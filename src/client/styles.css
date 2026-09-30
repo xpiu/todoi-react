@@ -1,0 +1,53 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.4;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.add {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.add input {
+  flex: 1;
+  padding: 0.5rem;
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.items li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.items li .title {
+  flex: 1;
+}
+
+.items li[data-status="DONE"] .title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.empty {
+  opacity: 0.6;
+}

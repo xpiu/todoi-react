@@ -1,0 +1,91 @@
+# Custom
+/.archive
+/.Archive
+/.tmp
+/.temp
+/.test
+/test
+/.meta
+
+# IDE & Agentic tools
+.vscode/
+.idea/
+.DS_Store
+.claudeignore
+.cursorignore
+.vscode/settings.json
+/.cursor
+/.claude/*
+!/.claude/skills/
+!/.claude/skills/**
+CLAUDE.md
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Security reports
+/docs/security-*
+/scripts/security-*
+/scripts/verify-security-*
+
+# Postgres local development files
+/.dev
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.local
+!.env.example
+.env.prod
+.env.production
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/.env
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+prisma/*.db-journal
+
+# Generated Prisma Client (keep out of version control due to query engine binaries)
+/generated/
+
+# storybook
+*storybook.log
+
+# swc
+.swc
+
+# Server configuration
+.htaccess*
+/src/generated/prisma
+test-results/
