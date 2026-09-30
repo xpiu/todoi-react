@@ -1,6 +1,15 @@
 # Todoi web application
 
+## ToC
+
+- [About the Todoi web application](#about-the-todoi-web-application)
+- [Tech stack](#tech-stack)
+- [Current state: barebones core](#current-state-barebones-core)
+- [Local development](#local-development)
+- [Project structure](#project-structure)
+
 ## About the Todoi web application
+
 Name: Todoi
 Summary: A lightweight, fast task manager.
 Production URL: https://todoi.com
@@ -29,6 +38,7 @@ Github repo: coming later
 - Hosting: a Hetzner VPS
 - CDN: Cloudflare
 - More caching tools: DELAYED, potentially Redis later
+
 ## Current state: barebones core
 
 Only the thinnest vertical slice exists so far, on purpose: one `items` table, a Hono JSON API
@@ -53,7 +63,7 @@ npm run dev                 # API on :3000, Vite on :5173 (proxies /api to the A
 Other scripts: `npm run typecheck`, `npm run build`, `npm run db:generate` (after editing
 `src/server/db/schema.ts`), `npm run db:studio`.
 
-## Layout
+## Project structure
 
 ```
 src/client/   React app (Vite entry: index.html -> src/client/main.tsx)
