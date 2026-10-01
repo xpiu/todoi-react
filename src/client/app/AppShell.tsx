@@ -17,10 +17,13 @@ import { DEFAULT_NAV, Sidebar } from "../design/navigation/Sidebar";
 import { SortMenu } from "../design/navigation/SortMenu";
 import { SubNavbar } from "../design/navigation/SubNavbar";
 import { TopNavbar } from "../design/navigation/TopNavbar";
-import { decodeViewState, encodeViewState } from "../design/navigation/viewState";
+import { encodeViewState, sameDefinition, type ViewDefinition } from "../design/navigation/viewState";
+import { SavedViewTabs } from "../design/navigation/SavedViewTabs";
+import { useSavedViewMutations } from "../data/savedViews";
+import { useResolvedView } from "./useResolvedView";
 import { CommandPalette } from "../design/overlay/CommandPalette";
 import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
-import { useFeedback } from "./feedback";
+import { quote, useFeedback } from "./feedback";
 import { downloadText, fileSlug, itemsToCsv, viewToMarkdown } from "./exportData";
 import { availableFilters, describeSort, FILTER_SECTIONS, filterKey, matchesFilters, nextSort, sameFilter, SORT_OPTS, type SortDim } from "./filters";
 import { keyOf } from "./items";
@@ -108,8 +111,38 @@ export function AppShell() {
   const activeId = projectId ?? (section === "inbox" || section === "projects" || section === "groups" ? section : undefined);
   const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
-  const state = projectMatch ? decodeViewState(projectMatch.search) : null;
-  const view = state?.view ?? project.data?.defaultView ?? "list";
+  const resolved = useResolvedView(projectId ?? "", projectMatch?.search ?? {}, project.data?.defaultView);
+  const state = projectMatch ? resolved.state : null;
+  const view = resolved.view;
+  const svm = useSavedViewMutations(projectId ?? "");
+  // The saved-views row: remembered per device; opens by itself when a saved-view link loads.
+  const [svOpen, setSvOpen] = useState(() => {
+    try {
+      return localStorage.getItem("td-saved-views-open") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const setSavedViewsOpen = (o: boolean) => {
+    setSvOpen(o);
+    try {
+      localStorage.setItem("td-saved-views-open", o ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
+  const savedViewsOpen = svOpen || !!resolved.raw.savedView;
+  // The tab stays active (with a dot) while the live state drifts from its definition.
+  const [lastSaved, setLastSaved] = useState<{ projectId: string; id: string } | null>(null);
+  const activeSavedId = resolved.raw.savedView ?? (lastSaved && lastSaved.projectId === projectId ? lastSaved.id : null);
+  const activeSaved = resolved.savedViews.find((v) => v.id === activeSavedId) ?? null;
+  const currentDef: ViewDefinition = { view, filters: state?.filters ?? [], sort: state?.sort ?? {} };
+  const svDirty = !!activeSaved && !sameDefinition({ view: activeSaved.definition.view, filters: activeSaved.definition.filters ?? [], sort: activeSaved.definition.sort ?? {} }, currentDef);
+  const goSaved = (id: string | null) => {
+    if (!projectId) return;
+    setLastSaved(id ? { projectId, id } : null);
+    void navigate({ to: "/p/$projectId", params: { projectId }, search: id ? { view: id, item: state?.item } : { item: state?.item } });
+  };
   const setView = (v: string) => {
     if (!projectId || !state) return;
     suggest(`view-${v}`);
@@ -117,6 +150,7 @@ export function AppShell() {
   };
   const setViewState = (patch: Partial<typeof state & object>) => {
     if (!projectId || !state) return;
+    if (resolved.raw.savedView) setLastSaved({ projectId, id: resolved.raw.savedView });
     void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, ...patch, savedView: undefined }) });
   };
   const clearFilters = () => setViewState({ filters: [] });
@@ -149,6 +183,45 @@ export function AppShell() {
     else downloadText(`${slug}.csv`, itemsToCsv(lists.flatMap((l) => l.items), ctx), "text/csv");
     notify({ message: `Exported “${p.name}” ${view} view as ${format.toUpperCase()} — ${visible.length} item${visible.length === 1 ? "" : "s"}`, icon: "download" });
   };
+  const savedViewsRow =
+    projectId && savedViewsOpen ? (
+      <div className="td-sv-row-wrap">
+        <SavedViewTabs
+          views={resolved.savedViews.map((v) => ({ id: v.id, name: v.name, shared: v.shared, definition: { view: v.definition.view, filters: v.definition.filters ?? [], sort: v.definition.sort ?? {} } }))}
+          activeId={activeSavedId}
+          dirty={svDirty}
+          canSave={(filters.length > 0 || sortActive.length > 0) && (!activeSaved || svDirty)}
+          currentDef={currentDef}
+          onSelect={goSaved}
+          onSave={(name, shared) => {
+            const id = newId();
+            svm.create.mutate({ id, name, shared, definition: currentDef }, { onSuccess: () => {
+              notify({ message: `Saved the view ${quote(name)}`, icon: "bookmark-plus" });
+              goSaved(id);
+            } });
+          }}
+          onAction={(id, action, value) => {
+            const v = resolved.savedViews.find((x) => x.id === id);
+            if (!v) return;
+            if (action === "copy-link") {
+              void navigator.clipboard?.writeText(`${window.location.origin}/p/${projectId}?view=${id}`);
+              notify({ message: `Copied the link to ${quote(v.name)}`, icon: "link" });
+            } else if (action === "update") {
+              svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => goSaved(id) });
+              notify({ message: `Updated ${quote(v.name)} with the current filters and sort`, icon: "save" });
+            } else if (action === "rename" && typeof value === "string") svm.update.mutate({ id, name: value });
+            else if (action === "share" && typeof value === "boolean") {
+              svm.update.mutate({ id, shared: value });
+              notify({ message: value ? `${quote(v.name)} is now shared with the project` : `${quote(v.name)} is now only yours`, icon: value ? "users" : "lock" });
+            } else if (action === "delete") {
+              svm.remove.mutate({ id });
+              if (activeSavedId === id) goSaved(null);
+              notify({ message: `Deleted the view ${quote(v.name)}`, icon: "trash-2", restore: () => svm.create.mutate({ id: v.id, name: v.name, shared: v.shared, definition: v.definition }) });
+            }
+          }}
+        />
+      </div>
+    ) : null;
   const filterBar =
     projectId && (filters.length || sortActive.length) ? (
       <FilterBar chips={barChips} sorts={sortActive.map((d) => ({ dim: d, label: describeSort(d, sort[d]!) }))} onToggle={toggleFilter} onClearFilters={clearFilters} onClearSort={(d) => selectSort(d, "none")} hidden={hiddenCount} />
@@ -163,7 +236,7 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} onMembers={() => lifecycle.openSettings(projectId, "members")} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} onMembers={() => lifecycle.openSettings(projectId, "members")} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
@@ -194,6 +267,7 @@ export function AppShell() {
         {vp.desktop ? nav : null}
       </TopNavbar>
       {!vp.desktop && nav ? <div className="td-app-subrow">{nav}</div> : null}
+      {savedViewsRow}
       {filterBar}
       {guestReason ? <GuestBar reason={guestReason} projectName={project.data?.name} signedIn={!!user} onLogin={() => navigate({ to: "/login" })} onCreateAccount={!user ? () => navigate({ to: "/signup" }) : undefined} /> : null}
       <div className="td-app-body">

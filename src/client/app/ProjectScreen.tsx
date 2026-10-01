@@ -24,7 +24,7 @@ import { useTouchDrag } from "../design/core/touchDrag";
 import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
-import { decodeViewState, encodeViewState } from "../design/navigation/viewState";
+import { encodeViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
 import { useAttachmentMutations } from "../data/attachments";
@@ -37,6 +37,7 @@ import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
 import { peopleOf } from "./session";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
+import { useResolvedView, type ResolvedView } from "./useResolvedView";
 import "./screens.css";
 
 const projectRoute = getRouteApi("/app/p/$projectId");
@@ -44,12 +45,11 @@ const projectRoute = getRouteApi("/app/p/$projectId");
 export function ProjectScreen() {
   const { projectId } = projectRoute.useParams();
   const search = projectRoute.useSearch();
-  const state = decodeViewState(search);
   const navigate = useNavigate();
   const project = useProject(projectId);
   const items = useProjectItems(projectId);
   const labels = useLabels(projectId);
-  const view = state.view ?? project.data?.defaultView ?? "list";
+  const { state, view } = useResolvedView(projectId, search, project.data?.defaultView);
   // Selection is per project: a different project reads as an empty selection.
   const [sel, setSel] = useState<{ pid: string; ids: string[] }>({ pid: projectId, ids: [] });
   const selectedIds = sel.pid === projectId ? sel.ids : [];
@@ -62,7 +62,8 @@ export function ProjectScreen() {
   }
   if (failed) return <LoadFailed what="this project" error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
-  const go = (next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, ...next }) });
+  // A change to filters or sort leaves the saved view (the URL turns ad-hoc); opening an item keeps it.
+  const go = (next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, ...next, savedView: "filters" in next || "sort" in next ? undefined : state.savedView }) });
   const props: ViewProps = {
     projectId,
     project: project.data,
@@ -90,8 +91,8 @@ interface ViewProps {
   project: ProjectDetail;
   items: Item[];
   labels: Label[];
-  filters: ReturnType<typeof decodeViewState>["filters"];
-  sort: ReturnType<typeof decodeViewState>["sort"];
+  filters: ResolvedView["filters"];
+  sort: ResolvedView["sort"];
   selectedIds: string[];
   setSelectedIds: (next: string[] | ((prev: string[]) => string[])) => void;
   clearFilters: () => void;

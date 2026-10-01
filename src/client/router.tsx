@@ -12,8 +12,8 @@ import { authClient } from "./auth";
 import { InboxScreen } from "./app/InboxScreen";
 import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
-import { PlaceholderScreen } from "./app/PlaceholderScreen";
 import { ProjectsScreen } from "./app/ProjectsScreen";
+import { ImportScreen } from "./app/ImportScreen";
 import { SettingsScreen } from "./app/SettingsScreen";
 import { ProjectScreen } from "./app/ProjectScreen";
 import { queryClient } from "./queryClient";
@@ -71,7 +71,7 @@ export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: 
 const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });
 export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <SettingsScreen page="account" />, validateSearch: sectionSearch });
-export const importRoute = createRoute({ getParentRoute: () => appRoute, path: "/import", component: () => <PlaceholderScreen title="Import" hint="Markdown, Trello JSON and CSV imports with a review step land next." icon="upload" /> });
+export const importRoute = createRoute({ getParentRoute: () => appRoute, path: "/import", component: ImportScreen });
 const authSearch = z.object({ next: z.string().optional().catch(undefined), email: z.string().optional().catch(undefined), invite: z.string().optional().catch(undefined) });
 export const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: "/login", component: LoginScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
 export const signupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/signup", component: SignupScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });

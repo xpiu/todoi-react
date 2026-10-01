@@ -1,0 +1,94 @@
+@layer components {
+  .td-imp {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--chrome-canvas);
+    box-sizing: border-box;
+    padding: var(--sp-4) var(--sp-5) var(--sp-8);
+  }
+  .td-imp-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+  }
+  .td-imp-title {
+    margin: 0;
+    font: var(--type-page-title);
+    color: var(--chrome-text);
+  }
+  .td-imp-crumb {
+    margin: calc(-1 * var(--sp-4)) 0 0;
+    font: var(--type-small);
+    color: var(--chrome-text-dim);
+  }
+  .td-imp-file {
+    display: none;
+  }
+  .td-imp-paste {
+    padding: var(--sp-2) var(--sp-5) 14px;
+    border-top: 1px solid var(--border-divider);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+  .td-imp-paste .td-field {
+    font: var(--weight-regular) 13px / 18px var(--font-mono);
+  }
+  .td-imp-paste-foot {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .td-imp-body {
+    padding: var(--sp-2) var(--sp-5) var(--sp-3);
+    border-top: 1px solid var(--border-divider);
+    font: var(--type-body);
+    color: var(--ink-600);
+  }
+  .td-imp-head {
+    font: var(--weight-semibold) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-400);
+    margin: var(--sp-3) 0 6px;
+  }
+  .td-imp-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--ink-900);
+  }
+  .td-imp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: var(--type-small);
+    color: var(--ink-600);
+  }
+  .td-imp-table th {
+    text-align: left;
+    font-weight: var(--weight-medium);
+    color: var(--ink-400);
+    padding: 6px var(--sp-2);
+    border-bottom: 1px solid var(--border-divider);
+  }
+  .td-imp-table td {
+    padding: var(--sp-2);
+    border-bottom: 1px solid var(--border-divider);
+    vertical-align: top;
+  }
+  .td-imp-strong {
+    color: var(--ink-900);
+  }
+  .td-imp-warn {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 6px 0;
+    color: var(--warning);
+    font: var(--type-body);
+  }
+  .td-imp-foot {
+    border-top: 1px solid var(--border-divider);
+  }
+}

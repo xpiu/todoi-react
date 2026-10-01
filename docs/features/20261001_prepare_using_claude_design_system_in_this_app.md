@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** in progress. Phases 0–5 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
+**Status:** in progress. Phases 0–6 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -96,8 +96,8 @@
 - [x] Settings shell (Page › Section › Group › Row registry, search across rows) with General, Storage & sync, Labels, Appearance, Keyboard (generated from `SHORTCUTS`), Help, Integrations, Notifications. *(GitHub sync itself stays a later milestone; the Integrations page says so.)*
 - [x] Account pages: Profile, Sign-in methods, API tokens, Security, Devices, Projects (storage, share links, invites), Data, Support. *(Tokens are real bearer tokens; social sign-in and self-service account deletion wait for the hosted release.)*
 - [x] Better Auth: SignInPage, SignUpPage, ResetPasswordPage, InvitePage, GuestBar + `data-readonly` contract. *(Email + password; reset links need an email sender, so the request shows the sent state only.)*
-- [ ] Export: ExportMenu (PDF via `print.css`, Markdown in Embridge format, CSV); import from Markdown, Trello JSON, CSV via one Review step.
-- [ ] Saved views (tabs row, shareable URL state).
+- [x] Export: ExportMenu (PDF via `print.css`, Markdown in Embridge format, CSV); import from Markdown, Trello JSON, CSV via one Review step. *(`/import`: pick or paste → Review (counts, lists, field mapping, warnings) → Create project; the Markdown parser round-trips Export's output.)*
+- [x] Saved views (tabs row, shareable URL state). *(`?view=id` resolves the saved definition; a drifted tab shows the dot and Update / Save as new.)*
 
 ## Phase 7 — Quality gates (set up early, run continuously)
 
