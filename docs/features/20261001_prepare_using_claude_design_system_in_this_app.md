@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** in progress. Phase 0 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
+**Status:** in progress. Phases 0 and 1 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -39,14 +39,14 @@
 
 ## Phase 1 — Foundations: tokens, fonts, icons, theming
 
-- [ ] Copy `tokens/` and `styles.css` into `src/client/design/tokens/`; import once from `main.tsx`. Remove the current `styles.css` rules it replaces.
-- [ ] Copy `assets/fonts/` (Inter variable, Geist Mono) and fix the `@font-face` paths; verify both only load for the Minimal theme.
-- [ ] Icons: add `lucide-react`. Port the DS `Icon` wrapper to TSX with an explicit icon map (name → component) so tree-shaking survives; include the custom `circle-todo` glyph.
-- [ ] Appearance store: port `components/core/Appearance.jsx` (theme × mode, per-slot Background/Foreground, show ids / labels / status, sidebar side, colorize columns, suggest shortcuts; `td-*` localStorage keys). This is the first Zustand use.
-- [ ] Viewport: port `Viewport.jsx` (`useViewport`, `data-device`, `data-touch` on `<html>`).
-- [ ] Set `<html data-theme="standard" data-mode="dark">` in `index.html`; confirm all four theme × mode scopes render.
-- [ ] Port the adherence lint rules (raw hex, raw px, font family, restricted imports) into the project linter.
-- [ ] Decide the component CSS strategy (see decisions) and set up the first example end to end.
+- [x] Copy `tokens/` and `styles.css` into `src/client/design/tokens/`; import once from `main.tsx`. Remove the current `styles.css` rules it replaces. Entry is `src/client/design/index.css` with cascade layers `tokens < base < components < theme`; the placeholder list styles now use tokens only.
+- [x] Copy `assets/fonts/` (Inter variable, Geist Mono) and fix the `@font-face` paths; verify both only load for the Minimal theme. Verified with Playwright: no font request in Standard, `Inter-Variable.ttf` requested only after switching to Minimal (Geist Mono loads once a mono element renders).
+- [x] Icons: add `lucide-react`. Port the DS `Icon` wrapper to TSX with an explicit icon map (name → component) so tree-shaking survives; include the custom `circle-todo` glyph. `lucide-react` 1.49: all 137 DS glyph names resolve; only the brand marks (github, slack, instagram, facebook, chrome) are gone from Lucide, `github` is drawn in `Icon.tsx`, the rest are added when their pages are ported. `IconName` is a union type, so an unknown name fails `tsc`.
+- [x] Appearance store: port `components/core/Appearance.jsx` (theme × mode, per-slot Background/Foreground, show ids / labels / status, sidebar side, colorize columns, suggest shortcuts; `td-*` localStorage keys). This is the first Zustand use. `src/client/design/core/appearance.ts`: Zustand 5 + `persist` under one key `td-appearance` (the kit's many `td-*` keys migrate on first read, verified); DOM effects applied before React mounts; cross-tab sync via the `storage` event.
+- [x] Viewport: port `Viewport.jsx` (`useViewport`, `data-device`, `data-touch` on `<html>`). `src/client/design/core/viewport.ts` on `useSyncExternalStore`; verified `data-device="phone"` at 390px.
+- [x] Set `<html data-theme="standard" data-mode="dark">` in `index.html`; confirm all four theme × mode scopes render. Plus a pre-paint inline script that applies the stored theme/mode before CSS resolves (no flash; verified at DOMContentLoaded). Four scopes screenshot-verified (`.tmp/20261001_phase1/`).
+- [x] Port the adherence lint rules (raw hex, raw px, font family, restricted imports) into the project linter. `oxlint` with a local JS plugin `tools/lint/design-adherence.js` (no-raw-hex, no-inline-px, no-inline-z-index, no-inline-font-family) + `no-restricted-imports` for `lucide-react`; `stylelint` for component CSS (no hex, no named colours, `z-index` must be a `--z-*` token, `font-family` must be a `--font-*` token, no `@media`, `td-*` class names). Unknown component props are a TypeScript error, so that rule needs no lint. `npm run check` = typecheck + both linters.
+- [x] Decide the component CSS strategy (see decisions) and set up the first example end to end. `Button` (`src/client/design/core/Button.tsx` + `Button.css` in `@layer components`) is the example: tokens only, `td-btn-*` classes, used by the placeholder list; the Minimal theme layer restyles it without touching the component.
 
 ## Phase 2 — Core primitives (TSX, one at a time, `.d.ts` as the contract)
 

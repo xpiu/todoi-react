@@ -1,0 +1,18 @@
+/* Shadows are themed: they live in tokens/themes/<theme>.css (per theme × mode), not here. This file is the stacking ladder only. */
+/* Stacking ladder — the only legal z-index values in this system.
+   Rungs are spaced so a consumer can slot a layer between two of ours.
+   Never write a raw z-index; if nothing fits, add a rung here and a row to guidelines/elevation-layers.html. */
+:root{
+--z-raised:1; /* @kind other */
+--z-hover-control:20; /* @kind other */
+--z-above-content:30; /* @kind other */
+--z-menu:60; /* @kind other */
+--z-menu-nav:70; /* @kind other */
+--z-menu-detached:80; /* @kind other */
+--z-modal:100; /* @kind other */
+--z-sheet:150; /* @kind other */
+--z-menu-toolbar:190; /* @kind other */
+--z-palette:200; /* @kind other */
+--z-drag:250; /* @kind other */
+--z-toast:300; /* @kind other */
+}

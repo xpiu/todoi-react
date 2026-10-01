@@ -62,9 +62,11 @@ Todoi is a lightweight task manager with a focus on user-friendliness, legibilit
 Only the thinnest vertical slice exists so far, on purpose: one `items` table, a Hono JSON API
 for it, and a React list that adds, updates and deletes items with optimistic mutations.
 
-In place: React + Vite, Hono (typed routes + RPC client), TanStack Query, Drizzle + PostgreSQL, zod validation.
-Deferred until there is something to use them for: Base UI, Zustand, Better Auth, Tiptap, OpenAPI,
-the sync engine, background jobs, hosting.
+In place: React + Vite, Hono (typed routes + RPC client), TanStack Query, Drizzle + PostgreSQL, zod validation,
+the design-system foundations (tokens, themes × modes, icons, appearance store with Zustand) per `DESIGN.md`.
+Deferred until there is something to use them for: Base UI, Better Auth, Tiptap, OpenAPI,
+the sync engine, background jobs, hosting. The adoption plan with its checklist lives in
+`docs/features/20261001_prepare_using_claude_design_system_in_this_app.md`.
 
 ## Local development
 
@@ -78,14 +80,20 @@ npm run db:migrate          # applies migrations from ./drizzle
 npm run dev                 # API on :3000, Vite on :5173 (proxies /api to the API)
 ```
 
-Other scripts: `npm run typecheck`, `npm run build`, `npm run db:generate` (after editing
-`src/server/db/schema.ts`), `npm run db:studio`.
+Other scripts: `npm run check` (typecheck + lint), `npm run typecheck`, `npm run lint` (oxlint with
+the design-adherence plugin in `tools/lint/`, stylelint for component CSS), `npm run build`,
+`npm run db:generate` (after editing `src/server/db/schema.ts`), `npm run db:studio`.
 
 ## Project structure
 
 ```
-src/client/   React app (Vite entry: index.html -> src/client/main.tsx)
-src/server/   Hono API, Drizzle schema and DB client (entry: src/server/index.ts)
-src/shared/   Code used by both: status ids, zod request schemas
-drizzle/      Generated SQL migrations
+src/client/          React app (Vite entry: index.html -> src/client/main.tsx)
+src/client/design/   Design system: tokens/ (CSS, four theme × mode scopes), fonts/, covers/,
+                     core/ (Icon, Button, appearance store, viewport, theme registry), one
+                     co-located .css per component, index.css as the single CSS entry
+src/server/          Hono API, Drizzle schema and DB client (entry: src/server/index.ts)
+src/shared/          Code used by both: status ids, zod request schemas
+drizzle/             Generated SQL migrations
+docs/design/         Glossary, data-model impact and kit notes; the spec itself is DESIGN.md
+tools/lint/          oxlint plugin with the design-adherence rules
 ```

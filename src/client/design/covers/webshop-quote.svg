@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 162" font-family="-apple-system,'Segoe UI',Roboto,sans-serif">
+<rect width="512" height="162" fill="#f7f9fc"></rect>
+<rect width="512" height="20" fill="#eef1f7"></rect>
+<circle cx="13" cy="10" r="3.5" fill="#ff5a4f"></circle><circle cx="25" cy="10" r="3.5" fill="#ffd024"></circle><circle cx="37" cy="10" r="3.5" fill="#1ed07c"></circle>
+<rect x="54" y="4" width="176" height="12" rx="6" fill="#ffffff"></rect>
+<text x="64" y="13" font-size="8" fill="#96969d">helicopterseurope.example/prices</text>
+<text x="28" y="48" font-size="14" font-weight="700" fill="#131f45">Price or request a quote?</text>
+<rect x="28" y="62" width="222" height="86" rx="6" fill="#ffffff" stroke="#dae0ec"></rect>
+<text x="44" y="82" font-size="9" font-weight="600" fill="#131f45">Used two-seater</text>
+<text x="44" y="102" font-size="14" font-weight="700" fill="#131f45">€310,000</text>
+<rect x="44" y="114" width="120" height="5" rx="2.5" fill="#dae0ec"></rect>
+<rect x="44" y="124" width="86" height="5" rx="2.5" fill="#dae0ec"></rect>
+<rect x="44" y="134" width="64" height="5" rx="2.5" fill="#dae0ec"></rect>
+<rect x="262" y="62" width="222" height="86" rx="6" fill="#ffffff" stroke="#131f45" stroke-width="1.5"></rect>
+<text x="278" y="82" font-size="9" font-weight="600" fill="#131f45">New five-seater</text>
+<text x="278" y="102" font-size="14" font-weight="700" fill="#96969d">Price on request</text>
+<rect x="278" y="112" width="92" height="16" rx="8" fill="#131f45"></rect>
+<text x="288" y="123" font-size="7.5" fill="#ffffff">Request a quote</text>
+<rect x="278" y="136" width="120" height="5" rx="2.5" fill="#dae0ec"></rect>
+</svg>

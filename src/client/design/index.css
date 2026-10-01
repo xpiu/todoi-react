@@ -1,0 +1,17 @@
+/* Design-system entry — imported once from src/client/main.tsx.
+   Layer order is the cascade: tokens < base < components < theme. A theme file (Minimal's
+   component rules) therefore overrides component CSS by layer, not by selector weight.
+   Components live in their own co-located .css files and declare `@layer components { … }`. */
+@layer tokens, base, components, theme;
+
+@import "./tokens/colors.css" layer(tokens);
+@import "./tokens/themes/standard.css" layer(tokens);
+@import "./tokens/themes/minimal.css" layer(tokens);
+@import "./tokens/typography.css" layer(tokens);
+@import "./tokens/spacing.css" layer(tokens);
+@import "./tokens/radius.css" layer(tokens);
+@import "./tokens/elevation.css" layer(tokens);
+@import "./tokens/motion.css" layer(tokens);
+@import "./tokens/base.css" layer(base);
+@import "./tokens/themes/minimal-components.css" layer(theme);
+@import "./tokens/print.css" layer(theme);

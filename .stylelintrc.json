@@ -1,0 +1,72 @@
+{
+  "extends": [
+    "stylelint-config-standard"
+  ],
+  "ignoreFiles": [
+    "dist/**",
+    "node_modules/**",
+    ".tmp/**",
+    "src/client/design/tokens/**"
+  ],
+  "rules": {
+    "selector-class-pattern": [
+      "^td-[a-z0-9-]+$|^(is|has)-[a-z0-9-]+$",
+      {
+        "message": "Class names are td-<component>-<part> (or is-/has- state)."
+      }
+    ],
+    "custom-property-pattern": null,
+    "declaration-empty-line-before": null,
+    "rule-empty-line-before": null,
+    "comment-empty-line-before": null,
+    "value-keyword-case": null,
+    "font-family-name-quotes": null,
+    "property-no-vendor-prefix": null,
+    "declaration-block-no-redundant-longhand-properties": null,
+    "no-descending-specificity": null,
+    "shorthand-property-no-redundant-values": null,
+    "color-function-notation": null,
+    "alpha-value-notation": null,
+    "import-notation": "string",
+    "color-function-alias-notation": null,
+    "color-hex-length": null,
+    "at-rule-empty-line-before": null,
+    "custom-property-empty-line-before": null
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/client/**/*.css"
+      ],
+      "rules": {
+        "color-no-hex": [
+          true,
+          {
+            "message": "Raw hex colour — use a token: var(--…)."
+          }
+        ],
+        "color-named": [
+          "never",
+          {
+            "ignore": [
+              "inside-function"
+            ],
+            "message": "Named colour — use a token."
+          }
+        ],
+        "declaration-property-value-disallowed-list": {
+          "/^z-index$/": [
+            "/^-?\\d+$/"
+          ],
+          "/^font-family$/": [
+            "/^(?!var\\(--font-)/"
+          ]
+        },
+        "at-rule-disallowed-list": [
+          "media"
+        ],
+        "selector-attribute-quotes": "always"
+      }
+    }
+  ]
+}

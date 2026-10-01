@@ -1,0 +1,21 @@
+/* ═══ Color model: theme × mode ═══════════════════════════════════════════════════════
+   Two independent axes, both attributes on <html>, both owned by components/core/Appearance.jsx:
+     data-theme = "standard" | "minimal"   the app theme (look and feel; Standard is the default)
+     data-mode  = "dark" | "light"         the color mode inside a theme (dark is the default)
+   Every color token is defined four times — once per theme × mode — in tokens/themes/<theme>.css.
+   Components consume ONLY the token names below (never a theme file directly, never a hex), so a new
+   theme is one more file in tokens/themes/ plus one @import in styles.css and one entry in Themes.jsx.
+   Resolution order (styles.css): colors.css → themes/standard.css → themes/minimal.css.
+   Scopes:   :root / [data-theme="standard"]  → Standard dark        [data-theme="standard"][data-mode="light"] (or no theme + light) → Standard light
+             [data-theme="minimal"]           → Minimal dark         [data-theme="minimal"][data-mode="light"] → Minimal light
+   Every light scope names its theme, so no theme's values leak into another's; the mode attribute alone never selects a palette.
+   Per-theme component styling (when a theme needs more than new token values) scopes on the same attribute:
+   [data-theme="minimal"] .td-card{…}. Never branch on a mode for that — use tokens. */
+
+/* Theme- and mode-independent: semantic aliases (they resolve against whichever scope applies) and fixed ink.
+   The "fixed" comment marker exempts a token from the parity audit */
+:root{
+--text-body:var(--ink-900);--text-subtle:var(--ink-600);--text-faint:var(--ink-400);--text-link:var(--blue-500);--text-inverse:#ffffff/*fixed*/;
+--action-primary:var(--blue-500);--action-primary-hover:var(--blue-600);--action-primary-active:var(--blue-700);
+--chrome-selected:#ffffff/*fixed*/;--chrome-selected-text:#131f45/*fixed*/;--label-text:#131f45/*fixed*/;--btn-inverse-bg:#dee6f4/*fixed*/;--btn-inverse-hover:#ffffff/*fixed*/;--btn-inverse-active:#c5d1e6/*fixed*/;
+}

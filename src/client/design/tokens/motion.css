@@ -1,0 +1,12 @@
+:root{
+--ease-standard:cubic-bezier(.2,0,0,1); /* @kind other */
+--duration-fast:100ms; /* @kind other */ /* hovers, presses */
+--duration-base:150ms; /* @kind other */ /* color/background transitions */
+--duration-overlay:200ms; /* @kind other */ /* overlay fade + settle */
+--duration-slow:400ms; /* @kind other */ /* delay before a tooltip shows */
+}
+/* Reduced motion: one global rule, no per-component opt-in. Everything still changes state, it just
+   stops moving — fades, settles and pulses collapse to a frame; delays (tooltip 400ms, skeleton 150ms) stay. */
+@media (prefers-reduced-motion:reduce){
+*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}

@@ -1,0 +1,629 @@
+/* ═══ Minimal theme — "Ledger" component rules ═══ Scoped on the theme, never a mode; colors come from tokens (tokens/themes/minimal.css). Source: explorations/minimal-theme-board.html (B). Selectors carry the html prefix so they outrank component stylesheets (which load after this file). */
+/* Base */
+html[data-theme="minimal"]{-webkit-font-smoothing:antialiased}
+html[data-theme="minimal"] body{font:400 13px/1.45 var(--font-ui)}
+/* ── Top bar: one 48px row, hairline below; title left, tools + views + account right; every element in ink, 16px line icons, stroke 1.75 */
+html[data-theme="minimal"] .td-topnav{height:48px;gap:24px;padding:0 24px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-topnav svg,html[data-theme="minimal"] .td-subnav svg,html[data-theme="minimal"] .td-sidebar svg,html[data-theme="minimal"] .td-list-head svg,html[data-theme="minimal"] .td-lsec-head svg,html[data-theme="minimal"] .td-calhead svg{stroke-width:1.75}
+html[data-theme="minimal"] .td-topnav-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;margin:0}
+html[data-theme="minimal"] span.td-topnav-title[data-editable="true"]{padding:0;margin:0;gap:6px}
+html[data-theme="minimal"] input.td-topnav-title{background:none;color:var(--ink-900);border:0;border-bottom:1px solid var(--ink-900);border-radius:0;padding:0;margin:0;font:500 13px/1.45 var(--font-ui);width:240px}
+html[data-theme="minimal"] .td-topnav-spacer{margin:0}
+html[data-theme="minimal"] .td-topnav .td-subnav{column-gap:24px;row-gap:0;min-height:0;padding:0}
+html[data-theme="minimal"] .td-subnav-actions{gap:16px}
+html[data-theme="minimal"] .td-subnav-views{gap:16px;padding:0;background:none;border-radius:0}
+/* Standalone row (tablet, below desktop): 48px row, 24px side padding and a hairline matching the top bar; glyph spacing is identical to the docked row (16px between icons, 24px between groups) — the row's height does the vertical centring */
+html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav){box-sizing:border-box;min-height:48px;padding:0 24px;column-gap:24px;row-gap:0;align-items:center;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-actions,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-views{align-items:center}
+html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-style-wrap,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-share-wrap{align-items:center}
+html[data-theme="minimal"] .td-subnav-act,html[data-theme="minimal"] .td-subnav-seg{height:16px;width:auto;min-width:16px;padding:0;gap:0;font-size:0;line-height:0;color:var(--ink-900);background:none;border-radius:0}
+html[data-theme="minimal"] .td-subnav-act:hover,html[data-theme="minimal"] .td-subnav-act:active,html[data-theme="minimal"] .td-subnav-act[aria-expanded="true"],html[data-theme="minimal"] .td-subnav-seg:hover,html[data-theme="minimal"] .td-subnav-seg:active,html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-subnav-act:focus-visible,html[data-theme="minimal"] .td-subnav-seg:focus-visible{outline:1px solid var(--ink-900);outline-offset:3px}
+/* View switcher: same ink as every other navbar element — text segments and the divider included */
+html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)){font:400 13px/1.45 var(--font-ui);height:auto;color:var(--ink-900)}
+html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)):hover,html[data-theme="minimal"] .td-subnav-seg:not(:has(svg))[aria-expanded="true"]{color:var(--ink-900)}
+html[data-theme="minimal"] .td-subnav-vdiv{display:none}
+/* Search → a search glyph over a hairline (132px), the + create glyph, a user glyph instead of the avatar, the sidebar toggle at the far right */
+html[data-theme="minimal"] .td-topnav>div:has(>.td-field-wrap){width:132px!important;margin-left:0}
+html[data-theme="minimal"] .td-topnav .td-field-dark{height:24px!important;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-topnav .td-field-dark:focus{box-shadow:none;border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon{left:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-topnav .td-field-dark::placeholder{color:transparent}
+html[data-theme="minimal"] .td-topnav-kbd{display:none}
+html[data-theme="minimal"] .td-topnav-create{margin:0}
+html[data-theme="minimal"] button.td-topnav-plus{width:20px;height:20px;border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] button.td-topnav-plus svg{stroke-width:1.5}
+html[data-theme="minimal"] button.td-topnav-plus:hover,html[data-theme="minimal"] button.td-topnav-plus[aria-expanded="true"],html[data-theme="minimal"] button.td-topnav-plus:active{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-topnav-user{gap:24px}
+html[data-theme="minimal"] .td-topnav-avatarbtn{border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-topnav-avatarbtn:hover .td-avatar,html[data-theme="minimal"] .td-topnav-avatarbtn[aria-expanded="true"] .td-avatar{opacity:.55}
+html[data-theme="minimal"] .td-topnav-avatarbtn .td-avatar{width:16px!important;height:16px!important;border-radius:0!important;color:transparent!important;font-size:0!important;background:var(--ink-900)!important;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat}
+html[data-theme="minimal"] .td-topnav-user>.td-iconbtn{width:16px!important;height:16px!important;margin-left:0;border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-topnav-user>.td-iconbtn svg{width:16px;height:16px}
+html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:hover,html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:active{background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-topnav-status .td-connstat,html[data-theme="minimal"] .td-topnav-status>*{color:var(--ink-900)}
+/* ── Sidebar: white, one vertical hairline, group header flush with rows (chevron trailing), plain rows without icons or dividers, all in ink (no grey rest state); the open row is bolder with a hairline */
+html[data-theme="minimal"] .td-sidebar:not([data-hidden="true"]){width:196px!important;background:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-sidebar-right{border-left:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-sidebar-left{border-right:1px solid var(--border-divider)}
+/* Fixed inner width with the insets on it (not the aside) so the collapse animates as a plain clip: the rail narrows, the rows never move or squish */
+html[data-theme="minimal"] .td-sidebar-inner{width:196px!important;padding:20px 24px 0}
+html[data-theme="minimal"] .td-sidebar-group,html[data-theme="minimal"] .td-sidebar-nav{gap:0}
+html[data-theme="minimal"] .td-sidebar-nav,html[data-theme="minimal"] .td-sidebar-group+.td-sidebar-group{margin-top:12px}
+html[data-theme="minimal"] .td-sidebar-head{height:auto;margin:0;padding:0 0 8px;border-radius:0}
+html[data-theme="minimal"] .td-sidebar-head:hover,html[data-theme="minimal"] .td-sidebar-head:has(.td-sidebar-headbtn:active){background:none}
+html[data-theme="minimal"] .td-sidebar-head>.td-iconbtn{display:none}
+html[data-theme="minimal"] .td-sidebar-headbtn{flex-direction:row-reverse;justify-content:space-between;padding:0;height:auto;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-sidebar-headbtn .td-sidebar-chev{width:14px;height:14px;stroke-width:1.5;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sidebar-row{height:auto;padding:10px 0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);background:none;gap:10px}
+html[data-theme="minimal"] .td-sidebar-row:hover,html[data-theme="minimal"] .td-sidebar-row:active,html[data-theme="minimal"] .td-sidebar-rowwrap[data-menu-open="true"] .td-sidebar-row:not([aria-current="true"]){background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sidebar-row[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em;box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-sidebar-row:focus-visible{outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-sidebar-iconwrap{display:none!important}
+html[data-theme="minimal"] .td-sidebar-count,html[data-theme="minimal"] .td-sidebar-row[aria-current="true"] .td-sidebar-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more,html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add{right:0;top:11px;transform:none;width:16px!important;height:16px!important;border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more svg,html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more:is(:hover,:active,[aria-expanded="true"]),html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add:is(:hover,:active),html[data-theme="minimal"] .td-sidebar-rowwrap[data-current="true"] .td-sidebar-more:is(:hover,:active,[aria-expanded="true"]),html[data-theme="minimal"] .td-sidebar-rowwrap[data-current="true"] .td-sidebar-add:is(:hover,:active){background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sidebar-row[data-droptarget="true"]{box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-sidebar-row[data-drop="true"]{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-sidebar-rename{outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-sidebar-drophint{width:196px!important;padding:8px 24px;color:var(--ink-400)}
+/* ── Board: columns in a 24px gutter, no list surface; the list name sits over the same hairline that ends every row */
+html[data-theme="minimal"] .td-board{gap:24px;padding:20px 24px 0}
+html[data-theme="minimal"] .td-list{background:none;border-radius:0;box-shadow:none;padding:0}
+html[data-theme="minimal"] .td-list.is-drop-target{box-shadow:none}
+html[data-theme="minimal"] .td-list.is-drop-target>.td-list-head{border-bottom-color:var(--ink-900)}
+/* Colorize Board columns (off by default in Minimal): the column takes a faint status wash with 12px of inner air and the name's hairline turns the status hue; cards stay bare rows on the wash. BACKLOG has no role and stays paper. */
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role]{padding:10px 12px 8px;border-radius:var(--radius-lg)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role] .td-card,html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role] .td-card-more{background:none;box-shadow:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="NEW"]>.td-list-head{border-bottom-color:color-mix(in srgb,var(--status-new-hue) 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="TODO"]>.td-list-head{border-bottom-color:color-mix(in srgb,var(--status-todo-hue) 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="DOING"]>.td-list-head{border-bottom-color:color-mix(in srgb,var(--status-doing-hue) 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="DONE"]>.td-list-head{border-bottom-color:color-mix(in srgb,#21e389 60%,transparent)}
+html[data-theme="minimal"][data-mode="light"][data-colorize-columns="true"] .td-list[data-status-role="DONE"]>.td-list-head{border-bottom-color:color-mix(in srgb,#1a9c5e 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list.is-drop-target[data-status-role]>.td-list-head{border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-head{padding:0 0 8px;gap:6px;align-items:baseline;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-list-head .td-pop-anchor:has(>.td-list-iconbtn){display:none!important}
+html[data-theme="minimal"] .td-list-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-count{display:none}
+html[data-theme="minimal"] .td-list-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-head .td-list-more-anchor{align-self:center;margin-left:auto}
+html[data-theme="minimal"] .td-list-head .td-list-more{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400);opacity:1}
+html[data-theme="minimal"] .td-list-head .td-list-more svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-list-head:hover .td-list-more,html[data-theme="minimal"] .td-list-head .td-list-more:focus-visible,html[data-theme="minimal"] .td-list-head .td-list-more[aria-expanded="true"]{opacity:1}
+html[data-theme="minimal"] .td-list-head .td-list-more:hover,html[data-theme="minimal"] .td-list-head .td-list-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-cards{gap:0;padding:0;scrollbar-width:thin;scrollbar-color:var(--border-divider) transparent}
+/* Card → a row: title, then one grey line of words (labels, date, initials, count, priority, key at the end in mono); no fill, no shadow, hairline below; cover as a bare full-width strip */
+html[data-theme="minimal"] .td-card{background:none;border-radius:0;box-shadow:none;padding:10px 0;border-bottom:1px solid var(--border-divider);overflow:visible;transition:none}
+html[data-theme="minimal"] .td-card:hover{box-shadow:none}
+html[data-theme="minimal"] .td-card:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-card.is-selected,html[data-theme="minimal"] .td-card.is-selected:hover{background:var(--blue-100);box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-card>img,html[data-theme="minimal"] .td-card>div:first-child:not(.td-card-body){height:96px!important;max-height:96px;margin-bottom:8px;border-radius:0}
+html[data-theme="minimal"] .td-card-body{padding:0!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:baseline;gap:2px 10px!important}
+html[data-theme="minimal"] .td-card-body>.td-card-title{width:100%;white-space:normal;margin-bottom:2px;font:400 12.5px/1.28 var(--font-ui)!important;color:var(--ink-900)!important;padding-right:0!important;order:-1}
+html[data-theme="minimal"] .td-card-title>svg{display:none!important}
+html[data-theme="minimal"] .td-card-title.is-done{color:var(--ink-400)!important}
+html[data-theme="minimal"] .td-card-labels,html[data-theme="minimal"] .td-card-badges{display:contents;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-card-badges.is-compact .td-meta-text{display:inline}
+html[data-theme="minimal"] .td-card-body>*,html[data-theme="minimal"] .td-card-labels>*,html[data-theme="minimal"] .td-card-badges>*{white-space:nowrap;flex:none}
+html[data-theme="minimal"] .td-card-badge,html[data-theme="minimal"] .td-due{display:inline-flex;gap:0;order:1}
+html[data-theme="minimal"] .td-card-badges>.td-card-due{flex:none;overflow:visible}
+html[data-theme="minimal"] .td-card-badge svg,html[data-theme="minimal"] .td-due svg{display:none!important}
+html[data-theme="minimal"] .td-card-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-card-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px;vertical-align:-2px}
+html[data-theme="minimal"] .td-card-badge[title^="This item has a description"]{display:none}
+html[data-theme="minimal"] .td-card-badges>.td-card-avs{order:2}
+html[data-theme="minimal"] .td-card-badge[title^="Subitems"]{order:3;color:var(--ink-400)!important}
+html[data-theme="minimal"] .td-card-badge[title^="Priority"]{order:4}
+html[data-theme="minimal"] .td-card-badge[title^="Repeats"],html[data-theme="minimal"] .td-card-badge[title^="Attachments"]{order:5}
+html[data-theme="minimal"] .td-prio-text{display:inline;text-transform:capitalize}
+html[data-theme="minimal"] .td-card-id,html[data-theme="minimal"] .td-lrow-key,html[data-theme="minimal"] .td-calchip-key{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-id{order:10;margin-left:auto}
+html[data-theme="minimal"] .td-card-id:hover,html[data-theme="minimal"] .td-lrow-key:hover{color:var(--ink-900)}
+html[data-theme="minimal"] .td-card-more{top:10px;right:0;width:16px;height:18px;border-radius:0;background:var(--chrome-canvas);box-shadow:-6px 0 4px -2px var(--chrome-canvas);color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-more:hover,html[data-theme="minimal"] .td-card-more[aria-expanded="true"]{color:var(--ink-900)}
+html[data-theme="minimal"] .td-card-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-card-meta{padding:4px 0 0}
+html[data-theme="minimal"] .td-card.td-file-target{outline:1px dashed var(--ink-900);outline-offset:-1px;background:var(--blue-100);box-shadow:none}
+html[data-theme="minimal"] .td-card.td-file-target::after{border-radius:0;font:400 11px/16px var(--font-ui);right:0;bottom:10px}
+/* Labels are words; assignees are initials; both comma-separated, grey */
+html[data-theme="minimal"] .td-card-labels .td-label,html[data-theme="minimal"] .td-lrow-labels .td-lpill{display:inline!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important;overflow:visible!important;position:static!important;transition:none!important}
+html[data-theme="minimal"] .td-card-labels .td-label+.td-label::before,html[data-theme="minimal"] .td-lrow-labels .td-lpill+.td-lpill::before{content:", "}
+html[data-theme="minimal"] .td-card-labels .td-label:not(:last-of-type){margin-right:-4px!important}
+html[data-theme="minimal"] .td-lrow-labels .td-lpill-n,html[data-theme="minimal"] .td-lrow-avs .td-lav-n,html[data-theme="minimal"] .td-card-avs .td-cav-n{display:none!important}
+html[data-theme="minimal"] .td-lrow-labels,html[data-theme="minimal"] .td-lrow-labels.is-float .td-lrow-labels-in{position:static;width:auto!important;height:auto;padding:0;overflow:visible;background:none!important;max-width:none!important}
+html[data-theme="minimal"] .td-card-avs,html[data-theme="minimal"] .td-lrow-avs{gap:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-avs .td-cav,html[data-theme="minimal"] .td-lrow-avs .td-lav{width:auto!important;height:auto!important;border-radius:0;box-shadow:none!important;margin:0!important;overflow:visible;transition:none}
+html[data-theme="minimal"] .td-card-avs .td-cav+.td-cav::before,html[data-theme="minimal"] .td-lrow-avs .td-lav+.td-lav::before{content:", ";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-avs .td-avatar,html[data-theme="minimal"] .td-lrow-avs .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;display:inline!important}
+html[data-theme="minimal"] .td-card-avs img.td-avatar,html[data-theme="minimal"] .td-lrow-avs img.td-avatar{width:14px!important;height:14px!important;border-radius:50%!important;vertical-align:-3px}
+html[data-theme="minimal"] .td-lrow .td-lrow-avs:hover .td-lav+.td-lav{margin-left:0}
+html[data-theme="minimal"] .td-lrow-avs .td-lav.td-lav-x{width:auto!important}
+/* Dates: words, grey; overdue red at normal weight; done grey */
+html[data-theme="minimal"] .td-due{background:none!important;color:var(--ink-400)!important;height:auto!important;padding:0!important;border-radius:0!important;font:400 11px/1.45 var(--font-ui)!important}
+html[data-theme="minimal"] .td-due[data-state="overdue"]{color:var(--danger)!important}
+html[data-theme="minimal"] .td-status{color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;gap:3px}
+html[data-theme="minimal"] .td-status svg{width:11px;height:11px;stroke:var(--ink-400)}
+/* Add an item · Add another list · the quick-add composer, all as plain grey rows */
+html[data-theme="minimal"] .td-list-foot{padding-top:0}
+html[data-theme="minimal"] .td-list-add,html[data-theme="minimal"] .td-board-addlist,html[data-theme="minimal"] .td-listview-addlist,html[data-theme="minimal"] .td-lsec-add,html[data-theme="minimal"] .td-caldaylist-add{height:auto;padding:10px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
+html[data-theme="minimal"] .td-list-add svg,html[data-theme="minimal"] .td-board-addlist svg,html[data-theme="minimal"] .td-listview-addlist svg,html[data-theme="minimal"] .td-lsec-add svg,html[data-theme="minimal"] .td-caldaylist-add svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-lsec-add>span:first-child{width:14px}
+html[data-theme="minimal"] .td-list-add:hover,html[data-theme="minimal"] .td-board-addlist:hover,html[data-theme="minimal"] .td-listview-addlist:hover,html[data-theme="minimal"] .td-lsec-add:hover,html[data-theme="minimal"] .td-caldaylist-add:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-add:focus-visible,html[data-theme="minimal"] .td-board-addlist:focus-visible,html[data-theme="minimal"] .td-listview-addlist:focus-visible,html[data-theme="minimal"] .td-lsec-add:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-board-addlist{align-self:flex-start;padding:0 0 8px;height:auto;width:var(--size-list-width);justify-content:flex-start}
+/* List view: "Add another list" is a section-level action, so it takes the list-title weight and tracking (.td-lsec-name) rather than the item-row weight */
+html[data-theme="minimal"] .td-listview-addlist{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;padding:0;align-self:flex-start}
+html[data-theme="minimal"] .td-list-composer{margin:0;padding:10px 0;background:none;box-shadow:none;border-radius:0;border-bottom:1px solid var(--border-divider)}
+/* ── List view: sections are the same ledger, one column wide */
+html[data-theme="minimal"] .td-listview{padding:20px 24px 24px}
+html[data-theme="minimal"] .td-listview-inner{gap:24px}
+html[data-theme="minimal"] .td-lsec{background:none;border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-lsec-head{padding:0 0 8px;gap:6px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-lsec-collapsed>.td-lsec-head{padding-bottom:8px}
+html[data-theme="minimal"] .td-lsec-head .td-pop-anchor:has(>.td-lsec-iconbtn){display:none!important}
+html[data-theme="minimal"] .td-lsec-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900);white-space:nowrap;flex:1 1 auto}
+html[data-theme="minimal"] .td-lsec-count{display:none}
+html[data-theme="minimal"] .td-lsec-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-lsec-actions{gap:10px}
+html[data-theme="minimal"] .td-lsec-chev,html[data-theme="minimal"] .td-lsec-addbtn,html[data-theme="minimal"] .td-lsec-more{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-lsec-more{opacity:1}
+html[data-theme="minimal"] .td-lsec-chev svg,html[data-theme="minimal"] .td-lsec-addbtn svg,html[data-theme="minimal"] .td-lsec-more svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-lsec-chev:hover,html[data-theme="minimal"] .td-lsec-addbtn:hover,html[data-theme="minimal"] .td-lsec-addbtn[aria-pressed="true"],html[data-theme="minimal"] .td-lsec-more:hover,html[data-theme="minimal"] .td-lsec-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-lsec-chev:focus-visible,html[data-theme="minimal"] .td-lsec-addbtn:focus-visible,html[data-theme="minimal"] .td-lsec-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-lsec-body{padding-bottom:0!important}
+html[data-theme="minimal"] .td-lgroup{background:none;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-lgroup.is-selected{background:var(--blue-100);box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-lrow{min-height:0;padding:10px 0;gap:10px;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-lrow:hover{background:none}
+html[data-theme="minimal"] .td-lrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-lrow-subs .td-lrow{border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-lrow-sub{padding-left:26px}
+html[data-theme="minimal"] .td-lrow-title{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-lgroup .td-lrow:has(.td-check-box-on)>.td-lrow-title{color:var(--ink-900);text-decoration:line-through;text-decoration-color:var(--ink-400);text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-lrow.is-unread{background:none;box-shadow:none}
+html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-title{font-weight:500}
+html[data-theme="minimal"] .td-lrow-end{gap:4px 10px;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-lrow-end>*{height:auto}
+html[data-theme="minimal"] .td-lrow-badge{color:var(--ink-400);font:400 11px/1.45 var(--font-ui);gap:0}
+html[data-theme="minimal"] .td-lrow-badge svg{display:none!important}
+html[data-theme="minimal"] .td-lrow-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-lrow-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px}
+html[data-theme="minimal"] .td-lrow-key.td-lrow-idkey{min-width:0}
+html[data-theme="minimal"] .td-lrow.td-drop-before{box-shadow:inset 0 1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-lrow.td-drop-after{box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-lrow.td-drop-into{box-shadow:inset 0 0 0 1px var(--ink-900);background:var(--blue-100)}
+html[data-theme="minimal"] .td-lrow.td-file-target{outline:1px dashed var(--ink-900);background:var(--blue-100)}
+html[data-theme="minimal"] .td-lrow.td-file-target::after,html[data-theme="minimal"] .td-card.td-file-target::after{background:var(--ink-900);color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-lsec-addrow{min-height:0;padding:10px 0;gap:6px;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-lsec-addrow>span:first-child{width:14px;margin-top:2px}
+html[data-theme="minimal"] .td-lsec-addrow>span:first-child svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-lsec-addrow .td-qa-input{font-weight:400}
+/* Switches (Projects · Auto-assign statuses): same rule as checkboxes — hairline track when off, filled ink with a paper knob when on. Standard maps the on-track to --action-primary, which in Minimal is the ink itself, so the white knob and check vanished */
+html[data-theme="minimal"] .td-pjs-sw,html[data-theme="minimal"] .td-pjs-sw:hover{background:none;box-shadow:inset 0 0 0 1px var(--ink-400)}
+html[data-theme="minimal"] .td-pjs-sw:hover{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"],html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"]:hover{background:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-pjs-sw[aria-checked="false"] .td-pjs-sw-knob{background:var(--ink-400);box-shadow:none}
+html[data-theme="minimal"] .td-pjs-sw[aria-checked="false"]:hover .td-pjs-sw-knob{background:var(--ink-900)}
+html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"] .td-pjs-sw-knob{background:var(--chrome-canvas);box-shadow:none}
+html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"] .td-pjs-sw-knob svg{color:var(--ink-900)}
+html[data-theme="minimal"] .td-pjs-sw[aria-checked="false"] .td-pjs-sw-knob svg{color:var(--chrome-canvas)}
+/* Checkboxes: 16px hairline circle, filled ink when checked */
+html[data-theme="minimal"] .td-check-box{border-width:1px;border-color:var(--ink-400);background:none;border-radius:2px}
+html[data-theme="minimal"] .td-check-circle{width:16px;height:16px;border-color:var(--ink-400)}
+html[data-theme="minimal"] .td-check:hover .td-check-box{border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-check-box-on,html[data-theme="minimal"] .td-check-circle.td-check-box-on{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-check-circle:not(.td-check-box-on){color:var(--ink-900)}
+html[data-theme="minimal"] .td-lrow>span:first-child{margin-top:1px!important}
+/* ── Calendar: a ruled month — horizontal hairlines only, no weekend tint, today in ink, chips as text */
+html[data-theme="minimal"] .td-calhead{padding:20px 24px 12px;gap:16px}
+html[data-theme="minimal"] .td-calhead+div{padding:0 24px 20px!important}
+html[data-theme="minimal"] .td-calhead-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calhead .td-btn-chrome,html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome,html[data-theme="minimal"] .td-calhead .td-select-trigger{height:auto;padding:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome{width:16px!important;height:16px!important}
+html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome svg{width:16px;height:16px}
+html[data-theme="minimal"] .td-calhead .td-btn-chrome:hover,html[data-theme="minimal"] .td-calhead .td-btn-chrome:active,html[data-theme="minimal"] .td-calhead .td-btn-chrome[aria-expanded="true"],html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome:hover,html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome:active{background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calhead .td-btn-chrome:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-calgrid{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calgrid-wd>div{padding:6px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calgrid-wd>div.is-wknd{background:none}
+html[data-theme="minimal"] .td-calgrid-wd>div.is-today{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calgrid-wd>div.is-today>span{color:var(--ink-900);font-weight:500}
+html[data-theme="minimal"] .td-calweek{border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calcell{border-right:0}
+html[data-theme="minimal"] .td-calcell.is-wknd{background:none}
+html[data-theme="minimal"] .td-calcell:hover{background:var(--n-a03)}
+html[data-theme="minimal"] .td-calcell:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-calcell.is-drop{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-calnum{top:6px;left:0;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calnum.is-out{color:var(--ink-300)}
+html[data-theme="minimal"] .td-calnum.is-today,html[data-theme="minimal"] .td-caltoday{background:none;color:var(--ink-900);font-weight:500;min-width:0;height:auto;padding:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-calnum.is-today{top:6px;left:0}
+html[data-theme="minimal"] .td-calcell-add{top:4px;right:0;width:16px;height:16px;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calcell-add:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calcell-add svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-calchips{padding:2px 0 6px;gap:2px;margin:0}
+html[data-theme="minimal"] .td-calchip{height:auto;padding:1px 0;background:none;box-shadow:none;border-radius:0;font:400 12px/1.35 var(--font-ui);color:var(--ink-900);gap:4px}
+html[data-theme="minimal"] .td-calchip:hover{box-shadow:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calchip:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:1px}
+html[data-theme="minimal"] .td-calchip-bars{display:none}
+html[data-theme="minimal"] .td-calchip.is-done{color:var(--ink-400)}
+html[data-theme="minimal"] .td-calchip.is-done>svg{display:none!important}
+html[data-theme="minimal"] .td-calchip>svg{width:11px;height:11px}
+html[data-theme="minimal"] .td-calchip-key{font-size:10px}
+html[data-theme="minimal"] .td-calspan{background:none;border:0;border-radius:0;margin:1px 0;padding:0;height:18px;box-shadow:inset 0 -1px 0 var(--ink-900);font:400 12px/1.35 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-calspan.is-l{padding-left:0}
+html[data-theme="minimal"] .td-calspan.is-done{color:var(--ink-400);box-shadow:inset 0 -1px 0 var(--ink-400)}
+html[data-theme="minimal"] .td-calspan:hover{box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calspan:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-calmore{padding:1px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calmore:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calmini{background:none;box-shadow:none;border-radius:0;border-top:1px solid var(--border-divider);padding:8px 0 0}
+html[data-theme="minimal"] .td-calmini:hover{box-shadow:none}
+html[data-theme="minimal"] .td-calmini:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-calmini-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-calmini-wd{font:400 9px/12px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calmini-day{font:400 11px/14px var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calmini-day.is-today .td-calmini-n{background:none;color:var(--ink-900);font-weight:500;box-shadow:inset 0 -1px 0 var(--ink-900);border-radius:0}
+html[data-theme="minimal"] .td-calmini-dot{background:var(--ink-900)}
+html[data-theme="minimal"] .td-caldaylist{gap:0}
+html[data-theme="minimal"] .td-caldaylist-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-caldaylist-block{background:none;border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-caldaylist-block>*+*{border-top:0}
+html[data-theme="minimal"] .td-caldaylist-empty{padding:16px 0;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+/* ── Chrome rows under the toolbar (filter · sort · saved views) and their chips: outlined ink instead of white pills */
+html[data-theme="minimal"] .td-fchip{height:24px;padding:0 8px;border-radius:2px;font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-fchip-on{background:none;color:var(--ink-900);box-shadow:inset 0 0 0 1px var(--ink-900);padding-right:4px}
+html[data-theme="minimal"] .td-fchip-on:hover{background:var(--n-a03)}
+html[data-theme="minimal"] .td-fchip-off{background:none;color:var(--ink-400);box-shadow:inset 0 0 0 1px var(--border-divider)}
+html[data-theme="minimal"] .td-fchip-off:hover{background:none;color:var(--ink-900);box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-fchip-dot{width:6px;height:6px;border-radius:1px}
+html[data-theme="minimal"] .td-btn-chrome,html[data-theme="minimal"] .td-btn-chrome-ghost{background:none;color:var(--ink-400);font-weight:400}
+html[data-theme="minimal"] .td-btn-chrome:hover,html[data-theme="minimal"] .td-btn-chrome:active,html[data-theme="minimal"] .td-btn-chrome-ghost:hover,html[data-theme="minimal"] .td-btn-chrome-ghost:active{background:none;color:var(--ink-900)}
+/* ── Shared controls: buttons, icon buttons, segmented and menus drop their fills for hairlines */
+html[data-theme="minimal"] .td-btn{font-weight:500;font-size:13px}
+html[data-theme="minimal"] .td-btn-outline{box-shadow:none;border-color:var(--border-divider)}
+html[data-theme="minimal"] .td-btn-outline:hover{background:var(--n-a03)}
+/* Item overlay aside: no resting hairline on the field buttons; it appears on hover / pressed / open / focus */
+html[data-theme="minimal"] .td-modal-aside .td-btn-outline{border-color:transparent}
+html[data-theme="minimal"] .td-modal-aside .td-btn-outline:hover,html[data-theme="minimal"] .td-modal-aside .td-btn-outline:active,html[data-theme="minimal"] .td-modal-aside .td-btn-outline[aria-expanded="true"],html[data-theme="minimal"] .td-modal-aside .td-btn-outline[aria-pressed="true"],html[data-theme="minimal"] .td-modal-aside .td-btn-outline:focus-visible{border-color:var(--border-divider)}
+html[data-theme="minimal"] .td-btn-primary{color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-iconbtn{border-radius:2px}
+html[data-theme="minimal"] .td-field{box-shadow:none;font-size:13px}
+html[data-theme="minimal"] .td-field:focus{box-shadow:none;border-color:var(--ink-900)}
+/* Tooltips: the same ink pill at the theme's 12px, no medium weight, square corners. Labeled toolbar controls lose their text here (icon-only 48px row), so their hints turn on */
+html[data-theme="minimal"] .td-tip[data-tip]::after{font:400 12px/1.45 var(--font-ui);letter-spacing:0;padding:3px 7px;border-radius:2px}
+html[data-theme="minimal"] .td-subnav-act.td-tip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-act.td-tip-labeled[data-tip]::before,html[data-theme="minimal"] .td-subnav-seg.td-tip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-seg.td-tip-labeled[data-tip]::before{display:block}
+/* ── Account pages (Projects · Project groups · Settings): the same 24px gutter as the board; page title is a plain 500-weight line; no white card — the table is rows over hairlines, column heads in grey over one ink hairline */
+html[data-theme="minimal"] .td-pjs,html[data-theme="minimal"] .td-set,html[data-theme="minimal"] .td-ib{padding:20px 24px 24px!important}
+html[data-theme="minimal"] .td-ib-inner{gap:16px!important}
+html[data-theme="minimal"] .td-ib-title{font:500 15px/1.45 var(--font-ui)!important;color:var(--ink-900)!important;margin:0!important}
+html[data-theme="minimal"] .td-ib-readall{height:auto;padding:0;background:none;border:0;box-shadow:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-ib-readall:hover,html[data-theme="minimal"] .td-ib-readall:active{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-ib-readall svg{display:none}
+html[data-theme="minimal"] .td-pjs-inner{gap:16px}
+html[data-theme="minimal"] .td-pjs-title,html[data-theme="minimal"] .td-set-title{font:500 15px/1.45 var(--font-ui);color:var(--ink-900);margin:0}
+html[data-theme="minimal"] .td-pjs-card{background:none;border-radius:0;box-shadow:none;padding:0}
+html[data-theme="minimal"] .td-pjs-table th{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0 12px 8px 0;border-bottom:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-pjs-table th:last-child{padding-right:0}
+html[data-theme="minimal"] .td-pjs-table td{font:400 13px/1.45 var(--font-ui);padding:10px 12px 10px 0;border-bottom:1px solid var(--border-divider);border-radius:0!important}
+html[data-theme="minimal"] .td-pjs-table td:last-child{padding-right:0}
+html[data-theme="minimal"] .td-pjs-table td.td-pjs-name{font-weight:400}
+html[data-theme="minimal"] .td-pjs-row:hover td{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-pjs-row:hover td.td-pjs-name{text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-400)}
+html[data-theme="minimal"] .td-pjs-row:focus-visible td{background:none;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-pjs-ic{width:28px}
+html[data-theme="minimal"] .td-pjs-ic svg{width:16px;height:16px;stroke:var(--ink-900)!important;color:var(--ink-900)!important;stroke-width:1.75}
+html[data-theme="minimal"] .td-pjs-num,html[data-theme="minimal"] .td-pjs-dim{color:var(--ink-400);font-variant-numeric:tabular-nums}
+html[data-theme="minimal"] .td-pjs-ic{width:auto;padding-right:10px!important}
+html[data-theme="minimal"] .td-pjs-lead .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-pjs-lead{gap:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-pjs-table .td-iconbtn{color:var(--ink-400);border-radius:0}
+html[data-theme="minimal"] .td-pjs-table .td-iconbtn:hover,html[data-theme="minimal"] .td-pjs-table .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+/* Group abbreviations: mono like every key in the theme; the edit affordance is a hairline under the text, not a box */
+html[data-theme="minimal"] .td-gps-abbr{font:400 12px/1.45 var(--font-mono);color:var(--ink-400);border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-gps-abbr:hover{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-gps-abbr:focus-visible{box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-gps-input{font:400 12px/1.45 var(--font-mono);color:var(--ink-900);background:none;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-gps-edit{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-gps-edit:hover{background:none;color:var(--ink-900)}
+/* Settings: the left nav is the sidebar's vocabulary — grey words, ink when current, no pill; the search a hairline; groups are ledgers with the group name in 500 over an ink hairline */
+html[data-theme="minimal"] .td-set-inner{grid-template-columns:172px minmax(0,1fr);gap:40px}
+html[data-theme="minimal"] .td-set-search .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-set-search .td-field::placeholder{color:var(--ink-400)}
+html[data-theme="minimal"] .td-set-search svg{width:16px;height:16px;stroke-width:1.75;color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-search .td-field-icon{left:0}
+/* Inbox: the page title is the same plain 500 line as the other account pages; “Mark all read” is a word, not a pill; a notification's source is a grey glyph, never a colored disc; unread rows carry an ink dot under the checkbox instead of a tint */
+html[data-theme="minimal"] .td-lrow-from .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:transparent!important;font-size:0!important;position:relative}
+html[data-theme="minimal"] .td-lrow-from .td-avatar::after{content:attr(data-initials);font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-lrow-from .td-nmark{background:none;border-radius:0;color:var(--ink-400);width:auto!important;height:auto!important}
+html[data-theme="minimal"] .td-lrow-from .td-nmark svg{width:14px;height:14px;stroke-width:1.75}
+html[data-theme="minimal"] .td-lrow.is-unread{background:none;box-shadow:none}
+html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-title{font-weight:500;letter-spacing:-.005em}
+html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-from{position:relative}
+html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-from::after{content:"";position:absolute;right:-6px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--ink-900)}
+html[data-theme="minimal"] .td-set-search{margin-bottom:20px}
+html[data-theme="minimal"] .td-set-clear{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-set-clear:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-navhead{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:16px 0 6px}
+html[data-theme="minimal"] .td-set-navhead:first-child{margin-top:0}
+html[data-theme="minimal"] .td-set-navrow{height:auto;padding:4px 0;gap:0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-set-navrow:hover,html[data-theme="minimal"] .td-set-navrow:active{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-navrow[aria-current="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-navrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-set-navicon{display:none}
+html[data-theme="minimal"] .td-set-crumb{display:none}
+html[data-theme="minimal"] .td-set-main{gap:32px;max-width:640px}
+html[data-theme="minimal"] .td-set-group{background:none;border-radius:0;box-shadow:none;overflow:visible}
+html[data-theme="minimal"] .td-set-grouphead{padding:0 0 8px;border-bottom:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-set-grouptitle{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-grouppath,html[data-theme="minimal"] .td-set-grouppath-btn{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-set-row{padding:10px 0;min-height:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-set-row+.td-set-row,html[data-theme="minimal"] .td-set-body+.td-set-row{border-top:0}
+html[data-theme="minimal"] .td-set-group[data-fields="true"] .td-set-row{padding:6px 0}
+html[data-theme="minimal"] .td-set-group[data-fields="true"] .td-set-row:last-child{padding-bottom:6px}
+html[data-theme="minimal"] .td-set-rowlabel{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-set-rowhint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-set-mark{font-weight:500;text-decoration-color:var(--ink-900)}
+@keyframes td-set-hit-minimal{0%,40%{background:var(--n-a06)}100%{background:transparent}}
+html[data-theme="minimal"] .td-set-row[data-hit="true"]{animation-name:td-set-hit-minimal}
+/* Row controls: the native select is a word with a chevron over a hairline; keyboard keys in mono, no chip */
+html[data-theme="minimal"] .td-set-select{height:24px;padding:0 20px 0 0;background-color:transparent;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);background-position:right 0 center}
+html[data-theme="minimal"] .td-set-select:hover{background-color:transparent;border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-select:focus-visible{box-shadow:none;border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-rowctl .td-field{height:24px;padding:3px 0!important;background:none;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-set-rowctl .td-field:focus{border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-kbd{background:none;border-radius:0;padding:0;min-width:0;height:auto;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-keys{gap:6px}
+/* Switch (core): hairline track off, ink track on, paper knob; the same rule as the Projects toggle */
+html[data-theme="minimal"] .td-switch-track,html[data-theme="minimal"] .td-switch:hover .td-switch-track{background:none;box-shadow:inset 0 0 0 1px var(--ink-400)}
+html[data-theme="minimal"] .td-switch:hover .td-switch-track{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-switch-on .td-switch-track,html[data-theme="minimal"] .td-switch-on:hover .td-switch-track{background:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-switch-thumb{background:var(--ink-400);box-shadow:none}
+html[data-theme="minimal"] .td-switch:hover .td-switch-thumb{background:var(--ink-900)}
+html[data-theme="minimal"] .td-switch-on .td-switch-thumb,html[data-theme="minimal"] .td-switch-on:hover .td-switch-thumb{background:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-switch:focus-visible .td-switch-track{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 2px var(--chrome-canvas),0 0 0 3px var(--ink-900)}
+/* ── Floating layers (popovers, menus, the account menu, dialogs): paper with a hairline ring, square corners; menu rows read in normal ink, hover is a faint wash */
+html[data-theme="minimal"] .td-pop,html[data-theme="minimal"] .td-usermenu,html[data-theme="minimal"] .td-createmenu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
+html[data-theme="minimal"] .td-pop{padding:6px 0}
+html[data-theme="minimal"] .td-menu{gap:0}
+html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-usermenu-item,html[data-theme="minimal"] .td-usermenu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-usermenu-item:hover,html[data-theme="minimal"] .td-usermenu-item:focus-visible,html[data-theme="minimal"] button.td-usermenu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-usermenu-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
+html[data-theme="minimal"] .td-menu-item[aria-checked="true"],html[data-theme="minimal"] .td-menu-item[aria-pressed="true"]{color:var(--ink-900)}
+html[data-theme="minimal"] .td-menu-item-icon,html[data-theme="minimal"] .td-usermenu-ico,html[data-theme="minimal"] .td-menu-item-check{color:inherit}
+html[data-theme="minimal"] .td-menu-item svg,html[data-theme="minimal"] .td-usermenu-item svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-menu-item[data-danger="true"]{color:var(--danger)}
+html[data-theme="minimal"] .td-menu-item-trail{color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-menu-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-menu-divider,html[data-theme="minimal"] .td-usermenu-sep{margin:6px 0;background:var(--border-divider)}
+html[data-theme="minimal"] .td-menu-heading{padding:8px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-usermenu{width:240px;padding:6px 0}
+html[data-theme="minimal"] .td-createmenu{width:200px;padding:6px 0;top:calc(100% + 12px)}
+/* Toolbar menus (Filter · Sort · Members): the same square sheet as every floating layer; section names are plain grey words, rows are normal ink with a faint hover wash, the checked row a paper-grey wash; label swatches shrink to a 6px square so color stays a hint */
+html[data-theme="minimal"] .td-fm,html[data-theme="minimal"] .td-sm,html[data-theme="minimal"] .td-mm{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);top:calc(100% + 4px)}
+html[data-theme="minimal"] .td-fm-head,html[data-theme="minimal"] .td-sm-head,html[data-theme="minimal"] .td-mm-head{padding:10px 14px;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-fm-head svg{stroke:var(--ink-900)!important}
+html[data-theme="minimal"] .td-fm-scroll,html[data-theme="minimal"] .td-sm-scroll,html[data-theme="minimal"] .td-mm-scroll{padding:6px 0}
+html[data-theme="minimal"] .td-fm-sec,html[data-theme="minimal"] .td-sm-sec,html[data-theme="minimal"] .td-mm-sec{padding:10px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-fm-row,html[data-theme="minimal"] .td-sm-row,html[data-theme="minimal"] .td-mm-row{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-fm-row:hover,html[data-theme="minimal"] .td-sm-row:hover,html[data-theme="minimal"] button.td-mm-row:hover{background:var(--chrome-hover);color:var(--ink-900)}
+html[data-theme="minimal"] .td-fm-row[aria-checked="true"],html[data-theme="minimal"] .td-sm-row[aria-checked="true"]{background:var(--blue-100);color:var(--ink-900)}
+html[data-theme="minimal"] .td-fm-row .td-check{margin-right:2px}
+html[data-theme="minimal"] .td-fm-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
+html[data-theme="minimal"] .td-fm-row>svg{stroke:currentColor!important;width:14px;height:14px;stroke-width:1.75}
+html[data-theme="minimal"] .td-fm-count,html[data-theme="minimal"] .td-sm-hint{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sm-dir{font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-mm-title{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-mm-vis{height:auto;padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-mm-row .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-mm-line{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-mm-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-mm-role{height:auto;padding:0;border-radius:0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-mm-role:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-mm-link{margin:6px 14px 8px;padding:4px 0;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;background:none}
+html[data-theme="minimal"] .td-mm-url{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+/* Auth pages (Log in · Invite · Reset): the wordmark in 500, no card — a plain column on paper; provider buttons and the primary are squares, links are grey words that go ink */
+html[data-theme="minimal"] .td-auth-mark{font:500 20px/1.35 var(--font-ui);letter-spacing:-.01em;margin-bottom:32px}
+html[data-theme="minimal"] .td-auth-card{width:360px;padding:0;background:none;border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-auth-title{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-auth-sub{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-auth-sub b{font-weight:500}
+html[data-theme="minimal"] .td-auth-stack{margin-top:24px;gap:8px}
+html[data-theme="minimal"] .td-auth-stack .td-btn{height:36px;border-radius:2px;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-or{margin:20px 0 16px;font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-label{font:400 13px/1.45 var(--font-ui);color:var(--ink-900);margin-bottom:6px}
+html[data-theme="minimal"] .td-auth-label a,html[data-theme="minimal"] .td-auth-links a,html[data-theme="minimal"] .td-auth-who a{font:400 12px/1.45 var(--font-ui);color:var(--ink-400);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
+html[data-theme="minimal"] .td-auth-label a:hover,html[data-theme="minimal"] .td-auth-links a:hover,html[data-theme="minimal"] .td-auth-who a:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
+html[data-theme="minimal"] .td-auth-field{margin-bottom:16px}
+html[data-theme="minimal"] .td-auth-field .td-field{height:32px;padding-left:0;padding-right:0;background:none;border:0;border-bottom:1px solid var(--border-input);border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-auth-field .td-field:focus{border-bottom-color:var(--ink-900);box-shadow:none;outline:none}
+html[data-theme="minimal"] .td-auth-links{margin-top:20px;font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-who{margin-top:20px;padding:10px 0;border-radius:0;background:none;border-top:1px solid var(--border-divider);border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-auth-who .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-auth-who-text b{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-who-text span{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-tile{width:auto;height:auto;border-radius:0;background:none}
+html[data-theme="minimal"] .td-auth-tile svg{stroke:var(--ink-900)!important;width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-auth-pname b{font:500 15px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-pname span{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-desc{padding:0 0 0 12px;border-left:1px solid var(--ink-900);font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-auth-foot{font:400 11px/1.45 var(--font-ui)}
+/* Command palette (Ctrl+K): a square sheet with a hairline ring; the query sits on an ink hairline, results are rows, the highlight a paper-grey wash, keys in bare mono */
+html[data-theme="minimal"] .td-pal{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);width:520px}
+html[data-theme="minimal"] .td-pal-input{padding:14px 20px 10px;gap:12px;border-bottom:1px solid var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-pal-input svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-pal-input input{font:400 15px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-pal-list{padding:6px 0}
+html[data-theme="minimal"] .td-pal-row{padding:8px 20px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-pal-row[aria-selected="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-pal-list-name{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-pal-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-pal-empty{padding:20px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-pal-foot{padding:10px 20px;gap:16px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-usermenu-id{padding:8px 14px 10px;gap:0}
+html[data-theme="minimal"] .td-usermenu-id .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-usermenu-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-usermenu-email{display:none}
+html[data-theme="minimal"] .td-select-search{border-radius:0;background:none;border-bottom:1px solid var(--border-divider);margin:0 14px 6px;padding:0}
+/* Dialogs: title in 500 over a hairline, footer buttons as words with the primary filled ink */
+html[data-theme="minimal"] .td-dialog-head{padding:16px 16px 12px 24px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-dialog-title{font:500 15px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-dialog-body{padding:16px 24px 24px}
+html[data-theme="minimal"] .td-dialog-foot{padding:12px 24px}
+html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger){background:none;border:0;box-shadow:none;color:var(--ink-400);font-weight:400}
+html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-dialog-foot .td-btn-primary,html[data-theme="minimal"] .td-dialog-foot .td-btn-danger{border-radius:2px;font-weight:500}
+/* Toast: an ink bar, square, words only; the action is underlined paper, not blue */
+html[data-theme="minimal"] .td-toast{border-radius:0;box-shadow:none;padding:8px 8px 8px 16px;font:400 13px/1.45 var(--font-ui);color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-toast-act{color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);text-decoration:underline;text-underline-offset:3px;border-radius:0}
+html[data-theme="minimal"] .td-toast-act:hover,html[data-theme="minimal"] .td-toast-act:active{background:none;text-decoration-color:var(--ink-400)}
+html[data-theme="minimal"] .td-toast-meta{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-toast .td-iconbtn{border-radius:0}
+/* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash */
+html[data-theme="minimal"] .td-sd{border-radius:0;top:calc(100% + 8px)}
+html[data-theme="minimal"] .td-sd-scroll{padding:0 16px}
+html[data-theme="minimal"] .td-sd-head{padding:12px 0 8px;font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-sd-row{width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-sd-scroll>.td-sd-row:last-child{box-shadow:none}
+html[data-theme="minimal"] .td-sd-row[aria-selected="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-sd-ico{width:16px;height:16px;border-radius:0;background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sd-ico svg{stroke-width:1.75;stroke:var(--ink-900)!important}
+html[data-theme="minimal"] .td-sd-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-sd-title mark{color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
+html[data-theme="minimal"] .td-sd-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sd-empty{padding:16px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sd-foot{padding:10px 16px;gap:16px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sd-foot .td-kbd2{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+/* ── Item overlay: the same ledger inside the dialog — square card, 500-weight title, section names over hairlines, every list (subitems, attachments, relations, comments) as rows, no fills, no bubbles */
+html[data-theme="minimal"] .td-modal{border-radius:0}
+html[data-theme="minimal"] .td-modal-cover{border-radius:0}
+html[data-theme="minimal"] .td-modal-main{padding:16px 24px 24px}
+html[data-theme="minimal"] .td-modal-head{padding:16px 16px 0 24px}
+html[data-theme="minimal"] .td-modal-aside{padding:16px 16px 24px}
+html[data-theme="minimal"] .td-modal-title{font:500 16px/1.35 var(--font-ui)!important;letter-spacing:-.005em}
+html[data-theme="minimal"] .td-modal-title-input{margin:0!important;padding:0 0 1px!important;background:none!important;border:0!important;border-bottom:1px solid var(--ink-900)!important;border-radius:0!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-modal-key{padding:0 6px!important;font:400 11px/1.45 var(--font-mono)!important;text-transform:none!important;letter-spacing:0!important;color:var(--ink-400)!important}
+html[data-theme="minimal"] .td-modal-key:hover{color:var(--ink-900)!important}
+html[data-theme="minimal"] .td-modal-corner .td-iconbtn{border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-modal-corner .td-iconbtn:hover,html[data-theme="minimal"] .td-modal-corner .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-400)}
+/* Aside field values: labels as comma-separated words in ink, like everywhere else in the theme */
+html[data-theme="minimal"] .td-modal-aside .td-lp-value{gap:0}
+html[data-theme="minimal"] .td-modal-aside .td-lp-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+html[data-theme="minimal"] .td-modal-aside .td-lp-value .td-label+.td-label::before{content:", "}
+html[data-theme="minimal"] .td-modal-aside .td-avstack{display:none}
+html[data-theme="minimal"] .td-modal-aside .td-avstack+.td-mp-value{margin-left:22px}
+html[data-theme="minimal"] .td-modal-aside .td-btn>svg{stroke:var(--ink-900)!important}
+html[data-theme="minimal"] .td-modal-aside .td-btn{font-weight:400}
+/* Section heads (Attachments, Relations, Activity): name in ink over a hairline; no leading icon, body flush left */
+html[data-theme="minimal"] .td-isec-head,html[data-theme="minimal"] .td-activity-head{gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-isec-head>svg,html[data-theme="minimal"] .td-isec-head>span:first-child:empty,html[data-theme="minimal"] .td-activity-head>svg{display:none}
+html[data-theme="minimal"] .td-isec-title,html[data-theme="minimal"] .td-activity-title{font:500 13px/1.45 var(--font-ui)!important;letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-isec-body{margin:0!important}
+html[data-theme="minimal"] .td-activity-head{margin-bottom:0}
+html[data-theme="minimal"] .td-activity-head .td-iconbtn{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-activity-head .td-iconbtn:hover,html[data-theme="minimal"] .td-activity-head .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-activity-head .td-iconbtn svg{width:16px;height:16px;stroke-width:1.75}
+/* Plain buttons in the main column (Add, Cancel, Save): words, not pills; primary stays filled ink with square corners */
+html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger){height:auto;padding:0;background:none;font:400 13px/1.45 var(--font-ui);color:var(--ink-400);border-radius:0}
+html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-modal-main .td-btn-primary,html[data-theme="minimal"] .td-modal-main .td-btn-danger{height:28px;padding:0 10px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-modal-main .td-btn:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px;box-shadow:none}
+/* Description: bare text; the editor is a hairline-bottomed area, no ring */
+html[data-theme="minimal"] .td-desc-view{margin:0;padding:0;border-radius:0}
+html[data-theme="minimal"] .td-desc-view:hover{background:none}
+html[data-theme="minimal"] .td-desc-view:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:4px}
+html[data-theme="minimal"] .td-desc-empty{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-desc-ta{padding:8px 0;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-desc-ta.is-mono{font:400 12px/1.5 var(--font-mono)}
+html[data-theme="minimal"] .td-desc-bar .td-iconbtn{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-desc-bar .td-iconbtn:hover,html[data-theme="minimal"] .td-desc-bar .td-iconbtn[aria-pressed="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-md{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-md h1{font:500 16px/1.35 var(--font-ui)}html[data-theme="minimal"] .td-md h2{font:500 14px/1.4 var(--font-ui)}html[data-theme="minimal"] .td-md h3{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-md a,html[data-theme="minimal"] .td-md .td-md-mention{color:var(--ink-900);font-weight:400;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
+html[data-theme="minimal"] .td-md .td-md-key:hover{color:var(--ink-900)}
+html[data-theme="minimal"] .td-md code{border-radius:2px;font-size:11.5px}
+html[data-theme="minimal"] .td-md pre{border-radius:0;background:none;padding:8px 0 8px 12px;border-left:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-md blockquote{border-left-color:var(--ink-900)}
+html[data-theme="minimal"] .td-md-box{border-width:1px;border-color:var(--ink-400);border-radius:2px}
+html[data-theme="minimal"] .td-md-box[data-on="true"]{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
+/* Subitems: count in mono over a hairline, rows with a hairline below, done in grey without the strike, the drag line in ink */
+html[data-theme="minimal"] .td-clhead{padding:0 0 8px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-clhead-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-clhead [role="progressbar"],html[data-theme="minimal"] .td-clhead [role="progressbar"]>div{border-radius:0!important;height:2px!important}
+html[data-theme="minimal"] .td-clhead-actions .td-iconbtn{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-clhead-actions .td-iconbtn:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-clrow{padding:10px 0;gap:10px;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-clrow:hover{background:none}
+html[data-theme="minimal"] .td-clrow-text{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-clrow-done{text-decoration:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-clline{left:0;right:0;height:1px;margin-top:0;border-radius:0;background:var(--ink-900)}
+html[data-theme="minimal"] .td-clline::before{display:none}
+html[data-theme="minimal"] .td-clrow-more .td-iconbtn,html[data-theme="minimal"] .td-clrow>.td-pop-anchor .td-iconbtn{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-clrow-more .td-iconbtn:hover,html[data-theme="minimal"] .td-clrow-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-cladd{padding:10px 0;gap:6px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
+html[data-theme="minimal"] .td-cladd svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-cladd:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-cladd:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-cladd.is-editing{border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-cladd-input{font:400 13px/1.45 var(--font-ui)}
+/* Attachments and relations: rows, hairline below, square thumbs, 500-weight names, grey meta */
+html[data-theme="minimal"] .td-att{gap:0}
+html[data-theme="minimal"] .td-att-row{margin:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-att-row:hover,html[data-theme="minimal"] .td-att-row:focus-within{background:none}
+html[data-theme="minimal"] .td-att-thumb{width:56px;height:40px;border-radius:0}
+html[data-theme="minimal"] .td-att-thumb[data-kind]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 9px/10px var(--font-mono);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-att-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-att-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-att-actions .td-iconbtn{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-att-actions .td-iconbtn:hover,html[data-theme="minimal"] .td-att-actions .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-att-rename{margin:0;padding:0;height:auto;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-att-confirm{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-drop-inner{border:1px dashed var(--ink-900);border-radius:0;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-drop-inner small{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-rel{gap:16px}
+html[data-theme="minimal"] .td-rel-group{gap:0}
+html[data-theme="minimal"] .td-rel-head{padding:0 0 6px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-rel-head svg{display:none}
+html[data-theme="minimal"] .td-rel-row{margin:0;min-height:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-rel-row:hover,html[data-theme="minimal"] .td-rel-row:focus-within{background:none}
+html[data-theme="minimal"] .td-rel-open{font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-rel-open:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-rel-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-rel-title[data-done="true"]{text-decoration:none}
+html[data-theme="minimal"] .td-rel-list{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-rel-x .td-iconbtn,html[data-theme="minimal"] .td-rel-x{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-rel-types{background:none;padding:0;gap:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-rel-types button{border-radius:0;color:var(--ink-400);font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-rel-types button[aria-pressed="true"]{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
+/* Activity: the composer is a hairline-bottomed field; comments are rows without avatars or bubbles, author in 500, meta grey; reactions as hairline chips */
+html[data-theme="minimal"] .td-composer{padding:12px 0 8px}
+html[data-theme="minimal"] .td-mf-ta{padding:6px 0;background:none;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui);transition:border-color var(--duration-base,150ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-mf-ta:focus{border-color:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-mf-list{border-radius:0;padding:0 8px}
+html[data-theme="minimal"] .td-mf-opt{border-radius:0;font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-mf-opt:last-child{box-shadow:none}
+html[data-theme="minimal"] .td-mf-opt[aria-selected="true"],html[data-theme="minimal"] .td-mf-opt:hover{background:var(--blue-100)}
+html[data-theme="minimal"] .td-mf-opt .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-composer-foot .td-btn-primary{height:28px;padding:0 10px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-composer-hint,html[data-theme="minimal"] .td-composer-reply{font-size:11px;color:var(--ink-400)}
+html[data-theme="minimal"] .td-comment{margin:0;gap:0;padding:10px 0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-comment>.td-avatar{display:none!important}
+html[data-theme="minimal"] .td-comment-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);gap:8px}
+html[data-theme="minimal"] .td-comment-meta b{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-comment-bubble{margin-top:2px;padding:0;background:none;border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-comment-body{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-comment-body b{font-weight:500!important}
+html[data-theme="minimal"] .td-comment-actions{margin-top:6px;gap:8px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-comment-actions a{color:var(--ink-400)}
+html[data-theme="minimal"] .td-comment-actions a:hover{color:var(--ink-900);text-decoration:none}
+html[data-theme="minimal"] .td-comment-edit-foot .td-btn{height:28px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-react{height:22px;padding:0 6px;border-radius:2px;border-color:var(--border-divider);background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
+html[data-theme="minimal"] .td-react:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-react[aria-pressed="true"]{background:none;border-color:var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-react-add{width:22px;height:22px;border-radius:2px;border-color:var(--border-divider)}
+html[data-theme="minimal"] .td-react-add:hover{border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-react-grid{padding:0}
+html[data-theme="minimal"] .td-react-pick{border-radius:0}
+html[data-theme="minimal"] .td-react-pick:hover{background:var(--blue-100)}

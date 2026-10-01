@@ -1,0 +1,59 @@
+/* ═══ Standard theme ═══════════════════════════════════════════════════════════════════
+   Todoi's default app theme. Scope contract (see tokens/colors.css):
+     dark  → :root (no attribute needed) and [data-theme="standard"]
+     light → [data-theme="standard"][data-mode="light"], plus html:not([data-theme])[data-mode="light"] for a page that sets
+             only the mode (Standard is the default theme). Never a bare [data-mode="light"]: that would also match Minimal light and
+             make Minimal depend on source order to win it back — each of the four scopes must name its theme.
+   Every color token below MUST appear in both scopes (the Theme parity audit enforces it); tokens that
+   deliberately keep one value across modes live in tokens/colors.css with a "fixed" marker (the comment marker on the declaration).
+   Background (chrome canvas) and Foreground (list/card/panel) picks are applied on top of these values
+   by components/core/Appearance.jsx from the palettes in components/core/Themes.jsx (STANDARD_*). */
+
+/* ── Standard · dark (default) ── */
+:root,[data-theme="standard"]{color-scheme:dark;
+/* Chrome (app frame): top bar, sidebar, sub-navbar and canvas share one near-black neutral with white ink */
+--chrome-topbar:#0b0b0c;--chrome-canvas:#161617;--chrome-hover:rgba(255,255,255,.10);--chrome-active:rgba(255,255,255,.16);--chrome-pressed:rgba(255,255,255,.22);--chrome-border:rgba(255,255,255,.2);--chrome-text:#ffffff;--chrome-text-dim:rgba(255,255,255,.68);
+/* Primary action blue */
+--blue-700:#7db0ff;--blue-600:#5b97ff;--blue-500:#3d84ff;--blue-400:#6ba3ff;--blue-100:#1d2433;
+/* Ink (text on surfaces) */
+--ink-900:#f2f2f3;--ink-600:#c2c2c6;--ink-400:#96969d;--ink-300:#6e6e76;
+/* Neutral alphas */
+--n-a03:rgba(255,255,255,.04);--n-a06:rgba(255,255,255,.08);--n-a14:rgba(255,255,255,.16);--n-a25:rgba(255,255,255,.28);--n-a31:rgba(255,255,255,.36);
+/* Surfaces (elevated neutral blacks on the canvas) — the Graphite Foreground preset */
+--surface-card:#242425;--surface-list:#1a1a1b;--surface-panel:#1f1f20;--surface-cover:#57575a;--surface-track:#343436;
+/* Label palette (solid) */
+--label-green:#21e389;--label-yellow:#ffd83d;--label-orange:#ff9a52;--label-red:#ff6b60;--label-pink:#ff70b8;--label-blue:#5c9dff;--label-teal:#2fd0f4;--label-lime:#a8e832;
+/* Semantic */
+--success-icon:#2bd465;--success-pill:#27a94e;--danger:#f5493d;--warning:#ffd83d;
+--action-subtle:rgba(255,255,255,.08);--action-subtle-hover:rgba(255,255,255,.14);
+--border-input:rgba(255,255,255,.22);--border-divider:rgba(255,255,255,.10);--focus-ring:#5b97ff;
+--backdrop:rgba(8,8,9,.84);--scrim:rgba(0,0,0,.45);
+/* Elevation — shadows sit on the mode (black on dark, navy on light) */
+--shadow-card:0 1px 1px rgba(0,0,0,.45),0 0 1px rgba(0,0,0,.55);--shadow-raised:0 4px 8px rgba(0,0,0,.4),0 0 1px rgba(0,0,0,.55);--shadow-input:0 1px 1px rgba(0,0,0,.35);--shadow-overlay:0 6px 24px rgba(0,0,0,.6);
+/* Status tints (Board "Colorize columns"): list + card surfaces nudged toward the status hue for NEW, TODO, DOING, DONE; BACKLOG stays neutral. Mixed from the live surface tokens so they follow the Foreground pick.
+   NEW is a cool pearl lift in dark mode (the column sits a step lighter than its neutral neighbours) */
+--status-new-hue:#dcd9e8;--status-new-list:color-mix(in srgb,var(--surface-list) 90%,var(--status-new-hue));--status-new-card:color-mix(in srgb,var(--surface-card) 91%,var(--status-new-hue));--status-new-card-ring:transparent;
+--status-todo-hue:#7db0ff;--status-todo-list:color-mix(in srgb,var(--surface-list) 89%,var(--status-todo-hue));--status-todo-card:color-mix(in srgb,var(--surface-card) 92%,var(--status-todo-hue));--status-doing-hue:#3d84ff;--status-doing-list:color-mix(in srgb,var(--surface-list) 84%,var(--status-doing-hue));--status-doing-card:color-mix(in srgb,var(--surface-card) 87%,var(--status-doing-hue));--status-done-list:color-mix(in srgb,var(--surface-list) 88%,var(--success-icon));--status-done-card:color-mix(in srgb,var(--surface-card) 90%,var(--success-icon));
+}
+
+/* ── Standard · light ── */
+[data-theme="standard"][data-mode="light"],html:not([data-theme])[data-mode="light"]{color-scheme:light;
+/* Chrome: one cornflower with near-black navy ink (7:1); --chrome-topbar is the toast/navy accent only */
+--chrome-topbar:#12215e;--chrome-canvas:#7c9fff;--chrome-hover:rgba(11,18,51,.10);--chrome-active:rgba(11,18,51,.16);--chrome-pressed:rgba(11,18,51,.24);--chrome-border:rgba(11,18,51,.32);--chrome-text:#0b1233;--chrome-text-dim:rgba(11,18,51,.82);
+--blue-700:#10289e;--blue-600:#1a3bc9;--blue-500:#264de3;--blue-400:#507cf7;--blue-100:#e5efff;
+--ink-900:#131f45;--ink-600:#3b4a70;--ink-400:#5a6a8c;--ink-300:#8091ad;
+/* Neutral alphas (from #091e42) */
+--n-a03:rgba(7,26,69,.03);--n-a06:rgba(7,26,69,.06);--n-a14:rgba(7,26,69,.14);--n-a25:rgba(7,26,69,.25);--n-a31:rgba(7,26,69,.31);
+/* Warm cream lists and panels on the cornflower canvas */
+--surface-card:#ffffff;--surface-list:#f8f5ee;--surface-panel:#fbf8f2;--surface-cover:#555b6b;--surface-track:#e4ddcf;
+--label-green:#1ed07c;--label-yellow:#ffd024;--label-orange:#ff8f3e;--label-red:#ff5a4f;--label-pink:#ff5ca8;--label-blue:#3d7efc;--label-teal:#14c3ea;--label-lime:#96da14;
+--success-icon:#1fbd53;--success-pill:#42a12e;--danger:#e0271b;--warning:#ffd024;
+--action-subtle:var(--n-a06);--action-subtle-hover:rgba(7,26,69,.10);
+--border-input:var(--n-a14);--border-divider:rgba(7,26,69,.08);--focus-ring:var(--blue-500);
+--backdrop:rgba(7,26,69,.72);--scrim:rgba(19,31,69,.28);
+/* Elevation */
+--shadow-card:0 1px 1px rgba(7,26,69,.14),0 0 1px rgba(7,26,69,.20);--shadow-raised:0 4px 8px rgba(7,26,69,.10),0 0 1px rgba(7,26,69,.20);--shadow-input:0 1px 1px rgba(7,26,69,.06);--shadow-overlay:0 6px 24px rgba(7,26,69,.22);
+/* NEW in light mode lifts toward paper white on the cream ("unread = brighter"); cards stay white and take a hairline ring so they still read as cards */
+--status-new-hue:#ffffff;--status-new-list:color-mix(in srgb,var(--surface-list) 40%,var(--status-new-hue));--status-new-card:#ffffff;--status-new-card-ring:rgba(7,26,69,.07);
+--status-todo-hue:#7db0ff;--status-todo-list:color-mix(in srgb,var(--surface-list) 84%,var(--status-todo-hue));--status-todo-card:color-mix(in srgb,var(--surface-card) 91%,var(--status-todo-hue));--status-doing-hue:#ffd024;--status-doing-list:color-mix(in srgb,var(--surface-list) 82%,var(--status-doing-hue));--status-doing-card:color-mix(in srgb,var(--surface-card) 90%,var(--status-doing-hue));--status-done-list:color-mix(in srgb,var(--surface-list) 90%,var(--success-icon));--status-done-card:color-mix(in srgb,var(--surface-card) 93%,var(--success-icon));
+}

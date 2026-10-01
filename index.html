@@ -1,9 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="standard" data-mode="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Todoi</title>
+    <script>
+      // Pre-paint: apply the stored theme and mode before any CSS resolves, so there is no flash.
+      // The appearance store (src/client/design/core/appearance.ts) owns these attributes once it loads.
+      (function () {
+        try {
+          var raw = localStorage.getItem("td-appearance");
+          var s = raw ? JSON.parse(raw).state : null;
+          var root = document.documentElement;
+          if (s && (s.theme === "standard" || s.theme === "minimal")) root.setAttribute("data-theme", s.theme);
+          if (s && (s.mode === "dark" || s.mode === "light")) root.setAttribute("data-mode", s.mode);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

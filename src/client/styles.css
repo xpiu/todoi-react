@@ -1,53 +1,70 @@
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-  line-height: 1.4;
-}
-
-body {
-  margin: 0;
-}
-
-main {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.add {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.add input {
-  flex: 1;
-  padding: 0.5rem;
-}
-
-.items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.items li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-}
-
-.items li .title {
-  flex: 1;
-}
-
-.items li[data-status="DONE"] .title {
-  text-decoration: line-through;
-  opacity: 0.6;
-}
-
-.empty {
-  opacity: 0.6;
+/* App-level styles for the placeholder item list. Tokens only (design/index.css owns :root and body).
+   Replaced by the List view in Phase 4. */
+@layer components {
+  .td-app {
+    min-height: 100vh;
+    background: var(--chrome-canvas);
+    color: var(--chrome-text);
+  }
+  .td-app-main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--sp-8) var(--sp-5);
+  }
+  .td-app-title {
+    font: var(--type-page-title);
+    margin: 0 0 var(--sp-4);
+  }
+  .td-placeholder-add {
+    display: flex;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+  }
+  .td-placeholder-add input {
+    flex: 1;
+    height: var(--size-control);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--ink-900);
+    font: var(--type-body);
+  }
+  .td-placeholder-list {
+    list-style: none;
+    margin: 0;
+    padding: var(--sp-1) 0;
+    background: var(--surface-list);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    color: var(--ink-900);
+  }
+  .td-placeholder-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-height: 32px;
+    padding: var(--sp-1) var(--sp-4);
+    border-bottom: 1px solid var(--border-divider);
+  }
+  .td-placeholder-row:last-child {
+    border-bottom: none;
+  }
+  .td-placeholder-title {
+    flex: 1;
+  }
+  .td-placeholder-row[data-status="DONE"] .td-placeholder-title {
+    color: var(--ink-400);
+  }
+  .td-placeholder-row select {
+    height: 24px;
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--ink-900);
+    font: var(--type-small);
+  }
+  .td-placeholder-empty {
+    color: var(--chrome-text-dim);
+  }
 }

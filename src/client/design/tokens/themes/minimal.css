@@ -1,0 +1,59 @@
+/* ═══ Minimal theme — "Ledger" ═══════════════════════════════════════════════════════
+   Plain paper and hairlines: one canvas color, no fills, no shadows, black versus grey text, red only for overdue.
+   Design source: explorations/minimal-theme-board.html (B · Ledger). Scopes:
+     dark  → [data-theme="minimal"]
+     light → [data-theme="minimal"][data-mode="light"]
+   Token SET stays identical to tokens/themes/standard.css (the Theme parity audit diffs the two).
+   Shape, density and per-component rules live in tokens/themes/minimal-components.css; type in tokens/typography.css.
+   Palettes: components/core/Themes.jsx (MINIMAL_*) — one Background per mode, no Foreground. */
+
+/* ── Minimal · dark ── near-black paper, white ink, #8b8b90 metadata, 14% hairlines, red #ff6b60 overdue */
+[data-theme="minimal"]{color-scheme:dark;
+--chrome-topbar:#f2f2f3;--chrome-canvas:#141415;--chrome-hover:rgba(255,255,255,.06);--chrome-active:rgba(255,255,255,.10);--chrome-pressed:rgba(255,255,255,.16);--chrome-border:rgba(255,255,255,.14);--chrome-text:#f2f2f3;--chrome-text-dim:#8b8b90;
+/* "Action blue" is the ink: primary buttons, checkboxes, focus rings and selection read as white */
+--blue-700:#c9c9cc;--blue-600:#dcdcdf;--blue-500:#f2f2f3;--blue-400:#b8b8bc;--blue-100:#1f1f21;
+--ink-900:#f2f2f3;--ink-600:#8b8b90;--ink-400:#8b8b90;--ink-300:#5c5c62;
+--n-a03:rgba(255,255,255,.03);--n-a06:rgba(255,255,255,.06);--n-a14:rgba(255,255,255,.14);--n-a25:rgba(255,255,255,.24);--n-a31:rgba(255,255,255,.32);
+--surface-card:#141415;--surface-list:#141415;--surface-panel:#141415;--surface-cover:#57575a;--surface-track:#2a2a2c;
+--label-green:#21e389;--label-yellow:#ffd83d;--label-orange:#ff9a52;--label-red:#ff6b60;--label-pink:#ff70b8;--label-blue:#5c9dff;--label-teal:#2fd0f4;--label-lime:#a8e832;
+--success-icon:#f2f2f3;--success-pill:#8b8b90;--danger:#ff6b60;--warning:#ffd83d;
+--action-subtle:rgba(255,255,255,.06);--action-subtle-hover:rgba(255,255,255,.10);
+--border-input:rgba(255,255,255,.26);--border-divider:rgba(255,255,255,.14);--focus-ring:#f2f2f3;
+--backdrop:rgba(0,0,0,.6);
+/* Drawer scrim: the paper stays paper in both modes — the overlaid sidebar is set off by its hairline ring and drop, not by tinting the page */
+--scrim:rgba(0,0,0,.12);
+--shadow-card:none;--shadow-raised:0 0 0 1px rgba(255,255,255,.14),0 6px 16px rgba(0,0,0,.5);--shadow-input:none;--shadow-overlay:0 0 0 1px rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.5);
+/* Status tints (Colorize Board columns, off by default here): a faint wash on the column and a status-hued hairline under its name; cards stay bare rows */
+--status-new-hue:#c9c4de;--status-new-list:color-mix(in srgb,var(--surface-list) 91%,var(--status-new-hue));--status-new-card:transparent;--status-new-card-ring:transparent;
+--status-todo-hue:#5c9dff;--status-todo-list:color-mix(in srgb,var(--surface-list) 91%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#ffd83d;--status-doing-list:color-mix(in srgb,var(--surface-list) 92%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-list:color-mix(in srgb,var(--surface-list) 92%,#21e389);--status-done-card:transparent;
+}
+
+/* ── Minimal · light ── white paper, black ink, #707070 metadata, 12% hairlines, red #e8453a overdue */
+[data-theme="minimal"][data-mode="light"]{color-scheme:light;
+/* Chrome = the same white as every surface; chrome text is the ink. --chrome-topbar is the toast only */
+--chrome-topbar:#000000;--chrome-canvas:#ffffff;--chrome-hover:rgba(0,0,0,.05);--chrome-active:rgba(0,0,0,.09);--chrome-pressed:rgba(0,0,0,.14);--chrome-border:rgba(0,0,0,.12);--chrome-text:#000000;--chrome-text-dim:#707070;
+/* "Action blue" is black: primary buttons, checkboxes, focus rings and selection all read as ink */
+--blue-700:#3a3a3a;--blue-600:#262626;--blue-500:#000000;--blue-400:#4a4a4a;--blue-100:#f2f2f2;
+/* Ink: two colors of text — black and dark grey */
+--ink-900:#000000;--ink-600:#707070;--ink-400:#707070;--ink-300:#a3a3a3;
+--n-a03:rgba(0,0,0,.03);--n-a06:rgba(0,0,0,.05);--n-a14:rgba(0,0,0,.12);--n-a25:rgba(0,0,0,.22);--n-a31:rgba(0,0,0,.3);
+/* Surfaces: one white; nothing sits on anything */
+--surface-card:#ffffff;--surface-list:#ffffff;--surface-panel:#ffffff;--surface-cover:#555b6b;--surface-track:#e8e8e8;
+--label-green:#1ed07c;--label-yellow:#ffd024;--label-orange:#ff8f3e;--label-red:#ff5a4f;--label-pink:#ff5ca8;--label-blue:#3d7efc;--label-teal:#14c3ea;--label-lime:#96da14;
+/* Done is grey, not green; overdue is the one red */
+--success-icon:#000000;--success-pill:#707070;--danger:#e8453a;--warning:#c99700;
+--action-subtle:rgba(0,0,0,.05);--action-subtle-hover:rgba(0,0,0,.09);
+--border-input:rgba(0,0,0,.24);--border-divider:rgba(0,0,0,.12);--focus-ring:#000000;
+--backdrop:rgba(0,0,0,.4);
+--scrim:rgba(0,0,0,.04);
+/* Elevation: none on content; floating layers get a hairline ring and a soft drop */
+--shadow-card:none;--shadow-raised:0 0 0 1px rgba(0,0,0,.12),0 6px 16px rgba(0,0,0,.10);--shadow-input:none;--shadow-overlay:0 0 0 1px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.08);
+/* Status tints (Colorize Board columns, off by default here): a faint wash on the column and a status-hued hairline under its name; cards stay bare rows */
+--status-new-hue:#8a80b8;--status-new-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-new-hue));--status-new-card:transparent;--status-new-card-ring:transparent;
+--status-todo-hue:#3d7efc;--status-todo-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#c99700;--status-doing-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-list:color-mix(in srgb,var(--surface-list) 94%,#1a9c5e);--status-done-card:transparent;
+}
+
+/* ── Minimal · shape & density ──
+   Radius, spacing and dimension tokens for the Ledger look; component rules are in tokens/themes/minimal-components.css.
+   html-prefixed so it outranks the :root declarations in spacing.css / radius.css, which load after this file. */
+html[data-theme="minimal"]{--radius-xs:2px;--radius-md:3px;--radius-lg:4px;--size-topbar:48px;--size-boardbar:48px;--size-list-width:196px;--size-control:28px;--size-control-lg:36px}

@@ -1,0 +1,33 @@
+@font-face{font-family:"Inter";src:url("../fonts/Inter-Variable.ttf") format("truetype");font-weight:100 900;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("../fonts/GeistMono.woff2") format("woff2");font-weight:400 600;font-display:swap}
+:root{
+--font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans","Helvetica Neue","Liberation Sans",Arial,sans-serif;
+--font-mono:ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+--text-xs:12px;--lh-xs:16px;
+--text-sm:14px;--lh-sm:20px;
+--text-md:16px;--lh-md:22px;
+--text-lg:18px;--lh-lg:24px;
+--text-xl:20px;--lh-xl:26px;
+--text-2xl:24px;--lh-2xl:30px;
+--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;
+/* Semantic type roles */
+--type-body:400 var(--text-sm)/var(--lh-sm) var(--font-ui);
+--type-small:400 var(--text-xs)/var(--lh-xs) var(--font-ui);
+--type-section:600 var(--text-md)/var(--lh-md) var(--font-ui);
+--type-item-title:600 var(--text-2xl)/var(--lh-2xl) var(--font-ui);
+--type-board-title:600 var(--text-sm)/var(--lh-sm) var(--font-ui);
+--type-list-name:600 var(--text-sm)/var(--lh-sm) var(--font-ui);
+--type-page-title:600 var(--text-xl)/var(--lh-xl) var(--font-ui);
+}
+/* Minimal (Ledger) type: Inter for UI, Geist Mono for keys and counts; 13px/1.45 base, medium 500 is the heaviest weight. Fonts ship in assets/fonts. */
+[data-theme="minimal"]{
+--font-ui:"Inter",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+--font-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+--text-xs:11px;--lh-xs:16px;--text-sm:13px;--lh-sm:19px;--text-md:13px;--lh-md:19px;--text-lg:15px;--lh-lg:22px;--text-xl:18px;--lh-xl:26px;--text-2xl:20px;--lh-2xl:28px;
+--weight-semibold:500;--weight-bold:500;
+--type-section:500 var(--text-md)/var(--lh-md) var(--font-ui);
+--type-item-title:500 var(--text-2xl)/var(--lh-2xl) var(--font-ui);
+--type-board-title:500 var(--text-sm)/var(--lh-sm) var(--font-ui);
+--type-list-name:500 var(--text-sm)/var(--lh-sm) var(--font-ui);
+--type-page-title:500 var(--text-xl)/var(--lh-xl) var(--font-ui);
+}

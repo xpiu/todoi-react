@@ -1,0 +1,6 @@
+:root{
+--radius-xs:3px;   /* label bars */
+--radius-md:5px;   /* cards, buttons, inputs, label & date pills */
+--radius-lg:7px;  /* lists, overlay panel */
+--radius-full:999px;
+}

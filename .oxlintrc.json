@@ -1,0 +1,81 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "react",
+    "import"
+  ],
+  "jsPlugins": [
+    "./tools/lint/design-adherence.js"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/",
+    ".tmp/",
+    "drizzle/"
+  ],
+  "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "import/no-cycle": "error",
+    "react/react-in-jsx-scope": "off",
+    "import/no-unassigned-import": "off",
+    "no-underscore-dangle": [
+      "warn",
+      {
+        "allow": [
+          "__todoi"
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/client/**/*.tsx",
+        "src/client/**/*.ts"
+      ],
+      "rules": {
+        "design/no-raw-hex": "error",
+        "design/no-inline-px": "error",
+        "design/no-inline-z-index": "error",
+        "design/no-inline-font-family": "error",
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "lucide-react",
+                "message": "Import icons through src/client/design/core/Icon (the explicit map) so tree-shaking and theme glyphs stay intact."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/client/design/core/themes.ts",
+        "src/client/design/core/icons.ts"
+      ],
+      "rules": {
+        "design/no-raw-hex": "off",
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}

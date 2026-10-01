@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
 
 import { ITEM_STATUSES } from "../../shared/item-status";
+import { Button } from "../design/core/Button";
 import { newItemId, useCreateItem, useDeleteItem, useItems, useUpdateItem } from "./useItems";
 
+/** Placeholder list from the scaffold; the List view (Phase 4) replaces it. */
 export function ItemList() {
   const items = useItems();
   const create = useCreateItem();
@@ -19,27 +21,29 @@ export function ItemList() {
   }
 
   if (items.isError) return <p role="alert">Could not load items: {items.error.message}</p>;
-  if (!items.isSuccess) return <p>Loading…</p>;
+  if (!items.isSuccess) return <p className="td-placeholder-empty">Loading…</p>;
 
   return (
     <>
-      <form onSubmit={onSubmit} className="add">
+      <form onSubmit={onSubmit} className="td-placeholder-add">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Add a task"
-          aria-label="New task title"
+          placeholder="Add an item"
+          aria-label="New item title"
           autoFocus
         />
-        <button type="submit">Add</button>
+        <Button type="submit" variant="primary" icon="plus">
+          Add
+        </Button>
       </form>
 
       {items.data.length === 0 ? (
-        <p className="empty">Nothing here yet.</p>
+        <p className="td-placeholder-empty">Nothing here yet.</p>
       ) : (
-        <ul className="items">
+        <ul className="td-placeholder-list">
           {items.data.map((item) => (
-            <li key={item.id} data-status={item.status}>
+            <li key={item.id} className="td-placeholder-row" data-status={item.status}>
               <input
                 type="checkbox"
                 checked={item.status === "DONE"}
@@ -48,7 +52,7 @@ export function ItemList() {
                 }
                 aria-label={`Mark "${item.title}" ${item.status === "DONE" ? "not done" : "done"}`}
               />
-              <span className="title">{item.title}</span>
+              <span className="td-placeholder-title">{item.title}</span>
               <select
                 value={item.status}
                 onChange={(e) =>
@@ -62,9 +66,7 @@ export function ItemList() {
                   </option>
                 ))}
               </select>
-              <button type="button" onClick={() => remove.mutate({ id: item.id })} aria-label={`Delete "${item.title}"`}>
-                ×
-              </button>
+              <Button variant="ghost" icon="x" aria-label={`Delete "${item.title}"`} onClick={() => remove.mutate({ id: item.id })} />
             </li>
           ))}
         </ul>

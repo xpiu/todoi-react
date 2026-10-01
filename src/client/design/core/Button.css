@@ -1,0 +1,115 @@
+/* Button — spec: DESIGN.md › Core controls. Tokens only; hover shifts background, never movement. */
+@layer components {
+  .td-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--size-control);
+    padding: 0 var(--sp-3);
+    border: none;
+    border-radius: var(--radius-md);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--ink-900);
+    background: var(--action-subtle);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--duration-base) var(--ease-standard),
+      color var(--duration-base) var(--ease-standard);
+  }
+  .td-btn:hover {
+    background: var(--action-subtle-hover);
+  }
+  .td-btn:active {
+    background: var(--n-a25);
+  }
+
+  .td-btn-primary {
+    background: var(--action-primary);
+    color: var(--text-inverse);
+  }
+  .td-btn-primary:hover {
+    background: var(--action-primary-hover);
+  }
+  .td-btn-primary:active {
+    background: var(--action-primary-active);
+  }
+
+  .td-btn-outline {
+    background: var(--surface-card);
+    border: 1px solid var(--border-input);
+    box-shadow: var(--shadow-input);
+  }
+  .td-btn-outline:hover {
+    background: var(--surface-panel);
+  }
+  .td-btn-outline:active {
+    background: var(--surface-list);
+  }
+
+  .td-btn-ghost {
+    background: transparent;
+  }
+  .td-btn-ghost:hover {
+    background: var(--action-subtle);
+  }
+  .td-btn-ghost:active {
+    background: var(--action-subtle-hover);
+  }
+
+  .td-btn-chrome {
+    background: var(--chrome-hover);
+    color: var(--chrome-text);
+  }
+  .td-btn-chrome:hover {
+    background: var(--chrome-active);
+  }
+  .td-btn-chrome:active {
+    background: var(--chrome-pressed);
+  }
+
+  .td-btn-chrome-ghost {
+    background: transparent;
+    color: var(--chrome-text);
+  }
+  .td-btn-chrome-ghost:hover {
+    background: var(--chrome-hover);
+  }
+  .td-btn-chrome-ghost:active {
+    background: var(--chrome-active);
+  }
+
+  .td-btn-inverse {
+    background: var(--btn-inverse-bg);
+    color: var(--chrome-selected-text);
+  }
+  .td-btn-inverse:hover {
+    background: var(--btn-inverse-hover);
+  }
+  .td-btn-inverse:active {
+    background: var(--btn-inverse-active);
+  }
+
+  .td-btn-danger {
+    background: var(--danger);
+    color: var(--text-inverse);
+  }
+  .td-btn-danger:hover {
+    filter: brightness(0.92);
+  }
+  .td-btn-danger:active {
+    filter: brightness(0.84);
+  }
+
+  .td-btn-lg {
+    height: var(--size-control-lg);
+    padding: 0 var(--sp-4);
+  }
+
+  .td-btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
