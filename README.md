@@ -59,8 +59,9 @@ Todoi is a lightweight task manager with a focus on user-friendliness, legibilit
 
 ## Current state: barebones core
 
-Only the thinnest vertical slice exists so far, on purpose: one `items` table, a Hono JSON API
-for it, and a React list that adds, updates and deletes items with optimistic mutations.
+The data model and API now follow the design spec's vocabulary (groups, projects, lists, items with
+subitems, labels, members, comments, relations, saved views, activity, an Inbox per account); the
+client is still the placeholder Inbox list until the views land. See `docs/design/glossary.md`.
 
 In place: React + Vite, Hono (typed routes + RPC client), TanStack Query, Drizzle + PostgreSQL, zod validation,
 the design-system foundations (tokens, themes × modes, icons, appearance store with Zustand) per `DESIGN.md`.
@@ -76,8 +77,7 @@ Requirements: Node 22+, a local PostgreSQL.
 cp .env.example .env        # then set DATABASE_URL for your machine
 createdb todoi_react        # once
 npm install
-npm run db:migrate          # applies migrations from ./drizzle
-npm run dev                 # API on :3000, Vite on :5173 (proxies /api to the API)
+npm run dev                 # API on :3000 (applies migrations and seeds sample data on boot in dev), Vite on :5173
 ```
 
 Other scripts: `npm run check` (typecheck + lint + tests), `npm run test` (Vitest), `npm run typecheck`, `npm run lint` (oxlint with
@@ -93,7 +93,7 @@ src/client/design/   Design system: tokens/ (CSS, four theme × mode scopes + pa
                      Base UI, pickers, Markdown, quick-add parser, shortcuts, appearance store),
                      one co-located .css per component, index.css as the single CSS entry
 src/client/dev/      /dev/ds gallery of every primitive in all theme × mode scopes
-src/server/          Hono API, Drizzle schema and DB client (entry: src/server/index.ts)
+src/server/          Hono API (routes/, services/), Drizzle schema, seed, DB client (entry: src/server/index.ts)
 src/shared/          Code used by both: status ids, zod request schemas
 drizzle/             Generated SQL migrations
 docs/design/         Glossary, data-model impact and kit notes; the spec itself is DESIGN.md

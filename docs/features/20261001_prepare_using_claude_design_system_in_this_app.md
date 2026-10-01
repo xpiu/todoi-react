@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** in progress. Phases 0, 1 and 2 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
+**Status:** in progress. Phases 0–3 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -60,12 +60,12 @@
 
 ## Phase 3 — Data model and API (match the vocabulary)
 
-- [ ] Extend the Drizzle schema in steps, each a migration: `groups` (with key prefix), `projects` (icon, color, visibility, default view, link-lists-with-statuses), `lists` (order, status role), `items` (key, project, list, order, status, priority, start, due, due time, repeat rule, cover, done), `subitems`, `labels` + `item_labels`, `members` + `assignees`, `comments`, `attachments`, `relations`, `activity`, `saved_views`, archive / trash flags with 90-day retention.
-- [ ] Item keys: per-group prefix + counter, stable across list moves, re-issued across group moves.
-- [ ] Zod schemas in `src/shared/` for every new table; Hono routes with typed RPC as today.
-- [ ] Linked moves update list and status atomically; the response carries what changed so the toast can say "— Status set to Doing".
-- [ ] Seed script from the UI kit sample data (Helicopters Europe project, labels, members) for local development.
-- [ ] Inbox as one app-managed list per account; notifications written as Inbox items.
+- [x] Extend the Drizzle schema in steps, each a migration: `groups` (with key prefix), `projects` (icon, color, visibility, default view, link-lists-with-statuses), `lists` (order, status role), `items` (key, project, list, order, status, priority, start, due, due time, repeat rule, cover, done), `subitems`, `labels` + `item_labels`, `members` + `assignees`, `comments`, `attachments`, `relations`, `activity`, `saved_views`, archive / trash flags with 90-day retention. Two migrations: `0001` (users — Better Auth-compatible columns —, groups, projects, lists, members, the extended items; hand-written backfill moves existing items into a local account's Inbox) and `0002` (labels, item_labels, item_assignees, item_watchers, comments, comment_reactions, attachments, item_relations, activity, saved_views; `done` backfill). Subitems are `items.parent_item_id`. In development the API applies pending migrations on boot (`MIGRATE_ON_START`), which also side-steps Postgres.app's per-process permission prompt for ad-hoc scripts; production keeps `npm run db:migrate`. The 90-day purge job is still to come (background jobs are deferred).
+- [x] Item keys: per-group prefix + counter, stable across list moves, re-issued across group moves. `groups.next_item_number` + `issueKeyNumber`; verified: a new item in Helicopters Europe got MP-140, a move within the project kept its key.
+- [x] Zod schemas in `src/shared/` for every new table; Hono routes with typed RPC as today. `shared/enums.ts`, `items.ts`, `projects.ts`, `content.ts`; routes `/api/groups`, `/projects`, `/lists`, `/items` (+ `/move`, `/details`, labels, assignees, watch, comments, relations), `/labels` (+ merge), `/comments` (+ reactions), `/saved-views`, `/activity`, `/inbox` (unread, mark-all-read). All exercised with a Node script against the running API. Attachments have a table but no upload route yet (storage backend is a Phase 5 decision).
+- [x] Linked moves update list and status atomically; the response carries what changed so the toast can say "— Status set to Doing". `services/items.ts › moveItem` (one transaction: list, position, Status when the destination role is linked, key re-issue across groups, subitems follow) returns `{item, changed: {list, project, status: {from, to}, key}}`; `setDone` keeps the prior Status. Verified: To-do → Doing set DOING, moving back restored TODO, done/undone round-trips.
+- [x] Seed script from the UI kit sample data (Helicopters Europe project, labels, members) for local development. `src/server/seed.ts`, run on boot while the database has no groups (`SEED_ON_START`): two groups, five projects, Flo + Sam, six labels, 21 items with subitems, dates, priorities, assignees and the recurring MP-137.
+- [x] Inbox as one app-managed list per account; notifications written as Inbox items. `lists.kind = inbox` (one per user, enforced by a partial unique index); `items.notification` + `unread`; `/api/inbox/unread` and `mark-all-read`. Producing notifications (mentions, assignments, watched items) is wired when comments and assignment flows land in Phase 5.
 
 ## Phase 4 — App frame and views
 

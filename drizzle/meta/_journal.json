@@ -8,6 +8,20 @@
       "when": 1790771396713,
       "tag": "0000_simple_changeling",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790856164352,
+      "tag": "0001_bouncy_puff_adder",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790856527204,
+      "tag": "0002_simple_thunderball",
+      "breakpoints": true
     }
   ]
 }

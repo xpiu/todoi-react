@@ -43,23 +43,22 @@ export function ItemList() {
       ) : (
         <ul className="td-placeholder-list">
           {items.data.map((item) => (
-            <li key={item.id} className="td-placeholder-row" data-status={item.status}>
+            <li key={item.id} className="td-placeholder-row" data-status={item.done ? "DONE" : (item.status ?? "")}>
               <input
                 type="checkbox"
-                checked={item.status === "DONE"}
-                onChange={(e) =>
-                  update.mutate({ id: item.id, status: e.target.checked ? "DONE" : "TODO" })
-                }
-                aria-label={`Mark "${item.title}" ${item.status === "DONE" ? "not done" : "done"}`}
+                checked={item.done}
+                onChange={(e) => update.mutate({ id: item.id, done: e.target.checked })}
+                aria-label={`Mark "${item.title}" ${item.done ? "not done" : "done"}`}
               />
               <span className="td-placeholder-title">{item.title}</span>
               <select
-                value={item.status}
+                value={item.status ?? ""}
                 onChange={(e) =>
-                  update.mutate({ id: item.id, status: e.target.value as typeof item.status })
+                  update.mutate({ id: item.id, status: (e.target.value || null) as typeof item.status })
                 }
                 aria-label={`Status of "${item.title}"`}
               >
+                <option value="">None</option>
                 {ITEM_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {s.charAt(0) + s.slice(1).toLowerCase()}
