@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** planning only. Implementation follows in later, smaller features.
+**Status:** in progress. Phase 0 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -31,11 +31,11 @@
 
 ## Phase 0 — Interpret the design
 
-- [ ] Read `readme.md` end to end; keep it as the canonical spec. Copy it into `docs/design-system/` with the tokens so the repo owns it (the `.tmp` export is disposable).
-- [ ] Open `ui_kits/todoi/index.html` in a browser (needs network for the CDN scripts) and walk every view, the overlay, Settings and Account. Note what is simulated vs real.
-- [ ] Open each guideline card once; list the ones that affect data model or API (status linking, saved views, archive/trash, notifications, relations, repeat rules).
-- [ ] Write a one-page glossary mapping DS vocabulary to database and API names (Group, Project, List, Item, Subitem, Label, Member, Status role, Saved view, Inbox).
-- [ ] Record the Open decisions below with a choice and a reason in this file.
+- [x] Read `readme.md` end to end; keep it as the canonical spec. Copied verbatim into `DESIGN.md` (repo root, with a preamble that maps export paths to repo paths) per decision 6; the tokens are copied once, into `src/client/design/tokens/` (Phase 1), to avoid a second copy under `docs/`.
+- [x] Open `ui_kits/todoi/index.html` in a browser (needs network for the CDN scripts) and walk every view, the overlay, Settings and Account. Note what is simulated vs real. Done with Playwright (41 screenshots in `.tmp/20261001_kit_walkthrough/`); notes in `docs/design/kit-walkthrough.md`.
+- [x] Open each guideline card once; list the ones that affect data model or API (status linking, saved views, archive/trash, notifications, relations, repeat rules). See `docs/design/data-model-impact.md`.
+- [x] Write a one-page glossary mapping DS vocabulary to database and API names (Group, Project, List, Item, Subitem, Label, Member, Status role, Saved view, Inbox). See `docs/design/glossary.md`.
+- [x] Record the Open decisions below with a choice and a reason in this file.
 
 ## Phase 1 — Foundations: tokens, fonts, icons, theming
 
@@ -109,18 +109,39 @@
 
 ---
 
-## Open decisions (resolve in Phase 0)
+## Open decisions (resolved 2026-10-01)
+
+Each decision records the user's direction (`=>`), the choice made, and the reason. Versions were
+checked against npm on 2026-10-01.
 
 1. **Primitives:** Base UI (planned in the README) for Popover / Menu / Select / Dialog behaviour with DS classes on top, or port the DS primitives verbatim. Leaning Base UI: it owns focus, ARIA and keyboard handling, and the DS defines look and copy, not internals. The DS's one-Popover rule still holds either way.
+   => answer: use best practices from the Base UI community
+   **Choice:** `@base-ui/react` (the package was renamed from `@base-ui-components/react`; v1.8 is current, stable since the 1.0 GA). One `Popover` wrapper in `src/client/design/core/` wraps Base UI's Popover with the DS classes, tiers and sheet behaviour; `Menu`, `Select`, `Dialog`, `Tooltip` follow the same pattern, styled through `className` and `data-*` state attributes the way Base UI's docs recommend. **Reason:** Base UI handles focus return, typeahead, ARIA roles and portal placement (Floating UI) which the DS reimplements by hand; the DS still decides every pixel. Base UI's `render` prop keeps the DS's custom triggers.
 2. **Component CSS:** keep the DS "one CSS string per component" pattern as co-located `.css` files imported by the TSX (closest to source, tokens-only, easy to diff), or CSS Modules. Tailwind is not a fit; the spec is written in tokens and class hooks (`.td-*`) that themes target.
+   => do not use tailwind - write elegant css and be smart - use legible class names that are conventional
+   **Choice:** plain, co-located `.css` files (one per component, imported by its `.tsx`), class names in the DS's `td-<component>-<part>` convention (BEM-like, no hashes), organised in CSS cascade layers (`@layer tokens, base, components, theme`) so the Minimal theme's `html[data-theme="minimal"] .td-*` rules override components by layer order instead of selector weight. **Reason:** the Minimal theme file targets the `td-*` hooks by name, which CSS Modules' hashed names would break; plain CSS keeps the spec's selectors greppable and diffable; layers remove the `!important` and `html`-prefix tricks the export needs.
 3. **Rich text:** Tiptap (README) versus the DS Markdown subset editor. The DS deliberately stores Markdown that round-trips to GitHub and Embridge. If Tiptap, it must serialise to the same subset.
+   => tiptap is only used for some content-heavy fields
+   **Choice:** the item description (and later long-form project descriptions) use Tiptap with a Markdown serializer restricted to the DS subset (headings 1–3, lists, task lists, quote, code, bold / italic / strike / inline code, links, mentions, item keys). Comments, titles and every other field stay plain textareas with the DS `MentionField` behaviour. The `Markdown` renderer is a pure function shared by both. **Reason:** Tiptap earns its weight only where people write paragraphs; everywhere else the DS's lighter editing model is faster and keeps the Markdown exact.
 4. **Icons:** `lucide-react` with an explicit map versus the Lucide CDN global the DS uses. Choose `lucide-react`; pin the version close to 0.454 to keep glyph names stable.
+   => the two themes (Standard and Minimal) use different typographies and icons
+   **Choice:** `lucide-react` (current major is 1.x; the glyph names the DS uses are checked against it in Phase 1 and any renamed glyph gets an alias in the icon map). `Icon` takes a name from an explicit `ICONS` map (tree-shakeable), draws the custom `circle-todo` and the pixel-snapped `list` / `kanban` / `calendar` / `panel-*` glyphs itself, and reads the theme to pick the Minimal (Ledger) variants and the 1.75 stroke. Typography switches per theme in `tokens/typography.css` (system stack vs Inter + Geist Mono). **Reason:** no CDN global in a Vite app; an explicit map keeps the bundle small and makes "unknown icon" a type error.
 5. **React version:** DS targets React 18 UMD; the app is React 19. Port, do not load the bundle.
+   => aim for a more modern React 19
+   **Choice:** port every component to TSX on React 19: function components, `use` / `useSyncExternalStore` where the DS used module-level stores, `ref` as a prop (no `forwardRef`), no `React.createElement` strings, no UMD bundle. **Reason:** the bundle depends on `window.*` globals and Babel standalone; React 19 removes the `forwardRef` boilerplate the DS carries.
 6. **Where the spec lives:** `docs/design-system/` in this repo versus a separate package. Start in-repo; extract only when a second consumer exists.
+   => write the spec in DESIGN.md and in more places where more info is useful `docs/design/`
+   **Choice:** `DESIGN.md` at the repo root holds the full spec (the README already points to it); `docs/design/` holds the glossary, the data-model impact list and the kit walkthrough; tokens live once in `src/client/design/tokens/`. **Reason:** one canonical file for the rules, short companion pages for the mappings that change as the app grows.
+
+Supporting choices made at the same time (all current versions on npm, 2026-10-01):
+
+- **State:** Zustand 5 for the Appearance store (persist middleware with `partialize`, keys kept as the DS's `td-*` names so a kit user's preferences carry over).
+- **Lint:** `oxlint` for TypeScript/TSX (the export's `_adherence.oxlintrc.json` is already an oxlint config) and `stylelint` for the token-only CSS rules (`color-no-hex`, disallowed `px` outside tokens, allowed font families).
+- **Tests:** Vitest for pure functions; Storybook 10 with `@storybook/addon-vitest` (Vitest browser mode on Playwright) and `@storybook/addon-a11y` for component tests across the four theme × mode scopes; Playwright for end-to-end and visual regression.
 
 ## Sources (external)
 
-- Design tokens: CSS custom properties over preprocessor variables; primitives → semantic → component layering. https://gitlab.com/gitlab-org/gitlab/-/issues/473845 · https://github.com/fintraffic-design/fds-coreui-css
-- Lucide React: static imports or an explicit icon map; `import * as icons` defeats tree-shaking. https://lucide.dev/docs/lucide-react
-- Base UI: unstyled, accessible primitives from the Radix / MUI / Floating UI authors; actively maintained in 2026. https://base-ui.com/react/overview/about · https://www.greatfrontend.com/blog/top-headless-ui-libraries-for-react-in-2026
-- Storybook 9 with Vite: story globals for theme / viewport, a11y via axe, visual regression via Chromatic or Playwright. https://storybook.js.org/blog/storybook-9/
+- Design tokens: CSS custom properties over preprocessor variables; primitives → semantic → component layering. [https://gitlab.com/gitlab-org/gitlab/-/issues/473845](https://gitlab.com/gitlab-org/gitlab/-/issues/473845) · [https://github.com/fintraffic-design/fds-coreui-css](https://github.com/fintraffic-design/fds-coreui-css)
+- Lucide React: static imports or an explicit icon map; `import * as icons` defeats tree-shaking. [https://lucide.dev/docs/lucide-react](https://lucide.dev/docs/lucide-react)
+- Base UI: unstyled, accessible primitives from the Radix / MUI / Floating UI authors; actively maintained in 2026. [https://base-ui.com/react/overview/about](https://base-ui.com/react/overview/about) · [https://www.greatfrontend.com/blog/top-headless-ui-libraries-for-react-in-2026](https://www.greatfrontend.com/blog/top-headless-ui-libraries-for-react-in-2026)
+- Storybook 9 with Vite: story globals for theme / viewport, a11y via axe, visual regression via Chromatic or Playwright. [https://storybook.js.org/blog/storybook-9/](https://storybook.js.org/blog/storybook-9/)
