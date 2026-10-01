@@ -180,7 +180,8 @@
   .td-lsec-addrow .td-qa-input::placeholder {
     color: var(--ink-600);
   }
-  .td-lsec-body.td-drop-before {
+  .td-lsec-body.td-drop-before,
+  .td-lsec-body.td-drop-end {
     box-shadow: inset 0 2px 0 var(--blue-500);
   }
 }

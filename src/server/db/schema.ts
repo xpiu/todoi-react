@@ -111,6 +111,8 @@ export const lists = pgTable(
 export interface ItemCover {
   color?: string;
   attachmentId?: string;
+  /** One of the kit's sample covers (design/covers/*.svg) — seed data only, until attachments land */
+  sample?: string;
 }
 export interface ItemNotification {
   kind: string;

@@ -1,0 +1,38 @@
+@layer components {
+  .td-board {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: var(--sp-3);
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 100%;
+    box-sizing: border-box;
+    background: var(--chrome-canvas);
+  }
+  .td-board > * {
+    flex-shrink: 0;
+  }
+  .td-board-addlist {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: var(--size-list-width);
+    height: 44px;
+    padding: 0 var(--sp-3);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--chrome-hover);
+    color: var(--chrome-text);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    cursor: pointer;
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-board-addlist:hover {
+    background: var(--chrome-active);
+  }
+  .td-board-addlist:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--chrome-border);
+  }
+}

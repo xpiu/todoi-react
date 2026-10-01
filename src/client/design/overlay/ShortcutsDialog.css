@@ -1,0 +1,50 @@
+@layer components {
+  .td-scd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 36px;
+    padding: var(--sp-2) 0 var(--sp-1);
+  }
+  html[data-device="phone"] .td-scd-grid {
+    grid-template-columns: 1fr;
+  }
+  .td-scd-sec h4 {
+    margin: 0 0 var(--sp-2);
+    font: var(--weight-semibold) 11px / 14px var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-400);
+  }
+  .td-scd-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .td-scd-row {
+    display: grid;
+    grid-template-columns: minmax(96px, auto) 1fr;
+    gap: 14px;
+    align-items: baseline;
+  }
+  .td-scd-keys {
+    display: flex;
+    gap: var(--sp-1);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .td-scd-sep {
+    color: var(--ink-400);
+    font: var(--weight-regular) 11px / 16px var(--font-ui);
+  }
+  .td-scd-desc {
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-scd-note {
+    margin-top: 14px;
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--border-divider);
+    font: var(--weight-regular) var(--text-xs) / 17px var(--font-ui);
+    color: var(--ink-600);
+  }
+}

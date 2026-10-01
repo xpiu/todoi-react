@@ -1,0 +1,31 @@
+@layer components {
+  html.td-tdrag-active,
+  html.td-tdrag-active * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+  [data-tdrag-root] * {
+    -webkit-touch-callout: none;
+  }
+  .td-tdrag-ghost {
+    box-shadow: var(--shadow-raised) !important;
+    opacity: 1 !important;
+    transition: none !important;
+    animation: none !important;
+    cursor: grabbing;
+    z-index: var(--z-drag);
+  }
+  .td-tdrag-ghost .td-card-more,
+  .td-tdrag-ghost .td-card-more-anchor,
+  .td-tdrag-ghost .td-pop {
+    display: none !important;
+  }
+  .td-tdrag-edge {
+    position: fixed;
+    z-index: var(--z-drag);
+    background: var(--blue-500);
+    opacity: 0.7;
+    pointer-events: none;
+    border-radius: 2px;
+  }
+}

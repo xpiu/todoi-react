@@ -1,0 +1,165 @@
+/* ListColumn — fixed-width column; Colorize columns tints by data-status-role via the --status-* tokens. */
+@layer components {
+  .td-list {
+    position: relative;
+    width: var(--size-list-width);
+    max-width: var(--size-list-width);
+    flex-shrink: 0;
+    background: var(--surface-list);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    transition:
+      background var(--duration-base) var(--ease-standard),
+      box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  .td-list.is-drop-target {
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="NEW"] {
+    background: var(--status-new-list);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="NEW"] .td-card {
+    background: var(--status-new-card);
+    box-shadow: var(--shadow-card), inset 0 0 0 1px var(--status-new-card-ring);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="NEW"] .td-card:hover {
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="TODO"] {
+    background: var(--status-todo-list);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="TODO"] .td-card {
+    background: var(--status-todo-card);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="DOING"] {
+    background: var(--status-doing-list);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="DOING"] .td-card {
+    background: var(--status-doing-card);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="DONE"] {
+    background: var(--status-done-list);
+  }
+  html[data-colorize-columns="true"] .td-list[data-status-role="DONE"] .td-card {
+    background: var(--status-done-card);
+  }
+  .td-list-head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 2px 3px var(--sp-1) 5px;
+    color: var(--ink-900);
+  }
+  .td-list-name {
+    flex: 1;
+    font: var(--type-list-name);
+  }
+  .td-list-count {
+    font: var(--type-body);
+    color: var(--ink-600);
+  }
+  .td-list-rename {
+    flex: 1;
+    min-width: 0;
+    height: 24px;
+    border: none;
+    outline: 2px solid var(--blue-500);
+    outline-offset: 0;
+    border-radius: var(--radius-xs);
+    background: var(--surface-card);
+    padding: 0 var(--sp-1);
+    font: var(--weight-semibold) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-list-more[aria-expanded="true"] {
+    background: var(--action-subtle);
+  }
+  .td-list-iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin: 0 -6px 0 -4px;
+    border: 0;
+    padding: 0;
+    background: none;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  .td-list-iconbtn:hover,
+  .td-list-iconbtn[aria-expanded="true"] {
+    background: var(--action-subtle);
+  }
+  .td-list-iconbtn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-list-cards {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    overflow-y: auto;
+    padding: 2px;
+    min-height: 8px;
+  }
+  .td-list-cards > * {
+    flex: 0 0 auto;
+  }
+  /* Drop cue: a 2px action-blue line floating in the 8px gap before / after the card. */
+  .td-list-cards > .td-drop-before {
+    box-shadow: 0 -6px 0 -2px var(--blue-500), var(--shadow-card);
+  }
+  .td-list-cards > .td-drop-after {
+    box-shadow: 0 6px 0 -2px var(--blue-500), var(--shadow-card);
+  }
+  .td-list-cards.td-drop-end::after {
+    content: "";
+    display: block;
+    height: 2px;
+    margin: -5px 0 3px;
+    border-radius: 1px;
+    background: var(--blue-500);
+  }
+  .td-list-foot {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding-top: 5px;
+  }
+  .td-list-add {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 5px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-600);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    cursor: pointer;
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-list-add:hover {
+    background: var(--action-subtle-hover);
+    color: var(--ink-900);
+  }
+  .td-list-composer {
+    margin-top: 5px;
+    padding: 6px var(--sp-2) 7px;
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+  }
+}

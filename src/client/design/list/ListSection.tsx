@@ -32,6 +32,8 @@ export interface ListSectionProps {
   onIconChange?: (icon: IconName | null) => void;
   onSelectAll?: () => void;
   onHide?: () => void;
+  /** Identifies the section for drop handlers (data-list-id) */
+  listId?: string;
   /** @default true */
   showAddRow?: boolean;
   /** @default true — false for a lone list with its own page title (Inbox) */
@@ -47,7 +49,7 @@ export interface ListSectionProps {
   style?: CSSProperties;
 }
 
-export function ListSection({ name, count, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onAddItem, quickAdd, showAddRow = true, showHeader = true, defaultCollapsed = false, onRename, onIconChange, onSelectAll, onHide, actions, menu = true, collapsible = true, children, style }: ListSectionProps) {
+export function ListSection({ listId, name, count, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onAddItem, quickAdd, showAddRow = true, showHeader = true, defaultCollapsed = false, onRename, onIconChange, onSelectAll, onHide, actions, menu = true, collapsible = true, children, style }: ListSectionProps) {
   const auto = listIconFor(name);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [renaming, setRenaming] = useState(false);
@@ -81,7 +83,7 @@ export function ListSection({ name, count, icon, iconColor, statusRole, onStatus
     </div>
   );
   return (
-    <section className={collapsed && showHeader ? "td-lsec td-lsec-collapsed" : "td-lsec"} data-list-name={name} style={style}>
+    <section className={collapsed && showHeader ? "td-lsec td-lsec-collapsed" : "td-lsec"} data-list-name={name} data-list-id={listId} style={style}>
       {showHeader ? (
         <div className="td-lsec-head">
           <Popover open={ipop.open} onOpenChange={ipop.setOpen} placement="bottom-start" offset={2} minWidth={0} role="dialog" aria-label={`Icon for ${name}`} trigger={<button type="button" className="td-lsec-iconbtn td-tip" data-tip="Change icon" aria-label={`Change icon for ${name}`}><Icon name={override ?? auto.icon} size={18} color={iconColor ?? auto.color} /></button>}>

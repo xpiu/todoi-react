@@ -1,22 +1,27 @@
-// ProjectScreen — one project in the view the URL names. List view first (the default); Board and
-// Calendar follow in this phase. Spec: DESIGN.md › Views.
+// ProjectScreen — one project in the view the URL names: List (default), Board, Calendar.
+// Spec: DESIGN.md › Views.
 import { getRouteApi } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useRef } from "react";
 
 import type { ItemStatus } from "../../shared/item-status";
-import { useLabels, useProject, useProjectItems } from "../data/queries";
-import { useCreateItem, useCreateList, useMoveItem, useUpdateItem, useUpdateList } from "../data/mutations";
+import type { Item, Label, ProjectDetail } from "../data/api";
 import { newId } from "../data/mutations";
+import { useLabels, useProject, useProjectItems } from "../data/queries";
+import { BoardView } from "../design/board/BoardView";
+import { ItemCard } from "../design/board/ItemCard";
+import { ListColumn } from "../design/board/ListColumn";
+import { useItemDnd, type ItemDnd } from "../design/board/useItemDnd";
 import { EmptyState } from "../design/core/EmptyState";
-import type { QuickAddResult } from "../design/core/quickAdd";
+import type { IconName } from "../design/core/Icon";
 import { ViewSkeleton } from "../design/core/Skeleton";
+import { useTouchDrag } from "../design/core/touchDrag";
 import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { decodeViewState } from "../design/navigation/viewState";
-import { rowsForList, type Person } from "./items";
-import { SEED_PEOPLE } from "./session";
+import { coverOf, rowsForList } from "./items";
 import { PlaceholderScreen } from "./PlaceholderScreen";
+import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import "./screens.css";
 
 const projectRoute = getRouteApi("/app/p/$projectId");
@@ -32,82 +37,71 @@ export function ProjectScreen() {
 
   if (project.isError) return <PlaceholderScreen title="Couldn't load this project" hint={project.error.message} icon="cloud-off" />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
-  if (view !== "list") return <PlaceholderScreen title={view === "board" ? "Board view" : "Calendar view"} hint="This view lands next in the current phase." icon={view === "board" ? "kanban" : "calendar"} />;
-  return <ProjectList projectId={projectId} project={project.data} items={items.data} labels={labels.data} />;
+  const props = { projectId, project: project.data, items: items.data, labels: labels.data };
+  if (view === "board") return <ProjectBoard {...props} />;
+  if (view === "calendar") return <PlaceholderScreen title="Calendar view" hint="The calendar lands next in this phase." icon="calendar" />;
+  return <ProjectList {...props} />;
 }
 
-function ProjectList({ projectId, project, items, labels }: { projectId: string; project: NonNullable<ReturnType<typeof useProject>["data"]>; items: NonNullable<ReturnType<typeof useProjectItems>["data"]>; labels: NonNullable<ReturnType<typeof useLabels>["data"]> }) {
-  const scope = useMemo(() => ({ projectId }), [projectId]);
-  const createItem = useCreateItem(scope);
-  const updateItem = useUpdateItem(scope);
-  const moveItem = useMoveItem(scope);
-  const createList = useCreateList(projectId);
-  const updateList = useUpdateList(projectId);
-  // Members with names: the seed's two people until the members endpoint carries user details.
-  const people: Person[] = SEED_PEOPLE;
-  const quickAdd = useMemo(
-    () => ({ labels: labels.map((l) => ({ text: l.name, color: l.color })), members: SEED_PEOPLE.map((p) => ({ name: p.name, nickname: p.nickname ?? undefined })), lists: project.lists.map((l) => ({ name: l.name, value: l.id })) }),
-    [labels, project.lists],
-  );
-  const visibleLists = project.lists.filter((l) => !l.hidden);
+interface ViewProps {
+  projectId: string;
+  project: ProjectDetail;
+  items: Item[];
+  labels: Label[];
+}
 
-  const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom") => {
-    const destination = parsed.list ? (project.lists.find((l) => l.name === parsed.list)?.id ?? listId) : listId;
-    const labelIds = parsed.labels.map((pl) => labels.find((l) => l.name.toLowerCase() === pl.text.toLowerCase())?.id).filter((id): id is string => !!id);
-    const assigneeIds = parsed.assignee ? people.filter((p) => p.name === parsed.assignee).map((p) => p.id) : [];
-    createItem.mutate({ id: newId(), title, listId: destination, priority: parsed.priority ? (parsed.priority.toUpperCase() as "URGENT" | "HIGH" | "MEDIUM" | "LOW") : undefined, dueDate: parsed.due ?? undefined, labelIds, assigneeIds, position });
+function NoLists({ actions }: { actions: ProjectActions }) {
+  const three = () => {
+    actions.createList.mutate({ id: newId(), name: "To-do", statusRole: "TODO" });
+    actions.createList.mutate({ id: newId(), name: "Doing", statusRole: "DOING" });
+    actions.createList.mutate({ id: newId(), name: "Done", statusRole: "DONE" });
   };
-
-  if (!visibleLists.length) {
-    return (
-      <div className="td-screen-canvas">
-        <EmptyState icon="list" title="No lists in this project yet" hint="Add a list to start collecting items, or begin with the usual three." action={{ label: "Add a list", icon: "plus", shortcut: "shift N", onClick: () => createList.mutate({ id: newId(), name: "To-do", statusRole: "TODO" }) }} secondary={{ label: "To-do · Doing · Done", onClick: () => { createList.mutate({ id: newId(), name: "To-do", statusRole: "TODO" }); createList.mutate({ id: newId(), name: "Doing", statusRole: "DOING" }); createList.mutate({ id: newId(), name: "Done", statusRole: "DONE" }); } }} />
-      </div>
-    );
-  }
-
   return (
-    <ListView
-      onAddList={() => createList.mutate({ id: newId(), name: `List ${project.lists.length + 1}` })}
-      onItemKey={(id, action) => {
-        const it = items.find((x) => x.id === id);
-        if (!it) return;
-        if (action === "done") updateItem.mutate({ id, done: !it.done });
-        else if (action.startsWith("priority-")) {
-          const n = Number(action.slice(9));
-          updateItem.mutate({ id, priority: n === 0 ? null : (["URGENT", "HIGH", "MEDIUM", "LOW"] as const)[n - 1]! });
-        }
-      }}
-      onMoveItem={(id, dir) => {
-        const it = items.find((x) => x.id === id);
-        if (!it) return;
-        const order = visibleLists.map((l) => l.id);
-        const li = order.indexOf(it.listId);
-        if (dir === "left" || dir === "right") {
-          const target = order[li + (dir === "left" ? -1 : 1)];
-          if (target) moveItem.mutate({ id, listId: target, position: it.position });
-        } else {
-          const next = Math.max(0, it.position + (dir === "up" ? -1 : 1));
-          moveItem.mutate({ id, listId: it.listId, position: next });
-        }
-      }}
-    >
-      {visibleLists.map((list) => {
-        const rows = rowsForList(items, list.id, { prefix: project.keyPrefix, labels, people });
+    <div className="td-screen-canvas">
+      <EmptyState icon="list" title="No lists in this project yet" hint="Add a list to start collecting items, or begin with the usual three." action={{ label: "Add a list", icon: "plus", shortcut: "shift N", onClick: () => actions.createList.mutate({ id: newId(), name: "To-do", statusRole: "TODO" }) }} secondary={{ label: "To-do · Doing · Done", onClick: three }} />
+    </div>
+  );
+}
+
+/** Section / column header callbacks shared by both views. */
+function listCallbacks(actions: ProjectActions, listId: string) {
+  return {
+    onRename: (name: string) => actions.updateList.mutate({ id: listId, name }),
+    onIconChange: (icon: IconName | null) => actions.updateList.mutate({ id: listId, icon }),
+    onStatusRoleChange: (role: ItemStatus | null) => actions.updateList.mutate({ id: listId, statusRole: role }),
+    onHide: () => actions.updateList.mutate({ id: listId, hidden: true }),
+  };
+}
+
+/** The touch long-press layer drives the same slot cue and drop as native drag-and-drop. */
+function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: ItemDnd, selector: string, move: ProjectActions["move"]) {
+  useTouchDrag(root, {
+    selector,
+    onLift: (el) => (el.getAttribute("data-drag-id")?.includes("/") ? false : undefined),
+    onMove: (p, d) => {
+      dnd.cueAt(p.x, p.y, d.dragId);
+    },
+    onDrop: (p, d) => {
+      const t = dnd.cueAt(p.x, p.y, d.dragId);
+      dnd.end();
+      if (t && d.dragId) move(d.dragId, t);
+    },
+    onCancel: dnd.end,
+  });
+}
+
+function ProjectList({ projectId, project, items, labels }: ViewProps) {
+  const actions = useProjectActions(projectId, project, items, labels);
+  const root = useRef<HTMLDivElement | null>(null);
+  const dnd = useItemDnd(root, { listSelector: ".td-lsec", itemSelector: ".td-lrow[data-drag-id]", cardsSelector: ".td-lsec-body", onDrop: actions.move });
+  useTouchItemDrag(root, dnd, ".td-lrow[data-drag-id]", actions.move);
+  if (!actions.lists.length) return <NoLists actions={actions} />;
+  return (
+    <ListView ref={root} onAddList={() => actions.addList()} onItemKey={actions.onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
+      {actions.lists.map((list) => {
+        const rows = rowsForList(items, list.id, { prefix: project.keyPrefix, labels, people: actions.people });
         return (
-          <ListSection
-            key={list.id}
-            name={list.name}
-            count={rows.length}
-            icon={(list.icon as "circle" | null) ?? null}
-            statusRole={list.statusRole}
-            quickAdd={quickAdd}
-            onAddItem={(title, parsed, position) => addItem(list.id, title, parsed, position)}
-            onRename={(name) => updateList.mutate({ id: list.id, name })}
-            onIconChange={(icon) => updateList.mutate({ id: list.id, icon })}
-            onStatusRoleChange={(role: ItemStatus | null) => updateList.mutate({ id: list.id, statusRole: role })}
-            onHide={() => updateList.mutate({ id: list.id, hidden: true })}
-          >
+          <ListSection key={list.id} listId={list.id} name={list.name} count={rows.length} icon={(list.icon as IconName | null) ?? null} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list.id)}>
             {rows.map((r) => (
               <ListRow
                 key={r.id}
@@ -115,19 +109,61 @@ function ProjectList({ projectId, project, items, labels }: { projectId: string;
                 title={r.title}
                 itemId={r.itemId}
                 done={r.done}
-                onDone={(done) => updateItem.mutate({ id: r.id, done })}
+                onDone={(done) => actions.setDone(r.id, done)}
                 labels={r.labels}
                 due={r.due}
                 dueState={r.dueState}
                 repeat={r.repeat}
                 priority={r.priority}
                 assignees={r.assignees}
-                subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => updateItem.mutate({ id: s.id, done }) }))}
+                subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done) }))}
               />
             ))}
           </ListSection>
         );
       })}
     </ListView>
+  );
+}
+
+function ProjectBoard({ projectId, project, items, labels }: ViewProps) {
+  const actions = useProjectActions(projectId, project, items, labels);
+  const root = useRef<HTMLDivElement | null>(null);
+  const dnd = useItemDnd(root, { listSelector: ".td-list", itemSelector: ".td-card[data-drag-id]", cardsSelector: ".td-list-cards", onDrop: actions.move });
+  useTouchItemDrag(root, dnd, ".td-card[data-drag-id]", actions.move);
+  if (!actions.lists.length) return <NoLists actions={actions} />;
+  return (
+    <BoardView ref={root} onAddList={() => actions.addList()} onItemKey={actions.onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
+      {actions.lists.map((list) => {
+        const rows = rowsForList(items, list.id, { prefix: project.keyPrefix, labels, people: actions.people });
+        return (
+          <ListColumn key={list.id} listId={list.id} name={list.name} count={rows.length} icon={(list.icon as IconName | null) ?? null} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed) => actions.addItem(list.id, title, parsed)} {...listCallbacks(actions, list.id)}>
+            {rows.map((r) => {
+              const it = items.find((x) => x.id === r.id);
+              return (
+                <ItemCard
+                  key={r.id}
+                  dragId={r.id}
+                  title={r.title}
+                  itemId={r.itemId}
+                  done={r.done}
+                  labels={r.labels}
+                  due={r.due}
+                  dueState={r.dueState}
+                  repeat={r.repeat}
+                  priority={r.priority}
+                  assignees={r.assignees}
+                  cover={coverOf(it)}
+                  badges={{ description: !!it?.description, checklist: r.subitems.length ? { done: r.subitems.filter((s) => s.done).length, total: r.subitems.length } : undefined }}
+                  onMenuAction={(action) => {
+                    if (action === "Delete") actions.remove(r.id);
+                  }}
+                />
+              );
+            })}
+          </ListColumn>
+        );
+      })}
+    </BoardView>
   );
 }

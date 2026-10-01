@@ -2,7 +2,7 @@
 // collection is ONE Tab stop (roving tabindex); arrows / J / K move focus inside, Ctrl/Cmd+arrow emits
 // onMoveItem, single keys emit onItemKey, S / shift+arrows / Ctrl+A emit onItemSelect. All matching
 // goes through the SHORTCUTS registry. Items are located by itemSelector and identified by data-drag-id.
-import { useEffect, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useImperativeHandle, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from "react";
 
 import { SHORTCUTS, type FocusDir, type ItemAction } from "./shortcuts";
 
@@ -45,13 +45,16 @@ export interface KeyNavProps extends Omit<HTMLAttributes<HTMLDivElement>, "onKey
   /** Selection keys: S ("toggle"), shift+↑↓ ("extend", both ids), ctrl/cmd+A ("all") */
   onItemSelect?: (ids: string[], mode: SelectMode) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLDivElement>) => void;
+  /** The root element (drag layers bind here) */
+  ref?: Ref<HTMLDivElement>;
   children?: ReactNode;
 }
 
 const isSubitemId = (id: string | null) => !id || id.includes("/");
 
-export function KeyNav({ itemSelector = ".td-card", columnSelector, onMoveItem, onItemKey, onItemSelect, onKeyDown, children, ...rest }: KeyNavProps) {
+export function KeyNav({ itemSelector = ".td-card", columnSelector, onMoveItem, onItemKey, onItemSelect, onKeyDown, ref, children, ...rest }: KeyNavProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  useImperativeHandle(ref, () => rootRef.current!, []);
   const activeRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -101,10 +104,14 @@ export function KeyNav({ itemSelector = ".td-card", columnSelector, onMoveItem, 
       if (onMoveItem && !isSubitemId(id)) {
         e.preventDefault();
         onMoveItem(id!, mv);
-        afterPaint(() => {
+        // The moved element re-mounts once the optimistic update lands; keep focus on it for a few frames.
+        let frames = 0;
+        const refocus = () => {
           const el = root.querySelector<HTMLElement>(`${itemSelector}[data-drag-id="${CSS.escape(id!)}"]`);
-          el?.focus();
-        });
+          if (el && document.activeElement !== el && (document.activeElement === document.body || !document.activeElement?.closest(itemSelector) || !root.contains(document.activeElement))) el.focus();
+          if (++frames < 30) requestAnimationFrame(refocus);
+        };
+        requestAnimationFrame(refocus);
       }
       return;
     }

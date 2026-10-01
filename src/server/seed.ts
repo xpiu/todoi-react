@@ -1,6 +1,6 @@
 // Development seed: the UI kit's sample workspace (docs/design/kit-walkthrough.md) so every view has
 // realistic data from the first run. Idempotent: runs only while the database has no groups.
-import { count, eq } from "drizzle-orm";
+import { count, sql, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import type { ItemPriority } from "../shared/enums";
@@ -63,7 +63,11 @@ const LIST_ROLES: Array<[string, ItemStatus | null]> = [["New", "NEW"], ["To-do"
 
 export async function seedIfEmpty() {
   const existing = (await db.select({ n: count() }).from(groups))[0]?.n ?? 0;
-  if (existing > 0) return false;
+  if (existing > 0) {
+    // An earlier seed stored the sample cover's name under `color`; move it to `sample`.
+    await db.execute(sql`update items set cover = jsonb_build_object('sample', cover->>'color') where cover->>'color' like 'web%'`);
+    return false;
+  }
   await db.insert(users).values({ id: SAM, name: "Sam Verhoeven", email: "sam@helicopterseurope.com", nickname: "sam", avatarColor: "orange" }).onConflictDoNothing();
   await db.update(users).set({ name: "Flo Zuallaert", nickname: "flo", email: "flo@helicopterseurope.com" }).where(eq(users.id, FLO));
 
@@ -110,7 +114,7 @@ export async function seedIfEmpty() {
       dueDate: it.due ?? null,
       repeatRule: it.repeat ?? null,
       repeatCount: it.repeatCount ?? 0,
-      cover: it.cover ? { color: it.cover } : null,
+      cover: it.cover ? { sample: it.cover } : null,
       position,
       createdBy: FLO,
       createdAt: new Date(it.created + "T09:00:00Z"),

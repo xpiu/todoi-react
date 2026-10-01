@@ -5,6 +5,7 @@ import { formatDate, toISO } from "../design/core/dates";
 import { describeRepeat } from "../design/core/repeat";
 import type { RowLabel, RowPerson, RowPriority } from "../design/list/ListRow";
 import type { DueState } from "../design/board/DueDatePill";
+import { SAMPLE_COVERS } from "../design/covers";
 
 export const PRIORITY_LABEL: Record<ItemPriority, RowPriority> = { URGENT: "Urgent", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
 
@@ -23,6 +24,15 @@ export function dueStateOf(item: Pick<Item, "dueDate" | "done">, today = toISO(n
 
 export function keyOf(item: Pick<Item, "keyNumber">, prefix: string): string | undefined {
   return item.keyNumber != null && prefix ? `${prefix}-${item.keyNumber}` : undefined;
+}
+
+/** The card / overlay cover: a label colour tile, a sample SVG, or (later) an attachment. */
+export function coverOf(item: Pick<Item, "cover"> | undefined): { src?: string; color?: string } | null {
+  const c = item?.cover;
+  if (!c) return null;
+  if (c.sample && SAMPLE_COVERS[c.sample]) return { src: SAMPLE_COVERS[c.sample] };
+  if (c.color) return { color: `var(--label-${c.color})` };
+  return null;
 }
 
 export interface RowModel {

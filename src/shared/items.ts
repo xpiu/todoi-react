@@ -58,7 +58,7 @@ export const updateItemSchema = z
     dueDate: isoDateSchema.nullable(),
     dueTime: timeSchema.nullable(),
     repeatRule: repeatRuleSchema.nullable(),
-    cover: z.object({ color: z.string().max(40).optional(), attachmentId: idSchema.optional() }).nullable(),
+    cover: z.object({ color: z.string().max(40).optional(), attachmentId: idSchema.optional(), sample: z.string().max(40).optional() }).nullable(),
     unread: z.boolean(),
   })
   .partial()

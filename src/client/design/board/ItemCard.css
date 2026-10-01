@@ -1,0 +1,187 @@
+@layer components {
+  .td-card {
+    position: relative;
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    overflow: hidden;
+    text-align: left;
+    transition: box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  .td-card:hover {
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
+  }
+  .td-card:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--focus-ring);
+  }
+  .td-card.is-selected,
+  .td-card.is-selected:hover,
+  html[data-colorize-columns] .td-list[data-status-role] .td-card.is-selected {
+    background: var(--blue-100);
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
+  }
+  .td-card-cover {
+    display: block;
+    width: 100%;
+    object-fit: cover;
+    background: var(--surface-cover);
+  }
+  .td-card-body {
+    padding: 5px var(--sp-2);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .td-card-title {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    font: var(--type-body);
+    color: var(--ink-900);
+  }
+  .td-card-done {
+    margin-top: 2px;
+  }
+  .td-card-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+    margin: 2px 0;
+    align-items: center;
+  }
+  .td-card-badges {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: var(--sp-3);
+    min-width: 0;
+    white-space: nowrap;
+    color: var(--ink-400);
+    font: var(--type-small);
+  }
+  .td-card-badges > * {
+    flex: 0 0 auto;
+  }
+  .td-card-badges > .td-card-due {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .td-card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+  .td-card-badge[data-complete="true"] {
+    color: var(--success-icon);
+  }
+  .td-card-avs {
+    display: inline-flex;
+    align-items: center;
+  }
+  .td-card-avs .td-cav {
+    display: inline-flex;
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px var(--surface-card);
+    position: relative;
+    z-index: var(--td-z, 0);
+  }
+  .td-card.is-selected .td-card-avs .td-cav {
+    box-shadow: 0 0 0 2px var(--blue-100);
+  }
+  .td-card-avs .td-cav + .td-cav {
+    margin-left: -6px;
+  }
+  .td-card-avs .td-cav-n {
+    align-items: center;
+    justify-content: center;
+    background: var(--action-subtle);
+    color: var(--ink-600);
+    font: var(--weight-semibold) 9px / 1 var(--font-ui);
+  }
+  .td-card-id {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font: var(--weight-medium) 11px / 16px var(--font-mono);
+    text-transform: uppercase;
+    color: var(--ink-400);
+    letter-spacing: 0.04em;
+    margin-left: auto;
+    cursor: pointer;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .td-card-id:hover {
+    color: var(--ink-600);
+  }
+  .td-card-id-pop {
+    position: absolute;
+    right: calc(100% + 5px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+    align-items: center;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .td-card-id:hover .td-card-id-pop,
+  .td-card-id.is-copied .td-card-id-pop {
+    display: inline-flex;
+  }
+  html[data-touch="true"] .td-card-id {
+    padding: 4px 0 4px var(--sp-2);
+    margin: -4px 0;
+  }
+  .td-card-more-anchor {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: var(--z-hover-control);
+  }
+  .td-card-more {
+    display: none;
+    width: 26px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    padding: 0;
+    background: var(--surface-card);
+    border-radius: 0 var(--radius-md) 0 var(--radius-xs);
+    color: var(--ink-400);
+    cursor: pointer;
+    box-shadow: -1px 1px 0 color-mix(in srgb, var(--surface-card) 60%, transparent);
+  }
+  .td-card:hover .td-card-more,
+  .td-card:focus-within .td-card-more,
+  .td-card-more[aria-expanded="true"],
+  html[data-touch="true"] .td-card-more {
+    display: inline-flex;
+  }
+  .td-card-more:hover,
+  .td-card-more[aria-expanded="true"] {
+    color: var(--ink-900);
+  }
+  .td-card-more:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
+  .td-card.td-drag-src {
+    opacity: 0.4;
+  }
+  .td-card.is-drag-ghost {
+    box-shadow: var(--shadow-card);
+    pointer-events: none;
+  }
+  .td-prio-text {
+    display: none;
+  }
+}
