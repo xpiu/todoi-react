@@ -24,12 +24,14 @@ export const projectQuery = (id: string) =>
   queryOptions({
     queryKey: keys.project(id),
     queryFn: () => api.api.projects[":id"].$get({ param: { id } }).then((r) => unwrap<ProjectDetail>(r)),
+    enabled: !!id,
   });
 
 export const projectItemsQuery = (projectId: string) =>
   queryOptions({
     queryKey: keys.items({ projectId }),
     queryFn: () => api.api.items.$get({ query: { projectId } }).then((r) => unwrap<Item[]>(r)),
+    enabled: !!projectId,
   });
 
 /** The caller's Inbox (no listId) or any one list. */
@@ -43,6 +45,7 @@ export const labelsQuery = (projectId: string) =>
   queryOptions({
     queryKey: keys.labels(projectId),
     queryFn: () => api.api.labels.$get({ query: { projectId } }).then((r) => unwrap<Label[]>(r)),
+    enabled: !!projectId,
   });
 
 export const itemDetailsQuery = (id: string) =>

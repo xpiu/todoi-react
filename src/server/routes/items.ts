@@ -72,9 +72,10 @@ export const itemsRoute = new Hono()
   })
   .patch("/:id", idParam, zValidator("json", updateItemSchema), async (c) => {
     const { id } = c.req.valid("param");
-    const { done, archived, parentItemId, ...rest } = c.req.valid("json");
+    const { done, archived, deleted, parentItemId, ...rest } = c.req.valid("json");
     const changes: Partial<ItemRow> = { ...rest };
     if (archived !== undefined) changes.archivedAt = archived ? new Date() : null;
+    if (deleted !== undefined) changes.deletedAt = deleted ? new Date() : null;
     if (parentItemId !== undefined) {
       // A subitem lives in its parent's list; promoting keeps the list it is in.
       changes.parentItemId = parentItemId;

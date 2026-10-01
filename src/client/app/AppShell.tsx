@@ -24,6 +24,9 @@ import { useFeedback } from "./feedback";
 import { downloadText, fileSlug, itemsToCsv, viewToMarkdown } from "./exportData";
 import { availableFilters, describeSort, FILTER_SECTIONS, filterKey, matchesFilters, nextSort, sameFilter, SORT_OPTS, type SortDim } from "./filters";
 import { keyOf } from "./items";
+import { useLifecycle } from "./lifecycle";
+import { LifecycleDialogs } from "./LifecycleDialogs";
+import { useProjectMutations } from "../data/projects";
 import { CURRENT_USER, SEED_PEOPLE } from "./session";
 import { useAppShortcuts } from "./useAppShortcuts";
 import "./AppShell.css";
@@ -50,6 +53,8 @@ export function AppShell() {
   const projectItems = useProjectItems(projectId ?? "");
   const projectLabels = useLabels(projectId ?? "");
   const createList = useCreateList(projectId ?? "");
+  const lifecycle = useLifecycle();
+  const pm = useProjectMutations();
   const toast = useFeedback((s) => s.toast);
   const dismiss = useFeedback((s) => s.dismiss);
   const setUndoScope = useFeedback((s) => s.setScope);
@@ -150,7 +155,7 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings" })} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings" })} onMembers={() => lifecycle.openSettings(projectId, "members")} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
@@ -170,6 +175,9 @@ export function AppShell() {
         onToggleSidebar={setSidebarOpen}
         onCreate={(kind) => {
           if (kind === "item") void navigate({ to: "/inbox" });
+          else if (kind === "project") lifecycle.openNewProject(project.data?.groupId);
+          else if (kind === "group") lifecycle.openNewGroup();
+          else if (kind === "list" && projectId && project.data) createList.mutate({ id: newId(), name: `List ${project.data.lists.length + 1}` });
         }}
       >
         {vp.desktop ? nav : null}
@@ -186,6 +194,30 @@ export function AppShell() {
           navItems={navItems}
           activeId={activeId}
           collapsed={!sidebarOpen}
+          onAdd={(groupId) => lifecycle.openNewProject(groupId)}
+          onNavAdd={(id) => {
+            if (id === "projects") lifecycle.openNewProject(project.data?.groupId);
+            else if (id === "groups") lifecycle.openNewGroup();
+            else if (id === "inbox") void navigate({ to: "/inbox" });
+          }}
+          onProjectRename={(id, name) => pm.updateProject.mutate({ id, name })}
+          onProjectIconChange={(id, icon) => pm.updateProject.mutate({ id, icon })}
+          onProjectAction={(id, action) => {
+            const p = sidebarGroups.flatMap((g) => g.projects).find((x) => x.id === id);
+            if (action === "settings") lifecycle.openSettings(id);
+            else if (action === "duplicate") {
+              const src = (groups.data ?? []).flatMap((g) => g.projects).find((x) => x.id === id);
+              if (src) pm.createProject.mutate({ id: newId(), groupId: src.groupId, name: `${src.name} (copy)`, copyFrom: src.id }, { onSuccess: () => notify({ message: `Duplicated “${src.name}” — lists and settings, not the items`, icon: "copy" }) });
+            } else if (action === "archive") {
+              pm.archiveProject.mutate({ id });
+              notify({ message: `Archived “${p?.name ?? "the project"}”`, icon: "archive", restore: () => pm.restoreProject.mutate({ id }) });
+              if (projectId === id) void navigate({ to: "/projects" });
+            } else if (action === "delete") {
+              pm.deleteProject.mutate({ id });
+              notify({ message: `Deleted “${p?.name ?? "the project"}”`, icon: "trash-2", restore: () => pm.restoreProject.mutate({ id }) });
+              if (projectId === id) void navigate({ to: "/projects" });
+            }
+          }}
           onSelect={(id) => {
             if (id === "inbox" || id === "projects" || id === "groups") void navigate({ to: `/${id}` });
             else openProject(id);
@@ -195,6 +227,7 @@ export function AppShell() {
       </div>
       {toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}
       <ShortcutHint hint={hints.hint} />
+      <LifecycleDialogs />
       <ShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
       <CommandPalette
         open={paletteOpen}

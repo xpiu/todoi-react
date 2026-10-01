@@ -68,6 +68,8 @@ export const updateItemSchema = z
     parentItemId: idSchema.nullable(),
     /** Archive (true) or restore (false) */
     archived: z.boolean(),
+    /** Restore from the Trash (false); true is what DELETE does */
+    deleted: z.boolean(),
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });

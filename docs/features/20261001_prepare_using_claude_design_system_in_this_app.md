@@ -91,8 +91,8 @@
 
 ## Phase 6 — Project lifecycle, settings, account, auth
 
-- [ ] ProjectDialog (templates, copy existing, visibility, group kind with prefix), ProjectPanel (single scrolling body, inline confirms), ActivityLog (per project, grouped by day).
-- [ ] Archive and Trash view (account and project scope, Restore, Delete forever inline).
+- [x] ProjectDialog (templates, copy existing, visibility, group kind with prefix), ProjectPanel (single scrolling body, inline confirms), ActivityLog (per project, grouped by day). *(Plus the Projects and Project groups pages with inline rename, prefix edit and the linked-statuses switch.)*
+- [x] Archive and Trash view (account and project scope, Restore, Delete forever inline). *(`/archive`, `?project=` for the project scope; the 90-day purge job stays deferred.)*
 - [ ] Settings shell (Page › Section › Group › Row registry, search across rows) with General, Storage & sync, Labels, Appearance, Keyboard (generated from `SHORTCUTS`), Help, Integrations, Notifications.
 - [ ] Account pages: Profile, Sign-in methods, API tokens, Security, Devices, Projects (storage, share links, invites), Data, Support.
 - [ ] Better Auth: SignInPage, SignUpPage, ResetPasswordPage, InvitePage, GuestBar + `data-readonly` contract.

@@ -4,7 +4,7 @@ import { logger } from "hono/logger";
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { itemsRoute } from "./routes/items";
-import { groupsRoute, listsRoute, projectsRoute } from "./routes/projects";
+import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } from "./routes/projects";
 
 // Chained so Hono can infer the full route type for the RPC client (`hc<AppType>`).
 export const app = new Hono()
@@ -13,6 +13,8 @@ export const app = new Hono()
   .get("/health", (c) => c.json({ ok: true }))
   .route("/groups", groupsRoute)
   .route("/projects", projectsRoute)
+  .route("/projects", membersRoute)
+  .route("/archive", archiveRoute)
   .route("/lists", listsRoute)
   .route("/items", itemsRoute)
   .route("/items", itemContentRoute)

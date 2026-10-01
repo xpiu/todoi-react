@@ -8,7 +8,10 @@ import { z } from "zod";
 import { PROJECT_VIEWS } from "../shared/enums";
 import { AppShell } from "./app/AppShell";
 import { InboxScreen } from "./app/InboxScreen";
+import { ArchiveScreen } from "./app/ArchiveScreen";
+import { GroupsScreen } from "./app/GroupsScreen";
 import { PlaceholderScreen } from "./app/PlaceholderScreen";
+import { ProjectsScreen } from "./app/ProjectsScreen";
 import { ProjectScreen } from "./app/ProjectScreen";
 import { queryClient } from "./queryClient";
 import { groupsQuery } from "./data/queries";
@@ -49,8 +52,9 @@ export const projectRoute = createRoute({
 });
 
 export const inboxRoute = createRoute({ getParentRoute: () => appRoute, path: "/inbox", component: InboxScreen });
-export const projectsRoute = createRoute({ getParentRoute: () => appRoute, path: "/projects", component: () => <PlaceholderScreen title="Projects" hint="The Projects overview (list–status links, counts) lands with the project lifecycle phase." icon="folder" /> });
-export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "/groups", component: () => <PlaceholderScreen title="Project groups" hint="Groups with item totals and completion land with the project lifecycle phase." icon="folders" /> });
+export const projectsRoute = createRoute({ getParentRoute: () => appRoute, path: "/projects", component: ProjectsScreen });
+export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "/groups", component: GroupsScreen });
+export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: "/archive", component: ArchiveScreen, validateSearch: (search: Record<string, unknown>) => z.object({ project: z.string().optional().catch(undefined) }).parse(search) });
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <PlaceholderScreen title="Settings" hint="The Settings shell (General, Storage & sync, Labels, Appearance, Keyboard…) lands in the settings phase." icon="settings" /> });
 export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <PlaceholderScreen title="Account" hint="Profile, sign-in methods, tokens and devices land with authentication." icon="user" /> });
 export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: "/i/$code", component: () => <PlaceholderScreen title="Invite" hint="Invite landing pages arrive with authentication." icon="mail" /> });
@@ -58,7 +62,7 @@ export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: 
 const DesignGallery = lazy(() => import("./dev/DesignGallery").then((m) => ({ default: m.DesignGallery })));
 export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/dev/ds", component: DesignGallery });
 
-const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, settingsRoute, accountRoute]), inviteRoute, galleryRoute]);
+const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, archiveRoute, settingsRoute, accountRoute]), inviteRoute, galleryRoute]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true });
 

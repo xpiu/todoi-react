@@ -1,0 +1,112 @@
+@layer components {
+  .td-pip-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--action-subtle);
+    cursor: pointer;
+    padding: 0;
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-pip-tile:hover {
+    background: var(--action-subtle-hover);
+  }
+  .td-pip-tile:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-pip-tile[aria-expanded="true"] {
+    background: var(--blue-100);
+  }
+  .td-pip-tile:disabled {
+    cursor: default;
+  }
+  .td-pip-tile.td-pip-captioned {
+    width: auto;
+    gap: var(--sp-2);
+    padding: 0 10px 0 6px;
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-pip-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border-radius: var(--radius-xs);
+    background: var(--surface-card);
+  }
+  .td-pip-caption {
+    white-space: nowrap;
+  }
+  .td-pip-chev {
+    color: var(--ink-400);
+    display: inline-flex;
+  }
+  .td-pip-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--sp-1);
+  }
+  .td-pip-colors {
+    display: flex;
+    gap: 6px;
+    padding: var(--sp-1) 2px;
+  }
+  .td-pip-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-full);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px var(--n-a25);
+  }
+  .td-pip-swatch[aria-checked="true"] {
+    box-shadow:
+      0 0 0 2px var(--surface-card),
+      0 0 0 4px var(--blue-500);
+  }
+  .td-pip-swatch:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--surface-card),
+      0 0 0 4px var(--focus-ring);
+  }
+  .td-pip-div {
+    height: 1px;
+    background: var(--border-divider);
+    margin: 0 2px;
+  }
+  .td-pip-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 28px);
+    gap: 2px;
+  }
+  .td-pip-opt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    padding: 0;
+  }
+  .td-pip-opt:hover {
+    background: var(--action-subtle);
+  }
+  .td-pip-opt:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
+  .td-pip-opt[aria-checked="true"] {
+    background: var(--blue-100);
+  }
+}
