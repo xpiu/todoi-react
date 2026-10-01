@@ -12,6 +12,8 @@ import { BoardView } from "../design/board/BoardView";
 import { ItemCard } from "../design/board/ItemCard";
 import { ListColumn } from "../design/board/ListColumn";
 import { useItemDnd, type ItemDnd } from "../design/board/useItemDnd";
+import { CalendarView } from "../design/calendar/CalendarView";
+import type { CalendarItem } from "../design/calendar/calendar";
 import { BulkBar } from "../design/core/BulkBar";
 import { EmptyState } from "../design/core/EmptyState";
 import type { IconName } from "../design/core/Icon";
@@ -25,7 +27,7 @@ import { ListView } from "../design/list/ListView";
 import { decodeViewState, encodeViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
-import { PlaceholderScreen } from "./PlaceholderScreen";
+import { LoadFailed } from "./LoadFailed";
 import { SEED_PEOPLE } from "./session";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import "./screens.css";
@@ -46,7 +48,8 @@ export function ProjectScreen() {
   const selectedIds = sel.pid === projectId ? sel.ids : [];
   const setSelectedIds = (next: string[] | ((prev: string[]) => string[])) => setSel((cur) => ({ pid: projectId, ids: typeof next === "function" ? next(cur.pid === projectId ? cur.ids : []) : next }));
 
-  if (project.isError) return <PlaceholderScreen title="Couldn't load this project" hint={project.error.message} icon="cloud-off" />;
+  const failed = project.isError ? project : items.isError ? items : labels.isError ? labels : null;
+  if (failed) return <LoadFailed what="this project" error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
   const props: ViewProps = {
     projectId,
@@ -60,7 +63,7 @@ export function ProjectScreen() {
     clearFilters: () => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ view: state.view, sort: state.sort }) }),
   };
   if (view === "board") return <ProjectBoard {...props} />;
-  if (view === "calendar") return <PlaceholderScreen title="Calendar view" hint="The calendar lands next in this phase." icon="calendar" />;
+  if (view === "calendar") return <ProjectCalendar {...props} />;
   return <ProjectList {...props} />;
 }
 
@@ -306,4 +309,23 @@ function ProjectBoard(props: ViewProps) {
       {v.bulkBar}
     </>
   );
+}
+
+/** Calendar: dated items (filters apply) on the grid; drag a chip to reschedule; "+" adds an item due that day. */
+function ProjectCalendar({ projectId, project, items, labels, filters }: ViewProps) {
+  const actions = useProjectActions(projectId, project, items, labels);
+  const ctx = useMemo(() => ({ labels, people: SEED_PEOPLE }), [labels]);
+  const calItems = useMemo<CalendarItem[]>(() => {
+    const visibleListIds = new Set(actions.lists.map((l) => l.id));
+    const subs = new Map<string, Item[]>();
+    for (const it of items) if (it.parentItemId) subs.set(it.parentItemId, [...(subs.get(it.parentItemId) ?? []), it]);
+    return items
+      .filter((it) => !it.parentItemId && it.dueDate && visibleListIds.has(it.listId) && matchesFilters(it, filters, ctx))
+      .map((it) => {
+        const row = rowsForList([it, ...(subs.get(it.id) ?? [])], it.listId, { prefix: project.keyPrefix, labels, people: actions.people })[0]!;
+        return { id: it.id, title: it.title, itemId: row.itemId, labels: row.labels.map((l) => (typeof l === "string" ? { color: l } : l)), done: it.done, due: it.dueDate, start: it.startDate, priority: row.priority, assignees: row.assignees.map((a) => (typeof a === "string" ? { name: a } : a)), subitems: row.subitems.map((s) => ({ id: s.id, title: s.title, itemId: s.itemId, done: s.done })), dueState: row.dueState };
+      });
+  }, [items, filters, ctx, actions.lists, actions.people, project.keyPrefix, labels]);
+  if (!actions.lists.length) return <NoLists actions={actions} />;
+  return <CalendarView items={calItems} onReschedule={actions.reschedule} onAddItem={actions.addItemOn} onToggleDone={actions.setDone} onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)} />;
 }

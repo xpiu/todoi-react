@@ -1,0 +1,70 @@
+@layer components {
+  .td-calmini {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 10px var(--sp-3) var(--sp-3);
+    cursor: pointer;
+    text-align: left;
+    border: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    transition: box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  .td-calmini:hover {
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
+  }
+  .td-calmini:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--focus-ring);
+  }
+  .td-calmini-name {
+    font: var(--weight-semibold) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-calmini-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 2px;
+  }
+  .td-calmini-wd {
+    font: var(--weight-medium) 9px / 12px var(--font-ui);
+    color: var(--ink-300);
+    text-align: center;
+    padding-bottom: 2px;
+  }
+  .td-calmini-day {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
+    font: var(--weight-regular) 11px / 14px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-calmini-n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    border-radius: var(--radius-full);
+  }
+  .td-calmini-day.is-today .td-calmini-n {
+    background: var(--blue-500);
+    color: var(--text-inverse);
+    font-weight: var(--weight-semibold);
+  }
+  .td-calmini-dot {
+    position: absolute;
+    left: 50%;
+    bottom: -1px;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 3px;
+    border-radius: var(--radius-full);
+    background: var(--blue-500);
+  }
+}

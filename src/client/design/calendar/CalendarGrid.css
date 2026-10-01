@@ -1,0 +1,220 @@
+@layer components {
+  .td-calgrid {
+    --td-cal-numrow: 24px;
+    --td-cal-lane: 20px;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-list);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    min-height: 0;
+  }
+  .td-calgrid-wd {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    flex-shrink: 0;
+  }
+  .td-calgrid-wd > div {
+    padding: 6px var(--sp-2) var(--sp-1);
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--ink-400);
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+  }
+  .td-calgrid-wd > div.is-wknd {
+    background: var(--n-a03);
+  }
+  .td-calgrid-wd > div.is-today {
+    background: var(--blue-500);
+    color: var(--text-inverse);
+  }
+  .td-calgrid-wdnum {
+    color: var(--ink-900);
+    font-weight: var(--weight-semibold);
+  }
+  .td-calgrid-wd > div.is-today .td-calgrid-wdnum {
+    color: var(--text-inverse);
+  }
+  .td-calweeks {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .td-calweek {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-calcell {
+    position: relative;
+    grid-row: 1 / -1;
+    border-right: 1px solid var(--border-divider);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  .td-calcell:last-of-type {
+    border-right: none;
+  }
+  .td-calcell.is-wknd {
+    background: var(--n-a03);
+  }
+  .td-calcell:hover {
+    background: var(--n-a06);
+  }
+  .td-calcell:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
+  }
+  .td-calcell.is-drop {
+    background: var(--n-a06);
+    box-shadow: inset 0 0 0 2px var(--blue-500);
+  }
+  .td-calnum {
+    position: absolute;
+    top: 5px;
+    left: 7px;
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--ink-600);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .td-calnum.is-out {
+    color: var(--ink-300);
+  }
+  .td-calnum.is-today {
+    top: 3px;
+    left: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    background: var(--blue-500);
+    color: var(--text-inverse);
+    font-weight: var(--weight-semibold);
+    box-sizing: border-box;
+  }
+  .td-calcell-add {
+    display: none;
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 22px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: var(--radius-xs);
+    color: var(--ink-400);
+    cursor: pointer;
+  }
+  .td-calcell:hover .td-calcell-add,
+  .td-calcell:focus-visible .td-calcell-add,
+  .td-calcell-add:focus-visible {
+    display: inline-flex;
+  }
+  .td-calcell-add:hover {
+    background: var(--n-a06);
+    color: var(--ink-900);
+  }
+  .td-calcell-add:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-calspan {
+    --td-span: var(--ink-400);
+    position: relative;
+    z-index: var(--z-raised);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 18px;
+    margin: 1px var(--sp-1);
+    padding: 0 6px 0 5px;
+    border: 0;
+    border-left: 3px solid var(--td-span);
+    border-radius: var(--radius-xs);
+    background: color-mix(in srgb, var(--td-span) 18%, transparent);
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--ink-900);
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: left;
+    min-width: 0;
+    transition: box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  .td-calspan:hover {
+    box-shadow: 0 0 0 2px var(--blue-500);
+  }
+  .td-calspan:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-calspan.is-l {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: 0;
+    border-left-width: 0;
+    padding-left: var(--sp-2);
+  }
+  .td-calspan.is-r {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-right: 0;
+  }
+  .td-calspan.is-done {
+    --td-span: var(--ink-300);
+    color: var(--ink-600);
+  }
+  .td-calspan-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .td-calchips {
+    position: relative;
+    z-index: var(--z-raised);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 2px 5px var(--sp-1);
+    margin-top: -2px;
+    min-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .td-calchips > * {
+    pointer-events: auto;
+  }
+  .td-calmore {
+    align-self: flex-start;
+    border: 0;
+    background: none;
+    margin: 0;
+    padding: 1px 3px;
+    border-radius: var(--radius-xs);
+    font: var(--weight-medium) 11px / 14px var(--font-ui);
+    color: var(--ink-400);
+    cursor: pointer;
+  }
+  .td-calmore:hover {
+    color: var(--ink-600);
+    background: var(--n-a06);
+  }
+  .td-calmore:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+}

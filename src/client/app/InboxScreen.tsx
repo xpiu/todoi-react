@@ -13,6 +13,7 @@ import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { rowsForList } from "./items";
+import { LoadFailed } from "./LoadFailed";
 import "./screens.css";
 
 export function InboxScreen() {
@@ -28,6 +29,7 @@ export function InboxScreen() {
       void qc.invalidateQueries({ queryKey: keys.inboxUnread });
     },
   });
+  if (items.isError) return <LoadFailed what="the Inbox" error={items.error} onRetry={() => void items.refetch()} />;
   if (!items.data) return <ViewSkeleton view="inbox" />;
   const listId = items.data[0]?.listId;
   const rows = listId ? rowsForList(items.data, listId, { prefix: "", labels: [], people: [], withCreated: true }) : [];

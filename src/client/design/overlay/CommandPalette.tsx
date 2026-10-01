@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { Icon } from "../core/Icon";
 import "./CommandPalette.css";
+import "../core/kbd.css";
 
 export interface PaletteItem {
   id: string;

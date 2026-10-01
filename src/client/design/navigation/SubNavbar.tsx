@@ -42,10 +42,15 @@ const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; 
 ];
 
 /** A toolbar-tier dialog Popover behind an action button (Filter, Sort). */
-function MenuPopoverless({ label, trigger, children }: { label: string; trigger: ReactElement; children: ReactNode }) {
+function MenuPopoverless({ label, trigger, children, onOpen }: { label: string; trigger: ReactElement; children: ReactNode; onOpen?: () => void }) {
   const pop = usePopover();
   return (
-    <Popover open={pop.open} onOpenChange={pop.setOpen} tier="toolbar" placement="bottom-start" role="dialog" aria-label={`${label} options`} width={296} trigger={trigger}>
+    <Popover
+      open={pop.open}
+      onOpenChange={(open) => {
+        pop.setOpen(open);
+        if (open) onOpen?.();
+      }} tier="toolbar" placement="bottom-start" role="dialog" aria-label={`${label} options`} width={296} trigger={trigger}>
       {children}
     </Popover>
   );
@@ -56,7 +61,7 @@ export interface SubNavbarProps {
   activeView?: string;
   onViewChange?: (id: string) => void;
   actions?: SubNavbarAction[];
-  /** Filter / Sort pressed (Style opens its own menu) */
+  /** Filter / Sort pressed or their panel opened (Style opens its own menu) */
   onAction?: (id: string) => void;
   /** Which action currently shows its panel (pressed look) */
   activeAction?: string | null;
@@ -201,7 +206,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             );
             if (!menu) return <span key={a.id}>{button}</span>;
             return (
-              <MenuPopoverless key={a.id} label={a.label} trigger={button}>
+              <MenuPopoverless key={a.id} label={a.label} trigger={button} onOpen={() => onAction?.(a.id)}>
                 {menu}
               </MenuPopoverless>
             );

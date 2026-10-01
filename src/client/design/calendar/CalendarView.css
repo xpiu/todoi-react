@@ -1,0 +1,38 @@
+@layer components {
+  .td-calview {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background: var(--chrome-canvas);
+  }
+  .td-calview-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 var(--sp-4) var(--sp-4);
+  }
+  .td-calview-grid {
+    flex: 1;
+    min-height: 0;
+  }
+  .td-calyear {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--sp-3);
+    align-content: start;
+  }
+  .td-calday {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: var(--sp-2);
+  }
+  html[data-device="phone"] .td-calview-body {
+    padding: 0 var(--sp-2) var(--sp-2);
+  }
+}

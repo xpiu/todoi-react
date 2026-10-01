@@ -12,6 +12,7 @@ import type { TooltipSide } from "./Tooltip";
 import { usePortalContainer } from "./portalContainer";
 import { useViewport } from "./viewport";
 import "./Popover.css";
+import "./kbd.css";
 import "./Menu.css";
 
 export interface MenuItemProps {

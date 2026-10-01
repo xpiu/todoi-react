@@ -8,6 +8,7 @@ import type { ItemStatus } from "../../shared/item-status";
 import type { Item, Label, ProjectDetail } from "../data/api";
 import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
+import { formatDate } from "../design/core/dates";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction } from "../design/core/BulkBar";
 import type { QuickAddResult } from "../design/core/quickAdd";
@@ -103,6 +104,24 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     }
   };
 
+  /** Calendar drop: a new due date, with an undo toast. */
+  const reschedule = (id: string, iso: string) => {
+    const it = byId(id);
+    if (!it || it.dueDate === iso) return;
+    const prev = it.dueDate;
+    updateItem.mutate({ id, dueDate: iso });
+    notify({ message: `Moved ${quote(it.title)} to ${formatDate(iso, { year: "auto" })}`, icon: "calendar", restore: () => updateItem.mutate({ id, dueDate: prev }) });
+  };
+
+  /** Calendar "+": a fresh item due that day in the first list, undoable (the overlay then names it). */
+  const addItemOn = (iso: string) => {
+    const list = lists[0];
+    if (!list) return;
+    const id = newId();
+    createItem.mutate({ id, title: "New item", listId: list.id, dueDate: iso });
+    notify({ message: `Added an item due ${formatDate(iso, { year: "auto" })} to ${list.name}`, icon: "plus", restore: () => deleteItem.mutate({ id }) });
+  };
+
   const addList = (name?: string, statusRole?: ItemStatus | null) => createList.mutate({ id: newId(), name: name ?? `List ${project.lists.length + 1}`, statusRole: statusRole ?? undefined });
 
   /** The BulkBar's actions for the current selection. */
@@ -159,5 +178,5 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     return false;
   };
 
-  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone: (id: string, done: boolean) => updateItem.mutate({ id, done }), addList, updateList, createList, bulkActions, bulk };
+  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone: (id: string, done: boolean) => updateItem.mutate({ id, done }), addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn };
 }

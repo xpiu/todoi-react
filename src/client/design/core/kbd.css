@@ -1,0 +1,12 @@
+/* The mono kbd chip: menu shortcuts, the palette footer, the ? dialog, ShortcutHint. */
+@layer components {
+  .td-kbd {
+    display: inline-block;
+    padding: 0 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border-input);
+    background: var(--surface-panel);
+    font: var(--weight-regular) 11px / 17px var(--font-mono);
+    color: var(--ink-600);
+  }
+}

@@ -8,6 +8,7 @@ import { newId, useCreateList } from "../data/mutations";
 import { useGroups, useInboxUnread, useLabels, useProject, useProjectItems } from "../data/queries";
 import { useAppearance } from "../design/core/appearance";
 import { SHORTCUTS } from "../design/core/shortcuts";
+import { ShortcutHint, useShortcutHints } from "../design/core/ShortcutHint";
 import { Toast } from "../design/core/Toast";
 import { useViewport } from "../design/core/viewport";
 import { FilterBar } from "../design/navigation/FilterBar";
@@ -57,6 +58,27 @@ export function AppShell() {
   const setSidebarOpen = vp.desktop ? setDesktopSidebar : setOverlaySidebar;
   const [helpOpen, setHelpOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // "Suggest shortcuts": nudges after pointer actions a key could have done.
+  const hints = useShortcutHints(ap.suggestShortcuts);
+  const suggest = hints.suggest;
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t?.closest) return;
+      if (t.closest("[data-add-item]")) suggest("add-item");
+      else if (t.closest(".td-listview-addlist, .td-board-addlist")) suggest("add-list");
+      else if (t.closest(".td-fbar-clear")) suggest("clear-filters");
+    };
+    const onDrop = (e: DragEvent) => {
+      if ((e.target as HTMLElement | null)?.closest?.(".td-board, .td-listview")) suggest("move-item");
+    };
+    document.addEventListener("click", onClick);
+    document.addEventListener("drop", onDrop);
+    return () => {
+      document.removeEventListener("click", onClick);
+      document.removeEventListener("drop", onDrop);
+    };
+  }, [suggest]);
   useEffect(() => {
     try {
       localStorage.setItem(SIDEBAR_KEY, desktopSidebar ? "1" : "0");
@@ -76,6 +98,7 @@ export function AppShell() {
   const view = state?.view ?? project.data?.defaultView ?? "list";
   const setView = (v: string) => {
     if (!projectId || !state) return;
+    suggest(`view-${v}`);
     void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, view: v as typeof view, savedView: undefined }) });
   };
   const setViewState = (patch: Partial<typeof state & object>) => {
@@ -110,7 +133,7 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings" })} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings" })} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
@@ -154,6 +177,7 @@ export function AppShell() {
         />
       </div>
       {toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}
+      <ShortcutHint hint={hints.hint} />
       <ShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
       <CommandPalette
         open={paletteOpen}

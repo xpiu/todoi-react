@@ -74,15 +74,6 @@
   .td-menu-item-check[data-after-trail="false"] {
     margin-left: auto;
   }
-  .td-kbd {
-    display: inline-block;
-    padding: 0 5px;
-    border-radius: 4px;
-    border: 1px solid var(--border-input);
-    background: var(--surface-panel);
-    font: var(--weight-regular) 11px / 17px var(--font-mono);
-    color: var(--ink-600);
-  }
   .td-menu-divider {
     height: 1px;
     margin: 3px var(--sp-1);

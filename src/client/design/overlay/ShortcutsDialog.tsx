@@ -3,6 +3,7 @@
 import { Dialog } from "../core/Dialog";
 import { SHORTCUTS, type ShortcutSection } from "../core/shortcuts";
 import "./ShortcutsDialog.css";
+import "../core/kbd.css";
 
 const SEPS = new Set(["+", "or", "then", "–"]);
 

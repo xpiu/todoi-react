@@ -1,0 +1,52 @@
+@layer components {
+  .td-caldaylist {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+  .td-caldaylist-meta {
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--chrome-text-dim);
+  }
+  .td-caldaylist-block {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .td-caldaylist-block > * + * {
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-caldaylist-add {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: 9px var(--sp-3);
+    border: 0;
+    background: none;
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--ink-600);
+    cursor: pointer;
+    text-align: left;
+    box-sizing: border-box;
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  .td-caldaylist-add:hover {
+    background: var(--action-subtle);
+  }
+  .td-caldaylist-add:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
+  .td-caldaylist-empty {
+    padding: var(--sp-6) var(--sp-4);
+    text-align: center;
+    font: var(--type-body);
+    color: var(--ink-600);
+  }
+}

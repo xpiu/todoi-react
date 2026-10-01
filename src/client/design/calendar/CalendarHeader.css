@@ -1,0 +1,28 @@
+@layer components {
+  .td-calhead {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4) 10px;
+    flex-shrink: 0;
+  }
+  .td-calhead-title {
+    margin: 0;
+    font: var(--weight-bold) 18px / 24px var(--font-ui);
+    color: var(--chrome-text);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-calhead-spacer {
+    flex: 1;
+  }
+  .td-calhead .td-btn-chrome:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--chrome-selected);
+  }
+  .td-calhead .td-btn-chrome[aria-expanded="true"] {
+    background: var(--chrome-active);
+  }
+}

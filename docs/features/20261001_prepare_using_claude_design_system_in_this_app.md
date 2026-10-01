@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** in progress. Phases 0–3 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
+**Status:** in progress. Phases 0–4 done 2026-10-01 (Phase 4 responsive: phone item sheet waits for the Phase 5 overlay); phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -69,15 +69,15 @@
 
 ## Phase 4 — App frame and views
 
-- [ ] Routing (projects, `/settings`, `/account`, `/i/CODE`); URL mirrors view, filters, sort and saved view.
-- [ ] TopNavbar, SubNavbar (view switcher, Filter / Sort / Style / Share), Sidebar (groups → projects, Groups / Projects / Inbox nav, left or right), SearchDropdown.
-- [ ] List view first (the DS default): ListView, ListSection, ListRow, inline quick-add, checkbox semantics (done remembers prior status).
-- [ ] Board view: BoardView, ListColumn (status-role tints), ItemCard, LabelChip, DueDatePill, FilterChip row.
-- [ ] Drag and drop: native DnD plus the TouchDrag long-press layer; quiet cues (dimmed source, 2px blue slot line); cross-list drop → undo toast.
-- [ ] Keyboard model end to end: N, ⇧N, E, D, 0–4, ⌫, /, F, X, Z, ?, G-chords, Ctrl+K palette, Ctrl+arrow moves, multi-select + BulkBar.
-- [ ] Calendar view: CalendarView, header, grid with spans and "+N more", day list, year mini months.
-- [ ] Empty, loading (ViewSkeleton after 150ms) and error states per the situation table.
-- [ ] Responsive: 1024px nav hoist, touch hit targets, phone item sheet and Popover bottom sheets. No `@media` in components.
+- [x] Routing (projects, `/settings`, `/account`, `/i/CODE`); URL mirrors view, filters, sort and saved view. *(TanStack Router, zod-validated `?v=&f=&s=&view=`; settings/account/invite are placeholders until Phase 6.)*
+- [x] TopNavbar, SubNavbar (view switcher, Filter / Sort / Style / Share), Sidebar (groups → projects, Groups / Projects / Inbox nav, left or right), SearchDropdown. *(FilterMenu / SortMenu as toolbar Popovers; FilterBar chip row with Clear filters.)*
+- [x] List view first (the DS default): ListView, ListSection, ListRow, inline quick-add, checkbox semantics (done remembers prior status).
+- [x] Board view: BoardView, ListColumn (status-role tints), ItemCard, LabelChip, DueDatePill, FilterChip row.
+- [x] Drag and drop: native DnD plus the TouchDrag long-press layer; quiet cues (dimmed source, 2px blue slot line); cross-list drop → undo toast. *(`useItemDnd` + `touchDrag.ts`; calendar chips reschedule the same way.)*
+- [x] Keyboard model end to end: N, ⇧N, E, D, 0–4, ⌫, /, F, X, Z, ?, G-chords, Ctrl+K palette, Ctrl+arrow moves, multi-select + BulkBar. *(E opens the overlay — lands with Phase 5. ShortcutHint nudges wired to the Style option.)*
+- [x] Calendar view: CalendarView, header, grid with spans and "+N more", day list, year mini months.
+- [x] Empty, loading (ViewSkeleton after 150ms) and error states per the situation table. *(No lists · No matches · empty Inbox · failed load with Retry/Details.)*
+- [~] Responsive: 1024px nav hoist, touch hit targets, phone item sheet and Popover bottom sheets. No `@media` in components. *(Done except the phone item sheet, which is the Phase 5 overlay.)*
 
 ## Phase 5 — Item overlay and editing
 
