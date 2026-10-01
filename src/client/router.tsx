@@ -14,6 +14,7 @@ import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
 import { PlaceholderScreen } from "./app/PlaceholderScreen";
 import { ProjectsScreen } from "./app/ProjectsScreen";
+import { SettingsScreen } from "./app/SettingsScreen";
 import { ProjectScreen } from "./app/ProjectScreen";
 import { queryClient } from "./queryClient";
 import { groupsQuery } from "./data/queries";
@@ -67,8 +68,10 @@ export const inboxRoute = createRoute({ getParentRoute: () => appRoute, path: "/
 export const projectsRoute = createRoute({ getParentRoute: () => appRoute, path: "/projects", component: ProjectsScreen });
 export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "/groups", component: GroupsScreen });
 export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: "/archive", component: ArchiveScreen, validateSearch: (search: Record<string, unknown>) => z.object({ project: z.string().optional().catch(undefined) }).parse(search) });
-export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <PlaceholderScreen title="Settings" hint="The Settings shell (General, Storage & sync, Labels, Appearance, Keyboard…) lands in the settings phase." icon="settings" /> });
-export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <PlaceholderScreen title="Account" hint="Profile, sign-in methods, tokens and devices land with authentication." icon="user" /> });
+const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
+export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });
+export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <SettingsScreen page="account" />, validateSearch: sectionSearch });
+export const importRoute = createRoute({ getParentRoute: () => appRoute, path: "/import", component: () => <PlaceholderScreen title="Import" hint="Markdown, Trello JSON and CSV imports with a review step land next." icon="upload" /> });
 const authSearch = z.object({ next: z.string().optional().catch(undefined), email: z.string().optional().catch(undefined), invite: z.string().optional().catch(undefined) });
 export const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: "/login", component: LoginScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
 export const signupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/signup", component: SignupScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
@@ -78,7 +81,7 @@ export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: 
 const DesignGallery = lazy(() => import("./dev/DesignGallery").then((m) => ({ default: m.DesignGallery })));
 export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/dev/ds", component: DesignGallery });
 
-const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, archiveRoute, settingsRoute, accountRoute]), loginRoute, signupRoute, resetRoute, inviteRoute, galleryRoute]);
+const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, archiveRoute, settingsRoute, accountRoute, importRoute]), loginRoute, signupRoute, resetRoute, inviteRoute, galleryRoute]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true });
 

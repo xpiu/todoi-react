@@ -7,9 +7,9 @@ import { z } from "zod";
 
 import { LABEL_COLORS, MEMBER_ROLES } from "../../shared/enums";
 import { idSchema } from "../../shared/items";
-import { maybeViewer, viewerOf } from "../auth";
+import { hashToken, maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
-import { groups, invites, items, members, projects, users } from "../db/schema";
+import { apiTokens, groups, invites, items, labels, lists, members, projects, users } from "../db/schema";
 import { env } from "../env";
 import { logActivity } from "../services/activity";
 
@@ -25,6 +25,42 @@ export const meRoute = new Hono()
     const [u] = await db.update(users).set(c.req.valid("json")).where(eq(users.id, v.userId)).returning();
     return u ? c.json(u) : c.json({ error: "Not found" }, 404);
   });
+
+const DAY = 86400000;
+export const tokensRoute = new Hono()
+  .get("/", async (c) => {
+    const v = viewerOf(c);
+    const rows = await db.select().from(apiTokens).where(eq(apiTokens.userId, v.userId));
+    return c.json(rows.map(({ hash: _h, ...t }) => t));
+  })
+  .post("/", zValidator("json", z.object({ name: z.string().trim().min(1).max(80), days: z.number().int().min(1).max(365).default(90) })), async (c) => {
+    const v = viewerOf(c);
+    const { name, days } = c.req.valid("json");
+    const secret = `tdi_${nanoid(32)}`;
+    const [row] = await db
+      .insert(apiTokens)
+      .values({ id: nanoid(), userId: v.userId, name, prefix: secret.slice(0, 8), hash: hashToken(secret), expiresAt: new Date(Date.now() + days * DAY) })
+      .returning();
+    const { hash: _h, ...t } = row!;
+    return c.json({ ...t, secret }, 201);
+  })
+  .delete("/:id", zValidator("param", z.object({ id: z.string().min(1) })), async (c) => {
+    const v = viewerOf(c);
+    await db.update(apiTokens).set({ revokedAt: new Date() }).where(and(eq(apiTokens.id, c.req.valid("param").id), eq(apiTokens.userId, v.userId)));
+    return c.body(null, 204);
+  });
+
+/** Everything the viewer can see, as one JSON document. */
+export const exportRoute = new Hono().get("/", async (c) => {
+  const v = viewerOf(c);
+  const mine = (await db.select({ projectId: members.projectId }).from(members).where(eq(members.userId, v.userId))).map((m) => m.projectId);
+  const ps = (await db.select().from(projects)).filter((p) => mine.includes(p.id));
+  const ids = ps.map((p) => p.id);
+  const [gs, ls, its, lbs] = await Promise.all([db.select().from(groups), db.select().from(lists), db.select().from(items), db.select().from(labels)]);
+  const inList = (x: { projectId: string | null }) => x.projectId != null && ids.includes(x.projectId);
+  const doc = { exportedAt: new Date().toISOString(), user: { id: v.userId, name: v.name, email: v.email }, groups: gs.filter((g) => ps.some((p) => p.groupId === g.id)), projects: ps, lists: ls.filter((l) => inList(l) || l.userId === v.userId), labels: lbs.filter(inList), items: its.filter((it) => inList(it) || it.listId === v.inboxListId) };
+  return c.body(JSON.stringify(doc, null, 2), 200, { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="todoi-export-${new Date().toISOString().slice(0, 10)}.json"` });
+});
 
 const inviteOut = async (code: string) => {
   const [row] = await db

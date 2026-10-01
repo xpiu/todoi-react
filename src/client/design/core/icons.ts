@@ -127,6 +127,7 @@ import {
   RefreshCw,
   Repeat,
   Rocket,
+  RotateCcw,
   Save,
   Search,
   Send,
@@ -167,6 +168,7 @@ import {
 } from "lucide-react";
 
 export const LUCIDE_ICONS = {
+  "rotate-ccw": RotateCcw,
   "briefcase": Briefcase,
   "shopping-cart": ShoppingCart,
   "lightbulb": Lightbulb,

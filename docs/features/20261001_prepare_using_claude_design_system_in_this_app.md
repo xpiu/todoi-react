@@ -93,9 +93,9 @@
 
 - [x] ProjectDialog (templates, copy existing, visibility, group kind with prefix), ProjectPanel (single scrolling body, inline confirms), ActivityLog (per project, grouped by day). *(Plus the Projects and Project groups pages with inline rename, prefix edit and the linked-statuses switch.)*
 - [x] Archive and Trash view (account and project scope, Restore, Delete forever inline). *(`/archive`, `?project=` for the project scope; the 90-day purge job stays deferred.)*
-- [ ] Settings shell (Page › Section › Group › Row registry, search across rows) with General, Storage & sync, Labels, Appearance, Keyboard (generated from `SHORTCUTS`), Help, Integrations, Notifications.
-- [ ] Account pages: Profile, Sign-in methods, API tokens, Security, Devices, Projects (storage, share links, invites), Data, Support.
-- [ ] Better Auth: SignInPage, SignUpPage, ResetPasswordPage, InvitePage, GuestBar + `data-readonly` contract.
+- [x] Settings shell (Page › Section › Group › Row registry, search across rows) with General, Storage & sync, Labels, Appearance, Keyboard (generated from `SHORTCUTS`), Help, Integrations, Notifications. *(GitHub sync itself stays a later milestone; the Integrations page says so.)*
+- [x] Account pages: Profile, Sign-in methods, API tokens, Security, Devices, Projects (storage, share links, invites), Data, Support. *(Tokens are real bearer tokens; social sign-in and self-service account deletion wait for the hosted release.)*
+- [x] Better Auth: SignInPage, SignUpPage, ResetPasswordPage, InvitePage, GuestBar + `data-readonly` contract. *(Email + password; reset links need an email sender, so the request shows the sent state only.)*
 - [ ] Export: ExportMenu (PDF via `print.css`, Markdown in Embridge format, CSV); import from Markdown, Trello JSON, CSV via one Review step.
 - [ ] Saved views (tabs row, shareable URL state).
 

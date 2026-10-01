@@ -3,7 +3,7 @@ import { logger } from "hono/logger";
 
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
-import { invitesRoute, meRoute, projectInvitesRoute } from "./routes/account";
+import { exportRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
 import { itemsRoute } from "./routes/items";
 import { auth, authMiddleware } from "./auth";
 import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } from "./routes/projects";
@@ -17,6 +17,8 @@ export const app = new Hono()
   .on(["GET", "POST"], "/auth/*", (c) => auth.handler(c.req.raw))
   .use("*", authMiddleware)
   .route("/me", meRoute)
+  .route("/me/tokens", tokensRoute)
+  .route("/me/export", exportRoute)
   .route("/invites", invitesRoute)
   .route("/projects", projectInvitesRoute)
   .route("/groups", groupsRoute)

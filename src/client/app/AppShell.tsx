@@ -163,7 +163,7 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings" })} onMembers={() => lifecycle.openSettings(projectId, "members")} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} onMembers={() => lifecycle.openSettings(projectId, "members")} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
@@ -180,8 +180,8 @@ export function AppShell() {
         signedIn={!!user}
         onLogout={logout}
         onLogin={() => navigate({ to: "/login" })}
-        onOpenSettings={() => navigate({ to: "/settings" })}
-        onOpenAccount={() => navigate({ to: "/account" })}
+        onOpenSettings={() => navigate({ to: "/settings", search: {} })}
+        onOpenAccount={() => navigate({ to: "/account", search: {} })}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={setSidebarOpen}
         onCreate={(kind) => {

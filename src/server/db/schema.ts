@@ -76,6 +76,26 @@ export const verifications = pgTable("verifications", {
   ...timestamps,
 });
 
+/** Personal API tokens: the secret is shown once; only its hash is stored. Bearer auth acts as the owner. */
+export const apiTokens = pgTable(
+  "api_tokens",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** "tdi_abcd" — the visible start of the secret */
+    prefix: text("prefix").notNull(),
+    hash: text("hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("api_tokens_user_idx").on(t.userId)],
+);
+
 /** An invite link to a project: role, optional locked email, expiry; accepted or revoked once. */
 export const invites = pgTable(
   "invites",

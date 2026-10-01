@@ -9,7 +9,9 @@ import { HTTPException } from "hono/http-exception";
 import { nanoid } from "nanoid";
 
 import { db } from "./db";
-import { accounts, lists, projects, sessions, users, verifications } from "./db/schema";
+import { createHash } from "node:crypto";
+
+import { accounts, apiTokens, lists, projects, sessions, users, verifications } from "./db/schema";
 import { env } from "./env";
 
 export const auth = betterAuth({
@@ -47,7 +49,24 @@ async function inboxFor(userId: string): Promise<string> {
 }
 
 /** Resolves the session once per request. Anonymous callers pass only for public-project reads. */
+export const hashToken = (secret: string) => createHash("sha256").update(secret).digest("hex");
+
+/** `Authorization: Bearer tdi_…` acts as the token's owner. */
+async function viewerFromBearer(header: string | undefined): Promise<Viewer | null> {
+  const m = /^Bearer\s+(tdi_[A-Za-z0-9_-]+)$/.exec(header ?? "");
+  if (!m) return null;
+  const [row] = await db.select({ token: apiTokens, user: users }).from(apiTokens).innerJoin(users, eq(users.id, apiTokens.userId)).where(eq(apiTokens.hash, hashToken(m[1]!)));
+  if (!row || row.token.revokedAt || row.token.expiresAt < new Date()) return null;
+  await db.update(apiTokens).set({ lastUsedAt: new Date() }).where(eq(apiTokens.id, row.token.id));
+  return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id) };
+}
+
 export const authMiddleware: MiddlewareHandler = async (c, next) => {
+  const bearer = await viewerFromBearer(c.req.header("authorization"));
+  if (bearer) {
+    c.set(VIEWER, bearer);
+    return next();
+  }
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (session) {
     const u = session.user;
