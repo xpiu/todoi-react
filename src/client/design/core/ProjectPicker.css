@@ -1,0 +1,40 @@
+@layer components {
+  .td-prp {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .td-prp-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: 2px var(--sp-1) 6px;
+    font: var(--weight-semibold) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--ink-900);
+    min-width: 0;
+  }
+  .td-prp-head-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-prp-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .td-prp-group {
+    font: var(--weight-regular) 11px / 16px var(--font-ui);
+    color: var(--ink-400);
+    flex: none;
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .td-prp-chev {
+    color: var(--ink-400);
+  }
+}

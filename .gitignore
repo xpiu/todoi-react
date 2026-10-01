@@ -38,6 +38,9 @@ CLAUDE.md
 # Postgres local development files
 /.dev
 
+# Local uploads (attachments)
+/.data
+
 # Build output
 dist/
 build/

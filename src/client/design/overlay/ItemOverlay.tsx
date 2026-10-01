@@ -4,6 +4,11 @@
 // is mid-edit and closes. Every change is the consumer's callback. Spec: DESIGN.md › Item overlay.
 import { useEffect, useRef, useState } from "react";
 
+import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
+import { ProjectPicker, type PickableList, type PickableProject } from "../core/ProjectPicker";
+import { AttachmentList, DropOverlay, isImageFile, useFileDrop, type AttachmentFile } from "./Attachments";
+import { ItemSection } from "./ItemSection";
+
 import type { ItemPriority } from "../../../shared/enums";
 import type { ItemStatus } from "../../../shared/item-status";
 import type { RelationType } from "../../../shared/enums";
@@ -60,6 +65,7 @@ export interface OverlayItem {
   cover: CoverValue | null;
   watching?: boolean;
   subitems: ChecklistItem[];
+  attachments?: AttachmentFile[];
 }
 export interface OverlayComment {
   id: string;
@@ -130,6 +136,15 @@ export interface ItemOverlayProps {
   onReactComment: (id: string, emoji: string) => void;
   onMakeSubitemOf?: (parent: PickableItem) => void;
   onMenuAction: (action: OverlayMenuAction) => void;
+  onAddFiles?: (files: File[], opts?: { cover?: boolean }) => void;
+  onAttachmentAction?: (id: string, action: "open" | "download" | "delete" | "rename", arg?: string) => void;
+  onExport?: (format: ExportFormatId) => void;
+  onPrint?: () => void;
+  /** Other projects for Move / Copy to project… */
+  projects?: PickableProject[];
+  loadLists?: (projectId: string) => Promise<PickableList[]>;
+  onMoveToProject?: (project: PickableProject, list: PickableList) => void;
+  onCopyToProject?: (project: PickableProject, list: PickableList) => void;
   onSuggestShortcut?: (id: string, delay?: number) => void;
 }
 
@@ -145,7 +160,12 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const [query, setQuery] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
   const [subitemOf, setSubitemOf] = useState(false);
+  const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
+  const [menuView, setMenuView] = useState<"main" | "export">("main");
+  const pickerRef = useRef<(() => void) | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const files = item.attachments ?? [];
+  const [dragging, dropHandlers] = useFileDrop((fs) => p.onAddFiles?.(fs), { disabled: !p.onAddFiles });
   const commitTitle = () => {
     const t = (titleEdit ?? "").trim();
     if (t && t !== item.title) p.onRename(t);
@@ -233,6 +253,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
       onClose={onClose}
       title={title}
       aria-label={item.title}
+      rootProps={dropHandlers}
       cover={item.cover ? (item.cover.src ? { src: item.cover.src } : { color: item.cover.color ?? "var(--surface-cover)" }) : null}
       corner={
         <>
@@ -242,25 +263,64 @@ export function ItemOverlay(p: ItemOverlayProps) {
             </span>
           ) : null}
           <IconButton name={linkCopied ? "check" : "link"} label="Copy item link" tooltip="Copy item link" iconSize={16} variant={cornerVariant} onClick={copyLink} />
-          <MenuButton label="Item options" variant={cornerVariant} tier="detached" width={220}>
-            <MenuItem icon="copy" onSelect={() => p.onMenuAction("duplicate")}>
-              Duplicate
-            </MenuItem>
-            {p.onMakeSubitemOf ? (
-              <MenuItem icon="corner-down-right" onSelect={() => setSubitemOf(true)}>
-                Make subitem of…
-              </MenuItem>
-            ) : null}
-            <MenuItem icon="share-2" onSelect={() => p.onMenuAction("share")}>
-              Share
-            </MenuItem>
-            <MenuDivider />
+          <MenuButton label="Item options" variant={cornerVariant} tier="detached" width={menuView === "export" ? 236 : 220} onOpenChange={(o) => !o && setMenuView("main")}>
+            {(close) =>
+              menuView === "export" && p.onExport ? (
+                <ExportMenu
+                  scope="item"
+                  subitems={item.subitems.length}
+                  comments={p.comments.length > 0}
+                  onBack={() => setMenuView("main")}
+                  onExport={(f) => {
+                    close();
+                    setMenuView("main");
+                    p.onExport?.(f);
+                  }}
+                  onPrint={p.onPrint ? () => {
+                    close();
+                    setMenuView("main");
+                    p.onPrint?.();
+                  } : undefined}
+                  printShortcut={`${SHORTCUTS.modLabel} P`}
+                />
+              ) : (
+                <>
+                  {p.onMoveToProject ? (
+                    <MenuItem icon="folder-input" onSelect={() => setTransfer("move")}>
+                      Move to project…
+                    </MenuItem>
+                  ) : null}
+                  <MenuItem icon="copy" onSelect={() => p.onMenuAction("duplicate")}>
+                    Duplicate
+                  </MenuItem>
+                  {p.onCopyToProject ? (
+                    <MenuItem icon="folder-output" onSelect={() => setTransfer("copy")}>
+                      Copy to project…
+                    </MenuItem>
+                  ) : null}
+                  {p.onMakeSubitemOf ? (
+                    <MenuItem icon="corner-down-right" onSelect={() => setSubitemOf(true)}>
+                      Make subitem of…
+                    </MenuItem>
+                  ) : null}
+                  <MenuItem icon="share-2" onSelect={() => p.onMenuAction("share")}>
+                    Share
+                  </MenuItem>
+                  {p.onExport ? (
+                    <MenuItem icon="download" drill onSelect={() => setMenuView("export")}>
+                      Export…
+                    </MenuItem>
+                  ) : null}
+                  <MenuDivider />
             <MenuItem icon="archive" onSelect={() => p.onMenuAction("archive")}>
               Archive
             </MenuItem>
-            <MenuItem icon="trash-2" danger onSelect={() => p.onMenuAction("delete")}>
-              Delete
-            </MenuItem>
+                  <MenuItem icon="trash-2" danger onSelect={() => p.onMenuAction("delete")}>
+                    Delete
+                  </MenuItem>
+                </>
+              )
+            }
           </MenuButton>
           <IconButton name="x" label="Close" variant={cornerVariant} onClick={onClose} />
         </>
@@ -276,7 +336,10 @@ export function ItemOverlay(p: ItemOverlayProps) {
           <LabelPicker block tier="detached" labels={p.labels} value={item.labelIds} onChange={p.onSetLabels} onCreateLabel={p.onCreateLabel} onEditLabel={p.onEditLabel} onDeleteLabel={p.onDeleteLabel} />
           <MemberPicker block tier="detached" members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
           <div className="td-aside-div" />
-          <CoverPicker block tier="detached" cover={item.cover} onChange={p.onSetCover} />
+          <Button variant="outline" icon="paperclip" className="td-aside-btn" disabled={!p.onAddFiles} onClick={() => pickerRef.current?.()}>
+            Attachment
+          </Button>
+          <CoverPicker block tier="detached" cover={item.cover} images={files.filter((f) => isImageFile(f) && f.src).map((f) => ({ id: f.id, name: f.name, src: f.src! }))} onChange={p.onSetCover} onUpload={p.onAddFiles ? (f) => p.onAddFiles?.([f], { cover: true }) : undefined} />
           <RelationButton block tier="detached" items={others} exclude={p.relations.map((r) => r.item.id)} onAdd={p.onAddRelation} />
           {p.onToggleWatch ? (
             <>
@@ -289,6 +352,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
         </div>
       }
     >
+      <DropOverlay active={dragging} hint="Images can become the cover" />
       <div className="td-overlay-main">
         <div className="td-overlay-desc">
           <DescriptionEditor value={item.description ?? ""} members={members} onOpenKey={p.onOpenKey} onChange={p.onSetDescription} onDraft={setDescDraft} onSuggestShortcut={p.onSuggestShortcut} />
@@ -302,6 +366,24 @@ export function ItemOverlay(p: ItemOverlayProps) {
             <ChecklistAddRow onCommit={addSubitem} onDraft={setSubDraft} />
           </div>
         )}
+        {files.length || p.onAddFiles ? (
+          <ItemSection icon="paperclip" title="Attachments" className={files.length ? undefined : "td-isec-hidden"} action={p.onAddFiles ? <Button onClick={() => pickerRef.current?.()}>Add</Button> : null}>
+            <AttachmentList
+              files={files}
+              pickerRef={pickerRef}
+              onAdd={p.onAddFiles ? (fs) => p.onAddFiles?.(fs) : undefined}
+              onOpen={p.onAttachmentAction ? (id) => p.onAttachmentAction?.(id, "open") : undefined}
+              onDownload={p.onAttachmentAction ? (id) => p.onAttachmentAction?.(id, "download") : undefined}
+              onMakeCover={(id) => {
+                const f = files.find((x) => x.id === id);
+                if (f?.src) p.onSetCover({ src: f.src, attachmentId: f.id });
+              }}
+              onRemoveCover={() => p.onSetCover(null)}
+              onRename={p.onAttachmentAction ? (id, n) => p.onAttachmentAction?.(id, "rename", n) : undefined}
+              onDelete={p.onAttachmentAction ? (id) => p.onAttachmentAction?.(id, "delete") : undefined}
+            />
+          </ItemSection>
+        ) : null}
         {p.relations.length ? <RelationsSection relations={p.relations} items={others} excludeIds={[item.id]} onAdd={p.onAddRelation} onRemove={p.onRemoveRelation} onOpen={p.onOpenItem} /> : null}
         <div className="td-activity">
           <div className="td-activity-head">
@@ -355,6 +437,13 @@ export function ItemOverlay(p: ItemOverlayProps) {
           ))}
         </div>
       </div>
+      <Dialog open={!!transfer} onClose={() => setTransfer(null)} title={transfer === "copy" ? "Copy to project" : "Move to project"} width={380}>
+        <ProjectPicker projects={p.projects ?? []} action={transfer ?? "move"} showHeading={false} loadLists={p.loadLists} onPick={(proj, list) => {
+          const t = transfer;
+          setTransfer(null);
+          (t === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list);
+        }} />
+      </Dialog>
       <Dialog open={subitemOf} onClose={() => setSubitemOf(false)} title="Make subitem of" width={360}>
         <ItemPicker
           items={others}

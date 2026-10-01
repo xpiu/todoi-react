@@ -5,6 +5,7 @@ import { formatDate, toISO } from "../design/core/dates";
 import { describeRepeat } from "../design/core/repeat";
 import type { RowLabel, RowPerson, RowPriority } from "../design/list/ListRow";
 import type { DueState } from "../design/board/DueDatePill";
+import { attachmentUrl } from "../data/attachments";
 import { SAMPLE_COVERS } from "../design/covers";
 
 export const PRIORITY_LABEL: Record<ItemPriority, RowPriority> = { URGENT: "Urgent", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
@@ -27,9 +28,10 @@ export function keyOf(item: Pick<Item, "keyNumber">, prefix: string): string | u
 }
 
 /** The card / overlay cover: a label colour tile, a sample SVG, or (later) an attachment. */
-export function coverOf(item: Pick<Item, "cover"> | undefined): { src?: string; color?: string } | null {
+export function coverOf(item: Pick<Item, "cover"> | undefined): { src?: string; color?: string; attachmentId?: string } | null {
   const c = item?.cover;
   if (!c) return null;
+  if (c.attachmentId) return { src: attachmentUrl(c.attachmentId), attachmentId: c.attachmentId };
   if (c.sample && SAMPLE_COVERS[c.sample]) return { src: SAMPLE_COVERS[c.sample] };
   if (c.color) return { color: `var(--label-${c.color})` };
   return null;
@@ -47,6 +49,7 @@ export interface RowModel {
   priority?: RowPriority;
   assignees: RowPerson[];
   subitems: RowModel[];
+  attachments?: number;
   created?: string;
   unread: boolean;
 }
@@ -67,6 +70,7 @@ export function rowsForList(items: Item[], listId: string, opts: { prefix: strin
     priority: it.priority ? PRIORITY_LABEL[it.priority] : undefined,
     assignees: it.assigneeIds.map((id) => personById.get(id)).filter((p): p is Person => !!p).map((p) => ({ name: p.name, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined })),
     subitems: [],
+    attachments: it.attachmentCount || undefined,
     created: opts.withCreated ? formatDate(it.createdAt) : undefined,
     unread: it.unread,
   });

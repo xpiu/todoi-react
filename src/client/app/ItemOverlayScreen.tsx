@@ -7,8 +7,12 @@ import type { Item, Label, ProjectDetail } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
 import { newId, useCreateItem, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
+import { attachmentUrl, useAttachmentMutations } from "../data/attachments";
+import { downloadText, fileSlug, itemToMarkdown, itemsToCsv } from "./exportData";
+import { useProjectActions } from "./useProjectActions";
+import { useProjectPicker } from "./useProjectPicker";
 import type { PickableItem } from "../design/core/ItemPicker";
-import { formatRelative, toISO } from "../design/core/dates";
+import { formatDate, formatRelative, toISO } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { quote, useFeedback } from "./feedback";
@@ -50,6 +54,9 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const addRelation = useAddRelation(itemId);
   const removeRelation = useRemoveRelation(itemId);
   const labelOps = useLabelMutations(projectId);
+  const files = useAttachmentMutations(itemId, projectId);
+  const actions = useProjectActions(projectId, project, items, labels);
+  const picker = useProjectPicker(projectId);
   const notify = useFeedback((s) => s.notify);
   const [now] = useState(() => new Date());
   if (!item) return null;
@@ -76,7 +83,9 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
     cover: coverOf(item),
     watching: details.data?.watching ?? false,
     subitems: subitems.map((s) => ({ id: s.id, text: s.title, done: s.done, itemId: keyOf(s, project.keyPrefix) })),
+    attachments: (details.data?.attachments ?? []).map((a) => ({ id: a.id, name: a.name, size: a.size, mime: a.mime, src: attachmentUrl(a.id), url: attachmentUrl(a.id, true), meta: `Added ${formatDate(a.createdAt, { year: "auto", today: now })}`, isCover: item.cover?.attachmentId === a.id })),
   };
+  const exportCtx = { prefix: project.keyPrefix, labels, people, listName: (id: string) => listName(id) ?? "" };
   const comments = (details.data?.comments ?? []).map((c) => {
     const author = personOf(c.authorId);
     const by = (emoji: string) => c.reactions.filter((r) => r.emoji === emoji).map((r) => personOf(r.userId)?.name ?? "Someone");
@@ -183,6 +192,40 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
           notify({ message: "Copied the item link", icon: "link" });
         }
       }}
+      onAddFiles={(fs, opts) =>
+        files.upload.mutate(fs, {
+          onSuccess: (made) => {
+            if (opts?.cover && made[0]) patch({ cover: { attachmentId: made[0].id } });
+            notify({ message: made.length === 1 ? `Attached ${quote(made[0]!.name)}` : `Attached ${made.length} files`, icon: "paperclip" });
+          },
+          onError: (e) => notify({ message: e.message, icon: "circle-alert" }),
+        })
+      }
+      onAttachmentAction={(id, action, arg) => {
+        if (action === "open") window.open(attachmentUrl(id), "_blank", "noopener");
+        else if (action === "download") window.open(attachmentUrl(id, true), "_blank", "noopener");
+        else if (action === "rename" && arg) files.rename.mutate({ id, name: arg });
+        else if (action === "delete") {
+          const f = details.data?.attachments.find((a) => a.id === id);
+          files.remove.mutate({ id });
+          notify({ message: `Deleted ${quote(f?.name ?? "the file")}`, icon: "trash-2" });
+        }
+      }}
+      onExport={(format) => {
+        const slug = fileSlug(`${keyOf(item, project.keyPrefix) ?? ""} ${item.title}`);
+        if (format === "pdf") window.print();
+        else if (format === "md") downloadText(`${slug}.md`, itemToMarkdown(item, exportCtx, { subitems, attachments: details.data?.attachments, comments: comments.map((c) => ({ author: c.author, body: c.text, date: c.meta })) }), "text/markdown");
+        else downloadText(`${slug}.csv`, itemsToCsv([item, ...subitems], exportCtx), "text/csv");
+        if (format !== "pdf") notify({ message: `Exported ${quote(item.title)} as ${format.toUpperCase()}`, icon: "download" });
+      }}
+      onPrint={() => window.print()}
+      projects={picker.projects}
+      loadLists={picker.loadLists}
+      onMoveToProject={(proj, list) => {
+        actions.transfer([item.id], proj, list, false);
+        onClose();
+      }}
+      onCopyToProject={(proj, list) => actions.transfer([item.id], proj, list, true)}
       onSuggestShortcut={onSuggestShortcut}
     />
   );

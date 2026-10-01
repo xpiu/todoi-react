@@ -21,6 +21,7 @@ import { decodeViewState, encodeViewState } from "../design/navigation/viewState
 import { CommandPalette } from "../design/overlay/CommandPalette";
 import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
 import { useFeedback } from "./feedback";
+import { downloadText, fileSlug, itemsToCsv, viewToMarkdown } from "./exportData";
 import { availableFilters, describeSort, FILTER_SECTIONS, filterKey, matchesFilters, nextSort, sameFilter, SORT_OPTS, type SortDim } from "./filters";
 import { keyOf } from "./items";
 import { CURRENT_USER, SEED_PEOPLE } from "./session";
@@ -119,6 +120,22 @@ export function AppShell() {
   const sortActive = (["lists", "items"] as const).filter((d) => sort[d]);
   const barChips = [...available.filter((f) => f.type === "label" || f.type === "due"), ...filters.filter((f) => f.type !== "label" && f.type !== "due").map((f) => available.find((a) => sameFilter(a, f)) ?? f)].map((f) => ({ ...f, selected: filters.some((a) => sameFilter(a, f)) }));
   const hiddenCount = filters.length ? topItems.length - topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length : 0;
+  const notify = useFeedback((s) => s.notify);
+  const exportView = (format: "pdf" | "md" | "csv") => {
+    const p = project.data;
+    if (!p) return;
+    if (format === "pdf") {
+      window.print();
+      return;
+    }
+    const visible = topItems.filter((it) => matchesFilters(it, filters, filterCtx));
+    const ctx = { prefix: p.keyPrefix, labels: filterCtx.labels, people: SEED_PEOPLE, listName: (id: string) => p.lists.find((l) => l.id === id)?.name ?? "" };
+    const lists = p.lists.filter((l) => !l.hidden).map((l) => ({ name: l.name, items: visible.filter((it) => it.listId === l.id) }));
+    const slug = fileSlug(`${p.name} ${view}`);
+    if (format === "md") downloadText(`${slug}.md`, viewToMarkdown(p.name, lists, ctx), "text/markdown");
+    else downloadText(`${slug}.csv`, itemsToCsv(lists.flatMap((l) => l.items), ctx), "text/csv");
+    notify({ message: `Exported “${p.name}” ${view} view as ${format.toUpperCase()} — ${visible.length} item${visible.length === 1 ? "" : "s"}`, icon: "download" });
+  };
   const filterBar =
     projectId && (filters.length || sortActive.length) ? (
       <FilterBar chips={barChips} sorts={sortActive.map((d) => ({ dim: d, label: describeSort(d, sort[d]!) }))} onToggle={toggleFilter} onClearFilters={clearFilters} onClearSort={(d) => selectSort(d, "none")} hidden={hiddenCount} />
@@ -133,7 +150,7 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings" })} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings" })} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));

@@ -1,0 +1,126 @@
+// ProjectPicker — move or copy items to another project: pick the project (search, glyph in its
+// colour, group at the trailing edge; projects without lists are inert), then the destination list.
+// Panel body only. onPick(project, list) fires once; the consumer moves / copies and raises ONE toast.
+import { useEffect, useState } from "react";
+
+import { listIconFor } from "../board/listIcons";
+import { Icon, type IconName } from "./Icon";
+import { IconButton } from "./IconButton";
+import "./ItemPicker.css";
+import "./ProjectPicker.css";
+
+export interface PickableList {
+  id: string;
+  name: string;
+  icon?: IconName | null;
+}
+export interface PickableProject {
+  id: string;
+  name: string;
+  icon?: IconName | null;
+  color?: string;
+  group?: string;
+  /** Known lists; `loadLists` fetches them when absent */
+  lists?: PickableList[];
+}
+
+export interface ProjectPickerProps {
+  projects: PickableProject[];
+  /** Excluded from the list */
+  current?: string;
+  action?: "move" | "copy";
+  count?: number;
+  onPick: (project: PickableProject, list: PickableList) => void;
+  onBack?: () => void;
+  loadLists?: (projectId: string) => Promise<PickableList[]>;
+  heading?: string;
+  /** false hides the heading row */
+  showHeading?: boolean;
+  note?: string | null;
+  placeholder?: string;
+  autoFocus?: boolean;
+}
+
+export function ProjectPicker({ projects, current, action = "move", count = 1, onPick, onBack, loadLists, heading, showHeading = true, note, placeholder = "Search projects…", autoFocus = true }: ProjectPickerProps) {
+  const [q, setQ] = useState("");
+  const [proj, setProj] = useState<PickableProject | null>(null);
+  const [loaded, setLoaded] = useState<{ id: string; lists: PickableList[] } | null>(null);
+  const lists = proj ? (proj.lists ?? (loaded?.id === proj.id ? loaded.lists : null)) : null;
+  const ql = q.trim().toLowerCase();
+  const list = projects.filter((p) => p.id !== current && (!ql || [p.name, p.group].filter(Boolean).some((s) => String(s).toLowerCase().includes(ql))));
+  const verb = action === "copy" ? "Copy" : "Move";
+  const title = heading ?? `${verb} to project`;
+  const noteText = note !== undefined ? note : action === "copy" ? (count === 1 ? "The copy gets its own key and starts without comments or activity." : "Each copy gets its own key and starts without comments or activity.") : count === 1 ? "Subitems, attachments and comments move along. The key changes if the group differs." : "Subitems, attachments and comments move along. Keys change if the group differs.";
+  useEffect(() => {
+    if (!proj || proj.lists) return;
+    let live = true;
+    void loadLists?.(proj.id).then((ls) => live && setLoaded({ id: proj.id, lists: ls }));
+    return () => {
+      live = false;
+    };
+  }, [proj, loadLists]);
+  if (proj) {
+    return (
+      <div className="td-prp">
+        <div className="td-prp-head">
+          <IconButton name="arrow-left" label="Back" size={22} iconSize={13} onClick={() => setProj(null)} />
+          <span className="td-prp-head-title">
+            {verb} to {proj.name}
+          </span>
+        </div>
+        <div className="td-picker-list" role="listbox" aria-label={`Lists in ${proj.name}`}>
+          {lists == null ? <div className="td-menu-note">Loading lists…</div> : null}
+          {lists?.map((l) => {
+            const auto = listIconFor(l.name);
+            return (
+              <div key={l.id} role="option" aria-selected={false} tabIndex={0} className="td-picker-row" onClick={() => onPick(proj, l)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onPick(proj, l)}>
+                <Icon name={l.icon ?? auto.icon} size={15} color={auto.color} />
+                <span className="td-prp-name">{l.name}</span>
+              </div>
+            );
+          })}
+          {lists && !lists.length ? <div className="td-menu-note">This project has no lists yet.</div> : null}
+        </div>
+        {noteText ? <div className="td-menu-note">{noteText}</div> : null}
+      </div>
+    );
+  }
+  return (
+    <div className="td-prp">
+      {onBack || showHeading ? (
+        <div className="td-prp-head">
+          {onBack ? <IconButton name="arrow-left" label="Back" size={22} iconSize={13} onClick={onBack} /> : null}
+          <span className="td-prp-head-title">{title}</span>
+        </div>
+      ) : null}
+      <div className="td-picker-search">
+        <Icon name="search" size={14} />
+        <input
+          className="td-picker-input"
+          autoFocus={autoFocus}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && list[0]) {
+              e.preventDefault();
+              setProj(list[0]);
+            } else if (e.key.length === 1) e.stopPropagation();
+          }}
+        />
+      </div>
+      <div className="td-picker-list" role="listbox" aria-label={title}>
+        {list.map((p) => (
+          <div key={p.id} role="option" aria-selected={false} tabIndex={0} className="td-picker-row" onClick={() => setProj(p)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setProj(p)}>
+            <Icon name={p.icon ?? "kanban"} size={15} color={p.color ?? "var(--ink-600)"} />
+            <span className="td-prp-name">{p.name}</span>
+            {p.group ? <span className="td-prp-group">{p.group}</span> : null}
+            <Icon name="chevron-right" size={13} className="td-prp-chev" />
+          </div>
+        ))}
+        {!list.length ? <div className="td-menu-note">No projects match</div> : null}
+      </div>
+    </div>
+  );
+}

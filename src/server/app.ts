@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
+import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { itemsRoute } from "./routes/items";
 import { groupsRoute, listsRoute, projectsRoute } from "./routes/projects";
 
@@ -15,6 +16,8 @@ export const app = new Hono()
   .route("/lists", listsRoute)
   .route("/items", itemsRoute)
   .route("/items", itemContentRoute)
+  .route("/items", itemAttachmentsRoute)
+  .route("/attachments", attachmentsRoute)
   .route("/labels", labelsRoute)
   .route("/comments", commentsRoute)
   .route("/saved-views", savedViewsRoute)

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** in progress. Phases 0–4 done 2026-10-01 (Phase 4 responsive: phone item sheet waits for the Phase 5 overlay); phases are implemented in order, each ticked when verified in the browser.
+**Status:** in progress. Phases 0–5 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -77,17 +77,17 @@
 - [x] Keyboard model end to end: N, ⇧N, E, D, 0–4, ⌫, /, F, X, Z, ?, G-chords, Ctrl+K palette, Ctrl+arrow moves, multi-select + BulkBar. *(E opens the overlay — lands with Phase 5. ShortcutHint nudges wired to the Style option.)*
 - [x] Calendar view: CalendarView, header, grid with spans and "+N more", day list, year mini months.
 - [x] Empty, loading (ViewSkeleton after 150ms) and error states per the situation table. *(No lists · No matches · empty Inbox · failed load with Retry/Details.)*
-- [~] Responsive: 1024px nav hoist, touch hit targets, phone item sheet and Popover bottom sheets. No `@media` in components. *(Done except the phone item sheet, which is the Phase 5 overlay.)*
+- [x] Responsive: 1024px nav hoist, touch hit targets, phone item sheet and Popover bottom sheets. No `@media` in components.
 
 ## Phase 5 — Item overlay and editing
 
-- [ ] ItemOverlay shell (880px, aside order: list · Status · Priority │ Dates · Repeat · Labels · Assignees │ Attachment · Cover · Relations │ Watch).
-- [ ] Property pickers: Select for list / Status / Priority, DatesPicker, RepeatPicker, LabelPicker (create / edit inline), MemberPicker, CoverPicker, RelationPicker + ItemPicker.
-- [ ] Description editor (Markdown subset, quiet toolbar, Save / Esc). Tiptap decision applies here.
-- [ ] Checklist / subitems with ⋯ (Open · Convert to item · Move to another item · Delete) and drag reorder.
-- [ ] Attachments (list, lightbox, drop sheet, file-drop onto cards), Comments (composer, @mentions, reactions, reply / edit / delete), activity rail.
-- [ ] Overlay ⋯: Duplicate, Move / Copy to project (ProjectPicker), Make subitem of…, Export…, Archive, Delete.
-- [ ] Recurring completion: `completeRecurring` on check, 650ms hold, toast with next due.
+- [x] ItemOverlay shell (880px, aside order: list · Status · Priority │ Dates · Repeat · Labels · Assignees │ Attachment · Cover · Relations │ Watch). *(`Modal` on Base UI Dialog; full-screen sheet on phones; `?item=` in the URL.)*
+- [x] Property pickers: Select for list / Status / Priority, DatesPicker, RepeatPicker, LabelPicker (create / edit inline), MemberPicker, CoverPicker, RelationPicker + ItemPicker.
+- [x] Description editor (Markdown subset, quiet toolbar, Save / Esc). Tiptap decision applies here. *(Tiptap v3 + `@tiptap/markdown`; Markdown in and out.)*
+- [x] Checklist / subitems with ⋯ (Open · Convert to item · Move to another item · Delete) and drag reorder.
+- [x] Attachments (list, lightbox, drop sheet, file-drop onto cards), Comments (composer, @mentions, reactions, reply / edit / delete), activity rail. *(Uploads on local disk under `UPLOAD_DIR`; swap to an object store later.)*
+- [x] Overlay ⋯: Duplicate, Move / Copy to project (ProjectPicker), Make subitem of…, Export…, Archive, Delete. *(Export: Markdown / CSV downloads, PDF via print; Share menu exports the view.)*
+- [x] Recurring completion: `completeRecurring` on check, 650ms hold, toast with next due.
 
 ## Phase 6 — Project lifecycle, settings, account, auth
 

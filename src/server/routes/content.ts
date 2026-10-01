@@ -23,7 +23,7 @@ import type { RelationType } from "../../shared/enums";
 import { idSchema } from "../../shared/items";
 import { viewerOf } from "../auth";
 import { db } from "../db";
-import { activity, commentReactions, comments, itemAssignees, itemLabels, itemRelations, itemWatchers, items, labels, savedViews, users } from "../db/schema";
+import { activity, attachments, commentReactions, comments, itemAssignees, itemLabels, itemRelations, itemWatchers, items, labels, savedViews, users } from "../db/schema";
 import { logActivity, quote } from "../services/activity";
 
 const idParam = zValidator("param", z.object({ id: idSchema }));
@@ -75,13 +75,14 @@ export const itemContentRoute = new Hono()
     const viewer = viewerOf(c);
     const [item] = await db.select().from(items).where(eq(items.id, id));
     if (!item) return c.json({ error: "Not found" }, 404);
-    const [labelRows, assigneeRows, watcherRows, commentRows, relationRows, subitems] = await Promise.all([
+    const [labelRows, assigneeRows, watcherRows, commentRows, relationRows, subitems, attachmentRows] = await Promise.all([
       db.select({ labelId: itemLabels.labelId }).from(itemLabels).where(eq(itemLabels.itemId, id)),
       db.select({ userId: itemAssignees.userId }).from(itemAssignees).where(eq(itemAssignees.itemId, id)),
       db.select({ userId: itemWatchers.userId }).from(itemWatchers).where(eq(itemWatchers.itemId, id)),
       db.select().from(comments).where(eq(comments.itemId, id)).orderBy(asc(comments.createdAt)),
       db.select().from(itemRelations).where(or(eq(itemRelations.itemId, id), eq(itemRelations.targetId, id))),
       db.select().from(items).where(and(eq(items.parentItemId, id), isNull(items.deletedAt))).orderBy(asc(items.position)),
+      db.select().from(attachments).where(eq(attachments.itemId, id)).orderBy(asc(attachments.createdAt)),
     ]);
     const reactionRows = commentRows.length ? await db.select().from(commentReactions).where(inArray(commentReactions.commentId, commentRows.map((r) => r.id))) : [];
     const relations = relationRows.map((r) => (r.itemId === id ? { type: r.type, itemId: r.targetId } : { type: INVERSE[r.type], itemId: r.itemId }));
@@ -95,6 +96,7 @@ export const itemContentRoute = new Hono()
       comments: commentRows.map((cm) => ({ ...cm, reactions: reactionRows.filter((r) => r.commentId === cm.id) })),
       relations: relations.map((r) => ({ ...r, item: related.find((x) => x.id === r.itemId) ?? null })),
       subitems,
+      attachments: attachmentRows,
     });
   })
   .put("/:id/labels", idParam, zValidator("json", setItemLabelsSchema), async (c) => {

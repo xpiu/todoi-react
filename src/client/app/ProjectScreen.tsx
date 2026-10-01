@@ -27,7 +27,13 @@ import { ListView } from "../design/list/ListView";
 import { decodeViewState, encodeViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
+import { useAttachmentMutations } from "../data/attachments";
+import { Dialog } from "../design/core/Dialog";
+import { ProjectPicker } from "../design/core/ProjectPicker";
+import { useFileDropTargets } from "../design/overlay/Attachments";
+import { useFeedback } from "./feedback";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
+import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
 import { SEED_PEOPLE } from "./session";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
@@ -103,6 +109,12 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const actions = useProjectActions(projectId, project, items, labels);
   const dnd = useItemDnd(root, { ...dndOpts, onDrop: actions.move });
   useTouchItemDrag(root, dnd, dndOpts.itemSelector, actions.move);
+  // Files dropped on a card or row attach to that item.
+  const [dropTarget, setDropTarget] = useState<{ id: string; files: File[] } | null>(null);
+  const fileDrop = useFileDropTargets((files, id) => setDropTarget({ id, files }), { selector: dndOpts.itemSelector });
+  const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
+  const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
+  const picker = useProjectPicker(projectId);
   const anchor = useRef<string | null>(null);
 
   const ctx = useMemo(() => ({ labels, people: SEED_PEOPLE }), [labels]);
@@ -173,18 +185,35 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
     return () => document.removeEventListener("keydown", onKey);
   }, [selectedIds.length, setSelectedIds]);
 
-  const bulkBar = selectedIds.length ? (
-    <BulkBar
-      count={selectedIds.length}
-      actions={actions.bulkActions(selectedIds)}
-      onAction={(id, value) => {
-        if (actions.bulk(id, value, selectedIds)) setSelectedIds([]);
-      }}
-      onClear={() => setSelectedIds([])}
-    />
-  ) : null;
+  const bulkBar = (
+    <>
+      {selectedIds.length ? (
+        <BulkBar
+          count={selectedIds.length}
+          actions={actions.bulkActions(selectedIds)}
+          onAction={(id, value) => {
+            if (id === "move" && (value === "__move" || value === "__copy")) {
+              setTransfer(value === "__copy" ? "copy" : "move");
+              return;
+            }
+            if (actions.bulk(id, value, selectedIds)) setSelectedIds([]);
+          }}
+          onClear={() => setSelectedIds([])}
+        />
+      ) : null}
+      <Dialog open={!!transfer} onClose={() => setTransfer(null)} title={transfer === "copy" ? "Copy to project" : "Move to project"} width={380}>
+        <ProjectPicker projects={picker.projects} action={transfer ?? "move"} count={selectedIds.length} showHeading={false} loadLists={picker.loadLists} onPick={(proj, list) => {
+          const t = transfer;
+          setTransfer(null);
+          actions.transfer(selectedIds, proj, list, t === "copy");
+          if (t === "move") setSelectedIds([]);
+        }} />
+      </Dialog>
+      {dropTarget ? <AttachDrop projectId={projectId} target={dropTarget} onDone={() => setDropTarget(null)} /> : null}
+    </>
+  );
   const isSelected = (id: string) => selectedIds.includes(id);
-  return { actions, dnd, lists, rowsOf, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar, isSelected };
+  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar, isSelected };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -206,6 +235,34 @@ function NoMatches({ hidden, onReset }: { hidden: number; onReset: () => void })
       <EmptyState icon="filter" title="No items match these filters" hint={`${hidden} item${hidden === 1 ? " is" : "s are"} hidden by the current filters.`} action={{ label: "Reset filters", icon: "x", shortcut: "X", onClick: onReset }} />
     </div>
   );
+}
+
+/** Item drag handlers and file-drop handlers on one root: files go to the file layer, in-app drags to the item layer. */
+function mergeDrag(items: ItemDnd["rootProps"], files: ReturnType<typeof useFileDropTargets>): Partial<ItemDnd["rootProps"]> {
+  const isFiles = (e: React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+  return {
+    onDragEnter: (e: React.DragEvent) => (isFiles(e) ? files.onDragEnter?.(e) : undefined),
+    onDragOver: (e: React.DragEvent) => (isFiles(e) ? files.onDragOver?.(e) : items.onDragOver(e)),
+    onDragLeave: (e: React.DragEvent) => (isFiles(e) ? files.onDragLeave?.(e) : items.onDragLeave(e)),
+    onDrop: (e: React.DragEvent) => (isFiles(e) ? files.onDrop?.(e) : items.onDrop(e)),
+  } as Partial<ItemDnd["rootProps"]>;
+}
+
+/** Uploads files dropped on a card / row, then raises the toast. */
+function AttachDrop({ projectId, target, onDone }: { projectId: string; target: { id: string; files: File[] }; onDone: () => void }) {
+  const files = useAttachmentMutations(target.id, projectId);
+  const notify = useFeedback((s) => s.notify);
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    files.upload.mutate(target.files, {
+      onSuccess: (made) => notify({ message: made.length === 1 ? `Attached ${made[0]!.name}` : `Attached ${made.length} files`, icon: "paperclip" }),
+      onError: (e) => notify({ message: e.message, icon: "circle-alert" }),
+      onSettled: onDone,
+    });
+  }, [files.upload, target, notify, onDone]);
+  return null;
 }
 
 /** Section / column header callbacks shared by both views. */
@@ -263,6 +320,7 @@ function ProjectList(props: ViewProps) {
                   repeat={r.repeat}
                   priority={r.priority}
                   assignees={r.assignees}
+                  attachments={r.attachments}
                   selected={v.isSelected(r.id)}
                   onClick={(e) => v.onItemClick(r.id, list.id, e)}
                   subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done) }))}
@@ -308,7 +366,7 @@ function ProjectBoard(props: ViewProps) {
                     selected={v.isSelected(r.id)}
                     onClick={(e) => v.onItemClick(r.id, list.id, e)}
                     cover={coverOf(it)}
-                    badges={{ description: !!it?.description, checklist: r.subitems.length ? { done: r.subitems.filter((s) => s.done).length, total: r.subitems.length } : undefined }}
+                    badges={{ description: !!it?.description, attachments: r.attachments, checklist: r.subitems.length ? { done: r.subitems.filter((s) => s.done).length, total: r.subitems.length } : undefined }}
                     onMenuAction={(action) => {
                       if (action === "Delete") actions.remove(r.id);
                     }}

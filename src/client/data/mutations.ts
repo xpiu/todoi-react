@@ -66,6 +66,7 @@ function placeholder(vars: CreateItemInput, siblings: Item[], projectId: string 
     updatedAt: now,
     labelIds: vars.labelIds ?? [],
     assigneeIds: vars.assigneeIds ?? [],
+    attachmentCount: 0,
   };
 }
 

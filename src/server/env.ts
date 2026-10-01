@@ -8,6 +8,8 @@ const envSchema = z.object({
   MIGRATE_ON_START: z.stringbool().default(process.env.NODE_ENV !== "production"),
   /** Seed the kit's sample project when the database has no groups (development default) */
   SEED_ON_START: z.stringbool().default(process.env.NODE_ENV !== "production"),
+  /** Where uploaded attachment bytes live (local disk until an object store lands) */
+  UPLOAD_DIR: z.string().default(".data/uploads"),
 });
 
 export const env = envSchema.parse(process.env);

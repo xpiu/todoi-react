@@ -6,7 +6,8 @@ import { useState, type CSSProperties, type ReactElement, type ReactNode } from 
 import { useAppearance } from "../core/appearance";
 import { Checkbox } from "../core/Checkbox";
 import { Icon, type IconName } from "../core/Icon";
-import { MenuDivider, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
+import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
+import { MenuDivider, MenuHeading, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
 import { Popover, usePopover } from "../core/Popover";
 import { Segmented } from "../core/Segmented";
 import { SwatchGroup } from "../core/SwatchGroup";
@@ -72,6 +73,10 @@ export interface SubNavbarProps {
   /** Count badges on the Filter / Sort actions while something is active */
   filterCount?: number;
   sortCount?: number;
+  /** "Export this view" rows at the end of the Share menu */
+  onExport?: (format: ExportFormatId) => void;
+  exportCount?: number;
+  exportFiltered?: boolean;
   /** Renders the Members button */
   onMembers?: () => void;
   /** @default true */
@@ -89,7 +94,7 @@ export interface SubNavbarProps {
   className?: string;
 }
 
-export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, activeAction, filterMenu, sortMenu, filterCount = 0, sortCount = 0, onMembers, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
+export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, activeAction, filterMenu, sortMenu, filterCount = 0, sortCount = 0, onExport, exportCount, exportFiltered, onMembers, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
   const ap = useAppearance();
   const active = activeView ?? views[0]?.id;
   const stylePop = usePopover();
@@ -239,6 +244,13 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   {t.label}
                 </MenuItem>
               ))}
+              {onExport ? (
+                <>
+                  <MenuDivider />
+                  <MenuHeading>Export this view</MenuHeading>
+                  <ExportMenu scope="view" view={views.find((v) => v.id === active)?.label === "Cal." ? "Calendar" : views.find((v) => v.id === active)?.label} count={exportCount} filtered={exportFiltered} onExport={onExport} onPrint={() => window.print()} />
+                </>
+              ) : null}
             </MenuPopover>
           ) : null}
         </div>

@@ -138,13 +138,30 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     notify({ message: `Added an item due ${formatDate(iso, { year: "auto" })} to ${list.name}`, icon: "plus", restore: () => deleteItem.mutate({ id }) });
   };
 
+  /** Move or copy items to a list in another project: one undo toast; a copy gets new keys. */
+  const transfer = (ids: string[], project: { id: string; name: string }, list: { id: string; name: string }, copy: boolean) => {
+    const sel = ids.map(byId).filter((x): x is Item => !!x);
+    if (!sel.length) return;
+    const noun = sel.length === 1 ? quote(sel[0]!.title) : nounOf(sel.length);
+    const dest = `${project.name} › ${list.name}`;
+    if (copy) {
+      const made = sel.map((it) => ({ src: it, id: newId() }));
+      made.forEach(({ src, id }) => createItem.mutate({ id, title: src.title, listId: list.id, status: src.status, priority: src.priority, startDate: src.startDate, dueDate: src.dueDate, description: src.description ?? undefined, labelIds: [], assigneeIds: src.assigneeIds }));
+      notify({ message: `Copied ${noun} to ${dest}`, icon: "folder-output", restore: () => made.forEach(({ id }) => deleteItem.mutate({ id })) });
+    } else {
+      const snapshot = sel.map((it) => ({ id: it.id, listId: it.listId, position: it.position }));
+      sel.forEach((it) => moveItem.mutate({ id: it.id, listId: list.id }));
+      notify({ message: `Moved ${noun} to ${dest}`, icon: "folder-input", restore: () => snapshot.forEach((it) => moveItem.mutate({ id: it.id, listId: it.listId, position: it.position })) });
+    }
+  };
+
   const addList = (name?: string, statusRole?: ItemStatus | null) => createList.mutate({ id: newId(), name: name ?? `List ${project.lists.length + 1}`, statusRole: statusRole ?? undefined });
 
   /** The BulkBar's actions for the current selection. */
   const bulkActions = (selectedIds: string[]): BulkAction[] => {
     const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
     return [
-      { id: "move", label: "Move to", icon: "arrow-right", options: lists.map((l) => ({ value: l.id, label: l.name, icon: listIconFor(l.name).icon, iconColor: listIconFor(l.name).color })) },
+      { id: "move", label: "Move to", icon: "arrow-right", options: [...lists.map((l) => ({ value: l.id, label: l.name, icon: listIconFor(l.name).icon, iconColor: listIconFor(l.name).color })), { value: null, label: "", divider: true }, { value: "__move", label: "Move to another project…", icon: "folder-input" }, { value: "__copy", label: "Copy to another project…", icon: "folder-output" }] },
       { id: "priority", label: "Priority", icon: "flag", options: [...PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABEL[p], icon: "flag" as const, iconColor: PRIO_COLORS[p] })), { value: null, label: "None", icon: "flag-off" }] },
       { id: "label", label: "Label", icon: "tag", options: labels.map((l) => ({ value: l.id, label: l.name, swatch: `var(--label-${l.color})`, checked: sel.length > 0 && sel.every((it) => it.labelIds.includes(l.id)) })) },
       { id: "assign", label: "Assign", icon: "user-plus", options: [...people.map((p) => ({ value: p.id, label: p.name, icon: "user" as const })), { value: null, label: "Unassigned", icon: "user-x" }] },
@@ -194,5 +211,5 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     return false;
   };
 
-  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn };
+  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer };
 }

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { createItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
 import { viewerOf } from "../auth";
 import { db } from "../db";
-import { itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
+import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { moveItem, setDone } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { issueKeyNumber } from "../services/projects";
@@ -20,13 +20,14 @@ const live = and(isNull(items.archivedAt), isNull(items.deletedAt));
 type ItemRow = typeof items.$inferSelect;
 /** Attach each item's label and assignee ids (one query each for the whole set). */
 async function withRelations(rows: ItemRow[]) {
-  if (!rows.length) return [] as Array<ItemRow & { labelIds: string[]; assigneeIds: string[] }>;
+  if (!rows.length) return [] as Array<ItemRow & { labelIds: string[]; assigneeIds: string[]; attachmentCount: number }>;
   const ids = rows.map((r) => r.id);
-  const [labelRows, assigneeRows] = await Promise.all([
+  const [labelRows, assigneeRows, attachmentRows] = await Promise.all([
     db.select().from(itemLabels).where(inArray(itemLabels.itemId, ids)),
     db.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids)),
+    db.select({ itemId: attachments.itemId, n: sql<number>`count(*)::int` }).from(attachments).where(inArray(attachments.itemId, ids)).groupBy(attachments.itemId),
   ]);
-  return rows.map((r) => ({ ...r, labelIds: labelRows.filter((l) => l.itemId === r.id).map((l) => l.labelId), assigneeIds: assigneeRows.filter((a) => a.itemId === r.id).map((a) => a.userId) }));
+  return rows.map((r) => ({ ...r, labelIds: labelRows.filter((l) => l.itemId === r.id).map((l) => l.labelId), assigneeIds: assigneeRows.filter((a) => a.itemId === r.id).map((a) => a.userId), attachmentCount: attachmentRows.find((a) => a.itemId === r.id)?.n ?? 0 }));
 }
 
 export const itemsRoute = new Hono()
@@ -67,7 +68,7 @@ export const itemsRoute = new Hono()
       await logActivity(tx, { projectId: list.projectId, actorId: viewer.userId, type: "item", text: `added ${quote(created!.title)} to ${list.name}`, itemId: created!.id, itemKey: keyNumber != null ? String(keyNumber) : null });
       return created!;
     });
-    return c.json({ ...row, labelIds, assigneeIds }, 201);
+    return c.json({ ...row, labelIds, assigneeIds, attachmentCount: 0 }, 201);
   })
   .patch("/:id", idParam, zValidator("json", updateItemSchema), async (c) => {
     const { id } = c.req.valid("param");
