@@ -1,0 +1,187 @@
+@layer components {
+  .td-clhead {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-2);
+    min-height: 24px;
+  }
+  .td-clhead-count {
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--ink-400);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .td-clhead-bar {
+    flex: 0 0 auto;
+    width: 88px;
+  }
+  .td-clhead-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+  .td-checklist:hover .td-clhead-actions,
+  .td-checklist:focus-within .td-clhead-actions {
+    opacity: 1;
+  }
+  .td-cllist {
+    margin-top: 2px;
+    position: relative;
+  }
+  .td-clrow {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: var(--sp-2);
+    border-radius: var(--radius-md);
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  .td-clrow:hover {
+    background: var(--n-a06);
+  }
+  .td-clrow.is-draggable {
+    cursor: grab;
+  }
+  .td-clrow.is-draggable:active {
+    cursor: grabbing;
+  }
+  .td-clrow-text {
+    flex: 1;
+    min-width: 0;
+    font: var(--type-body);
+    color: var(--ink-900);
+    transition: color var(--duration-fast) var(--ease-standard);
+  }
+  .td-clrow-done {
+    text-decoration: line-through;
+    color: var(--ink-300);
+  }
+  .td-clgrip {
+    position: absolute;
+    left: -16px;
+    top: 0;
+    bottom: 0;
+    width: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-300);
+    opacity: 0;
+    cursor: grab;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+  .td-clrow:hover .td-clgrip {
+    opacity: 1;
+  }
+  .td-checklist.is-dragging .td-clrow {
+    transition: none;
+  }
+  .td-checklist.is-dragging .td-clrow:hover {
+    background: none;
+  }
+  .td-checklist.is-dragging .td-clgrip,
+  .td-checklist.is-dragging .td-clrow-more {
+    opacity: 0;
+  }
+  .td-clrow.td-drag-src {
+    opacity: 0.4;
+  }
+  .td-clrow-more {
+    margin-left: auto;
+    flex: none;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+  .td-clrow:hover .td-clrow-more,
+  .td-clrow:focus-within .td-clrow-more,
+  .td-clrow-more[aria-expanded="true"] {
+    opacity: 1;
+  }
+  html[data-touch="true"] .td-clrow-more,
+  html[data-touch="true"] .td-clhead-actions {
+    opacity: 1;
+  }
+  html[data-touch="true"] .td-clgrip {
+    display: none;
+  }
+  html[data-touch="true"] .td-clrow {
+    padding: 10px var(--sp-2);
+  }
+  html[data-touch="true"] .td-clrow.is-draggable {
+    cursor: default;
+  }
+  .td-clline {
+    position: absolute;
+    left: var(--sp-2);
+    right: var(--sp-2);
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 1px;
+    background: var(--blue-500);
+    pointer-events: none;
+  }
+  .td-clline.is-before {
+    top: 0;
+  }
+  .td-clline.is-after {
+    bottom: -1px;
+  }
+  .td-clline::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: -2px;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--blue-500);
+  }
+  .td-cladd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: var(--sp-2);
+    border: none;
+    background: none;
+    border-radius: var(--radius-md);
+    font: var(--type-body);
+    color: var(--ink-600);
+    cursor: pointer;
+    text-align: left;
+    transition:
+      background var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+  .td-cladd:hover {
+    background: var(--n-a06);
+    color: var(--ink-900);
+  }
+  .td-cladd:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-cladd.is-editing {
+    cursor: text;
+    color: var(--ink-400);
+    background: none;
+  }
+  .td-cladd-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: none;
+    padding: 0;
+    font: var(--type-body);
+    color: var(--ink-900);
+  }
+  .td-cladd-input::placeholder {
+    color: var(--ink-400);
+  }
+}

@@ -173,6 +173,8 @@ function MenuChildren({ render }: { render: (close: () => void) => ReactNode }) 
 export interface MenuButtonProps extends Omit<MenuPopoverProps, "trigger"> {
   /** Trigger glyph @default "ellipsis" */
   icon?: IconName;
+  /** Class on the trigger button (className styles the popup) */
+  triggerClassName?: string;
   tooltip?: string;
   tooltipSide?: TooltipSide;
   /** IconButton variant @default "ghost" */
@@ -183,6 +185,6 @@ export interface MenuButtonProps extends Omit<MenuPopoverProps, "trigger"> {
 }
 
 /** Trigger + Popover + Menu in one: the ⋯ menu. */
-export function MenuButton({ icon = "ellipsis", label, tooltip, tooltipSide, variant = "ghost", size = 32, iconSize, ...rest }: MenuButtonProps) {
-  return <MenuPopover label={label} trigger={<IconButton name={icon} label={label} tooltip={tooltip} tooltipSide={tooltipSide} variant={variant} size={size} iconSize={iconSize} />} {...rest} />;
+export function MenuButton({ icon = "ellipsis", label, tooltip, tooltipSide, variant = "ghost", size = 32, iconSize, triggerClassName, ...rest }: MenuButtonProps) {
+  return <MenuPopover label={label} trigger={<IconButton name={icon} label={label} tooltip={tooltip} tooltipSide={tooltipSide} variant={variant} size={size} iconSize={iconSize} className={triggerClassName} />} {...rest} />;
 }

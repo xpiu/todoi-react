@@ -1,0 +1,63 @@
+@layer components {
+  .td-aside-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    align-items: stretch;
+  }
+  .td-aside-div {
+    height: 1px;
+    margin: var(--sp-1) var(--sp-2);
+    background: var(--border-divider);
+  }
+  .td-select-foot {
+    width: 100%;
+    border: 0;
+    background: none;
+    text-align: left;
+    color: var(--ink-900);
+    gap: var(--sp-2);
+  }
+  .td-overlay-desc {
+    margin-top: var(--sp-3);
+  }
+  .td-overlay-addsub {
+    margin-top: var(--sp-4);
+  }
+  .td-overlay-subitems {
+    margin-top: var(--sp-6);
+  }
+  .td-activity {
+    margin-top: var(--sp-6);
+  }
+  .td-activity-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    color: var(--ink-900);
+    margin-bottom: var(--sp-3);
+  }
+  .td-activity-glyph {
+    flex: none;
+  }
+  .td-activity-title {
+    flex: 1 1 auto;
+    font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
+  }
+  .td-activity-head > .td-iconbtn {
+    order: 1;
+    flex: none;
+  }
+  .td-activity-search {
+    order: 2;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  html[data-device="desktop"] .td-activity-search,
+  html[data-device="tablet"] .td-activity-search {
+    order: 0;
+    flex: 0 1 240px;
+    margin-left: auto;
+  }
+}

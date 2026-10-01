@@ -9,7 +9,7 @@ import "./Markdown.css";
 
 export interface MarkdownMember {
   name: string;
-  nickname?: string;
+  nickname?: string | null;
 }
 export interface MarkdownOptions {
   /** @names matching a nickname, first name or full name render as mentions */
@@ -28,6 +28,8 @@ function isKnownMember(name: string, members?: ReadonlyArray<MarkdownMember>): b
   return members.some((mem) => [mem.nickname, mem.name.split(/\s+/)[0], mem.name].filter(Boolean).some((x) => String(x).toLowerCase() === n));
 }
 
+const unescape = (t: string) => t.replace(/\\([\\`*_{}[\]()#+\-.!~>])/g, "$1");
+
 function inline(text: string, o: MarkdownOptions, keyBase: string): ReactNode[] {
   const out: ReactNode[] = [];
   let last = 0;
@@ -35,7 +37,7 @@ function inline(text: string, o: MarkdownOptions, keyBase: string): ReactNode[] 
   let m: RegExpExecArray | null;
   INLINE.lastIndex = 0;
   while ((m = INLINE.exec(text))) {
-    if (m.index > last) out.push(text.slice(last, m.index));
+    if (m.index > last) out.push(unescape(text.slice(last, m.index)));
     let t = m[0];
     const k = `${keyBase}-${i++}`;
     const lead = /^\s/.test(t) ? t[0] : "";
@@ -86,7 +88,7 @@ function inline(text: string, o: MarkdownOptions, keyBase: string): ReactNode[] 
     } else out.push(<em key={k}>{t.slice(1, -1)}</em>);
     last = m.index + m[0].length;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) out.push(unescape(text.slice(last)));
   return out;
 }
 

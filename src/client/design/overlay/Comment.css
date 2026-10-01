@@ -1,0 +1,151 @@
+@layer components {
+  .td-comment {
+    display: flex;
+    gap: 10px;
+    margin-top: var(--sp-4);
+  }
+  .td-comment-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .td-comment-meta {
+    font: var(--type-small);
+    color: var(--ink-600);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .td-comment-meta b {
+    font: var(--weight-bold) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-comment-meta-act {
+    margin-top: 2px;
+  }
+  .td-comment-bubble {
+    margin-top: var(--sp-1);
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: var(--sp-2) var(--sp-3);
+  }
+  .td-comment-actions {
+    margin-top: var(--sp-1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font: var(--type-small);
+    color: var(--ink-600);
+  }
+  .td-comment-act {
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: var(--ink-600);
+    cursor: pointer;
+  }
+  .td-comment-act:hover {
+    color: var(--ink-900);
+    text-decoration: underline;
+  }
+  .td-comment-act.is-danger {
+    color: var(--danger);
+  }
+  .td-comment-body {
+    font: var(--type-body);
+    color: var(--ink-900);
+  }
+  .td-comment-body b {
+    font-weight: var(--weight-bold);
+  }
+  .td-comment-edit {
+    margin-top: var(--sp-1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .td-comment-edit-foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .td-comment-edit-foot .td-btn {
+    height: 28px;
+    padding: 0 10px;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+  }
+  .td-comment-edit-hint {
+    margin-left: auto;
+    font: var(--weight-regular) 11px / 16px var(--font-mono);
+    color: var(--ink-400);
+  }
+  .td-react-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .td-react {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    height: 24px;
+    padding: 0 var(--sp-2);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-input);
+    background: var(--surface-card);
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--ink-600);
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) var(--ease-standard),
+      border-color var(--duration-fast) var(--ease-standard);
+  }
+  .td-react:hover {
+    background: var(--surface-panel);
+  }
+  .td-react[aria-pressed="true"] {
+    border-color: var(--blue-500);
+    background: var(--blue-100);
+    color: var(--ink-900);
+  }
+  .td-react-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    border: 1px dashed var(--border-input);
+    background: none;
+    color: var(--ink-400);
+    cursor: pointer;
+  }
+  .td-react-add:hover {
+    color: var(--ink-900);
+    border-color: var(--ink-300);
+  }
+  .td-react-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 32px);
+    gap: 2px;
+    padding: 2px;
+  }
+  .td-react-pick {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .td-react-pick:hover {
+    background: var(--action-subtle);
+  }
+}

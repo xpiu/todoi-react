@@ -1,0 +1,94 @@
+@layer components {
+  .td-ip {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .td-ip-search,
+  .td-picker-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 var(--sp-1);
+    padding: 0 var(--sp-2);
+    height: 30px;
+    border-radius: var(--radius-md);
+    background: var(--surface-list);
+    color: var(--ink-400);
+  }
+  .td-ip-input,
+  .td-picker-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    background: none;
+    outline: none;
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-ip-input::placeholder,
+  .td-picker-input::placeholder {
+    color: var(--ink-400);
+  }
+  .td-ip-list,
+  .td-picker-list {
+    max-height: 280px;
+    overflow-y: auto;
+    margin: 0 calc(-1 * var(--sp-1));
+    padding: 0 var(--sp-1);
+  }
+  .td-ip-row,
+  .td-picker-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    min-height: 30px;
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--radius-md);
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .td-ip-row[aria-selected="true"],
+  .td-ip-row:hover,
+  .td-picker-row:hover,
+  .td-picker-row[aria-checked="true"],
+  .td-picker-row:focus-visible {
+    background: var(--action-subtle);
+  }
+  .td-picker-row:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
+  html[data-touch="true"] .td-ip-row,
+  html[data-touch="true"] .td-picker-row {
+    min-height: 44px;
+  }
+  .td-ip-key {
+    font: var(--weight-regular) 11px / 16px var(--font-mono);
+    color: var(--ink-400);
+    flex: none;
+  }
+  .td-ip-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-ip-title[data-done="true"] {
+    color: var(--ink-400);
+    text-decoration: line-through;
+  }
+  .td-ip-list-name {
+    font: var(--weight-regular) 11px / 16px var(--font-ui);
+    color: var(--ink-400);
+    flex: none;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

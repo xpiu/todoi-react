@@ -27,6 +27,7 @@ import { ListView } from "../design/list/ListView";
 import { decodeViewState, encodeViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
+import { ItemOverlayScreen } from "./ItemOverlayScreen";
 import { LoadFailed } from "./LoadFailed";
 import { SEED_PEOPLE } from "./session";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
@@ -51,6 +52,7 @@ export function ProjectScreen() {
   const failed = project.isError ? project : items.isError ? items : labels.isError ? labels : null;
   if (failed) return <LoadFailed what="this project" error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
+  const go = (next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, ...next }) });
   const props: ViewProps = {
     projectId,
     project: project.data,
@@ -60,11 +62,17 @@ export function ProjectScreen() {
     sort: state.sort,
     selectedIds,
     setSelectedIds,
-    clearFilters: () => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ view: state.view, sort: state.sort }) }),
+    clearFilters: () => go({ filters: [], savedView: undefined }),
+    openItem: (id, edit) => go({ item: id, edit: !!edit }),
   };
-  if (view === "board") return <ProjectBoard {...props} />;
-  if (view === "calendar") return <ProjectCalendar {...props} />;
-  return <ProjectList {...props} />;
+  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={(id, edit) => go({ item: id, edit: !!edit })} /> : null;
+  const body = view === "board" ? <ProjectBoard {...props} /> : view === "calendar" ? <ProjectCalendar {...props} /> : <ProjectList {...props} />;
+  return (
+    <>
+      {body}
+      {overlay}
+    </>
+  );
 }
 
 interface ViewProps {
@@ -77,6 +85,7 @@ interface ViewProps {
   selectedIds: string[];
   setSelectedIds: (next: string[] | ((prev: string[]) => string[])) => void;
   clearFilters: () => void;
+  openItem: (id: string, edit?: boolean) => void;
 }
 
 interface VisibleList {
@@ -90,7 +99,7 @@ interface VisibleList {
 }
 
 /** Everything a view needs beyond rendering: visible lists (filtered, sorted), actions, selection, drag. */
-function useProjectView({ projectId, project, items, labels, filters, sort, selectedIds, setSelectedIds }: ViewProps, root: React.RefObject<HTMLDivElement | null>, dndOpts: { listSelector: string; itemSelector: string; cardsSelector: string }) {
+function useProjectView({ projectId, project, items, labels, filters, sort, selectedIds, setSelectedIds, openItem }: ViewProps, root: React.RefObject<HTMLDivElement | null>, dndOpts: { listSelector: string; itemSelector: string; cardsSelector: string }) {
   const actions = useProjectActions(projectId, project, items, labels);
   const dnd = useItemDnd(root, { ...dndOpts, onDrop: actions.move });
   useTouchItemDrag(root, dnd, dndOpts.itemSelector, actions.move);
@@ -134,10 +143,14 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       if (a >= 0 && b >= 0) setSelectedIds((prev) => [...new Set([...prev, ...ids.slice(Math.min(a, b), Math.max(a, b) + 1)])]);
       else onItemSelect([id], "toggle");
     }
-    // A plain click opens the item (Phase 5).
+    else openItem(id);
   };
   // Single-key actions apply to the whole selection when the focused item is part of it.
   const onItemKey = (id: string, action: ItemAction) => {
+    if (action === "edit") {
+      openItem(id, true);
+      return;
+    }
     if (selectedIds.length > 1 && selectedIds.includes(id)) {
       if (action === "done" || action === "delete") {
         if (actions.bulk(action, undefined, selectedIds)) setSelectedIds([]);
@@ -312,7 +325,7 @@ function ProjectBoard(props: ViewProps) {
 }
 
 /** Calendar: dated items (filters apply) on the grid; drag a chip to reschedule; "+" adds an item due that day. */
-function ProjectCalendar({ projectId, project, items, labels, filters }: ViewProps) {
+function ProjectCalendar({ projectId, project, items, labels, filters, openItem }: ViewProps) {
   const actions = useProjectActions(projectId, project, items, labels);
   const ctx = useMemo(() => ({ labels, people: SEED_PEOPLE }), [labels]);
   const calItems = useMemo<CalendarItem[]>(() => {
@@ -327,5 +340,5 @@ function ProjectCalendar({ projectId, project, items, labels, filters }: ViewPro
       });
   }, [items, filters, ctx, actions.lists, actions.people, project.keyPrefix, labels]);
   if (!actions.lists.length) return <NoLists actions={actions} />;
-  return <CalendarView items={calItems} onReschedule={actions.reschedule} onAddItem={actions.addItemOn} onToggleDone={actions.setDone} onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)} />;
+  return <CalendarView items={calItems} onOpenItem={(id) => openItem(id)} onReschedule={actions.reschedule} onAddItem={actions.addItemOn} onToggleDone={actions.setDone} onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)} />;
 }

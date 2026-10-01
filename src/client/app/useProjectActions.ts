@@ -9,6 +9,7 @@ import type { Item, Label, ProjectDetail } from "../data/api";
 import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
 import { formatDate } from "../design/core/dates";
+import { completeRecurring } from "../design/core/repeat";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction } from "../design/core/BulkBar";
 import type { QuickAddResult } from "../design/core/quickAdd";
@@ -93,10 +94,25 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     notify({ message: `Deleted ${quote(it.title)}`, icon: "trash-2", restore: () => recreate(it) });
   };
 
+  /** Done toggle. A recurring item checked done reopens on its next due instead (one toast, undoable). */
+  const setDone = (id: string, done: boolean) => {
+    const it = byId(id);
+    if (!it) return;
+    if (done && it.repeatRule && it.dueDate) {
+      const r = completeRecurring(it.repeatRule, it.dueDate, { title: it.title, count: it.repeatCount });
+      const prev = { dueDate: it.dueDate, repeatCount: it.repeatCount };
+      if (r.ended) updateItem.mutate({ id, done: true, repeatCount: r.count });
+      else updateItem.mutate({ id, dueDate: r.next, repeatCount: r.count });
+      notify({ message: r.message, meta: r.meta, icon: r.icon, restore: () => updateItem.mutate({ id, done: false, ...prev }) });
+      return;
+    }
+    updateItem.mutate({ id, done });
+  };
+
   const onItemKey = (id: string, action: ItemAction) => {
     const it = byId(id);
     if (!it) return;
-    if (action === "done") updateItem.mutate({ id, done: !it.done });
+    if (action === "done") setDone(id, !it.done);
     else if (action === "delete") remove(id);
     else if (action.startsWith("priority-")) {
       const n = Number(action.slice(9));
@@ -178,5 +194,5 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     return false;
   };
 
-  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone: (id: string, done: boolean) => updateItem.mutate({ id, done }), addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn };
+  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn };
 }

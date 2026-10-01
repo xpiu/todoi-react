@@ -29,6 +29,8 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: key });
+      void qc.invalidateQueries({ queryKey: ["activity"] });
+      void qc.invalidateQueries({ queryKey: ["item"] });
       for (const k of extraKeys) void qc.invalidateQueries({ queryKey: k });
     },
   });

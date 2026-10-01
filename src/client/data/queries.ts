@@ -2,7 +2,7 @@
 // the items of a project or the Inbox, labels. Keys are grouped so a mutation can invalidate a scope.
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
-import { api, unwrap, type GroupWithProjects, type Item, type ItemDetails, type Label, type ProjectDetail } from "./api";
+import { api, unwrap, type GroupWithProjects, type Item, type ItemDetails, type Label, type ProjectDetail, type ActivityEntry } from "./api";
 
 export const keys = {
   groups: ["groups"] as const,
@@ -11,6 +11,7 @@ export const keys = {
   itemDetails: (id: string) => ["item", id, "details"] as const,
   labels: (projectId: string) => ["labels", projectId] as const,
   inboxUnread: ["inbox", "unread"] as const,
+  activity: (projectId: string) => ["activity", projectId] as const,
 };
 
 export const groupsQuery = () =>
@@ -50,6 +51,13 @@ export const itemDetailsQuery = (id: string) =>
     queryFn: () => api.api.items[":id"].details.$get({ param: { id } }).then((r) => unwrap<ItemDetails>(r)),
   });
 
+export const activityQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: keys.activity(projectId),
+    queryFn: () => api.api.activity.$get({ query: { projectId } }).then((r) => unwrap<ActivityEntry[]>(r)),
+    enabled: !!projectId,
+  });
+
 export const inboxUnreadQuery = () =>
   queryOptions({
     queryKey: keys.inboxUnread,
@@ -63,3 +71,4 @@ export const useListItems = (listId?: string) => useQuery(listItemsQuery(listId)
 export const useLabels = (projectId: string) => useQuery(labelsQuery(projectId));
 export const useItemDetails = (id: string) => useQuery(itemDetailsQuery(id));
 export const useInboxUnread = () => useQuery(inboxUnreadQuery());
+export const useActivity = (projectId: string) => useQuery(activityQuery(projectId));

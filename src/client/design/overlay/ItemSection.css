@@ -1,0 +1,24 @@
+@layer components {
+  .td-isec {
+    margin-top: var(--sp-6);
+  }
+  .td-isec-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    color: var(--ink-900);
+  }
+  .td-isec-spacer {
+    width: 16px;
+  }
+  .td-isec-title {
+    flex: 1;
+    font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
+  }
+  .td-isec-body {
+    margin-top: var(--sp-2);
+  }
+  .td-isec-body.is-inset {
+    margin-left: 28px;
+  }
+}

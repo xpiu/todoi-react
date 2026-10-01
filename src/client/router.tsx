@@ -18,6 +18,10 @@ const viewSearchSchema = z.object({
   v: z.enum(PROJECT_VIEWS).optional().catch(undefined),
   f: z.string().optional().catch(undefined),
   s: z.string().optional().catch(undefined),
+  /** The open item (overlay) */
+  item: z.string().optional().catch(undefined),
+  /** Open with the title in edit mode (the E shortcut) */
+  edit: z.boolean().optional().catch(undefined),
 });
 export type ProjectSearch = z.infer<typeof viewSearchSchema>;
 

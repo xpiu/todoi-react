@@ -71,14 +71,28 @@ export const itemsRoute = new Hono()
   })
   .patch("/:id", idParam, zValidator("json", updateItemSchema), async (c) => {
     const { id } = c.req.valid("param");
-    const { done, ...changes } = c.req.valid("json");
+    const { done, archived, parentItemId, ...rest } = c.req.valid("json");
+    const changes: Partial<ItemRow> = { ...rest };
+    if (archived !== undefined) changes.archivedAt = archived ? new Date() : null;
+    if (parentItemId !== undefined) {
+      // A subitem lives in its parent's list; promoting keeps the list it is in.
+      changes.parentItemId = parentItemId;
+      if (parentItemId) {
+        const [parent] = await db.select({ listId: items.listId, projectId: items.projectId }).from(items).where(eq(items.id, parentItemId));
+        if (!parent) return c.json({ error: "Not found" }, 404);
+        changes.listId = parent.listId;
+        changes.projectId = parent.projectId;
+      }
+    }
     if (done !== undefined) {
       const row = await setDone(id, done, viewerOf(c).userId);
       if (!row) return c.json({ error: "Not found" }, 404);
       if (!Object.keys(changes).length) return c.json(row);
     }
     const [row] = await db.update(items).set(changes).where(eq(items.id, id)).returning();
-    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
+    if (!row) return c.json({ error: "Not found" }, 404);
+    if (archived !== undefined) await logActivity(db, { projectId: row.projectId, actorId: viewerOf(c).userId, type: "item", text: `${archived ? "archived" : "restored"} ${quote(row.title)}`, itemId: row.id, itemKey: row.keyNumber != null ? String(row.keyNumber) : null });
+    return c.json(row);
   })
   // Move within or across lists; a linked list role updates the Status in the same transaction.
   .post("/:id/move", idParam, zValidator("json", moveItemSchema), async (c) => {

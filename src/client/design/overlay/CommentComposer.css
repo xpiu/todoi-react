@@ -1,0 +1,98 @@
+@layer components {
+  .td-mf {
+    position: relative;
+    width: 100%;
+  }
+  .td-mf-ta {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
+    overflow: hidden;
+    font: var(--type-body);
+    color: var(--ink-900);
+    background: var(--surface-card);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    padding: var(--sp-2) var(--sp-3);
+    box-shadow: var(--shadow-input);
+    transition:
+      border-color var(--duration-base) var(--ease-standard),
+      box-shadow var(--duration-base) var(--ease-standard);
+  }
+  .td-mf-ta:focus {
+    outline: none;
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--focus-ring);
+  }
+  .td-mf-ta::placeholder {
+    color: var(--ink-400);
+  }
+  .td-mf-list {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 4px);
+    min-width: 220px;
+    max-width: 100%;
+    padding: var(--sp-1);
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-overlay);
+    z-index: var(--z-menu);
+  }
+  .td-mf-list[data-below="true"] {
+    bottom: auto;
+    top: calc(100% + 4px);
+  }
+  .td-mf-opt {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    min-height: 30px;
+    padding: var(--sp-1) var(--sp-2);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+    cursor: pointer;
+    text-align: left;
+  }
+  .td-mf-opt[aria-selected="true"],
+  .td-mf-opt:hover {
+    background: var(--action-subtle);
+  }
+  .td-mf-sub {
+    margin-left: auto;
+    font: var(--weight-regular) 11px / 16px var(--font-ui);
+    color: var(--ink-400);
+  }
+  .td-composer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .td-composer-foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .td-composer-hint {
+    margin-left: auto;
+    font: var(--weight-regular) 11px / 16px var(--font-mono);
+    color: var(--ink-400);
+    white-space: nowrap;
+  }
+  .td-composer-reply {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: var(--type-small);
+    color: var(--ink-600);
+  }
+  .td-composer-reply b {
+    font-weight: var(--weight-semibold);
+    color: var(--ink-900);
+  }
+}

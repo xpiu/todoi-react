@@ -38,5 +38,6 @@ export type ProjectDetail = InferResponseType<(typeof api.api.projects)[":id"]["
 export type List = ProjectDetail["lists"][number];
 export type Item = InferResponseType<typeof api.api.items.$get, 200>[number];
 export type Label = InferResponseType<typeof api.api.labels.$get, 200>[number];
+export type ActivityEntry = InferResponseType<typeof api.api.activity.$get, 200>[number];
 export type ItemDetails = InferResponseType<(typeof api.api.items)[":id"]["details"]["$get"], 200>;
 export type MoveResult = InferResponseType<(typeof api.api.items)[":id"]["move"]["$post"], 200>;

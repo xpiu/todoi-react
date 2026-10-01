@@ -19,6 +19,9 @@ export interface ViewDefinition {
 }
 export interface ViewState extends ViewDefinition {
   savedView?: string;
+  /** The open item overlay (rides along, never part of a saved definition) */
+  item?: string;
+  edit?: boolean;
 }
 
 /** The query-string shape the router validates (every key optional). */
@@ -27,13 +30,16 @@ export interface ViewSearch {
   v?: ProjectView;
   f?: string;
   s?: string;
+  item?: string;
+  edit?: boolean;
 }
 
 const isView = (v: unknown): v is ProjectView => v === "list" || v === "board" || v === "calendar";
 
-export function encodeViewState({ view, filters = [], sort = {}, savedView }: ViewState): ViewSearch {
-  if (savedView) return { view: savedView };
-  const out: ViewSearch = {};
+export function encodeViewState({ view, filters = [], sort = {}, savedView, item, edit }: ViewState): ViewSearch {
+  const extra: ViewSearch = item ? { item, ...(edit ? { edit: true } : {}) } : {};
+  if (savedView) return { view: savedView, ...extra };
+  const out: ViewSearch = { ...extra };
   if (view) out.v = view;
   if (filters.length) out.f = filters.map((f) => `${encodeURIComponent(f.type)}:${encodeURIComponent(f.value)}`).join(",");
   const s = (["lists", "items"] as const).filter((d) => sort[d]).map((d) => `${d}.${sort[d]!.key}.${sort[d]!.dir}`);
@@ -45,6 +51,10 @@ export function decodeViewState(input: ViewSearch | Record<string, unknown>): Vi
   const out: ViewState & { filters: ViewFilter[]; sort: { lists: SortSpec | null; items: SortSpec | null } } = { filters: [], sort: { lists: null, items: null } };
   const search = input as Record<string, unknown>;
   if (typeof search.view === "string" && search.view) out.savedView = search.view;
+  if (typeof search.item === "string" && search.item) {
+    out.item = search.item;
+    if (search.edit === true) out.edit = true;
+  }
   if (isView(search.v)) out.view = search.v;
   if (typeof search.f === "string" && search.f) {
     for (const x of search.f.split(",")) {

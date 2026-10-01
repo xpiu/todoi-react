@@ -58,8 +58,16 @@ export const updateItemSchema = z
     dueDate: isoDateSchema.nullable(),
     dueTime: timeSchema.nullable(),
     repeatRule: repeatRuleSchema.nullable(),
+    /** Completed repeats so far (recurring completion advances it) */
+    repeatCount: z.number().int().min(0),
     cover: z.object({ color: z.string().max(40).optional(), attachmentId: idSchema.optional(), sample: z.string().max(40).optional() }).nullable(),
     unread: z.boolean(),
+    /** Order among siblings (subitem reorder) */
+    position: z.number().int().min(0),
+    /** Nest under another item (null = promote to a top-level item of its list) */
+    parentItemId: idSchema.nullable(),
+    /** Archive (true) or restore (false) */
+    archived: z.boolean(),
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });

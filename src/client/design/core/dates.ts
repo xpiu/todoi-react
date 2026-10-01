@@ -143,3 +143,18 @@ export function formatDateRange(start: DateInput, due: DateInput, time?: string 
   if (out && d && time) out += ` · ${formatTime(time)}`;
   return out;
 }
+
+/** "just now", "5 min ago", "3 hours ago", "yesterday", else the absolute date — for comment and activity rows. */
+export function formatRelative(v: DateInput, now: Date = new Date()): string {
+  const d = v instanceof Date ? v : v ? new Date(v) : null;
+  if (!d || isNaN(d.getTime())) return "";
+  const s = Math.round((now.getTime() - d.getTime()) / 1000);
+  if (s < 45) return "just now";
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min ago`;
+  if (s < 86400) {
+    const h = Math.round(s / 3600);
+    return `${h} hour${h === 1 ? "" : "s"} ago`;
+  }
+  if (s < 172800) return "yesterday";
+  return formatDate(d, { year: "auto", today: now });
+}
