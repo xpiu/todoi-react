@@ -1,20 +1,38 @@
-# Todoi web application
+# Todoi (web application
 
-## ToC
+## ℹ️ About
 
-- [About the Todoi web application](#about-the-todoi-web-application)
-- [Tech stack](#tech-stack)
-- [Current state: barebones core](#current-state-barebones-core)
-- [Local development](#local-development)
-- [Project structure](#project-structure)
+- **Project title**: Todoi (web application)
+- **Project brief / Executive summary**: 
+Todoi is a lightweight task manager with a focus on user-friendliness, legibility, speed, and support for AI agents.
+- **Public URL**: `https://todoi.com`
+- **Public server (production)**: VPS 2 with Dokploy - the app at todoi.com is temporarily a placeholder micro-site
+- **Public placeholder app source files (v2 - live on 20260821)**: `archive/todoi-placeholder-20260820/`
+- **Official email**: `info@todoi.com`
+- **Default email for sending messages**: `noreply@todoi.com`
+- **Product doc**: PRODUCT.md
+- **Design doc**: DESIGN.md
+- **Staging URL**: `https://st.todoi.com` (not active yet)
+- **Outdated staging URL**: `https://s.todoi.com` (contains an active but out-of-date NextJS build)
+- **Staging server**: `http://72.62.177.91/` (VPS 2)
+- **Project planning**: available in `todo.md`
+- **Git repository**: `git@github.com:xpiu/todoi-react.git`
+- **Todoi Business development files**: `git@github.com:xpiu/todoi-business.git`
+- **Todoi Business planning**: `https://github.com/xpiu/todoi-business/blob/main/todo/todo-business.md`
+- **Todoi Business milestones**: `https://github.com/xpiu/todoi-business/blob/main/todo/milestones-business.md`
+- **Android app**: prototype under development in external repo `todoi-app`
+- **iOS app**: not initiated
+- **MacOS app**: not initiated
+- **Windows app**: not initiated
 
-## About the Todoi web application
 
-Name: Todoi
-Summary: A lightweight, fast task manager.
-Production URL: https://todoi.com
-Staging URL: st.todoi.com
-Github repo: coming later
+## 📚 Table of contents
+
+- ℹ️ About
+- Tech stack
+-
+
+
 
 ## Tech stack
 
