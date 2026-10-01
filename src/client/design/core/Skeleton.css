@@ -1,0 +1,113 @@
+/* Skeleton — flat --surface-track blocks with an opacity pulse (no shimmer). Reduced motion is the
+   global rule in tokens/motion.css. ViewSkeleton lays them out in the shape of the coming view. */
+@layer components {
+  .td-sk {
+    display: block;
+    background: var(--surface-track);
+    border-radius: var(--radius-xs);
+    animation: td-sk-pulse 1.4s var(--ease-standard) infinite;
+    flex-shrink: 0;
+  }
+  .td-sk-round {
+    border-radius: var(--radius-full);
+  }
+  @keyframes td-sk-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .td-skview {
+    height: 100%;
+    box-sizing: border-box;
+    background: var(--chrome-canvas);
+    overflow: hidden;
+    position: relative;
+  }
+  .td-skview-board {
+    display: flex;
+    gap: 11px;
+    padding: var(--sp-3);
+    align-items: flex-start;
+  }
+  .td-sk-col {
+    width: var(--size-list-width);
+    flex-shrink: 0;
+    background: var(--surface-list);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+  .td-sk-colhead {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    height: 28px;
+    padding: 0 5px;
+  }
+  .td-sk-card {
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: var(--sp-2);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .td-sk-cardmeta {
+    display: flex;
+    gap: var(--sp-3);
+    margin-top: 2px;
+  }
+  .td-sk-colfoot {
+    height: 32px;
+  }
+  .td-skview-list {
+    padding: var(--sp-4) var(--sp-5) var(--sp-6);
+  }
+  .td-skview-list-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+  }
+  .td-sk-sec {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 11px 13px 7px;
+  }
+  .td-sk-sechead {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    height: 24px;
+    margin-bottom: var(--sp-1);
+  }
+  .td-sk-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    height: 36px;
+  }
+  .td-sk-row > .td-sk-end {
+    margin-left: auto;
+  }
+  .td-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

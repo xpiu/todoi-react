@@ -1,0 +1,42 @@
+/* IconButton — square icon-only button, transparent in every variant; only the glyph colour changes. */
+@layer components {
+  .td-iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--ink-600);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-iconbtn:hover {
+    background: var(--action-subtle);
+  }
+  .td-iconbtn:active {
+    background: var(--action-subtle-hover);
+  }
+  .td-iconbtn-chrome {
+    color: var(--chrome-text);
+  }
+  .td-iconbtn-chrome:hover {
+    background: var(--chrome-hover);
+  }
+  .td-iconbtn-chrome:active {
+    background: var(--chrome-active);
+  }
+  .td-iconbtn-round {
+    border-radius: var(--radius-full);
+  }
+
+  /* Touch: keep the 24–32px look, grow an invisible 44px hit area. */
+  html[data-touch="true"] .td-iconbtn {
+    position: relative;
+  }
+  html[data-touch="true"] .td-iconbtn::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc((100% - 44px) / 2));
+  }
+}

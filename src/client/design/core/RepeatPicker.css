@@ -1,0 +1,166 @@
+/* RepeatPicker — the rule as a sentence; presets, Custom… (interval · unit · weekdays · ends), "Doesn't repeat". */
+@layer components {
+  .td-rp {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 6px;
+    width: 236px;
+  }
+  .td-rp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    outline: none;
+  }
+  .td-rp-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: var(--weight-semibold) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-rp-head .td-btn {
+    height: 24px;
+    padding: 0 var(--sp-1);
+  }
+  .td-rp-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-rp-unit {
+    color: var(--ink-600);
+  }
+  .td-rp-num {
+    width: 44px;
+    height: 28px;
+    padding: 0 6px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-input);
+    background: var(--surface-card);
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+    outline: none;
+    text-align: center;
+    box-shadow: var(--shadow-input);
+  }
+  .td-rp-num:focus {
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--focus-ring);
+  }
+  .td-rp-num-sm {
+    height: 26px;
+  }
+  .td-rp-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--sp-1);
+  }
+  .td-rp-day {
+    height: 28px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--action-subtle);
+    font: var(--weight-medium) 11px / 16px var(--font-ui);
+    color: var(--ink-600);
+    cursor: pointer;
+  }
+  .td-rp-day[aria-pressed="true"] {
+    background: var(--action-primary);
+    color: var(--text-inverse);
+  }
+  .td-rp-day:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--focus-ring);
+  }
+  .td-rp-ends {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .td-rp-opt {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 28px;
+    padding: 0 var(--sp-1);
+    border-radius: var(--radius-md);
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .td-rp-opt:hover {
+    background: var(--action-subtle);
+  }
+  .td-rp-opt:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
+  .td-rp-radio {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--n-a31);
+    box-sizing: border-box;
+    flex: none;
+  }
+  .td-rp-opt[aria-checked="true"] .td-rp-radio {
+    border-color: var(--blue-500);
+    border-width: 4px;
+  }
+  .td-rp-inline {
+    flex: 1;
+    min-width: 0;
+    height: 26px;
+    padding: 0 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-input);
+    background: var(--surface-card);
+    font: var(--type-small);
+    color: var(--ink-900);
+    outline: none;
+  }
+  .td-rp-inline:focus {
+    border-color: var(--focus-ring);
+  }
+  .td-rp-preview {
+    font: var(--weight-regular) 11px / 16px var(--font-ui);
+    color: var(--ink-400);
+    white-space: nowrap;
+  }
+  .td-rp-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding-top: 6px;
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-rp-foot .td-btn {
+    height: 28px;
+    padding: 0 10px;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+  }
+  .td-rp-sum {
+    font: var(--type-small);
+    color: var(--ink-600);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-rp-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+  .td-rp-value[data-placeholder="true"] {
+    color: var(--ink-600);
+    font-weight: var(--weight-regular);
+  }
+}

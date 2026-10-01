@@ -1,0 +1,85 @@
+/* Toast — bottom-left on navy (--chrome-topbar); undoable outcomes only, one at a time. */
+@layer components {
+  .td-toast {
+    position: fixed;
+    left: var(--sp-4);
+    bottom: var(--sp-4);
+    z-index: var(--z-toast);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    max-width: 480px;
+    padding: 6px 6px 6px 14px;
+    background: var(--chrome-topbar);
+    color: var(--text-inverse);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-overlay);
+    font: var(--type-body);
+    animation: td-toast-in var(--duration-base) var(--ease-standard);
+  }
+  .td-toast-icon {
+    margin-right: 10px;
+    flex-shrink: 0;
+    opacity: 0.75;
+  }
+  .td-toast-msg {
+    margin-right: 10px;
+    min-width: 0;
+  }
+  .td-toast-meta {
+    margin-right: 10px;
+    flex: none;
+    font: var(--type-small);
+    opacity: 0.6;
+    white-space: nowrap;
+  }
+  .td-toast-act {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: var(--blue-400);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    height: 32px;
+    padding: 0 var(--sp-2);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .td-toast-act:hover {
+    background: color-mix(in srgb, var(--text-inverse) 12%, transparent);
+  }
+  .td-toast-act:active {
+    background: color-mix(in srgb, var(--text-inverse) 20%, transparent);
+  }
+  .td-toast-kbd {
+    display: inline-block;
+    padding: 0 5px;
+    border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--text-inverse) 30%, transparent);
+    font: var(--weight-regular) 11px / 18px var(--font-mono);
+    opacity: 0.75;
+  }
+  @keyframes td-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Minimal: the toast is the one inverted surface; chrome-topbar is the ink there, so text flips to the paper. */
+@layer theme {
+  [data-theme="minimal"] .td-toast {
+    color: var(--chrome-canvas);
+  }
+  [data-theme="minimal"] .td-toast-act {
+    color: var(--chrome-canvas);
+    text-decoration: underline;
+  }
+}

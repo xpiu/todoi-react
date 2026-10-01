@@ -1,0 +1,72 @@
+/* EmptyState — the one block for "nothing to show": glyph, one title, at most one hint, two actions. */
+@layer components {
+  .td-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--sp-1);
+    padding: 48px var(--sp-6);
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .td-empty-chrome {
+    background: var(--chrome-canvas);
+  }
+  .td-empty-compact {
+    padding: var(--sp-5) var(--sp-4) var(--sp-3);
+    justify-content: flex-start;
+  }
+  .td-empty-icon {
+    display: inline-flex;
+    margin-bottom: 6px;
+    color: var(--ink-400);
+  }
+  .td-empty-chrome .td-empty-icon {
+    color: var(--chrome-text-dim);
+  }
+  .td-empty-danger .td-empty-icon {
+    color: var(--danger);
+  }
+  .td-empty-title {
+    margin: 0;
+    font: var(--weight-semibold) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--ink-900);
+    max-width: 420px;
+    text-wrap: pretty;
+  }
+  .td-empty-hint {
+    margin: 0;
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+    max-width: 420px;
+    text-wrap: pretty;
+  }
+  .td-empty-chrome .td-empty-title {
+    color: var(--chrome-text);
+  }
+  .td-empty-chrome .td-empty-hint {
+    color: var(--chrome-text-dim);
+  }
+  .td-empty-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .td-empty-actions .td-btn-inverse {
+    padding: 0 14px;
+  }
+  .td-empty-kbd {
+    display: inline-block;
+    padding: 0 5px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    opacity: 0.55;
+    font: var(--weight-regular) 11px / 16px var(--font-mono);
+    margin-left: var(--sp-1);
+  }
+}

@@ -1,0 +1,15 @@
+/* ProgressBar — slim rounded bar (checklist completion, uploads). */
+@layer components {
+  .td-progress {
+    border-radius: var(--radius-full);
+    background: var(--surface-track);
+    overflow: hidden;
+    flex: 1;
+  }
+  .td-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--td-progress-color, var(--ink-600));
+    transition: width var(--duration-overlay) var(--ease-standard);
+  }
+}

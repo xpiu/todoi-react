@@ -1,0 +1,124 @@
+/* Tooltip — the one styled hover hint (DESIGN.md › Tooltips). CSS-only through data-tip, so it never needs
+   a portal; IconButton, MenuButton and SwatchGroup reuse these rules. Shown after --duration-slow. */
+@layer components {
+  .td-tip[data-tip] {
+    position: relative;
+  }
+  .td-tip[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 6px);
+    transform: translate(-50%, -2px);
+    z-index: var(--z-menu-nav);
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--radius-md);
+    background: var(--ink-900);
+    color: var(--surface-card);
+    font: var(--weight-medium) var(--text-sm) / 18px var(--font-ui);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    box-shadow: var(--shadow-raised);
+    transition:
+      opacity var(--duration-base) var(--ease-standard),
+      transform var(--duration-base) var(--ease-standard);
+    transition-delay: 0s;
+  }
+  .td-tip[data-tip]::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 1px);
+    transform: translate(-50%, -2px);
+    z-index: var(--z-menu-nav);
+    border: 5px solid transparent;
+    border-top: 0;
+    border-bottom-color: var(--ink-900);
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      opacity var(--duration-base) var(--ease-standard),
+      transform var(--duration-base) var(--ease-standard);
+    transition-delay: 0s;
+  }
+  .td-tip[data-tip]:hover::after,
+  .td-tip[data-tip]:focus-visible::after,
+  .td-tip[data-tip]:focus-within::after,
+  .td-tip[data-tip]:hover::before,
+  .td-tip[data-tip]:focus-visible::before,
+  .td-tip[data-tip]:focus-within::before {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition-delay: var(--duration-slow);
+  }
+  .td-tip[data-tip][aria-expanded="true"]::after,
+  .td-tip[data-tip][aria-expanded="true"]::before,
+  .td-tip[data-tip][data-tip-off="true"]::after,
+  .td-tip[data-tip][data-tip-off="true"]::before {
+    opacity: 0 !important;
+  }
+
+  .td-tip[data-tip-side="bottom-start"]::after {
+    left: 0;
+    transform: translate(0, -2px);
+  }
+  .td-tip[data-tip-side="bottom-start"]:hover::after,
+  .td-tip[data-tip-side="bottom-start"]:focus-visible::after,
+  .td-tip[data-tip-side="bottom-start"]:focus-within::after {
+    transform: translate(0, 0);
+  }
+  .td-tip[data-tip-side="bottom-end"]::after {
+    left: auto;
+    right: 0;
+    transform: translate(0, -2px);
+  }
+  .td-tip[data-tip-side="bottom-end"]:hover::after,
+  .td-tip[data-tip-side="bottom-end"]:focus-visible::after,
+  .td-tip[data-tip-side="bottom-end"]:focus-within::after {
+    transform: translate(0, 0);
+  }
+  .td-tip[data-tip-side="top"]::after {
+    top: auto;
+    bottom: calc(100% + 6px);
+    transform: translate(-50%, 2px);
+  }
+  .td-tip[data-tip-side="top"]::before {
+    top: auto;
+    bottom: calc(100% + 1px);
+    border: 5px solid transparent;
+    border-bottom: 0;
+    border-top-color: var(--ink-900);
+    transform: translate(-50%, 2px);
+  }
+  .td-tip[data-tip-side="top"]:hover::after,
+  .td-tip[data-tip-side="top"]:focus-visible::after,
+  .td-tip[data-tip-side="top"]:focus-within::after,
+  .td-tip[data-tip-side="top"]:hover::before,
+  .td-tip[data-tip-side="top"]:focus-visible::before,
+  .td-tip[data-tip-side="top"]:focus-within::before {
+    transform: translate(-50%, 0);
+  }
+  .td-tip[data-tip-side="left"]::after {
+    left: auto;
+    right: calc(100% + 6px);
+    top: 50%;
+    transform: translate(2px, -50%);
+  }
+  .td-tip[data-tip-side="left"]::before {
+    display: none;
+  }
+  .td-tip[data-tip-side="left"]:hover::after,
+  .td-tip[data-tip-side="left"]:focus-visible::after,
+  .td-tip[data-tip-side="left"]:focus-within::after {
+    transform: translate(0, -50%);
+  }
+
+  /* Labeled controls carry the hint too, but it stays off while their text label is visible;
+     a theme that hides the label (Minimal's icon-only toolbar) turns it on. */
+  .td-tip-labeled[data-tip]::after,
+  .td-tip-labeled[data-tip]::before {
+    display: none;
+  }
+}

@@ -1,0 +1,92 @@
+/* SyncNotice — persistent inline notice for a condition (never an outcome); tone lives in the glyph only. */
+@layer components {
+  .td-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    margin: 10px var(--sp-3) 0;
+    padding: 5px 5px 5px var(--sp-3);
+    box-sizing: border-box;
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card), 0 0 0 1px var(--border-divider);
+    color: var(--ink-900);
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    animation: td-notice-in var(--duration-base) var(--ease-standard);
+  }
+  .td-notice-fixed {
+    position: fixed;
+    left: 50%;
+    bottom: var(--sp-3);
+    transform: translateX(-50%);
+    margin: 0;
+    width: min(720px, calc(100% - 24px));
+    z-index: var(--z-toast);
+    box-shadow: var(--shadow-overlay), 0 0 0 1px var(--border-divider);
+    animation: td-notice-up var(--duration-base) var(--ease-standard);
+  }
+  .td-notice-danger {
+    --td-notice-tone: var(--danger);
+  }
+  .td-notice-warn {
+    --td-notice-tone: var(--warning);
+  }
+  .td-notice-info {
+    --td-notice-tone: var(--blue-500);
+  }
+  .td-notice-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    color: var(--td-notice-tone);
+  }
+  .td-notice-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--sp-2);
+    padding: 3px 0;
+  }
+  .td-notice-msg {
+    font-weight: var(--weight-semibold);
+  }
+  .td-notice-detail {
+    color: var(--ink-600);
+  }
+  .td-notice-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .td-notice-actions .td-btn {
+    height: 28px;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+  }
+  .td-notice-actions .td-btn-ghost {
+    padding: 0 var(--sp-2);
+  }
+  .td-notice-actions .td-btn:not(.td-btn-ghost) {
+    padding: 0 10px;
+  }
+  @keyframes td-notice-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes td-notice-up {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 8px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+}

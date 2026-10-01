@@ -197,5 +197,10 @@ export function Icon({ name, size = 16, strokeWidth = 2, color, style, className
   const custom = CUSTOM[name];
   if (custom) return <RawSvg nodes={custom} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={className} />;
   const Lucide = LUCIDE_ICONS[name as LucideIconName];
+  if (!Lucide) {
+    // A theme variant that has no Lucide fallback (or a stale name): draw the neutral circle instead of crashing.
+    if (import.meta.env.DEV) console.warn(`Icon: "${name}" is not in the icon map`);
+    return <RawSvg nodes={[["circle", { cx: 12, cy: 12, r: 10 }]]} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={className} />;
+  }
   return <Lucide size={size} strokeWidth={strokeWidth} color={color} style={{ ...baseStyle, ...style }} className={className} aria-hidden />;
 }

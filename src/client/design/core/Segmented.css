@@ -1,0 +1,98 @@
+/* Segmented — one-of-N picker for 2–4 short options. The picked segment lifts to card white. */
+@layer components {
+  .td-seg {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--surface-list);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+  }
+  .td-seg-stretch {
+    display: flex;
+    width: 100%;
+  }
+  .td-seg-stretch .td-seg-btn {
+    flex: 1;
+  }
+  .td-seg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 4px;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--duration-base) var(--ease-standard),
+      color var(--duration-base) var(--ease-standard);
+  }
+  .td-seg-sm .td-seg-btn {
+    height: 24px;
+    padding: 0 var(--sp-2);
+    font-size: var(--text-xs);
+    line-height: var(--lh-xs);
+  }
+  .td-seg-btn:hover {
+    color: var(--ink-900);
+  }
+  .td-seg-btn[aria-pressed="true"] {
+    background: var(--surface-card);
+    color: var(--ink-900);
+    box-shadow: var(--shadow-card);
+  }
+  .td-seg-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-seg-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .td-seg[data-disabled="true"] {
+    opacity: 0.5;
+  }
+}
+
+/* Minimal: no track, no fill — the segments sit on one hairline; the chosen one completes it into a 1px ink box. */
+@layer theme {
+  [data-theme="minimal"] .td-seg {
+    background: transparent;
+    box-shadow: inset 0 -1px 0 var(--border-divider);
+    padding: 0;
+    gap: 0;
+    border-radius: 0;
+  }
+  [data-theme="minimal"] .td-seg-btn {
+    border-radius: 0;
+    color: var(--ink-900);
+    font-weight: var(--weight-regular);
+    box-shadow: inset 0 0 0 1px transparent;
+    transition:
+      color var(--duration-fast) var(--ease-standard),
+      box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  [data-theme="minimal"] .td-seg-btn:hover {
+    background: none;
+    color: var(--ink-900);
+  }
+  [data-theme="minimal"] .td-seg-btn[aria-pressed="true"],
+  [data-theme="minimal"] .td-seg-btn[aria-pressed="true"]:hover {
+    background: none;
+    color: var(--ink-900);
+    box-shadow: inset 0 0 0 1px var(--ink-900);
+  }
+  [data-theme="minimal"] .td-seg-btn:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1px var(--ink-900),
+      inset 0 0 0 2px var(--chrome-canvas),
+      inset 0 0 0 3px var(--ink-900);
+  }
+}

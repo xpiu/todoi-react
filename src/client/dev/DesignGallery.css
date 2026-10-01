@@ -1,0 +1,81 @@
+/* Gallery page chrome only; the primitives bring their own styles. */
+@layer components {
+  .td-gal {
+    min-height: 100vh;
+    background: var(--chrome-canvas);
+    color: var(--chrome-text);
+    padding: 0 var(--sp-5) 96px;
+  }
+  .td-gal-top {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-above-content);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    height: var(--size-topbar);
+    margin: 0 calc(var(--sp-5) * -1);
+    padding: 0 var(--sp-5);
+    background: var(--chrome-canvas);
+    border-bottom: 1px solid var(--chrome-border);
+  }
+  .td-gal-meta {
+    margin-left: auto;
+    font: var(--type-small);
+    color: var(--chrome-text-dim);
+  }
+  .td-gal-section {
+    margin-top: var(--sp-6);
+  }
+  .td-gal-h {
+    margin: 0 0 var(--sp-3);
+    font: var(--type-section);
+    color: var(--chrome-text);
+  }
+  .td-gal-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    background: var(--surface-list);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    color: var(--ink-900);
+  }
+  .td-gal-chrome {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
+    border-radius: var(--radius-md);
+    background: var(--chrome-canvas);
+  }
+  .td-gal-icons {
+    display: inline-flex;
+    gap: var(--sp-2);
+    color: var(--ink-400);
+  }
+  .td-gal-panel,
+  .td-gal-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-1);
+  }
+  .td-gal-wide {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    width: 100%;
+  }
+  .td-gal-skeletons {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+  }
+  .td-gal-skeletons .td-skview {
+    width: 420px;
+    border-radius: var(--radius-md);
+  }
+}

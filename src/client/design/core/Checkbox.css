@@ -1,0 +1,71 @@
+/* Checkbox — square blue check for checklist rows; circle green variant completes a whole item. */
+@layer components {
+  .td-check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    cursor: pointer;
+    font: var(--type-body);
+    color: var(--ink-900);
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .td-check-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-xs);
+    border: 2px solid var(--n-a31);
+    background: var(--surface-card);
+    box-sizing: border-box;
+    color: var(--text-inverse);
+    transition:
+      background var(--duration-fast) var(--ease-standard),
+      border-color var(--duration-fast) var(--ease-standard);
+  }
+  .td-check:hover .td-check-box {
+    border-color: var(--ink-300);
+  }
+  .td-check-box-on {
+    background: var(--blue-500);
+    border-color: var(--blue-500);
+  }
+  .td-check-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    border-color: var(--ink-300);
+  }
+  .td-check-circle.td-check-box-on {
+    background: var(--success-icon);
+    border-color: var(--success-icon);
+  }
+  .td-check-circle:not(.td-check-box-on) {
+    color: var(--ink-300);
+  }
+  .td-check-ic {
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-standard);
+  }
+  .td-check-box-on .td-check-ic {
+    opacity: 1;
+    transform: scale(1);
+  }
+  /* Circle: hover previews the checkmark with a quick pop-in. */
+  .td-check:hover .td-check-circle:not(.td-check-box-on) .td-check-ic {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .td-check:focus-visible {
+    outline: none;
+  }
+  .td-check:focus-visible .td-check-box {
+    box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--focus-ring);
+  }
+}

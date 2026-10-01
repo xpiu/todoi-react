@@ -140,6 +140,8 @@ import {
   Warehouse,
   Wrench,
   X,
+  PanelLeft,
+  PanelRight,
   type LucideIcon,
 } from "lucide-react";
 
@@ -281,6 +283,8 @@ export const LUCIDE_ICONS = {
   "warehouse": Warehouse,
   "wrench": Wrench,
   "x": X,
+  "panel-left": PanelLeft,
+  "panel-right": PanelRight,
 } as const satisfies Record<string, LucideIcon>;
 
 export type LucideIconName = keyof typeof LUCIDE_ICONS;

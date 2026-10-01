@@ -1,0 +1,15 @@
+/* StatusChip — quiet status meta for cards and rows: glyph in its status colour + name in --ink-600. */
+@layer components {
+  .td-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font: var(--type-small);
+    color: var(--ink-600);
+    white-space: nowrap;
+  }
+  .td-status-sm {
+    font-size: 11px;
+    line-height: 14px;
+  }
+}

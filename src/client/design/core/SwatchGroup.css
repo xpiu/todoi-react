@@ -1,0 +1,128 @@
+/* SwatchGroup — a row of colour swatches, one picked (aria-pressed + check). */
+@layer components {
+  .td-swatches {
+    display: inline-flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+  }
+  .td-swatch {
+    border: none;
+    padding: 0;
+    border-radius: var(--td-swatch-r, var(--radius-full));
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    box-sizing: border-box;
+    line-height: 0;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--n-a25);
+    transition: box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  .td-swatch > svg {
+    display: block;
+    flex: none;
+  }
+  .td-swatch:hover {
+    box-shadow: inset 0 0 0 1px var(--n-a31);
+  }
+  .td-swatch[aria-pressed="true"] {
+    box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--blue-500);
+  }
+  .td-swatch:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--focus-ring);
+  }
+  .td-swatches[data-disabled="true"] .td-swatch {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .td-swatches[data-disabled="true"] .td-swatch[aria-pressed="true"] {
+    box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--n-a31);
+  }
+  .td-swatches[data-labeled="true"] {
+    gap: 6px;
+  }
+  .td-swatch-chip {
+    border: none;
+    margin: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 28px;
+    padding: 0 10px 0 6px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    font: var(--type-small);
+    color: var(--ink-600);
+    box-shadow: inset 0 0 0 1px var(--n-a14);
+    transition:
+      box-shadow var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast),
+      background var(--duration-fast);
+  }
+  .td-swatch-chip:hover {
+    background: var(--action-subtle);
+    color: var(--ink-900);
+  }
+  .td-swatch-chip[aria-pressed="true"] {
+    color: var(--ink-900);
+    box-shadow: inset 0 0 0 2px var(--blue-500);
+  }
+  .td-swatch-chip:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
+  }
+  .td-swatch-chip .td-swatch-dot {
+    width: 30px;
+    height: 14px;
+    border-radius: var(--radius-full);
+    flex: none;
+    box-shadow: inset 0 0 0 1px var(--n-a25);
+  }
+  .td-swatch-chip[aria-pressed="true"] .td-swatch-dot {
+    box-shadow: inset 0 0 0 1px var(--n-a31);
+  }
+  .td-swatch-chip .td-swatch-check {
+    margin-left: -2px;
+    color: var(--blue-500);
+  }
+  .td-swatches[data-disabled="true"] .td-swatch-chip {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .td-swatches[data-disabled="true"] .td-swatch-chip:hover {
+    background: transparent;
+    color: var(--ink-600);
+  }
+  .td-swatches[data-disabled="true"] .td-swatch-chip[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 2px var(--n-a31);
+  }
+}
+
+/* Minimal: no halo, no blue, no radius — the chosen sheet gets a 1px ink hairline inset. */
+@layer theme {
+  [data-theme="minimal"] .td-swatch,
+  [data-theme="minimal"] .td-swatch-chip,
+  [data-theme="minimal"] .td-swatch-chip .td-swatch-dot {
+    border-radius: 0;
+  }
+  [data-theme="minimal"] .td-swatch[aria-pressed="true"],
+  [data-theme="minimal"] .td-swatch-chip[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px var(--ink-900);
+  }
+  [data-theme="minimal"] .td-swatch:focus-visible,
+  [data-theme="minimal"] .td-swatch-chip:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1px var(--ink-900),
+      inset 0 0 0 2px var(--chrome-canvas),
+      inset 0 0 0 3px var(--ink-900);
+  }
+  [data-theme="minimal"] .td-swatches[data-disabled="true"] .td-swatch[aria-pressed="true"],
+  [data-theme="minimal"] .td-swatches[data-disabled="true"] .td-swatch-chip[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px var(--n-a31);
+  }
+}

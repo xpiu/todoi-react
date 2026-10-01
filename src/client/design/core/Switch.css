@@ -1,0 +1,58 @@
+/* Switch — on/off for a setting that takes effect at once. 32×18 track, action blue when on. */
+@layer components {
+  .td-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    cursor: pointer;
+    font: var(--type-body);
+    color: var(--ink-900);
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .td-switch-track {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background: var(--n-a25);
+    box-sizing: border-box;
+    transition: background var(--duration-fast) var(--ease-standard);
+    flex: none;
+  }
+  .td-switch:hover .td-switch-track {
+    background: var(--n-a31);
+  }
+  .td-switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: var(--radius-full);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+  .td-switch-on .td-switch-track {
+    background: var(--blue-500);
+  }
+  .td-switch-on:hover .td-switch-track {
+    background: var(--blue-600);
+  }
+  .td-switch-on .td-switch-thumb {
+    transform: translateX(14px);
+  }
+  .td-switch:focus-visible {
+    outline: none;
+  }
+  .td-switch:focus-visible .td-switch-track {
+    box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--focus-ring);
+  }
+  .td-switch[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

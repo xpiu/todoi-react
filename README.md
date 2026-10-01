@@ -80,7 +80,7 @@ npm run db:migrate          # applies migrations from ./drizzle
 npm run dev                 # API on :3000, Vite on :5173 (proxies /api to the API)
 ```
 
-Other scripts: `npm run check` (typecheck + lint), `npm run typecheck`, `npm run lint` (oxlint with
+Other scripts: `npm run check` (typecheck + lint + tests), `npm run test` (Vitest), `npm run typecheck`, `npm run lint` (oxlint with
 the design-adherence plugin in `tools/lint/`, stylelint for component CSS), `npm run build`,
 `npm run db:generate` (after editing `src/server/db/schema.ts`), `npm run db:studio`.
 
@@ -88,9 +88,11 @@ the design-adherence plugin in `tools/lint/`, stylelint for component CSS), `npm
 
 ```
 src/client/          React app (Vite entry: index.html -> src/client/main.tsx)
-src/client/design/   Design system: tokens/ (CSS, four theme × mode scopes), fonts/, covers/,
-                     core/ (Icon, Button, appearance store, viewport, theme registry), one
-                     co-located .css per component, index.css as the single CSS entry
+src/client/design/   Design system: tokens/ (CSS, four theme × mode scopes + parity test), fonts/,
+                     covers/, core/ (every primitive: Icon, Button … Popover/Menu/Select/Dialog on
+                     Base UI, pickers, Markdown, quick-add parser, shortcuts, appearance store),
+                     one co-located .css per component, index.css as the single CSS entry
+src/client/dev/      /dev/ds gallery of every primitive in all theme × mode scopes
 src/server/          Hono API, Drizzle schema and DB client (entry: src/server/index.ts)
 src/shared/          Code used by both: status ids, zod request schemas
 drizzle/             Generated SQL migrations

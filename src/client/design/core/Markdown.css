@@ -1,0 +1,109 @@
+/* Markdown — rendered user-authored text (descriptions, comments); the GitHub-sync subset only. */
+@layer components {
+  .td-md {
+    font: var(--type-body);
+    color: var(--ink-900);
+    overflow-wrap: anywhere;
+  }
+  .td-md > * + * {
+    margin-top: var(--sp-2);
+  }
+  .td-md p,
+  .td-md ul,
+  .td-md ol,
+  .td-md blockquote,
+  .td-md pre,
+  .td-md h1,
+  .td-md h2,
+  .td-md h3 {
+    margin: 0;
+  }
+  .td-md h1 {
+    font: var(--weight-semibold) var(--text-lg) / var(--lh-lg) var(--font-ui);
+  }
+  .td-md h2 {
+    font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
+  }
+  .td-md h3 {
+    font: var(--weight-semibold) var(--text-sm) / var(--lh-sm) var(--font-ui);
+  }
+  .td-md ul,
+  .td-md ol {
+    padding-left: 22px;
+  }
+  .td-md li + li {
+    margin-top: 2px;
+  }
+  .td-md li.td-md-task {
+    list-style: none;
+    margin-left: -22px;
+    display: flex;
+    gap: var(--sp-2);
+    align-items: flex-start;
+  }
+  .td-md-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    margin-top: 3px;
+    border-radius: var(--radius-xs);
+    border: 2px solid var(--n-a31);
+    box-sizing: border-box;
+    flex: none;
+    color: var(--text-inverse);
+  }
+  .td-md-box[data-on="true"] {
+    background: var(--blue-500);
+    border-color: var(--blue-500);
+  }
+  .td-md-task-done {
+    color: var(--ink-400);
+    text-decoration: line-through;
+  }
+  .td-md blockquote {
+    padding: 0 0 0 var(--sp-3);
+    border-left: 2px solid var(--border-input);
+    color: var(--ink-600);
+  }
+  .td-md code {
+    font: var(--weight-regular) var(--text-xs) / var(--lh-xs) var(--font-mono);
+    background: var(--action-subtle);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .td-md pre {
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-list);
+    overflow-x: auto;
+  }
+  .td-md pre code {
+    background: none;
+    padding: 0;
+    font: var(--weight-regular) var(--text-xs) / 18px var(--font-mono);
+  }
+  .td-md a {
+    color: var(--blue-500);
+    text-decoration: none;
+  }
+  .td-md a:hover {
+    text-decoration: underline;
+  }
+  .td-md-mention {
+    color: var(--blue-500);
+    font-weight: var(--weight-semibold);
+  }
+  .td-md-key {
+    font: var(--weight-regular) var(--text-xs) / var(--lh-xs) var(--font-mono);
+    color: var(--ink-400);
+    cursor: pointer;
+  }
+  .td-md-key:hover {
+    color: var(--blue-500);
+  }
+  .td-md del {
+    color: var(--ink-400);
+  }
+}

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** in progress. Phases 0 and 1 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
+**Status:** in progress. Phases 0, 1 and 2 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -50,13 +50,13 @@
 
 ## Phase 2 — Core primitives (TSX, one at a time, `.d.ts` as the contract)
 
-- [ ] Button, IconButton, Tooltip (`data-tip`, 400ms delay), Checkbox, Switch, TextField, Segmented, SwatchGroup, Avatar / AvatarStack, ProgressBar, Skeleton, StatusChip (+ `STATUSES` registry sharing `src/shared/item-status.ts`).
-- [ ] Popover, Menu / MenuItem / MenuDivider / MenuNote / MenuButton, Select, Dialog, ConfirmDialog. Built on Base UI if that decision lands; styled with DS classes and tokens.
-- [ ] Toast + UndoStack (depth 10, LIFO, session only), EmptyState, SyncNotice, ConnectionStatus.
-- [ ] Shortcuts registry (`SHORTCUTS`) and `KeyNav` roving tabindex; `keyLabel` for ⌘ / Ctrl.
-- [ ] Date utilities: `resolveDate`, `formatDate`, `formatDateRange`, `parseTime`; DateCalendar, DatePicker, DatesPicker, RepeatPicker (`describeRepeat`, `nextOccurrence`, `completeRecurring`).
-- [ ] Markdown subset renderer (mentions, item keys) and QuickAdd parser (`#label @assignee !priority due… >List`). Pure functions first, with unit tests.
-- [ ] A Storybook or a plain `/dev/ds` route rendering every primitive in all four theme × mode scopes and on phone/touch overrides. Add the DS theme-parity check as a test.
+- [x] Button, IconButton, Tooltip (`data-tip`, 400ms delay), Checkbox, Switch, TextField, Segmented, SwatchGroup, Avatar / AvatarStack, ProgressBar, Skeleton, StatusChip (+ `STATUSES` registry sharing `src/shared/item-status.ts`). All in `src/client/design/core/`, one `.tsx` + one `.css` each; Tooltip stays CSS-only on purpose (no portal needed).
+- [x] Popover, Menu / MenuItem / MenuDivider / MenuNote / MenuButton, Select, Dialog, ConfirmDialog. Built on Base UI if that decision lands; styled with DS classes and tokens. On `@base-ui/react` 1.8: Popover and Menu on their Base UI namesakes (plus `MenuPopover` for a custom trigger), Select on Base UI Combobox with the input inside the popup (the library's searchable-select pattern; filter field above 8 options), Dialog / ConfirmDialog on Dialog / AlertDialog. Phone bottom sheets with a swipe handle, z-tiers through `data-tier`; a `PortalContainerContext` lets popovers inside a Dialog render in the modal's stacking context. Verified with Playwright: keyboard roving, typeahead filter, nested Escape keeps the dialog open, danger confirm focuses Cancel.
+- [x] Toast + UndoStack (depth 10, LIFO, session only), EmptyState, SyncNotice, ConnectionStatus. `useOnline` is a `useSyncExternalStore` subscription; `connectionCopy` is the one copy source.
+- [x] Shortcuts registry (`SHORTCUTS`) and `KeyNav` roving tabindex; `keyLabel` for ⌘ / Ctrl. `shortcuts.ts` (typed ids, sections for the cheat sheet) and `KeyNav.tsx`.
+- [x] Date utilities: `resolveDate`, `formatDate`, `formatDateRange`, `parseTime`; DateCalendar, DatePicker, DatesPicker, RepeatPicker (`describeRepeat`, `nextOccurrence`, `completeRecurring`). Pure functions in `dates.ts` and `repeat.ts` with Vitest tests (two export bugs fixed on the way: "next month" was parsed as Monday, and the weekly-interval search ignored week boundaries). RepeatPicker presets are a radiogroup on the dialog Popover.
+- [x] Markdown subset renderer (mentions, item keys) and QuickAdd parser (`#label @assignee !priority due… >List`). Pure functions first, with unit tests. `Markdown.tsx` (`renderMarkdown`, tested through `renderToStaticMarkup`, including the no-raw-HTML guarantee) and `quickAdd.ts`; the `QuickAddInput` field itself lands with the list views (it previews LabelChip / DueDatePill).
+- [x] A Storybook or a plain `/dev/ds` route rendering every primitive in all four theme × mode scopes and on phone/touch overrides. Add the DS theme-parity check as a test. Chose the plain route: `src/client/dev/DesignGallery.tsx` at `/dev/ds` (theme × mode switcher on the real store; the viewport attributes follow the window), driven by Playwright (`.tmp/scripts/gallery.mjs`, screenshots in `.tmp/20261001_phase2/`). Storybook 10 + Vitest browser mode stays an option for Phase 7 once there are views worth story-testing. The parity audit is `src/client/design/tokens/parity.test.ts` (every token in all four scopes, no orphans, fixed-ink tokens marked, component CSS without hex / bare z-index / `@media`, only known tokens referenced).
 
 ## Phase 3 — Data model and API (match the vocabulary)
 

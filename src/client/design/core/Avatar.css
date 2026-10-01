@@ -1,0 +1,47 @@
+/* Avatar — round user avatar: image, or initials on one of the eight label tokens. */
+@layer components {
+  .td-avatar {
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-ui);
+    line-height: 1;
+  }
+  img.td-avatar {
+    object-fit: cover;
+  }
+  .td-avatar[data-ink="light"] {
+    color: var(--text-inverse);
+  }
+  .td-avatar[data-ink="dark"] {
+    color: var(--label-text);
+  }
+
+  /* AvatarStack — overlapping avatars; each wears a 2px card-coloured ring. */
+  .td-avstack {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+  }
+  .td-avstack > * {
+    box-shadow: 0 0 0 2px var(--surface-card);
+    border-radius: var(--radius-full);
+  }
+  .td-avstack > * + * {
+    margin-left: calc(var(--td-av-overlap, 6px) * -1);
+  }
+  .td-avstack-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--action-subtle-hover);
+    color: var(--ink-600);
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-ui);
+    line-height: 1;
+  }
+}
