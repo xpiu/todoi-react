@@ -1,0 +1,73 @@
+@layer components {
+  .td-guest {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 6px var(--sp-4);
+    box-sizing: border-box;
+    background: var(--chrome-canvas);
+    color: var(--chrome-text);
+    border-bottom: 1px solid var(--chrome-border);
+  }
+  .td-guest-icon {
+    display: inline-flex;
+    flex: none;
+    color: var(--chrome-text-dim);
+  }
+  .td-guest-text {
+    flex: 1;
+    min-width: 0;
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--chrome-text);
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+  .td-guest-text b {
+    font-weight: var(--weight-semibold);
+  }
+  .td-guest-text span {
+    color: var(--chrome-text-dim);
+  }
+  .td-guest-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+  }
+  /* The read-only contract */
+  [data-readonly="true"] .td-list-foot,
+  [data-readonly="true"] .td-list-add,
+  [data-readonly="true"] .td-lsec-add,
+  [data-readonly="true"] .td-lsec-addbtn,
+  [data-readonly="true"] .td-lsec-more,
+  [data-readonly="true"] .td-board-addlist,
+  [data-readonly="true"] .td-listview-addlist,
+  [data-readonly="true"] .td-calcell-add,
+  [data-readonly="true"] .td-caldaylist-add,
+  [data-readonly="true"] .td-cladd,
+  [data-readonly="true"] .td-list-more,
+  [data-readonly="true"] .td-card-more-anchor,
+  [data-readonly="true"] .td-bulk,
+  [data-readonly="true"] .td-composer {
+    display: none !important;
+  }
+  [data-readonly="true"] .td-check,
+  [data-readonly="true"] .td-lrow-check,
+  [data-readonly="true"] .td-list-name,
+  [data-readonly="true"] .td-lsec-name,
+  [data-readonly="true"] .td-list-iconbtn,
+  [data-readonly="true"] .td-lsec-iconbtn,
+  [data-readonly="true"] .td-modal-aside,
+  [data-readonly="true"] .td-modal-title {
+    pointer-events: none;
+  }
+  [data-readonly="true"] .td-card[draggable],
+  [data-readonly="true"] .td-lrow[draggable],
+  [data-readonly="true"] .td-calchip[draggable] {
+    cursor: pointer;
+  }
+}

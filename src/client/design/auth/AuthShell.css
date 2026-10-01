@@ -1,0 +1,267 @@
+@layer components {
+  .td-auth {
+    flex: 1;
+    min-height: 100vh;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    background: var(--chrome-canvas);
+    color: var(--chrome-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px var(--sp-4);
+    gap: var(--sp-4);
+    overflow-y: auto;
+  }
+  .td-auth-mark {
+    font: var(--weight-semibold) 26px / 32px var(--font-ui);
+    color: var(--chrome-text);
+    letter-spacing: -0.015em;
+    margin-bottom: var(--sp-4);
+  }
+  .td-auth-card {
+    width: 400px;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-overlay);
+    padding: var(--sp-6);
+  }
+  .td-auth-foot {
+    font: var(--type-small);
+    color: var(--chrome-text-dim);
+    display: flex;
+    gap: var(--sp-3);
+    align-items: center;
+  }
+  .td-auth-foot a {
+    color: var(--chrome-text-dim);
+  }
+  .td-auth-foot a:hover {
+    color: var(--chrome-text);
+  }
+  .td-auth-title {
+    margin: 0;
+    font: var(--weight-semibold) 18px / 24px var(--font-ui);
+    color: var(--ink-900);
+    text-wrap: pretty;
+  }
+  .td-auth-sub {
+    margin: var(--sp-1) 0 0;
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+    text-wrap: pretty;
+  }
+  .td-auth-sub b {
+    font-weight: var(--weight-semibold);
+    color: var(--ink-900);
+  }
+  .td-auth-sub.is-legal {
+    margin-top: 10px;
+    font: var(--type-small);
+    color: var(--ink-400);
+    text-align: center;
+  }
+  .td-auth-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+  }
+  .td-auth-stack.is-tight {
+    margin-top: var(--sp-1);
+  }
+  .td-auth-stack .td-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .td-auth-or {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: var(--sp-4) 0 var(--sp-3);
+    font: var(--type-small);
+    color: var(--ink-400);
+  }
+  .td-auth-or::before,
+  .td-auth-or::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-divider);
+  }
+  .td-auth-form {
+    margin-top: var(--sp-4);
+  }
+  .td-auth-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+    margin: 0 0 var(--sp-1);
+  }
+  .td-auth-label-extra {
+    display: flex;
+    gap: 10px;
+  }
+  .td-auth-label a,
+  .td-auth-links a,
+  .td-auth-sub a {
+    font: var(--type-small);
+    color: var(--text-link);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .td-auth-label a:hover,
+  .td-auth-links a:hover,
+  .td-auth-sub a:hover {
+    text-decoration: underline;
+  }
+  .td-auth-field {
+    margin-bottom: var(--sp-3);
+  }
+  .td-auth-field .td-field {
+    height: 36px;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .td-auth-field .td-field[readonly] {
+    color: var(--ink-600);
+    background: var(--surface-list);
+  }
+  .td-auth-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: calc(-1 * var(--sp-1)) 0 var(--sp-3);
+    font: var(--type-small);
+    color: var(--danger);
+  }
+  .td-auth-error-ico {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .td-auth-links {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-top: 14px;
+    font: var(--type-small);
+    color: var(--ink-400);
+  }
+  .td-auth-links.is-center {
+    justify-content: center;
+    gap: var(--sp-1);
+  }
+  .td-auth-who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: var(--sp-4);
+    padding: 10px var(--sp-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-list);
+  }
+  .td-auth-who-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .td-auth-who-text b {
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--ink-900);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-auth-who-text span {
+    font: var(--type-small);
+    color: var(--ink-400);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-auth-who a {
+    font: var(--type-small);
+    color: var(--text-link);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .td-auth-project {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+  .td-auth-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: var(--radius-md);
+    background: var(--action-subtle);
+  }
+  .td-auth-pname {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .td-auth-pname b {
+    font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
+    color: var(--ink-900);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-auth-pname span {
+    font: var(--type-small);
+    color: var(--ink-400);
+  }
+  .td-auth-desc {
+    margin: var(--sp-3) 0 0;
+    padding: var(--sp-2) var(--sp-3);
+    border-left: 2px solid var(--border-input);
+    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+    text-wrap: pretty;
+  }
+  .td-auth-state {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .td-auth-state-icon {
+    flex: none;
+    display: inline-flex;
+    margin-top: 2px;
+    color: var(--ink-400);
+  }
+  .td-auth-state-icon[data-tone="danger"] {
+    color: var(--danger);
+  }
+  .td-auth-state-icon[data-tone="success"] {
+    color: var(--success-icon);
+  }
+  .td-auth-check {
+    padding: 2px 0 var(--sp-1);
+  }
+  .td-pwf-hint {
+    margin: var(--sp-1) 0 0;
+    font: var(--type-small);
+    color: var(--ink-400);
+  }
+  .td-pwf-hint[data-ok="true"] {
+    color: var(--success-icon);
+  }
+  .td-pwf-hint[data-error="true"] {
+    color: var(--danger);
+  }
+}

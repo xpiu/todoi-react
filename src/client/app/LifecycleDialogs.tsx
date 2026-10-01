@@ -12,7 +12,7 @@ import { ProjectDialog, type NewGroup, type NewProject } from "../design/project
 import { ProjectPanel, type PanelAction, type ProjectPatch } from "../design/project/ProjectPanel";
 import { quote, useFeedback } from "./feedback";
 import { useLifecycle } from "./lifecycle";
-import { CURRENT_USER } from "./session";
+import { useCurrentUser } from "./session";
 
 export function LifecycleDialogs() {
   const dialog = useLifecycle((s) => s.dialog);
@@ -65,9 +65,10 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
   const [open, setOpen] = useState(true);
+  const { user } = useCurrentUser();
   const p = project.data;
-  if (!p) return null;
-  const me = p.members.find((x) => x.userId === CURRENT_USER.id);
+  if (!p || !user) return null;
+  const me = p.members.find((x) => x.userId === user.id);
   const role: MemberRole = me?.role ?? "viewer";
   const patch = (c: ProjectPatch) => m.updateProject.mutate({ id: p.id, ...c });
   const finish = () => {
@@ -86,8 +87,8 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
       finish();
       void navigate({ to: "/projects" });
     } else if (a === "leave") {
-      m.removeMember.mutate({ projectId: p.id, userId: CURRENT_USER.id });
-      notify({ message: `Left ${quote(p.name)}`, icon: "log-out", restore: () => m.setMember.mutate({ projectId: p.id, userId: CURRENT_USER.id, role }) });
+      m.removeMember.mutate({ projectId: p.id, userId: user.id });
+      notify({ message: `Left ${quote(p.name)}`, icon: "log-out", restore: () => m.setMember.mutate({ projectId: p.id, userId: user.id, role }) });
       finish();
       void navigate({ to: "/projects" });
     } else if (a === "open-archive") {
@@ -105,7 +106,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
       members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, color: x.avatarColor ? `var(--label-${x.avatarColor})` : undefined }))}
       activity={(activity.data ?? []).map((a) => ({ id: a.id, type: a.type, actor: a.actor?.name ?? "Todoi", actorColor: a.actor?.avatarColor ? `var(--label-${a.actor.avatarColor})` : undefined, text: a.text, key: a.itemKey ? `${p.keyPrefix}-${a.itemKey}` : null, time: a.createdAt }))}
       archivedCount={p.archivedCount}
-      currentUserId={CURRENT_USER.id}
+      currentUserId={user.id}
       section={section}
       onChange={patch}
       onAction={act}

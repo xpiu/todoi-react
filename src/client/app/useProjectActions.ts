@@ -17,12 +17,10 @@ import type { ItemAction } from "../design/core/shortcuts";
 import { STATUSES } from "../design/core/statuses";
 import { quote, useFeedback } from "./feedback";
 import { PRIORITY_LABEL, type Person } from "./items";
-import { SEED_PEOPLE } from "./session";
+import { peopleOf } from "./session";
 
 const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
-// Members with names: the seed's two people until the members endpoint carries user details.
-const people: Person[] = SEED_PEOPLE;
 const statusName = (id: string | null | undefined) => STATUSES.find((s) => s.id === id)?.name ?? "None";
 const nounOf = (n: number) => `${n} item${n === 1 ? "" : "s"}`;
 
@@ -40,12 +38,13 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const updateList = useUpdateList(projectId);
   const notify = useFeedback((s) => s.notify);
   const lists = project.lists.filter((l) => !l.hidden);
+  const people: Person[] = useMemo(() => peopleOf(project), [project]);
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name ?? "the list";
   const byId = (id: string) => items.find((x) => x.id === id);
 
   const quickAdd = useMemo(
     () => ({ labels: labels.map((l) => ({ text: l.name, color: l.color })), members: people.map((p) => ({ name: p.name, nickname: p.nickname ?? undefined })), lists: project.lists.map((l) => ({ name: l.name, value: l.id })) }),
-    [labels, project.lists],
+    [labels, project.lists, people],
   );
 
   const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom") => {

@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { idSchema } from "../../shared/items";
 import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
-import { viewerOf } from "../auth";
+import { maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
 import { groups, items, lists, members, projects, users } from "../db/schema";
 import { createProject, listsWithCounts, updateList } from "../services/projects";
@@ -17,8 +17,11 @@ const liveProjects = and(isNull(projects.archivedAt), isNull(projects.deletedAt)
 export const groupsRoute = new Hono()
   // The sidebar: every live group with its live projects.
   .get("/", async (c) => {
+    const viewer = viewerOf(c);
     const gs = await db.select().from(groups).where(liveGroups).orderBy(asc(groups.position), asc(groups.createdAt));
-    const ps = await db.select().from(projects).where(liveProjects).orderBy(asc(projects.position), asc(projects.createdAt));
+    const mine = new Set((await db.select({ projectId: members.projectId }).from(members).where(eq(members.userId, viewer.userId))).map((m) => m.projectId));
+    // Projects the viewer belongs to, plus shared / public ones.
+    const ps = (await db.select().from(projects).where(liveProjects).orderBy(asc(projects.position), asc(projects.createdAt))).filter((p) => mine.has(p.id) || p.visibility !== "private");
     const [counts, owners] = await Promise.all([
       db
         .select({ projectId: items.projectId, items: sql<number>`count(*)::int`, done: sql<number>`count(*) filter (where ${items.done})::int` })
@@ -56,6 +59,11 @@ export const projectsRoute = new Hono()
     const { id } = c.req.valid("param");
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
     if (!project) return c.json({ error: "Not found" }, 404);
+    const viewer = maybeViewer(c);
+    if (project.visibility === "private") {
+      const member = viewer ? (await db.select({ userId: members.userId }).from(members).where(and(eq(members.projectId, id), eq(members.userId, viewer.userId)))).length > 0 : false;
+      if (!member) return c.json({ error: viewer ? "You're not a member of this project" : "Sign in to continue" }, viewer ? 403 : 401);
+    }
     const [group] = await db.select().from(groups).where(eq(groups.id, project.groupId));
     const ls = await listsWithCounts(id);
     const ms = await db

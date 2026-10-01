@@ -5,7 +5,7 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 
 import type { ItemStatus } from "../../shared/item-status";
-import type { Item, Label, ProjectDetail } from "../data/api";
+import { ApiError, type Item, type Label, type ProjectDetail } from "../data/api";
 import { newId } from "../data/mutations";
 import { useLabels, useProject, useProjectItems } from "../data/queries";
 import { BoardView } from "../design/board/BoardView";
@@ -35,7 +35,7 @@ import { useFeedback } from "./feedback";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
-import { SEED_PEOPLE } from "./session";
+import { peopleOf } from "./session";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import "./screens.css";
 
@@ -56,6 +56,10 @@ export function ProjectScreen() {
   const setSelectedIds = (next: string[] | ((prev: string[]) => string[])) => setSel((cur) => ({ pid: projectId, ids: typeof next === "function" ? next(cur.pid === projectId ? cur.ids : []) : next }));
 
   const failed = project.isError ? project : items.isError ? items : labels.isError ? labels : null;
+  if (failed && failed.error instanceof ApiError && failed.error.status === 401) {
+    void navigate({ to: "/login", search: { next: location.pathname + location.search } });
+    return null;
+  }
   if (failed) return <LoadFailed what="this project" error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
   const go = (next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, ...next }) });
@@ -117,7 +121,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const picker = useProjectPicker(projectId);
   const anchor = useRef<string | null>(null);
 
-  const ctx = useMemo(() => ({ labels, people: SEED_PEOPLE }), [labels]);
+  const ctx = useMemo(() => ({ labels, people: peopleOf(project) }), [labels, project]);
   const visibleItems = useMemo(() => {
     if (!filters.length) return items;
     const keep = new Set(items.filter((it) => !it.parentItemId && matchesFilters(it, filters, ctx)).map((it) => it.id));
@@ -385,7 +389,7 @@ function ProjectBoard(props: ViewProps) {
 /** Calendar: dated items (filters apply) on the grid; drag a chip to reschedule; "+" adds an item due that day. */
 function ProjectCalendar({ projectId, project, items, labels, filters, openItem }: ViewProps) {
   const actions = useProjectActions(projectId, project, items, labels);
-  const ctx = useMemo(() => ({ labels, people: SEED_PEOPLE }), [labels]);
+  const ctx = useMemo(() => ({ labels, people: peopleOf(project) }), [labels, project]);
   const calItems = useMemo<CalendarItem[]>(() => {
     const visibleListIds = new Set(actions.lists.map((l) => l.id));
     const subs = new Map<string, Item[]>();

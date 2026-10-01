@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import { createItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
-import { viewerOf } from "../auth";
+import { maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { moveItem, setDone } from "../services/items";
@@ -34,8 +34,8 @@ export const itemsRoute = new Hono()
   // GET /api/items?listId= | ?projectId= — defaults to the caller's Inbox.
   .get("/", listQuery, async (c) => {
     const { listId, projectId } = c.req.valid("query");
-    const viewer = viewerOf(c);
-    const scope = projectId ? eq(items.projectId, projectId) : eq(items.listId, listId ?? viewer.inboxListId);
+    const scope = projectId ? eq(items.projectId, projectId) : eq(items.listId, listId ?? viewerOf(c).inboxListId);
+    void maybeViewer;
     const rows = await db
       .select()
       .from(items)

@@ -5,9 +5,10 @@ import { nanoid } from "nanoid";
 
 import type { ItemPriority } from "../shared/enums";
 import type { ItemStatus } from "../shared/item-status";
-import { LOCAL_USER_ID } from "./auth";
+import { DEV_PASSWORD, LOCAL_USER_ID } from "./auth";
+import { hashPassword } from "better-auth/crypto";
 import { db } from "./db";
-import { groups, itemAssignees, itemLabels, items, labels, members, users } from "./db/schema";
+import { accounts, groups, itemAssignees, itemLabels, items, labels, members, users } from "./db/schema";
 import { createProject } from "./services/projects";
 
 const SAM_ID = "seed_user_sam_000000a";
@@ -62,6 +63,7 @@ const LABELS: Array<[name: string, color: string]> = [["note", "teal"], ["shop",
 const LIST_ROLES: Array<[string, ItemStatus | null]> = [["New", "NEW"], ["To-do", "TODO"], ["Doing", "DOING"], ["Done", "DONE"], ["Backlog", "BACKLOG"]];
 
 export async function seedIfEmpty() {
+  await ensureDevAccounts();
   const existing = (await db.select({ n: count() }).from(groups))[0]?.n ?? 0;
   if (existing > 0) {
     // An earlier seed stored the sample cover's name under `color`; move it to `sample`.
@@ -131,3 +133,15 @@ export async function seedIfEmpty() {
   return true;
 }
 
+
+/** Email + password sign-in for the seed people (development only): the password is DEV_PASSWORD. */
+async function ensureDevAccounts() {
+  const people = [LOCAL_USER_ID, SAM_ID];
+  for (const userId of people) {
+    const [u] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
+    if (!u) continue;
+    const [acc] = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.userId, userId));
+    if (acc) continue;
+    await db.insert(accounts).values({ id: nanoid(), userId, accountId: userId, providerId: "credential", password: await hashPassword(DEV_PASSWORD) });
+  }
+}

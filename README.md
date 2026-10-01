@@ -1,5 +1,11 @@
 # Todoi (web application
 
+## Signing in (development)
+
+Better Auth (email + password) guards the app. The seed creates two people with the password `todoi-dev-password`:
+`flo@helicopterseurope.com` and `sam@helicopterseurope.com`. Create more accounts at `/signup`; invites come from
+Project settings › Members (the link is copied to the clipboard).
+
 ## ℹ️ About
 
 - **Project title**: Todoi (web application)

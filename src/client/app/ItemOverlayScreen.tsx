@@ -17,7 +17,7 @@ import type { IconName } from "../design/core/Icon";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
-import { CURRENT_USER, SEED_PEOPLE } from "./session";
+import { peopleOf, useCurrentUser } from "./session";
 
 export interface ItemOverlayScreenProps {
   projectId: string;
@@ -31,8 +31,6 @@ export interface ItemOverlayScreenProps {
   onSuggestShortcut?: (id: string, delay?: number) => void;
 }
 
-const people: Person[] = SEED_PEOPLE;
-const personOf = (id: string) => people.find((p) => p.id === id);
 const memberOf = (p: Person) => ({ id: p.id, name: p.name, nickname: p.nickname ?? undefined, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined });
 
 export function ItemOverlayScreen({ projectId, project, items, labels, itemId, editTitle, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps) {
@@ -59,6 +57,9 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const picker = useProjectPicker(projectId);
   const notify = useFeedback((s) => s.notify);
   const [now] = useState(() => new Date());
+  const { user } = useCurrentUser();
+  const people: Person[] = useMemo(() => peopleOf(project), [project]);
+  const personOf = (id: string) => people.find((p) => p.id === id);
   if (!item) return null;
 
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name;
@@ -90,7 +91,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
     const author = personOf(c.authorId);
     const by = (emoji: string) => c.reactions.filter((r) => r.emoji === emoji).map((r) => personOf(r.userId)?.name ?? "Someone");
     const emojis = [...new Set(c.reactions.map((r) => r.emoji))];
-    return { id: c.id, author: author?.name ?? "Someone", authorId: c.authorId, color: author?.avatarColor ? `var(--label-${author.avatarColor})` : undefined, meta: formatRelative(c.createdAt, now), text: c.body, edited: !!c.editedAt, reactions: emojis.map((e) => ({ emoji: e, count: by(e).length, mine: c.reactions.some((r) => r.emoji === e && r.userId === CURRENT_USER.id), by: by(e) })) };
+    return { id: c.id, author: author?.name ?? "Someone", authorId: c.authorId, color: author?.avatarColor ? `var(--label-${author.avatarColor})` : undefined, meta: formatRelative(c.createdAt, now), text: c.body, edited: !!c.editedAt, reactions: emojis.map((e) => ({ emoji: e, count: by(e).length, mine: c.reactions.some((r) => r.emoji === e && r.userId === user?.id), by: by(e) })) };
   });
   const activityRows = (activity.data ?? []).filter((a) => a.itemId === item.id).map((a) => ({ id: a.id, author: a.actor?.name ?? "Todoi", meta: formatRelative(a.createdAt, now), text: a.text }));
   const relations = (details.data?.relations ?? []).filter((r) => r.item).map((r) => ({ type: r.type, item: { id: r.item!.id, title: r.item!.title, itemId: keyOf(r.item!, project.keyPrefix), listName: listName(r.item!.listId), status: r.item!.status, done: r.item!.done } }));
@@ -107,7 +108,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       lists={project.lists.filter((l) => !l.hidden).map((l) => ({ id: l.id, name: l.name, icon: l.icon as IconName | null, statusRole: l.statusRole }))}
       labels={labels}
       members={people.map(memberOf)}
-      currentUserId={CURRENT_USER.id}
+      currentUserId={user?.id ?? ""}
       comments={comments}
       activity={activityRows}
       relations={relations}

@@ -12,7 +12,6 @@ import { ArchiveView, type ArchiveEntry } from "../design/project/ArchiveView";
 import { projectColorVar } from "../design/project/ProjectIconPicker";
 import { quote, useFeedback } from "./feedback";
 import { LoadFailed } from "./LoadFailed";
-import { SEED_PEOPLE } from "./session";
 
 const route = getRouteApi("/app/archive");
 
@@ -27,10 +26,9 @@ export function ArchiveScreen() {
   const navigate = useNavigate();
   if (archive.isError) return <LoadFailed what="the archive" error={archive.error} onRetry={() => void archive.refetch()} />;
   if (!archive.data) return <ViewSkeleton view="list" lists={1} />;
-  const byName = (id: string | null) => SEED_PEOPLE.find((p) => p.id === id)?.name;
   const entries: ArchiveEntry[] = [
     ...archive.data.projects.map((p) => ({ id: p.id, kind: "project" as const, removed: p.deletedAt ? ("deleted" as const) : ("archived" as const), title: p.name, at: p.deletedAt ?? p.archivedAt, icon: p.icon as IconName | null, color: projectColorVar(p.color), groupName: p.groupName ?? undefined })),
-    ...archive.data.items.map((it) => ({ id: it.id, kind: "item" as const, removed: it.deletedAt ? ("deleted" as const) : ("archived" as const), title: it.title, key: it.keyNumber != null && it.keyPrefix ? `${it.keyPrefix}-${it.keyNumber}` : undefined, at: it.deletedAt ?? it.archivedAt, by: byName(it.createdBy), done: it.done, projectId: it.projectId ?? undefined, projectName: it.projectName ?? undefined, listName: it.listName ?? undefined })),
+    ...archive.data.items.map((it) => ({ id: it.id, kind: "item" as const, removed: it.deletedAt ? ("deleted" as const) : ("archived" as const), title: it.title, key: it.keyNumber != null && it.keyPrefix ? `${it.keyPrefix}-${it.keyNumber}` : undefined, at: it.deletedAt ?? it.archivedAt, done: it.done, projectId: it.projectId ?? undefined, projectName: it.projectName ?? undefined, listName: it.listName ?? undefined })),
   ];
   const restore = (e: ArchiveEntry) => {
     if (e.kind === "project") m.restoreProject.mutate({ id: e.id });

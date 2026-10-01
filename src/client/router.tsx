@@ -7,6 +7,8 @@ import { z } from "zod";
 
 import { PROJECT_VIEWS } from "../shared/enums";
 import { AppShell } from "./app/AppShell";
+import { InviteScreen, LoginScreen, ResetScreen, SignupScreen } from "./app/auth/AuthScreens";
+import { authClient } from "./auth";
 import { InboxScreen } from "./app/InboxScreen";
 import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
@@ -31,7 +33,17 @@ export type ProjectSearch = z.infer<typeof viewSearchSchema>;
 export const rootRoute = createRootRoute({ component: Outlet });
 
 /** Everything inside the app frame (top bar + sidebar). */
-export const appRoute = createRoute({ getParentRoute: () => rootRoute, id: "app", component: AppShell });
+/** Signed-in only, except project pages: those decide per project (public projects read as a guest). */
+export const appRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "app",
+  component: AppShell,
+  beforeLoad: async ({ location }) => {
+    if (/^\/p\//.test(location.pathname)) return;
+    const s = await authClient.getSession();
+    if (!s.data) throw redirect({ to: "/login", search: { next: location.href } });
+  },
+});
 
 export const indexRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -57,12 +69,16 @@ export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "
 export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: "/archive", component: ArchiveScreen, validateSearch: (search: Record<string, unknown>) => z.object({ project: z.string().optional().catch(undefined) }).parse(search) });
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <PlaceholderScreen title="Settings" hint="The Settings shell (General, Storage & sync, Labels, Appearance, Keyboard…) lands in the settings phase." icon="settings" /> });
 export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <PlaceholderScreen title="Account" hint="Profile, sign-in methods, tokens and devices land with authentication." icon="user" /> });
-export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: "/i/$code", component: () => <PlaceholderScreen title="Invite" hint="Invite landing pages arrive with authentication." icon="mail" /> });
+const authSearch = z.object({ next: z.string().optional().catch(undefined), email: z.string().optional().catch(undefined), invite: z.string().optional().catch(undefined) });
+export const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: "/login", component: LoginScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
+export const signupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/signup", component: SignupScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
+export const resetRoute = createRoute({ getParentRoute: () => rootRoute, path: "/reset", component: ResetScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
+export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: "/i/$code", component: InviteScreen });
 
 const DesignGallery = lazy(() => import("./dev/DesignGallery").then((m) => ({ default: m.DesignGallery })));
 export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/dev/ds", component: DesignGallery });
 
-const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, archiveRoute, settingsRoute, accountRoute]), inviteRoute, galleryRoute]);
+const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, archiveRoute, settingsRoute, accountRoute]), loginRoute, signupRoute, resetRoute, inviteRoute, galleryRoute]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true });
 

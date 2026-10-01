@@ -27,7 +27,9 @@ import { keyOf } from "./items";
 import { useLifecycle } from "./lifecycle";
 import { LifecycleDialogs } from "./LifecycleDialogs";
 import { useProjectMutations } from "../data/projects";
-import { CURRENT_USER, SEED_PEOPLE } from "./session";
+import { avatarColorVar, peopleOf, useCurrentUser } from "./session";
+import { authClient } from "../auth";
+import { GuestBar } from "../design/auth/GuestBar";
 import { useAppShortcuts } from "./useAppShortcuts";
 import "./AppShell.css";
 
@@ -54,6 +56,12 @@ export function AppShell() {
   const projectLabels = useLabels(projectId ?? "");
   const createList = useCreateList(projectId ?? "");
   const lifecycle = useLifecycle();
+  const { user } = useCurrentUser();
+  const myRole = user ? project.data?.members.find((m) => m.userId === user.id)?.role : undefined;
+  // Guests: anonymous on a public project, or a Viewer inside one → read only.
+  const readonly = !!projectId && !!project.data && (!user || myRole === "viewer" || (!myRole && project.data.visibility === "public"));
+  const guestReason: "public" | "viewer" | null = !readonly ? null : myRole === "viewer" ? "viewer" : "public";
+  const logout = () => void authClient.signOut().then(() => navigate({ to: "/login" }));
   const pm = useProjectMutations();
   const toast = useFeedback((s) => s.toast);
   const dismiss = useFeedback((s) => s.dismiss);
@@ -117,7 +125,7 @@ export function AppShell() {
 
   // Filter options and their match counts over the project's top-level items.
   const topItems = (projectItems.data ?? []).filter((it) => !it.parentItemId);
-  const filterCtx = { labels: projectLabels.data ?? [], people: SEED_PEOPLE };
+  const filterCtx = { labels: projectLabels.data ?? [], people: peopleOf(project.data) };
   const available = availableFilters(filterCtx.labels, filterCtx.people);
   const counts = Object.fromEntries(available.map((f) => [filterKey(f), topItems.filter((it) => matchesFilters(it, [f], filterCtx)).length]));
   const filters = state?.filters ?? [];
@@ -134,7 +142,7 @@ export function AppShell() {
       return;
     }
     const visible = topItems.filter((it) => matchesFilters(it, filters, filterCtx));
-    const ctx = { prefix: p.keyPrefix, labels: filterCtx.labels, people: SEED_PEOPLE, listName: (id: string) => p.lists.find((l) => l.id === id)?.name ?? "" };
+    const ctx = { prefix: p.keyPrefix, labels: filterCtx.labels, people: filterCtx.people, listName: (id: string) => p.lists.find((l) => l.id === id)?.name ?? "" };
     const lists = p.lists.filter((l) => !l.hidden).map((l) => ({ name: l.name, items: visible.filter((it) => it.listId === l.id) }));
     const slug = fileSlug(`${p.name} ${view}`);
     if (format === "md") downloadText(`${slug}.md`, viewToMarkdown(p.name, lists, ctx), "text/markdown");
@@ -168,7 +176,10 @@ export function AppShell() {
       <TopNavbar
         title={title}
         search
-        user={CURRENT_USER}
+        user={user ? { name: user.name, nickname: user.nickname ?? undefined, email: user.email, src: user.image ?? undefined, avatarColor: avatarColorVar(user.avatarColor) } : { name: "Guest" }}
+        signedIn={!!user}
+        onLogout={logout}
+        onLogin={() => navigate({ to: "/login" })}
         onOpenSettings={() => navigate({ to: "/settings" })}
         onOpenAccount={() => navigate({ to: "/account" })}
         sidebarOpen={sidebarOpen}
@@ -184,8 +195,9 @@ export function AppShell() {
       </TopNavbar>
       {!vp.desktop && nav ? <div className="td-app-subrow">{nav}</div> : null}
       {filterBar}
+      {guestReason ? <GuestBar reason={guestReason} projectName={project.data?.name} signedIn={!!user} onLogin={() => navigate({ to: "/login" })} onCreateAccount={!user ? () => navigate({ to: "/signup" }) : undefined} /> : null}
       <div className="td-app-body">
-        <main className="td-app-content">
+        <main className="td-app-content" data-readonly={readonly ? "true" : undefined}>
           <Outlet />
         </main>
         {!vp.desktop && sidebarOpen ? <div className="td-sidebar-scrim" onClick={() => setSidebarOpen(false)} /> : null}
