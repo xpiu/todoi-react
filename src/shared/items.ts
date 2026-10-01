@@ -42,6 +42,8 @@ export const createItemSchema = z.object({
   dueDate: isoDateSchema.nullable().optional(),
   dueTime: timeSchema.nullable().optional(),
   description: z.string().max(100_000).optional(),
+  labelIds: z.array(idSchema).max(50).optional(),
+  assigneeIds: z.array(z.string().min(1).max(64)).max(50).optional(),
 });
 export type CreateItemInput = z.infer<typeof createItemSchema>;
 

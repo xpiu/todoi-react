@@ -1,0 +1,29 @@
+/* App frame: top bar, optional sub row (below desktop), then content beside the sidebar. */
+@layer components {
+  .td-app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    background: var(--chrome-canvas);
+    color: var(--chrome-text);
+    overflow: hidden;
+  }
+  .td-app-subrow {
+    flex-shrink: 0;
+  }
+  .td-app-body {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  .td-app-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}

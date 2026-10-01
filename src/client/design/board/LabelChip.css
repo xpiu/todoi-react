@@ -1,0 +1,56 @@
+/* LabelChip — bar / small pill / chip; the eight palette colours come from data-color. */
+@layer components {
+  .td-label {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    background: var(--td-label-bg);
+  }
+  .td-label[data-form="bar"] {
+    display: inline-block;
+    width: 40px;
+    height: 8px;
+    border-radius: var(--radius-xs);
+  }
+  .td-label[data-form="sm"] {
+    padding: 2px var(--sp-2);
+    border-radius: var(--radius-md);
+    font: var(--weight-semibold) 11px / 16px var(--font-ui);
+  }
+  .td-label[data-form="chip"] {
+    height: 32px;
+    padding: 0 var(--sp-3);
+    border-radius: var(--radius-xs);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+  }
+  .td-label[data-ink="light"] {
+    color: var(--text-inverse);
+  }
+  .td-label[data-ink="dark"] {
+    color: var(--label-text);
+  }
+  .td-label[data-color="green"] {
+    --td-label-bg: var(--label-green);
+  }
+  .td-label[data-color="yellow"] {
+    --td-label-bg: var(--label-yellow);
+  }
+  .td-label[data-color="orange"] {
+    --td-label-bg: var(--label-orange);
+  }
+  .td-label[data-color="red"] {
+    --td-label-bg: var(--label-red);
+  }
+  .td-label[data-color="pink"] {
+    --td-label-bg: var(--label-pink);
+  }
+  .td-label[data-color="blue"] {
+    --td-label-bg: var(--label-blue);
+  }
+  .td-label[data-color="teal"] {
+    --td-label-bg: var(--label-teal);
+  }
+  .td-label[data-color="lime"] {
+    --td-label-bg: var(--label-lime);
+  }
+}

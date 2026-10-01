@@ -1,0 +1,169 @@
+@layer components {
+  .td-subnav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    row-gap: var(--sp-1);
+    column-gap: var(--sp-2);
+    min-height: var(--size-boardbar);
+    padding: 0 var(--sp-4);
+    background: var(--chrome-canvas);
+    flex-shrink: 0;
+  }
+  .td-subnav-spacer {
+    flex: 1;
+  }
+  .td-subnav-views {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    background: var(--chrome-hover);
+    border-radius: var(--radius-md);
+  }
+  .td-subnav-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 4px;
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--chrome-text);
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--duration-base) var(--ease-standard),
+      color var(--duration-base) var(--ease-standard);
+  }
+  .td-subnav-seg:hover {
+    background: var(--chrome-hover);
+  }
+  .td-subnav-seg:active {
+    background: var(--chrome-active);
+  }
+  .td-subnav-seg[aria-pressed="true"] {
+    background: var(--chrome-selected);
+    color: var(--chrome-selected-text);
+  }
+  .td-subnav-vdiv {
+    width: 1px;
+    height: 18px;
+    margin: 0 3px;
+    align-self: center;
+    background: var(--chrome-border);
+    flex-shrink: 0;
+  }
+  .td-subnav-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    flex-wrap: wrap;
+  }
+  .td-subnav-act {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--radius-md);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--chrome-text);
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-subnav-act:hover {
+    background: var(--chrome-hover);
+  }
+  .td-subnav-act:active,
+  .td-subnav-act[aria-expanded="true"] {
+    background: var(--chrome-active);
+  }
+  .td-share-vis {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px var(--sp-2);
+    border-radius: var(--radius-full);
+    background: var(--surface-list);
+    font: var(--weight-medium) 11px / 16px var(--font-ui);
+    color: var(--ink-600);
+  }
+
+  /* Style menu */
+  .td-style-menu {
+    padding: var(--sp-2);
+    box-sizing: border-box;
+  }
+  .td-style-label {
+    font: var(--weight-semibold) 11px / 16px var(--font-ui);
+    color: var(--ink-600);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .td-style-label-gap {
+    margin-top: 14px;
+  }
+  .td-style-more {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: calc(100% + var(--sp-4));
+    margin: var(--sp-3) calc(var(--sp-2) * -1) calc(var(--sp-2) * -1);
+    padding: 9px var(--sp-3);
+    box-sizing: border-box;
+    border: none;
+    border-top: 1px solid var(--border-divider);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+    transition:
+      background var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+  .td-style-more:hover {
+    background: var(--surface-list);
+    color: var(--ink-900);
+  }
+  .td-style-more:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
+  }
+  .td-style-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: 10px;
+  }
+  .td-style-row:first-of-type {
+    margin-top: 0;
+  }
+  .td-style-trail {
+    margin-left: auto;
+    display: inline-flex;
+  }
+  .td-style-div {
+    height: 1px;
+    margin: var(--sp-3) calc(var(--sp-2) * -1);
+    background: var(--border-divider);
+  }
+  .td-style-eg {
+    margin-left: auto;
+    font: var(--weight-regular) 11px / 16px var(--font-mono);
+    color: var(--ink-400);
+    letter-spacing: 0.02em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--surface-list);
+  }
+}

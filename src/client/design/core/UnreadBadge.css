@@ -1,0 +1,23 @@
+@layer components {
+  .td-unread {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex: none;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    background: var(--action-primary);
+    color: var(--text-inverse);
+    font: var(--weight-semibold) 11px / 16px var(--font-ui);
+    white-space: nowrap;
+  }
+  .td-unread[data-dot="true"] {
+    min-width: 6px;
+    width: 6px;
+    height: 6px;
+    padding: 0;
+  }
+}

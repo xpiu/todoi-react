@@ -1,0 +1,227 @@
+/* TopNavbar — always visible, full-width chrome bar. */
+@layer components {
+  .td-topnav {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    height: var(--size-topbar);
+    padding: 0 var(--sp-4);
+    background: var(--chrome-canvas);
+    border-bottom: 1px solid var(--chrome-hover);
+    flex-shrink: 0;
+  }
+  .td-topnav-user {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .td-topnav-avatarbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    padding: 0;
+    background: none;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  .td-topnav-avatarbtn:hover,
+  .td-topnav-avatarbtn[aria-expanded="true"] {
+    box-shadow: 0 0 0 3px var(--chrome-hover);
+  }
+  .td-topnav-avatarbtn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-topnav-guest {
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .td-topnav-guest[data-tone="chrome"] {
+    background: var(--chrome-hover);
+    color: var(--chrome-text-dim);
+  }
+  .td-topnav-guest[data-tone="card"] {
+    background: var(--surface-list);
+    color: var(--ink-400);
+  }
+
+  /* Account menu identity header (a MenuItem carrying the avatar + two lines) */
+  .td-usermenu-id {
+    min-height: 52px;
+    padding: var(--sp-2) 10px;
+  }
+  .td-usermenu-idrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .td-usermenu-idtext {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .td-usermenu-name {
+    font: var(--weight-semibold) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    color: var(--ink-900);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-usermenu-email {
+    font: var(--type-small);
+    color: var(--ink-400);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Title: keeps growing until its text is 25px from the next control, then truncates. */
+  .td-topnav-title {
+    font: var(--type-board-title);
+    color: var(--chrome-text);
+    margin: 0 25px 0 var(--sp-1);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  span.td-topnav-title[data-editable="true"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px var(--sp-2);
+    margin-left: -4px;
+    margin-right: -3px;
+    border-radius: var(--radius-md);
+    cursor: text;
+  }
+  span.td-topnav-title[data-editable="true"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-topnav-title-txt {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-topnav-title-pen {
+    flex-shrink: 0;
+    display: inline-flex;
+    color: var(--chrome-text-dim);
+    opacity: 0;
+    transform: translateX(-2px);
+    transition:
+      opacity var(--duration-base) var(--ease-standard),
+      transform var(--duration-base) var(--ease-standard);
+  }
+  span.td-topnav-title[data-editable="true"]:hover .td-topnav-title-pen,
+  span.td-topnav-title[data-editable="true"]:focus-visible .td-topnav-title-pen {
+    opacity: 1;
+    transform: none;
+  }
+  input.td-topnav-title {
+    background: var(--chrome-selected);
+    color: var(--chrome-selected-text);
+    border: 1px solid transparent;
+    outline: none;
+    padding: 2px var(--sp-2);
+    margin-left: -4px;
+    border-radius: var(--radius-md);
+    width: 280px;
+  }
+
+  .td-topnav-create {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin: 0 -4px;
+  }
+  button.td-topnav-plus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: none;
+    border-radius: var(--radius-md);
+    color: var(--chrome-text);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  button.td-topnav-plus:hover,
+  button.td-topnav-plus[aria-expanded="true"] {
+    background: var(--chrome-hover);
+  }
+  button.td-topnav-plus:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-topnav-spacer {
+    flex: 1;
+    min-width: 0;
+    margin: 0 calc(var(--sp-4) * -1);
+  }
+  .td-topnav-sbtoggle-left {
+    margin: 0 -6px;
+    flex-shrink: 0;
+  }
+  .td-topnav-status {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .td-topnav-status:empty {
+    display: none;
+  }
+  .td-topnav .td-subnav {
+    padding-right: 0;
+    background: transparent;
+  }
+
+  /* Search: compact field that widens while its dropdown is open */
+  .td-topnav-search {
+    position: relative;
+    width: 157px;
+    flex-shrink: 0;
+    transition: width var(--duration-base) var(--ease-standard);
+  }
+  .td-topnav-search[data-open="true"] {
+    width: 320px;
+  }
+  .td-topnav-field {
+    height: 32px;
+    padding: 5px var(--sp-3) 5px 34px;
+  }
+  .td-topnav-field[data-kbd="short"] {
+    padding-right: 40px;
+  }
+  .td-topnav-field[data-kbd="long"] {
+    padding-right: 58px;
+  }
+  .td-topnav-kbd {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font: var(--weight-medium) 11px / 16px var(--font-ui);
+    color: var(--chrome-text-dim);
+    background: var(--chrome-hover);
+    border: 1px solid var(--chrome-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+}

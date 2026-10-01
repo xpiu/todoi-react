@@ -1,0 +1,52 @@
+@layer components {
+  .td-fchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+    white-space: nowrap;
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-fchip-on {
+    background: var(--chrome-selected);
+    color: var(--chrome-selected-text);
+    padding-right: 5px;
+  }
+  .td-fchip-on:hover {
+    background: var(--btn-inverse-bg);
+  }
+  .td-fchip-off {
+    background: var(--chrome-hover);
+    color: var(--chrome-text);
+  }
+  .td-fchip-off:hover {
+    background: var(--chrome-active);
+  }
+  .td-fchip-cat {
+    font-weight: var(--weight-regular);
+    opacity: 0.62;
+  }
+  .td-fchip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .td-fchip-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    margin-left: 1px;
+  }
+  .td-fchip-on:hover .td-fchip-x {
+    background: var(--n-a06);
+  }
+}

@@ -1,0 +1,37 @@
+@layer components {
+  .td-listview {
+    height: 100%;
+    overflow-y: auto;
+    background: var(--chrome-canvas);
+    box-sizing: border-box;
+    padding: var(--sp-4) var(--sp-5) var(--sp-6);
+  }
+  .td-listview-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+  }
+  .td-listview-addlist {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 var(--sp-3);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--chrome-text);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    cursor: pointer;
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-listview-addlist:hover {
+    background: var(--chrome-active);
+  }
+  .td-listview-addlist:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--chrome-border);
+  }
+}

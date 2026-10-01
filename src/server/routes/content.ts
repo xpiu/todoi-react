@@ -48,7 +48,7 @@ export const labelsRoute = new Hono()
   })
   .patch("/:id", idParam, zValidator("json", updateLabelSchema), async (c) => {
     const [row] = await db.update(labels).set(c.req.valid("json")).where(eq(labels.id, c.req.valid("param").id)).returning();
-    return row ? c.json(row) : c.notFound();
+    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   })
   // Merge: every item with this label gets the target instead; the source label disappears.
   .post("/:id/merge", idParam, zValidator("json", mergeLabelSchema), async (c) => {
@@ -64,7 +64,7 @@ export const labelsRoute = new Hono()
   })
   .delete("/:id", idParam, async (c) => {
     const [row] = await db.delete(labels).where(eq(labels.id, c.req.valid("param").id)).returning({ id: labels.id });
-    return row ? c.body(null, 204) : c.notFound();
+    return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
   });
 
 // ── On one item ────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ export const itemContentRoute = new Hono()
     const { id } = c.req.valid("param");
     const viewer = viewerOf(c);
     const [item] = await db.select().from(items).where(eq(items.id, id));
-    if (!item) return c.notFound();
+    if (!item) return c.json({ error: "Not found" }, 404);
     const [labelRows, assigneeRows, watcherRows, commentRows, relationRows, subitems] = await Promise.all([
       db.select({ labelId: itemLabels.labelId }).from(itemLabels).where(eq(itemLabels.itemId, id)),
       db.select({ userId: itemAssignees.userId }).from(itemAssignees).where(eq(itemAssignees.itemId, id)),
@@ -127,7 +127,7 @@ export const itemContentRoute = new Hono()
     const { id } = c.req.valid("param");
     const viewer = viewerOf(c);
     const [item] = await db.select().from(items).where(eq(items.id, id));
-    if (!item) return c.notFound();
+    if (!item) return c.json({ error: "Not found" }, 404);
     const [row] = await db
       .insert(comments)
       .values({ ...c.req.valid("json"), itemId: id, authorId: viewer.userId })
@@ -160,11 +160,11 @@ export const commentsRoute = new Hono()
       .set({ body: c.req.valid("json").body, editedAt: new Date() })
       .where(eq(comments.id, c.req.valid("param").id))
       .returning();
-    return row ? c.json(row) : c.notFound();
+    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   })
   .delete("/:id", idParam, async (c) => {
     const [row] = await db.delete(comments).where(eq(comments.id, c.req.valid("param").id)).returning({ id: comments.id });
-    return row ? c.body(null, 204) : c.notFound();
+    return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
   })
   // Toggle the caller's reaction.
   .post("/:id/reactions", idParam, zValidator("json", reactSchema), async (c) => {
@@ -205,11 +205,11 @@ export const savedViewsRoute = new Hono()
   })
   .patch("/:id", idParam, zValidator("json", updateSavedViewSchema), async (c) => {
     const [row] = await db.update(savedViews).set(c.req.valid("json")).where(eq(savedViews.id, c.req.valid("param").id)).returning();
-    return row ? c.json(row) : c.notFound();
+    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   })
   .delete("/:id", idParam, async (c) => {
     const [row] = await db.delete(savedViews).where(eq(savedViews.id, c.req.valid("param").id)).returning({ id: savedViews.id });
-    return row ? c.body(null, 204) : c.notFound();
+    return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
   });
 
 // ── Activity (read) ────────────────────────────────────────────────────────────
