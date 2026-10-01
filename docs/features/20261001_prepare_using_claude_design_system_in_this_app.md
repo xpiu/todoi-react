@@ -1,0 +1,126 @@
+# Preparing to use the Todoi Design System in this app
+
+**Date:** 2026-10-01
+**Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
+**Status:** planning only. Implementation follows in later, smaller features.
+
+## What the export is
+
+- A full product spec disguised as a design system: hierarchy vocabulary (`Account → Group → Project → List → Item → Subitem`), voice and copy rules, visual foundations, interaction and keyboard model, item editing, states, notifications, export, responsive classes, settings/account pages, project lifecycle, archive/trash, auth and guests.
+- **Tokens:** 11 plain CSS files under `tokens/` (colors, two themes × two modes, typography, spacing, radius, elevation z-ladder, motion, base, print). Directly reusable.
+- **Components:** 90 `.jsx` files under `components/{core,navigation,board,list,calendar,overlay,project,auth}` with matching `.d.ts` prop contracts. Written for React 18 UMD + Babel-standalone, CSS injected per component via a `<style>` tag, icons from the Lucide CDN global. Reference implementations, not drop-in production code.
+- **UI kit:** `ui_kits/todoi/` is the assembled app (Board / List / Calendar, overlay, Settings, Account, Inbox). Depends on `_ds_bundle.js` and `window.*` globals. Treat as a behavioural reference and seed data, not as source.
+- **Guidelines:** 70 specimen cards in `guidelines/` and `components/**/*.card.html`; `explorations/` holds rejected directions (keep for "why not").
+- **Adherence lint:** `_adherence.oxlintrc.json` forbids raw hex, raw px, non-DS fonts, and unknown component props. Worth porting.
+
+## Fit with the current repo
+
+- Status ids already match (`NEW / BACKLOG / TODO / DOING / DONE` in `src/shared/item-status.ts`).
+- Everything else is new: data model stops at `items`, client is one unstyled list, no theming, no routing, no auth.
+- Decisions to make before building (see "Open decisions" below): Base UI vs the DS's own primitives, Tiptap vs the DS Markdown editor, Zustand for the Appearance store.
+
+## Working rules (from the spec, apply from day one)
+
+- Tokens only in component CSS. Never a hex, never a mode selector, never a raw `z-index`, never a component-level `@media`.
+- `data-theme` and `data-mode` live on `<html>` and are owned by one Appearance store. Dark Standard is the default.
+- Copy uses item / list / project, sentence case, verbs first. Never card / column / board in UI text.
+- One shortcut registry, one Popover shell, one Toast (undo only), one `EmptyState`, one `SyncNotice`. No second copies.
+- Notifications are Inbox items. No bell.
+
+---
+
+## Phase 0 — Interpret the design
+
+- [ ] Read `readme.md` end to end; keep it as the canonical spec. Copy it into `docs/design-system/` with the tokens so the repo owns it (the `.tmp` export is disposable).
+- [ ] Open `ui_kits/todoi/index.html` in a browser (needs network for the CDN scripts) and walk every view, the overlay, Settings and Account. Note what is simulated vs real.
+- [ ] Open each guideline card once; list the ones that affect data model or API (status linking, saved views, archive/trash, notifications, relations, repeat rules).
+- [ ] Write a one-page glossary mapping DS vocabulary to database and API names (Group, Project, List, Item, Subitem, Label, Member, Status role, Saved view, Inbox).
+- [ ] Record the Open decisions below with a choice and a reason in this file.
+
+## Phase 1 — Foundations: tokens, fonts, icons, theming
+
+- [ ] Copy `tokens/` and `styles.css` into `src/client/design/tokens/`; import once from `main.tsx`. Remove the current `styles.css` rules it replaces.
+- [ ] Copy `assets/fonts/` (Inter variable, Geist Mono) and fix the `@font-face` paths; verify both only load for the Minimal theme.
+- [ ] Icons: add `lucide-react`. Port the DS `Icon` wrapper to TSX with an explicit icon map (name → component) so tree-shaking survives; include the custom `circle-todo` glyph.
+- [ ] Appearance store: port `components/core/Appearance.jsx` (theme × mode, per-slot Background/Foreground, show ids / labels / status, sidebar side, colorize columns, suggest shortcuts; `td-*` localStorage keys). This is the first Zustand use.
+- [ ] Viewport: port `Viewport.jsx` (`useViewport`, `data-device`, `data-touch` on `<html>`).
+- [ ] Set `<html data-theme="standard" data-mode="dark">` in `index.html`; confirm all four theme × mode scopes render.
+- [ ] Port the adherence lint rules (raw hex, raw px, font family, restricted imports) into the project linter.
+- [ ] Decide the component CSS strategy (see decisions) and set up the first example end to end.
+
+## Phase 2 — Core primitives (TSX, one at a time, `.d.ts` as the contract)
+
+- [ ] Button, IconButton, Tooltip (`data-tip`, 400ms delay), Checkbox, Switch, TextField, Segmented, SwatchGroup, Avatar / AvatarStack, ProgressBar, Skeleton, StatusChip (+ `STATUSES` registry sharing `src/shared/item-status.ts`).
+- [ ] Popover, Menu / MenuItem / MenuDivider / MenuNote / MenuButton, Select, Dialog, ConfirmDialog. Built on Base UI if that decision lands; styled with DS classes and tokens.
+- [ ] Toast + UndoStack (depth 10, LIFO, session only), EmptyState, SyncNotice, ConnectionStatus.
+- [ ] Shortcuts registry (`SHORTCUTS`) and `KeyNav` roving tabindex; `keyLabel` for ⌘ / Ctrl.
+- [ ] Date utilities: `resolveDate`, `formatDate`, `formatDateRange`, `parseTime`; DateCalendar, DatePicker, DatesPicker, RepeatPicker (`describeRepeat`, `nextOccurrence`, `completeRecurring`).
+- [ ] Markdown subset renderer (mentions, item keys) and QuickAdd parser (`#label @assignee !priority due… >List`). Pure functions first, with unit tests.
+- [ ] A Storybook or a plain `/dev/ds` route rendering every primitive in all four theme × mode scopes and on phone/touch overrides. Add the DS theme-parity check as a test.
+
+## Phase 3 — Data model and API (match the vocabulary)
+
+- [ ] Extend the Drizzle schema in steps, each a migration: `groups` (with key prefix), `projects` (icon, color, visibility, default view, link-lists-with-statuses), `lists` (order, status role), `items` (key, project, list, order, status, priority, start, due, due time, repeat rule, cover, done), `subitems`, `labels` + `item_labels`, `members` + `assignees`, `comments`, `attachments`, `relations`, `activity`, `saved_views`, archive / trash flags with 90-day retention.
+- [ ] Item keys: per-group prefix + counter, stable across list moves, re-issued across group moves.
+- [ ] Zod schemas in `src/shared/` for every new table; Hono routes with typed RPC as today.
+- [ ] Linked moves update list and status atomically; the response carries what changed so the toast can say "— Status set to Doing".
+- [ ] Seed script from the UI kit sample data (Helicopters Europe project, labels, members) for local development.
+- [ ] Inbox as one app-managed list per account; notifications written as Inbox items.
+
+## Phase 4 — App frame and views
+
+- [ ] Routing (projects, `/settings`, `/account`, `/i/CODE`); URL mirrors view, filters, sort and saved view.
+- [ ] TopNavbar, SubNavbar (view switcher, Filter / Sort / Style / Share), Sidebar (groups → projects, Groups / Projects / Inbox nav, left or right), SearchDropdown.
+- [ ] List view first (the DS default): ListView, ListSection, ListRow, inline quick-add, checkbox semantics (done remembers prior status).
+- [ ] Board view: BoardView, ListColumn (status-role tints), ItemCard, LabelChip, DueDatePill, FilterChip row.
+- [ ] Drag and drop: native DnD plus the TouchDrag long-press layer; quiet cues (dimmed source, 2px blue slot line); cross-list drop → undo toast.
+- [ ] Keyboard model end to end: N, ⇧N, E, D, 0–4, ⌫, /, F, X, Z, ?, G-chords, Ctrl+K palette, Ctrl+arrow moves, multi-select + BulkBar.
+- [ ] Calendar view: CalendarView, header, grid with spans and "+N more", day list, year mini months.
+- [ ] Empty, loading (ViewSkeleton after 150ms) and error states per the situation table.
+- [ ] Responsive: 1024px nav hoist, touch hit targets, phone item sheet and Popover bottom sheets. No `@media` in components.
+
+## Phase 5 — Item overlay and editing
+
+- [ ] ItemOverlay shell (880px, aside order: list · Status · Priority │ Dates · Repeat · Labels · Assignees │ Attachment · Cover · Relations │ Watch).
+- [ ] Property pickers: Select for list / Status / Priority, DatesPicker, RepeatPicker, LabelPicker (create / edit inline), MemberPicker, CoverPicker, RelationPicker + ItemPicker.
+- [ ] Description editor (Markdown subset, quiet toolbar, Save / Esc). Tiptap decision applies here.
+- [ ] Checklist / subitems with ⋯ (Open · Convert to item · Move to another item · Delete) and drag reorder.
+- [ ] Attachments (list, lightbox, drop sheet, file-drop onto cards), Comments (composer, @mentions, reactions, reply / edit / delete), activity rail.
+- [ ] Overlay ⋯: Duplicate, Move / Copy to project (ProjectPicker), Make subitem of…, Export…, Archive, Delete.
+- [ ] Recurring completion: `completeRecurring` on check, 650ms hold, toast with next due.
+
+## Phase 6 — Project lifecycle, settings, account, auth
+
+- [ ] ProjectDialog (templates, copy existing, visibility, group kind with prefix), ProjectPanel (single scrolling body, inline confirms), ActivityLog (per project, grouped by day).
+- [ ] Archive and Trash view (account and project scope, Restore, Delete forever inline).
+- [ ] Settings shell (Page › Section › Group › Row registry, search across rows) with General, Storage & sync, Labels, Appearance, Keyboard (generated from `SHORTCUTS`), Help, Integrations, Notifications.
+- [ ] Account pages: Profile, Sign-in methods, API tokens, Security, Devices, Projects (storage, share links, invites), Data, Support.
+- [ ] Better Auth: SignInPage, SignUpPage, ResetPasswordPage, InvitePage, GuestBar + `data-readonly` contract.
+- [ ] Export: ExportMenu (PDF via `print.css`, Markdown in Embridge format, CSV); import from Markdown, Trello JSON, CSV via one Review step.
+- [ ] Saved views (tabs row, shareable URL state).
+
+## Phase 7 — Quality gates (set up early, run continuously)
+
+- [ ] Unit tests for every pure function ported (parsers, date math, repeat rules, markdown, `encodeViewState`).
+- [ ] Component tests in all four theme × mode scopes; axe accessibility checks; reduced-motion check.
+- [ ] Theme-parity audit as CI: every color token defined in all four scopes, no orphans, no hex in component code.
+- [ ] Visual regression on the kit's key screens (board, list, calendar, overlay, settings) once they exist.
+- [ ] Keep `docs/design-system/readme.md` in sync when a rule changes; the spec is the contract, not the kit.
+
+---
+
+## Open decisions (resolve in Phase 0)
+
+1. **Primitives:** Base UI (planned in the README) for Popover / Menu / Select / Dialog behaviour with DS classes on top, or port the DS primitives verbatim. Leaning Base UI: it owns focus, ARIA and keyboard handling, and the DS defines look and copy, not internals. The DS's one-Popover rule still holds either way.
+2. **Component CSS:** keep the DS "one CSS string per component" pattern as co-located `.css` files imported by the TSX (closest to source, tokens-only, easy to diff), or CSS Modules. Tailwind is not a fit; the spec is written in tokens and class hooks (`.td-*`) that themes target.
+3. **Rich text:** Tiptap (README) versus the DS Markdown subset editor. The DS deliberately stores Markdown that round-trips to GitHub and Embridge. If Tiptap, it must serialise to the same subset.
+4. **Icons:** `lucide-react` with an explicit map versus the Lucide CDN global the DS uses. Choose `lucide-react`; pin the version close to 0.454 to keep glyph names stable.
+5. **React version:** DS targets React 18 UMD; the app is React 19. Port, do not load the bundle.
+6. **Where the spec lives:** `docs/design-system/` in this repo versus a separate package. Start in-repo; extract only when a second consumer exists.
+
+## Sources (external)
+
+- Design tokens: CSS custom properties over preprocessor variables; primitives → semantic → component layering. https://gitlab.com/gitlab-org/gitlab/-/issues/473845 · https://github.com/fintraffic-design/fds-coreui-css
+- Lucide React: static imports or an explicit icon map; `import * as icons` defeats tree-shaking. https://lucide.dev/docs/lucide-react
+- Base UI: unstyled, accessible primitives from the Radix / MUI / Floating UI authors; actively maintained in 2026. https://base-ui.com/react/overview/about · https://www.greatfrontend.com/blog/top-headless-ui-libraries-for-react-in-2026
+- Storybook 9 with Vite: story globals for theme / viewport, a11y via axe, visual regression via Chromatic or Playwright. https://storybook.js.org/blog/storybook-9/
