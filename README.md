@@ -90,6 +90,23 @@ Other scripts: `npm run check` (typecheck + lint + tests), `npm run test` (Vites
 the design-adherence plugin in `tools/lint/`, stylelint for component CSS), `npm run build`,
 `npm run db:generate` (after editing `src/server/db/schema.ts`), `npm run db:studio`.
 
+## Quality gates
+
+`npm run check` runs the typecheck, oxlint + stylelint and the Vitest unit tests. The unit suite covers every pure
+module (quick-add and import parsers, date math, repeat rules, Markdown, view-state encoding, filters, export,
+shortcuts, item rows) and the **theme-parity audit** (`src/client/design/tokens/parity.test.ts`: every colour token
+defined in all four theme × mode scopes, identical token sets, no raw hex or bare z-index in component CSS).
+
+`npm run test:e2e` runs the browser gates in `tests/e2e/` with Playwright against the dev servers (started for you
+when nothing listens on :5173; Postgres must be up). They sign in as the seeded dev user and, for each of the four
+scopes (Standard / Minimal × Dark / Light), open the list, board, calendar, item overlay and Settings screens, assert
+the scope landed on `<html>`, run **axe** (WCAG 2.1 A + AA; serious and critical violations fail), and compare a
+**visual-regression** snapshot. Two more specs check the reduced-motion rule and the list keyboard model.
+
+Snapshots live in `tests/e2e/__screenshots__` and are recorded per platform. After an intentional visual change run
+`npm run test:e2e:update` and commit the new baselines. CI (`.github/workflows/ci.yml`) runs `npm run check`, then
+the browser gates on Linux with `--ignore-snapshots` until Linux baselines are committed.
+
 ## Project structure
 
 ```

@@ -17,7 +17,9 @@
     "lint:css": "stylelint \"src/client/**/*.css\"",
     "check": "npm run typecheck && npm run lint && npm run test",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -42,6 +44,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.4",
     "@types/pg": "^8.23.1",

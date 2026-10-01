@@ -112,6 +112,10 @@
     padding: 2px;
     min-height: 8px;
   }
+  .td-list-cards:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
   .td-list-cards > * {
     flex: 0 0 auto;
   }

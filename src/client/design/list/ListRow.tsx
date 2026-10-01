@@ -110,9 +110,11 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
   const row = (
     <div
       className={"td-lrow" + (sub ? " td-lrow-sub" : "") + (unread && !sub ? " is-unread" : "")}
-      role="button"
+      // The list / listitem pattern: the row is a focusable list item (roving tabindex via KeyNav) whose
+      // controls — checkbox, key, ⋯ — stay real buttons; a widget role here would nest interactives.
+      role={hasSubs ? undefined : "listitem"}
       tabIndex={0}
-      aria-selected={selected ? true : undefined}
+      data-selected={selected ? "true" : undefined}
       draggable={dragId ? true : undefined}
       data-drag-id={dragId}
       onClick={onClick}
@@ -124,6 +126,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
       }}
       style={sub ? style : undefined}
     >
+      {selected ? <span className="td-sr-only">Selected</span> : null}
       <span className="td-lrow-check" onClick={stop}>
         <Checkbox checked={!!done} onChange={(v) => onDone?.(v)} shape="circle" recurring={recurring} aria-label={done ? "Mark not done" : "Mark done"} />
       </span>
@@ -227,9 +230,9 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
     );
   }
   return (
-    <div className={"td-lgroup" + (selected ? " is-selected" : "")} style={style}>
+    <div className={"td-lgroup" + (selected ? " is-selected" : "")} role="listitem" style={style}>
       {row}
-      <div className="td-lrow-subs">
+      <div className="td-lrow-subs" role="list" aria-label={`Subitems of ${title}`}>
         {subitems!.map((s, i) => (
           <ListRow key={s.itemId ?? i} {...s} sub showId={s.showId ?? showId} />
         ))}

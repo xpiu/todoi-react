@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Source:** `.tmp/20261001_claude_design_system_export/Todoi Design System/` (Claude Design export; `readme.md` is the spec, `SKILL.md` the agent entry point)
-**Status:** in progress. Phases 0–6 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
+**Status:** complete. Phases 0–7 done 2026-10-01; phases are implemented in order, each ticked when verified in the browser.
 
 ## What the export is
 
@@ -101,11 +101,11 @@
 
 ## Phase 7 — Quality gates (set up early, run continuously)
 
-- [ ] Unit tests for every pure function ported (parsers, date math, repeat rules, markdown, `encodeViewState`).
-- [ ] Component tests in all four theme × mode scopes; axe accessibility checks; reduced-motion check.
-- [ ] Theme-parity audit as CI: every color token defined in all four scopes, no orphans, no hex in component code.
-- [ ] Visual regression on the kit's key screens (board, list, calendar, overlay, settings) once they exist.
-- [ ] Keep `docs/design-system/readme.md` in sync when a rule changes; the spec is the contract, not the kit.
+- [x] Unit tests for every pure function ported (parsers, date math, repeat rules, markdown, `encodeViewState`). *(Vitest: quick-add + import parsers, dates, calendar, repeat, Markdown, viewState, filters, export, shortcuts, item rows — `npm run test`.)*
+- [x] Component tests in all four theme × mode scopes; axe accessibility checks; reduced-motion check. *(Playwright `tests/e2e`: list, board, calendar, overlay and Settings in Standard / Minimal × Dark / Light with axe WCAG 2.1 A+AA (serious / critical fail), a reduced-motion spec and a list keyboard spec — `npm run test:e2e`. Fixed on the way: list rows use the list / listitem pattern instead of nested buttons; board columns' scroll regions are keyboard reachable.)*
+- [x] Theme-parity audit as CI: every color token defined in all four scopes, no orphans, no hex in component code. *(`tokens/parity.test.ts` in `npm run check`; `.github/workflows/ci.yml` runs check + the browser gates on every push and PR.)*
+- [x] Visual regression on the kit's key screens (board, list, calendar, overlay, settings) once they exist. *(`toHaveScreenshot` per scope, baselines in `tests/e2e/__screenshots__`, `npm run test:e2e:update` after an intentional change.)*
+- [x] Keep `docs/design-system/readme.md` in sync when a rule changes; the spec is the contract, not the kit. *(The spec lives at `DESIGN.md` + `docs/design/`; the README's Quality gates section documents how the gates enforce it.)*
 
 ---
 

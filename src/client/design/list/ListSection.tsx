@@ -157,7 +157,9 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
         <div className="td-lsec-fold-in">
           <div className="td-lsec-body" data-flush={showHeader ? undefined : "true"}>
             {adding === "top" ? addRow : null}
-            {children}
+            <div className="td-lsec-rows" role="list" aria-label={`${name} items`}>
+              {children}
+            </div>
             {!showAddRow ? null : adding === "bottom" ? (
               addRow
             ) : (

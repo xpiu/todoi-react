@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: Typecheck, lint, unit tests, theme parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  browser:
+    name: Screens × scopes, axe, reduced motion
+    runs-on: ubuntu-latest
+    needs: check
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: todoi
+          POSTGRES_PASSWORD: todoi
+          POSTGRES_DB: todoi_react
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U todoi" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://todoi:todoi@localhost:5432/todoi_react
+      APP_URL: http://localhost:5173
+      BETTER_AUTH_SECRET: ci-only-secret-not-for-production-use
+      UPLOAD_DIR: .data/uploads
+      MIGRATE_ON_START: "true"
+      SEED_ON_START: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: cp .env.example .env
+      - run: npx playwright install --with-deps chromium
+      # Visual baselines are recorded per platform; until linux baselines are committed the snapshots
+      # are skipped here and only the scope, axe and motion assertions gate the build.
+      - run: npm run test:e2e -- --ignore-snapshots
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            .tmp/playwright-report
+            .tmp/test-results
+          retention-days: 7

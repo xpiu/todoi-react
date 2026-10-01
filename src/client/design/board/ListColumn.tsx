@@ -110,7 +110,9 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
           )}
         </MenuPopover>
       </div>
-      <div className="td-list-cards">{children}</div>
+      <div className="td-list-cards" tabIndex={0} role="group" aria-label={`${name} cards`}>
+        {children}
+      </div>
       {adding ? (
         <div className="td-list-composer">
           <QuickAddInput {...quickAdd} placeholder="Item title" aria-label={`New item in ${name}`} onSubmit={(p) => commitAdd(p, true)} onCancel={() => setAdding(false)} onBlur={(p) => commitAdd(p, false)} />
