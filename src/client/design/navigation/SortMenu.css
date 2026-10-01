@@ -1,0 +1,94 @@
+@layer components {
+  .td-sm {
+    width: 296px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .td-sm-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 10px var(--sp-3);
+    border-bottom: 1px solid var(--border-divider);
+    font: var(--weight-semibold) 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-sm-head > .td-icon {
+    color: var(--ink-600);
+  }
+  .td-sm-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .td-sm-reset {
+    height: 26px;
+    padding: 0 var(--sp-2);
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--text-link);
+  }
+  .td-sm-scroll {
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 6px;
+  }
+  .td-sm-sec {
+    padding: var(--sp-2) 10px var(--sp-1);
+    font: var(--weight-semibold) 11px / 16px var(--font-ui);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-400);
+  }
+  .td-sm-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font: var(--type-body);
+    color: var(--ink-900);
+    box-sizing: border-box;
+  }
+  .td-sm-row:hover {
+    background: var(--surface-list);
+  }
+  .td-sm-row[aria-checked="true"] {
+    background: var(--blue-100);
+  }
+  .td-sm-row:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
+  .td-sm-check {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .td-sm-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-sm-hint {
+    flex-shrink: 0;
+    font: var(--type-small);
+    color: var(--ink-400);
+  }
+  .td-sm-dir {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    flex-shrink: 0;
+    font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--text-link);
+  }
+}

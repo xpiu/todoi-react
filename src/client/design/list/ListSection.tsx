@@ -18,7 +18,7 @@ export type AddPosition = "top" | "bottom";
 
 export interface ListSectionProps {
   name: string;
-  count?: number;
+  count?: number | string;
   /** Explicit icon override; omit for the automatic name-derived icon */
   icon?: IconName | null;
   iconColor?: string;

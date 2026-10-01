@@ -1,7 +1,7 @@
 // SubNavbar — view switcher (List / Board / Cal. + optional Views toggle) and the Filter / Sort /
 // Style / Members / Share actions. Style is the quick appearance menu on the shared store (a dialog
 // Popover); Share is a Menu with Copy project URL and share targets. Spec: DESIGN.md › Subnavbar.
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 
 import { useAppearance } from "../core/appearance";
 import { Checkbox } from "../core/Checkbox";
@@ -41,6 +41,16 @@ const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; 
   { id: "discord", label: "Discord", icon: "discord", href: () => "https://discord.com/channels/@me" },
 ];
 
+/** A toolbar-tier dialog Popover behind an action button (Filter, Sort). */
+function MenuPopoverless({ label, trigger, children }: { label: string; trigger: ReactElement; children: ReactNode }) {
+  const pop = usePopover();
+  return (
+    <Popover open={pop.open} onOpenChange={pop.setOpen} tier="toolbar" placement="bottom-start" role="dialog" aria-label={`${label} options`} width={296} trigger={trigger}>
+      {children}
+    </Popover>
+  );
+}
+
 export interface SubNavbarProps {
   views?: SubNavbarView[];
   activeView?: string;
@@ -50,6 +60,13 @@ export interface SubNavbarProps {
   onAction?: (id: string) => void;
   /** Which action currently shows its panel (pressed look) */
   activeAction?: string | null;
+  /** Body of the Filter action's Popover (a FilterMenu); without it the action only fires onAction */
+  filterMenu?: ReactNode;
+  /** Body of the Sort action's Popover (a SortMenu) */
+  sortMenu?: ReactNode;
+  /** Count badges on the Filter / Sort actions while something is active */
+  filterCount?: number;
+  sortCount?: number;
   /** Renders the Members button */
   onMembers?: () => void;
   /** @default true */
@@ -67,7 +84,7 @@ export interface SubNavbarProps {
   className?: string;
 }
 
-export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, activeAction, onMembers, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
+export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, activeAction, filterMenu, sortMenu, filterCount = 0, sortCount = 0, onMembers, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
   const ap = useAppearance();
   const active = activeView ?? views[0]?.id;
   const stylePop = usePopover();
@@ -173,11 +190,20 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                 </Popover>
               );
             }
-            return (
-              <button key={a.id} type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} aria-expanded={activeAction === a.id} onClick={() => onAction?.(a.id)}>
+            const menu = a.id === "filter" ? filterMenu : a.id === "sort" ? sortMenu : null;
+            const badge = a.id === "filter" ? filterCount : a.id === "sort" ? sortCount : 0;
+            const button = (
+              <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-active={badge ? "true" : undefined} aria-expanded={menu ? undefined : activeAction === a.id} onClick={menu ? undefined : () => onAction?.(a.id)}>
                 {a.icon ? <Icon name={a.icon} size={16} /> : null}
                 {a.label}
+                {badge ? <span className="td-subnav-badge">{badge}</span> : null}
               </button>
+            );
+            if (!menu) return <span key={a.id}>{button}</span>;
+            return (
+              <MenuPopoverless key={a.id} label={a.label} trigger={button}>
+                {menu}
+              </MenuPopoverless>
             );
           })}
           {onMembers ? (

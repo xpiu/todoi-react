@@ -103,6 +103,22 @@ export function useDeleteItem(scope: ItemsScope) {
   );
 }
 
+export function useSetItemLabels(scope: ItemsScope) {
+  return useOptimistic(
+    scope,
+    (vars: { id: string; labelIds: string[] }) => api.api.items[":id"].labels.$put({ param: { id: vars.id }, json: { labelIds: vars.labelIds } }).then((r) => unwrap<{ labelIds: string[] }>(r)),
+    (items, { id, labelIds }) => items.map((it) => (it.id === id ? { ...it, labelIds } : it)),
+  );
+}
+
+export function useSetItemAssignees(scope: ItemsScope) {
+  return useOptimistic(
+    scope,
+    (vars: { id: string; userIds: string[] }) => api.api.items[":id"].assignees.$put({ param: { id: vars.id }, json: { userIds: vars.userIds } }).then((r) => unwrap<{ userIds: string[] }>(r)),
+    (items, { id, userIds }) => items.map((it) => (it.id === id ? { ...it, assigneeIds: userIds } : it)),
+  );
+}
+
 /** Move within or across lists; the server returns what changed (list, Status, key) for the toast. */
 export function useMoveItem(scope: ItemsScope) {
   const projectId = "projectId" in scope ? scope.projectId : null;

@@ -1,7 +1,8 @@
-// ProjectScreen — one project in the view the URL names: List (default), Board, Calendar.
-// Spec: DESIGN.md › Views.
-import { getRouteApi } from "@tanstack/react-router";
-import { useRef } from "react";
+// ProjectScreen — one project in the view the URL names: List (default), Board, Calendar. The URL
+// also carries the filters and sort; selection lives here so it survives a view switch.
+// Spec: DESIGN.md › Views, Filtering, Selection.
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 
 import type { ItemStatus } from "../../shared/item-status";
 import type { Item, Label, ProjectDetail } from "../data/api";
@@ -11,16 +12,21 @@ import { BoardView } from "../design/board/BoardView";
 import { ItemCard } from "../design/board/ItemCard";
 import { ListColumn } from "../design/board/ListColumn";
 import { useItemDnd, type ItemDnd } from "../design/board/useItemDnd";
+import { BulkBar } from "../design/core/BulkBar";
 import { EmptyState } from "../design/core/EmptyState";
 import type { IconName } from "../design/core/Icon";
+import type { SelectMode } from "../design/core/KeyNav";
+import type { ItemAction } from "../design/core/shortcuts";
 import { ViewSkeleton } from "../design/core/Skeleton";
 import { useTouchDrag } from "../design/core/touchDrag";
 import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
-import { decodeViewState } from "../design/navigation/viewState";
+import { decodeViewState, encodeViewState } from "../design/navigation/viewState";
+import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
 import { PlaceholderScreen } from "./PlaceholderScreen";
+import { SEED_PEOPLE } from "./session";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import "./screens.css";
 
@@ -30,14 +36,29 @@ export function ProjectScreen() {
   const { projectId } = projectRoute.useParams();
   const search = projectRoute.useSearch();
   const state = decodeViewState(search);
+  const navigate = useNavigate();
   const project = useProject(projectId);
   const items = useProjectItems(projectId);
   const labels = useLabels(projectId);
   const view = state.view ?? project.data?.defaultView ?? "list";
+  // Selection is per project: a different project reads as an empty selection.
+  const [sel, setSel] = useState<{ pid: string; ids: string[] }>({ pid: projectId, ids: [] });
+  const selectedIds = sel.pid === projectId ? sel.ids : [];
+  const setSelectedIds = (next: string[] | ((prev: string[]) => string[])) => setSel((cur) => ({ pid: projectId, ids: typeof next === "function" ? next(cur.pid === projectId ? cur.ids : []) : next }));
 
   if (project.isError) return <PlaceholderScreen title="Couldn't load this project" hint={project.error.message} icon="cloud-off" />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
-  const props = { projectId, project: project.data, items: items.data, labels: labels.data };
+  const props: ViewProps = {
+    projectId,
+    project: project.data,
+    items: items.data,
+    labels: labels.data,
+    filters: state.filters,
+    sort: state.sort,
+    selectedIds,
+    setSelectedIds,
+    clearFilters: () => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ view: state.view, sort: state.sort }) }),
+  };
   if (view === "board") return <ProjectBoard {...props} />;
   if (view === "calendar") return <PlaceholderScreen title="Calendar view" hint="The calendar lands next in this phase." icon="calendar" />;
   return <ProjectList {...props} />;
@@ -48,6 +69,106 @@ interface ViewProps {
   project: ProjectDetail;
   items: Item[];
   labels: Label[];
+  filters: ReturnType<typeof decodeViewState>["filters"];
+  sort: ReturnType<typeof decodeViewState>["sort"];
+  selectedIds: string[];
+  setSelectedIds: (next: string[] | ((prev: string[]) => string[])) => void;
+  clearFilters: () => void;
+}
+
+interface VisibleList {
+  id: string;
+  name: string;
+  icon: IconName | null;
+  statusRole: ItemStatus | null;
+  total: number;
+  count: number;
+  countLabel: number | string;
+}
+
+/** Everything a view needs beyond rendering: visible lists (filtered, sorted), actions, selection, drag. */
+function useProjectView({ projectId, project, items, labels, filters, sort, selectedIds, setSelectedIds }: ViewProps, root: React.RefObject<HTMLDivElement | null>, dndOpts: { listSelector: string; itemSelector: string; cardsSelector: string }) {
+  const actions = useProjectActions(projectId, project, items, labels);
+  const dnd = useItemDnd(root, { ...dndOpts, onDrop: actions.move });
+  useTouchItemDrag(root, dnd, dndOpts.itemSelector, actions.move);
+  const anchor = useRef<string | null>(null);
+
+  const ctx = useMemo(() => ({ labels, people: SEED_PEOPLE }), [labels]);
+  const visibleItems = useMemo(() => {
+    if (!filters.length) return items;
+    const keep = new Set(items.filter((it) => !it.parentItemId && matchesFilters(it, filters, ctx)).map((it) => it.id));
+    return items.filter((it) => (it.parentItemId ? keep.has(it.parentItemId) : keep.has(it.id)));
+  }, [items, filters, ctx]);
+  const order = itemComparator(sort.items);
+  const lists: VisibleList[] = sortLists(
+    actions.lists.map((l) => {
+      const total = items.filter((it) => it.listId === l.id && !it.parentItemId).length;
+      const count = visibleItems.filter((it) => it.listId === l.id && !it.parentItemId).length;
+      return { id: l.id, name: l.name, icon: (l.icon as IconName | null) ?? null, statusRole: l.statusRole, total, count, countLabel: filters.length ? `${count} of ${total}` : count };
+    }),
+    sort.lists,
+  );
+  const rowsOf = (listId: string) => rowsForList(visibleItems, listId, { prefix: project.keyPrefix, labels, people: actions.people, order });
+  const allFiltered = filters.length > 0 && lists.length > 0 && lists.every((l) => !l.count) && lists.some((l) => l.total);
+  const hiddenCount = lists.reduce((n, l) => n + (l.total - l.count), 0);
+
+  // Selection: S / shift+arrows / Ctrl+A from KeyNav, Ctrl+click toggles, shift+click ranges within a list.
+  const onItemSelect = (ids: string[], mode: SelectMode) => {
+    if (mode === "toggle") setSelectedIds((prev) => (ids.every((id) => prev.includes(id)) ? prev.filter((id) => !ids.includes(id)) : [...new Set([...prev, ...ids])]));
+    else if (mode === "extend") setSelectedIds((prev) => [...new Set([...prev, ...ids])]);
+    else setSelectedIds(ids);
+    anchor.current = ids[ids.length - 1] ?? null;
+  };
+  const onItemClick = (id: string, listId: string, e: SyntheticEvent) => {
+    const me = e as unknown as { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean };
+    if (me.ctrlKey || me.metaKey) {
+      e.preventDefault();
+      onItemSelect([id], "toggle");
+    } else if (me.shiftKey && anchor.current) {
+      e.preventDefault();
+      const ids = rowsOf(listId).map((r) => r.id);
+      const a = ids.indexOf(anchor.current), b = ids.indexOf(id);
+      if (a >= 0 && b >= 0) setSelectedIds((prev) => [...new Set([...prev, ...ids.slice(Math.min(a, b), Math.max(a, b) + 1)])]);
+      else onItemSelect([id], "toggle");
+    }
+    // A plain click opens the item (Phase 5).
+  };
+  // Single-key actions apply to the whole selection when the focused item is part of it.
+  const onItemKey = (id: string, action: ItemAction) => {
+    if (selectedIds.length > 1 && selectedIds.includes(id)) {
+      if (action === "done" || action === "delete") {
+        if (actions.bulk(action, undefined, selectedIds)) setSelectedIds([]);
+        return;
+      }
+      if (action.startsWith("priority-")) {
+        const n = Number(action.slice(9));
+        actions.bulk("priority", n === 0 ? null : (["URGENT", "HIGH", "MEDIUM", "LOW"] as const)[n - 1]!, selectedIds);
+        return;
+      }
+    }
+    actions.onItemKey(id, action);
+  };
+  useEffect(() => {
+    if (!selectedIds.length) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) setSelectedIds([]);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selectedIds.length, setSelectedIds]);
+
+  const bulkBar = selectedIds.length ? (
+    <BulkBar
+      count={selectedIds.length}
+      actions={actions.bulkActions(selectedIds)}
+      onAction={(id, value) => {
+        if (actions.bulk(id, value, selectedIds)) setSelectedIds([]);
+      }}
+      onClear={() => setSelectedIds([])}
+    />
+  ) : null;
+  const isSelected = (id: string) => selectedIds.includes(id);
+  return { actions, dnd, lists, rowsOf, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar, isSelected };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -63,13 +184,22 @@ function NoLists({ actions }: { actions: ProjectActions }) {
   );
 }
 
+function NoMatches({ hidden, onReset }: { hidden: number; onReset: () => void }) {
+  return (
+    <div className="td-screen-canvas">
+      <EmptyState icon="filter" title="No items match these filters" hint={`${hidden} item${hidden === 1 ? " is" : "s are"} hidden by the current filters.`} action={{ label: "Reset filters", icon: "x", shortcut: "X", onClick: onReset }} />
+    </div>
+  );
+}
+
 /** Section / column header callbacks shared by both views. */
-function listCallbacks(actions: ProjectActions, listId: string) {
+function listCallbacks(actions: ProjectActions, listId: string, selectAll: () => void) {
   return {
     onRename: (name: string) => actions.updateList.mutate({ id: listId, name }),
     onIconChange: (icon: IconName | null) => actions.updateList.mutate({ id: listId, icon }),
     onStatusRoleChange: (role: ItemStatus | null) => actions.updateList.mutate({ id: listId, statusRole: role }),
     onHide: () => actions.updateList.mutate({ id: listId, hidden: true }),
+    onSelectAll: selectAll,
   };
 }
 
@@ -90,80 +220,90 @@ function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: Ite
   });
 }
 
-function ProjectList({ projectId, project, items, labels }: ViewProps) {
-  const actions = useProjectActions(projectId, project, items, labels);
+function ProjectList(props: ViewProps) {
   const root = useRef<HTMLDivElement | null>(null);
-  const dnd = useItemDnd(root, { listSelector: ".td-lsec", itemSelector: ".td-lrow[data-drag-id]", cardsSelector: ".td-lsec-body", onDrop: actions.move });
-  useTouchItemDrag(root, dnd, ".td-lrow[data-drag-id]", actions.move);
-  if (!actions.lists.length) return <NoLists actions={actions} />;
+  const v = useProjectView(props, root, { listSelector: ".td-lsec", itemSelector: ".td-lrow[data-drag-id]", cardsSelector: ".td-lsec-body" });
+  const { actions } = v;
+  if (!v.lists.length) return <NoLists actions={actions} />;
+  if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
-    <ListView ref={root} onAddList={() => actions.addList()} onItemKey={actions.onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
-      {actions.lists.map((list) => {
-        const rows = rowsForList(items, list.id, { prefix: project.keyPrefix, labels, people: actions.people });
-        return (
-          <ListSection key={list.id} listId={list.id} name={list.name} count={rows.length} icon={(list.icon as IconName | null) ?? null} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list.id)}>
-            {rows.map((r) => (
-              <ListRow
-                key={r.id}
-                dragId={r.id}
-                title={r.title}
-                itemId={r.itemId}
-                done={r.done}
-                onDone={(done) => actions.setDone(r.id, done)}
-                labels={r.labels}
-                due={r.due}
-                dueState={r.dueState}
-                repeat={r.repeat}
-                priority={r.priority}
-                assignees={r.assignees}
-                subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done) }))}
-              />
-            ))}
-          </ListSection>
-        );
-      })}
-    </ListView>
-  );
-}
-
-function ProjectBoard({ projectId, project, items, labels }: ViewProps) {
-  const actions = useProjectActions(projectId, project, items, labels);
-  const root = useRef<HTMLDivElement | null>(null);
-  const dnd = useItemDnd(root, { listSelector: ".td-list", itemSelector: ".td-card[data-drag-id]", cardsSelector: ".td-list-cards", onDrop: actions.move });
-  useTouchItemDrag(root, dnd, ".td-card[data-drag-id]", actions.move);
-  if (!actions.lists.length) return <NoLists actions={actions} />;
-  return (
-    <BoardView ref={root} onAddList={() => actions.addList()} onItemKey={actions.onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
-      {actions.lists.map((list) => {
-        const rows = rowsForList(items, list.id, { prefix: project.keyPrefix, labels, people: actions.people });
-        return (
-          <ListColumn key={list.id} listId={list.id} name={list.name} count={rows.length} icon={(list.icon as IconName | null) ?? null} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed) => actions.addItem(list.id, title, parsed)} {...listCallbacks(actions, list.id)}>
-            {rows.map((r) => {
-              const it = items.find((x) => x.id === r.id);
-              return (
-                <ItemCard
+    <>
+      <ListView ref={root} onAddList={() => actions.addList()} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps}>
+        {v.lists.map((list) => {
+          const rows = v.rowsOf(list.id);
+          return (
+            <ListSection key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list.id, () => v.onItemSelect(rows.map((r) => r.id), "all"))}>
+              {rows.map((r) => (
+                <ListRow
                   key={r.id}
                   dragId={r.id}
                   title={r.title}
                   itemId={r.itemId}
                   done={r.done}
+                  onDone={(done) => actions.setDone(r.id, done)}
                   labels={r.labels}
                   due={r.due}
                   dueState={r.dueState}
                   repeat={r.repeat}
                   priority={r.priority}
                   assignees={r.assignees}
-                  cover={coverOf(it)}
-                  badges={{ description: !!it?.description, checklist: r.subitems.length ? { done: r.subitems.filter((s) => s.done).length, total: r.subitems.length } : undefined }}
-                  onMenuAction={(action) => {
-                    if (action === "Delete") actions.remove(r.id);
-                  }}
+                  selected={v.isSelected(r.id)}
+                  onClick={(e) => v.onItemClick(r.id, list.id, e)}
+                  subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done) }))}
                 />
-              );
-            })}
-          </ListColumn>
-        );
-      })}
-    </BoardView>
+              ))}
+            </ListSection>
+          );
+        })}
+      </ListView>
+      {v.bulkBar}
+    </>
+  );
+}
+
+function ProjectBoard(props: ViewProps) {
+  const root = useRef<HTMLDivElement | null>(null);
+  const v = useProjectView(props, root, { listSelector: ".td-list", itemSelector: ".td-card[data-drag-id]", cardsSelector: ".td-list-cards" });
+  const { actions } = v;
+  if (!v.lists.length) return <NoLists actions={actions} />;
+  if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
+  return (
+    <>
+      <BoardView ref={root} onAddList={() => actions.addList()} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps}>
+        {v.lists.map((list) => {
+          const rows = v.rowsOf(list.id);
+          return (
+            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed) => actions.addItem(list.id, title, parsed)} {...listCallbacks(actions, list.id, () => v.onItemSelect(rows.map((r) => r.id), "all"))}>
+              {rows.map((r) => {
+                const it = props.items.find((x) => x.id === r.id);
+                return (
+                  <ItemCard
+                    key={r.id}
+                    dragId={r.id}
+                    title={r.title}
+                    itemId={r.itemId}
+                    done={r.done}
+                    labels={r.labels}
+                    due={r.due}
+                    dueState={r.dueState}
+                    repeat={r.repeat}
+                    priority={r.priority}
+                    assignees={r.assignees}
+                    selected={v.isSelected(r.id)}
+                    onClick={(e) => v.onItemClick(r.id, list.id, e)}
+                    cover={coverOf(it)}
+                    badges={{ description: !!it?.description, checklist: r.subitems.length ? { done: r.subitems.filter((s) => s.done).length, total: r.subitems.length } : undefined }}
+                    onMenuAction={(action) => {
+                      if (action === "Delete") actions.remove(r.id);
+                    }}
+                  />
+                );
+              })}
+            </ListColumn>
+          );
+        })}
+      </BoardView>
+      {v.bulkBar}
+    </>
   );
 }

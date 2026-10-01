@@ -18,7 +18,7 @@ import "./ListColumn.css";
 
 export interface ListColumnProps {
   name: string;
-  count?: number;
+  count?: number | string;
   icon?: IconName | null;
   iconColor?: string;
   statusRole?: ItemStatus | null;

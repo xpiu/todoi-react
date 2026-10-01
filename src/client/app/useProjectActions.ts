@@ -1,22 +1,28 @@
 // The actions every project view shares: quick-add, done, priority, move (keyboard and drag) with the
-// undo toast, delete. Views only render; this hook talks to the data layer and the feedback store.
+// undo toast, delete, and the bulk versions behind the BulkBar. Views only render; this hook talks to
+// the data layer and the feedback store. Every undoable outcome raises exactly one toast.
 import { useMemo } from "react";
 
 import type { ItemPriority } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
 import type { Item, Label, ProjectDetail } from "../data/api";
-import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useUpdateItem, useUpdateList } from "../data/mutations";
+import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
+import { listIconFor } from "../design/board/listIcons";
 import type { DropTarget } from "../design/board/useItemDnd";
-import type { ItemAction } from "../design/core/shortcuts";
+import type { BulkAction } from "../design/core/BulkBar";
 import type { QuickAddResult } from "../design/core/quickAdd";
+import type { ItemAction } from "../design/core/shortcuts";
+import { STATUSES } from "../design/core/statuses";
 import { quote, useFeedback } from "./feedback";
-import { type Person } from "./items";
+import { PRIORITY_LABEL, type Person } from "./items";
 import { SEED_PEOPLE } from "./session";
 
 const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
+const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
 // Members with names: the seed's two people until the members endpoint carries user details.
 const people: Person[] = SEED_PEOPLE;
-const STATUS_NAMES: Record<string, string> = { NEW: "New", BACKLOG: "Backlog", TODO: "To-do", DOING: "Doing", DONE: "Done" };
+const statusName = (id: string | null | undefined) => STATUSES.find((s) => s.id === id)?.name ?? "None";
+const nounOf = (n: number) => `${n} item${n === 1 ? "" : "s"}`;
 
 export type ProjectActions = ReturnType<typeof useProjectActions>;
 
@@ -26,11 +32,14 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const updateItem = useUpdateItem(scope);
   const moveItem = useMoveItem(scope);
   const deleteItem = useDeleteItem(scope);
+  const setLabels = useSetItemLabels(scope);
+  const setAssignees = useSetItemAssignees(scope);
   const createList = useCreateList(projectId);
   const updateList = useUpdateList(projectId);
   const notify = useFeedback((s) => s.notify);
   const lists = project.lists.filter((l) => !l.hidden);
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name ?? "the list";
+  const byId = (id: string) => items.find((x) => x.id === id);
 
   const quickAdd = useMemo(
     () => ({ labels: labels.map((l) => ({ text: l.name, color: l.color })), members: people.map((p) => ({ name: p.name, nickname: p.nickname ?? undefined })), lists: project.lists.map((l) => ({ name: l.name, value: l.id })) }),
@@ -46,7 +55,7 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
 
   /** Move with the undo toast for cross-list moves; same-list reorders stay quiet. */
   const move = (id: string, target: DropTarget) => {
-    const it = items.find((x) => x.id === id);
+    const it = byId(id);
     if (!it) return;
     const from = { listId: it.listId, position: it.position };
     const crossList = target.listId !== it.listId;
@@ -55,15 +64,16 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
       {
         onSuccess: (result) => {
           if (!crossList) return;
-          const status = result.changed.status ? ` — Status set to ${STATUS_NAMES[result.changed.status.to ?? ""] ?? "None"}` : "";
-          notify({ message: `Moved ${quote(it.title)} to ${listName(target.listId)}${status}`, history: `Moved ${quote(it.title)} to ${listName(target.listId)}`, icon: "arrow-right", restore: () => moveItem.mutate({ id, listId: from.listId, position: from.position }) });
+          const status = result.changed.status ? ` — Status set to ${statusName(result.changed.status.to)}` : "";
+          const base = `Moved ${quote(it.title)} to ${listName(target.listId)}`;
+          notify({ message: base + status, history: base, icon: "arrow-right", restore: () => moveItem.mutate({ id, listId: from.listId, position: from.position }) });
         },
       },
     );
   };
 
   const onMoveItemKey = (id: string, dir: "up" | "down" | "left" | "right") => {
-    const it = items.find((x) => x.id === id);
+    const it = byId(id);
     if (!it) return;
     const order = lists.map((l) => l.id);
     const li = order.indexOf(it.listId);
@@ -73,15 +83,17 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     } else move(id, { listId: it.listId, position: Math.max(0, it.position + (dir === "up" ? -1 : 1)) });
   };
 
+  const recreate = (it: Item) => createItem.mutate({ id: it.id, title: it.title, listId: it.listId, status: it.status, priority: it.priority, startDate: it.startDate, dueDate: it.dueDate, description: it.description ?? undefined, labelIds: it.labelIds, assigneeIds: it.assigneeIds });
+
   const remove = (id: string) => {
-    const it = items.find((x) => x.id === id);
+    const it = byId(id);
     if (!it) return;
     deleteItem.mutate({ id });
-    notify({ message: `Deleted ${quote(it.title)}`, icon: "trash-2", restore: () => createItem.mutate({ id: it.id, title: it.title, listId: it.listId, status: it.status, priority: it.priority, dueDate: it.dueDate, labelIds: it.labelIds, assigneeIds: it.assigneeIds }) });
+    notify({ message: `Deleted ${quote(it.title)}`, icon: "trash-2", restore: () => recreate(it) });
   };
 
   const onItemKey = (id: string, action: ItemAction) => {
-    const it = items.find((x) => x.id === id);
+    const it = byId(id);
     if (!it) return;
     if (action === "done") updateItem.mutate({ id, done: !it.done });
     else if (action === "delete") remove(id);
@@ -93,5 +105,59 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
 
   const addList = (name?: string, statusRole?: ItemStatus | null) => createList.mutate({ id: newId(), name: name ?? `List ${project.lists.length + 1}`, statusRole: statusRole ?? undefined });
 
-  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone: (id: string, done: boolean) => updateItem.mutate({ id, done }), addList, updateList, createList };
+  /** The BulkBar's actions for the current selection. */
+  const bulkActions = (selectedIds: string[]): BulkAction[] => {
+    const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
+    return [
+      { id: "move", label: "Move to", icon: "arrow-right", options: lists.map((l) => ({ value: l.id, label: l.name, icon: listIconFor(l.name).icon, iconColor: listIconFor(l.name).color })) },
+      { id: "priority", label: "Priority", icon: "flag", options: [...PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABEL[p], icon: "flag" as const, iconColor: PRIO_COLORS[p] })), { value: null, label: "None", icon: "flag-off" }] },
+      { id: "label", label: "Label", icon: "tag", options: labels.map((l) => ({ value: l.id, label: l.name, swatch: `var(--label-${l.color})`, checked: sel.length > 0 && sel.every((it) => it.labelIds.includes(l.id)) })) },
+      { id: "assign", label: "Assign", icon: "user-plus", options: [...people.map((p) => ({ value: p.id, label: p.name, icon: "user" as const })), { value: null, label: "Unassigned", icon: "user-x" }] },
+      { id: "done", label: sel.length && sel.every((it) => it.done) ? "Not done" : "Done", icon: "circle-check" },
+      { id: "delete", label: "Delete", icon: "trash-2", danger: true },
+    ];
+  };
+
+  /** One state change and one undo toast for every selected item. Returns true when the selection should clear. */
+  const bulk = (action: string, value: string | null | undefined, selectedIds: string[]): boolean => {
+    const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
+    if (!sel.length) return false;
+    const noun = nounOf(sel.length);
+    const snapshot = sel.map((it) => ({ ...it }));
+    if (action === "move" && value) {
+      const end = items.filter((it) => it.listId === value && !it.parentItemId).length;
+      sel.forEach((it, i) => moveItem.mutate({ id: it.id, listId: value, position: end + i }));
+      const dest = project.lists.find((l) => l.id === value);
+      const status = dest?.statusRole && project.linkStatuses ? ` — Statuses set to ${statusName(dest.statusRole)}` : "";
+      const base = `Moved ${noun} to ${listName(value)}`;
+      notify({ message: base + status, history: base, icon: "arrow-right", restore: () => [...snapshot].reverse().forEach((it) => moveItem.mutate({ id: it.id, listId: it.listId, position: it.position })) });
+      return true;
+    }
+    if (action === "priority") {
+      const p = (value as ItemPriority | null) ?? null;
+      sel.forEach((it) => updateItem.mutate({ id: it.id, priority: p }));
+      notify({ message: p ? `Set priority ${PRIORITY_LABEL[p]} on ${noun}` : `Cleared priority on ${noun}`, icon: "flag", restore: () => snapshot.forEach((it) => updateItem.mutate({ id: it.id, priority: it.priority })) });
+    } else if (action === "label" && value) {
+      const label = labels.find((l) => l.id === value);
+      if (!label) return false;
+      const allHave = sel.every((it) => it.labelIds.includes(value));
+      sel.forEach((it) => setLabels.mutate({ id: it.id, labelIds: allHave ? it.labelIds.filter((x) => x !== value) : [...it.labelIds.filter((x) => x !== value), value] }));
+      notify({ message: `${allHave ? "Removed" : "Added"} the label ${label.name} ${allHave ? "from" : "to"} ${noun}`, icon: "tag", restore: () => snapshot.forEach((it) => setLabels.mutate({ id: it.id, labelIds: it.labelIds })) });
+    } else if (action === "assign") {
+      sel.forEach((it) => setAssignees.mutate({ id: it.id, userIds: value ? [value] : [] }));
+      const who = people.find((p) => p.id === value);
+      notify({ message: who ? `Assigned ${noun} to ${who.name.split(" ")[0]}` : `Unassigned ${noun}`, icon: "user-plus", restore: () => snapshot.forEach((it) => setAssignees.mutate({ id: it.id, userIds: it.assigneeIds })) });
+    } else if (action === "done") {
+      const allDone = sel.every((it) => it.done);
+      sel.forEach((it) => updateItem.mutate({ id: it.id, done: !allDone }));
+      notify({ message: `Marked ${noun} ${allDone ? "not done" : "done"}`, icon: "circle-check", restore: () => snapshot.forEach((it) => updateItem.mutate({ id: it.id, done: it.done })) });
+    } else if (action === "delete") {
+      sel.forEach((it) => deleteItem.mutate({ id: it.id }));
+      notify({ message: `Deleted ${noun}`, icon: "trash-2", restore: () => snapshot.forEach(recreate) });
+      return true;
+    }
+    return false;
+  };
+
+  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone: (id: string, done: boolean) => updateItem.mutate({ id, done }), addList, updateList, createList, bulkActions, bulk };
 }

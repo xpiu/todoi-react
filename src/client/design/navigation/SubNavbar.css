@@ -84,6 +84,21 @@
   .td-subnav-act[aria-expanded="true"] {
     background: var(--chrome-active);
   }
+  .td-subnav-act[data-active="true"] {
+    color: var(--chrome-selected);
+  }
+  .td-subnav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    background: var(--chrome-selected);
+    color: var(--chrome-selected-text);
+    font: var(--weight-semibold) 11px / 16px var(--font-ui);
+  }
   .td-share-vis {
     flex-shrink: 0;
     display: inline-flex;

@@ -52,7 +52,7 @@ export interface RowModel {
 }
 
 /** Items of one list as row models: top-level rows in position order, each with its subitems. */
-export function rowsForList(items: Item[], listId: string, opts: { prefix: string; labels: Label[]; people: Person[]; today?: string; withCreated?: boolean }): RowModel[] {
+export function rowsForList(items: Item[], listId: string, opts: { prefix: string; labels: Label[]; people: Person[]; today?: string; withCreated?: boolean; /** Overrides board order (a sort) */ order?: ((a: Item, b: Item) => number) | null }): RowModel[] {
   const labelById = new Map(opts.labels.map((l) => [l.id, l]));
   const personById = new Map(opts.people.map((p) => [p.id, p]));
   const toRow = (it: Item): RowModel => ({
@@ -77,6 +77,6 @@ export function rowsForList(items: Item[], listId: string, opts: { prefix: strin
   }
   return inList
     .filter((it) => !it.parentItemId)
-    .sort((a, b) => a.position - b.position || a.createdAt.localeCompare(b.createdAt))
+    .sort((a, b) => (opts.order ? opts.order(a, b) : 0) || a.position - b.position || a.createdAt.localeCompare(b.createdAt))
     .map((it) => ({ ...toRow(it), subitems: (byParent.get(it.id) ?? []).sort((a, b) => a.position - b.position).map(toRow) }));
 }
