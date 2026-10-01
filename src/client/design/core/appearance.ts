@@ -26,6 +26,8 @@ import {
   type ThemeBackground,
   type ThemeForeground,
   type ThemeId,
+  APPEARANCE_STORAGE_KEY,
+  APPEARANCE_STORAGE_VERSION,
 } from "./themes";
 
 export const STATUS_DISPLAY_OPTIONS = [
@@ -95,7 +97,6 @@ const PERSISTED_DEFAULTS: PersistedState = {
   statusDisplay: "informative",
 };
 
-export const APPEARANCE_STORAGE_KEY = "td-appearance";
 const slotKey = (theme: ThemeId, mode: ModeId) => `${theme}-${mode}` as const;
 
 // ── Resolution ─────────────────────────────────────────────────────────────────
@@ -235,7 +236,7 @@ export const useAppearanceStore = create<AppearanceStore>()(
           themePrefs: p.themePrefs ?? {},
         };
       },
-      version: 1,
+      version: APPEARANCE_STORAGE_VERSION,
     },
   ),
 );

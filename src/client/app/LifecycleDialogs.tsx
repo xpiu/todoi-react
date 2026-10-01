@@ -3,6 +3,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { projectUrl } from "./links";
+
 import type { LabelColor, MemberRole } from "../../shared/enums";
 import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
@@ -102,7 +104,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   return (
     <ProjectPanel
       open={open}
-      project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: `${location.origin}/p/${p.id}`, role }}
+      project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: projectUrl(p.id), role }}
       members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, color: x.avatarColor ? `var(--label-${x.avatarColor})` : undefined }))}
       activity={(activity.data ?? []).map((a) => ({ id: a.id, type: a.type, actor: a.actor?.name ?? "Todoi", actorColor: a.actor?.avatarColor ? `var(--label-${a.actor.avatarColor})` : undefined, text: a.text, key: a.itemKey ? `${p.keyPrefix}-${a.itemKey}` : null, time: a.createdAt }))}
       archivedCount={p.archivedCount}

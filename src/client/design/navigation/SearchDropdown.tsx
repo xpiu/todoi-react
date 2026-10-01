@@ -2,9 +2,10 @@
 // items and Inbox in grouped sections; ↑↓ + Enter navigate at document level so the field keeps
 // focus; Esc closes. Anchored inside the field's wrapper (the top bar is never clipped), which is
 // the one listed exception to the Popover rule until it migrates. Spec: DESIGN.md › Search dropdown.
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import { Icon, type IconName } from "../core/Icon";
+import { Mark } from "../core/text";
 import "./SearchDropdown.css";
 
 export interface SearchSourceGroup {
@@ -51,18 +52,6 @@ interface Row {
   entity: SearchEntity;
 }
 
-function mark(text: string, needle: string): ReactNode {
-  if (!needle) return text;
-  const i = text.toLowerCase().indexOf(needle);
-  if (i < 0) return text;
-  return (
-    <>
-      {text.slice(0, i)}
-      <mark>{text.slice(i, i + needle.length)}</mark>
-      {text.slice(i + needle.length)}
-    </>
-  );
-}
 
 export interface SearchDropdownProps {
   query?: string;
@@ -154,7 +143,7 @@ export function SearchDropdown({ query = "", sources = {}, recent = [], onSelect
                       </span>
                     )}
                     <span className="td-sd-title" data-done={r.done ? "true" : undefined}>
-                      {mark(r.title, needle)}
+                      <Mark text={r.title} q={needle} />
                     </span>
                     {r.meta ? <span className="td-sd-meta">{r.meta}</span> : null}
                   </button>

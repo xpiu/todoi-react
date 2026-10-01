@@ -1,11 +1,9 @@
 // ShortcutsDialog — the ? cheat sheet, rendered from the canonical SHORTCUTS registry so docs and
 // behaviour never drift. Spec: DESIGN.md › Shortcut map.
 import { Dialog } from "../core/Dialog";
+import { Keys } from "../core/ShortcutHint";
 import { SHORTCUTS, type ShortcutSection } from "../core/shortcuts";
 import "./ShortcutsDialog.css";
-import "../core/kbd.css";
-
-const SEPS = new Set(["+", "or", "then", "–"]);
 
 export interface ShortcutsDialogProps {
   open: boolean;
@@ -24,7 +22,7 @@ export function ShortcutsDialog({ open, onClose, sections = SHORTCUTS.sections, 
             <div className="td-scd-rows">
               {sec.rows.map((r, i) => (
                 <div key={i} className="td-scd-row">
-                  <span className="td-scd-keys">{r[0].map((tok, j) => (SEPS.has(tok) ? <span key={j} className="td-scd-sep">{tok}</span> : <kbd key={j} className="td-kbd">{SHORTCUTS.keyLabel(tok)}</kbd>))}</span>
+                  <Keys keys={r[0]} />
                   <span className="td-scd-desc">{r[1]}</span>
                 </div>
               ))}

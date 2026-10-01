@@ -99,9 +99,10 @@ export function ItemCard({ title, itemId, showId = true, labels = [], done, due,
   return (
     <div
       className={"td-card" + (selected ? " is-selected" : "")}
-      role="button"
+      // The list / listitem pattern (as ListRow): a focusable item whose ⋯ stays a real button.
+      role="listitem"
       tabIndex={0}
-      aria-selected={selected ? true : undefined}
+      data-selected={selected ? "true" : undefined}
       draggable={dragId ? true : undefined}
       data-drag-id={dragId}
       onDragStart={dragId ? (e) => setCleanDragImage(e, e.currentTarget) : undefined}
@@ -114,6 +115,7 @@ export function ItemCard({ title, itemId, showId = true, labels = [], done, due,
       }}
       style={style}
     >
+      {selected ? <span className="td-sr-only">Selected</span> : null}
       {cover ? cover.src ? <img className="td-card-cover" src={cover.src} alt="" draggable={false} style={{ height: Math.min(cover.height ?? 82, 82) }} /> : <div className="td-card-cover-color" style={{ height: Math.min(cover.height ?? 36, 82), background: cover.color ?? "var(--surface-cover)" }} /> : null}
       <div className="td-card-body">
         <div className={"td-card-title" + (done ? " is-done" : "")}>

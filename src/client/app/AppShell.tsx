@@ -17,10 +17,13 @@ import { DEFAULT_NAV, Sidebar } from "../design/navigation/Sidebar";
 import { SortMenu } from "../design/navigation/SortMenu";
 import { SubNavbar } from "../design/navigation/SubNavbar";
 import { TopNavbar } from "../design/navigation/TopNavbar";
-import { encodeViewState, sameDefinition, type ViewDefinition } from "../design/navigation/viewState";
+import { encodeViewState, nextViewSearch, sameDefinition, type ViewDefinition } from "../design/navigation/viewState";
 import { SavedViewTabs } from "../design/navigation/SavedViewTabs";
 import { useSavedViewMutations } from "../data/savedViews";
 import { useResolvedView } from "./useResolvedView";
+import { usePersistedFlag } from "./usePersistedFlag";
+import { projectUrl } from "./links";
+import { count } from "../design/core/text";
 import { CommandPalette } from "../design/overlay/CommandPalette";
 import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
 import { quote, useFeedback } from "./feedback";
@@ -37,13 +40,7 @@ import { useAppShortcuts } from "./useAppShortcuts";
 import "./AppShell.css";
 
 const SIDEBAR_KEY = "td-sidebar-open";
-const readSidebar = () => {
-  try {
-    return localStorage.getItem(SIDEBAR_KEY) !== "0";
-  } catch {
-    return true;
-  }
-};
+const SAVED_VIEWS_KEY = "td-saved-views-open";
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -69,7 +66,7 @@ export function AppShell() {
   const toast = useFeedback((s) => s.toast);
   const dismiss = useFeedback((s) => s.dismiss);
   const setUndoScope = useFeedback((s) => s.setScope);
-  const [desktopSidebar, setDesktopSidebar] = useState(readSidebar);
+  const [desktopSidebar, setDesktopSidebar] = usePersistedFlag(SIDEBAR_KEY, true);
   const [overlaySidebar, setOverlaySidebar] = useState(false);
   const sidebarOpen = vp.desktop ? desktopSidebar : overlaySidebar;
   const setSidebarOpen = vp.desktop ? setDesktopSidebar : setOverlaySidebar;
@@ -96,13 +93,6 @@ export function AppShell() {
       document.removeEventListener("drop", onDrop);
     };
   }, [suggest]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(SIDEBAR_KEY, desktopSidebar ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  }, [desktopSidebar]);
   // The undo history is per project / screen.
   const undoScope = projectId ?? location.pathname;
   useEffect(() => setUndoScope(undoScope), [undoScope, setUndoScope]);
@@ -116,28 +106,14 @@ export function AppShell() {
   const view = resolved.view;
   const svm = useSavedViewMutations(projectId ?? "");
   // The saved-views row: remembered per device; opens by itself when a saved-view link loads.
-  const [svOpen, setSvOpen] = useState(() => {
-    try {
-      return localStorage.getItem("td-saved-views-open") === "1";
-    } catch {
-      return false;
-    }
-  });
-  const setSavedViewsOpen = (o: boolean) => {
-    setSvOpen(o);
-    try {
-      localStorage.setItem("td-saved-views-open", o ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  };
+  const [svOpen, setSavedViewsOpen] = usePersistedFlag(SAVED_VIEWS_KEY, false);
   const savedViewsOpen = svOpen || !!resolved.raw.savedView;
   // The tab stays active (with a dot) while the live state drifts from its definition.
   const [lastSaved, setLastSaved] = useState<{ projectId: string; id: string } | null>(null);
   const activeSavedId = resolved.raw.savedView ?? (lastSaved && lastSaved.projectId === projectId ? lastSaved.id : null);
   const activeSaved = resolved.savedViews.find((v) => v.id === activeSavedId) ?? null;
   const currentDef: ViewDefinition = { view, filters: state?.filters ?? [], sort: state?.sort ?? {} };
-  const svDirty = !!activeSaved && !sameDefinition({ view: activeSaved.definition.view, filters: activeSaved.definition.filters ?? [], sort: activeSaved.definition.sort ?? {} }, currentDef);
+  const svDirty = !!activeSaved && !sameDefinition(activeSaved.definition, currentDef);
   const goSaved = (id: string | null) => {
     if (!projectId) return;
     setLastSaved(id ? { projectId, id } : null);
@@ -151,7 +127,7 @@ export function AppShell() {
   const setViewState = (patch: Partial<typeof state & object>) => {
     if (!projectId || !state) return;
     if (resolved.raw.savedView) setLastSaved({ projectId, id: resolved.raw.savedView });
-    void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, ...patch, savedView: undefined }) });
+    void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, patch) });
   };
   const clearFilters = () => setViewState({ filters: [] });
   const toggleFilter = (f: { type: string; value: string }) => setViewState({ filters: state!.filters.some((a) => sameFilter(a, f)) ? state!.filters.filter((a) => !sameFilter(a, f)) : [...state!.filters, { type: f.type, value: f.value }] });
@@ -181,13 +157,13 @@ export function AppShell() {
     const slug = fileSlug(`${p.name} ${view}`);
     if (format === "md") downloadText(`${slug}.md`, viewToMarkdown(p.name, lists, ctx), "text/markdown");
     else downloadText(`${slug}.csv`, itemsToCsv(lists.flatMap((l) => l.items), ctx), "text/csv");
-    notify({ message: `Exported “${p.name}” ${view} view as ${format.toUpperCase()} — ${visible.length} item${visible.length === 1 ? "" : "s"}`, icon: "download" });
+    notify({ message: `Exported “${p.name}” ${view} view as ${format.toUpperCase()} — ${count(visible.length, "item")}`, icon: "download" });
   };
   const savedViewsRow =
     projectId && savedViewsOpen ? (
-      <div className="td-sv-row-wrap">
+      <div className="td-sv-row-wrap" id="td-saved-views">
         <SavedViewTabs
-          views={resolved.savedViews.map((v) => ({ id: v.id, name: v.name, shared: v.shared, definition: { view: v.definition.view, filters: v.definition.filters ?? [], sort: v.definition.sort ?? {} } }))}
+          views={resolved.savedViews}
           activeId={activeSavedId}
           dirty={svDirty}
           canSave={(filters.length > 0 || sortActive.length > 0) && (!activeSaved || svDirty)}
@@ -204,7 +180,7 @@ export function AppShell() {
             const v = resolved.savedViews.find((x) => x.id === id);
             if (!v) return;
             if (action === "copy-link") {
-              void navigator.clipboard?.writeText(`${window.location.origin}/p/${projectId}?view=${id}`);
+              void navigator.clipboard?.writeText(projectUrl(projectId, `?view=${id}`));
               notify({ message: `Copied the link to ${quote(v.name)}`, icon: "link" });
             } else if (action === "update") {
               svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => goSaved(id) });

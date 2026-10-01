@@ -68,6 +68,8 @@ export const inboxUnreadQuery = () =>
   });
 
 export const useGroups = () => useQuery(groupsQuery());
+/** Every project in the sidebar order, each carrying its group's name. */
+export const projectsOf = (groups: GroupWithProjects[] | undefined) => (groups ?? []).flatMap((g) => g.projects.map((p) => ({ ...p, groupName: g.name })));
 export const useProject = (id: string) => useQuery(projectQuery(id));
 export const useProjectItems = (projectId: string) => useQuery(projectItemsQuery(projectId));
 export const useListItems = (listId?: string) => useQuery(listItemsQuery(listId));

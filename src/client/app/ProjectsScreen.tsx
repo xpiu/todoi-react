@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { LabelColor } from "../../shared/enums";
 import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
-import { useGroups } from "../data/queries";
+import { projectsOf, useGroups } from "../data/queries";
 import { Avatar } from "../design/core/Avatar";
 import { Button } from "../design/core/Button";
 import { Icon, type IconName } from "../design/core/Icon";
@@ -30,7 +30,7 @@ export function ProjectsScreen() {
   const [draft, setDraft] = useState("");
   if (groups.isError) return <LoadFailed what="the projects" error={groups.error} onRetry={() => void groups.refetch()} />;
   if (!groups.data) return <ViewSkeleton view="list" lists={1} />;
-  const projects = groups.data.flatMap((g) => g.projects.map((p) => ({ ...p, groupName: g.name })));
+  const projects = projectsOf(groups.data);
   const go = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const commitRename = (p: { id: string; name: string }) => {
     const v = draft.trim();

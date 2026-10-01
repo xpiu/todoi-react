@@ -41,15 +41,12 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--chrome-border);
   }
-  .td-sv-tab[aria-selected="true"] {
+  .td-sv-tab[aria-current="true"] {
     background: var(--chrome-selected);
     color: var(--chrome-selected-text);
   }
-  .td-sv-tab[aria-selected="true"]:hover {
+  .td-sv-tab[aria-current="true"]:hover {
     background: var(--btn-inverse-bg);
-  }
-  .td-sv-tab.has-menu {
-    padding-right: 5px;
   }
   .td-sv-shared {
     opacity: 0.7;
@@ -61,19 +58,23 @@
     background: var(--blue-500);
     flex-shrink: 0;
   }
-  .td-sv-tab[aria-selected="true"] .td-sv-dot {
+  .td-sv-tab[aria-current="true"] .td-sv-dot {
     background: var(--action-primary);
   }
+  /* The per-tab ⋯ sits over the tab's right padding, as a sibling (a tab can't contain a button). */
   .td-sv-more {
+    position: absolute;
+    right: 3px;
+    top: 50%;
+    transform: translateY(-50%);
     display: inline-flex;
-    margin-left: 1px;
     opacity: 0.65;
   }
   .td-sv-more:hover,
   .td-sv-more:focus-within {
     opacity: 1;
   }
-  .td-sv-tab[aria-selected="true"] .td-sv-more .td-iconbtn {
+  .td-sv-wrap[data-selected="true"] .td-sv-more .td-iconbtn {
     color: var(--chrome-selected-text);
   }
   .td-sv-save {

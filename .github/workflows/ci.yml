@@ -32,13 +32,10 @@ jobs:
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U todoi" --health-interval 5s --health-timeout 5s --health-retries 10
+    # `.env.example` (copied below) holds the dev defaults; only what differs on the runner is set here.
     env:
       DATABASE_URL: postgres://todoi:todoi@localhost:5432/todoi_react
-      APP_URL: http://localhost:5173
       BETTER_AUTH_SECRET: ci-only-secret-not-for-production-use
-      UPLOAD_DIR: .data/uploads
-      MIGRATE_ON_START: "true"
-      SEED_ON_START: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

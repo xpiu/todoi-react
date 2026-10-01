@@ -1,6 +1,6 @@
 // The signed-in person: profile (name, handle, avatar colour) and project invites.
 import { zValidator } from "@hono/zod-validator";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { db } from "../db";
 import { apiTokens, groups, invites, items, labels, lists, members, projects, users } from "../db/schema";
 import { env } from "../env";
 import { logActivity } from "../services/activity";
+import { memberProjectIds } from "../services/projects";
 
 export const meRoute = new Hono()
   .get("/", async (c) => {
@@ -53,12 +54,16 @@ export const tokensRoute = new Hono()
 /** Everything the viewer can see, as one JSON document. */
 export const exportRoute = new Hono().get("/", async (c) => {
   const v = viewerOf(c);
-  const mine = (await db.select({ projectId: members.projectId }).from(members).where(eq(members.userId, v.userId))).map((m) => m.projectId);
-  const ps = (await db.select().from(projects)).filter((p) => mine.includes(p.id));
-  const ids = ps.map((p) => p.id);
-  const [gs, ls, its, lbs] = await Promise.all([db.select().from(groups), db.select().from(lists), db.select().from(items), db.select().from(labels)]);
-  const inList = (x: { projectId: string | null }) => x.projectId != null && ids.includes(x.projectId);
-  const doc = { exportedAt: new Date().toISOString(), user: { id: v.userId, name: v.name, email: v.email }, groups: gs.filter((g) => ps.some((p) => p.groupId === g.id)), projects: ps, lists: ls.filter((l) => inList(l) || l.userId === v.userId), labels: lbs.filter(inList), items: its.filter((it) => inList(it) || it.listId === v.inboxListId) };
+  const ids = await memberProjectIds(v.userId);
+  const ps = ids.length ? await db.select().from(projects).where(inArray(projects.id, ids)) : [];
+  const groupIds = [...new Set(ps.map((p) => p.groupId))];
+  const [gs, ls, its, lbs] = await Promise.all([
+    groupIds.length ? db.select().from(groups).where(inArray(groups.id, groupIds)) : [],
+    db.select().from(lists).where(ids.length ? or(inArray(lists.projectId, ids), eq(lists.userId, v.userId)) : eq(lists.userId, v.userId)),
+    db.select().from(items).where(ids.length ? or(inArray(items.projectId, ids), eq(items.listId, v.inboxListId)) : eq(items.listId, v.inboxListId)),
+    ids.length ? db.select().from(labels).where(inArray(labels.projectId, ids)) : [],
+  ]);
+  const doc = { exportedAt: new Date().toISOString(), user: { id: v.userId, name: v.name, email: v.email }, groups: gs, projects: ps, lists: ls, labels: lbs, items: its };
   return c.body(JSON.stringify(doc, null, 2), 200, { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="todoi-export-${new Date().toISOString().slice(0, 10)}.json"` });
 });
 
@@ -87,7 +92,7 @@ export const projectInvitesRoute = new Hono()
     const { email, role, days } = c.req.valid("json");
     const [row] = await db
       .insert(invites)
-      .values({ id: nanoid(), code: nanoid(12), projectId: id, email: email ?? null, role, invitedBy: v.userId, expiresAt: new Date(Date.now() + days * 86400000) })
+      .values({ id: nanoid(), code: nanoid(12), projectId: id, email: email ?? null, role, invitedBy: v.userId, expiresAt: new Date(Date.now() + days * DAY) })
       .returning();
     await logActivity(db, { projectId: id, actorId: v.userId, type: "member", text: `invited ${email ?? "someone"} as ${role}` });
     return c.json({ ...row!, url: `${env.APP_URL}/i/${row!.code}` }, 201);

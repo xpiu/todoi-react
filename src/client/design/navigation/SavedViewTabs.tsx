@@ -1,7 +1,8 @@
 // SavedViewTabs — named, shareable tabs that capture a project's view type + filters + sort, on their
 // own chrome row under the toolbar: "All items" plus one tab per saved view (shared ones carry a users
 // glyph), a blue dot while the live state drifts from the active view, a per-tab ⋯ menu, and Save view.
-// Spec: DESIGN.md › Saved views.
+// ARIA: a navigation of buttons with aria-current (not a tablist — there are no tab panels, and the
+// per-tab ⋯ and Save view sit in the same row). Spec: DESIGN.md › Saved views.
 import { useState } from "react";
 
 import { Button } from "../core/Button";
@@ -18,6 +19,7 @@ export interface SavedViewTab {
   shared: boolean;
   definition: ViewDefinition;
 }
+const MENU_WIDTH = 24;
 export type SavedViewAction = "copy-link" | "update" | "rename" | "share" | "delete";
 
 export interface SavedViewTabsProps {
@@ -56,14 +58,14 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
   };
   const summary = currentDef ? summarizeView(currentDef) : [];
   return (
-    <div className="td-sv" role="tablist" aria-label="Saved views">
-      <button type="button" className="td-sv-tab" role="tab" aria-selected={!activeId} onClick={() => onSelect(null)}>
+    <nav className="td-sv" aria-label="Saved views">
+      <button type="button" className="td-sv-tab" aria-current={!activeId ? "true" : undefined} onClick={() => onSelect(null)}>
         {allLabel}
       </button>
       {views.map((v) => {
         const isA = v.id === activeId;
         return (
-          <div key={v.id} className="td-sv-wrap">
+          <div key={v.id} className="td-sv-wrap" data-selected={isA ? "true" : undefined}>
             {renaming === v.id ? (
               <input
                 className="td-sv-input td-sv-renaming"
@@ -80,11 +82,14 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
                 }}
               />
             ) : (
-              <button type="button" className="td-sv-tab has-menu" role="tab" aria-selected={isA} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
-                {v.shared ? <Icon name="users" size={13} className="td-sv-shared" /> : null}
-                {v.name}
-                {isA && dirty ? <span className="td-sv-dot" title="Filters changed since this view was saved" aria-label="unsaved changes" /> : null}
-                <span className="td-sv-more" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+              // The ⋯ menu sits beside the tab (never inside it: a button can't hold a button).
+              <>
+                <button type="button" className="td-sv-tab" aria-current={isA ? "true" : undefined} style={{ paddingRight: MENU_WIDTH }} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
+                  {v.shared ? <Icon name="users" size={13} className="td-sv-shared" /> : null}
+                  {v.name}
+                  {isA && dirty ? <span className="td-sv-dot" title="Filters changed since this view was saved" aria-label="unsaved changes" /> : null}
+                </button>
+                <span className="td-sv-more">
                   <MenuButton label={`Actions for ${v.name}`} tier="toolbar" placement="bottom-start" minWidth={200} size={18} iconSize={12} variant="chrome">
                     <MenuItem icon="link" onSelect={() => onAction(v.id, "copy-link")}>
                       Copy link
@@ -112,7 +117,7 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
                     </MenuItem>
                   </MenuButton>
                 </span>
-              </button>
+              </>
             )}
           </div>
         );
@@ -166,6 +171,6 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
           </div>
         </Popover>
       ) : null}
-    </div>
+    </nav>
   );
 }

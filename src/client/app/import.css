@@ -1,29 +1,5 @@
+/* Import: the blocks composed into SettingsCards (paste area, review body); the page and cards are the settings shell's. */
 @layer components {
-  .td-imp {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    background: var(--chrome-canvas);
-    box-sizing: border-box;
-    padding: var(--sp-4) var(--sp-5) var(--sp-8);
-  }
-  .td-imp-inner {
-    max-width: 680px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-5);
-  }
-  .td-imp-title {
-    margin: 0;
-    font: var(--type-page-title);
-    color: var(--chrome-text);
-  }
-  .td-imp-crumb {
-    margin: calc(-1 * var(--sp-4)) 0 0;
-    font: var(--type-small);
-    color: var(--chrome-text-dim);
-  }
   .td-imp-file {
     display: none;
   }
@@ -87,8 +63,5 @@
     padding: 6px 0;
     color: var(--warning);
     font: var(--type-body);
-  }
-  .td-imp-foot {
-    border-top: 1px solid var(--border-divider);
   }
 }

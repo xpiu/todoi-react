@@ -1,11 +1,11 @@
 import { expect, type Page } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
+import { AxeBuilder } from "@axe-core/playwright";
 
-export const DEV_USER = { email: "flo@helicopterseurope.com", password: "todoi-dev-password" };
-export const THEMES = ["standard", "minimal"] as const;
-export const MODES = ["dark", "light"] as const;
-export type Scope = `${(typeof THEMES)[number]}-${(typeof MODES)[number]}`;
-export const SCOPES: Scope[] = THEMES.flatMap((t) => MODES.map((m) => `${t}-${m}` as Scope));
+import { DEV_USER } from "../../src/shared/devUser";
+import { APPEARANCE_STORAGE_KEY, APPEARANCE_STORAGE_VERSION, MODE_IDS, THEME_IDS } from "../../src/client/design/core/themes";
+
+export type Scope = `${(typeof THEME_IDS)[number]}-${(typeof MODE_IDS)[number]}`;
+export const SCOPES: Scope[] = THEME_IDS.flatMap((t) => MODE_IDS.map((m) => `${t}-${m}` as Scope));
 
 /** Sign in through the API; the cookie jar is shared with the page. */
 export async function signIn(page: Page) {
@@ -13,16 +13,12 @@ export async function signIn(page: Page) {
   expect(r.ok(), "sign-in").toBeTruthy();
 }
 
-/** Persist a theme × mode before the app boots (the same localStorage key the Style menu writes). */
+/** Persist a theme × mode before the app boots — the Appearance store's own key and version; the store fills in the rest. */
 export async function useScope(page: Page, scope: Scope) {
   const [theme, mode] = scope.split("-");
   await page.addInitScript(
-    ([t, m]) => {
-      localStorage.setItem("td-appearance", JSON.stringify({ state: { theme: t, mode: m, slots: {}, themePrefs: {}, showItemIds: true, showLabels: true, statusDisplay: "informative" }, version: 1 }));
-      localStorage.setItem("td-saved-views-open", "0");
-      localStorage.setItem("td-prefs", JSON.stringify({ state: { showTips: false }, version: 1 }));
-    },
-    [theme, mode],
+    ([key, value]) => localStorage.setItem(key!, value!),
+    [APPEARANCE_STORAGE_KEY, JSON.stringify({ state: { theme, mode }, version: APPEARANCE_STORAGE_VERSION })],
   );
 }
 
@@ -32,12 +28,16 @@ export async function expectScope(page: Page, scope: Scope) {
   await expect(page.locator("html")).toHaveAttribute("data-mode", mode!);
 }
 
-/** The seeded project every screen test opens. */
-export async function seedProjectId(page: Page): Promise<string> {
-  const groups = (await (await page.request.get("/api/groups")).json()) as Array<{ projects: Array<{ id: string; name: string }> }>;
-  const p = groups.flatMap((g) => g.projects).find((x) => /website/i.test(x.name)) ?? groups[0]?.projects[0];
-  if (!p) throw new Error("no seeded project");
-  return p.id;
+/** The seeded project every screen test opens (looked up once per worker). */
+let seeded: Promise<string> | undefined;
+export function seedProjectId(page: Page): Promise<string> {
+  seeded ??= (async () => {
+    const groups = (await (await page.request.get("/api/groups")).json()) as Array<{ projects: Array<{ id: string; name: string }> }>;
+    const p = groups.flatMap((g) => g.projects).find((x) => /website/i.test(x.name)) ?? groups[0]?.projects[0];
+    if (!p) throw new Error("no seeded project");
+    return p.id;
+  })();
+  return seeded;
 }
 
 export async function firstItemId(page: Page, projectId: string): Promise<string> {
@@ -56,9 +56,31 @@ export async function checkA11y(page: Page, label: string) {
   expect(blocking.map(describe), `axe: ${label}`).toEqual([]);
 }
 
-/** Wait for data to settle and hide anything that moves between runs. */
+export interface Screen {
+  name: string;
+  /** Where to go; may set things up first and hand back a cleanup */
+  open: (page: Page) => Promise<(() => Promise<void>) | void>;
+  /** The element that proves the screen is up (roles the components expose) */
+  ready: (page: Page) => ReturnType<Page["getByRole"]>;
+}
+
+/** One screen in one scope: the scope is on <html>, the screen is up, axe is clean, the baseline matches. */
+export async function gate(page: Page, scope: Scope, screen: Screen) {
+  const cleanup = await screen.open(page);
+  try {
+    await expectScope(page, scope);
+    await expect(screen.ready(page)).toBeVisible();
+    await settle(page);
+    await checkA11y(page, `${scope} ${screen.name}`);
+    await expect(page).toHaveScreenshot(`${scope}-${screen.name}.png`);
+  } finally {
+    await cleanup?.();
+  }
+}
+
+/** Wait for data to settle and hide anything that moves between runs (toasts, shortcut hints, carets). */
 export async function settle(page: Page) {
   await page.waitForLoadState("networkidle");
-  await page.addStyleTag({ content: ".td-toast, .td-hint, .td-shortcut-hint { visibility: hidden !important } * { caret-color: transparent !important }" });
+  await page.addStyleTag({ content: '[role="status"].td-toast, .td-hint { visibility: hidden !important } * { caret-color: transparent !important }' });
   await page.waitForTimeout(300);
 }

@@ -3,13 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
 
 import type { LabelColor } from "../../shared/enums";
+import { authClient } from "../auth";
 import { api, unwrap } from "./api";
 
 export type Me = InferResponseType<typeof api.api.me.$get, 200>;
 export type ApiToken = InferResponseType<typeof api.api.me.tokens.$get, 200>[number];
 
-export const useMe = () => useQuery({ queryKey: ["me"], queryFn: () => api.api.me.$get().then((r) => unwrap<Me>(r)) });
-export const useTokens = () => useQuery({ queryKey: ["me", "tokens"], queryFn: () => api.api.me.tokens.$get().then((r) => unwrap<ApiToken[]>(r)) });
+export const useMe = (enabled = true) => useQuery({ queryKey: ["me"], queryFn: () => api.api.me.$get().then((r) => unwrap<Me>(r)), enabled });
+export const useTokens = (enabled = true) => useQuery({ queryKey: ["me", "tokens"], queryFn: () => api.api.me.tokens.$get().then((r) => unwrap<ApiToken[]>(r)), enabled });
+/** The person's signed-in devices (Better Auth sessions). */
+export const useSessions = (enabled = true) => useQuery({ queryKey: ["me", "sessions"], queryFn: async () => (await authClient.listSessions()).data ?? [], enabled });
 
 export function useAccountMutations() {
   const qc = useQueryClient();

@@ -12,6 +12,10 @@ export type ModeId = (typeof MODE_IDS)[number];
 export const DEFAULT_THEME: ThemeId = "standard";
 export const DEFAULT_MODE: ModeId = "dark";
 
+/** Where the Appearance store persists (zustand `persist`); the browser tests seed the same key. */
+export const APPEARANCE_STORAGE_KEY = "td-appearance";
+export const APPEARANCE_STORAGE_VERSION = 1;
+
 export const MODES: ReadonlyArray<{ id: ModeId; label: string; icon: "moon" | "sun" }> = [
   { id: "dark", label: "Dark", icon: "moon" },
   { id: "light", label: "Light", icon: "sun" },

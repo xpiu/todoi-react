@@ -1,5 +1,15 @@
-/* The mono kbd chip: menu shortcuts, the palette footer, the ? dialog, ShortcutHint. */
+/* The mono kbd chip: menu shortcuts, the palette footer, the ? dialog, ShortcutHint, Settings › Keyboard. */
 @layer components {
+  .td-keys {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+  }
+  .td-keys-sep {
+    color: var(--ink-400);
+    font: var(--weight-regular) 11px / 16px var(--font-ui);
+  }
   .td-kbd {
     display: inline-block;
     padding: 0 5px;

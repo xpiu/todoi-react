@@ -1,22 +1,22 @@
 // SettingsShell — the secondary-page shell shared by /settings and /account: a page nav on the chrome
 // (left) and one white card per group of 48px rows (right). Vocabulary: Page › Section › Group › Row;
 // a row is a label + optional hint and exactly one control. Search filters every row on every page
-// and renders matches as the same cards with a Page › Section breadcrumb. Spec: DESIGN.md › Secondary pages.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+// and renders matches as the same cards with a Page › Section breadcrumb. SettingsPageFrame and
+// SettingsCard are the same canvas and card for a page without the nav (Import). Spec: DESIGN.md › Secondary pages.
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Icon, type IconName } from "../core/Icon";
+import { count, Mark } from "../core/text";
 import { TextField } from "../core/TextField";
 import "./SettingsShell.css";
 
 export interface SettingsRow {
   id: string;
   label: ReactNode;
-  /** Plain text of the label for search */
-  text?: string;
   hint?: string | null;
   /** One control at the trailing edge */
   control?: ReactNode;
-  /** Expanded body under the row (help topics) */
+  /** Expanded body under the row (help topics, the import paste area) */
   body?: ReactNode;
   bodyText?: string;
   /** Colour bar before the label (labels) */
@@ -24,7 +24,7 @@ export interface SettingsRow {
   /** Mono label (secrets) */
   mono?: boolean;
   /** Extra search terms (shortcut keys) */
-  keywords?: string[];
+  keywords?: ReadonlyArray<string>;
 }
 export interface SettingsGroup {
   id: string;
@@ -37,7 +37,7 @@ export interface SettingsGroup {
   tone?: "info" | "warn" | "danger";
   /** Compact field rows */
   fields?: boolean;
-  /** Rendered above the rows (an identity card) */
+  /** Replaces the head (an identity card); the card is then labelled by its title */
   lead?: ReactNode;
 }
 export interface SettingsSection {
@@ -61,24 +61,14 @@ export interface SettingsShellProps {
   onNavigate: (page: string, section: string) => void;
 }
 
-const Mark = ({ text, q }: { text: string; q: string }) => {
-  if (!q) return <>{text}</>;
-  const i = text.toLowerCase().indexOf(q);
-  if (i < 0) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, i)}
-      <mark className="td-set-mark">{text.slice(i, i + q.length)}</mark>
-      {text.slice(i + q.length)}
-    </>
-  );
-};
+/** The row a search result opened scrolls into view as it mounts (or as it becomes the hit). */
+const scrollToHit = (el: HTMLElement | null) => el?.scrollIntoView({ block: "center", behavior: "smooth" });
 
-function Row({ row, q, hit }: { row: SettingsRow; q: string; hit?: boolean }) {
+function Row({ row, q = "", hit }: { row: SettingsRow; q?: string; hit?: boolean }) {
   const label = typeof row.label === "string" ? <Mark text={row.label} q={q} /> : row.label;
   return (
     <>
-      <div className="td-set-row" data-setting={row.id} data-hit={hit || undefined}>
+      <div className="td-set-row" data-hit={hit || undefined} ref={hit ? scrollToHit : undefined}>
         <div className="td-set-rowtext">
           <span className="td-set-rowlabel" data-mono={row.mono ? "true" : undefined}>
             {row.swatch ? <span className="td-set-bar" style={{ background: row.swatch }} aria-hidden /> : null}
@@ -97,23 +87,21 @@ function Row({ row, q, hit }: { row: SettingsRow; q: string; hit?: boolean }) {
   );
 }
 
-function Group({ group, path, onOpen, q, hit }: { group: SettingsGroup; path?: string; onOpen?: () => void; q: string; hit?: string | null }) {
+/** One card: head (title, or a breadcrumb button in search results), rows, and anything composed after them. */
+export function SettingsCard({ group, crumb, q = "", hit, children }: { group: SettingsGroup; crumb?: { label: string; onOpen: () => void }; q?: string; hit?: string | null; children?: ReactNode }) {
+  const headingId = `set-g-${group.id}`;
   return (
-    <section className="td-set-group" data-fields={group.fields || undefined} data-tone={group.tone} aria-labelledby={`set-g-${group.id}`}>
+    <section className="td-set-group" data-fields={group.fields || undefined} data-tone={group.tone} aria-labelledby={group.lead ? undefined : headingId} aria-label={group.lead ? group.title : undefined}>
       {group.lead ?? (
         <div className="td-set-grouphead">
-          <h2 className="td-set-grouptitle" id={`set-g-${group.id}`}>
+          <h2 className="td-set-grouptitle" id={headingId}>
             <Mark text={group.title} q={q} />
           </h2>
-          {path ? (
-            onOpen ? (
-              <button type="button" className="td-set-grouppath-btn" onClick={onOpen} aria-label={`Open ${path}`}>
-                {path}
-                <Icon name="arrow-right" size={12} />
-              </button>
-            ) : (
-              <span className="td-set-grouppath">{path}</span>
-            )
+          {crumb ? (
+            <button type="button" className="td-set-grouppath-btn" onClick={crumb.onOpen} aria-label={`Open ${crumb.label}`}>
+              {crumb.label}
+              <Icon name="arrow-right" size={12} />
+            </button>
           ) : group.sub ? (
             <span className="td-set-grouppath">{group.sub}</span>
           ) : null}
@@ -123,16 +111,33 @@ function Group({ group, path, onOpen, q, hit }: { group: SettingsGroup; path?: s
       {group.rows.map((r) => (
         <Row key={r.id} row={r} q={q} hit={hit === r.id} />
       ))}
+      {children}
     </section>
   );
 }
 
-const rowText = (r: SettingsRow) => [r.text ?? (typeof r.label === "string" ? r.label : ""), r.hint ?? "", r.bodyText ?? "", ...(r.keywords ?? [])].join(" ").toLowerCase();
+/** The settings canvas and column without the page nav: a title, a line under it, then cards. */
+export function SettingsPageFrame({ title, crumb, children }: { title: string; crumb?: string; children?: ReactNode }) {
+  return (
+    <div className="td-set">
+      <div className="td-set-inner" data-nav="false">
+        <div className="td-set-main">
+          <div>
+            <h1 className="td-set-title">{title}</h1>
+            {crumb ? <p className="td-set-crumb">{crumb}</p> : null}
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const rowText = (r: SettingsRow) => [typeof r.label === "string" ? r.label : "", r.hint ?? "", r.bodyText ?? "", ...(r.keywords ?? [])].join(" ").toLowerCase();
 
 export function SettingsShell({ pages, page, section, onNavigate }: SettingsShellProps) {
   const [q, setQ] = useState("");
   const [hit, setHit] = useState<string | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
   const query = q.trim().toLowerCase();
   const cur = pages.find((p) => p.id === page) ?? pages[0]!;
   const sec = cur.sections.find((s) => s.id === section) ?? cur.sections[0]!;
@@ -153,20 +158,15 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
     go(x.page.id, x.section.id);
     setHit(x.group.rows[0]?.id ?? null);
   };
+  // The hit highlight fades after a moment; the scroll itself happens as the row mounts.
   useEffect(() => {
     if (!hit || query) return;
-    const root = rootRef.current;
-    const el = root?.querySelector<HTMLElement>(`[data-setting="${CSS.escape(hit)}"]`);
-    if (el && root) {
-      const r = el.getBoundingClientRect(), c = root.getBoundingClientRect();
-      if (r.top < c.top + 56 || r.bottom > c.bottom) root.scrollTo({ top: root.scrollTop + r.top - c.top - 96, behavior: "smooth" });
-    }
     const t = setTimeout(() => setHit(null), 1600);
     return () => clearTimeout(t);
-  }, [hit, query, page, section]);
+  }, [hit, query]);
   const total = results?.reduce((n, x) => n + x.group.rows.length, 0) ?? 0;
   return (
-    <div className="td-set" ref={rootRef}>
+    <div className="td-set">
       <div className="td-set-inner">
         <nav className="td-set-nav" aria-label="Settings pages">
           <div className="td-set-search" role="search">
@@ -183,7 +183,7 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
                 } else if (e.key === "Enter" && results?.[0]) {
                   e.preventDefault();
                   openResult(results[0]);
-                } else if (e.key.length === 1) e.stopPropagation();
+                }
               }}
               placeholder="Search settings"
               aria-label="Search settings"
@@ -216,11 +216,11 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
               <div>
                 <h1 className="td-set-title">Search</h1>
                 <p className="td-set-crumb" aria-live="polite">
-                  {total} setting{total === 1 ? "" : "s"} match “{q.trim()}”{results.length ? " · Enter opens the first result" : ""}
+                  {count(total, "setting")} match “{q.trim()}”{results.length ? " · Enter opens the first result" : ""}
                 </p>
               </div>
               {results.length ? (
-                results.map((x) => <Group key={`${x.page.id}/${x.section.id}/${x.group.id}`} group={x.group} path={`${x.page.title} › ${x.section.label}`} onOpen={() => openResult(x)} q={query} />)
+                results.map((x) => <SettingsCard key={`${x.page.id}/${x.section.id}/${x.group.id}`} group={x.group} crumb={{ label: `${x.page.title} › ${x.section.label}`, onOpen: () => openResult(x) }} q={query} />)
               ) : (
                 <div className="td-set-group">
                   <div className="td-set-empty">No settings match “{q.trim()}”</div>
@@ -239,33 +239,13 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
                 ) : null}
               </div>
               {sec.groups.map((g) => (
-                <Group key={g.id} group={g} q="" hit={hit} />
+                <SettingsCard key={g.id} group={g} hit={hit} />
               ))}
             </>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-/** A mono kbd chip row control for the Keyboard section. */
-export function Keys({ keys, keyLabel }: { keys: string[]; keyLabel: (t: string) => string }) {
-  const SEPS = new Set(["+", "or", "then", "–"]);
-  return (
-    <span className="td-set-keys">
-      {keys.map((t, i) =>
-        SEPS.has(t) ? (
-          <span key={i} className="td-set-keysep">
-            {t}
-          </span>
-        ) : (
-          <kbd key={i} className="td-set-kbd">
-            {keyLabel(t)}
-          </kbd>
-        ),
-      )}
-    </span>
   );
 }
 

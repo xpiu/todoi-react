@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 
 import type { ItemPriority } from "../shared/enums";
 import type { ItemStatus } from "../shared/item-status";
+import { DEV_USER } from "../shared/devUser";
 import { DEV_PASSWORD, LOCAL_USER_ID } from "./auth";
 import { hashPassword } from "better-auth/crypto";
 import { db } from "./db";
@@ -71,7 +72,7 @@ export async function seedIfEmpty() {
     return false;
   }
   await db.insert(users).values({ id: SAM, name: "Sam Verhoeven", email: "sam@helicopterseurope.com", nickname: "sam", avatarColor: "orange" }).onConflictDoNothing();
-  await db.update(users).set({ name: "Flo Zuallaert", nickname: "flo", email: "flo@helicopterseurope.com" }).where(eq(users.id, FLO));
+  await db.update(users).set({ name: "Flo Zuallaert", nickname: "flo", email: DEV_USER.email }).where(eq(users.id, FLO));
 
   const marketing = nanoid();
   const sales = nanoid();

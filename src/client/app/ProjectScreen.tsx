@@ -24,7 +24,7 @@ import { useTouchDrag } from "../design/core/touchDrag";
 import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
-import { encodeViewState } from "../design/navigation/viewState";
+import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
 import { useAttachmentMutations } from "../data/attachments";
@@ -37,7 +37,7 @@ import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
 import { peopleOf } from "./session";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
-import { useResolvedView, type ResolvedView } from "./useResolvedView";
+import { useResolvedView } from "./useResolvedView";
 import "./screens.css";
 
 const projectRoute = getRouteApi("/app/p/$projectId");
@@ -63,7 +63,7 @@ export function ProjectScreen() {
   if (failed) return <LoadFailed what="this project" error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
   // A change to filters or sort leaves the saved view (the URL turns ad-hoc); opening an item keeps it.
-  const go = (next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, ...next, savedView: "filters" in next || "sort" in next ? undefined : state.savedView }) });
+  const go = (next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, next) });
   const props: ViewProps = {
     projectId,
     project: project.data,
@@ -73,7 +73,7 @@ export function ProjectScreen() {
     sort: state.sort,
     selectedIds,
     setSelectedIds,
-    clearFilters: () => go({ filters: [], savedView: undefined }),
+    clearFilters: () => go({ filters: [] }),
     openItem: (id, edit) => go({ item: id, edit: !!edit }),
   };
   const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={(id, edit) => go({ item: id, edit: !!edit })} /> : null;
@@ -91,8 +91,8 @@ interface ViewProps {
   project: ProjectDetail;
   items: Item[];
   labels: Label[];
-  filters: ResolvedView["filters"];
-  sort: ResolvedView["sort"];
+  filters: DecodedViewState["filters"];
+  sort: DecodedViewState["sort"];
   selectedIds: string[];
   setSelectedIds: (next: string[] | ((prev: string[]) => string[])) => void;
   clearFilters: () => void;

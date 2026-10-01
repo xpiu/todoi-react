@@ -13,8 +13,6 @@ import { InboxScreen } from "./app/InboxScreen";
 import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
 import { ProjectsScreen } from "./app/ProjectsScreen";
-import { ImportScreen } from "./app/ImportScreen";
-import { SettingsScreen } from "./app/SettingsScreen";
 import { ProjectScreen } from "./app/ProjectScreen";
 import { queryClient } from "./queryClient";
 import { groupsQuery } from "./data/queries";
@@ -68,6 +66,9 @@ export const inboxRoute = createRoute({ getParentRoute: () => appRoute, path: "/
 export const projectsRoute = createRoute({ getParentRoute: () => appRoute, path: "/projects", component: ProjectsScreen });
 export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "/groups", component: GroupsScreen });
 export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: "/archive", component: ArchiveScreen, validateSearch: (search: Record<string, unknown>) => z.object({ project: z.string().optional().catch(undefined) }).parse(search) });
+// Settings, Account and Import load on demand, like the design gallery.
+const SettingsScreen = lazy(() => import("./app/SettingsScreen").then((m) => ({ default: m.SettingsScreen })));
+const ImportScreen = lazy(() => import("./app/ImportScreen").then((m) => ({ default: m.ImportScreen })));
 const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });
 export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <SettingsScreen page="account" />, validateSearch: sectionSearch });

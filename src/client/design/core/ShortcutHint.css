@@ -23,15 +23,6 @@
     align-items: center;
     gap: 5px;
   }
-  .td-hint-keys {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-  }
-  .td-hint-sep {
-    color: var(--ink-400);
-    font: var(--weight-regular) 11px / 16px var(--font-ui);
-  }
   .td-hint-dot {
     width: 3px;
     height: 3px;

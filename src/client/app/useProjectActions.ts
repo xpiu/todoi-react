@@ -15,6 +15,7 @@ import type { BulkAction } from "../design/core/BulkBar";
 import type { QuickAddResult } from "../design/core/quickAdd";
 import type { ItemAction } from "../design/core/shortcuts";
 import { STATUSES } from "../design/core/statuses";
+import { count } from "../design/core/text";
 import { quote, useFeedback } from "./feedback";
 import { PRIORITY_LABEL, type Person } from "./items";
 import { peopleOf } from "./session";
@@ -22,7 +23,6 @@ import { peopleOf } from "./session";
 const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
 const statusName = (id: string | null | undefined) => STATUSES.find((s) => s.id === id)?.name ?? "None";
-const nounOf = (n: number) => `${n} item${n === 1 ? "" : "s"}`;
 
 export type ProjectActions = ReturnType<typeof useProjectActions>;
 
@@ -141,7 +141,7 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const transfer = (ids: string[], project: { id: string; name: string }, list: { id: string; name: string }, copy: boolean) => {
     const sel = ids.map(byId).filter((x): x is Item => !!x);
     if (!sel.length) return;
-    const noun = sel.length === 1 ? quote(sel[0]!.title) : nounOf(sel.length);
+    const noun = sel.length === 1 ? quote(sel[0]!.title) : count(sel.length, "item");
     const dest = `${project.name} › ${list.name}`;
     if (copy) {
       const made = sel.map((it) => ({ src: it, id: newId() }));
@@ -173,7 +173,7 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const bulk = (action: string, value: string | null | undefined, selectedIds: string[]): boolean => {
     const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
     if (!sel.length) return false;
-    const noun = nounOf(sel.length);
+    const noun = count(sel.length, "item");
     const snapshot = sel.map((it) => ({ ...it }));
     if (action === "move" && value) {
       const end = items.filter((it) => it.listId === value && !it.parentItemId).length;

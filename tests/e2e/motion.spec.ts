@@ -11,7 +11,7 @@ test.describe("prefers-reduced-motion", () => {
     await signIn(page);
     const pid = await seedProjectId(page);
     await page.goto(`/p/${pid}?v=board`);
-    await expect(page.locator(".td-board").first()).toBeVisible();
+    await expect(page.getByRole("list", { name: / cards$/ }).first()).toBeVisible();
     const durations = await page.evaluate(() => {
       const els = [document.querySelector(".td-btn, button"), document.querySelector(".td-card"), document.querySelector(".td-subnav")].filter(Boolean) as Element[];
       return els.map((el) => getComputedStyle(el).transitionDuration);
@@ -32,7 +32,7 @@ test.describe("motion on", () => {
     await signIn(page);
     const pid = await seedProjectId(page);
     await page.goto(`/p/${pid}?v=board`);
-    await expect(page.locator(".td-board").first()).toBeVisible();
+    await expect(page.getByRole("list", { name: / cards$/ }).first()).toBeVisible();
     const base = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--duration-base").trim());
     expect(base).toBe("150ms");
   });

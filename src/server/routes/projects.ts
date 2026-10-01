@@ -4,11 +4,12 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import { idSchema } from "../../shared/items";
+import { importProjectSchema } from "../../shared/import";
 import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
 import { maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
 import { groups, items, lists, members, projects, users } from "../db/schema";
-import { createProject, listsWithCounts, updateList } from "../services/projects";
+import { createProject, importProject, listsWithCounts, memberProjectIds, updateList } from "../services/projects";
 
 const idParam = zValidator("param", z.object({ id: idSchema }));
 const liveGroups = and(isNull(groups.archivedAt), isNull(groups.deletedAt));
@@ -19,7 +20,7 @@ export const groupsRoute = new Hono()
   .get("/", async (c) => {
     const viewer = viewerOf(c);
     const gs = await db.select().from(groups).where(liveGroups).orderBy(asc(groups.position), asc(groups.createdAt));
-    const mine = new Set((await db.select({ projectId: members.projectId }).from(members).where(eq(members.userId, viewer.userId))).map((m) => m.projectId));
+    const mine = new Set(await memberProjectIds(viewer.userId));
     // Projects the viewer belongs to, plus shared / public ones.
     const ps = (await db.select().from(projects).where(liveProjects).orderBy(asc(projects.position), asc(projects.createdAt))).filter((p) => mine.has(p.id) || p.visibility !== "private");
     const [counts, owners] = await Promise.all([
@@ -77,6 +78,12 @@ export const projectsRoute = new Hono()
   .post("/", zValidator("json", createProjectSchema), async (c) => {
     const viewer = viewerOf(c);
     const result = await createProject(c.req.valid("json"), viewer.userId);
+    return c.json(result, 201);
+  })
+  // A reviewed import plan becomes a project in one transaction (Markdown / Trello / CSV).
+  .post("/import", zValidator("json", importProjectSchema), async (c) => {
+    const viewer = viewerOf(c);
+    const result = await importProject(c.req.valid("json"), viewer.userId);
     return c.json(result, 201);
   })
   .patch("/:id", idParam, zValidator("json", updateProjectSchema), async (c) => {

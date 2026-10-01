@@ -8,6 +8,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { nanoid } from "nanoid";
 
+import { DEV_USER } from "../shared/devUser";
 import { db } from "./db";
 import { createHash } from "node:crypto";
 
@@ -28,7 +29,7 @@ export const auth = betterAuth({
 /** The seed's local account (migration 0001 creates it); dev password in README. */
 export const LOCAL_USER_ID = "local_user_000000000a";
 export const LOCAL_INBOX_ID = "local_inbox_00000000a";
-export const DEV_PASSWORD = "todoi-dev-password";
+export const DEV_PASSWORD = DEV_USER.password;
 
 export interface Viewer {
   userId: string;
@@ -51,13 +52,19 @@ async function inboxFor(userId: string): Promise<string> {
 /** Resolves the session once per request. Anonymous callers pass only for public-project reads. */
 export const hashToken = (secret: string) => createHash("sha256").update(secret).digest("hex");
 
+const LAST_USED_GRANULARITY = 60_000;
+
 /** `Authorization: Bearer tdi_…` acts as the token's owner. */
 async function viewerFromBearer(header: string | undefined): Promise<Viewer | null> {
   const m = /^Bearer\s+(tdi_[A-Za-z0-9_-]+)$/.exec(header ?? "");
   if (!m) return null;
   const [row] = await db.select({ token: apiTokens, user: users }).from(apiTokens).innerJoin(users, eq(users.id, apiTokens.userId)).where(eq(apiTokens.hash, hashToken(m[1]!)));
-  if (!row || row.token.revokedAt || row.token.expiresAt < new Date()) return null;
-  await db.update(apiTokens).set({ lastUsedAt: new Date() }).where(eq(apiTokens.id, row.token.id));
+  const now = new Date();
+  if (!row || row.token.revokedAt || row.token.expiresAt < now) return null;
+  // "Last used" is informational: refresh it at most once a minute, off the request path.
+  if (!row.token.lastUsedAt || now.getTime() - row.token.lastUsedAt.getTime() > LAST_USED_GRANULARITY) {
+    void db.update(apiTokens).set({ lastUsedAt: now }).where(eq(apiTokens.id, row.token.id)).catch(() => undefined);
+  }
   return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id) };
 }
 

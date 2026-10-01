@@ -1,40 +1,18 @@
 // Import parsers — pure: Markdown in the Embridge format (what Export writes), a Trello board's JSON
 // export, and CSV with a header row. Each yields the same plan the Review step shows and the
 // importer executes: lists with items (title, description, due, labels, assignee names, done, subitems).
-import type { ItemPriority } from "../../shared/enums";
-import type { ItemStatus } from "../../shared/item-status";
+import type { ItemPriority, LabelColor } from "../../shared/enums";
+import type { ImportPlan, PlanItem, PlanList } from "../../shared/import";
 import { parseDateValue, toISO } from "../design/core/dates";
+import { suggestedRoleForTitle as roleFor } from "../design/core/statuses";
+import { count } from "../design/core/text";
 
-export interface PlanItem {
-  title: string;
-  description?: string;
-  due?: string | null;
-  labels: string[];
-  assignee?: string | null;
-  priority?: ItemPriority | null;
-  status?: ItemStatus | null;
-  done: boolean;
-  subitems: Array<{ title: string; done: boolean }>;
-}
-export interface PlanList {
-  name: string;
-  statusRole?: ItemStatus | null;
-  items: PlanItem[];
-}
-export interface ImportPlan {
-  name: string;
-  description?: string;
-  lists: PlanList[];
-  labels: Array<{ name: string; color?: string }>;
-  warnings: string[];
-}
+export type { ImportPlan, PlanItem, PlanList };
 
 const PRIORITY_WORDS: Record<string, ItemPriority> = { urgent: "URGENT", high: "HIGH", medium: "MEDIUM", low: "LOW" };
-const STATUS_WORDS: Record<string, ItemStatus> = { new: "NEW", backlog: "BACKLOG", "to-do": "TODO", todo: "TODO", doing: "DOING", done: "DONE" };
-const roleFor = (name: string): ItemStatus | null => STATUS_WORDS[name.trim().toLowerCase()] ?? null;
 const isoOf = (v: string | null | undefined) => (v ? toISO(parseDateValue(v)) : null);
 const blank = (): ImportPlan => ({ name: "", lists: [], labels: [], warnings: [] });
-const addLabel = (plan: ImportPlan, name: string, color?: string) => {
+const addLabel = (plan: ImportPlan, name: string, color?: LabelColor) => {
   if (!plan.labels.some((l) => l.name.toLowerCase() === name.toLowerCase())) plan.labels.push({ name, color });
 };
 
@@ -100,7 +78,7 @@ interface TrelloBoard {
   checklists?: Array<{ id: string; idCard: string; checkItems?: Array<{ name: string; state: string; pos?: number }> }>;
   members?: Array<{ id: string; fullName?: string; username?: string }>;
 }
-const TRELLO_COLORS: Record<string, string> = { green: "green", yellow: "yellow", orange: "orange", red: "red", purple: "pink", blue: "blue", sky: "teal", lime: "lime", pink: "pink", black: "teal" };
+const TRELLO_COLORS: Record<string, LabelColor> = { green: "green", yellow: "yellow", orange: "orange", red: "red", purple: "pink", blue: "blue", sky: "teal", lime: "lime", pink: "pink", black: "teal" };
 
 /** A Trello board export (Menu › More › Print and export › Export as JSON). */
 export function parseTrello(json: string): ImportPlan {
@@ -131,7 +109,7 @@ export function parseTrello(json: string): ImportPlan {
     target.items.push({ title: c.name, description: c.desc || undefined, due: isoOf(c.due ?? null), labels, assignee: c.idMembers?.[0] ? members.get(c.idMembers[0]) : null, done: !!c.dueComplete, subitems: subs });
   }
   plan.lists = [...byList.values()];
-  if (skipped) plan.warnings.push(`${skipped} archived card${skipped === 1 ? "" : "s"} left out`);
+  if (skipped) plan.warnings.push(`${count(skipped, "archived card")} left out`);
   if ((b.cards ?? []).some((c) => (c.idMembers?.length ?? 0) > 1)) plan.warnings.push("Cards with several members keep only the first as assignee");
   return plan;
 }

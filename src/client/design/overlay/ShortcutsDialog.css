@@ -26,16 +26,6 @@
     gap: 14px;
     align-items: baseline;
   }
-  .td-scd-keys {
-    display: flex;
-    gap: var(--sp-1);
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .td-scd-sep {
-    color: var(--ink-400);
-    font: var(--weight-regular) 11px / 16px var(--font-ui);
-  }
   .td-scd-desc {
     font: var(--weight-regular) 13px / 18px var(--font-ui);
     color: var(--ink-900);

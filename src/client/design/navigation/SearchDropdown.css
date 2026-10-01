@@ -70,11 +70,6 @@
   .td-sd-title[data-done="true"] {
     color: var(--ink-400);
   }
-  .td-sd-title mark {
-    background: transparent;
-    color: var(--text-link);
-    font-weight: var(--weight-semibold);
-  }
   .td-sd-meta {
     flex-shrink: 0;
     font: var(--type-small);

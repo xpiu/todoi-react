@@ -47,8 +47,11 @@ export function encodeViewState({ view, filters = [], sort = {}, savedView, item
   return out;
 }
 
-export function decodeViewState(input: ViewSearch | Record<string, unknown>): ViewState & { filters: ViewFilter[]; sort: { lists: SortSpec | null; items: SortSpec | null } } {
-  const out: ViewState & { filters: ViewFilter[]; sort: { lists: SortSpec | null; items: SortSpec | null } } = { filters: [], sort: { lists: null, items: null } };
+/** A decoded state always carries filters and both sort slots (null when unset). */
+export type DecodedViewState = ViewState & { filters: ViewFilter[]; sort: { lists: SortSpec | null; items: SortSpec | null } };
+
+export function decodeViewState(input: ViewSearch | Record<string, unknown>): DecodedViewState {
+  const out: DecodedViewState = { filters: [], sort: { lists: null, items: null } };
   const search = input as Record<string, unknown>;
   if (typeof search.view === "string" && search.view) out.savedView = search.view;
   if (typeof search.item === "string" && search.item) {
@@ -69,6 +72,12 @@ export function decodeViewState(input: ViewSearch | Record<string, unknown>): Vi
     }
   }
   return out;
+}
+
+/** The query after a change: editing filters or sort leaves the saved view (the URL turns ad-hoc); opening an item or switching view type keeps it. */
+export function nextViewSearch(state: ViewState, patch: Partial<ViewState>): ViewSearch {
+  const leaves = "filters" in patch || "sort" in patch;
+  return encodeViewState({ ...state, ...patch, savedView: leaves ? undefined : (patch.savedView ?? state.savedView) });
 }
 
 /** "?v=board&f=label:design&s=items.due.asc" from a definition (for Copy link). */

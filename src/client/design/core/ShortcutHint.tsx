@@ -34,6 +34,25 @@ export const SHORTCUT_HINTS: Record<string, HintDef> = {
 
 const STORE = "td-hint-seen";
 const SEPS = new Set(["+", "or", "then", "–"]);
+
+/** A shortcut as kbd chips — "ctrl + K", "G then B" — shared by the hint, the ? dialog and Settings › Keyboard. */
+export function Keys({ keys, className }: { keys: ReadonlyArray<string>; className?: string }) {
+  return (
+    <span className={["td-keys", className ?? ""].join(" ").trim()}>
+      {keys.map((k, j) =>
+        SEPS.has(k) ? (
+          <span key={j} className="td-keys-sep">
+            {k}
+          </span>
+        ) : (
+          <kbd key={j} className="td-kbd">
+            {keyLabel(k)}
+          </kbd>
+        ),
+      )}
+    </span>
+  );
+}
 const readSeen = (): Record<string, number> => {
   try {
     return (JSON.parse(localStorage.getItem(STORE) ?? "{}") as Record<string, number>) || {};
@@ -160,7 +179,7 @@ export function ShortcutHint({ hint, style }: { hint: ActiveHint | null; style?:
       {hint.parts.map((p, i) => (
         <span key={i} className="td-hint-part">
           {i ? <span className="td-hint-dot" /> : null}
-          <span className="td-hint-keys">{p[0].map((k, j) => (SEPS.has(k) ? <span key={j} className="td-hint-sep">{k}</span> : <kbd key={j} className="td-kbd">{keyLabel(k)}</kbd>))}</span>
+          <Keys keys={p[0]} />
           {p[1] ? <span>{p[1]}</span> : null}
         </span>
       ))}

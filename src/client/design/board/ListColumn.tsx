@@ -110,7 +110,7 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
           )}
         </MenuPopover>
       </div>
-      <div className="td-list-cards" tabIndex={0} role="group" aria-label={`${name} cards`}>
+      <div className="td-list-cards" tabIndex={0} role="list" aria-label={`${name} cards`}>
         {children}
       </div>
       {adding ? (

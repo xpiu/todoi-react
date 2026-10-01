@@ -1,0 +1,11 @@
+/* The search-match highlight: no fill, a link-coloured underline (settings search, the top-nav search). */
+@layer components {
+  .td-mark {
+    background: transparent;
+    color: inherit;
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-decoration-color: var(--text-link);
+    text-underline-offset: 2px;
+  }
+}

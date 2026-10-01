@@ -5,7 +5,7 @@ import { LABEL_COLORS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES } from 
 import { ITEM_STATUSES } from "./item-status";
 import { idSchema } from "./items";
 
-const name = z.string().trim().min(1).max(120);
+export const name = z.string().trim().min(1).max(120);
 /** Item-key prefix: 2–5 uppercase letters or digits ("MP", "SAL") */
 export const keyPrefixSchema = z.string().regex(/^[A-Z0-9]{2,5}$/, "2–5 uppercase letters or digits");
 

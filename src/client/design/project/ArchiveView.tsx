@@ -8,6 +8,7 @@ import { listIconFor } from "../board/listIcons";
 import { Button } from "../core/Button";
 import { EmptyState } from "../core/EmptyState";
 import { Icon, type IconName } from "../core/Icon";
+import { count } from "../core/text";
 import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
 import { Segmented } from "../core/Segmented";
 import { Select } from "../core/Select";
@@ -23,7 +24,6 @@ export function daysLeft(deletedAt: string, now = Date.now(), retention = ARCHIV
   return Math.max(0, retention - Math.floor((now - t) / DAY));
 }
 const goneIn = (n: number | null) => (n == null ? "" : n <= 0 ? "gone today" : n === 1 ? "gone tomorrow" : `gone in ${n} days`);
-const count = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 
 export interface ArchiveEntry {
   id: string;
