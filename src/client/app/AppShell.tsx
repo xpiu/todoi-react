@@ -17,6 +17,7 @@ import { ToastPortalProvider } from "../design/core/ToastPortal";
 import { useViewport } from "../design/core/viewport";
 import { FilterBar } from "../design/navigation/FilterBar";
 import { FilterMenu } from "../design/navigation/FilterMenu";
+import { MembersMenu } from "../design/navigation/MembersMenu";
 import { DEFAULT_NAV, Sidebar } from "../design/navigation/Sidebar";
 import { SortMenu } from "../design/navigation/SortMenu";
 import { SubNavbar } from "../design/navigation/SubNavbar";
@@ -245,7 +246,20 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} onMembers={() => lifecycle.openSettings(projectId, "members")} /> : null;
+  const pd = project.data;
+  const membersMenu = pd ? (
+    <MembersMenu
+      members={pd.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, color: avatarColorVar(x.avatarColor) }))}
+      currentUserId={user?.id}
+      canManage={myRole === "owner" || myRole === "admin"}
+      visibility={pd.visibility}
+      onVisibilityChange={(v) => pm.updateProject.mutate({ id: pd.id, visibility: v })}
+      onChangeRole={(mem, r) => pm.setMember.mutate({ projectId: pd.id, userId: mem.id, role: r })}
+      onInvite={() => lifecycle.openSettings(pd.id, "members")}
+      url={projectUrl(pd.id)}
+    />
+  ) : undefined;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));

@@ -43,8 +43,8 @@ const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; 
   { id: "discord", label: "Discord", icon: "discord", href: () => "https://discord.com/channels/@me" },
 ];
 
-/** A toolbar-tier dialog Popover behind an action button (Filter, Sort). */
-function MenuPopoverless({ label, trigger, children, onOpen }: { label: string; trigger: ReactElement; children: ReactNode; onOpen?: () => void }) {
+/** A toolbar-tier dialog Popover behind an action button (Filter, Sort, Members); its body draws its own header, so the popup is flush. */
+function ActionPopover({ label, trigger, children, width = 296, onOpen }: { label: string; trigger: ReactElement; children: ReactNode; width?: number; onOpen?: () => void }) {
   const pop = usePopover();
   return (
     <Popover
@@ -52,7 +52,15 @@ function MenuPopoverless({ label, trigger, children, onOpen }: { label: string; 
       onOpenChange={(open) => {
         pop.setOpen(open);
         if (open) onOpen?.();
-      }} tier="toolbar" placement="bottom-start" role="dialog" aria-label={`${label} options`} width={296} trigger={trigger}>
+      }}
+      tier="toolbar"
+      placement="bottom-start"
+      role="dialog"
+      aria-label={label}
+      width={width}
+      className="td-pop-flush"
+      trigger={trigger}
+    >
       {children}
     </Popover>
   );
@@ -78,8 +86,8 @@ export interface SubNavbarProps {
   onExport?: (format: ExportFormatId) => void;
   exportCount?: number;
   exportFiltered?: boolean;
-  /** Renders the Members button */
-  onMembers?: () => void;
+  /** Body of the Members action's Popover (a MembersMenu); renders the Members button */
+  membersMenu?: ReactNode;
   /** @default true */
   share?: boolean;
   projectUrl?: string;
@@ -95,7 +103,7 @@ export interface SubNavbarProps {
   className?: string;
 }
 
-export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, activeAction, filterMenu, sortMenu, filterCount = 0, sortCount = 0, onExport, exportCount, exportFiltered, onMembers, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
+export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, activeAction, filterMenu, sortMenu, filterCount = 0, sortCount = 0, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
   const ap = useAppearance();
   const active = activeView ?? views[0]?.id;
   const stylePop = usePopover();
@@ -168,7 +176,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
   return (
     <div className={["td-subnav", className ?? ""].join(" ").trim()} style={style} role="toolbar" aria-label="Project views and actions">
       <div className="td-subnav-spacer" />
-      {actions.length || onMembers ? (
+      {actions.length || membersMenu ? (
         <div className="td-subnav-actions">
           {actions.map((a) => {
             if (a.id === "style") {
@@ -204,16 +212,24 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             );
             if (!menu) return <span key={a.id}>{button}</span>;
             return (
-              <MenuPopoverless key={a.id} label={a.label} trigger={button} onOpen={() => onAction?.(a.id)}>
+              <ActionPopover key={a.id} label={`${a.label} options`} trigger={button} onOpen={() => onAction?.(a.id)}>
                 {menu}
-              </MenuPopoverless>
+              </ActionPopover>
             );
           })}
-          {onMembers ? (
-            <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip="Members" aria-expanded={activeAction === "members"} onClick={onMembers}>
-              <Icon name="users" size={16} />
-              Members
-            </button>
+          {membersMenu ? (
+            <ActionPopover
+              label="Project members and sharing"
+              width={320}
+              trigger={
+                <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip="Members">
+                  <Icon name="users" size={16} />
+                  Members
+                </button>
+              }
+            >
+              {membersMenu}
+            </ActionPopover>
           ) : null}
           {share ? (
             <MenuPopover

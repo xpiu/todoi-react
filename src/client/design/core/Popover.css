@@ -31,6 +31,10 @@
       opacity var(--duration-base) var(--ease-standard),
       transform var(--duration-base) var(--ease-standard);
   }
+  /* A body with its own header and scroller (the toolbar's Filter / Sort / Members) sits edge to edge */
+  .td-pop.td-pop-flush:not([data-sheet]) {
+    padding: 0;
+  }
   .td-pop[data-starting-style],
   .td-pop[data-ending-style] {
     opacity: 0;
@@ -69,6 +73,10 @@
     padding: 0 var(--sp-2) calc(var(--sp-2) + env(safe-area-inset-bottom, 0px));
     border-radius: 12px 12px 0 0;
     transition: transform var(--duration-overlay) var(--ease-standard), opacity var(--duration-overlay) var(--ease-standard);
+  }
+  /* A flush body (Filter / Sort / Members) fills the sheet instead of keeping its dropdown width */
+  .td-pop-flush[data-sheet="true"] > :not(.td-sheet-handle) {
+    width: auto;
   }
   .td-pop[data-sheet="true"][data-starting-style],
   .td-pop[data-sheet="true"][data-ending-style] {

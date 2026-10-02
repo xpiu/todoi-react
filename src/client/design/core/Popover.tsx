@@ -126,7 +126,8 @@ export function Popover({
     [onOpenChange],
   );
 
-  const popupStyle: CSSProperties = { ...(width != null ? { width } : null), ...(minWidth != null ? { minWidth } : null), ...style };
+  // A bottom sheet spans the screen: the anchored width would leave it short of the right edge.
+  const popupStyle: CSSProperties = { ...(width != null && !isSheet ? { width } : null), ...(minWidth != null && !isSheet ? { minWidth } : null), ...style };
   const popupCls = ["td-pop", dragging ? "is-dragging" : "", className ?? ""].filter(Boolean).join(" ");
 
   return (
@@ -169,4 +170,9 @@ export function usePopover(initial = false) {
   const toggle = useCallback(() => setOpen((o) => !o), []);
   const close = useCallback(() => setOpen(false), []);
   return { open, setOpen, toggle, close };
+}
+
+/** A control inside a Popover's body that closes it when clicked (and still runs its own onClick), e.g. a row that opens a dialog. */
+export function PopoverClose({ render }: { render: ReactElement }) {
+  return <BasePopover.Close render={render} />;
 }

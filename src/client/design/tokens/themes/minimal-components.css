@@ -385,6 +385,7 @@ html[data-theme="minimal"] .td-switch:focus-visible .td-switch-track{box-shadow:
 /* ── Floating layers (popovers, menus, the account menu, dialogs): paper with a hairline ring, square corners; menu rows read in normal ink, hover is a faint wash */
 html[data-theme="minimal"] .td-pop,html[data-theme="minimal"] .td-usermenu,html[data-theme="minimal"] .td-createmenu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
 html[data-theme="minimal"] .td-pop{padding:6px 0}
+html[data-theme="minimal"] .td-pop.td-pop-flush:not([data-sheet]){padding:0}
 html[data-theme="minimal"] .td-menu{gap:0}
 html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-usermenu-item,html[data-theme="minimal"] .td-usermenu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-usermenu-item:hover,html[data-theme="minimal"] .td-usermenu-item:focus-visible,html[data-theme="minimal"] button.td-usermenu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
@@ -401,26 +402,31 @@ html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/1.45
 html[data-theme="minimal"] .td-usermenu{width:240px;padding:6px 0}
 html[data-theme="minimal"] .td-createmenu{width:200px;padding:6px 0;top:calc(100% + 12px)}
 /* Toolbar menus (Filter · Sort · Members): the same square sheet as every floating layer; section names are plain grey words, rows are normal ink with a faint hover wash, the checked row a paper-grey wash; label swatches shrink to a 6px square so color stays a hint */
-html[data-theme="minimal"] .td-fm,html[data-theme="minimal"] .td-sm,html[data-theme="minimal"] .td-mm{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);top:calc(100% + 4px)}
+html[data-theme="minimal"] .td-fm,html[data-theme="minimal"] .td-sm,html[data-theme="minimal"] .td-mm{border-radius:0}
 html[data-theme="minimal"] .td-fm-head,html[data-theme="minimal"] .td-sm-head,html[data-theme="minimal"] .td-mm-head{padding:10px 14px;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-fm-head svg{stroke:var(--ink-900)!important}
 html[data-theme="minimal"] .td-fm-scroll,html[data-theme="minimal"] .td-sm-scroll,html[data-theme="minimal"] .td-mm-scroll{padding:6px 0}
 html[data-theme="minimal"] .td-fm-sec,html[data-theme="minimal"] .td-sm-sec,html[data-theme="minimal"] .td-mm-sec{padding:10px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-fm-row,html[data-theme="minimal"] .td-sm-row,html[data-theme="minimal"] .td-mm-row{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-fm-row:hover,html[data-theme="minimal"] .td-sm-row:hover,html[data-theme="minimal"] button.td-mm-row:hover{background:var(--chrome-hover);color:var(--ink-900)}
-html[data-theme="minimal"] .td-fm-row[aria-checked="true"],html[data-theme="minimal"] .td-sm-row[aria-checked="true"]{background:var(--blue-100);color:var(--ink-900)}
+html[data-theme="minimal"] .td-fm-row:hover,html[data-theme="minimal"] .td-sm-row:hover,html[data-theme="minimal"] button.td-mm-row:hover:not(:disabled){background:var(--chrome-hover);color:var(--ink-900)}
+html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"]{color:var(--ink-400)}
+/* Checked rows stay bare paper: the checkbox or the check carries the state, so a hover fill never reads as "picked" */
+html[data-theme="minimal"] .td-fm-row[aria-checked="true"]:not(:hover),html[data-theme="minimal"] .td-sm-row[aria-checked="true"]:not(:hover){background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-fm-row .td-check{margin-right:2px}
 html[data-theme="minimal"] .td-fm-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
 html[data-theme="minimal"] .td-fm-row>svg{stroke:currentColor!important;width:14px;height:14px;stroke-width:1.75}
-html[data-theme="minimal"] .td-fm-count,html[data-theme="minimal"] .td-sm-hint{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+/* The Filter / Sort count reads as a plain mono figure beside the glyph (no white pill: invisible on light paper, loud on dark) */
+html[data-theme="minimal"] .td-subnav-badge{min-width:0;height:auto;padding:0;margin-left:2px;border-radius:0;background:none;color:var(--chrome-text);font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-fm-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sm-hint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sm-dir{font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-mm-title{font:500 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-mm-vis{height:auto;padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-mm-row .td-avatar{display:none!important}
 html[data-theme="minimal"] .td-mm-line{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-mm-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-mm-role{height:auto;padding:0;border-radius:0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-mm-role:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-mm-role,html[data-theme="minimal"] .td-mm-rolepick .td-select-trigger{height:auto;padding:0;border-radius:0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-mm-role:hover,html[data-theme="minimal"] .td-mm-rolepick .td-select-trigger:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-mm-link{margin:6px 14px 8px;padding:4px 0;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;background:none}
 html[data-theme="minimal"] .td-mm-url{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
 /* Auth pages (Log in · Invite · Reset): the wordmark in 500, no card — a plain column on paper; provider buttons and the primary are squares, links are grey words that go ink */

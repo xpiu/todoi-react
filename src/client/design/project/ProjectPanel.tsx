@@ -25,7 +25,7 @@ export const PROJECT_ROLES: ReadonlyArray<{ value: Exclude<MemberRole, "owner">;
   { value: "editor", label: "Editor" },
   { value: "viewer", label: "Viewer" },
 ];
-const roleName = (r: MemberRole) => (r === "owner" ? "Owner" : (PROJECT_ROLES.find((x) => x.value === r)?.label ?? r));
+export const roleName = (r: MemberRole) => (r === "owner" ? "Owner" : (PROJECT_ROLES.find((x) => x.value === r)?.label ?? r));
 const VIEW_OPTS: ReadonlyArray<{ value: ProjectView; label: string; icon: IconName }> = [
   { value: "list", label: "List", icon: "list" },
   { value: "board", label: "Board", icon: "kanban" },
