@@ -1,21 +1,16 @@
-import { z } from "zod";
+// Node 22 loads `.env` natively via `--env-file`; see the npm scripts. The rules live in config.ts.
+import { parseEnv } from "./config";
 
-// Node 22 loads `.env` natively via `--env-file`; see the npm scripts.
-export const DEV = process.env.NODE_ENV !== "production";
+function load() {
+  try {
+    return parseEnv(process.env);
+  } catch (error) {
+    if (process.env.VITEST) throw error;
+    // A readable refusal instead of a stack trace: the message lists every setting to fix.
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+}
 
-const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  PORT: z.coerce.number().int().positive().default(3000),
-  /** Apply pending Drizzle migrations when the API boots (development default) */
-  MIGRATE_ON_START: z.stringbool().default(DEV),
-  /** Seed the kit's sample project when the database has no groups (development default) */
-  SEED_ON_START: z.stringbool().default(DEV),
-  /** Where uploaded attachment bytes live (local disk until an object store lands) */
-  UPLOAD_DIR: z.string().default(".data/uploads"),
-  /** Where the app is served (cookies, trusted origins, links in invites) */
-  APP_URL: z.string().url().default("http://localhost:5173"),
-  /** Better Auth signing secret — set a real one outside development */
-  BETTER_AUTH_SECRET: z.string().min(16).default("todoi-dev-secret-change-me-please"),
-});
-
-export const env = envSchema.parse(process.env);
+export const env = load();
+export const DEV = env.DEV;

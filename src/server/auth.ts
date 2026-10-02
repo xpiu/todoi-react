@@ -23,7 +23,7 @@ export const auth = betterAuth({
   basePath: "/api/auth",
   secret: env.BETTER_AUTH_SECRET,
   // Vite moves to the next port when 5173 is taken; in development any loopback port may call the API.
-  trustedOrigins: [env.APP_URL, `http://localhost:${env.PORT}`, ...(DEV ? ["http://localhost:*", "http://127.0.0.1:*"] : [])],
+  trustedOrigins: [env.APP_URL, ...(DEV ? [`http://localhost:${env.PORT}`, "http://localhost:*", "http://127.0.0.1:*"] : [])],
   database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications } }),
   emailAndPassword: { enabled: true, minPasswordLength: 10 },
   plugins: [anonymous({
