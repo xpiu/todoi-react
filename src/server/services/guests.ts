@@ -18,10 +18,10 @@ export async function createGuestWorkspace(userId: string) {
 export async function transferGuestWorkspace(guestId: string, userId: string) {
   await db.transaction(async (tx) => {
     // Serialize account linking and Inbox creation for these identities.
-    const locked = await tx.select().from(users).where(inArray(users.id, [guestId, userId])).orderBy(users.id).for("update");
+    const locked = await tx.select({ id: users.id, isAnonymous: users.isAnonymous }).from(users).where(inArray(users.id, [guestId, userId])).orderBy(users.id).for("update");
     if (!locked.find((u) => u.id === guestId)?.isAnonymous || !locked.find((u) => u.id === userId)) return;
 
-    const inboxes = await tx.select().from(lists).where(and(eq(lists.kind, "inbox"), inArray(lists.userId, [guestId, userId])));
+    const inboxes = await tx.select({ id: lists.id, userId: lists.userId }).from(lists).where(and(eq(lists.kind, "inbox"), inArray(lists.userId, [guestId, userId])));
     const guestInbox = inboxes.find((l) => l.userId === guestId);
     const userInbox = inboxes.find((l) => l.userId === userId);
     if (guestInbox && userInbox) {

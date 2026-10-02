@@ -9,6 +9,12 @@ import { db } from "./db";
 import { attachments, comments, groups, invites, items, labels, lists, members, projects, savedViews, users } from "./db/schema";
 
 type Permission = "read" | "edit" | "owner";
+type ItemScope = Pick<typeof items.$inferSelect, "projectId" | "listId">;
+
+function sameItemScope(item: ItemScope, scope: ItemScope | undefined): boolean {
+  return item.projectId === scope?.projectId && (!!item.projectId || item.listId === scope?.listId);
+}
+
 const missing = () => new HTTPException(404, { message: "Not found" });
 const forbidden = () => new HTTPException(403, { message: "You don't have access to this content" });
 const invalid = () => new HTTPException(400, { message: "Content must belong to the same project or Inbox" });
@@ -67,7 +73,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
       if (field("copyFrom")) await projectAccess(field("copyFrom")!, "read");
       if (action === "members" && !read && c.req.method !== "DELETE") {
         const targetId = c.req.path.split("/").at(-1)!;
-        const [user] = await db.select().from(users).where(eq(users.id, targetId));
+        const [user] = await db.select({ isAnonymous: users.isAnonymous }).from(users).where(eq(users.id, targetId));
         if (!user || user.isAnonymous) throw invalid();
       }
       break;
@@ -80,34 +86,39 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
       const projectId = read ? c.req.query("projectId") : undefined;
       const listId = read ? c.req.query("listId") : field("listId");
       if (projectId) await projectAccess(projectId);
-      const list = listId ? await listAccess(listId) : !id && !projectId ? await listAccess(viewerOf(c).inboxListId) : undefined;
+      let list: Awaited<ReturnType<typeof listAccess>> | undefined;
+      if (listId) {
+        list = await listAccess(listId);
+      } else if (!id && !projectId) {
+        list = await listAccess(viewerOf(c).inboxListId);
+      }
       const scope = item ?? (list ? { projectId: list.projectId, listId: list.id } : undefined);
       const parentId = field("parentItemId");
       if (parentId) {
         const parent = await itemAccess(parentId, "edit");
-        if (parent.id === id || parent.parentItemId || parent.projectId !== scope?.projectId || !parent.projectId && parent.listId !== scope?.listId) throw invalid();
+        if (parent.id === id || parent.parentItemId || !sameItemScope(parent, scope)) throw invalid();
       }
       if (field("targetId")) {
         const target = await itemAccess(field("targetId")!, "edit");
-        if (target.projectId !== item?.projectId || !target.projectId && target.listId !== item?.listId) throw invalid();
+        if (!sameItemScope(target, item)) throw invalid();
       }
       if (field("replyToId")) {
-        const [reply] = await db.select().from(comments).where(eq(comments.id, field("replyToId")!));
+        const [reply] = await db.select({ itemId: comments.itemId }).from(comments).where(eq(comments.id, field("replyToId")!));
         if (!reply || reply.itemId !== id) throw invalid();
       }
       const labelIds = ids("labelIds");
       if (labelIds.length) {
-        const rows = await db.select().from(labels).where(inArray(labels.id, labelIds));
+        const rows = await db.select({ projectId: labels.projectId }).from(labels).where(inArray(labels.id, labelIds));
         if (new Set(labelIds).size !== rows.length || rows.some((l) => l.projectId !== scope?.projectId)) throw invalid();
       }
       const userIds = [...ids("assigneeIds"), ...ids("userIds")];
       if (userIds.length) {
-        const allowed = scope?.projectId ? (await db.select().from(members).where(eq(members.projectId, scope.projectId))).map((m) => m.userId) : [viewer?.userId];
-        if (userIds.some((u) => !allowed.includes(u))) throw invalid();
+        const allowed = new Set(scope?.projectId ? (await db.select({ userId: members.userId }).from(members).where(eq(members.projectId, scope.projectId))).map((m) => m.userId) : [viewer?.userId]);
+        if (userIds.some((u) => !allowed.has(u))) throw invalid();
       }
       const cover = body?.cover as { attachmentId?: unknown } | undefined;
       if (typeof cover?.attachmentId === "string") {
-        const [attachment] = await db.select().from(attachments).where(eq(attachments.id, cover.attachmentId));
+        const [attachment] = await db.select({ itemId: attachments.itemId }).from(attachments).where(eq(attachments.id, cover.attachmentId));
         if (!attachment || attachment.itemId !== id) throw invalid();
       }
       break;
@@ -115,33 +126,33 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     case "labels": {
       let projectId = read ? c.req.query("projectId") : field("projectId");
       if (id) {
-        const [label] = await db.select().from(labels).where(eq(labels.id, id));
+        const [label] = await db.select({ projectId: labels.projectId }).from(labels).where(eq(labels.id, id));
         if (!label) throw missing();
         projectId = label.projectId;
       }
       if (projectId) await projectAccess(projectId);
       if (field("intoLabelId")) {
-        const [target] = await db.select().from(labels).where(eq(labels.id, field("intoLabelId")!));
+        const [target] = await db.select({ projectId: labels.projectId }).from(labels).where(eq(labels.id, field("intoLabelId")!));
         if (!target || target.projectId !== projectId) throw invalid();
       }
       break;
     }
     case "comments": {
-      const [comment] = await db.select().from(comments).where(eq(comments.id, id!));
+      const [comment] = await db.select({ itemId: comments.itemId, authorId: comments.authorId }).from(comments).where(eq(comments.id, id!));
       if (!comment) throw missing();
       await itemAccess(comment.itemId);
       if (action !== "reactions" && comment.authorId !== viewer?.userId) throw forbidden();
       break;
     }
     case "attachments": {
-      const [attachment] = await db.select().from(attachments).where(eq(attachments.id, id!));
+      const [attachment] = await db.select({ itemId: attachments.itemId }).from(attachments).where(eq(attachments.id, id!));
       if (!attachment) throw missing();
       await itemAccess(attachment.itemId);
       break;
     }
     case "saved-views":
       if (id) {
-        const [view] = await db.select().from(savedViews).where(eq(savedViews.id, id));
+        const [view] = await db.select({ projectId: savedViews.projectId, ownerId: savedViews.ownerId }).from(savedViews).where(eq(savedViews.id, id));
         if (!view) throw missing();
         await projectAccess(view.projectId);
         if (view.ownerId !== viewer?.userId) throw forbidden();
@@ -162,7 +173,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
       if (!read) {
         if (action === "accept") registered();
         else {
-          const [invite] = await db.select().from(invites).where(eq(invites.code, id!));
+          const [invite] = await db.select({ projectId: invites.projectId }).from(invites).where(eq(invites.code, id!));
           if (!invite) throw missing();
           await projectAccess(invite.projectId, "owner");
         }
