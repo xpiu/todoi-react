@@ -28,11 +28,10 @@ import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
-import { useAttachmentMutations } from "../data/attachments";
 import { Dialog } from "../design/core/Dialog";
 import { ProjectPicker } from "../design/core/ProjectPicker";
 import { useFileDropTargets } from "../design/overlay/Attachments";
-import { useFeedback } from "./feedback";
+import { attachFiles } from "./uploads";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
@@ -116,8 +115,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const dnd = useItemDnd(root, { ...dndOpts, onDrop: actions.move });
   useTouchItemDrag(root, dnd, dndOpts.itemSelector, actions.move);
   // Files dropped on a card or row attach to that item.
-  const [dropTarget, setDropTarget] = useState<{ id: string; files: File[] } | null>(null);
-  const fileDrop = useFileDropTargets((files, id) => setDropTarget({ id, files }), { selector: dndOpts.itemSelector });
+  const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
   const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
   const picker = useProjectPicker(projectId);
@@ -215,7 +213,6 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           if (t === "move") setSelectedIds([]);
         }} />
       </Dialog>
-      {dropTarget ? <AttachDrop projectId={projectId} target={dropTarget} onDone={() => setDropTarget(null)} /> : null}
     </>
   );
   const isSelected = (id: string) => selectedIds.includes(id);
@@ -252,23 +249,6 @@ function mergeDrag(items: ItemDnd["rootProps"], files: ReturnType<typeof useFile
     onDragLeave: (e: React.DragEvent) => (isFiles(e) ? files.onDragLeave?.(e) : items.onDragLeave(e)),
     onDrop: (e: React.DragEvent) => (isFiles(e) ? files.onDrop?.(e) : items.onDrop(e)),
   } as Partial<ItemDnd["rootProps"]>;
-}
-
-/** Uploads files dropped on a card / row, then raises the toast. */
-function AttachDrop({ projectId, target, onDone }: { projectId: string; target: { id: string; files: File[] }; onDone: () => void }) {
-  const files = useAttachmentMutations(target.id, projectId);
-  const notify = useFeedback((s) => s.notify);
-  const started = useRef(false);
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    files.upload.mutate(target.files, {
-      onSuccess: (made) => notify({ message: made.length === 1 ? `Attached ${made[0]!.name}` : `Attached ${made.length} files`, icon: "paperclip" }),
-      onError: (e) => notify({ message: e.message, icon: "circle-alert" }),
-      onSettled: onDone,
-    });
-  }, [files.upload, target, notify, onDone]);
-  return null;
 }
 
 /** Section / column header callbacks shared by both views. */

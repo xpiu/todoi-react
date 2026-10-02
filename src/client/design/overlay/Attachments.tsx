@@ -1,6 +1,7 @@
 // Attachments — rows of 64×48 thumbnail (image preview, or file glyph + mono extension), name, meta
 // line, hover Open and ⋯ (Download · Make / Remove cover · Rename · Delete with an inline confirm);
-// uploads show a progress bar in place of the meta. Images open the Lightbox. Files arrive from the
+// uploads show a progress bar in place of the meta (with Cancel), failed ones their reason with Retry and
+// Remove. Images open the Lightbox. Files arrive from the
 // aside button, the section's Add, a drop over the panel (DropOverlay) or a drop on a card / row.
 import { useEffect, useRef, useState, type DragEvent, type RefObject } from "react";
 
@@ -25,6 +26,9 @@ export interface AttachmentFile {
   isCover?: boolean;
   /** 0–100 while uploading */
   progress?: number;
+  /** Why the upload failed; the row offers Retry when `retriable` and Remove */
+  error?: string;
+  retriable?: boolean;
 }
 
 const IMG = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
@@ -50,14 +54,19 @@ export interface AttachmentRowProps {
   onRename?: (name: string) => void;
   onDelete?: () => void;
   onPreview?: () => void;
+  /** Send a failed upload again */
+  onRetry?: () => void;
+  /** Cancel an upload in flight, or remove a failed one from the list */
+  onDismiss?: () => void;
 }
 
-export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveCover, onRename, onDelete, onPreview }: AttachmentRowProps) {
+export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveCover, onRename, onDelete, onPreview, onRetry, onDismiss }: AttachmentRowProps) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(file.name);
   const [confirm, setConfirm] = useState(false);
   const img = isImageFile(file) && (file.src || file.url);
   const uploading = file.progress != null && file.progress < 100;
+  const pending = uploading || !!file.error;
   const [icon, ext] = kindOf(file.name);
   const commit = () => {
     const t = name.trim();
@@ -66,8 +75,8 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
   };
   const meta = [file.meta, file.size != null ? formatBytes(file.size) : null].filter(Boolean).join(" · ");
   return (
-    <div className="td-att-row" data-uploading={uploading ? "true" : undefined}>
-      <button type="button" className={"td-att-thumb" + (img ? " is-image" : "")} data-kind={img ? undefined : ext} aria-label={img ? `Preview ${file.name}` : file.name} tabIndex={img && onPreview ? 0 : -1} onClick={img && onPreview && !uploading ? onPreview : undefined}>
+    <div className="td-att-row" role="listitem" data-uploading={uploading ? "true" : undefined} data-failed={file.error ? "true" : undefined}>
+      <button type="button" className={"td-att-thumb" + (img ? " is-image" : "")} data-kind={img ? undefined : ext} aria-label={img ? `Preview ${file.name}` : file.name} tabIndex={img && onPreview && !pending ? 0 : -1} onClick={img && onPreview && !pending ? onPreview : undefined}>
         {img ? (
           <img src={file.src ?? file.url} alt="" />
         ) : (
@@ -104,9 +113,14 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
             {file.name}
           </div>
         )}
-        {uploading ? (
+        {file.error ? (
+          <div className="td-att-meta td-att-error" role="alert">
+            <Icon name="circle-alert" size={12} />
+            <span title={file.error}>{file.error}</span>
+          </div>
+        ) : uploading ? (
           <div className="td-att-progress">
-            <ProgressBar value={file.progress} height={4} color="var(--blue-500)" className="td-att-bar" />
+            <ProgressBar value={file.progress} height={4} color="var(--blue-500)" className="td-att-bar" aria-label={`Uploading ${file.name}`} />
             <span className="td-att-meta">{Math.round(file.progress!)}%</span>
           </div>
         ) : confirm ? (
@@ -138,7 +152,16 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
           </div>
         )}
       </div>
-      {!uploading && !renaming && !confirm ? (
+      {pending ? (
+        <div className="td-att-actions is-visible">
+          {file.error && file.retriable && onRetry ? (
+            <Button variant="ghost" icon="refresh-cw" onClick={onRetry}>
+              Retry
+            </Button>
+          ) : null}
+          {onDismiss ? <IconButton name="x" label={file.error ? `Remove ${file.name}` : `Cancel uploading ${file.name}`} tooltip={file.error ? "Remove" : "Cancel upload"} size={28} iconSize={15} onClick={onDismiss} /> : null}
+        </div>
+      ) : !renaming && !confirm ? (
         <div className="td-att-actions">
           {onOpen || file.url ? <IconButton name="external-link" label={`Open ${file.name}`} tooltip="Open" size={28} iconSize={15} onClick={() => (onOpen ? onOpen() : window.open(file.url, "_blank", "noopener"))} /> : null}
           <MenuButton label={`Actions for ${file.name}`} tier="detached" size={28} iconSize={15} width={184}>
@@ -187,15 +210,17 @@ export interface AttachmentListProps {
   onRemoveCover?: (id: string) => void;
   onRename?: (id: string, name: string) => void;
   onDelete?: (id: string) => void;
+  onRetry?: (id: string) => void;
+  onDismiss?: (id: string) => void;
   accept?: string;
   /** Receives a function that opens the file picker */
   pickerRef?: RefObject<(() => void) | null>;
 }
 
-export function AttachmentList({ files, onAdd, onOpen, onDownload, onMakeCover, onRemoveCover, onRename, onDelete, accept, pickerRef }: AttachmentListProps) {
+export function AttachmentList({ files, onAdd, onOpen, onDownload, onMakeCover, onRemoveCover, onRename, onDelete, onRetry, onDismiss, accept, pickerRef }: AttachmentListProps) {
   const [preview, setPreview] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const images = files.filter((f) => isImageFile(f) && (f.src || f.url) && !(f.progress != null && f.progress < 100));
+  const images = files.filter((f) => isImageFile(f) && (f.src || f.url) && !(f.progress != null && f.progress < 100) && !f.error);
   useEffect(() => {
     if (pickerRef) pickerRef.current = () => inputRef.current?.click();
   }, [pickerRef]);
@@ -203,7 +228,7 @@ export function AttachmentList({ files, onAdd, onOpen, onDownload, onMakeCover, 
     <>
       <div className="td-att" role="list">
         {files.map((f) => (
-          <AttachmentRow key={f.id} file={f} onOpen={onOpen ? () => onOpen(f.id) : undefined} onDownload={onDownload ? () => onDownload(f.id) : undefined} onMakeCover={onMakeCover ? () => onMakeCover(f.id) : undefined} onRemoveCover={onRemoveCover ? () => onRemoveCover(f.id) : undefined} onRename={onRename ? (n) => onRename(f.id, n) : undefined} onDelete={onDelete ? () => onDelete(f.id) : undefined} onPreview={() => setPreview(images.indexOf(f))} />
+          <AttachmentRow key={f.id} file={f} onOpen={onOpen ? () => onOpen(f.id) : undefined} onDownload={onDownload ? () => onDownload(f.id) : undefined} onMakeCover={onMakeCover ? () => onMakeCover(f.id) : undefined} onRemoveCover={onRemoveCover ? () => onRemoveCover(f.id) : undefined} onRename={onRename ? (n) => onRename(f.id, n) : undefined} onDelete={onDelete ? () => onDelete(f.id) : undefined} onRetry={onRetry ? () => onRetry(f.id) : undefined} onDismiss={onDismiss ? () => onDismiss(f.id) : undefined} onPreview={() => setPreview(images.indexOf(f))} />
         ))}
       </div>
       {onAdd ? (

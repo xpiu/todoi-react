@@ -146,7 +146,8 @@ export interface ItemOverlayProps {
   onMakeSubitemOf?: (parent: PickableItem) => void;
   onMenuAction: (action: OverlayMenuAction) => void;
   onAddFiles?: (files: File[], opts?: { cover?: boolean }) => void;
-  onAttachmentAction?: (id: string, action: "open" | "download" | "delete" | "rename", arg?: string) => void;
+  /** retry / dismiss act on a failed or in-flight upload (its row's id) */
+  onAttachmentAction?: (id: string, action: "open" | "download" | "delete" | "rename" | "retry" | "dismiss", arg?: string) => void;
   onExport?: (format: ExportFormatId) => void;
   onPrint?: () => void;
   /** Other projects for Move / Copy to project… */
@@ -424,6 +425,8 @@ export function ItemOverlay(p: ItemOverlayProps) {
               onRemoveCover={() => p.onSetCover(null)}
               onRename={p.onAttachmentAction ? (id, n) => p.onAttachmentAction?.(id, "rename", n) : undefined}
               onDelete={p.onAttachmentAction ? (id) => p.onAttachmentAction?.(id, "delete") : undefined}
+              onRetry={p.onAttachmentAction ? (id) => p.onAttachmentAction?.(id, "retry") : undefined}
+              onDismiss={p.onAttachmentAction ? (id) => p.onAttachmentAction?.(id, "dismiss") : undefined}
             />
           </ItemSection>
         ) : null}
