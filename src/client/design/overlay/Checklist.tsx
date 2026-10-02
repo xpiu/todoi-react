@@ -163,7 +163,7 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
         <span className="td-clhead-count">
           {done}/{total}
         </span>
-        <ProgressBar value={pct} height={4} color={pct === 100 ? "var(--success-icon)" : "var(--blue-500)"} className="td-clhead-bar" />
+        <ProgressBar value={pct} height={4} color={pct === 100 ? "var(--success-icon)" : "var(--blue-500)"} className="td-clhead-bar" aria-label={`${done} of ${total} subitems done`} />
         <div className="td-clhead-actions">
           {done > 0 ? <IconButton name={hideChecked ? "eye" : "eye-off"} size={24} iconSize={14} label={hideChecked ? "Show checked items" : "Hide checked items"} tooltip={hideChecked ? "Show checked items" : "Hide checked items"} onClick={() => setHideChecked((h) => !h)} /> : null}
           {onDelete ? <IconButton name="trash-2" size={24} iconSize={14} label="Delete subitems" tooltip="Delete subitems" onClick={onDelete} /> : null}

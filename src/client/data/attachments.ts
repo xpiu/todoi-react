@@ -2,7 +2,8 @@
 // by refetching the item's details and the project's items (the card badge count).
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
-import { ApiError, api, unwrap, type ItemDetails } from "./api";
+import type { ErrorBody } from "../../shared/errors";
+import { api, fromErrorBody, unwrap, type ItemDetails } from "./api";
 import { keys } from "./queries";
 
 export type Attachment = ItemDetails["attachments"][number];
@@ -28,9 +29,9 @@ export function uploadAttachment(itemId: string, file: File, { onProgress, signa
     xhr.responseType = "json";
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.((e.loaded / e.total) * 100);
     xhr.onload = () => {
-      const body = xhr.response as Attachment[] | { error?: string } | null;
+      const body = xhr.response as Attachment[] | Partial<ErrorBody> | null;
       if (xhr.status >= 200 && xhr.status < 300 && Array.isArray(body) && body[0]) resolve(body[0]);
-      else reject(new ApiError(xhr.status, (body && !Array.isArray(body) && body.error) || `Upload failed (${xhr.status})`));
+      else reject(fromErrorBody(xhr.status, Array.isArray(body) ? null : body, xhr.getResponseHeader("x-request-id") ?? undefined));
     };
     xhr.onerror = () => reject(new TypeError("Network request failed"));
     xhr.onabort = () => reject(new DOMException("Upload cancelled", "AbortError"));

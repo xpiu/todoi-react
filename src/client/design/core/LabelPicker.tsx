@@ -123,8 +123,14 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
   const list = labels.filter((l) => !ql || norm(l.name).includes(ql));
   const exact = labels.some((l) => norm(l.name) === ql);
   const toggle = (l: PickableLabel) => onChange(sel.has(l.id) ? value.filter((v) => v !== l.id) : [...value, l.id]);
+  /** The draft stays open until the label exists; the caller explains a refusal (e.g. a duplicate name). */
   const create = async (d: LabelDraft) => {
-    const made = await onCreateLabel?.(d);
+    let made: PickableLabel | void;
+    try {
+      made = await onCreateLabel?.(d);
+    } catch {
+      return;
+    }
     if (made) onChange([...value, made.id]);
     setEdit(null);
     setQ("");

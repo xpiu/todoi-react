@@ -92,7 +92,6 @@ export function ImportScreen() {
           notify({ message: `Imported ${quote(name.trim())} — ${count(made.items, "item")} in ${count(plan.lists.length, "list")}`, icon: "upload" });
           void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
         },
-        onError: (e) => notify({ message: e instanceof Error ? e.message : "The import failed", icon: "circle-alert" }),
       },
     );
   };

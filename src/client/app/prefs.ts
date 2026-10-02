@@ -8,9 +8,9 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { DEFAULT_PREFS, prefsOf, type Prefs } from "../../shared/prefs";
-import { api, errorMessage, unwrap } from "../data/api";
+import { api, unwrap } from "../data/api";
 import { setDateConventions } from "../design/core/dates";
-import { useFeedback } from "./feedback";
+import { notifyFailure } from "./feedback";
 
 export { DEFAULT_PREFS, type Prefs };
 
@@ -22,7 +22,7 @@ export const usePrefs = create<Prefs & { set: (patch: Partial<Prefs>) => void }>
       ...DEFAULT_PREFS,
       set: (patch) => {
         set(patch);
-        api.api.me.prefs.$patch({ json: patch }).then((r) => unwrap(r)).catch((err: unknown) => useFeedback.getState().notify({ message: `Couldn't save that setting to your account: ${errorMessage(err)}`, icon: "circle-alert" }));
+        api.api.me.prefs.$patch({ json: patch }).then((r) => unwrap(r)).catch((err: unknown) => notifyFailure(err, "Couldn't save that setting to your account: "));
       },
     }),
     { name: "td-prefs", partialize: (s) => prefsOf(s), merge: (stored, current) => ({ ...current, ...prefsOf(stored) }) },

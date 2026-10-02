@@ -6,14 +6,16 @@ import { useState } from "react";
 import { projectUrl } from "./links";
 
 import type { LabelColor, MemberRole } from "../../shared/enums";
+import { explain } from "../data/api";
 import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
 import { useActivity, useGroups, useProject } from "../data/queries";
 import type { IconName } from "../design/core/Icon";
 import { ProjectDialog, type NewGroup, type NewProject } from "../design/project/ProjectDialog";
 import { ProjectPanel, type PanelAction, type ProjectPatch } from "../design/project/ProjectPanel";
-import { quote, useFeedback } from "./feedback";
-import { useLifecycle } from "./lifecycle";
+import { copyText } from "../design/core/clipboard";
+import { copyAndNotify, quote, useFeedback } from "./feedback";
+import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { useCurrentUser } from "./session";
 
 export function LifecycleDialogs() {
@@ -24,24 +26,20 @@ export function LifecycleDialogs() {
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
   const projects = (groups.data ?? []).flatMap((g) => g.projects);
-  const createProject = (p: NewProject) => {
+  // The dialog stays open with the values until the server has the project; a failure shows in the dialog.
+  const createProject = async (p: NewProject) => {
     const id = newId();
-    m.createProject.mutate(
-      { id, groupId: p.groupId, name: p.name, icon: p.icon, color: p.color, visibility: p.visibility, lists: p.lists ? p.lists.map(([n, r]) => [n, r ?? null] as [string, typeof r | null]) : undefined, copyFrom: p.copyFrom ?? undefined },
-      {
-        onSuccess: (made) => {
-          const g = groups.data?.find((x) => x.id === p.groupId);
-          const lists = made.lists.map((l) => l.name);
-          notify({ message: `Created ${quote(p.name)} in ${g?.name ?? "the group"}${lists.length ? ` with ${lists.join(" · ")}` : ""}`, icon: "folder-plus" });
-          void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
-        },
-      },
-    );
+    const made = await m.createProject.mutateAsync({ id, groupId: p.groupId, name: p.name, icon: p.icon, color: p.color, visibility: p.visibility, lists: p.lists ? p.lists.map(([n, r]) => [n, r ?? null] as [string, typeof r | null]) : undefined, copyFrom: p.copyFrom ?? undefined, quiet: true }).catch(explain);
+    const g = groups.data?.find((x) => x.id === p.groupId);
+    const lists = made.lists.map((l) => l.name);
     close();
+    notify({ message: `Created ${quote(p.name)} in ${g?.name ?? "the group"}${lists.length ? ` with ${lists.join(" · ")}` : ""}`, icon: "folder-plus" });
+    void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   };
-  const createGroup = (g: NewGroup) => {
-    m.createGroup.mutate({ id: newId(), name: g.name, keyPrefix: g.keyPrefix }, { onSuccess: () => notify({ message: `Created the group ${quote(g.name)} — keys start at ${g.keyPrefix}-1`, icon: "folders" }) });
+  const createGroup = async (g: NewGroup) => {
+    await m.createGroup.mutateAsync({ id: newId(), name: g.name, keyPrefix: g.keyPrefix, quiet: true }).catch(explain);
     close();
+    notify({ message: `Created the group ${quote(g.name)} — keys start at ${g.keyPrefix}-1`, icon: "folders" });
   };
   return (
     <>
@@ -64,6 +62,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   const project = useProject(projectId);
   const activity = useActivity(projectId);
   const m = useProjectMutations();
+  const removeProject = useRemoveProject();
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
   const [open, setOpen] = useState(true);
@@ -72,27 +71,23 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   if (!p || !user) return null;
   const me = p.members.find((x) => x.userId === user.id);
   const role: MemberRole = me?.role ?? "viewer";
-  const patch = (c: ProjectPatch) => m.updateProject.mutate({ id: p.id, ...c });
+  // A refused change is explained by the query client; the panel puts the field back (ProjectPanel).
+  const patch = (c: ProjectPatch) => m.updateProject.mutateAsync({ id: p.id, ...c });
   const finish = () => {
     setOpen(false);
     onClose();
   };
+  const leaveTo = () => {
+    finish();
+    void navigate({ to: "/projects" });
+  };
   const act = (a: PanelAction) => {
-    if (a === "archive") {
-      m.archiveProject.mutate({ id: p.id });
-      notify({ message: `Archived ${quote(p.name)}`, icon: "archive", restore: () => m.restoreProject.mutate({ id: p.id }) });
-      finish();
-      void navigate({ to: "/projects" });
-    } else if (a === "delete") {
-      m.deleteProject.mutate({ id: p.id });
-      notify({ message: `Deleted ${quote(p.name)}`, icon: "trash-2", restore: () => m.restoreProject.mutate({ id: p.id }) });
-      finish();
-      void navigate({ to: "/projects" });
-    } else if (a === "leave") {
-      m.removeMember.mutate({ projectId: p.id, userId: user.id });
-      notify({ message: `Left ${quote(p.name)}`, icon: "log-out", restore: () => m.setMember.mutate({ projectId: p.id, userId: user.id, role }) });
-      finish();
-      void navigate({ to: "/projects" });
+    if (a === "archive" || a === "delete") removeProject(p, a, leaveTo);
+    else if (a === "leave") {
+      m.removeMember.mutate({ projectId: p.id, userId: user.id }, { onSuccess: () => {
+        notify({ message: `Left ${quote(p.name)}`, icon: "log-out", restore: () => m.setMember.mutateAsync({ projectId: p.id, userId: user.id, role, quiet: true }) });
+        leaveTo();
+      } });
     } else if (a === "open-archive") {
       finish();
       void navigate({ to: "/archive", search: { project: p.id } });
@@ -113,11 +108,13 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
       onChange={patch}
       onAction={act}
       onChangeRole={(mem, r) => m.setMember.mutate({ projectId: p.id, userId: mem.id, role: r })}
-      onRemoveMember={(mem) => {
-        m.removeMember.mutate({ projectId: p.id, userId: mem.id });
-        notify({ message: `Removed ${mem.name} from ${quote(p.name)}`, icon: "user-x", restore: () => m.setMember.mutate({ projectId: p.id, userId: mem.id, role: mem.role }) });
+      onRemoveMember={(mem) => m.removeMember.mutate({ projectId: p.id, userId: mem.id }, { onSuccess: () => notify({ message: `Removed ${mem.name} from ${quote(p.name)}`, icon: "user-x", restore: () => m.setMember.mutateAsync({ projectId: p.id, userId: mem.id, role: mem.role, quiet: true }) }) })}
+      // Todoi does not send email: the invite is a link, copied for the admin to send themselves.
+      onInvite={async (email, r) => {
+        const invite = await m.createInvite.mutateAsync({ projectId: p.id, email, role: r, quiet: true }).catch(explain);
+        const copied = await copyText(invite.url);
+        notify({ message: copied ? `Copied an invite link for ${email}. Send it to them; Todoi doesn't email invites.` : `Created an invite for ${email}. Copy the link to send it; Todoi doesn't email invites.`, icon: "mail", ...(copied ? {} : { undo: () => void copyAndNotify(invite.url, "Copied the invite link"), actionLabel: "Copy link", standalone: true }) });
       }}
-      onInvite={(email, r) => notify({ message: `Invited ${email} as ${r} — invites send once sign-in exists`, icon: "mail" })}
       onOpenKey={(key) => {
         const n = Number(key.split("-")[1]);
         finish();

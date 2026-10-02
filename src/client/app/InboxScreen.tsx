@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
 
-import { api, errorMessage, unwrap, type Item } from "../data/api";
+import { api, unwrap, type Item } from "../data/api";
 import { newId, useCreateItem, useUpdateItem } from "../data/mutations";
 import { keys, searchQuery } from "../data/queries";
 import { useItemDnd } from "../design/board/useItemDnd";
@@ -17,7 +17,7 @@ import { ViewSkeleton } from "../design/core/Skeleton";
 import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
-import { useFeedback } from "./feedback";
+import { notifyFailure, useFeedback } from "./feedback";
 import { INBOX_SCOPE, NO_LABELS, useInbox } from "./inbox";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
 import { rowsForList } from "./items";
@@ -82,7 +82,7 @@ export function InboxScreen() {
       if (hit) openResult.item(hit);
       else notify({ message: `${n.aboutKey} isn't available to you anymore`, icon: "circle-alert" });
     } catch (err) {
-      notify({ message: errorMessage(err), icon: "circle-alert" });
+      notifyFailure(err);
     }
   };
 

@@ -107,7 +107,7 @@ describe("attachment uploads", () => {
     const body = new ReadableStream({ pull: (c) => { pulled++; c.enqueue(new Uint8Array(1024)); } });
     const response = await post(body, { "content-length": String(MAX_UPLOAD_REQUEST_BYTES + 1) });
     expect(response.status).toBe(413);
-    expect(await response.json()).toEqual({ error: "Uploads are limited to 25 MB per file" });
+    expect(await response.json()).toMatchObject({ error: "Uploads are limited to 25 MB per file", code: "too_large" });
     expect(pulled).toBeLessThanOrEqual(1);
     expect(store).not.toHaveBeenCalled();
   });

@@ -9,6 +9,7 @@ import { PROJECT_TEMPLATES, suggestKeyPrefix } from "../../../shared/projects";
 import { Button } from "../core/Button";
 import { Dialog } from "../core/Dialog";
 import { Icon, type IconName } from "../core/Icon";
+import { InlineError } from "../core/InlineError";
 import { Select } from "../core/Select";
 import { TextField } from "../core/TextField";
 import { ProjectIconPicker } from "./ProjectIconPicker";
@@ -43,8 +44,9 @@ export interface ProjectDialogProps {
   defaultGroupId?: string;
   /** Existing projects to copy from */
   projects?: Array<{ id: string; name: string; icon?: IconName | null; color?: LabelColor | null }>;
-  onCreateProject?: (p: NewProject) => void;
-  onCreateGroup?: (g: NewGroup) => void;
+  /** The dialog waits on a returned promise: it stays open with the values and shows the reason when it rejects */
+  onCreateProject?: (p: NewProject) => void | Promise<unknown>;
+  onCreateGroup?: (g: NewGroup) => void | Promise<unknown>;
   onClose: () => void;
 }
 
@@ -69,19 +71,28 @@ function ProjectForm({ kind, groups, defaultGroupId, projects, onCreateProject, 
   const [abbrTouched, setAbbrTouched] = useState(false);
   const finalAbbr = (abbrTouched ? abbr : suggestKeyPrefix(name)).toUpperCase();
   const valid = name.trim().length > 0 && (isGroup ? /^[A-Z0-9]{2,5}$/.test(finalAbbr) : !!groupId);
-  const submit = () => {
-    if (!valid) return;
-    if (isGroup) {
-      onCreateGroup?.({ name: name.trim(), keyPrefix: finalAbbr });
-      return;
-    }
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  /** Nothing is cleared until the server has it; a failure keeps every value and says why. */
+  const submit = async () => {
+    if (!valid || pending) return;
     const t = PROJECT_TEMPLATES.find((x) => x.id === tpl);
-    onCreateProject?.({ name: name.trim(), icon, color, groupId: groupId!, templateId: tpl, lists: tpl === "copy" ? null : (t?.lists ?? []), copyFrom: tpl === "copy" ? copyFrom : null, visibility: vis });
+    setPending(true);
+    setError(null);
+    try {
+      await (isGroup
+        ? onCreateGroup?.({ name: name.trim(), keyPrefix: finalAbbr })
+        : onCreateProject?.({ name: name.trim(), icon, color, groupId: groupId!, templateId: tpl, lists: tpl === "copy" ? null : (t?.lists ?? []), copyFrom: tpl === "copy" ? copyFrom : null, visibility: vis }));
+    } catch (err) {
+      setError(`Couldn't create the ${isGroup ? "group" : "project"}: ${err instanceof Error && err.message ? err.message : "something went wrong"}`);
+    } finally {
+      setPending(false);
+    }
   };
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      submit();
+      void submit();
     } else if (e.key.length === 1) e.stopPropagation();
   };
   const row = (label: string, hint: string | null, ctl: React.ReactNode) => (
@@ -150,12 +161,13 @@ function ProjectForm({ kind, groups, defaultGroupId, projects, onCreateProject, 
           {row("Visibility", visOpt?.hint ?? null, <Select aria-label="Visibility" value={vis} options={PROJECT_VISIBILITY.map((v) => ({ value: v.value, label: v.label, icon: v.icon }))} onChange={(v) => setVis(v)} placement="bottom-end" tier="detached" width={200} />)}
         </>
       )}
+      <InlineError message={error} className="td-pd-error" />
       <div className="td-pd-foot">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" disabled={!valid} onClick={submit}>
-          {isGroup ? "Create group" : "Create project"}
+        <Button variant="primary" disabled={!valid || pending} onClick={() => void submit()}>
+          {pending ? "Creating…" : isGroup ? "Create group" : "Create project"}
         </Button>
       </div>
     </>

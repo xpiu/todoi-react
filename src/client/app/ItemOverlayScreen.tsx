@@ -3,7 +3,7 @@
 // Undoable outcomes (archive, delete, duplicate) raise the one Toast. Spec: DESIGN.md › Item overlay.
 import { useMemo, useRef, useState } from "react";
 
-import { errorMessage, type Item, type Label } from "../data/api";
+import { explain, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
 import { newId, useCreateItem, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
@@ -18,7 +18,7 @@ import type { AttachmentFile } from "../design/overlay/Attachments";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { useDrafts } from "./drafts";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
-import { quote, useFeedback } from "./feedback";
+import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
 import { peopleOf, useCurrentUser, type ItemContainer } from "./session";
 
@@ -109,9 +109,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const relations = (details.data?.relations ?? []).map((r) => ({ type: r.type, item: { id: r.item.id, title: r.item.title, itemId: keyOf(r.item, project.keyPrefix), listName: listName(r.item.listId), status: r.item.status, done: r.item.done } }));
   const patch = (changes: Parameters<typeof updateItem.mutate>[0] extends infer V ? Omit<V, "id"> : never) => updateItem.mutate({ id: item.id, ...changes });
   /** A save the overlay waits on: it keeps the draft and shows this reason when the request fails. */
-  const saving = (request: Promise<unknown>) => request.catch((err: unknown) => {
-    throw new Error(errorMessage(err));
-  });
+  const saving = (request: Promise<unknown>) => request.catch(explain);
   const openKey = (key: string) => {
     const target = items.find((it) => keyOf(it, project.keyPrefix) === key);
     if (target) onOpen(target.id);
@@ -174,10 +172,10 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       onRemoveRelation={(type, targetId) => removeRelation.mutate({ type, targetId })}
       onOpenItem={(id) => onOpen(id)}
       onOpenKey={openKey}
-      onAddComment={(body, replyToId) => saving(addComment.mutateAsync({ id: commentId.current, body, replyToId }).then(() => {
+      onAddComment={(body, replyToId) => saving(addComment.mutateAsync({ id: commentId.current, body, replyToId, quiet: true }).then(() => {
         commentId.current = newId();
       }))}
-      onEditComment={(id, body) => saving(editComment.mutateAsync({ id, body }))}
+      onEditComment={(id, body) => saving(editComment.mutateAsync({ id, body, quiet: true }))}
       drafts={drafts}
       onDraftsChange={(d) => keepDrafts(item.id, d)}
       onDeleteComment={(id) => deleteComment.mutate({ id })}
@@ -200,8 +198,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
           void actions.remove(item.id);
           onClose();
         } else if (action === "share") {
-          void navigator.clipboard?.writeText(`${location.origin}${location.pathname}?item=${item.id}`);
-          notify({ message: "Copied the item link", icon: "link" });
+          void copyAndNotify(`${location.origin}${location.pathname}?item=${item.id}`, "Copied the item link");
         }
       }}
       onAddFiles={(fs, opts) =>
@@ -217,8 +214,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
         else if (action === "rename" && arg) files.rename.mutate({ id, name: arg });
         else if (action === "delete") {
           const f = details.data?.attachments.find((a) => a.id === id);
-          files.remove.mutate({ id });
-          notify({ message: `Deleted ${quote(f?.name ?? "the file")}`, icon: "trash-2" });
+          files.remove.mutate({ id }, { onSuccess: () => notify({ message: `Deleted ${quote(f?.name ?? "the file")}`, icon: "trash-2" }) });
         }
       }}
       onExport={(format) => {

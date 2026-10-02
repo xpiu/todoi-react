@@ -142,10 +142,7 @@ export function GroupsScreen() {
                           danger
                           disabled={g.projects.length > 0}
                           title={g.projects.length ? "Move or delete its projects first" : undefined}
-                          onSelect={() => {
-                            m.deleteGroup.mutate({ id: g.id });
-                            notify({ message: `Deleted the group ${quote(g.name)}`, icon: "trash-2" });
-                          }}
+                          onSelect={() => m.deleteGroup.mutate({ id: g.id }, { onSuccess: () => notify({ message: `Deleted the group ${quote(g.name)}`, icon: "trash-2" }) })}
                         >
                           Delete
                         </MenuItem>

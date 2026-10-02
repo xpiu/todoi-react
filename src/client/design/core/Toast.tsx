@@ -1,4 +1,5 @@
-// Toast — bottom-left status toast for undoable outcomes ("Moved … to Done"), never for errors.
+// Toast — bottom-left status toast for confirmed outcomes ("Moved … to Done", with Undo) and the fallback
+// explanation of a failed request that has no form to show it in. Spec: DESIGN.md › Toasts.
 // role="status" so screen readers announce it; auto-dismisses after ~5s, hover pauses. One at a time.
 import { useEffect, useRef, type CSSProperties } from "react";
 

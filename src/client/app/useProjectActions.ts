@@ -122,7 +122,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       restore: async () => {
         // Retain only unfinished work if a bulk restore fails midway through.
         while (pending.length) {
-          await restoreItem.mutateAsync({ id: pending[0]! });
+          await restoreItem.mutateAsync({ id: pending[0]!, quiet: true });
           pending.shift();
         }
       },
@@ -216,7 +216,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       restore: async () => {
         while (back.length) {
           const { it, at, result: forward } = back[0]!;
-          const result = await moveItem.mutateAsync({ id: it.id, listId: it.listId, position: at, toProjectId: projectId, restore: { ...carried, parentItemId: forward.undo?.parentItemId ?? null } });
+          const result = await moveItem.mutateAsync({ id: it.id, listId: it.listId, position: at, toProjectId: projectId, restore: { ...carried, parentItemId: forward.undo?.parentItemId ?? null }, quiet: true });
           mergeRestore(carried, { ...emptyRestore(), relations: result.undo?.relations ?? [] });
           back.shift();
         }
@@ -230,7 +230,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const hideList = (listId: string) =>
     updateList.mutate(
       { id: listId, hidden: true },
-      { onSuccess: () => notify({ message: `Hid ${quote(listName(listId))} for everyone in this project`, history: `Hid ${quote(listName(listId))}`, icon: "eye-off", restore: () => updateList.mutateAsync({ id: listId, hidden: false }).then(() => undefined) }) },
+      { onSuccess: () => notify({ message: `Hid ${quote(listName(listId))} for everyone in this project`, history: `Hid ${quote(listName(listId))}`, icon: "eye-off", restore: () => updateList.mutateAsync({ id: listId, hidden: false, quiet: true }).then(() => undefined) }) },
     );
   const showLists = (ids: string[]) => ids.forEach((id) => updateList.mutate({ id, hidden: false }));
   /** Set a list's Status role; `applyToExisting` also sets it on the list's live items in the same request. */
