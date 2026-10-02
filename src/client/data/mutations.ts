@@ -14,7 +14,7 @@ export const newId = () => nanoid();
 export type ItemsScope = { projectId: string } | { listId: string };
 
 /** Optimistic helper: patch the scope's items cache before the request, roll back on error, refetch after. */
-function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVars) => Promise<TResult>, patch: (items: Item[], vars: TVars) => Item[], extraKeys: QueryKey[] = []) {
+function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVars) => Promise<TResult>, patch: (items: Item[], vars: TVars) => Item[], extraKeys: QueryKey[] | ((vars: TVars) => QueryKey[]) = []) {
   const qc = useQueryClient();
   const key = keys.items(scope);
   return useMutation({
@@ -30,11 +30,11 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
       useFeedback.getState().notify({ message: err.message, icon: "circle-alert" });
     },
-    onSettled: () => {
+    onSettled: (_data, _err, vars) => {
       void qc.invalidateQueries({ queryKey: key });
       void qc.invalidateQueries({ queryKey: ["activity"] });
       void qc.invalidateQueries({ queryKey: ["item"] });
-      for (const k of extraKeys) void qc.invalidateQueries({ queryKey: k });
+      for (const k of typeof extraKeys === "function" ? extraKeys(vars) : extraKeys) void qc.invalidateQueries({ queryKey: k });
     },
   });
 }
@@ -138,13 +138,34 @@ export function useSetItemAssignees(scope: ItemsScope) {
   );
 }
 
-/** Move within or across lists; the server returns what changed (list, Status, key) for the toast. */
+/** The item and its descendants, as one id set. */
+const familyIds = (items: Item[], id: string) => {
+  const ids = new Set([id]);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const it of items) {
+      if (!it.parentItemId || !ids.has(it.parentItemId) || ids.has(it.id)) continue;
+      ids.add(it.id);
+      grew = true;
+    }
+  }
+  return ids;
+};
+
+/**
+ * Move within or across lists; the server returns what changed (list, Status, key, adjustments) for the toast.
+ * `toProjectId` names another project (or null for an Inbox): the family leaves this cache, and both sides refresh.
+ */
 export function useMoveItem(scope: ItemsScope) {
   const projectId = "projectId" in scope ? scope.projectId : null;
   return useOptimistic(
     scope,
-    (vars: { id: string } & MoveItemInput) => api.api.items[":id"].move.$post({ param: { id: vars.id }, json: { listId: vars.listId, position: vars.position } }).then((r) => unwrap<MoveResult>(r)),
-    (items, { id, listId, position }) => {
+    (vars: { id: string; toProjectId?: string | null } & MoveItemInput) => api.api.items[":id"].move.$post({ param: { id: vars.id }, json: { listId: vars.listId, position: vars.position, restore: vars.restore } }).then((r) => unwrap<MoveResult>(r)),
+    (items, { id, listId, position, toProjectId }) => {
+      if (toProjectId !== undefined && toProjectId !== projectId) {
+        const family = familyIds(items, id);
+        return items.filter((it) => !family.has(it.id));
+      }
       const moving = items.find((it) => it.id === id);
       if (!moving) return items;
       const rest = items.filter((it) => it.id !== id);
@@ -154,7 +175,8 @@ export function useMoveItem(scope: ItemsScope) {
       const pos = new Map(order.map((it, i) => [it.id, i]));
       return [...rest.map((it) => (pos.has(it.id) ? { ...it, position: pos.get(it.id)! } : it)), { ...moving, listId, position: pos.get(id)! }];
     },
-    projectId ? [keys.project(projectId)] : [],
+    // Across projects both sides change (items, keys, labels, counts); inactive caches only go stale.
+    ({ toProjectId }) => (toProjectId === undefined ? (projectId ? [keys.project(projectId)] : []) : [["items"], ["project"], ["labels"], keys.groups]),
   );
 }
 

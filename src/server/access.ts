@@ -15,6 +15,18 @@ function sameItemScope(item: ItemScope, scope: ItemScope | undefined): boolean {
   return item.projectId === scope?.projectId && (!!item.projectId || item.listId === scope?.listId);
 }
 
+/** The one read rule for a project: members, anyone for public, any signed-in account for shared. */
+const canReadProject = (visibility: string, isMember: boolean, signedIn: boolean) => isMember || visibility === "public" || (visibility === "shared" && signedIn);
+
+/** Which of these items the viewer may read (their projects, or the viewer's own Inbox) — for content that mentions other items. */
+export async function readableItemIds(viewer: { userId: string; inboxListId: string } | null, rows: Array<ItemScope & { id: string }>): Promise<Set<string>> {
+  const projectIds = [...new Set(rows.map((r) => r.projectId).filter((id): id is string => !!id))];
+  const projectRows = projectIds.length ? await db.select({ id: projects.id, visibility: projects.visibility }).from(projects).where(inArray(projects.id, projectIds)) : [];
+  const memberOf = new Set(viewer && projectIds.length ? (await db.select({ projectId: members.projectId }).from(members).where(and(eq(members.userId, viewer.userId), inArray(members.projectId, projectIds)))).map((m) => m.projectId) : []);
+  const readable = new Set(projectRows.filter((p) => canReadProject(p.visibility, memberOf.has(p.id), !!viewer)).map((p) => p.id));
+  return new Set(rows.filter((r) => (r.projectId ? readable.has(r.projectId) : r.listId === viewer?.inboxListId)).map((r) => r.id));
+}
+
 const missing = () => new HTTPException(404, { message: "Not found" });
 const forbidden = () => new HTTPException(403, { message: "You don't have access to this content" });
 const invalid = () => new HTTPException(400, { message: "Content must belong to the same project or Inbox" });
@@ -35,8 +47,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     const [project] = await db.select({ visibility: projects.visibility }).from(projects).where(eq(projects.id, projectId));
     if (!project) throw missing();
     const [member] = viewer ? await db.select({ role: members.role }).from(members).where(and(eq(members.projectId, projectId), eq(members.userId, viewer.userId))) : [];
-    const canRead = !!member || project.visibility === "public" || project.visibility === "shared" && !!viewer;
-    if (required === "read" && canRead) return;
+    if (required === "read" && canReadProject(project.visibility, !!member, !!viewer)) return;
     if (required === "edit" && member && member.role !== "viewer") return;
     if (required === "owner" && member?.role === "owner") return;
     throw forbidden();

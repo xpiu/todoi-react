@@ -50,7 +50,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
   const list = projects.filter((p) => p.id !== current && (!ql || [p.name, p.group].filter(Boolean).some((s) => String(s).toLowerCase().includes(ql))));
   const verb = action === "copy" ? "Copy" : "Move";
   const title = heading ?? `${verb} to project`;
-  const noteText = note !== undefined ? note : action === "copy" ? (count === 1 ? "The copy gets its own key and starts without comments or activity." : "Each copy gets its own key and starts without comments or activity.") : count === 1 ? "Subitems, attachments and comments move along. The key changes if the group differs." : "Subitems, attachments and comments move along. Keys change if the group differs.";
+  const noteText = note !== undefined ? note : action === "copy" ? (count === 1 ? "The copy gets its own key and starts without comments or activity." : "Each copy gets its own key and starts without comments or activity.") : `Subitems, attachments and comments move along; labels match by name. ${count === 1 ? "The key changes" : "Keys change"} if the group differs. Non-member assignees and relations to items left behind are removed.`;
   useEffect(() => {
     if (!proj || proj.lists) return;
     let live = true;

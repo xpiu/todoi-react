@@ -211,7 +211,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
         <ProjectPicker projects={picker.projects} action={transfer ?? "move"} count={selectedIds.length} showHeading={false} loadLists={picker.loadLists} onPick={(proj, list) => {
           const t = transfer;
           setTransfer(null);
-          actions.transfer(selectedIds, proj, list, t === "copy");
+          void actions.transfer(selectedIds, proj, list, t === "copy");
           if (t === "move") setSelectedIds([]);
         }} />
       </Dialog>

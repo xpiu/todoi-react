@@ -5,7 +5,8 @@ import { useMemo } from "react";
 
 import type { ItemPriority } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
-import type { Item, Label, ProjectDetail } from "../data/api";
+import type { MoveRestore } from "../../shared/items";
+import type { Item, Label, MoveResult, ProjectDetail } from "../data/api";
 import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
 import { formatDate } from "../design/core/dates";
@@ -23,6 +24,12 @@ import { peopleOf } from "./session";
 const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
 const statusName = (id: string | null | undefined) => STATUSES.find((s) => s.id === id)?.name ?? "None";
+const emptyRestore = (): MoveRestore => ({ keys: [], labels: [], assignees: [], watchers: [], relations: [], createdLabelIds: [] });
+/** Fold one move's record into a running one (a subitem's own parent link is per item, so it stays out). */
+function mergeRestore(into: MoveRestore, from: MoveRestore | null | undefined) {
+  if (!from) return;
+  for (const k of ["keys", "labels", "assignees", "watchers", "relations", "createdLabelIds"] as const) (into[k] as unknown[]).push(...from[k]);
+}
 
 export type ProjectActions = ReturnType<typeof useProjectActions>;
 
@@ -158,7 +165,8 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   };
 
   /** Move or copy items to a list in another project: one undo toast; a copy gets new keys. */
-  const transfer = (ids: string[], project: { id: string; name: string }, list: { id: string; name: string }, copy: boolean) => {
+  const transfer = async (ids: string[], project: { id: string; name: string }, list: { id: string; name: string }, copy: boolean) => {
+    const picked = new Set(ids);
     const sel = ids.map(byId).filter((x): x is Item => !!x);
     if (!sel.length) return;
     const noun = sel.length === 1 ? quote(sel[0]!.title) : count(sel.length, "item");
@@ -167,11 +175,54 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
       const made = sel.map((it) => ({ src: it, id: newId() }));
       made.forEach(({ src, id }) => createItem.mutate({ id, title: src.title, listId: list.id, status: src.status, priority: src.priority, startDate: src.startDate, dueDate: src.dueDate, description: src.description ?? undefined, labelIds: [], assigneeIds: src.assigneeIds }));
       notify({ message: `Copied ${noun} to ${dest}`, icon: "folder-output", restore: () => made.forEach(({ id }) => deleteItem.mutate({ id })) });
-    } else {
-      const snapshot = sel.map((it) => ({ id: it.id, listId: it.listId, position: it.position }));
-      sel.forEach((it) => moveItem.mutate({ id: it.id, listId: list.id }));
-      notify({ message: `Moved ${noun} to ${dest}`, icon: "folder-input", restore: () => snapshot.forEach((it) => moveItem.mutate({ id: it.id, listId: it.listId, position: it.position })) });
+      return;
     }
+    // Subitems travel with a selected parent; one at a time, so relations between moved items survive.
+    const roots = sel.filter((it) => !it.parentItemId || !picked.has(it.parentItemId));
+    const undoScope = useFeedback.getState().scope;
+    const moved: Array<{ it: Item; result: MoveResult }> = [];
+    const carried = emptyRestore();
+    for (const it of roots) {
+      try {
+        const result = await moveItem.mutateAsync({ id: it.id, listId: list.id, toProjectId: project.id, restore: carried.relations.length ? { ...emptyRestore(), relations: carried.relations } : undefined });
+        moved.push({ it, result });
+        mergeRestore(carried, result.undo);
+      } catch { /* The mutation reports the request error; only completed moves become undoable. */ }
+    }
+    if (!moved.length || useFeedback.getState().scope !== undoScope) return;
+    // What the destination changed, in the message (it wraps); the history keeps the short form.
+    const keyed = moved.filter((m) => m.result.changed.key);
+    const sum = (k: "subitems" | "labelsRemoved" | "assigneesRemoved" | "watchersRemoved" | "relationsRemoved") => moved.reduce((n, m) => n + m.result.changed[k], 0);
+    const created = [...new Set(moved.flatMap((m) => m.result.changed.labelsCreated))];
+    const details = [
+      keyed.length === 1 && moved.length === 1 ? `now ${keyed[0]!.result.changed.key}` : keyed.length ? count(keyed.length, "new key") : null,
+      created.length === 1 ? `label ${quote(created[0]!)} added` : created.length ? `${count(created.length, "label")} added` : null,
+      sum("labelsRemoved") ? `${count(sum("labelsRemoved"), "label")} removed` : null,
+      sum("assigneesRemoved") ? `${count(sum("assigneesRemoved"), "non-member")} unassigned` : null,
+      sum("watchersRemoved") ? `${count(sum("watchersRemoved"), "watcher")} without access removed` : null,
+      sum("relationsRemoved") ? `${count(sum("relationsRemoved"), "relation")} to items left behind removed` : null,
+    ].filter(Boolean).join(", ");
+    const subitems = sum("subitems");
+    const what = moved.length === 1 ? quote(moved[0]!.it.title) : count(moved.length, "item");
+    const base = `Moved ${what} to ${dest}`;
+    // Back in original order, each handing back what the move took; relations rejoin once both ends are home.
+    // A top-level item returns to its index among its list's items (stored positions can have gaps).
+    const rankOf = (it: Item) => (it.parentItemId ? it.position : items.filter((x) => x.listId === it.listId && !x.parentItemId).sort((a, b) => a.position - b.position).findIndex((x) => x.id === it.id));
+    const back = moved.map((m) => ({ ...m, at: rankOf(m.it) })).sort((a, b) => a.at - b.at);
+    notify({
+      message: `Moved ${what}${subitems ? ` and ${count(subitems, "subitem")}` : ""} to ${dest}${details ? ` — ${details}` : ""}`,
+      history: base,
+      meta: moved.length < roots.length ? `${roots.length - moved.length} not moved` : undefined,
+      icon: "folder-input",
+      restore: async () => {
+        while (back.length) {
+          const { it, at, result: forward } = back[0]!;
+          const result = await moveItem.mutateAsync({ id: it.id, listId: it.listId, position: at, toProjectId: projectId, restore: { ...carried, parentItemId: forward.undo?.parentItemId ?? null } });
+          mergeRestore(carried, { ...emptyRestore(), relations: result.undo?.relations ?? [] });
+          back.shift();
+        }
+      },
+    });
   };
 
   const addList = (name?: string, statusRole?: ItemStatus | null) => createList.mutate({ id: newId(), name: name ?? `List ${project.lists.length + 1}`, statusRole: statusRole ?? undefined });

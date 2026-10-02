@@ -2,7 +2,7 @@
 // Kept separate from `item-status.ts` so the browser bundle does not need zod.
 import { z } from "zod";
 
-import { ITEM_PRIORITIES } from "./enums";
+import { ITEM_PRIORITIES, RELATION_TYPES } from "./enums";
 import { ITEM_STATUSES } from "./item-status";
 
 /** Ids are generated app-side (nanoid) so an optimistic insert already knows its final id. */
@@ -75,10 +75,30 @@ export const updateItemSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 
+const userIdSchema = z.string().min(1).max(64);
+/**
+ * What a cross-project move took from the item family, handed back by its Undo. The server re-checks
+ * every entry against the destination (family membership, members, same-project relations, free keys).
+ */
+export const moveRestoreSchema = z.object({
+  keys: z.array(z.object({ itemId: idSchema, keyNumber: z.number().int().min(1) })).max(1000),
+  labels: z.array(z.object({ itemId: idSchema, labelId: idSchema })).max(5000),
+  assignees: z.array(z.object({ itemId: idSchema, userId: userIdSchema })).max(5000),
+  watchers: z.array(z.object({ itemId: idSchema, userId: userIdSchema })).max(5000),
+  relations: z.array(z.object({ itemId: idSchema, targetId: idSchema, type: z.enum(RELATION_TYPES) })).max(5000),
+  /** Labels the move created in the project the family now leaves; removed again when unused */
+  createdLabelIds: z.array(idSchema).max(1000),
+  /** The parent a moved subitem left behind, to nest under again */
+  parentItemId: idSchema.nullable().optional(),
+});
+export type MoveRestore = z.infer<typeof moveRestoreSchema>;
+
 /** Move within or across lists (and projects): the list and the position among its siblings. */
 export const moveItemSchema = z.object({
   listId: idSchema,
   /** Index among the destination list's top-level items; omitted = end */
   position: z.number().int().min(0).optional(),
+  /** Undo of a cross-project move: the associations and keys to give back */
+  restore: moveRestoreSchema.optional(),
 });
 export type MoveItemInput = z.infer<typeof moveItemSchema>;

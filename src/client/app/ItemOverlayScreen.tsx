@@ -94,7 +94,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
     return { id: c.id, author: author?.name ?? "Someone", authorId: c.authorId, color: author?.avatarColor ? `var(--label-${author.avatarColor})` : undefined, meta: formatRelative(c.createdAt, now), text: c.body, edited: !!c.editedAt, reactions: emojis.map((e) => ({ emoji: e, count: by(e).length, mine: c.reactions.some((r) => r.emoji === e && r.userId === user?.id), by: by(e) })) };
   });
   const activityRows = (activity.data ?? []).filter((a) => a.itemId === item.id).map((a) => ({ id: a.id, author: a.actor?.name ?? "Todoi", meta: formatRelative(a.createdAt, now), text: a.text }));
-  const relations = (details.data?.relations ?? []).filter((r) => r.item).map((r) => ({ type: r.type, item: { id: r.item!.id, title: r.item!.title, itemId: keyOf(r.item!, project.keyPrefix), listName: listName(r.item!.listId), status: r.item!.status, done: r.item!.done } }));
+  const relations = (details.data?.relations ?? []).map((r) => ({ type: r.type, item: { id: r.item.id, title: r.item.title, itemId: keyOf(r.item, project.keyPrefix), listName: listName(r.item.listId), status: r.item.status, done: r.item.done } }));
   const patch = (changes: Parameters<typeof updateItem.mutate>[0] extends infer V ? Omit<V, "id"> : never) => updateItem.mutate({ id: item.id, ...changes });
   const openKey = (key: string) => {
     const target = items.find((it) => keyOf(it, project.keyPrefix) === key);
@@ -213,10 +213,10 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       projects={picker.projects}
       loadLists={picker.loadLists}
       onMoveToProject={(proj, list) => {
-        actions.transfer([item.id], proj, list, false);
+        void actions.transfer([item.id], proj, list, false);
         onClose();
       }}
-      onCopyToProject={(proj, list) => actions.transfer([item.id], proj, list, true)}
+      onCopyToProject={(proj, list) => void actions.transfer([item.id], proj, list, true)}
       onSuggestShortcut={onSuggestShortcut}
     />
   );

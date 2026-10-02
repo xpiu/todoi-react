@@ -21,6 +21,7 @@ import {
 } from "../../shared/content";
 import type { RelationType } from "../../shared/enums";
 import { idSchema } from "../../shared/items";
+import { readableItemIds } from "../access";
 import { viewerOf } from "../auth";
 import { db } from "../db";
 import { activity, attachments, commentReactions, comments, itemAssignees, itemLabels, itemRelations, itemWatchers, items, labels, savedViews, users } from "../db/schema";
@@ -89,14 +90,20 @@ export const itemContentRoute = new Hono()
     const reactionRows = commentRows.length ? await db.select().from(commentReactions).where(inArray(commentReactions.commentId, commentRows.map((r) => r.id))) : [];
     const relations = relationRows.map((r) => (r.itemId === id ? { type: r.type, itemId: r.targetId } : { type: INVERSE[r.type], itemId: r.itemId }));
     const relatedIds = relations.map((r) => r.itemId);
-    const related = relatedIds.length ? await db.select({ id: items.id, title: items.title, keyNumber: items.keyNumber, listId: items.listId, status: items.status, done: items.done }).from(items).where(inArray(items.id, relatedIds)) : [];
+    const relatedRows = relatedIds.length ? await db.select({ id: items.id, title: items.title, keyNumber: items.keyNumber, listId: items.listId, projectId: items.projectId, status: items.status, done: items.done }).from(items).where(inArray(items.id, relatedIds)) : [];
+    // Relations stay within one project, but never describe an item the viewer could not open themselves.
+    const readable = await readableItemIds(viewer, relatedRows);
+    const related = relatedRows.filter((r) => readable.has(r.id)).map(({ projectId: _projectId, ...r }) => r);
     return c.json({
       labelIds: labelRows.map((r) => r.labelId),
       assigneeIds: assigneeRows.map((r) => r.userId),
       watching: watcherRows.some((r) => r.userId === viewer.userId),
       watcherIds: watcherRows.map((r) => r.userId),
       comments: commentRows.map((cm) => ({ ...cm, reactions: reactionRows.filter((r) => r.commentId === cm.id) })),
-      relations: relations.map((r) => ({ ...r, item: related.find((x) => x.id === r.itemId) ?? null })),
+      relations: relations.flatMap((r) => {
+        const target = related.find((x) => x.id === r.itemId);
+        return target ? [{ ...r, item: target }] : [];
+      }),
       subitems,
       attachments: attachmentRows,
     });
