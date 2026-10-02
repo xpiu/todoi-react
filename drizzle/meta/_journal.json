@@ -43,6 +43,20 @@
       "when": 1790899833637,
       "tag": "0005_oval_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790930332972,
+      "tag": "0006_lifecycle_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790932994468,
+      "tag": "0007_upload_cleanup_index",
+      "breakpoints": true
     }
   ]
 }

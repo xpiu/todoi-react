@@ -105,6 +105,7 @@ export interface MenuPopoverProps {
   /** aria-label of the menu — required */
   label: string;
   open?: boolean;
+  disabled?: boolean;
   onOpenChange?: (open: boolean, reason?: PopoverCloseReason) => void;
   /** @default "bottom-end" */
   placement?: PopoverPlacement;
@@ -121,7 +122,7 @@ export interface MenuPopoverProps {
 }
 
 /** A menu behind any trigger. Uncontrolled unless `open` is given. */
-export function MenuPopover({ trigger, label, open, onOpenChange, placement = "bottom-end", tier = "menu", width, minWidth = 184, block, children, style, className }: MenuPopoverProps) {
+export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", width, minWidth = 184, block, children, style, className }: MenuPopoverProps) {
   const vp = useViewport();
   const container = usePortalContainer();
   const isSheet = vp.phone;
@@ -132,7 +133,7 @@ export function MenuPopover({ trigger, label, open, onOpenChange, placement = "b
   );
   return (
     <BaseMenu.Root open={open} onOpenChange={handleOpenChange} modal={isSheet}>
-      <BaseMenu.Trigger render={trigger} data-block={block ? "true" : undefined} />
+      <BaseMenu.Trigger render={trigger} disabled={disabled} data-block={block ? "true" : undefined} />
       <BaseMenu.Portal container={container ?? undefined}>
         {isSheet ? <BaseMenu.Backdrop className="td-sheet-backdrop" /> : null}
         <BaseMenu.Positioner

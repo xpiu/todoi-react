@@ -2,7 +2,7 @@
 // Conventions: app-generated text ids (nanoid), timestamptz created_at / updated_at on every table,
 // soft removal as two timestamps (archived_at, deleted_at), enums mirroring the const arrays in src/shared/.
 import { sql } from "drizzle-orm";
-import { boolean, date, index, integer, jsonb, pgEnum, pgTable, text, time, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, jsonb, pgEnum, pgTable, text, time, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES } from "../../shared/enums";
 import { ITEM_STATUSES } from "../../shared/item-status";
@@ -178,7 +178,7 @@ export const lists = pgTable(
     id: text("id").primaryKey(),
     kind: listKindEnum("kind").notNull().default("project"),
     /** Null for the account-level Inbox */
-    projectId: text("project_id").references(() => projects.id),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
     /** Set for the Inbox: the account it belongs to */
     userId: text("user_id").references(() => users.id),
     name: text("name").notNull(),
@@ -214,12 +214,12 @@ export const items = pgTable(
   {
     id: text("id").primaryKey(),
     /** Null for Inbox items (they get a project when filed) */
-    projectId: text("project_id").references(() => projects.id),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
     listId: text("list_id")
       .notNull()
       .references(() => lists.id),
     /** Subitems are items with a parent, one level deep */
-    parentItemId: text("parent_item_id"),
+    parentItemId: text("parent_item_id").references((): AnyPgColumn => items.id, { onDelete: "cascade" }),
     /** Number behind the key "<group.key_prefix>-<key_number>"; null until the item lands in a project */
     keyNumber: integer("key_number"),
     title: text("title").notNull(),
@@ -259,7 +259,7 @@ export const members = pgTable(
   {
     projectId: text("project_id")
       .notNull()
-      .references(() => projects.id),
+      .references(() => projects.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id),
@@ -283,7 +283,7 @@ export const labels = pgTable(
     id: text("id").primaryKey(),
     projectId: text("project_id")
       .notNull()
-      .references(() => projects.id),
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     /** One of the eight palette names */
     color: text("color").notNull(),
@@ -411,7 +411,7 @@ export const activity = pgTable(
     id: text("id").primaryKey(),
     projectId: text("project_id")
       .notNull()
-      .references(() => projects.id),
+      .references(() => projects.id, { onDelete: "cascade" }),
     itemId: text("item_id"),
     /** Null when Todoi itself acted */
     actorId: text("actor_id").references(() => users.id),
@@ -437,7 +437,7 @@ export const savedViews = pgTable(
     id: text("id").primaryKey(),
     projectId: text("project_id")
       .notNull()
-      .references(() => projects.id),
+      .references(() => projects.id, { onDelete: "cascade" }),
     ownerId: text("owner_id")
       .notNull()
       .references(() => users.id),
@@ -457,3 +457,11 @@ export type Attachment = typeof attachments.$inferSelect;
 export type ItemRelation = typeof itemRelations.$inferSelect;
 export type ActivityEntry = typeof activity.$inferSelect;
 export type SavedView = typeof savedViews.$inferSelect;
+
+/** Durable outbox populated by the attachment DELETE trigger, including cascading deletes. */
+export const uploadCleanup = pgTable("upload_cleanup", {
+  storageKey: text("storage_key").primaryKey(),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("upload_cleanup_due_idx").on(t.nextAttemptAt)]);

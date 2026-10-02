@@ -17,6 +17,7 @@
     "lint:css": "stylelint \"src/client/**/*.css\"",
     "check": "npm run typecheck && npm run lint && npm run test",
     "test": "vitest run",
+    "test:integration": "node --env-file=.env node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots"

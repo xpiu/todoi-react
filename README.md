@@ -109,6 +109,19 @@ module (quick-add and import parsers, date math, repeat rules, Markdown, view-st
 shortcuts, item rows) and the **theme-parity audit** (`src/client/design/tokens/parity.test.ts`: every colour token
 defined in all four theme × mode scopes, identical token sets, no raw hex or bare z-index in component CSS).
 
+`npm run test:integration` checks lifecycle behavior against PostgreSQL, including foreign-key cascades,
+transaction rollback, and retryable file cleanup. It reads `.env`, creates a disposable database and upload
+directory for each test file, applies every migration, and removes them afterward. The database role needs
+`CREATEDB`; these tests never use the application database for fixtures. CI runs them before the browser tests.
+
+Archive and Trash visibility is inherited from parent items and projects. Restoring a container preserves
+each child's own archived/deleted state. Permanent deletion cascades through dependent records. Migration
+`0006_lifecycle_cleanup.sql` adds the parent foreign key (promoting old orphaned children to top-level items)
+and a transactional attachment-cleanup outbox. The API drains up to 100 due cleanup jobs after deletion, at
+startup, and every minute; filesystem failures retry with backoff up to one hour. Run `npm run db:migrate`
+before starting the updated API outside development. Database cascades enqueue cleanup; the running API
+removes the bytes after commit. Project activity survives individual item deletion, but is removed with its project.
+
 `npm run test:e2e` runs the browser gates in `tests/e2e/` with Playwright against the dev servers (started for you
 when nothing listens on :5173; Postgres must be up). They sign in as the seeded dev user and, for each of the four
 scopes (Standard / Minimal × Dark / Light), open the list, board, calendar, item overlay and Settings screens, assert

@@ -11,7 +11,8 @@ import { db } from "../db";
 import { attachments, items } from "../db/schema";
 import { logActivity, quote } from "../services/activity";
 import { attachmentHeaders } from "../services/attachmentResponse";
-import { readUpload, removeUpload, saveUpload } from "../services/uploads";
+import { readUpload, saveUpload } from "../services/uploads";
+import { drainUploadCleanup } from "../services/uploadCleanup";
 
 const idParam = zValidator("param", z.object({ id: z.string().min(1).max(64) }));
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -60,12 +61,15 @@ export const attachmentsRoute = new Hono()
     return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   })
   .delete("/:id", idParam, async (c) => {
-    const [row] = await db.delete(attachments).where(eq(attachments.id, c.req.valid("param").id)).returning();
+    const row = await db.transaction(async (tx) => {
+      const [removed] = await tx.delete(attachments).where(eq(attachments.id, c.req.valid("param").id)).returning();
+      if (!removed) return;
+      const [item] = await tx.select({ id: items.id, cover: items.cover }).from(items).where(eq(items.id, removed.itemId));
+      if (item?.cover?.attachmentId === removed.id) await tx.update(items).set({ cover: null }).where(eq(items.id, item.id));
+      return removed;
+    });
     if (!row) return c.json({ error: "Not found" }, 404);
-    await removeUpload(row.storageKey);
-    // A cover that pointed at this file goes with it.
-    const [item] = await db.select({ id: items.id, cover: items.cover }).from(items).where(eq(items.id, row.itemId));
-    if (item?.cover?.attachmentId === row.id) await db.update(items).set({ cover: null }).where(eq(items.id, item.id));
+    await drainUploadCleanup();
     return c.body(null, 204);
   });
 

@@ -45,6 +45,7 @@ export interface ArchiveEntry {
 
 export interface ArchiveViewProps {
   entries: ArchiveEntry[];
+  busy?: boolean;
   tab?: "archive" | "trash";
   onTabChange?: (tab: "archive" | "trash") => void;
   /** Project scope: no project filter, project-less meta */
@@ -62,7 +63,7 @@ export interface ArchiveViewProps {
   surface?: "chrome" | "card";
 }
 
-export function ArchiveView({ entries, tab: tabProp, onTabChange, project, projects = [], onRestore, onDelete, onDestroy, onOpen, onEmptyTrash, now, retentionDays = ARCHIVE_RETENTION_DAYS, surface = "chrome" }: ArchiveViewProps) {
+export function ArchiveView({ entries, busy = false, tab: tabProp, onTabChange, project, projects = [], onRestore, onDelete, onDestroy, onOpen, onEmptyTrash, now, retentionDays = ARCHIVE_RETENTION_DAYS, surface = "chrome" }: ArchiveViewProps) {
   const [tabState, setTabState] = useState<"archive" | "trash">("archive");
   const tab = tabProp ?? tabState;
   const [q, setQ] = useState("");
@@ -138,6 +139,7 @@ export function ArchiveView({ entries, tab: tabProp, onTabChange, project, proje
                 Cancel
               </Button>
               <Button
+                disabled={busy}
                 variant="danger"
                 onClick={() => {
                   setConfirm(null);
@@ -149,10 +151,10 @@ export function ArchiveView({ entries, tab: tabProp, onTabChange, project, proje
             </>
           ) : (
             <>
-              <Button icon="archive-restore" onClick={() => onRestore(e)}>
+              <Button disabled={busy} icon="archive-restore" onClick={() => onRestore(e)}>
                 Restore
               </Button>
-              <MenuButton label={`More for ${e.title}`} tooltip="More" triggerClassName="td-arc-more" placement="bottom-end" tier="detached" size={28} iconSize={16}>
+              <MenuButton disabled={busy} label={`More for ${e.title}`} tooltip="More" triggerClassName="td-arc-more" placement="bottom-end" tier="detached" size={28} iconSize={16}>
                 {onOpen ? (
                   <MenuItem icon={e.kind === "project" ? "kanban" : "square-arrow-out-up-right"} onSelect={() => onOpen(e)}>
                     Open
@@ -208,6 +210,7 @@ export function ArchiveView({ entries, tab: tabProp, onTabChange, project, proje
                 Cancel
               </Button>
               <Button
+                disabled={busy}
                 variant="danger"
                 onClick={() => {
                   setEmptyConfirm(false);
@@ -218,7 +221,7 @@ export function ArchiveView({ entries, tab: tabProp, onTabChange, project, proje
               </Button>
             </span>
           ) : (
-            <Button variant={surface === "card" ? "ghost" : "chrome-ghost"} icon="trash-2" onClick={() => setEmptyConfirm(true)}>
+            <Button disabled={busy} variant={surface === "card" ? "ghost" : "chrome-ghost"} icon="trash-2" onClick={() => setEmptyConfirm(true)}>
               Empty trash
             </Button>
           )

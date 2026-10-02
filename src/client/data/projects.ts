@@ -14,14 +14,13 @@ export const useArchive = (projectId?: string, enabled = true) => useQuery({ que
 
 export function useProjectMutations() {
   const qc = useQueryClient();
-  const refresh = (projectId?: string) => {
-    void qc.invalidateQueries({ queryKey: keys.groups });
-    void qc.invalidateQueries({ queryKey: ["archive"] });
-    if (projectId) {
-      void qc.invalidateQueries({ queryKey: keys.project(projectId) });
-      void qc.invalidateQueries({ queryKey: keys.items({ projectId }) });
-    }
-  };
+  const refresh = (projectId?: string) => Promise.all([
+    qc.invalidateQueries({ queryKey: keys.groups }),
+    qc.invalidateQueries({ queryKey: ["archive"] }),
+    qc.invalidateQueries({ queryKey: ["item"] }),
+    qc.invalidateQueries({ queryKey: projectId ? keys.project(projectId) : ["project"] }),
+    qc.invalidateQueries({ queryKey: projectId ? keys.items({ projectId }) : ["items"] }),
+  ]);
   const createProject = useMutation({ mutationFn: (input: CreateProjectInput) => api.api.projects.$post({ json: input }).then((r) => unwrap<{ project: { id: string; name: string }; lists: Array<{ name: string }> }>(r)), onSettled: () => refresh() });
   const importProject = useMutation({ mutationFn: (input: ImportProjectInput) => api.api.projects.import.$post({ json: input }).then((r) => unwrap<{ project: { id: string; name: string }; items: number }>(r)), onSettled: () => refresh() });
   const createGroup = useMutation({ mutationFn: (input: CreateGroupInput) => api.api.groups.$post({ json: input }).then((r) => unwrap<{ id: string; name: string }>(r)), onSettled: () => refresh() });

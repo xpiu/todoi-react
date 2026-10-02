@@ -1,0 +1,1 @@
+CREATE INDEX "upload_cleanup_due_idx" ON "upload_cleanup" USING btree ("next_attempt_at");

@@ -1,7 +1,7 @@
 // Everything that hangs off an item or a project besides lists: labels, assignees, watchers, comments,
 // reactions, relations, saved views, the activity log and the Inbox's "Mark all read".
 import { zValidator } from "@hono/zod-validator";
-import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -25,6 +25,8 @@ import { viewerOf } from "../auth";
 import { db } from "../db";
 import { activity, attachments, commentReactions, comments, itemAssignees, itemLabels, itemRelations, itemWatchers, items, labels, savedViews, users } from "../db/schema";
 import { logActivity, quote } from "../services/activity";
+
+import { itemIsLive } from "../services/lifecycle";
 
 const idParam = zValidator("param", z.object({ id: idSchema }));
 const projectQuery = zValidator("query", z.object({ projectId: idSchema }));
@@ -81,7 +83,7 @@ export const itemContentRoute = new Hono()
       db.select({ userId: itemWatchers.userId }).from(itemWatchers).where(eq(itemWatchers.itemId, id)),
       db.select().from(comments).where(eq(comments.itemId, id)).orderBy(asc(comments.createdAt)),
       db.select().from(itemRelations).where(or(eq(itemRelations.itemId, id), eq(itemRelations.targetId, id))),
-      db.select().from(items).where(and(eq(items.parentItemId, id), isNull(items.deletedAt))).orderBy(asc(items.position)),
+      db.select().from(items).where(and(eq(items.parentItemId, id), itemIsLive)).orderBy(asc(items.position)),
       db.select().from(attachments).where(eq(attachments.itemId, id)).orderBy(asc(attachments.createdAt)),
     ]);
     const reactionRows = commentRows.length ? await db.select().from(commentReactions).where(inArray(commentReactions.commentId, commentRows.map((r) => r.id))) : [];
@@ -231,7 +233,7 @@ export const activityRoute = new Hono().get("/", projectQuery, zValidator("query
 export const inboxRoute = new Hono()
   .get("/unread", async (c) => {
     const viewer = viewerOf(c);
-    const n = (await db.select({ n: sql<number>`count(*)::int` }).from(items).where(and(eq(items.listId, viewer.inboxListId), eq(items.unread, true), isNull(items.deletedAt))))[0]?.n ?? 0;
+    const n = (await db.select({ n: sql<number>`count(*)::int` }).from(items).where(and(eq(items.listId, viewer.inboxListId), eq(items.unread, true), itemIsLive)))[0]?.n ?? 0;
     return c.json({ unread: n });
   })
   .post("/mark-all-read", async (c) => {

@@ -8,6 +8,7 @@ import type { ImportProjectInput } from "../../shared/import";
 import type { CreateProjectInput, UpdateListInput } from "../../shared/projects";
 import { db } from "../db";
 import { groups, itemLabels, items, labels, lists, members, projects, type List, type Project } from "../db/schema";
+import { itemIsLive } from "./lifecycle";
 import { logActivity } from "./activity";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -116,7 +117,7 @@ export async function listsWithCounts(projectId: string) {
   const counts = await db
     .select({ listId: items.listId, n: sql<number>`count(*)::int` })
     .from(items)
-    .where(and(eq(items.projectId, projectId), isNull(items.parentItemId), isNull(items.deletedAt), isNull(items.archivedAt)))
+    .where(and(eq(items.projectId, projectId), isNull(items.parentItemId), itemIsLive))
     .groupBy(items.listId);
   const byList = new Map(counts.map((c) => [c.listId, c.n]));
   return ls.map((list) => ({ list, count: byList.get(list.id) ?? 0 }));

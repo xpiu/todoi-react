@@ -11,6 +11,8 @@ import { db } from "../db";
 import { groups, items, lists, members, projects, users } from "../db/schema";
 import { createProject, importProject, listsWithCounts, memberProjectIds, updateList } from "../services/projects";
 
+import { destroyItem, destroyProject, itemContainersLive, itemIsLive, setProjectLifecycle } from "../services/lifecycle";
+
 const idParam = zValidator("param", z.object({ id: idSchema }));
 const liveGroups = and(isNull(groups.archivedAt), isNull(groups.deletedAt));
 const liveProjects = and(isNull(projects.archivedAt), isNull(projects.deletedAt));
@@ -27,7 +29,7 @@ export const groupsRoute = new Hono()
       db
         .select({ projectId: items.projectId, items: sql<number>`count(*)::int`, done: sql<number>`count(*) filter (where ${items.done})::int` })
         .from(items)
-        .where(and(inArray(items.projectId, mine), isNull(items.parentItemId), isNull(items.deletedAt), isNull(items.archivedAt)))
+        .where(and(inArray(items.projectId, mine), isNull(items.parentItemId), itemIsLive))
         .groupBy(items.projectId),
       db.select({ projectId: members.projectId, name: users.name }).from(members).innerJoin(users, eq(users.id, members.userId)).where(and(inArray(members.projectId, mine), eq(members.role, "owner"))),
     ]);
@@ -67,7 +69,7 @@ export const projectsRoute = new Hono()
       .from(members)
       .innerJoin(users, eq(users.id, members.userId))
       .where(eq(members.projectId, id));
-    const [archived] = await db.select({ n: sql<number>`count(*)::int` }).from(items).where(and(eq(items.projectId, id), isNotNull(items.archivedAt), isNull(items.deletedAt)));
+    const [archived] = await db.select({ n: sql<number>`count(*)::int` }).from(items).where(and(eq(items.projectId, id), isNotNull(items.archivedAt), isNull(items.deletedAt), itemContainersLive));
     return c.json({ ...project, keyPrefix: group?.keyPrefix ?? "", groupName: group?.name ?? "", lists: ls.map((r) => ({ ...r.list, count: r.count })), members: ms, archivedCount: archived?.n ?? 0 });
   })
   .post("/", zValidator("json", createProjectSchema), async (c) => {
@@ -86,15 +88,15 @@ export const projectsRoute = new Hono()
     return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   })
   .post("/:id/archive", idParam, async (c) => {
-    const [row] = await db.update(projects).set({ archivedAt: new Date() }).where(eq(projects.id, c.req.valid("param").id)).returning();
+    const row = await setProjectLifecycle(c.req.valid("param").id, { archived: true });
     return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   })
   .post("/:id/restore", idParam, async (c) => {
-    const [row] = await db.update(projects).set({ archivedAt: null, deletedAt: null }).where(eq(projects.id, c.req.valid("param").id)).returning();
+    const row = await setProjectLifecycle(c.req.valid("param").id, { archived: false, deleted: false });
     return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   })
   .delete("/:id", idParam, async (c) => {
-    const [row] = await db.update(projects).set({ deletedAt: new Date() }).where(eq(projects.id, c.req.valid("param").id)).returning({ id: projects.id });
+    const row = await setProjectLifecycle(c.req.valid("param").id, { deleted: true });
     return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
   });
 
@@ -125,7 +127,7 @@ export const archiveRoute = new Hono()
       .leftJoin(lists, eq(lists.id, items.listId))
       .leftJoin(projects, eq(projects.id, items.projectId))
       .leftJoin(groups, eq(groups.id, projects.groupId))
-      .where(and(removed, projectId ? and(inArray(items.projectId, mine), eq(items.projectId, projectId)) : or(inArray(items.projectId, mine), eq(items.listId, viewer.inboxListId))))
+      .where(and(removed, itemContainersLive, projectId ? and(inArray(items.projectId, mine), eq(items.projectId, projectId)) : or(inArray(items.projectId, mine), eq(items.listId, viewer.inboxListId))))
       .orderBy(desc(items.updatedAt));
     const ps = projectId
       ? []
@@ -142,17 +144,11 @@ export const archiveRoute = new Hono()
   })
   // Delete forever: an item row or a project with everything in it.
   .delete("/items/:id", idParam, async (c) => {
-    await db.delete(items).where(eq(items.id, c.req.valid("param").id));
+    await destroyItem(c.req.valid("param").id);
     return c.body(null, 204);
   })
   .delete("/projects/:id", idParam, async (c) => {
-    const { id } = c.req.valid("param");
-    await db.transaction(async (tx) => {
-      await tx.delete(items).where(eq(items.projectId, id));
-      await tx.delete(lists).where(eq(lists.projectId, id));
-      await tx.delete(members).where(eq(members.projectId, id));
-      await tx.delete(projects).where(eq(projects.id, id));
-    });
+    await destroyProject(c.req.valid("param").id);
     return c.body(null, 204);
   });
 

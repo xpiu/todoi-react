@@ -44,6 +44,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: cp .env.example .env
+      - run: npm run test:integration
       - run: npx playwright install --with-deps chromium
       # Visual baselines are recorded per platform; until linux baselines are committed the snapshots
       # are skipped here and only the scope, axe and motion assertions gate the build.
