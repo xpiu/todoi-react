@@ -148,7 +148,7 @@ export function InboxScreen() {
           )}
         </ListSection>
       </ListView>
-      {opened ? <ItemOverlayScreen key={opened.id} projectId={null} project={container} items={items.data} labels={NO_LABELS} itemId={opened.id} editTitle={search.edit} onClose={close} onOpen={open} /> : null}
+      {search.item ? <ItemOverlayScreen key={search.item} projectId={null} project={container} items={items.data} labels={NO_LABELS} itemId={search.item} editTitle={search.edit} onClose={close} onOpen={open} /> : null}
     </>
   );
 }

@@ -5,4 +5,9 @@
     overflow-y: auto;
     background: var(--chrome-canvas);
   }
+  .td-route-error-detail {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    opacity: 0.7;
+  }
 }

@@ -7,6 +7,7 @@ import { seedProjectId, signIn } from "./helpers";
 // Duplication (DESIGN.md › Item overlay, Duplicate): a richly populated item in the seeded project (Sam is
 // an editor there) is duplicated in place and copied to a fresh project in another group, where Sam is not
 // a member and one label exists only by name. Included fields survive a reload; what stays behind is said.
+// Its dates lie years ahead, so the seeded project's calendar (a visual gate running alongside) never shows it.
 type Fixture = { source: ProjectDetail; listId: string; dest: ProjectDetail; rich: string; title: string; labels: Label[]; sam: string };
 const test = base.extend<{ fixture: Fixture }>({
   fixture: async ({ page }, use) => {
@@ -23,7 +24,7 @@ const test = base.extend<{ fixture: Fixture }>({
     expect((await page.request.post("/api/projects", { data: { id: destId, groupId: otherGroup.id, name: `Copy target ${destId.slice(0, 6)}`, lists: [["Arrivals", null]] } })).status()).toBe(201);
     expect((await page.request.post("/api/labels", { data: { id: nanoid(), projectId: destId, name: labels[0]!.name.toUpperCase(), color: "teal" } })).status()).toBe(201);
     try {
-      expect((await page.request.post("/api/items", { data: { id: rich, title, listId, description: "**Keep** this", priority: "HIGH", startDate: "2026-10-12", dueDate: "2026-10-14", dueTime: "09:30", labelIds: labels.map((l) => l.id), assigneeIds: [owner, sam] } })).status()).toBe(201);
+      expect((await page.request.post("/api/items", { data: { id: rich, title, listId, description: "**Keep** this", priority: "HIGH", startDate: "2031-03-10", dueDate: "2031-03-12", dueTime: "09:30", labelIds: labels.map((l) => l.id), assigneeIds: [owner, sam] } })).status()).toBe(201);
       expect((await page.request.patch(`/api/items/${rich}`, { data: { repeatRule: { freq: "weekly" }, cover: { color: "teal" } } })).ok()).toBeTruthy();
       for (const [sub, done] of [["First step", true], ["Second step", false]] as const) {
         const id = nanoid();
@@ -63,7 +64,7 @@ async function copiesIn(page: Page, f: Fixture, projectId: string) {
       subitems: all.filter((s) => s.parentItemId === it.id).map((s) => `${s.title}:${s.done}`).sort(),
     }));
 }
-const INCLUDED = ["**Keep** this", "HIGH", "2026-10-12", "2026-10-14", "09:30", { freq: "weekly" }, { color: "teal" }, false];
+const INCLUDED = ["**Keep** this", "HIGH", "2031-03-10", "2031-03-12", "09:30", { freq: "weekly" }, { color: "teal" }, false];
 
 test("Duplicate in the overlay copies every included field beside the original and says what stays behind", async ({ page, fixture: f }) => {
   await page.goto(`/p/${f.source.id}?v=list&item=${f.rich}`);

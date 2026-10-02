@@ -85,5 +85,6 @@ export type ActivityEntry = InferResponseType<typeof api.api.activity.$get, 200>
 export type ItemDetails = InferResponseType<(typeof api.api.items)[":id"]["details"]["$get"], 200>;
 export type UpdatedItem = InferResponseType<(typeof api.api.items)[":id"]["$patch"], 200>;
 export type MoveResult = InferResponseType<(typeof api.api.items)[":id"]["move"]["$post"], 200>;
+export type ItemLocation = InferResponseType<(typeof api.api.items)[":id"]["$get"], 200>;
 export type DuplicateResult = InferResponseType<(typeof api.api.items)[":id"]["duplicate"]["$post"], 201>;
 export type SearchHit = InferResponseType<typeof api.api.search.$get, 200>[number];

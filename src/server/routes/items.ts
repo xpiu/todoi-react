@@ -5,11 +5,11 @@ import { z } from "zod";
 import { createItemSchema, duplicateItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
 import { viewerOf } from "../auth";
 import { db } from "../db";
-import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
+import { attachments, groups, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { statusChange } from "../../shared/completion";
 import { duplicateItem, moveItem, placeAmongSiblings, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
-import { itemIsLive, setItemLifecycle } from "../services/lifecycle";
+import { itemContainersLive, itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
 import { deliver, notifyPeople } from "../services/notifications";
 import { fail, validate } from "../errors";
@@ -41,6 +41,20 @@ export const itemsRoute = new Hono()
       .where(and(scope, itemIsLive))
       .orderBy(asc(items.position), asc(items.createdAt));
     return c.json(await withRelations(rows));
+  })
+  // One item by id, whatever its state: an overlay link can say the item is archived, in the Trash, inside
+  // an archived project or parent, or now lives elsewhere — instead of showing nothing.
+  .get("/:id", idParam, async (c) => {
+    const [row] = await db
+      .select({ item: items, live: sql<boolean>`${itemContainersLive}`, projectName: projects.name, keyPrefix: groups.keyPrefix })
+      .from(items)
+      .leftJoin(projects, eq(projects.id, items.projectId))
+      .leftJoin(groups, eq(groups.id, projects.groupId))
+      .where(eq(items.id, c.req.valid("param").id));
+    if (!row) return fail(c, 404, "This item doesn't exist");
+    const { item } = row;
+    const state = item.deletedAt ? "deleted" : item.archivedAt ? "archived" : row.live ? "live" : "container";
+    return c.json({ id: item.id, title: item.title, projectId: item.projectId, listId: item.listId, parentItemId: item.parentItemId, keyNumber: item.keyNumber, projectName: row.projectName, keyPrefix: row.keyPrefix, state } as const);
   })
   .post("/", validate("json", createItemSchema), async (c) => {
     const viewer = viewerOf(c);

@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { PROJECT_VIEWS } from "../shared/enums";
 import { AppShell } from "./app/AppShell";
+import { ScreenError, SessionError } from "./app/RouteError";
 import { InviteScreen, LoginScreen, ResetScreen, SignupScreen } from "./app/auth/AuthScreens";
 import { authClient, ensureBrowserSession } from "./auth";
 import { InboxScreen } from "./app/InboxScreen";
@@ -29,7 +30,7 @@ const viewSearchSchema = z.object({
 });
 export type ProjectSearch = z.infer<typeof viewSearchSchema>;
 
-export const rootRoute = createRootRoute({ component: Outlet });
+export const rootRoute = createRootRoute({ component: Outlet, errorComponent: SessionError });
 
 /** Everything inside the app frame (top bar + sidebar). */
 export const appRoute = createRoute({
@@ -37,6 +38,8 @@ export const appRoute = createRoute({
   id: "app",
   component: AppShell,
   beforeLoad: ensureBrowserSession,
+  // The frame never rendered: no session. Its screens' own failures render inside it (ScreenError).
+  errorComponent: SessionError,
 });
 
 export const indexRoute = createRoute({
@@ -86,7 +89,7 @@ export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path:
 
 const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, archiveRoute, settingsRoute, accountRoute, importRoute]), loginRoute, signupRoute, resetRoute, inviteRoute, galleryRoute]);
 
-export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true });
+export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true, defaultErrorComponent: ScreenError });
 
 declare module "@tanstack/react-router" {
   interface Register {

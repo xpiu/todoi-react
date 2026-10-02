@@ -7,6 +7,9 @@ export const { useSession } = authClient;
 
 let openingSession: Promise<void> | undefined;
 let sessionReady = false;
+/** The reason a session step failed, for the error screen's detail line ("Session check: 503 Service Unavailable"). */
+const failure = (step: "session" | "guest", e: { message?: string; status?: number; statusText?: string }) =>
+  `${step === "session" ? "Session check" : "Guest workspace"}: ${e.message || [e.status, e.statusText].filter(Boolean).join(" ") || "no answer"}`;
 /** Route preloads and tabs share one guest session instead of creating competing workspaces. */
 export function ensureBrowserSession(): Promise<void> {
   // Once per page load: in-app navigation must not need the network (offline it would fail the whole
@@ -14,10 +17,10 @@ export function ensureBrowserSession(): Promise<void> {
   if (sessionReady) return Promise.resolve();
   const open = async () => {
     const session = await authClient.getSession();
-    if (session.error) throw new Error(session.error.message ?? "Could not open your workspace");
+    if (session.error) throw new Error(failure("session", session.error));
     if (session.data) return;
     const result = await authClient.signIn.anonymous();
-    if (result.error) throw new Error(result.error.message ?? "Could not open your workspace");
+    if (result.error) throw new Error(failure("guest", result.error));
   };
   openingSession ??= (async () => {
     if (navigator.locks) await navigator.locks.request("todoi-session", open);
@@ -25,6 +28,9 @@ export function ensureBrowserSession(): Promise<void> {
   })().then(() => { sessionReady = true; }).finally(() => { openingSession = undefined; });
   return openingSession;
 }
+
+/** Whether this page load has a session (the app frame's start succeeded). */
+export const hasBrowserSession = () => sessionReady;
 
 /** After a sign-out without a page reload: the next app route checks the session again. */
 export const forgetBrowserSession = () => {

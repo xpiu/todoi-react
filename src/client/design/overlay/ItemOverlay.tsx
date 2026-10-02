@@ -18,6 +18,8 @@ import { DatesPicker, type DatesValue } from "../core/DatesPicker";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
+import { InlineError } from "../core/InlineError";
+import { Skeleton } from "../core/Skeleton";
 import { ItemPicker, type PickableItem } from "../core/ItemPicker";
 import { LabelPicker, type LabelDraft, type PickableLabel } from "../core/LabelPicker";
 import { MemberPicker, type PickableMember } from "../core/MemberPicker";
@@ -106,6 +108,8 @@ export interface ItemOverlayProps {
   comments: OverlayComment[];
   activity: OverlayActivity[];
   relations: Relation[];
+  /** Comments, files, links and watching while they load or after they failed — never shown as empty @default ready */
+  detailsState?: "loading" | { error: string; onRetry: () => void };
   /** Every other item in the project (relations, subitem moves, "Make subitem of…") */
   projectItems: PickableItem[];
   /** An Inbox item: "Move to project…" (filing) takes the list select's place; labels and assignees,
@@ -419,6 +423,19 @@ export function ItemOverlay(p: ItemOverlayProps) {
             <ChecklistAddRow onCommit={addSubitem} onDraft={setSubDraft} />
           </div>
         )}
+        {p.detailsState === "loading" ? (
+          <div className="td-overlay-details-state" aria-busy="true" aria-label="Loading comments, files and links">
+            <Skeleton width="55%" />
+            <Skeleton width="35%" />
+          </div>
+        ) : p.detailsState ? (
+          <div className="td-overlay-details-state">
+            <InlineError message={`Couldn't load comments, files and links. ${p.detailsState.error}`} />
+            <Button variant="outline" icon="refresh-cw" onClick={p.detailsState.onRetry}>
+              Retry
+            </Button>
+          </div>
+        ) : null}
         {files.length || p.onAddFiles ? (
           <ItemSection icon="paperclip" title="Attachments" className={files.length ? undefined : "td-isec-hidden"} action={p.onAddFiles ? <Button onClick={() => pickerRef.current?.()}>Add</Button> : null}>
             <AttachmentList

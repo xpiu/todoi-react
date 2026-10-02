@@ -2,13 +2,14 @@
 // the items of a project or the Inbox, labels. Keys are grouped so a mutation can invalidate a scope.
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
-import { api, unwrap, type GroupWithProjects, type Item, type ItemDetails, type Label, type ProjectDetail, type ActivityEntry, type SearchHit } from "./api";
+import { api, ApiError, unwrap, type GroupWithProjects, type Item, type ItemDetails, type ItemLocation, type Label, type ProjectDetail, type ActivityEntry, type SearchHit } from "./api";
 
 export const keys = {
   groups: ["groups"] as const,
   project: (id: string) => ["project", id] as const,
   items: (scope: { projectId: string } | { listId: string }) => ["items", scope] as const,
   itemDetails: (id: string) => ["item", id, "details"] as const,
+  itemLocation: (id: string) => ["item", id, "location"] as const,
   labels: (projectId: string) => ["labels", projectId] as const,
   inboxUnread: ["inbox", "unread"] as const,
   activity: (projectId: string) => ["activity", projectId] as const,
@@ -53,6 +54,15 @@ export const itemDetailsQuery = (id: string) =>
   queryOptions({
     queryKey: keys.itemDetails(id),
     queryFn: () => api.api.items[":id"].details.$get({ param: { id } }).then((r) => unwrap<ItemDetails>(r)),
+  });
+
+/** Where an item is and whether it is live, archived or in the Trash — for a link to an item not on screen. */
+export const itemLocationQuery = (id: string) =>
+  queryOptions({
+    queryKey: keys.itemLocation(id),
+    queryFn: () => api.api.items[":id"].$get({ param: { id } }).then((r) => unwrap<ItemLocation>(r)),
+    // "Doesn't exist" and "not yours" are answers, not hiccups.
+    retry: (n, err) => !(err instanceof ApiError && err.status < 500) && n < 1,
   });
 
 export const activityQuery = (projectId: string) =>

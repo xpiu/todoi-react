@@ -54,11 +54,14 @@
   .td-calcell {
     position: relative;
     grid-row: 1 / -1;
+    display: grid;
+    grid-template-rows: subgrid;
     border-right: 1px solid var(--border-divider);
     cursor: pointer;
     transition: background var(--duration-fast) var(--ease-standard);
   }
-  .td-calcell:last-of-type {
+  /* The seventh day: cells come first in a week row, before its span bars. */
+  .td-calcell:nth-child(7) {
     border-right: none;
   }
   .td-calcell.is-wknd {
@@ -131,10 +134,15 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-calspan {
-    --td-span: var(--ink-400);
+  .td-calspan-cell {
     position: relative;
     z-index: var(--z-raised);
+    display: flex;
+    min-width: 0;
+  }
+  .td-calspan {
+    --td-span: var(--ink-400);
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     gap: 5px;
@@ -184,6 +192,7 @@
     text-overflow: ellipsis;
   }
   .td-calchips {
+    grid-row: -2 / -1;
     position: relative;
     z-index: var(--z-raised);
     display: flex;

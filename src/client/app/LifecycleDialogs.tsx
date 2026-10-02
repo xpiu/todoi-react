@@ -6,7 +6,7 @@ import { useState } from "react";
 import { projectUrl } from "./links";
 
 import type { LabelColor, MemberRole } from "../../shared/enums";
-import { explain } from "../data/api";
+import { errorMessage, explain } from "../data/api";
 import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
 import { useActivity, useGroups, useProject } from "../data/queries";
@@ -17,6 +17,7 @@ import { copyText } from "../design/core/clipboard";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { useCurrentUser } from "./session";
+import { StateDialog } from "./StateDialog";
 
 export function LifecycleDialogs() {
   const dialog = useLifecycle((s) => s.dialog);
@@ -68,7 +69,8 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   const [open, setOpen] = useState(true);
   const { user } = useCurrentUser();
   const p = project.data;
-  if (!p || !user) return null;
+  if (project.isError) return <StateDialog title="Couldn't load the project settings" body={`${errorMessage(project.error)} Check the connection and try again.`} action={{ label: "Retry", onClick: () => void project.refetch() }} onClose={onClose} />;
+  if (!p || !user) return <StateDialog title="Opening the project settings…" body="pending" onClose={onClose} />;
   const me = p.members.find((x) => x.userId === user.id);
   const role: MemberRole = me?.role ?? "viewer";
   // A refused change is explained by the query client; the panel puts the field back (ProjectPanel).

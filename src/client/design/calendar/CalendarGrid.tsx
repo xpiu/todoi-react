@@ -196,7 +196,6 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     key={dIso}
                     dIso={dIso}
                     column={di + 1}
-                    lanes={L}
                     className={"td-calcell" + (wk ? " is-wknd" : "") + (dropDays.has(dIso) || dropIso === dIso ? " is-drop" : "")}
                     cellRef={(el) => {
                       cellRefs.current[dIso] = el;
@@ -205,10 +204,12 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     label={label}
                     isToday={isT}
                     onClick={(e) => {
-                      if ((e.target as HTMLElement).closest(".td-calcell-add")) return;
+                      // A chip, "+N more" or "+" inside the cell does its own thing.
+                      if ((e.target as HTMLElement).closest(".td-calcell-add, .td-calchip, .td-calmore")) return;
                       onAddItem?.(dIso);
                     }}
                     onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
                       const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
                       if (mv != null) {
                         e.preventDefault();
@@ -270,24 +271,26 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
               })}
               {weekSpans[wi]!.map((s, si) => {
                 const first = s.it.labels?.[0];
+                // A cell spanning its days (the week row holds only cells), with the bar's button inside.
                 return (
-                  <button
-                    key={`${s.it.id}-${si}`}
-                    type="button"
-                    className={"td-calspan" + (s.contL ? " is-l" : "") + (s.contR ? " is-r" : "") + (s.it.done ? " is-done" : "")}
-                    style={{ gridColumn: `${s.c1 + 1} / ${s.c2 + 2}`, gridRow: 2 + s.lane, ...(first && !s.it.done ? { "--td-span": `var(--label-${first.color})` } : {}) } as CSSProperties}
-                    title={s.it.title}
-                    draggable={onReschedule ? true : undefined}
-                    data-drag-id={onReschedule ? s.it.id : undefined}
-                    onDragStart={dragStart(s.it.id, null)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenItem?.(s.it.id);
-                    }}
-                  >
-                    {s.it.done ? <Icon name="circle-check" size={12} className="td-calchip-ico" /> : null}
-                    <span className="td-calspan-title">{s.it.title}</span>
-                  </button>
+                  <div key={`${s.it.id}-${si}`} role="gridcell" aria-colspan={s.c2 - s.c1 + 1} className="td-calspan-cell" style={{ gridColumn: `${s.c1 + 1} / ${s.c2 + 2}`, gridRow: 2 + s.lane }}>
+                    <button
+                      type="button"
+                      className={"td-calspan" + (s.contL ? " is-l" : "") + (s.contR ? " is-r" : "") + (s.it.done ? " is-done" : "")}
+                      style={first && !s.it.done ? ({ "--td-span": `var(--label-${first.color})` } as CSSProperties) : undefined}
+                      title={s.it.title}
+                      draggable={onReschedule ? true : undefined}
+                      data-drag-id={onReschedule ? s.it.id : undefined}
+                      onDragStart={dragStart(s.it.id, null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenItem?.(s.it.id);
+                      }}
+                    >
+                      {s.it.done ? <Icon name="circle-check" size={12} className="td-calchip-ico" /> : null}
+                      <span className="td-calspan-title">{s.it.title}</span>
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -298,17 +301,16 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
   );
 }
 
-/** A day: the full-height cell (number, hover +, drop target) and its chip stack below the span lanes. */
-function CellPair({ dIso, column, lanes, className, cellRef, tabIndex, label, isToday, onClick, onKeyDown, drop, number, add, children }: { dIso: string; column: number; lanes: number; className: string; cellRef: (el: HTMLDivElement | null) => void; tabIndex: number; label: string; isToday: boolean; onClick: (e: React.MouseEvent) => void; onKeyDown: (e: React.KeyboardEvent) => void; drop: Record<string, unknown>; number: React.ReactNode; add: React.ReactNode; children: React.ReactNode }) {
+/** A day: the full-height cell (number, hover +, drop target) holding its chip stack below the span lanes. */
+function CellPair({ dIso, column, className, cellRef, tabIndex, label, isToday, onClick, onKeyDown, drop, number, add, children }: { dIso: string; column: number; className: string; cellRef: (el: HTMLDivElement | null) => void; tabIndex: number; label: string; isToday: boolean; onClick: (e: React.MouseEvent) => void; onKeyDown: (e: React.KeyboardEvent) => void; drop: Record<string, unknown>; number: React.ReactNode; add: React.ReactNode; children: React.ReactNode }) {
+  // One cell per day, its chips inside it (on the week's last row, through subgrid), so the week row holds only cells.
   return (
-    <>
-      <div className={className} role="gridcell" data-iso={dIso} ref={cellRef} tabIndex={tabIndex} aria-label={label} aria-current={isToday ? "date" : undefined} style={{ gridColumn: column }} onClick={onClick} onKeyDown={onKeyDown} {...drop}>
-        {number}
-        {add}
-      </div>
-      <div className="td-calchips" data-iso={dIso} style={{ gridColumn: column, gridRow: lanes + 2 }}>
+    <div className={className} role="gridcell" data-iso={dIso} ref={cellRef} tabIndex={tabIndex} aria-label={label} aria-current={isToday ? "date" : undefined} style={{ gridColumn: column }} onClick={onClick} onKeyDown={onKeyDown} {...drop}>
+      {number}
+      {add}
+      <div className="td-calchips" data-iso={dIso}>
         {children}
       </div>
-    </>
+    </div>
   );
 }

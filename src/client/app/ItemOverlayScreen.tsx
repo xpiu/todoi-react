@@ -3,7 +3,7 @@
 // Undoable outcomes (archive, delete, duplicate) raise the one Toast. Spec: DESIGN.md › Item overlay.
 import { useMemo, useRef, useState } from "react";
 
-import { explain, type Item, type Label } from "../data/api";
+import { errorMessage, explain, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
 import { newId, useCreateItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
@@ -17,6 +17,7 @@ import type { IconName } from "../design/core/Icon";
 import type { AttachmentFile } from "../design/overlay/Attachments";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { useDrafts } from "./drafts";
+import { MissingItem } from "./MissingItem";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
@@ -71,7 +72,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const keepDrafts = useDrafts((s) => s.set);
   // One id per comment draft: resending after a failure cannot post it twice.
   const commentId = useRef(newId());
-  if (!item) return null;
+  if (!item) return <MissingItem itemId={itemId} projectId={projectId} onClose={onClose} />;
 
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name;
   const subitems = items.filter((it) => it.parentItemId === item.id).sort((a, b) => a.position - b.position);
@@ -127,6 +128,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       comments={comments}
       activity={activityRows}
       relations={relations}
+      detailsState={details.data ? undefined : details.isError ? { error: errorMessage(details.error), onRetry: () => void details.refetch() } : "loading"}
       projectItems={projectItems}
       autoEditTitle={editTitle}
       today={today}
@@ -147,7 +149,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       onDeleteLabel={(l) => labelOps.remove.mutate({ id: l.id })}
       onSetAssignees={(userIds) => setAssignees.mutate({ id: item.id, userIds })}
       onSetCover={(cover) => patch({ cover: cover ? (cover.src ? { attachmentId: cover.attachmentId } : { color: cover.color?.replace(/^var\(--label-([a-z]+)\)$/, "$1") }) : null })}
-      onToggleWatch={projectId ? (watching) => setWatching.mutate({ watching }) : undefined}
+      onToggleWatch={projectId && details.data ? (watching) => setWatching.mutate({ watching }) : undefined}
       onSetDescription={(description) => saving(updateItem.mutateAsync({ id: item.id, description, quiet: true }))}
       onAddSubitem={(title) => createItem.mutate({ id: newId(), title, listId: item.listId, parentItemId: item.id })}
       onToggleSubitem={(id, done) => actions.setDone(id, done)}
