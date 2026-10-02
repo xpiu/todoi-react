@@ -15,14 +15,16 @@ export interface CalendarItemChipProps {
   overdue?: boolean;
   onClick?: () => void;
   dragId?: string;
+  /** The day the chip sits on, the drag's starting day */
+  dragFrom?: string;
   onDragStart?: (e: DragEvent<HTMLButtonElement>) => void;
   style?: CSSProperties;
 }
 
-export function CalendarItemChip({ title, itemId, showId = true, labels = [], done, overdue, onClick, dragId, onDragStart, style }: CalendarItemChipProps) {
+export function CalendarItemChip({ title, itemId, showId = true, labels = [], done, overdue, onClick, dragId, dragFrom, onDragStart, style }: CalendarItemChipProps) {
   const bars = labels.slice(0, 3).map((l) => l.color);
   return (
-    <button type="button" className={"td-calchip" + (done ? " is-done" : "")} title={title} draggable={dragId ? true : undefined} data-drag-id={dragId} onDragStart={onDragStart} onClick={onClick} style={style}>
+    <button type="button" className={"td-calchip" + (done ? " is-done" : "")} title={title} draggable={dragId ? true : undefined} data-drag-id={dragId} data-drag-from={dragId ? dragFrom : undefined} onDragStart={onDragStart} onClick={onClick} style={style}>
       {done ? <Icon name="circle-check" size={12} color="var(--success-icon)" className="td-calchip-ico" /> : !done && overdue ? <Icon name="clock" size={12} color="var(--danger)" className="td-calchip-ico" /> : null}
       {bars.length ? (
         <span className="td-calchip-bars" aria-hidden>

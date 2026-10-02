@@ -5,14 +5,14 @@ import { useMemo, useRef, useState } from "react";
 
 import { explain, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
-import { newId, useCreateItem, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
+import { newId, useCreateItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
 import { attachmentUrl, useAttachmentMutations } from "../data/attachments";
 import { downloadText, fileSlug, itemToMarkdown, itemsToCsv } from "./exportData";
 import { useProjectActions } from "./useProjectActions";
 import { useProjectPicker } from "./useProjectPicker";
 import type { PickableItem } from "../design/core/ItemPicker";
-import { formatDate, formatRelative, toISO } from "../design/core/dates";
+import { formatDate, formatRelative } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import type { AttachmentFile } from "../design/overlay/Attachments";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
@@ -20,6 +20,7 @@ import { useDrafts } from "./drafts";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
+import { useToday } from "./today";
 import { peopleOf, useCurrentUser, type ItemContainer } from "./session";
 
 export interface ItemOverlayScreenProps {
@@ -45,7 +46,6 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const updateItem = useUpdateItem(scope);
   const moveItem = useMoveItem(scope);
   const createItem = useCreateItem(scope);
-  const deleteItem = useDeleteItem(scope);
   const setLabels = useSetItemLabels(scope);
   const setAssignees = useSetItemAssignees(scope);
   const addComment = useAddComment(itemId);
@@ -62,6 +62,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const picker = useProjectPicker(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
   const [now] = useState(() => new Date());
+  const today = useToday();
   const { user } = useCurrentUser();
   const people: Person[] = useMemo(() => peopleOf(project), [project]);
   const personOf = (id: string) => people.find((p) => p.id === id);
@@ -87,7 +88,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
     start: item.startDate,
     due: item.dueDate,
     dueTime: item.dueTime,
-    dueState: dueStateOf(item),
+    dueState: dueStateOf(item, today),
     repeat: item.repeatRule,
     labelIds: item.labelIds,
     assigneeIds: item.assigneeIds,
@@ -128,7 +129,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       relations={relations}
       projectItems={projectItems}
       autoEditTitle={editTitle}
-      today={toISO(now)!}
+      today={today}
       inbox={!projectId}
       onClose={onClose}
       onRename={(title) => saving(updateItem.mutateAsync({ id: item.id, title, quiet: true }))}
@@ -186,11 +187,8 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
         onClose();
       }}
       onMenuAction={(action) => {
-        if (action === "duplicate") {
-          const id = newId();
-          createItem.mutate({ id, title: item.title, listId: item.listId, status: item.status, priority: item.priority, startDate: item.startDate, dueDate: item.dueDate, description: item.description ?? undefined, labelIds: item.labelIds, assigneeIds: item.assigneeIds });
-          notify({ message: `Duplicated ${quote(item.title)}`, icon: "copy", restore: () => deleteItem.mutate({ id }) });
-        } else if (action === "archive") {
+        if (action === "duplicate") void actions.copyItems([item.id], { projectId, listId: item.listId, name: null });
+        else if (action === "archive") {
           patch({ archived: true });
           notify({ message: `Archived ${quote(item.title)}`, icon: "archive", restore: () => updateItem.mutate({ id: item.id, archived: false }) });
           onClose();

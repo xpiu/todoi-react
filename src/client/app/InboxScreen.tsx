@@ -21,6 +21,7 @@ import { notifyFailure, useFeedback } from "./feedback";
 import { INBOX_SCOPE, NO_LABELS, useInbox } from "./inbox";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
 import { rowsForList } from "./items";
+import { useToday } from "./today";
 import { LoadFailed } from "./LoadFailed";
 import { usePrefs } from "./prefs";
 import { hitKey, useOpenResult } from "./search";
@@ -36,6 +37,7 @@ export function InboxScreen() {
   const openResult = useOpenResult();
   const notify = useFeedback((s) => s.notify);
   const showCompleted = usePrefs((s) => s.showCompleted);
+  const today = useToday();
   // Inbox capture parses dates and priority only: labels, people and lists belong to a project.
   const inboxQuickAdd = useMemo(() => ({ dates: actions.quickAdd.dates }), [actions.quickAdd.dates]);
   const root = useRef<HTMLDivElement | null>(null);
@@ -92,7 +94,7 @@ export function InboxScreen() {
   const data = showCompleted ? items.data : items.data.filter((it) => !it.done || it.parentItemId);
   const byId = (id: string) => data.find((x) => x.id === id);
   const listId = data[0]?.listId;
-  const rows = listId ? rowsForList(data, listId, { prefix: "", labels: [], people: [], withCreated: true }) : [];
+  const rows = listId ? rowsForList(data, listId, { prefix: "", labels: [], people: [], withCreated: true, today }) : [];
   const unread = data.some((it) => it.unread);
   const onItemKey = (id: string, action: ItemAction) => {
     if (action === "edit") open(id, true);

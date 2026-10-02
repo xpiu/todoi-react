@@ -2,12 +2,18 @@
 // Conventions: app-generated text ids (nanoid), timestamptz created_at / updated_at on every table,
 // soft removal as two timestamps (archived_at, deleted_at), enums mirroring the const arrays in src/shared/.
 import { sql } from "drizzle-orm";
-import { boolean, date, index, integer, jsonb, pgEnum, pgTable, text, time, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { boolean, customType, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES } from "../../shared/enums";
 import { ITEM_STATUSES } from "../../shared/item-status";
 import type { RepeatRule } from "../../shared/items";
 import type { Prefs } from "../../shared/prefs";
+
+/** A Postgres `time` read back as the API's "HH:MM" (the driver returns "HH:MM:SS"). */
+const minuteTime = customType<{ data: string; driverData: string }>({
+  dataType: () => "time",
+  fromDriver: (v) => v.slice(0, 5),
+});
 
 export const itemStatusEnum = pgEnum("item_status", ITEM_STATUSES);
 export const itemPriorityEnum = pgEnum("item_priority", ITEM_PRIORITIES);
@@ -236,7 +242,7 @@ export const items = pgTable(
     priority: itemPriorityEnum("priority"),
     startDate: date("start_date"),
     dueDate: date("due_date"),
-    dueTime: time("due_time"),
+    dueTime: minuteTime("due_time"),
     repeatRule: jsonb("repeat_rule").$type<RepeatRule>(),
     repeatCount: integer("repeat_count").notNull().default(0),
     cover: jsonb("cover").$type<ItemCover>(),

@@ -93,7 +93,8 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
       if (field("projectId")) await projectAccess(field("projectId")!);
       break;
     case "items": {
-      const item = id ? await itemAccess(id) : undefined;
+      // A copy needs only to read its original; the destination list is checked for editing below.
+      const item = id ? await itemAccess(id, action === "duplicate" ? "read" : permission) : undefined;
       const projectId = read ? c.req.query("projectId") : undefined;
       const listId = read ? c.req.query("listId") : field("listId");
       if (projectId) await projectAccess(projectId);

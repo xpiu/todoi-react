@@ -30,7 +30,7 @@ export function useCompletion(scope: ItemsScope) {
   const undo = ({ it, occurrence }: Outcome) =>
     updateItem.mutateAsync(
       // Undo reports its own failure ("Couldn't undo. …" with Retry Undo).
-      { quiet: true, ...(occurrence ? { id: it.id, dueDate: it.dueDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { done: false } : {}) }
+      { quiet: true, ...(occurrence ? { id: it.id, dueDate: it.dueDate, startDate: it.startDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { done: false } : {}) }
       : it.done ? { id: it.id, status: "DONE" as const } : { id: it.id, done: false }) },
     );
 

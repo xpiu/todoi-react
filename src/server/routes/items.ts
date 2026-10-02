@@ -2,12 +2,12 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { createItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
+import { createItemSchema, duplicateItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
 import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { statusChange } from "../../shared/completion";
-import { moveItem, placeAmongSiblings, updateItem } from "../services/items";
+import { duplicateItem, moveItem, placeAmongSiblings, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
@@ -98,6 +98,15 @@ export const itemsRoute = new Hono()
   .post("/:id/move", idParam, validate("json", moveItemSchema), async (c) => {
     const result = await moveItem(c.req.valid("param").id, c.req.valid("json"), viewerOf(c).userId);
     return result ? c.json(result) : fail(c, 404, "Not found");
+  })
+  // Copy into a list: the copy and its subitems (root first), and what was not carried over.
+  .post("/:id/duplicate", idParam, validate("json", duplicateItemSchema), async (c) => {
+    const input = c.req.valid("json");
+    const [taken] = await db.select({ id: items.id }).from(items).where(eq(items.id, input.id));
+    if (taken) return fail(c, 409, "That copy already exists");
+    const result = await duplicateItem(c.req.valid("param").id, input, viewerOf(c).userId);
+    if (!result) return fail(c, 404, "Not found");
+    return c.json({ items: await withRelations(result.items), report: result.report }, 201);
   })
   .delete("/:id", idParam, async (c) => {
     // Delete = move to the Trash (90 days); "Delete forever" is a later, explicit action.

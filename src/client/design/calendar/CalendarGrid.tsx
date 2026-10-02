@@ -1,13 +1,13 @@
 // CalendarGrid — the month / week grid: weekday header, week rows with day cells (number, hover +),
 // span bars laid in lanes, chips per day with "+N more" when the cell is full. Keyboard: arrows move
 // the focused day (crossing a period edge navigates), Enter opens the day. Native drag and the touch
-// long-press layer both reschedule a chip onto the day under the pointer. Spec: DESIGN.md › Calendar.
+// long-press layer both move a chip or a span bar, whole range, by the days dragged. Spec: DESIGN.md › Calendar.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from "react";
 
 import { isReadOnly } from "../auth/GuestBar";
 import { Icon } from "../core/Icon";
 import { useTouchDrag } from "../core/touchDrag";
-import { addDays, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
+import { addDays, daysBetween, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
 import { dateConventions } from "../core/dates";
 import { CalendarItemChip } from "./CalendarItemChip";
 import "./CalendarGrid.css";
@@ -23,7 +23,8 @@ export interface CalendarGridProps {
   onOpenItem?: (id: string) => void;
   onAddItem?: (iso: string) => void;
   onShowMore?: (iso: string) => void;
-  onReschedule?: (id: string, iso: string) => void;
+  /** A drag from the grabbed day to the drop day: move the item's dates by the days between */
+  onReschedule?: (id: string, from: string, to: string) => void;
   /** Arrow keys leaving the shown weeks ask the view to move the cursor */
   onNavigateDate?: (iso: string) => void;
   /** The day the view wants focused (after a navigation) */
@@ -90,33 +91,50 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
     else onNavigateDate?.(target);
   };
 
-  // Reschedule by drag: native (chips are draggable) and touch (long-press).
-  const dragId = useRef<string | null>(null);
+  // Reschedule by drag: native and touch (long-press), chips and span bars alike. A drag moves the whole
+  // item by the days between the grabbed day and the drop day, so a range keeps its length.
+  const drag = useRef<{ id: string; from: string } | null>(null);
   const [dropIso, setDropIso] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<{ id: string; from: string } | null>(null);
   const isoUnder = (t: Element | null) => t?.closest?.("[data-iso]")?.getAttribute("data-iso") ?? null;
+  /** The day cell under a point, beneath any span bar drawn over it. */
+  const isoAt = (x: number, y: number) => document.elementsFromPoint(x, y).map(isoUnder).find(Boolean) ?? null;
+  const begin = (id: string, from: string | null) => {
+    if (!from) return false;
+    drag.current = { id, from };
+    setDragging(drag.current);
+  };
+  const end = (to: string | null) => {
+    const d = drag.current;
+    drag.current = null;
+    setDragging(null);
+    setDropIso(null);
+    if (d && to && to !== d.from) onReschedule?.(d.id, d.from, to);
+  };
   useTouchDrag(wrapRef, {
-    selector: ".td-calchip[data-drag-id]",
+    selector: "[data-drag-id]",
     disabled: !onReschedule,
-    onLift: (el) => {
+    onLift: (el, p) => {
       if (isReadOnly(el)) return false;
-      dragId.current = el.getAttribute("data-drag-id");
+      return begin(el.getAttribute("data-drag-id")!, el.getAttribute("data-drag-from") ?? isoAt(p.x, p.y));
     },
     onMove: (p) => setDropIso(isoUnder(p.target)),
-    onDrop: (p) => {
-      const id = dragId.current, d = isoUnder(p.target);
-      dragId.current = null;
-      setDropIso(null);
-      if (id && d) onReschedule?.(id, d);
-    },
-    onCancel: () => {
-      dragId.current = null;
-      setDropIso(null);
-    },
+    onDrop: (p) => end(isoUnder(p.target)),
+    onCancel: () => end(null),
   });
+  const dragStart = (id: string, from: string | null) => (e: DragEvent<HTMLElement>) => {
+    if (isReadOnly(e.currentTarget) || begin(id, from ?? isoAt(e.clientX, e.clientY)) === false) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.effectAllowed = "move";
+  };
   const dropHandlers = (dIso: string) =>
     onReschedule
       ? {
           onDragOver: (e: DragEvent) => {
+            if (!drag.current) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
             setDropIso(dIso);
@@ -124,13 +142,18 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
           onDragLeave: () => setDropIso((x) => (x === dIso ? null : x)),
           onDrop: (e: DragEvent) => {
             e.preventDefault();
-            setDropIso(null);
-            const id = dragId.current ?? e.dataTransfer.getData("text/plain");
-            dragId.current = null;
-            if (id) onReschedule(id, dIso);
+            end(dIso);
           },
         }
       : {};
+  // The days the dragged item would cover if dropped here.
+  const dropDays = new Set<string>();
+  const moving = dragging && dropIso ? items.find((it) => it.id === dragging.id) : null;
+  if (moving && dragging && dropIso) {
+    const n = daysBetween(parseDateValue(dragging.from)!, parseDateValue(dropIso)!);
+    const due = parseDateValue(moving.due), st = parseDateValue(moving.start) ?? due;
+    if (st && due) for (let d = addDays(st, n); d <= addDays(due, n); d = addDays(d, 1)) dropDays.add(toISO(d)!);
+  }
 
   const monthOf = date.getMonth();
   const lanes = weekSpans.map((ws) => (ws.length ? Math.max(...ws.map((s) => s.lane)) + 1 : 0));
@@ -174,7 +197,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     dIso={dIso}
                     column={di + 1}
                     lanes={L}
-                    className={"td-calcell" + (wk ? " is-wknd" : "") + (dropIso === dIso ? " is-drop" : "")}
+                    className={"td-calcell" + (wk ? " is-wknd" : "") + (dropDays.has(dIso) || dropIso === dIso ? " is-drop" : "")}
                     cellRef={(el) => {
                       cellRefs.current[dIso] = el;
                     }}
@@ -228,15 +251,8 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                           done={it.done}
                           overdue={!it.done && due < todayD}
                           dragId={onReschedule ? it.id : undefined}
-                          onDragStart={(e) => {
-                            if (isReadOnly(e.currentTarget)) {
-                              e.preventDefault();
-                              return;
-                            }
-                            dragId.current = it.id;
-                            e.dataTransfer.setData("text/plain", it.id);
-                            e.dataTransfer.effectAllowed = "move";
-                          }}
+                          dragFrom={dIso}
+                          onDragStart={dragStart(it.id, dIso)}
                           onClick={() => onOpenItem?.(it.id)}
                         />
                       );
@@ -261,6 +277,9 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     className={"td-calspan" + (s.contL ? " is-l" : "") + (s.contR ? " is-r" : "") + (s.it.done ? " is-done" : "")}
                     style={{ gridColumn: `${s.c1 + 1} / ${s.c2 + 2}`, gridRow: 2 + s.lane, ...(first && !s.it.done ? { "--td-span": `var(--label-${first.color})` } : {}) } as CSSProperties}
                     title={s.it.title}
+                    draggable={onReschedule ? true : undefined}
+                    data-drag-id={onReschedule ? s.it.id : undefined}
+                    onDragStart={dragStart(s.it.id, null)}
                     onClick={(e) => {
                       e.stopPropagation();
                       onOpenItem?.(s.it.id);

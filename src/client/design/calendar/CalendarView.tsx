@@ -3,15 +3,13 @@
 // ←/→ outside the grid and PageUp/PageDown move the period. Spec: DESIGN.md › Views › Calendar.
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 
-import { addDays, coversDay, parseDateValue, periodTitle, shiftPeriod, toISO, type CalendarItem, type CalendarPeriod } from "./calendar";
+import { addDays, coversDay, daysBetween, isSpan, parseDateValue, periodTitle, shiftPeriod, toISO, type CalendarItem, type CalendarPeriod } from "./calendar";
 import { dateConventions } from "../core/dates";
 import { CalendarDayList } from "./CalendarDayList";
 import { CalendarGrid } from "./CalendarGrid";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarMiniMonth } from "./CalendarMiniMonth";
 import "./CalendarView.css";
-
-const DAY = 864e5;
 
 export interface CalendarViewProps {
   items: CalendarItem[];
@@ -26,7 +24,7 @@ export interface CalendarViewProps {
   showLabels?: boolean;
   onOpenItem?: (id: string) => void;
   onAddItem?: (iso: string) => void;
-  onReschedule?: (id: string, iso: string) => void;
+  onReschedule?: (id: string, from: string, to: string) => void;
   onToggleDone?: (id: string, done: boolean) => void;
   onToggleSubitem?: (itemId: string, subitemId: string, done: boolean) => void;
   style?: CSSProperties;
@@ -68,7 +66,7 @@ export function CalendarView({ items, period: periodProp, defaultPeriod = "month
     const s = new Set<string>();
     for (const it of items) {
       const due = parseDateValue(it.due), st = parseDateValue(it.start);
-      if (st && due && due.getTime() - st.getTime() >= DAY && due.getTime() - st.getTime() < 200 * DAY) {
+      if (st && due && isSpan(it) && daysBetween(st, due) < 200) {
         for (let d = new Date(st); d <= due; d = addDays(d, 1)) if (d.getFullYear() === Y) s.add(toISO(d)!);
       } else if (due && due.getFullYear() === Y) s.add(toISO(due)!);
     }

@@ -3,9 +3,10 @@
 import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-import type { MoveItemInput, MoveRestore } from "../../shared/items";
+import { dateRangeIssue, type MoveItemInput, type MoveRestore } from "../../shared/items";
 import { db } from "../db";
-import { groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type Project } from "../db/schema";
+import { ApiFailure } from "../errors";
+import { attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type Project } from "../db/schema";
 import { applyCompletion, statusChange, type Occurrence } from "../../shared/completion";
 import { logActivity, quote } from "./activity";
 import { itemIsLive, setItemLifecycle } from "./lifecycle";
@@ -14,6 +15,7 @@ import { issueKeyNumbers } from "./projects";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type ItemState = { done?: boolean; status?: Item["status"]; ifDue?: string };
+
 
 /**
  * Update an item in one locked transaction: plain fields, then done / Status by the shared completion rules
@@ -28,6 +30,13 @@ export async function updateItem(id: string, state: ItemState, fields: Partial<I
     const stale = state.done === true && !!next.repeatRule && state.ifDue !== undefined && next.dueDate !== state.ifDue;
     const { patch, occurrence } = stale ? { patch: {}, occurrence: null } : applyCompletion(next, state);
     const changes = { ...fields, ...patch };
+    // A time belongs to a due: clearing the due drops it.
+    if (fields.dueDate === null && fields.dueTime === undefined && cur.dueTime) changes.dueTime = null;
+    if ("startDate" in fields || "dueDate" in fields || "dueTime" in fields) {
+      const issue = dateRangeIssue({ ...next, ...changes });
+      // An update the stored dates make invalid (a start after the due it keeps): nothing is written.
+      if (issue) throw new ApiFailure(400, issue.message, { [issue.path]: issue.message });
+    }
     // Nothing left to write (a retried completion): answer with the item as it is.
     if (!Object.keys(changes).length && lifecycle.archived === undefined && lifecycle.deleted === undefined) return { item: cur, occurrence: null };
     const row = await setItemLifecycle(id, lifecycle, actorId, changes, tx);
@@ -123,17 +132,25 @@ async function carryLabels(tx: Tx, ids: string[], destProjectId: string | null, 
     changed.labelsRemoved = new Set(foreign.map((l) => l.labelId)).size;
     return;
   }
-  const existing = await tx.select().from(labels).where(eq(labels.projectId, destProjectId));
+  const { byName, created } = await labelsByName(tx, destProjectId, foreign);
+  undo.createdLabelIds.push(...created.map((l) => l.id));
+  changed.labelsCreated.push(...created.map((l) => l.name));
+  await tx.insert(itemLabels).values(foreign.map((l) => ({ itemId: l.itemId, labelId: byName.get(l.name.toLowerCase())! }))).onConflictDoNothing();
+}
+
+/** A project's labels by lower-case name, creating those it lacks (same name and color) at the end. */
+async function labelsByName(tx: Tx, projectId: string, wanted: Array<{ name: string; color: string }>) {
+  const existing = await tx.select().from(labels).where(eq(labels.projectId, projectId));
   const byName = new Map(existing.map((l) => [l.name.toLowerCase(), l.id]));
   let position = existing.reduce((max, l) => Math.max(max, l.position), -1);
-  for (const l of foreign) {
+  const created: Array<{ id: string; name: string }> = [];
+  for (const l of wanted) {
     if (byName.has(l.name.toLowerCase())) continue;
-    const [made] = await tx.insert(labels).values({ id: nanoid(), projectId: destProjectId, name: l.name, color: l.color, position: ++position }).returning({ id: labels.id });
+    const [made] = await tx.insert(labels).values({ id: nanoid(), projectId, name: l.name, color: l.color, position: ++position }).returning({ id: labels.id });
     byName.set(l.name.toLowerCase(), made!.id);
-    undo.createdLabelIds.push(made!.id);
-    changed.labelsCreated.push(l.name);
+    created.push({ id: made!.id, name: l.name });
   }
-  await tx.insert(itemLabels).values(foreign.map((l) => ({ itemId: l.itemId, labelId: byName.get(l.name.toLowerCase())! }))).onConflictDoNothing();
+  return { byName, created };
 }
 
 /** Keep only the people the destination allows on the family; record the rest for the Undo. */
@@ -271,5 +288,93 @@ export async function moveItem(id: string, { listId, position, restore }: MoveIt
       }
     }
     return { item: row!, changed, undo };
+  });
+}
+
+/** What a copy carried over differently from its original, so the toast can say so instead of implying a full copy. */
+export interface DuplicateReport {
+  subitems: number;
+  /** Labels made in the destination project so the copy keeps its labels */
+  labelsCreated: string[];
+  /** Labels left off (an Inbox has none) */
+  labelsDropped: number;
+  /** People left off because they are not members of the destination project */
+  assigneesDropped: number;
+  /** Content that stays with the original: never copied */
+  left: { comments: number; attachments: number; relations: number };
+}
+
+/**
+ * Copy an item (and its live subitems) into a list. Copied: title, description, Status and done (a linked
+ * destination role sets the Status, as a move does), priority, dates and time, repeat, a color or sample
+ * cover, labels (by name in another project, created when missing) and assignees who are members there.
+ * Never copied: comments, activity, attachments (and an attachment cover), relations and watchers.
+ * Next to its original in the same list (a subitem stays under its parent); at the end of another list.
+ */
+export async function duplicateItem(sourceId: string, { id, listId }: { id: string; listId: string }, actorId: string): Promise<{ items: Item[]; report: DuplicateReport } | null> {
+  return db.transaction(async (tx) => {
+    const family = (await familyOf(tx, sourceId)).filter((it, i) => i === 0 || (!it.archivedAt && !it.deletedAt));
+    const root = family[0];
+    if (!root) return null;
+    const [dest] = await tx.select().from(lists).where(eq(lists.id, listId)).for("update");
+    if (!dest) return null;
+    const destProject = dest.projectId ? (await tx.select().from(projects).where(eq(projects.id, dest.projectId)))[0] ?? null : null;
+    const sameList = dest.id === root.listId;
+    const ids = family.map((it) => it.id);
+    const newId = new Map(family.map((it, i) => [it.id, i === 0 ? id : nanoid()]));
+
+    // Where the copy goes: beside its original, or at the end of another list.
+    const placed: { position?: number } = {};
+    const parentItemId = sameList ? root.parentItemId : null;
+    if (parentItemId) {
+      placed.position = ((await tx.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.parentItemId, parentItemId)))[0]?.max ?? -1) + 1;
+    } else {
+      const live = sameList ? await tx.select({ id: items.id }).from(items).where(and(eq(items.listId, dest.id), isNull(items.parentItemId), itemIsLive)).orderBy(asc(items.position), asc(items.createdAt)) : [];
+      const at = live.findIndex((s) => s.id === root.id);
+      await placeAmongSiblings(tx, id, dest.id, at >= 0 ? at + 1 : undefined, placed);
+    }
+    const state = !sameList && dest.statusRole && destProject?.linkStatuses && dest.statusRole !== root.status ? statusChange(root, dest.statusRole) : {};
+    const first = destProject ? await issueKeyNumbers(tx, destProject.groupId, family.length) : null;
+
+    const report: DuplicateReport = { subitems: family.length - 1, labelsCreated: [], labelsDropped: 0, assigneesDropped: 0, left: { comments: 0, attachments: 0, relations: 0 } };
+    const made: Item[] = [];
+    for (const [i, it] of family.entries()) {
+      const cover = it.cover?.attachmentId ? null : it.cover;
+      const [row] = await tx
+        .insert(items)
+        .values({
+          id: newId.get(it.id)!, listId: dest.id, projectId: dest.projectId, parentItemId: i === 0 ? parentItemId : newId.get(it.parentItemId!)!,
+          keyNumber: first == null ? null : first + i, title: it.title, description: it.description, status: it.status, priorStatus: it.priorStatus, done: it.done,
+          priority: it.priority, startDate: it.startDate, dueDate: it.dueDate, dueTime: it.dueTime, repeatRule: it.repeatRule, repeatCount: it.repeatCount, cover,
+          position: i === 0 ? placed.position! : it.position, createdBy: actorId, ...(i === 0 ? state : {}),
+        })
+        .returning();
+      made.push(row!);
+    }
+
+    // Labels: the same ones in the same project; by name in another; none in an Inbox.
+    const labelRows = await tx.select({ itemId: itemLabels.itemId, labelId: itemLabels.labelId, name: labels.name, color: labels.color, projectId: labels.projectId }).from(itemLabels).innerJoin(labels, eq(labels.id, itemLabels.labelId)).where(inArray(itemLabels.itemId, ids));
+    if (labelRows.length && !dest.projectId) report.labelsDropped = new Set(labelRows.map((l) => l.labelId)).size;
+    else if (labelRows.length) {
+      const foreign = labelRows.filter((l) => l.projectId !== dest.projectId);
+      const { byName, created } = foreign.length ? await labelsByName(tx, dest.projectId!, foreign) : { byName: new Map<string, string>(), created: [] };
+      report.labelsCreated = created.map((l) => l.name);
+      await tx.insert(itemLabels).values(labelRows.map((l) => ({ itemId: newId.get(l.itemId)!, labelId: l.projectId === dest.projectId ? l.labelId : byName.get(l.name.toLowerCase())! }))).onConflictDoNothing();
+    }
+    // Assignees must be members of the destination (an Inbox belongs to its owner).
+    const assigneeRows = await tx.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids));
+    const memberIds = new Set(dest.projectId ? (await tx.select({ userId: members.userId }).from(members).where(eq(members.projectId, dest.projectId))).map((m) => m.userId) : [dest.userId]);
+    const kept = assigneeRows.filter((a) => memberIds.has(a.userId));
+    report.assigneesDropped = new Set(assigneeRows.filter((a) => !memberIds.has(a.userId)).map((a) => a.userId)).size;
+    if (kept.length) await tx.insert(itemAssignees).values(kept.map((a) => ({ itemId: newId.get(a.itemId)!, userId: a.userId }))).onConflictDoNothing();
+
+    const count = async (table: typeof comments | typeof attachments) => Number((await tx.select({ n: sql<string>`count(*)` }).from(table).where(inArray(table.itemId, ids)))[0]!.n);
+    report.left = {
+      comments: await count(comments),
+      attachments: await count(attachments),
+      relations: Number((await tx.select({ n: sql<string>`count(*)` }).from(itemRelations).where(or(inArray(itemRelations.itemId, ids), inArray(itemRelations.targetId, ids))))[0]!.n),
+    };
+    await logActivity(tx, { projectId: dest.projectId, actorId, type: "item", text: `added ${quote(made[0]!.title)} to ${dest.name} as a copy`, itemId: id, itemKey: keyOf(made[0]!) });
+    return { items: made, report };
   });
 }
