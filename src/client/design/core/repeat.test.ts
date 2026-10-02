@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { completeRecurring, describeRepeat, nextOccurrence, type RepeatRule } from "./repeat";
+import { complete } from "../../../shared/completion";
+import { describeCompletion, describeRepeat, nextOccurrence, type RepeatRule } from "./repeat";
 
 const DUE = "2026-09-12"; // Saturday
 
@@ -45,16 +46,18 @@ describe("nextOccurrence", () => {
   });
 });
 
-describe("completeRecurring", () => {
+describe("describeCompletion", () => {
   const rule: RepeatRule = { freq: "weekly", byWeekday: [4], ends: { type: "after", count: 10 } };
-  it("returns the next due plus the toast copy", () => {
-    const r = completeRecurring(rule, "2026-08-27", { title: "Check both dealers' stock lists", count: 2, today: "2026-08-25" });
-    expect(r).toEqual({ next: "2026-09-03", count: 3, ended: false, icon: "repeat", message: "Completed “Check both dealers' stock lists” — next due Sep 3", meta: "3 of 10" });
+  it("words the next due plus the count", () => {
+    const { occurrence } = complete({ status: null, priorStatus: null, done: false, dueDate: "2026-08-27", repeatRule: rule, repeatCount: 2 });
+    expect(occurrence).toEqual({ from: "2026-08-27", next: "2026-09-03", count: 3, ended: false });
+    expect(describeCompletion(occurrence!, rule, { title: "Check both dealers' stock lists", today: "2026-08-25" })).toEqual({ icon: "repeat", message: "Completed “Check both dealers' stock lists” — next due Sep 3", meta: "3 of 10" });
   });
   it("says when it was the last repeat and truncates long titles", () => {
-    const r = completeRecurring({ freq: "daily", ends: { type: "after", count: 1 } }, DUE, { title: "A".repeat(50) });
-    expect(r.ended).toBe(true);
-    expect(r.next).toBeNull();
+    const last = { freq: "daily", ends: { type: "after", count: 1 } } as const;
+    const { occurrence } = complete({ status: null, priorStatus: null, done: false, dueDate: DUE, repeatRule: last, repeatCount: 0 });
+    expect(occurrence).toMatchObject({ next: null, ended: true });
+    const r = describeCompletion(occurrence!, last, { title: "A".repeat(50) });
     expect(r.message).toBe("Completed “" + "A".repeat(39) + "…” — that was the last repeat");
     expect(r.meta).toBe("1 of 1");
   });

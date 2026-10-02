@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { api, unwrap } from "../data/api";
-import { newId, useCreateItem, useUpdateItem } from "../data/mutations";
+import { newId, useCreateItem } from "../data/mutations";
 import { keys, useListItems } from "../data/queries";
 import { Button } from "../design/core/Button";
 import { EmptyState } from "../design/core/EmptyState";
@@ -12,6 +12,7 @@ import { ViewSkeleton } from "../design/core/Skeleton";
 import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
+import { useCompletion } from "./completion";
 import { rowsForList } from "./items";
 import { LoadFailed } from "./LoadFailed";
 import "./screens.css";
@@ -21,7 +22,7 @@ export function InboxScreen() {
   const qc = useQueryClient();
   const scope = useMemo(() => ({ listId: "inbox" }), []);
   const createItem = useCreateItem(scope);
-  const updateItem = useUpdateItem(scope);
+  const completion = useCompletion(scope);
   const markAllRead = useMutation({
     mutationFn: () => api.api.inbox["mark-all-read"].$post().then((r) => unwrap<{ marked: number }>(r)),
     onSettled: () => {
@@ -35,7 +36,10 @@ export function InboxScreen() {
   const rows = listId ? rowsForList(items.data, listId, { prefix: "", labels: [], people: [], withCreated: true }) : [];
   const unread = items.data.some((it) => it.unread);
   return (
-    <ListView showAddList={false} onItemKey={(id, action) => action === "done" && updateItem.mutate({ id, done: !items.data!.find((x) => x.id === id)?.done })}>
+    <ListView showAddList={false} onItemKey={(id, action) => {
+      const it = items.data!.find((x) => x.id === id);
+      if (action === "done" && it) void completion.setDone(it, !it.done);
+    }}>
       <ListSection
         name="Inbox"
         icon="inbox"
@@ -52,7 +56,10 @@ export function InboxScreen() {
         onAddItem={(title, parsed) => createItem.mutate({ id: newId(), title, priority: parsed.priority ? (parsed.priority.toUpperCase() as "URGENT" | "HIGH" | "MEDIUM" | "LOW") : undefined, dueDate: parsed.due ?? undefined })}
       >
         {rows.length ? (
-          rows.map((r) => <ListRow key={r.id} dragId={r.id} title={r.title} done={r.done} onDone={(done) => updateItem.mutate({ id: r.id, done })} due={r.due} dueState={r.dueState} priority={r.priority} created={r.created} unread={r.unread} />)
+          rows.map((r) => <ListRow key={r.id} dragId={r.id} title={r.title} done={r.done} onDone={(done) => {
+            const it = items.data!.find((x) => x.id === r.id);
+            if (it) void completion.setDone(it, done);
+          }} due={r.due} dueState={r.dueState} priority={r.priority} created={r.created} unread={r.unread} />)
         ) : (
           <EmptyState surface="card" compact icon="inbox" title="Your inbox is empty" hint="Capture anything here; drag it onto a project in the sidebar when it has a home." />
         )}

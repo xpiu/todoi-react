@@ -51,8 +51,12 @@ export const updateItemSchema = z
   .object({
     title: titleSchema,
     description: z.string().max(100_000).nullable(),
+    /** Set as given; Done means done (a recurring item does not move on — that is `done: true`) */
     status: z.enum(ITEM_STATUSES).nullable(),
+    /** true completes: a recurring item with a due moves to its next occurrence; false reopens */
     done: z.boolean(),
+    /** With done: complete only while this is still the due, so a retried request completes one occurrence */
+    ifDue: isoDateSchema,
     priority: z.enum(ITEM_PRIORITIES).nullable(),
     startDate: isoDateSchema.nullable(),
     dueDate: isoDateSchema.nullable(),

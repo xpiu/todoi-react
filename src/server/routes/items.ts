@@ -7,7 +7,8 @@ import { createItemSchema, idSchema, moveItemSchema, updateItemSchema } from "..
 import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
-import { moveItem, setDone } from "../services/items";
+import { statusChange } from "../../shared/completion";
+import { moveItem, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
@@ -47,7 +48,8 @@ export const itemsRoute = new Hono()
     const [list] = await db.select().from(lists).where(eq(lists.id, listId));
     if (!list) return c.json({ error: "List not found" }, 404);
     const { labelIds = [], assigneeIds = [], ...fields } = input;
-    const status = fields.status === undefined ? (list.statusRole ?? null) : fields.status;
+    // Created in a Done list (or as Done) means done, by the same rule as every other path.
+    const state = statusChange({ status: null, done: false, priorStatus: null }, fields.status === undefined ? (list.statusRole ?? null) : fields.status);
     const row = await db.transaction(async (tx) => {
       const max = (await tx.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, listId)))[0]?.max ?? -1;
       // Items in a project get a key from the group's counter at once; Inbox items get one when filed.
@@ -58,7 +60,7 @@ export const itemsRoute = new Hono()
       }
       const [created] = await tx
         .insert(items)
-        .values({ ...fields, listId, projectId: list.projectId, status, keyNumber, position: max + 1, createdBy: viewer.userId })
+        .values({ ...fields, ...state, listId, projectId: list.projectId, keyNumber, position: max + 1, createdBy: viewer.userId })
         .returning();
       if (labelIds.length) await tx.insert(itemLabels).values(labelIds.map((labelId) => ({ itemId: created!.id, labelId }))).onConflictDoNothing();
       if (assigneeIds.length) await tx.insert(itemAssignees).values(assigneeIds.map((userId) => ({ itemId: created!.id, userId }))).onConflictDoNothing();
@@ -69,7 +71,7 @@ export const itemsRoute = new Hono()
   })
   .patch("/:id", idParam, zValidator("json", updateItemSchema), async (c) => {
     const { id } = c.req.valid("param");
-    const { done, archived, deleted, parentItemId, ...rest } = c.req.valid("json");
+    const { done, status, ifDue, archived, deleted, parentItemId, ...rest } = c.req.valid("json");
     const changes: Partial<ItemRow> = { ...rest };
     if (parentItemId !== undefined) {
       // A subitem lives in its parent's list; promoting keeps the list it is in.
@@ -81,14 +83,10 @@ export const itemsRoute = new Hono()
         changes.projectId = parent.projectId;
       }
     }
-    if (done !== undefined) {
-      const row = await setDone(id, done, viewerOf(c).userId);
-      if (!row) return c.json({ error: "Not found" }, 404);
-      if (!Object.keys(changes).length && archived === undefined && deleted === undefined) return c.json(row);
-    }
-    const row = await setItemLifecycle(id, { archived, deleted }, viewerOf(c).userId, changes);
-    if (!row) return c.json({ error: "Not found" }, 404);
-    return c.json(row);
+    const result = await updateItem(id, { done, status, ifDue }, changes, { archived, deleted }, viewerOf(c).userId);
+    if (!result) return c.json({ error: "Not found" }, 404);
+    // `occurrence`: the recurring occurrence this request completed, for the client's toast and Undo.
+    return c.json({ ...result.item, occurrence: result.occurrence });
   })
   // Move within or across lists; a linked list role updates the Status in the same transaction.
   .post("/:id/move", idParam, zValidator("json", moveItemSchema), async (c) => {

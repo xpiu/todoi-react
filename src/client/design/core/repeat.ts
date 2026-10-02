@@ -1,6 +1,9 @@
 // Repeat rules — pure functions behind RepeatPicker and recurring completion (DESIGN.md › Repeat,
 // Recurring item completion). A rule is a plain object the item stores; dates are ISO strings.
-import { addDays, formatDate, parseDateValue, toISO, type DateInput } from "./dates";
+import { nextOccurrence, type Occurrence } from "../../../shared/completion";
+import { formatDate, parseDateValue, type DateInput } from "./dates";
+
+export { nextOccurrence };
 
 export type RepeatFreq = "daily" | "weekly" | "monthly" | "yearly";
 export type RepeatEnds = { type: "never" } | { type: "on"; date: string | null } | { type: "after"; count: number };
@@ -46,52 +49,10 @@ export function describeRepeat(rule: RepeatRule | null | undefined, anchor?: Dat
   return s;
 }
 
-/** Monday-based week index of a date (days since epoch Monday, divided by 7). */
-const weekIndex = (d: Date) => Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000 + 3) / 7);
-
-/** Next occurrence (ISO) after `from`, honouring interval and weekdays; null once the rule has ended. `count` = occurrences already completed. */
-export function nextOccurrence(rule: RepeatRule | null | undefined, from: DateInput, count = 0): string | null {
-  const d = parseDateValue(from);
-  if (!rule || !d) return null;
-  const n = Math.max(1, rule.interval ?? 1);
-  let x = new Date(d);
-  if (rule.freq === "daily") x = addDays(d, n);
-  else if (rule.freq === "weekly") {
-    const days = (rule.byWeekday?.length ? rule.byWeekday : [d.getDay()]).slice().sort((a, b) => a - b);
-    const w0 = weekIndex(d);
-    let found: Date | null = null;
-    for (let i = 1; i <= 7 * n + 7 && !found; i++) {
-      const c = addDays(d, i);
-      if (days.includes(c.getDay()) && (weekIndex(c) - w0) % n === 0) found = c;
-    }
-    x = found ?? addDays(d, 7 * n);
-  } else if (rule.freq === "monthly") x.setMonth(x.getMonth() + n);
-  else if (rule.freq === "yearly") x.setFullYear(x.getFullYear() + n);
-  const e = rule.ends;
-  const iso = toISO(x)!;
-  if (e?.type === "on" && e.date && iso > e.date) return null;
-  if (e?.type === "after" && e.count && count + 1 >= e.count) return null;
-  return iso;
-}
-
-export interface CompleteRecurringResult {
-  /** The due to reopen the item with, or null when the rule has ended */
-  next: string | null;
-  count: number;
-  ended: boolean;
-  icon: "repeat";
-  /** Toast copy: 'Completed “…” — next due Sep 3' */
-  message: string;
-  /** "3 of 10" for ends-after rules */
-  meta?: string;
-}
-
-/** Checking a recurring item done. Pure: the consumer applies `next` (reopen with it, store `count`) or leaves it done. */
-export function completeRecurring(rule: RepeatRule, due: DateInput, { title, count = 0, today }: { title?: string; count?: number; today?: DateInput } = {}): CompleteRecurringResult {
-  const next = nextOccurrence(rule, due, count);
+/** Toast copy for one completed occurrence (the API decides it): 'Completed “…” — next due Sep 3', "3 of 10". */
+export function describeCompletion(o: Occurrence, rule: RepeatRule | null | undefined, { title, today }: { title?: string; today?: DateInput } = {}): { icon: "repeat"; message: string; meta?: string } {
   const t = title ? "“" + (title.length > 40 ? title.slice(0, 39).trimEnd() + "…" : title) + "”" : "the item";
-  const e = rule.ends;
-  const meta = e?.type === "after" && e.count ? `${Math.min(count + 1, e.count)} of ${e.count}` : undefined;
-  if (!next) return { next: null, count: count + 1, ended: true, icon: "repeat", message: `Completed ${t} — that was the last repeat`, meta };
-  return { next, count: count + 1, ended: false, icon: "repeat", message: `Completed ${t} — next due ${formatDate(next, { year: "auto", today })}`, meta };
+  const e = rule?.ends;
+  const meta = e?.type === "after" && e.count ? `${Math.min(o.count, e.count)} of ${e.count}` : undefined;
+  return { icon: "repeat", message: o.next ? `Completed ${t} — next due ${formatDate(o.next, { year: "auto", today })}` : `Completed ${t} — that was the last repeat`, meta };
 }

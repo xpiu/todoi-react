@@ -128,7 +128,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       onClose={onClose}
       onRename={(title) => saving(updateItem.mutateAsync({ id: item.id, title, quiet: true }))}
       onMoveToList={(listId) => moveItem.mutate({ id: item.id, listId })}
-      onSetStatus={(status) => patch(status === "DONE" ? { done: true } : item.done ? { done: false, status } : { status })}
+      onSetStatus={(status) => (status === "DONE" ? actions.setDone(item.id, true) : patch({ status }))}
       onSetPriority={(priority) => patch({ priority })}
       onSetDates={(v) => patch({ startDate: v.start, dueDate: v.due, dueTime: v.time })}
       onSetRepeat={(rule) => patch({ repeatRule: rule })}
@@ -144,7 +144,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       onToggleWatch={(watching) => setWatching.mutate({ watching })}
       onSetDescription={(description) => saving(updateItem.mutateAsync({ id: item.id, description, quiet: true }))}
       onAddSubitem={(title) => createItem.mutate({ id: newId(), title, listId: item.listId, parentItemId: item.id })}
-      onToggleSubitem={(id, done) => updateItem.mutate({ id, done })}
+      onToggleSubitem={(id, done) => actions.setDone(id, done)}
       onReorderSubitem={(id, index) => {
         const order = subitems.filter((s) => s.id !== id);
         order.splice(index, 0, subitems.find((s) => s.id === id)!);

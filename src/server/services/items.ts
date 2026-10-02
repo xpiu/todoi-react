@@ -6,21 +6,38 @@ import { nanoid } from "nanoid";
 import type { MoveItemInput, MoveRestore } from "../../shared/items";
 import { db } from "../db";
 import { groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type Project } from "../db/schema";
+import { applyCompletion, statusChange, type Occurrence } from "../../shared/completion";
 import { logActivity, quote } from "./activity";
-import { itemIsLive } from "./lifecycle";
+import { itemIsLive, setItemLifecycle } from "./lifecycle";
 import { issueKeyNumbers } from "./projects";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/** Checkbox semantics: checking sets Status to Done and remembers the prior Status; unchecking restores it. */
-export async function setDone(id: string, done: boolean, actorId: string | null = null): Promise<Item | null> {
+export type ItemState = { done?: boolean; status?: Item["status"]; ifDue?: string };
+
+/**
+ * Update an item in one locked transaction: plain fields, then done / Status by the shared completion rules
+ * (a recurring item moves to its next occurrence), then archive / restore. A completion whose `ifDue` no
+ * longer matches was already applied (a retry) and changes nothing.
+ */
+export async function updateItem(id: string, state: ItemState, fields: Partial<Item>, lifecycle: { archived?: boolean; deleted?: boolean }, actorId: string): Promise<{ item: Item; occurrence: Occurrence | null } | null> {
   return db.transaction(async (tx) => {
-    const [cur] = await tx.select().from(items).where(eq(items.id, id));
+    const [cur] = await tx.select().from(items).where(eq(items.id, id)).for("update");
     if (!cur) return null;
-    const patch = done ? { done: true, status: "DONE" as const, priorStatus: cur.status === "DONE" ? cur.priorStatus : cur.status } : { done: false, status: cur.priorStatus, priorStatus: null };
-    const [row] = await tx.update(items).set(patch).where(eq(items.id, id)).returning();
-    if (row) await logActivity(tx, { projectId: row.projectId, actorId, type: "item", text: `${done ? "completed" : "reopened"} ${quote(row.title)}`, itemId: row.id, itemKey: keyOf(row) });
-    return row ?? null;
+    const next = { ...cur, ...fields };
+    const stale = state.done === true && !!next.repeatRule && state.ifDue !== undefined && next.dueDate !== state.ifDue;
+    const { patch, occurrence } = stale ? { patch: {}, occurrence: null } : applyCompletion(next, state);
+    const changes = { ...fields, ...patch };
+    // Nothing left to write (a retried completion): answer with the item as it is.
+    if (!Object.keys(changes).length && lifecycle.archived === undefined && lifecycle.deleted === undefined) return { item: cur, occurrence: null };
+    const row = await setItemLifecycle(id, lifecycle, actorId, changes, tx);
+    if (!row) return null;
+    if (row.done !== cur.done || occurrence) {
+      const verb = occurrence || row.done ? "completed" : "reopened";
+      const repeats = occurrence && !occurrence.ended ? " — it repeats" : "";
+      await logActivity(tx, { projectId: row.projectId, actorId, type: "item", text: `${verb} ${quote(row.title)}${repeats}`, itemId: row.id, itemKey: keyOf(row) });
+    }
+    return { item: row, occurrence };
   });
 }
 
@@ -183,10 +200,10 @@ export async function moveItem(id: string, { listId, position, restore }: MoveIt
 
     const patch: Partial<Item> = { listId: dest.id, projectId: dest.projectId };
     const changed: MoveResult["changed"] = { list: dest.id !== cur.listId, project: crossProject, status: null, key: null, subitems: 0, labelsCreated: [], labelsRemoved: 0, assigneesRemoved: 0, watchersRemoved: 0, relationsRemoved: 0 };
+    // Placing an item in a Done list is a literal Status change: it is done there, not a recurring occurrence.
     if (dest.id !== cur.listId && dest.statusRole && destProject?.linkStatuses && dest.statusRole !== cur.status) {
       changed.status = { from: cur.status, to: dest.statusRole };
-      patch.status = dest.statusRole;
-      patch.done = dest.statusRole === "DONE";
+      Object.assign(patch, statusChange(cur, dest.statusRole));
     }
     // A subitem leaving its parent's project becomes an item of its own there; its Undo nests it again.
     if (crossProject && cur.parentItemId) patch.parentItemId = null;

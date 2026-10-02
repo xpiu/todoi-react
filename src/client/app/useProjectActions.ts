@@ -10,13 +10,13 @@ import type { Item, Label, MoveResult, ProjectDetail } from "../data/api";
 import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
 import { formatDate } from "../design/core/dates";
-import { completeRecurring } from "../design/core/repeat";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction } from "../design/core/BulkBar";
 import type { QuickAddResult } from "../design/core/quickAdd";
 import type { ItemAction } from "../design/core/shortcuts";
 import { STATUSES } from "../design/core/statuses";
 import { count } from "../design/core/text";
+import { useCompletion } from "./completion";
 import { quote, useFeedback } from "./feedback";
 import { PRIORITY_LABEL, type Person } from "./items";
 import { peopleOf } from "./session";
@@ -37,6 +37,7 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const scope = useMemo(() => ({ projectId }), [projectId]);
   const createItem = useCreateItem(scope);
   const updateItem = useUpdateItem(scope);
+  const completion = useCompletion(scope);
   const moveItem = useMoveItem(scope);
   const deleteItem = useDeleteItem(scope);
   const restoreItem = useRestoreItem(scope);
@@ -120,19 +121,10 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   };
   const remove = (id: string) => removeMany([id]);
 
-  /** Done toggle. A recurring item checked done reopens on its next due instead (one toast, undoable). */
+  /** Done toggle; a recurring item moves to its next due instead (the API decides; one undoable toast). */
   const setDone = (id: string, done: boolean) => {
     const it = byId(id);
-    if (!it) return;
-    if (done && it.repeatRule && it.dueDate) {
-      const r = completeRecurring(it.repeatRule, it.dueDate, { title: it.title, count: it.repeatCount });
-      const prev = { dueDate: it.dueDate, repeatCount: it.repeatCount };
-      if (r.ended) updateItem.mutate({ id, done: true, repeatCount: r.count });
-      else updateItem.mutate({ id, dueDate: r.next, repeatCount: r.count });
-      notify({ message: r.message, meta: r.meta, icon: r.icon, restore: () => updateItem.mutate({ id, done: false, ...prev }) });
-      return;
-    }
-    updateItem.mutate({ id, done });
+    if (it) void completion.setDone(it, done);
   };
 
   const onItemKey = (id: string, action: ItemAction) => {
@@ -274,9 +266,7 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
       const who = people.find((p) => p.id === value);
       notify({ message: who ? `Assigned ${noun} to ${who.name.split(" ")[0]}` : `Unassigned ${noun}`, icon: "user-plus", restore: () => snapshot.forEach((it) => setAssignees.mutate({ id: it.id, userIds: it.assigneeIds })) });
     } else if (action === "done") {
-      const allDone = sel.every((it) => it.done);
-      sel.forEach((it) => updateItem.mutate({ id: it.id, done: !allDone }));
-      notify({ message: `Marked ${noun} ${allDone ? "not done" : "done"}`, icon: "circle-check", restore: () => snapshot.forEach((it) => updateItem.mutate({ id: it.id, done: it.done })) });
+      void completion.setDoneMany(sel, !sel.every((it) => it.done));
     }
     return false;
   };

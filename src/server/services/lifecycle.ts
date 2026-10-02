@@ -27,21 +27,24 @@ const timestamps = ({ archived, deleted }: LifecycleChange) => ({
   ...(deleted === undefined ? {} : { deletedAt: deleted ? new Date() : null }),
 });
 
-export async function setItemLifecycle(id: string, change: LifecycleChange, actorId: string, fields: Partial<Item> = {}) {
-  type Connection = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
-  const update = async (connection: Connection) => {
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** `outer`: run inside the caller's transaction (an item update that also archives or restores). */
+export async function setItemLifecycle(id: string, change: LifecycleChange, actorId: string, fields: Partial<Item> = {}, outer?: Tx) {
+  const update = async (connection: typeof db | Tx) => {
     const [item] = await connection.update(items).set({ ...fields, ...timestamps(change) }).where(eq(items.id, id)).returning();
     return item;
   };
-  if (change.archived === undefined && change.deleted === undefined) return update(db);
-  return db.transaction(async (tx) => {
+  if (change.archived === undefined && change.deleted === undefined) return update(outer ?? db);
+  const run = async (tx: Tx) => {
     const item = await update(tx);
     if (item) {
       const verb = change.deleted ? "deleted" : change.archived ? "archived" : "restored";
       await logActivity(tx, { projectId: item.projectId, actorId, type: "item", text: `${verb} ${quote(item.title)}`, itemId: id, itemKey: item.keyNumber == null ? null : String(item.keyNumber) });
     }
     return item;
-  });
+  };
+  return outer ? run(outer) : db.transaction(run);
 }
 
 export async function setProjectLifecycle(id: string, change: LifecycleChange) {

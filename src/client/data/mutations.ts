@@ -6,7 +6,8 @@ import { nanoid } from "nanoid";
 import type { CreateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
 import type { CreateListInput, UpdateListInput } from "../../shared/projects";
 import { useFeedback } from "../app/feedback";
-import { api, errorMessage, unwrap, type Item, type MoveResult } from "./api";
+import { applyCompletion } from "../../shared/completion";
+import { api, errorMessage, unwrap, type Item, type MoveResult, type UpdatedItem } from "./api";
 import { keys } from "./queries";
 
 export const newId = () => nanoid();
@@ -90,12 +91,14 @@ export function useCreateItem(scope: ItemsScope) {
 export function useUpdateItem(scope: ItemsScope) {
   return useOptimistic(
     scope,
-    ({ quiet: _quiet, ...vars }: { id: string; quiet?: boolean } & UpdateItemInput) => api.api.items[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<Item>(r)),
-    (items, { id, quiet: _quiet, ...changes }) =>
+    ({ quiet: _quiet, ...vars }: { id: string; quiet?: boolean } & UpdateItemInput) => api.api.items[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<UpdatedItem>(r)),
+    // The API's own completion rules predict the result (a recurring item moves to its next due).
+    (items, { id, quiet: _quiet, done, status, ifDue, ...changes }) =>
       items.map((it) => {
         if (it.id !== id) return it;
-        const doneChange = changes.done === undefined ? {} : changes.done ? { done: true, status: "DONE" as const, priorStatus: it.status } : { done: false, status: it.priorStatus, priorStatus: null };
-        return { ...it, ...changes, ...doneChange };
+        const next = { ...it, ...changes };
+        const stale = done === true && !!next.repeatRule && ifDue !== undefined && next.dueDate !== ifDue;
+        return stale ? next : { ...next, ...applyCompletion(next, { done, status }).patch };
       }),
   );
 }

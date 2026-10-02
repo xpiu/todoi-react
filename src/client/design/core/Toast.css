@@ -17,6 +17,10 @@
     font: var(--type-body);
     animation: td-toast-in var(--duration-base) var(--ease-standard);
   }
+  /* Both sit at the bottom edge: while the BulkBar is up (44px: 32px buttons + padding), the toast rises above it. */
+  body:has(.td-bulk) .td-toast {
+    bottom: calc(var(--sp-4) + 44px + var(--sp-2));
+  }
   .td-toast-icon {
     margin-right: 10px;
     flex-shrink: 0;

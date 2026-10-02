@@ -1,30 +1,11 @@
-// Date utilities — pure, shared by DatePicker, DatesPicker, quick-add, the calendar and the API later.
-// Dates are local-midnight `Date`s in memory and ISO "YYYY-MM-DD" strings at the edges; times are "HH:MM".
+// Date utilities — pure, shared by DatePicker, DatesPicker, quick-add and the calendar; the calendar-date
+// core (src/shared/dates.ts) also runs in the API. Dates are local-midnight `Date`s in memory and ISO
+// "YYYY-MM-DD" strings at the edges; times are "HH:MM".
 // Spec: DESIGN.md › Content fundamentals (timestamps), Item editing › Dates, Quick-add grammar.
 
-export type DateInput = string | Date | null | undefined;
+import { addDays, parseDateValue, pad, toISO, type DateInput } from "../../../shared/dates";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
-export function toISO(d: Date | null | undefined): string | null {
-  return d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : null;
-}
-
-/** ISO "2026-09-12" or anything Date parses ("Sep 12, 2026") → local-midnight Date; null for empty / invalid. */
-export function parseDateValue(v: DateInput): Date | null {
-  if (!v) return null;
-  if (v instanceof Date) return isNaN(v.getTime()) ? null : new Date(v.getFullYear(), v.getMonth(), v.getDate());
-  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(String(v));
-  if (m) return new Date(+m[1]!, +m[2]! - 1, +m[3]!);
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-export const addDays = (d: Date, n: number): Date => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-};
+export { addDays, parseDateValue, toISO, type DateInput };
 
 export const sameDay = (a: Date | null | undefined, b: Date | null | undefined): boolean =>
   !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();

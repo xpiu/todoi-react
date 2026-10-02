@@ -3,6 +3,7 @@
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
+import { statusChange } from "../../shared/completion";
 import { LABEL_COLORS } from "../../shared/enums";
 import type { ImportProjectInput } from "../../shared/import";
 import type { CreateProjectInput, UpdateListInput } from "../../shared/projects";
@@ -77,13 +78,14 @@ export async function importProject({ id, groupId, name, plan }: ImportProjectIn
       if (!lid) continue;
       l.items.forEach((it, position) => {
         const itemId = nanoid();
-        const status = it.done ? "DONE" : (l.statusRole ?? null);
-        rows.push({ id: itemId, listId: lid, projectId: project.id, title: it.title, description: it.description ?? null, dueDate: it.due ?? null, priority: it.priority ?? null, status, priorStatus: it.done ? (l.statusRole ?? null) : null, done: it.done, keyNumber: key++, position, createdBy: userId });
+        // The list's role is the Status; a done item remembers it for reopening (the shared invariant).
+        const state = (done: boolean) => statusChange(statusChange({ status: null, done: false, priorStatus: null }, l.statusRole ?? null), done ? "DONE" : (l.statusRole ?? null));
+        rows.push({ id: itemId, listId: lid, projectId: project.id, title: it.title, description: it.description ?? null, dueDate: it.due ?? null, priority: it.priority ?? null, ...state(it.done), keyNumber: key++, position, createdBy: userId });
         for (const n of it.labels) {
           const lab = labelId.get(n.toLowerCase());
           if (lab) links.push({ itemId, labelId: lab });
         }
-        it.subitems.forEach((s, j) => rows.push({ id: nanoid(), listId: lid, projectId: project.id, parentItemId: itemId, title: s.title, status: s.done ? "DONE" : (l.statusRole ?? null), done: s.done, keyNumber: key++, position: j, createdBy: userId }));
+        it.subitems.forEach((s, j) => rows.push({ id: nanoid(), listId: lid, projectId: project.id, parentItemId: itemId, title: s.title, ...state(s.done), keyNumber: key++, position: j, createdBy: userId }));
       });
     }
     for (let i = 0; i < rows.length; i += 500) await tx.insert(items).values(rows.slice(i, i + 500));
@@ -100,9 +102,11 @@ export async function updateList(id: string, { applyToExisting, ...patch }: Upda
     if (!list) return null;
     let rewritten = 0;
     if (patch.statusRole !== undefined && applyToExisting && list.statusRole) {
+      // The shared invariant in SQL: a Done role remembers each open item's Status; any other role clears it.
+      const done = list.statusRole === "DONE";
       const rows = await tx
         .update(items)
-        .set({ status: list.statusRole, done: list.statusRole === "DONE" })
+        .set({ status: list.statusRole, done, priorStatus: done ? sql`case when ${items.done} or ${items.status} = 'DONE' then ${items.priorStatus} else ${items.status} end` : null })
         .where(and(eq(items.listId, id), isNull(items.parentItemId), isNull(items.deletedAt)))
         .returning({ id: items.id });
       rewritten = rows.length;
