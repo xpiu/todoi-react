@@ -60,7 +60,7 @@ Todoi is a lightweight task manager with a focus on user-friendliness, legibilit
 - Ordering & conflict handling: One monotonic sync id from Postgres ( A single integer totally orders every write in the workspace; field conflicts resolve last-write-wins against it. )
 - ORM and migrations: Drizzle
 - Background jobs: undefined, when needed
-- Errors and logs: DEFERRED
+- Errors and logs: one API error shape with a request id, and a JSON log line for each server fault or refused database write (no log aggregation service yet)
 
 - UI library: React
 - Build delivery: Vite
@@ -75,17 +75,29 @@ Todoi is a lightweight task manager with a focus on user-friendliness, legibilit
 - CDN: Cloudflare
 - More caching tools: DELAYED, potentially Redis later
 
-## Current state: barebones core
+## Current state
 
-The data model and API now follow the design spec's vocabulary (groups, projects, lists, items with
-subitems, labels, members, comments, relations, saved views, activity, an Inbox per account); the
-client is still the placeholder Inbox list until the views land. See `docs/design/glossary.md`.
+A working single-instance app on the design spec's vocabulary (see `docs/design/glossary.md` and `DESIGN.md`):
 
-In place: React + Vite, Hono (typed routes + RPC client), TanStack Query, Drizzle + PostgreSQL, zod validation,
-the design-system foundations (tokens, themes × modes, icons, appearance store with Zustand) per `DESIGN.md`.
-Deferred until there is something to use them for: Base UI, Better Auth, Tiptap, OpenAPI,
-the sync engine, background jobs, hosting. The adoption plan with its checklist lives in
-`docs/features/20261001_prepare_using_claude_design_system_in_this_app.md`.
+- **Workspace:** project groups, projects with lists, items with subitems, labels, assignees, watchers,
+  relations, recurrence, cover images and attachments; List, Board and Calendar views with filters, sorts
+  and saved views; the item overlay with a Tiptap description editor, comments and activity.
+- **Around it:** the account Inbox (capture, filing, notifications as items), search and the command
+  palette, Archive and Trash with Undo, import and Markdown/CSV/JSON export, Settings and Account pages.
+- **Accounts:** browser guest workspaces and email/password accounts (Better Auth in our own Postgres),
+  project members and roles, invite links, API tokens.
+- **Stack:** React + Vite, Base UI, Zustand + TanStack Query with optimistic mutations, Hono typed routes
+  with the RPC client, zod, Drizzle + PostgreSQL. API errors share one shape (`src/shared/errors.ts`).
+
+Genuine limitations, so nobody plans around features that are not there:
+
+- **No email is sent.** Invites are links the admin copies and sends; password reset is not finished.
+- **No live sync.** Other people's changes appear when a view refetches (on focus, navigation or after an
+  edit), not instantly. Edits made offline wait in this tab's memory and are lost if it closes first.
+- **One instance.** Attachment bytes live on local disk (`UPLOAD_DIR`) and the upload-cleanup loop runs
+  in the API process, so run one API process with a persistent volume.
+- **Not yet:** OpenAPI, background job runner, complete export round-trips, large-project virtualization,
+  Linux screenshot baselines in CI. Planning lives in `todo.md`.
 
 ## Local development
 
@@ -100,7 +112,42 @@ npm run dev                 # API on :3000 (applies migrations and seeds sample 
 
 Other scripts: `npm run check` (typecheck + lint + tests), `npm run test` (Vitest), `npm run typecheck`, `npm run lint` (oxlint with
 the design-adherence plugin in `tools/lint/`, stylelint for component CSS), `npm run build`,
-`npm run db:generate` (after editing `src/server/db/schema.ts`), `npm run db:studio`.
+`npm run db:generate` (after editing `src/server/db/schema.ts`), `npm run db:studio`, `npm start` (see Production).
+
+## Production
+
+The API serves the built client itself, so one Node process behind a TLS reverse proxy (Dokploy, Caddy,
+nginx) is the whole deployment.
+
+```sh
+npm ci
+npm run build                 # client → dist/, API → dist-server/index.js
+npm run db:migrate            # apply migrations (needs dev dependencies), or set MIGRATE_ON_START=true
+npm start                     # NODE_ENV=production node dist-server/index.js
+```
+
+Configuration comes from the environment (`.env` is read if present; real variables win):
+
+| Variable | Production |
+|---|---|
+| `DATABASE_URL` | Required. A persistent PostgreSQL database. |
+| `APP_URL` | Required. The public `https://` URL; cookies, trusted origins and invite links use it. |
+| `BETTER_AUTH_SECRET` | Required. 32+ random characters (`openssl rand -base64 32`). Rotating it signs everyone out. |
+| `UPLOAD_DIR` | Attachment bytes. Mount a **persistent volume** here and back it up with the database. |
+| `PORT` | Default 3000. |
+| `MIGRATE_ON_START` | Default false. `true` applies pending migrations on boot with the runtime migrator. |
+| `SEED_ON_START` | Must stay false: the seed creates demo accounts with a published password. |
+| `CLIENT_DIR` | Default `dist`. Empty serves the API only (when a CDN or proxy serves the client). |
+
+With `NODE_ENV=production` the API **refuses to start** and lists what to fix when `APP_URL` or
+`BETTER_AUTH_SECRET` is missing, the secret is a development or example value or shorter than 32
+characters, `APP_URL` is plain http outside localhost, or the seed is on. Development keeps its defaults.
+
+Every path outside `/api` answers with the client, so deep links such as `/p/<project>` open the app; hashed
+`/assets/*` are cached for a year and `index.html` revalidates. On `SIGTERM` the API stops accepting
+connections, finishes open requests (up to 10 s) and closes the database pool, so a rolling restart drops
+nothing. Each server fault or refused database write is logged as one JSON line with the `requestId` the client shows as "ref …".
+For a local smoke test: `npm run build && APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) npm start`.
 
 ## Quality gates
 

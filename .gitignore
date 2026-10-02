@@ -43,6 +43,7 @@ CLAUDE.md
 
 # Build output
 dist/
+dist-server/
 build/
 .next/
 out/
