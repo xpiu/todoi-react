@@ -13,6 +13,12 @@
   .td-board > * {
     flex-shrink: 0;
   }
+  .td-board-tail {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+  }
   .td-board-addlist {
     display: inline-flex;
     align-items: center;

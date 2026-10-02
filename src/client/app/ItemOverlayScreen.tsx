@@ -14,8 +14,10 @@ import { useProjectPicker } from "./useProjectPicker";
 import type { PickableItem } from "../design/core/ItemPicker";
 import { formatDate, formatRelative, toISO } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
+import type { AttachmentFile } from "../design/overlay/Attachments";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { useDrafts } from "./drafts";
+import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
 import { quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
 import { peopleOf, useCurrentUser, type ItemContainer } from "./session";
@@ -55,6 +57,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const removeRelation = useRemoveRelation(itemId);
   const labelOps = useLabelMutations(projectId ?? "");
   const files = useAttachmentMutations(itemId, projectId);
+  const uploads = usePendingUploads(itemId);
   const actions = useProjectActions(projectId, project, items, labels);
   const picker = useProjectPicker(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
@@ -91,7 +94,9 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
     cover: coverOf(item),
     watching: details.data?.watching ?? false,
     subitems: subitems.map((s) => ({ id: s.id, text: s.title, done: s.done, itemId: keyOf(s, project.keyPrefix) })),
-    attachments: (details.data?.attachments ?? []).map((a) => ({ id: a.id, name: a.name, size: a.size, mime: a.mime, src: attachmentUrl(a.id), url: attachmentUrl(a.id, true), meta: `Added ${formatDate(a.createdAt, { year: "auto", today: now })}`, isCover: item.cover?.attachmentId === a.id })),
+    attachments: (details.data?.attachments ?? []).map((a): AttachmentFile => ({ id: a.id, name: a.name, size: a.size, mime: a.mime, src: attachmentUrl(a.id), url: attachmentUrl(a.id, true), meta: `Added ${formatDate(a.createdAt, { year: "auto", today: now })}`, isCover: item.cover?.attachmentId === a.id })).concat(
+      uploads.map((u) => ({ id: u.key, name: u.file.name, size: u.file.size, mime: u.file.type, progress: u.error ? undefined : u.progress, error: u.error, retriable: u.retriable })),
+    ),
   };
   const exportCtx = { prefix: project.keyPrefix, labels, people, listName: (id: string) => listName(id) ?? "" };
   const comments = (details.data?.comments ?? []).map((c) => {
@@ -200,16 +205,14 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
         }
       }}
       onAddFiles={(fs, opts) =>
-        files.upload.mutate(fs, {
-          onSuccess: (made) => {
-            if (opts?.cover && made[0]) patch({ cover: { attachmentId: made[0].id } });
-            notify({ message: made.length === 1 ? `Attached ${quote(made[0]!.name)}` : `Attached ${made.length} files`, icon: "paperclip" });
-          },
-          onError: (e) => notify({ message: e.message, icon: "circle-alert" }),
+        void attachFiles(item.id, projectId, fs).then((made) => {
+          if (opts?.cover && made[0]) patch({ cover: { attachmentId: made[0].id } });
         })
       }
       onAttachmentAction={(id, action, arg) => {
-        if (action === "open") window.open(attachmentUrl(id), "_blank", "noopener");
+        if (action === "retry") void retryUploads([id]);
+        else if (action === "dismiss") dismissUpload(id);
+        else if (action === "open") window.open(attachmentUrl(id), "_blank", "noopener");
         else if (action === "download") window.open(attachmentUrl(id, true), "_blank", "noopener");
         else if (action === "rename" && arg) files.rename.mutate({ id, name: arg });
         else if (action === "delete") {

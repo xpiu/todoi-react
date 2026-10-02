@@ -16,6 +16,8 @@ export interface ToastState {
   history?: string;
   /** Label of the action button @default "Undo" */
   actionLabel?: string;
+  /** The action is not an undo (e.g. Retry), so the toast does not offer it under Z */
+  standalone?: boolean;
 }
 
 interface FeedbackStore {

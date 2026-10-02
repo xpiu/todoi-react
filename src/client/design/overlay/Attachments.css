@@ -101,8 +101,22 @@
   .td-att-actions:has([aria-expanded="true"]) {
     opacity: 1;
   }
-  html[data-touch="true"] .td-att-actions {
+  html[data-touch="true"] .td-att-actions,
+  .td-att-actions.is-visible {
     opacity: 1;
+  }
+  .td-att-actions .td-btn {
+    height: 28px;
+  }
+  .td-att-error {
+    color: var(--danger);
+  }
+  .td-att-error span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .td-att-row[data-failed] .td-att-name {
+    color: var(--ink-600);
   }
   html[data-touch="true"] .td-att-row {
     padding: var(--sp-2);

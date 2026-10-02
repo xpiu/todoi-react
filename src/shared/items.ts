@@ -44,6 +44,8 @@ export const createItemSchema = z.object({
   description: z.string().max(100_000).optional(),
   labelIds: z.array(idSchema).max(50).optional(),
   assigneeIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  /** Where a top-level item goes among its list's items @default "bottom" (subitems always go last) */
+  position: z.enum(["top", "bottom"]).optional(),
 });
 export type CreateItemInput = z.infer<typeof createItemSchema>;
 

@@ -13,6 +13,15 @@
     flex-direction: column;
     gap: var(--sp-5);
   }
+  .td-listview-tail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .td-listview-tail > .td-listview-addlist {
+    flex: 1;
+  }
   .td-listview-addlist {
     display: inline-flex;
     align-items: center;

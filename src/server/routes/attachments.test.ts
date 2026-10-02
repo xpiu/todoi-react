@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { workspaceAccess } from "../access";
 import { attachments, items, lists, members, projects } from "../db/schema";
-import { attachmentsRoute } from "./attachments";
+import { MAX_UPLOAD_REQUEST_BYTES } from "../../shared/uploads";
+import { attachmentsRoute, itemAttachmentsRoute } from "./attachments";
 
 const state = vi.hoisted(() => ({
   member: true,
@@ -12,8 +13,17 @@ const state = vi.hoisted(() => ({
   mime: "text/html",
   read: vi.fn(),
 }));
+const store = vi.hoisted(() => vi.fn());
+vi.mock("../services/attachments", async (original) => ({ ...(await original<object>()), storeAttachments: store }));
 vi.mock("../auth", () => ({ maybeViewer: () => ({ userId: "viewer" }), viewerOf: () => ({ userId: "viewer" }) }));
-vi.mock("../services/uploads", () => ({ readUpload: (key: string) => { state.read(key); return state.bytes; }, saveUpload: vi.fn(), removeUpload: vi.fn() }));
+vi.mock("../services/uploads", () => ({
+  openUpload: (key: string) => {
+    state.read(key);
+    return { size: state.bytes.byteLength, head: state.bytes.subarray(0, 16), stream: new Blob([state.bytes]).stream() };
+  },
+  saveUpload: vi.fn(),
+  removeUpload: vi.fn(),
+}));
 // Exercise the real access middleware and file handler, with mutable persistence fixtures.
 vi.mock("../db", () => ({ db: { select: () => ({ from: (table: unknown) => ({ where: async () => {
   if (table === attachments) return state.present ? [{ id: "file", itemId: "item", storageKey: "stored", name: "owner's file.html", mime: state.mime }] : [];
@@ -82,5 +92,33 @@ describe("attachment responses", () => {
     state.present = false;
     expect((await app.request("/api/attachments/file/file")).status).toBe(404);
     expect(state.read).not.toHaveBeenCalled();
+  });
+});
+
+describe("attachment uploads", () => {
+  const uploads = new Hono().route("/api/items", itemAttachmentsRoute);
+  const post = (body: BodyInit, headers: Record<string, string> = {}) =>
+    uploads.request(new Request("http://test/api/items/item/attachments", { method: "POST", body, headers: { "content-type": "multipart/form-data; boundary=x", ...headers }, duplex: "half" } as RequestInit));
+
+  beforeEach(() => store.mockReset());
+
+  it("refuses a declared oversized request without reading it", async () => {
+    let pulled = 0;
+    const body = new ReadableStream({ pull: (c) => { pulled++; c.enqueue(new Uint8Array(1024)); } });
+    const response = await post(body, { "content-length": String(MAX_UPLOAD_REQUEST_BYTES + 1) });
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "Uploads are limited to 25 MB per file" });
+    expect(pulled).toBeLessThanOrEqual(1);
+    expect(store).not.toHaveBeenCalled();
+  });
+
+  it("stops reading an undeclared stream once it passes the limit", async () => {
+    let sent = 0;
+    const chunk = new Uint8Array(1024 * 1024);
+    const body = new ReadableStream({ pull: (c) => { sent += chunk.byteLength; if (sent > 100 * 1024 * 1024) c.close(); else c.enqueue(chunk); } });
+    const response = await post(body, { "transfer-encoding": "chunked" });
+    expect(response.status).toBe(413);
+    expect(sent).toBeLessThan(MAX_UPLOAD_REQUEST_BYTES + 4 * chunk.byteLength);
+    expect(store).not.toHaveBeenCalled();
   });
 });

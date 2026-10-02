@@ -11,6 +11,8 @@ export interface BoardViewProps extends Pick<KeyNavProps, "onMoveItem" | "onItem
   onAddList?: () => void;
   /** @default true */
   showAddList?: boolean;
+  /** Beside "Add another list" (the hidden-lists menu) */
+  after?: ReactNode;
   /** Spread onto the root: the drag-and-drop handlers of the view */
   rootProps?: Record<string, unknown>;
   ref?: Ref<HTMLDivElement>;
@@ -18,15 +20,20 @@ export interface BoardViewProps extends Pick<KeyNavProps, "onMoveItem" | "onItem
   className?: string;
 }
 
-export function BoardView({ children, onAddList, showAddList = true, onMoveItem, onItemKey, onItemSelect, rootProps, ref, style, className }: BoardViewProps) {
+export function BoardView({ children, onAddList, showAddList = true, after, onMoveItem, onItemKey, onItemSelect, rootProps, ref, style, className }: BoardViewProps) {
   return (
     <KeyNav ref={ref} className={["td-board", className ?? ""].join(" ").trim()} style={style} itemSelector=".td-card" columnSelector=".td-list" onMoveItem={onMoveItem} onItemKey={onItemKey} onItemSelect={onItemSelect} {...rootProps}>
       {children}
-      {showAddList ? (
-        <button type="button" className="td-board-addlist" onClick={onAddList}>
-          <Icon name="plus" size={16} />
-          Add another list
-        </button>
+      {showAddList || after ? (
+        <div className="td-board-tail">
+          {showAddList ? (
+            <button type="button" className="td-board-addlist" onClick={onAddList}>
+              <Icon name="plus" size={16} />
+              Add another list
+            </button>
+          ) : null}
+          {after}
+        </div>
       ) : null}
     </KeyNav>
   );

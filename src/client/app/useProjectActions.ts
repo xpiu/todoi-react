@@ -49,6 +49,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const updateList = useUpdateList(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
   const lists = project.lists.filter((l) => !l.hidden);
+  const hiddenLists = project.lists.filter((l) => l.hidden);
   const people: Person[] = useMemo(() => peopleOf(project), [project]);
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name ?? "the list";
   const byId = (id: string) => items.find((x) => x.id === id);
@@ -225,6 +226,20 @@ export function useProjectActions(projectId: string | null, project: ItemContain
 
   const addList = (name?: string, statusRole?: ItemStatus | null) => createList.mutate({ id: newId(), name: name ?? `List ${project.lists.length + 1}`, statusRole: statusRole ?? undefined });
 
+  /** Hiding is project-wide (shared project data), so the toast says so and Undo shows it again. */
+  const hideList = (listId: string) =>
+    updateList.mutate(
+      { id: listId, hidden: true },
+      { onSuccess: () => notify({ message: `Hid ${quote(listName(listId))} for everyone in this project`, history: `Hid ${quote(listName(listId))}`, icon: "eye-off", restore: () => updateList.mutateAsync({ id: listId, hidden: false }).then(() => undefined) }) },
+    );
+  const showLists = (ids: string[]) => ids.forEach((id) => updateList.mutate({ id, hidden: false }));
+  /** Set a list's Status role; `applyToExisting` also sets it on the list's live items in the same request. */
+  const setListRole = (listId: string, statusRole: ItemStatus | null, applyToExisting = false) =>
+    updateList.mutate(
+      { id: listId, statusRole, ...(applyToExisting ? { applyToExisting } : {}) },
+      { onSuccess: (r) => { if (applyToExisting) notify({ message: `Set ${count(r.rewritten, "item")} in ${quote(listName(listId))} to ${statusName(statusRole)}`, icon: "milestone" }); } },
+    );
+
   /** The BulkBar's actions for the current selection. */
   const bulkActions = (selectedIds: string[]): BulkAction[] => {
     const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
@@ -277,5 +292,5 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     return false;
   };
 
-  return { lists, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer };
+  return { lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer };
 }

@@ -255,7 +255,7 @@ export function AppShell() {
   };
 
   return (
-    <ToastPortalProvider toast={toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}>
+    <ToastPortalProvider toast={toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo && !toast.standalone ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}>
     <div className="td-app" data-sidebar-side={ap.sidebarLeft ? "left" : "right"}>
       <TopNavbar
         title={title}

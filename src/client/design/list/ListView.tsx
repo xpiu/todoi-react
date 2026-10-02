@@ -11,6 +11,8 @@ export interface ListViewProps extends Pick<KeyNavProps, "onMoveItem" | "onItemK
   onAddList?: () => void;
   /** @default true */
   showAddList?: boolean;
+  /** Beside "Add another list" (the hidden-lists menu) */
+  after?: ReactNode;
   /** Spread onto the root: the drag-and-drop handlers of the view */
   rootProps?: Record<string, unknown>;
   ref?: Ref<HTMLDivElement>;
@@ -18,16 +20,21 @@ export interface ListViewProps extends Pick<KeyNavProps, "onMoveItem" | "onItemK
   className?: string;
 }
 
-export function ListView({ children, onAddList, showAddList = true, onMoveItem, onItemKey, onItemSelect, rootProps, ref, style, className }: ListViewProps) {
+export function ListView({ children, onAddList, showAddList = true, after, onMoveItem, onItemKey, onItemSelect, rootProps, ref, style, className }: ListViewProps) {
   return (
     <KeyNav ref={ref} className={["td-listview", className ?? ""].join(" ").trim()} style={style} itemSelector=".td-lrow" onMoveItem={onMoveItem} onItemKey={onItemKey} onItemSelect={onItemSelect} {...rootProps}>
       <div className="td-listview-inner">
         {children}
-        {showAddList ? (
-          <button type="button" className="td-listview-addlist" onClick={onAddList}>
-            <Icon name="plus" size={16} />
-            Add another list
-          </button>
+        {showAddList || after ? (
+          <div className="td-listview-tail">
+            {showAddList ? (
+              <button type="button" className="td-listview-addlist" onClick={onAddList}>
+                <Icon name="plus" size={16} />
+                Add another list
+              </button>
+            ) : null}
+            {after}
+          </div>
         ) : null}
       </div>
     </KeyNav>

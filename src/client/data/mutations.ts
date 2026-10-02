@@ -6,8 +6,9 @@ import { nanoid } from "nanoid";
 import type { CreateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
 import type { CreateListInput, UpdateListInput } from "../../shared/projects";
 import { useFeedback } from "../app/feedback";
-import { applyCompletion } from "../../shared/completion";
-import { api, errorMessage, unwrap, type Item, type MoveResult, type UpdatedItem } from "./api";
+import { applyCompletion, statusChange } from "../../shared/completion";
+import type { ItemStatus } from "../../shared/item-status";
+import { api, errorMessage, unwrap, type Item, type MoveResult, type ProjectDetail, type UpdatedItem } from "./api";
 import { keys } from "./queries";
 
 export const newId = () => nanoid();
@@ -42,19 +43,23 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
   });
 }
 
-function placeholder(vars: CreateItemInput, siblings: Item[], projectId: string | null): Item {
+/**
+ * The item a create will produce, predicted by the API's own rules so nothing jumps when the refetch lands:
+ * a Status from the list's role (and done in a Done list), and the place among the list's top-level
+ * items (`placeAmongSiblings` on the server: top or end, siblings renumbered). Subitems go last.
+ */
+export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: { listId: string; projectId: string | null; statusRole: ItemStatus | null }): Item[] {
   const now = new Date().toISOString();
-  return {
+  const state = statusChange({ status: null, done: false, priorStatus: null }, vars.status === undefined ? dest.statusRole : vars.status);
+  const item: Item = {
     id: vars.id,
     title: vars.title,
-    listId: vars.listId ?? siblings[0]?.listId ?? "",
-    projectId,
+    listId: dest.listId,
+    projectId: dest.projectId,
     parentItemId: vars.parentItemId ?? null,
     keyNumber: null,
     description: vars.description ?? null,
-    status: vars.status ?? null,
-    priorStatus: null,
-    done: false,
+    ...state,
     priority: vars.priority ?? null,
     startDate: vars.startDate ?? null,
     dueDate: vars.dueDate ?? null,
@@ -64,7 +69,7 @@ function placeholder(vars: CreateItemInput, siblings: Item[], projectId: string 
     cover: null,
     notification: null,
     unread: false,
-    position: siblings.filter((s) => s.listId === vars.listId && !s.parentItemId).length,
+    position: 0,
     createdBy: null,
     archivedAt: null,
     deletedAt: null,
@@ -74,17 +79,32 @@ function placeholder(vars: CreateItemInput, siblings: Item[], projectId: string 
     assigneeIds: vars.assigneeIds ?? [],
     attachmentCount: 0,
   };
+  if (vars.parentItemId) return [...items, { ...item, position: Math.max(-1, ...items.filter((it) => it.listId === dest.listId).map((it) => it.position)) + 1 }];
+  const siblings = items.filter((it) => it.listId === dest.listId && !it.parentItemId).sort((x, y) => x.position - y.position || x.createdAt.localeCompare(y.createdAt));
+  const at = vars.position === "top" ? 0 : siblings.length;
+  const renumbered = new Map(siblings.map((it, i) => [it.id, i < at ? i : i + 1]));
+  return [...items.map((it) => (renumbered.has(it.id) ? { ...it, position: renumbered.get(it.id)! } : it)), { ...item, position: at }];
 }
 
 export function useCreateItem(scope: ItemsScope) {
+  const qc = useQueryClient();
   const projectId = "projectId" in scope ? scope.projectId : null;
+  const destOf = (vars: CreateItemInput, cached: Item[]) => {
+    // Without a list the API files the item in the caller's Inbox: the list the Inbox screen's items are in.
+    const listId = vars.listId ?? cached[0]?.listId ?? ("listId" in scope ? scope.listId : "");
+    const list = projectId ? qc.getQueryData<ProjectDetail>(keys.project(projectId))?.lists.find((l) => l.id === listId) : undefined;
+    return { listId, projectId, statusRole: list?.statusRole ?? null };
+  };
   return useOptimistic(
     scope,
-    (vars: CreateItemInput & { position?: "top" | "bottom" }) => api.api.items.$post({ json: vars }).then((r) => unwrap<Item>(r)),
-    (items, vars) => {
-      const it = placeholder(vars, items, projectId);
-      return vars.position === "top" ? [{ ...it, position: -1 }, ...items] : [...items, it];
-    },
+    // The returned record replaces the prediction at once (its key, server timestamps); the refetch follows.
+    (vars: CreateItemInput) =>
+      api.api.items.$post({ json: vars }).then(async (r) => {
+        const made = await unwrap<Item>(r);
+        qc.setQueryData<Item[]>(keys.items(scope), (old) => old?.map((it) => (it.id === made.id ? made : it)));
+        return made;
+      }),
+    (items, vars) => optimisticCreate(items, vars, destOf(vars, items)),
     projectId ? [keys.project(projectId)] : [],
   );
 }
@@ -197,7 +217,8 @@ export function useCreateList(projectId: string) {
 export function useUpdateList(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { id: string } & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<unknown>(r)),
+    // `rewritten`: how many items an applyToExisting role change updated.
+    mutationFn: (vars: { id: string } & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<{ rewritten: number }>(r)),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.project(projectId) });
       void qc.invalidateQueries({ queryKey: keys.items({ projectId }) });

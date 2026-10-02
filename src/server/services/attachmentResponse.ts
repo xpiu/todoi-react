@@ -8,11 +8,12 @@ function previewType(bytes: Uint8Array): string | null {
   return null;
 }
 
-export function attachmentHeaders(bytes: Uint8Array, name: string, download: boolean): Record<string, string> {
-  const mime = previewType(bytes);
+/** `head` is the file's first bytes (16 suffice to recognize a preview type); `size` the whole length. */
+export function attachmentHeaders(head: Uint8Array, size: number, name: string, download: boolean): Record<string, string> {
+  const mime = previewType(head);
   return {
     "Content-Type": mime ?? "application/octet-stream",
-    "Content-Length": String(bytes.byteLength),
+    "Content-Length": String(size),
     // Every retrieval must pass current authorization, including after membership revocation.
     "Cache-Control": "private, no-store",
     "Content-Disposition": `${mime && !download ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(name).replace(/'/g, "%27")}`,

@@ -168,18 +168,21 @@ async function carryRelations(tx: Tx, ids: string[], dest: { projectId: string |
   return gone.length;
 }
 
-/** Shift a list's live top-level items (the indices the views show) to make room for `id` at `position` (or append) and set its own position in `patch`. */
-async function placeAmongSiblings(tx: Tx, id: string, listId: string, position: number | undefined, patch: Partial<Item>) {
+/**
+ * Shift a list's live top-level items (the indices the views show) to make room for `id` at `position` (or
+ * append) and set its own position in `patch`. Moves and creations both place items through here.
+ */
+export async function placeAmongSiblings(tx: Tx, id: string, listId: string, position: number | undefined, patch: Partial<Item>) {
   const siblings = await tx
-    .select({ id: items.id })
+    .select({ id: items.id, position: items.position })
     .from(items)
     .where(and(eq(items.listId, listId), isNull(items.parentItemId), itemIsLive, ne(items.id, id)))
     .orderBy(asc(items.position), asc(items.createdAt));
   const at = position == null ? siblings.length : Math.max(0, Math.min(position, siblings.length));
-  const order = [...siblings.slice(0, at).map((s) => s.id), id, ...siblings.slice(at).map((s) => s.id)];
-  for (let i = 0; i < order.length; i++) {
-    if (order[i] === id) patch.position = i;
-    else await tx.update(items).set({ position: i }).where(eq(items.id, order[i]!));
+  patch.position = at;
+  for (const [i, s] of siblings.entries()) {
+    const next = i < at ? i : i + 1;
+    if (s.position !== next) await tx.update(items).set({ position: next }).where(eq(items.id, s.id));
   }
 }
 
