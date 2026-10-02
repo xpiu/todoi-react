@@ -10,6 +10,7 @@ import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, items } from "../db/schema";
 import { logActivity, quote } from "../services/activity";
+import { attachmentHeaders } from "../services/attachmentResponse";
 import { readUpload, removeUpload, saveUpload } from "../services/uploads";
 
 const idParam = zValidator("param", z.object({ id: z.string().min(1).max(64) }));
@@ -52,12 +53,7 @@ export const attachmentsRoute = new Hono()
     const bytes = await readUpload(row.storageKey);
     if (!bytes) return c.json({ error: "File missing" }, 404);
     const download = c.req.query("download") != null;
-    return c.body(bytes, 200, {
-      "Content-Type": row.mime ?? "application/octet-stream",
-      "Content-Length": String(bytes.byteLength),
-      "Cache-Control": "private, max-age=31536000, immutable",
-      "Content-Disposition": `${download ? "attachment" : "inline"}; filename*=UTF-8''${encodeURIComponent(row.name)}`,
-    });
+    return c.body(bytes, 200, attachmentHeaders(bytes, row.name, download));
   })
   .patch("/:id", idParam, zValidator("json", z.object({ name: z.string().trim().min(1).max(200) })), async (c) => {
     const [row] = await db.update(attachments).set({ name: safeName(c.req.valid("json").name) }).where(eq(attachments.id, c.req.valid("param").id)).returning();
