@@ -22,7 +22,10 @@ async function addThroughGui(page: Page, title: string) {
   await page.getByRole("button", { name: "Add an item", exact: true }).last().click();
   const input = page.getByRole("textbox", { name: "New item in To do", exact: true });
   await input.fill(title);
+  // The row appears optimistically; callers read the API next, so wait for the server to have it.
+  const created = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/api/items");
   await input.press("Enter");
+  expect((await created).status()).toBe(201);
   await input.press("Escape");
   await expect(page.getByText(title, { exact: true })).toBeVisible();
 }
