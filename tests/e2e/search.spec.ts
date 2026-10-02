@@ -64,11 +64,11 @@ test("the top-bar search opens hidden, nested, Inbox and other-project items", a
   await overlayOpen(page, `Zephyr elsewhere ${f.tag}`);
   await page.keyboard.press("Escape");
 
-  // The Inbox: its row comes into view.
+  // The Inbox: the item opens there.
   await field(page).fill(`inbox ${f.tag}`);
   await results(page).getByRole("option", { name: new RegExp(`Zephyr inbox ${f.tag}`) }).click();
-  await expect(page).toHaveURL(/\/inbox\?item=/);
-  await expect(page.locator(`[data-drag-id="${f.inbox}"]`)).toBeFocused();
+  await expect(page).toHaveURL(new RegExp(`/inbox\\?item=${f.inbox}$`));
+  await overlayOpen(page, `Zephyr inbox ${f.tag}`);
 });
 
 test("an unmatched query says what was searched", async ({ page, fixture: f }) => {

@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import type { ItemPriority } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
 import type { MoveRestore } from "../../shared/items";
-import type { Item, Label, MoveResult, ProjectDetail } from "../data/api";
+import type { Item, Label, MoveResult } from "../data/api";
 import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
 import { formatDate } from "../design/core/dates";
@@ -19,7 +19,7 @@ import { count } from "../design/core/text";
 import { useCompletion } from "./completion";
 import { quote, useFeedback } from "./feedback";
 import { PRIORITY_LABEL, type Person } from "./items";
-import { peopleOf } from "./session";
+import { peopleOf, type ItemContainer } from "./session";
 
 const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
@@ -33,8 +33,9 @@ function mergeRestore(into: MoveRestore, from: MoveRestore | null | undefined) {
 
 export type ProjectActions = ReturnType<typeof useProjectActions>;
 
-export function useProjectActions(projectId: string, project: ProjectDetail, items: Item[], labels: Label[]) {
-  const scope = useMemo(() => ({ projectId }), [projectId]);
+/** `projectId` null: the Inbox (with `inboxContainer`). */
+export function useProjectActions(projectId: string | null, project: ItemContainer, items: Item[], labels: Label[]) {
+  const scope = useMemo(() => (projectId ? { projectId } : { listId: "inbox" }), [projectId]);
   const createItem = useCreateItem(scope);
   const updateItem = useUpdateItem(scope);
   const completion = useCompletion(scope);
@@ -43,8 +44,8 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const restoreItem = useRestoreItem(scope);
   const setLabels = useSetItemLabels(scope);
   const setAssignees = useSetItemAssignees(scope);
-  const createList = useCreateList(projectId);
-  const updateList = useUpdateList(projectId);
+  const createList = useCreateList(projectId ?? "");
+  const updateList = useUpdateList(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
   const lists = project.lists.filter((l) => !l.hidden);
   const people: Person[] = useMemo(() => peopleOf(project), [project]);

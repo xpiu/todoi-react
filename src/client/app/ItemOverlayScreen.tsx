@@ -3,7 +3,7 @@
 // Undoable outcomes (archive, delete, duplicate) raise the one Toast. Spec: DESIGN.md › Item overlay.
 import { useMemo, useRef, useState } from "react";
 
-import { errorMessage, type Item, type Label, type ProjectDetail } from "../data/api";
+import { errorMessage, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
 import { newId, useCreateItem, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
@@ -18,11 +18,12 @@ import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { useDrafts } from "./drafts";
 import { quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
-import { peopleOf, useCurrentUser } from "./session";
+import { peopleOf, useCurrentUser, type ItemContainer } from "./session";
 
 export interface ItemOverlayScreenProps {
-  projectId: string;
-  project: ProjectDetail;
+  /** null: an Inbox item (`project` is then `inboxContainer`) */
+  projectId: string | null;
+  project: ItemContainer;
   items: Item[];
   labels: Label[];
   itemId: string;
@@ -37,8 +38,8 @@ const memberOf = (p: Person) => ({ id: p.id, name: p.name, nickname: p.nickname 
 export function ItemOverlayScreen({ projectId, project, items, labels, itemId, editTitle, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps) {
   const item = items.find((it) => it.id === itemId);
   const details = useItemDetails(itemId);
-  const activity = useActivity(projectId);
-  const scope = useMemo(() => ({ projectId }), [projectId]);
+  const activity = useActivity(projectId ?? "");
+  const scope = useMemo(() => (projectId ? { projectId } : { listId: "inbox" }), [projectId]);
   const updateItem = useUpdateItem(scope);
   const moveItem = useMoveItem(scope);
   const createItem = useCreateItem(scope);
@@ -52,10 +53,10 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const setWatching = useSetWatching(itemId);
   const addRelation = useAddRelation(itemId);
   const removeRelation = useRemoveRelation(itemId);
-  const labelOps = useLabelMutations(projectId);
+  const labelOps = useLabelMutations(projectId ?? "");
   const files = useAttachmentMutations(itemId, projectId);
   const actions = useProjectActions(projectId, project, items, labels);
-  const picker = useProjectPicker(projectId);
+  const picker = useProjectPicker(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
   const [now] = useState(() => new Date());
   const { user } = useCurrentUser();
@@ -125,6 +126,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       projectItems={projectItems}
       autoEditTitle={editTitle}
       today={toISO(now)!}
+      inbox={!projectId}
       onClose={onClose}
       onRename={(title) => saving(updateItem.mutateAsync({ id: item.id, title, quiet: true }))}
       onMoveToList={(listId) => moveItem.mutate({ id: item.id, listId })}
@@ -141,7 +143,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       onDeleteLabel={(l) => labelOps.remove.mutate({ id: l.id })}
       onSetAssignees={(userIds) => setAssignees.mutate({ id: item.id, userIds })}
       onSetCover={(cover) => patch({ cover: cover ? (cover.src ? { attachmentId: cover.attachmentId } : { color: cover.color?.replace(/^var\(--label-([a-z]+)\)$/, "$1") }) : null })}
-      onToggleWatch={(watching) => setWatching.mutate({ watching })}
+      onToggleWatch={projectId ? (watching) => setWatching.mutate({ watching }) : undefined}
       onSetDescription={(description) => saving(updateItem.mutateAsync({ id: item.id, description, quiet: true }))}
       onAddSubitem={(title) => createItem.mutate({ id: newId(), title, listId: item.listId, parentItemId: item.id })}
       onToggleSubitem={(id, done) => actions.setDone(id, done)}

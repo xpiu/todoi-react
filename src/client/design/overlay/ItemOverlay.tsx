@@ -107,6 +107,9 @@ export interface ItemOverlayProps {
   relations: Relation[];
   /** Every other item in the project (relations, subitem moves, "Make subitem of…") */
   projectItems: PickableItem[];
+  /** An Inbox item: "Move to project…" (filing) takes the list select's place; labels and assignees,
+   * which belong to a project, are left out */
+  inbox?: boolean;
   /** The E shortcut: open with the title in edit */
   autoEditTitle?: boolean;
   today?: string;
@@ -370,14 +373,26 @@ export function ItemOverlay(p: ItemOverlayProps) {
       }
       aside={
         <div className="td-aside-stack">
-          <Select block tier="detached" aria-label="Move to list" title="Move to list" value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button> : null}</> : undefined} />
+          {p.inbox ? (
+            p.onMoveToProject ? (
+              <Button variant="outline" icon="folder-input" className="td-aside-btn" onClick={() => setTransfer("move")}>
+                Move to project…
+              </Button>
+            ) : null
+          ) : (
+            <Select block tier="detached" aria-label="Move to list" title="Move to list" value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button> : null}</> : undefined} />
+          )}
           <Select block tier="detached" aria-label="Status" title="Status" value={status} options={statusOpts} width={200} onChange={(v) => p.onSetStatus(v === NO_STATUS ? null : (v as ItemStatus))} footer={<div className="td-menu-note" title="A list can carry a Status role. Editing Status directly never moves the item.">Status is set here or by a linked list move. Editing it never moves the item.</div>} />
           <Select block tier="detached" aria-label="Priority" title="Priority" placeholder="Priority" icon="flag" value={item.priority ?? NO_PRIORITY} width={184} options={[...PRIORITIES.map((pr) => ({ value: pr.value as string, label: pr.label, icon: "flag" as IconName, iconColor: pr.color })), { value: NO_PRIORITY, label: "No priority", icon: "flag-off" as IconName }]} renderValue={(o) => (o && o.value !== NO_PRIORITY ? o.label : "Priority")} onChange={(v) => p.onSetPriority(v === NO_PRIORITY ? null : (v as ItemPriority))} />
           <div className="td-aside-div" />
           <DatesPicker block tier="detached" start={item.start} due={item.due} time={item.dueTime} state={item.dueState ?? (item.done ? "complete" : undefined)} today={p.today} onChange={p.onSetDates} />
           <RepeatPicker block tier="detached" value={item.repeat ?? null} anchor={item.due} today={p.today} onChange={p.onSetRepeat} />
-          <LabelPicker block tier="detached" labels={p.labels} value={item.labelIds} onChange={p.onSetLabels} onCreateLabel={p.onCreateLabel} onEditLabel={p.onEditLabel} onDeleteLabel={p.onDeleteLabel} />
-          <MemberPicker block tier="detached" members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
+          {p.inbox ? null : (
+            <>
+              <LabelPicker block tier="detached" labels={p.labels} value={item.labelIds} onChange={p.onSetLabels} onCreateLabel={p.onCreateLabel} onEditLabel={p.onEditLabel} onDeleteLabel={p.onDeleteLabel} />
+              <MemberPicker block tier="detached" members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
+            </>
+          )}
           <div className="td-aside-div" />
           <Button variant="outline" icon="paperclip" className="td-aside-btn" disabled={!p.onAddFiles} onClick={() => pickerRef.current?.()}>
             Attachment

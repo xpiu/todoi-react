@@ -1,26 +1,15 @@
 // Guest work stays private and survives both registration and an existing-account login.
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
-import { loadEnvFile } from "node:process";
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
 import { Pool } from "pg";
 
-import { checkA11y } from "./helpers";
+import { checkA11y, trackAccounts } from "./helpers";
 
-if (!process.env.DATABASE_URL) loadEnvFile(".env");
 const password = "guest-test-password";
-const ownedUsers = new Set<string>();
-const responses: Promise<void>[] = [];
-function watch(context: BrowserContext) {
-  context.on("response", (response) => {
-    if (!/\/api\/auth\/(sign-in|sign-up|get-session)/.test(response.url())) return;
-    responses.push(response.json().then((data) => { if (data?.user?.id) ownedUsers.add(data.user.id); }).catch(() => undefined));
-  });
-}
+const { watch, own } = trackAccounts(test);
 async function session(page: Page) {
   const data = await (await page.request.get("/api/auth/get-session")).json();
-  ownedUsers.add(data.user.id);
+  own(data.user.id);
   return data.user as { id: string; isAnonymous: boolean; email: string };
 }
 async function workspace(page: Page) {
@@ -38,34 +27,6 @@ async function addThroughGui(page: Page, title: string) {
   await expect(page.getByText(title, { exact: true })).toBeVisible();
 }
 
-test.beforeEach(({ context }) => { ownedUsers.clear(); responses.length = 0; watch(context); });
-test.afterEach(async () => {
-  await Promise.all(responses);
-  if (!ownedUsers.size) return;
-  // Remove only identities created by these tests, their workspaces, and their uploaded bytes.
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const client = await pool.connect();
-  try {
-    await client.query("begin");
-    const ids = [...ownedUsers];
-    const { rows: ps } = await client.query("select id from projects where group_id in (select id from groups where owner_id = any($1))", [ids]);
-    const projectIds = ps.map((p) => p.id);
-    const { rows: files } = await client.query("select storage_key from attachments where item_id in (select id from items where project_id = any($1) or list_id in (select id from lists where user_id = any($2)))", [projectIds, ids]);
-    await client.query("delete from items where project_id = any($1) or list_id in (select id from lists where user_id = any($2))", [projectIds, ids]);
-    for (const table of ["activity", "saved_views", "labels", "invites", "lists", "members"]) {
-      await client.query(`delete from ${table} where project_id = any($1)`, [projectIds]);
-    }
-    await client.query("delete from projects where id = any($1)", [projectIds]);
-    await client.query("delete from lists where user_id = any($1)", [ids]);
-    await client.query("delete from groups where owner_id = any($1)", [ids]);
-    await client.query("delete from users where id = any($1)", [ids]);
-    await client.query("commit");
-    await Promise.all(files.map((f) => rm(join(process.env.UPLOAD_DIR ?? ".data/uploads", f.storage_key), { force: true })));
-  } catch (error) {
-    await client.query("rollback");
-    throw error;
-  } finally { client.release(); await pool.end(); }
-});
 
 test("new browser gets an empty, editable private workspace; avatar and /account expose authentication", async ({ page }) => {
   await page.goto("/");

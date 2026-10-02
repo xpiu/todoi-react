@@ -13,7 +13,7 @@ export function useAttachmentMutations(itemId: string, projectId: string | null)
   const qc = useQueryClient();
   const settle = () => {
     void qc.invalidateQueries({ queryKey: keys.itemDetails(itemId) });
-    if (projectId) void qc.invalidateQueries({ queryKey: keys.items({ projectId }) });
+    void qc.invalidateQueries({ queryKey: keys.items(projectId ? { projectId } : { listId: "inbox" }) });
     void qc.invalidateQueries({ queryKey: ["activity"] });
   };
   const upload = useMutation({

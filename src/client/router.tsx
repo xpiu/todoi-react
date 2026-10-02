@@ -57,8 +57,8 @@ export const projectRoute = createRoute({
   component: ProjectScreen,
 });
 
-// `item`: an Inbox item to bring into view (search results, notification links).
-export const inboxRoute = createRoute({ getParentRoute: () => appRoute, path: "/inbox", component: InboxScreen, validateSearch: (search: Record<string, unknown>) => z.object({ item: z.string().optional().catch(undefined) }).parse(search) });
+// `item`: the open Inbox item (overlay; `edit` opens its title for renaming); `capture`: open the quick-add field.
+export const inboxRoute = createRoute({ getParentRoute: () => appRoute, path: "/inbox", component: InboxScreen, validateSearch: (search: Record<string, unknown>) => z.object({ item: z.string().optional().catch(undefined), edit: z.boolean().optional().catch(undefined), capture: z.boolean().optional().catch(undefined) }).parse(search) });
 export const projectsRoute = createRoute({ getParentRoute: () => appRoute, path: "/projects", component: ProjectsScreen });
 export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "/groups", component: GroupsScreen });
 export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: "/archive", component: ArchiveScreen, validateSearch: (search: Record<string, unknown>) => z.object({ project: z.string().optional().catch(undefined) }).parse(search) });

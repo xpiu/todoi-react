@@ -42,6 +42,7 @@ import { authClient } from "../auth";
 import { GuestBar } from "../design/auth/GuestBar";
 import { useAppShortcuts } from "./useAppShortcuts";
 import { hitContext, hitKey, useItemSearch, useOpenResult } from "./search";
+import { useInbox } from "./inbox";
 import "./AppShell.css";
 
 const SIDEBAR_KEY = "td-sidebar-open";
@@ -110,6 +111,9 @@ export function AppShell() {
   useEffect(() => setUndoScope(undoScope), [undoScope, setUndoScope]);
 
   const section = location.pathname.split("/")[1] ?? "";
+  // On the Inbox, a row dropped on a sidebar project is filed there.
+  const inbox = useInbox(section === "inbox");
+  const capture = () => void navigate({ to: "/inbox", search: { capture: true } });
   const activeId = projectId ?? (section === "inbox" || section === "projects" || section === "groups" ? section : undefined);
   const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
@@ -271,7 +275,7 @@ export function AppShell() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={setSidebarOpen}
         onCreate={(kind) => {
-          if (kind === "item") void navigate({ to: "/inbox" });
+          if (kind === "item") capture();
           else if (kind === "project") lifecycle.openNewProject(project.data?.groupId);
           else if (kind === "group") lifecycle.openNewGroup();
           else if (kind === "list" && projectId && project.data) createList.mutate({ id: newId(), name: `List ${project.data.lists.length + 1}` });
@@ -297,8 +301,9 @@ export function AppShell() {
           onNavAdd={(id) => {
             if (id === "projects") lifecycle.openNewProject(project.data?.groupId);
             else if (id === "groups") lifecycle.openNewGroup();
-            else if (id === "inbox") void navigate({ to: "/inbox" });
+            else if (id === "inbox") capture();
           }}
+          onItemDrop={section === "inbox" ? (projectId, itemId) => void inbox.fileTo(itemId, projectId) : undefined}
           onProjectRename={(id, name) => pm.updateProject.mutate({ id, name })}
           onProjectIconChange={(id, icon) => pm.updateProject.mutate({ id, icon })}
           onProjectAction={(id, action) => {
