@@ -3,9 +3,9 @@
 // "YYYY-MM-DD" strings at the edges; times are "HH:MM".
 // Spec: DESIGN.md › Content fundamentals (timestamps), Item editing › Dates, Quick-add grammar.
 
-import { addDays, parseDateValue, pad, toISO, type DateInput } from "../../../shared/dates";
+import { addDays, addMonths, daysBetween, parseDateValue, pad, realDate, shiftISO, toISO, type DateInput } from "../../../shared/dates";
 
-export { addDays, parseDateValue, toISO, type DateInput };
+export { addDays, addMonths, daysBetween, parseDateValue, realDate, shiftISO, toISO, type DateInput };
 
 export type DateFormat = "mdy-text" | "dmy-text" | "iso" | "mdy" | "dmy";
 export interface DateConventions {
@@ -60,6 +60,15 @@ export function formatDate(v: DateInput, { year = "always", today, weekday }: Fo
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const MO = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
+/** The next month/day on or after today; null when it does not exist (Feb 30), Feb 29 waiting for a leap year. */
+function nextDayOf(m0: number, day: number, t: Date): Date | null {
+  for (let y = t.getFullYear(); y <= t.getFullYear() + 4; y++) {
+    const d = realDate(y, m0, day);
+    if (d && d >= t) return d;
+  }
+  return null;
+}
+
 /** The quick-add date grammar: today, tomorrow, fri, next fri, next week, in 3 days, 12 sep, sep 12, 9/12, ISO. */
 export function resolveDate(str: string, today?: DateInput): Date | null {
   const t = startOfToday(today);
@@ -79,29 +88,18 @@ export function resolveDate(str: string, today?: DateInput): Date | null {
       return addDays(t, n);
     }
     if (word === "week" && m[1]) return addDays(t, 7);
-    if (word === "month" && m[1]) {
-      const x = new Date(t);
-      x.setMonth(x.getMonth() + 1);
-      return x;
-    }
+    if (word === "month" && m[1]) return addMonths(t, 1);
     return null;
   }
-  if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s))) return new Date(+m[1]!, +m[2]! - 1, +m[3]!);
+  if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s))) return realDate(+m[1]!, +m[2]! - 1, +m[3]!);
   if ((m = /^(\d{1,2})[ /-]([a-z]{3,})$/.exec(s)) || (m = /^([a-z]{3,})[ /-](\d{1,2})$/.exec(s))) {
     const dayFirst = !isNaN(+m[1]!);
     const day = +(dayFirst ? m[1]! : m[2]!);
     const mon = dayFirst ? m[2]! : m[1]!;
     const mi = MO.findIndex((x) => mon.startsWith(x));
-    if (mi < 0 || day < 1 || day > 31) return null;
-    let d = new Date(t.getFullYear(), mi, day);
-    if (d < t) d = new Date(t.getFullYear() + 1, mi, day);
-    return d;
+    return mi < 0 ? null : nextDayOf(mi, day, t);
   }
-  if ((m = /^(\d{1,2})\/(\d{1,2})$/.exec(s))) {
-    const d = new Date(t.getFullYear(), +m[1]! - 1, +m[2]!);
-    if (d < t) d.setFullYear(d.getFullYear() + 1);
-    return d;
-  }
+  if ((m = /^(\d{1,2})\/(\d{1,2})$/.exec(s))) return nextDayOf(+m[1]! - 1, +m[2]!, t);
   return null;
 }
 
@@ -135,7 +133,7 @@ export function formatTime(t: string | null | undefined): string {
 }
 
 /** "Sep 10 – Sep 12, 2026 · 14:00" / "Sep 12, 2026" / "From Sep 10, 2026" / "". */
-export function formatDateRange(start: DateInput, due: DateInput, time?: string | null, opts: { today?: DateInput } = {}): string {
+export function formatDateRange(start: DateInput, due: DateInput, time?: string | null, opts: Pick<FormatDateOptions, "today" | "year"> = {}): string {
   const s = parseDateValue(start);
   const d = parseDateValue(due);
   let out = "";

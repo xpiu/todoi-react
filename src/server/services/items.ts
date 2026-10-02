@@ -3,7 +3,7 @@
 import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-import type { MoveItemInput, MoveRestore } from "../../shared/items";
+import { dateRangeIssue, type MoveItemInput, type MoveRestore } from "../../shared/items";
 import { db } from "../db";
 import { groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type Project } from "../db/schema";
 import { applyCompletion, statusChange, type Occurrence } from "../../shared/completion";
@@ -14,6 +14,9 @@ import { issueKeyNumbers } from "./projects";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type ItemState = { done?: boolean; status?: Item["status"]; ifDue?: string };
+
+/** An update the item's stored values make invalid (a start after the due it keeps); nothing was written. */
+export class ItemRejected extends Error {}
 
 /**
  * Update an item in one locked transaction: plain fields, then done / Status by the shared completion rules
@@ -28,6 +31,12 @@ export async function updateItem(id: string, state: ItemState, fields: Partial<I
     const stale = state.done === true && !!next.repeatRule && state.ifDue !== undefined && next.dueDate !== state.ifDue;
     const { patch, occurrence } = stale ? { patch: {}, occurrence: null } : applyCompletion(next, state);
     const changes = { ...fields, ...patch };
+    // A time belongs to a due: clearing the due drops it.
+    if (fields.dueDate === null && fields.dueTime === undefined && cur.dueTime) changes.dueTime = null;
+    if ("startDate" in fields || "dueDate" in fields || "dueTime" in fields) {
+      const issue = dateRangeIssue({ ...next, ...changes });
+      if (issue) throw new ItemRejected(issue.message);
+    }
     // Nothing left to write (a retried completion): answer with the item as it is.
     if (!Object.keys(changes).length && lifecycle.archived === undefined && lifecycle.deleted === undefined) return { item: cur, occurrence: null };
     const row = await setItemLifecycle(id, lifecycle, actorId, changes, tx);

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { db } from "../db";
 import { activity, groups, items, lists, members, projects, users } from "../db/schema";
-import { moveItem, updateItem } from "./items";
+import { ItemRejected, moveItem, updateItem } from "./items";
 import { importProject, updateList } from "./projects";
 
 async function fixture() {
@@ -95,5 +95,34 @@ describe("completion on the server", () => {
     expect(state(by("In Done"))).toMatchObject({ status: "DONE", priorStatus: null, done: true });
     await updateItem(by("Finished").id, { done: false }, {}, {}, f.userId);
     expect(state(await row(by("Finished").id))).toMatchObject({ status: "DOING", done: false });
+  });
+});
+
+describe("item dates on the server", () => {
+  it("checks a one-field change against the dates the item keeps, and writes nothing when it fails", async () => {
+    const f = await fixture();
+    await updateItem(f.plain, {}, { startDate: "2026-09-10", dueDate: "2026-09-12", dueTime: "09:00" }, {}, f.userId);
+    await expect(updateItem(f.plain, {}, { startDate: "2026-09-13" }, {}, f.userId)).rejects.toThrow(ItemRejected);
+    await expect(updateItem(f.plain, {}, { dueDate: "2026-09-09" }, {}, f.userId)).rejects.toThrow("The start date must be on or before the due date");
+    expect(await row(f.plain)).toMatchObject({ startDate: "2026-09-10", dueDate: "2026-09-12", dueTime: "09:00" });
+    // A whole-range move (the calendar drag) changes both at once.
+    await updateItem(f.plain, {}, { startDate: "2026-09-13", dueDate: "2026-09-15" }, {}, f.userId);
+    // Clearing the due drops its time; the start alone is fine.
+    await updateItem(f.plain, {}, { dueDate: null }, {}, f.userId);
+    expect(await row(f.plain)).toMatchObject({ startDate: "2026-09-13", dueDate: null, dueTime: null });
+  });
+
+  it("leaves an item whose stored dates break the rules editable in its other fields", async () => {
+    const f = await fixture();
+    await db.update(items).set({ startDate: "2026-06-28", dueDate: "2020-01-10" }).where(eq(items.id, f.plain));
+    await updateItem(f.plain, {}, { title: "Renamed" }, {}, f.userId);
+    expect(await row(f.plain)).toMatchObject({ title: "Renamed" });
+  });
+
+  it("moves a recurring range's start with its due", async () => {
+    const f = await fixture();
+    await updateItem(f.recurring, {}, { startDate: "2026-09-10" }, {}, f.userId);
+    await updateItem(f.recurring, { done: true, ifDue: "2026-09-12" }, {}, {}, f.userId);
+    expect(await row(f.recurring)).toMatchObject({ startDate: "2026-09-17", dueDate: "2026-09-19" });
   });
 });

@@ -44,6 +44,13 @@ describe("resolveDate (quick-add grammar)", () => {
     expect(iso("9/12")).toBe("2026-09-12");
     expect(iso("2026-12-31")).toBe("2026-12-31");
   });
+  it("refuses days that do not exist instead of rolling into the next month", () => {
+    expect(iso("2/31")).toBeNull();
+    expect(iso("31 feb")).toBeNull();
+    expect(iso("2026-02-31")).toBeNull();
+    expect(iso("feb 29")).toBe("2028-02-29");
+    expect(iso("next month", "2026-01-31")).toBe("2026-02-28");
+  });
   it("rejects nonsense", () => {
     expect(resolveDate("whenever", TODAY)).toBeNull();
     expect(resolveDate("32 sep", TODAY)).toBeNull();

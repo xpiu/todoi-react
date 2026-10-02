@@ -40,6 +40,7 @@ import { usePrefs } from "./prefs";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
 import { peopleOf } from "./session";
+import { useToday } from "./today";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import { useResolvedView } from "./useResolvedView";
 import "./screens.css";
@@ -127,7 +128,8 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const picker = useProjectPicker(projectId);
   const anchor = useRef<string | null>(null);
 
-  const ctx = useMemo(() => ({ labels, people: peopleOf(project) }), [labels, project]);
+  const today = useToday();
+  const ctx = useMemo(() => ({ labels, people: peopleOf(project), today }), [labels, project, today]);
   const showCompleted = usePrefs((s) => s.showCompleted);
   const visibleItems = useMemo(() => {
     if (!filters.length && showCompleted) return items;
@@ -143,7 +145,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
     }),
     sort.lists,
   );
-  const rowsOf = (listId: string) => rowsForList(visibleItems, listId, { prefix: project.keyPrefix, labels, people: actions.people, order });
+  const rowsOf = (listId: string) => rowsForList(visibleItems, listId, { prefix: project.keyPrefix, labels, people: actions.people, order, today });
   const allFiltered = filters.length > 0 && lists.length > 0 && lists.every((l) => !l.count) && lists.some((l) => l.total);
   const hiddenCount = lists.reduce((n, l) => n + (l.total - l.count), 0);
 
@@ -412,7 +414,8 @@ function ProjectBoard(props: ViewProps) {
 /** Calendar: dated items (filters apply) on the grid; drag a chip to reschedule; "+" adds an item due that day. */
 function ProjectCalendar({ projectId, project, items, labels, filters, openItem }: ViewProps) {
   const actions = useProjectActions(projectId, project, items, labels);
-  const ctx = useMemo(() => ({ labels, people: peopleOf(project) }), [labels, project]);
+  const today = useToday();
+  const ctx = useMemo(() => ({ labels, people: peopleOf(project), today }), [labels, project, today]);
   const showCompleted = usePrefs((s) => s.showCompleted);
   const calItems = useMemo<CalendarItem[]>(() => {
     const visibleListIds = new Set(actions.lists.map((l) => l.id));
@@ -421,10 +424,10 @@ function ProjectCalendar({ projectId, project, items, labels, filters, openItem 
     return items
       .filter((it) => !it.parentItemId && it.dueDate && (showCompleted || !it.done) && visibleListIds.has(it.listId) && matchesFilters(it, filters, ctx))
       .map((it) => {
-        const row = rowsForList([it, ...(subs.get(it.id) ?? [])], it.listId, { prefix: project.keyPrefix, labels, people: actions.people })[0]!;
+        const row = rowsForList([it, ...(subs.get(it.id) ?? [])], it.listId, { prefix: project.keyPrefix, labels, people: actions.people, today })[0]!;
         return { id: it.id, title: it.title, itemId: row.itemId, labels: row.labels.map((l) => (typeof l === "string" ? { color: l } : l)), done: it.done, due: it.dueDate, start: it.startDate, priority: row.priority, assignees: row.assignees.map((a) => (typeof a === "string" ? { name: a } : a)), subitems: row.subitems.map((s) => ({ id: s.id, title: s.title, itemId: s.itemId, done: s.done })), dueState: row.dueState };
       });
-  }, [items, filters, ctx, showCompleted, actions.lists, actions.people, project.keyPrefix, labels]);
+  }, [items, filters, ctx, showCompleted, actions.lists, actions.people, project.keyPrefix, labels, today]);
   if (!actions.lists.length) return <NoLists actions={actions} />;
-  return <CalendarView items={calItems} onOpenItem={(id) => openItem(id)} onReschedule={actions.reschedule} onAddItem={actions.addItemOn} onToggleDone={actions.setDone} onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)} />;
+  return <CalendarView items={calItems} today={today} onOpenItem={(id) => openItem(id)} onReschedule={actions.reschedule} onAddItem={actions.addItemOn} onToggleDone={actions.setDone} onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)} />;
 }

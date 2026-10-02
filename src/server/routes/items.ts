@@ -8,7 +8,7 @@ import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { statusChange } from "../../shared/completion";
-import { moveItem, placeAmongSiblings, updateItem } from "../services/items";
+import { ItemRejected, moveItem, placeAmongSiblings, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
@@ -89,7 +89,13 @@ export const itemsRoute = new Hono()
         changes.projectId = parent.projectId;
       }
     }
-    const result = await updateItem(id, { done, status, ifDue }, changes, { archived, deleted }, viewerOf(c).userId);
+    let result: Awaited<ReturnType<typeof updateItem>>;
+    try {
+      result = await updateItem(id, { done, status, ifDue }, changes, { archived, deleted }, viewerOf(c).userId);
+    } catch (error) {
+      if (error instanceof ItemRejected) return c.json({ error: error.message }, 400);
+      throw error;
+    }
     if (!result) return c.json({ error: "Not found" }, 404);
     // `occurrence`: the recurring occurrence this request completed, for the client's toast and Undo.
     return c.json({ ...result.item, occurrence: result.occurrence });

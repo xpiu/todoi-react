@@ -1,10 +1,10 @@
 // Calendar model — pure helpers shared by the grid, the day list and the year view. Items land on
 // their due day; an item with a start and a due at least a day apart is a span. Undated items never
 // reach the calendar (the List view is where they live). Spec: DESIGN.md › Views › Calendar.
-import { addDays, parseDateValue, sameDay, toISO } from "../core/dates";
+import { addDays, addMonths, daysBetween, parseDateValue, sameDay, toISO } from "../core/dates";
 
 export type { DateInput } from "../core/dates";
-export { addDays, parseDateValue, sameDay, toISO };
+export { addDays, daysBetween, parseDateValue, sameDay, toISO };
 
 export interface CalendarLabel {
   color: string;
@@ -29,19 +29,18 @@ export interface CalendarItem {
 export type CalendarPeriod = "day" | "week" | "month" | "year";
 export const CALENDAR_PERIODS: ReadonlyArray<CalendarPeriod> = ["day", "week", "month", "year"];
 
-const DAY = 864e5;
-
 /** Monday-based by default (weekStartsOn 1); 0 for Sunday. */
 export const startOfWeek = (d: Date, ws = 1): Date => addDays(d, -((d.getDay() - ws + 7) % 7));
 
+/** A start before the due: drawn as a bar across the days. Counted in calendar days, so a DST night does not shorten it. */
 export const isSpan = (it: Pick<CalendarItem, "start" | "due">): boolean => {
   const st = parseDateValue(it.start), due = parseDateValue(it.due);
-  return !!(st && due && due.getTime() - st.getTime() >= DAY);
+  return !!(st && due && daysBetween(st, due) >= 1);
 };
 
 export const coversDay = (it: Pick<CalendarItem, "start" | "due">, d: Date): boolean => {
   const st = parseDateValue(it.start), due = parseDateValue(it.due);
-  if (st && due && due.getTime() - st.getTime() >= DAY) return d >= st && d <= due;
+  if (st && due && daysBetween(st, due) >= 1) return d >= st && d <= due;
   return sameDay(due, d);
 };
 
@@ -92,7 +91,7 @@ export function placeSpans(spans: Array<{ it: CalendarItem; st: Date; due: Date 
     let lane = 0;
     while ((rows[lane] ?? []).some((x) => !(s.due < x.st || s.st > x.due))) lane++;
     (rows[lane] = rows[lane] ?? []).push(s);
-    out.push({ ...s, lane, c1: Math.max(0, Math.round((Math.max(s.st.getTime(), a.getTime()) - a.getTime()) / DAY)), c2: Math.min(6, Math.round((Math.min(s.due.getTime(), b.getTime()) - a.getTime()) / DAY)), contL: s.st < a, contR: s.due > b });
+    out.push({ ...s, lane, c1: Math.max(0, daysBetween(a, s.st)), c2: Math.min(6, daysBetween(a, s.due)), contL: s.st < a, contR: s.due > b });
   }
   return out;
 }
@@ -103,7 +102,7 @@ export function shiftPeriod(c: Date, period: CalendarPeriod, n: number): Date {
   if (period === "month") d.setMonth(d.getMonth() + n, Math.min(c.getDate(), 28));
   else if (period === "week") d.setDate(d.getDate() + 7 * n);
   else if (period === "day") d.setDate(d.getDate() + n);
-  else d.setFullYear(d.getFullYear() + n);
+  else return addMonths(c, 12 * n);
   return d;
 }
 

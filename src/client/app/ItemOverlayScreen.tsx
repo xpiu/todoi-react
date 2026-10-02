@@ -12,7 +12,7 @@ import { downloadText, fileSlug, itemToMarkdown, itemsToCsv } from "./exportData
 import { useProjectActions } from "./useProjectActions";
 import { useProjectPicker } from "./useProjectPicker";
 import type { PickableItem } from "../design/core/ItemPicker";
-import { formatDate, formatRelative, toISO } from "../design/core/dates";
+import { formatDate, formatRelative } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import type { AttachmentFile } from "../design/overlay/Attachments";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
@@ -20,6 +20,7 @@ import { useDrafts } from "./drafts";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
 import { quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
+import { useToday } from "./today";
 import { peopleOf, useCurrentUser, type ItemContainer } from "./session";
 
 export interface ItemOverlayScreenProps {
@@ -62,6 +63,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const picker = useProjectPicker(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
   const [now] = useState(() => new Date());
+  const today = useToday();
   const { user } = useCurrentUser();
   const people: Person[] = useMemo(() => peopleOf(project), [project]);
   const personOf = (id: string) => people.find((p) => p.id === id);
@@ -87,7 +89,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
     start: item.startDate,
     due: item.dueDate,
     dueTime: item.dueTime,
-    dueState: dueStateOf(item),
+    dueState: dueStateOf(item, today),
     repeat: item.repeatRule,
     labelIds: item.labelIds,
     assigneeIds: item.assigneeIds,
@@ -130,7 +132,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       relations={relations}
       projectItems={projectItems}
       autoEditTitle={editTitle}
-      today={toISO(now)!}
+      today={today}
       inbox={!projectId}
       onClose={onClose}
       onRename={(title) => saving(updateItem.mutateAsync({ id: item.id, title, quiet: true }))}

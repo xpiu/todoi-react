@@ -1,6 +1,6 @@
 // Completion rules, shared so the API applies them and the client predicts them identically
 // (DESIGN.md › Recurring item completion, Lists & Status linking). Pure: no I/O, no zod.
-import { addDays, parseDateValue, toISO, type DateInput } from "./dates";
+import { addDays, addMonths, daysBetween, parseDateValue, shiftISO, toISO, type DateInput } from "./dates";
 import type { ItemStatus } from "./item-status";
 import type { RepeatRule } from "./items";
 
@@ -23,8 +23,9 @@ export function nextOccurrence(rule: RepeatRule | null | undefined, from: DateIn
       if (days.includes(c.getDay()) && (weekIndex(c) - w0) % n === 0) found = c;
     }
     x = found ?? addDays(d, 7 * n);
-  } else if (rule.freq === "monthly") x.setMonth(x.getMonth() + n);
-  else if (rule.freq === "yearly") x.setFullYear(x.getFullYear() + n);
+  } else if (rule.freq === "monthly") x = addMonths(d, n);
+  // Kept inside the month, so a Jan 31 or Feb 29 item does not spill into the next month.
+  else if (rule.freq === "yearly") x = addMonths(d, 12 * n);
   const e = rule.ends;
   const iso = toISO(x)!;
   if (e?.type === "on" && e.date && iso > e.date) return null;
@@ -38,6 +39,8 @@ export interface CompletionFields {
   priorStatus: ItemStatus | null;
   done: boolean;
   dueDate: string | null;
+  /** Moves with the due, so an occurrence keeps its length */
+  startDate?: string | null;
   repeatRule: RepeatRule | null;
   repeatCount: number;
 }
@@ -72,7 +75,8 @@ export function complete(cur: CompletionFields): { patch: Partial<CompletionFiel
     const next = nextOccurrence(cur.repeatRule, cur.dueDate, cur.repeatCount);
     const count = cur.repeatCount + 1;
     const occurrence = { from: cur.dueDate, next, count, ended: !next };
-    return { patch: next ? { dueDate: next, repeatCount: count } : { ...statusChange(cur, "DONE"), repeatCount: count }, occurrence };
+    const startDate = next && cur.startDate ? { startDate: shiftISO(cur.startDate, daysBetween(parseDateValue(cur.dueDate)!, parseDateValue(next)!)) } : {};
+    return { patch: next ? { dueDate: next, ...startDate, repeatCount: count } : { ...statusChange(cur, "DONE"), repeatCount: count }, occurrence };
   }
   return { patch: statusChange(cur, "DONE"), occurrence: null };
 }

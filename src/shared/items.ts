@@ -2,6 +2,7 @@
 // Kept separate from `item-status.ts` so the browser bundle does not need zod.
 import { z } from "zod";
 
+import { isRealISODate } from "./dates";
 import { ITEM_PRIORITIES, RELATION_TYPES } from "./enums";
 import { ITEM_STATUSES } from "./item-status";
 
@@ -10,8 +11,25 @@ export const idSchema = z.string().regex(/^[A-Za-z0-9_-]{21}$/);
 /** @deprecated use idSchema */
 export const itemIdSchema = idSchema;
 
-export const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
-export const timeSchema = z.string().regex(/^\d{2}:\d{2}$/, "HH:MM");
+/** A calendar day that exists: "2026-02-28", never "2026-02-31" (which would roll into March). */
+export const isoDateSchema = z.string().refine(isRealISODate, "Use a real date written as YYYY-MM-DD");
+/** 24-hour "HH:MM", 00:00–23:59. */
+export const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a time from 00:00 to 23:59");
+
+type DateFields = { startDate?: string | null; dueDate?: string | null; dueTime?: string | null };
+/**
+ * The rules an item's dates obey together: the start is on or before the due, and a time belongs to a due.
+ * Checked on the request (create, or both fields in one update) and by the API against the stored item.
+ */
+export function dateRangeIssue({ startDate, dueDate, dueTime }: DateFields): { path: keyof DateFields; message: string } | null {
+  if (startDate && dueDate && startDate > dueDate) return { path: "startDate", message: "The start date must be on or before the due date" };
+  if (dueTime && dueDate === null) return { path: "dueTime", message: "A time needs a due date" };
+  return null;
+}
+const checkDates = (v: DateFields, ctx: z.RefinementCtx) => {
+  const issue = dateRangeIssue(v);
+  if (issue) ctx.addIssue({ code: "custom", path: [issue.path], message: issue.message });
+};
 
 /** Recurrence rule, the shape RepeatPicker edits (src/client/design/core/repeat.ts). */
 export const repeatRuleSchema = z.object({
@@ -46,7 +64,8 @@ export const createItemSchema = z.object({
   assigneeIds: z.array(z.string().min(1).max(64)).max(50).optional(),
   /** Where a top-level item goes among its list's items @default "bottom" (subitems always go last) */
   position: z.enum(["top", "bottom"]).optional(),
-});
+})
+  .superRefine((v, ctx) => checkDates({ ...v, dueDate: v.dueDate ?? null }, ctx));
 export type CreateItemInput = z.infer<typeof createItemSchema>;
 
 export const updateItemSchema = z
@@ -78,7 +97,8 @@ export const updateItemSchema = z
     deleted: z.boolean(),
   })
   .partial()
-  .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
+  .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" })
+  .superRefine(checkDates);
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 
 const userIdSchema = z.string().min(1).max(64);

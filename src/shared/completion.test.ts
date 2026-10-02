@@ -51,3 +51,10 @@ describe("applyCompletion", () => {
     expect(applyCompletion(done, {}).patch).toEqual({});
   });
 });
+
+describe("a recurring range", () => {
+  it("moves its start with its due, keeping the occurrence's length", () => {
+    const r = complete(open({ startDate: "2026-09-10", dueDate: "2026-09-12", repeatRule: { freq: "weekly" } }));
+    expect(r.patch).toEqual({ dueDate: "2026-09-19", startDate: "2026-09-17", repeatCount: 1 });
+  });
+});

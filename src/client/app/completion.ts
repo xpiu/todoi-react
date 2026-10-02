@@ -29,7 +29,7 @@ export function useCompletion(scope: ItemsScope) {
   /** Put an item back exactly as it was before this request. */
   const undo = ({ it, occurrence }: Outcome) =>
     updateItem.mutateAsync(
-      occurrence ? { id: it.id, dueDate: it.dueDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { done: false } : {}) }
+      occurrence ? { id: it.id, dueDate: it.dueDate, startDate: it.startDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { done: false } : {}) }
       : it.done ? { id: it.id, status: "DONE" } : { id: it.id, done: false },
     );
 

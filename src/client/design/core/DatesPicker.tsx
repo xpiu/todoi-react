@@ -157,12 +157,17 @@ export function DatesPicker({
           placeholder={val ? formatDate(val, { year: "auto", today }) : ph}
           aria-label={`${label} date`}
           value={typed[k]}
+          aria-invalid={typed[k].trim() && !g ? true : undefined}
           onFocus={() => setActive(k)}
           onChange={(e) => setTyped((t) => ({ ...t, [k]: e.target.value }))}
           onKeyDown={onKeyDown}
         />
         {g ? (
           <span className="td-dp-preview">{formatDate(g, { weekday: true, year: "auto", today })}</span>
+        ) : typed[k].trim() ? (
+          <span className="td-dp-preview" data-invalid="true">
+            Not a date
+          </span>
         ) : val ? (
           <button type="button" className="td-dp-x" aria-label={`Clear ${label.toLowerCase()} date`} onClick={clear}>
             <Icon name="x" size={12} />
@@ -197,6 +202,7 @@ export function DatesPicker({
                 placeholder="Add a time: 14:30, 2pm"
                 aria-label="Due time"
                 value={typed.time}
+                aria-invalid={typed.time.trim() && !timeGuess ? true : undefined}
                 onFocus={() => setActive("time")}
                 onChange={(e) => setTyped((t) => ({ ...t, time: e.target.value }))}
                 onBlur={() => {
@@ -216,7 +222,7 @@ export function DatesPicker({
               />
               {typed.time && !timeGuess ? (
                 <span className="td-dp-preview" data-invalid="true">
-                  ?
+                  Not a time
                 </span>
               ) : time && !typed.time ? (
                 <button type="button" className="td-dp-x" aria-label="Clear time" onClick={() => emit({ time: null })}>

@@ -9,7 +9,7 @@ import type { MoveRestore } from "../../shared/items";
 import type { Item, Label, MoveResult } from "../data/api";
 import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
-import { formatDate } from "../design/core/dates";
+import { daysBetween, formatDate, formatDateRange, parseDateValue, shiftISO } from "../design/core/dates";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction } from "../design/core/BulkBar";
 import type { QuickAddResult } from "../design/core/quickAdd";
@@ -147,13 +147,16 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     }
   };
 
-  /** Calendar drop: a new due date, with an undo toast. */
-  const reschedule = (id: string, iso: string) => {
+  /** Calendar drop: the item's start and due move together by the days dragged (a range keeps its length); one Undo. */
+  const reschedule = (id: string, from: string, to: string) => {
     const it = byId(id);
-    if (!it || it.dueDate === iso) return;
-    const prev = it.dueDate;
-    updateItem.mutate({ id, dueDate: iso });
-    notify({ message: `Moved ${quote(it.title)} to ${formatDate(iso, { year: "auto" })}`, icon: "calendar", restore: () => updateItem.mutate({ id, dueDate: prev }) });
+    const n = daysBetween(parseDateValue(from)!, parseDateValue(to)!);
+    if (!it || !it.dueDate || !n) return;
+    const prev = { startDate: it.startDate, dueDate: it.dueDate };
+    const next = { startDate: shiftISO(it.startDate, n), dueDate: shiftISO(it.dueDate, n) };
+    updateItem.mutate({ id, ...next });
+    const when = next.startDate && next.startDate !== next.dueDate ? formatDateRange(next.startDate, next.dueDate, null, { year: "auto" }) : formatDate(next.dueDate, { year: "auto" });
+    notify({ message: `Moved ${quote(it.title)} to ${when}`, icon: "calendar", restore: () => updateItem.mutate({ id, ...prev }) });
   };
 
   /** Calendar "+": a fresh item due that day in the first list, undoable (the overlay then names it). */
