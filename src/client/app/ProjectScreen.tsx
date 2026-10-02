@@ -28,7 +28,10 @@ import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
-import { Dialog } from "../design/core/Dialog";
+import { ConfirmDialog, Dialog } from "../design/core/Dialog";
+import { statusById } from "../design/core/statuses";
+import { count } from "../design/core/text";
+import { HiddenListsMenu } from "../design/board/HiddenListsMenu";
 import { ProjectPicker } from "../design/core/ProjectPicker";
 import { useFileDropTargets } from "../design/overlay/Attachments";
 import { attachFiles } from "./uploads";
@@ -118,6 +121,8 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
   const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
+  // A new Status role on a list with items waits for the review: existing items, or future moves only.
+  const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
   const picker = useProjectPicker(projectId);
   const anchor = useRef<string | null>(null);
 
@@ -215,11 +220,44 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       </Dialog>
     </>
   );
+  const requestRole = (list: VisibleList, role: ItemStatus | null) => {
+    if (role === list.statusRole) return;
+    // Removing a role, or a role on an empty list, rewrites nothing: no review needed.
+    if (role && list.total) setRoleReview({ list, role });
+    else actions.setListRole(list.id, role);
+  };
+  const review = roleReview;
+  const roleDialog = (
+    <ConfirmDialog
+      open={!!review}
+      title={review ? `Apply ${statusById(review.role)?.name ?? review.role} to the ${count(review.list.total, "item")} already in “${review.list.name}”?` : ""}
+      body={`Changing a list's Status role never rewrites items on its own. Apply it to ${review?.list.total === 1 ? "this item" : "these items"} in one action, or leave ${review?.list.total === 1 ? "it" : "them"} as they are and use the role for future moves only.`}
+      confirmLabel="Apply to existing items"
+      cancelLabel="Future moves only"
+      onConfirm={() => {
+        setRoleReview(null);
+        if (review) actions.setListRole(review.list.id, review.role, true);
+      }}
+      // Esc, the backdrop and "Future moves only" all keep the role and leave every item as it is.
+      onClose={() => {
+        setRoleReview(null);
+        if (review) actions.setListRole(review.list.id, review.role);
+      }}
+    />
+  );
+  const hiddenMenu = <HiddenListsMenu lists={actions.hiddenLists.map((l) => ({ id: l.id, name: l.name, count: items.filter((it) => it.listId === l.id && !it.parentItemId).length }))} onShow={actions.showLists} />;
   const isSelected = (id: string) => selectedIds.includes(id);
-  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar, isSelected };
+  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
+  const hidden = actions.hiddenLists;
+  if (hidden.length)
+    return (
+      <div className="td-screen-canvas">
+        <EmptyState icon="eye-off" title={hidden.length === 1 ? `“${hidden[0]!.name}” is hidden` : `All ${hidden.length} lists are hidden`} hint="Hidden lists keep their items and are hidden for everyone in this project. Show them again, or add a new list." action={{ label: hidden.length === 1 ? "Show the list" : "Show all lists", icon: "eye", onClick: () => actions.showLists(hidden.map((l) => l.id)) }} secondary={{ label: "Add a list", onClick: () => actions.addList() }} />
+      </div>
+    );
   const three = () => {
     actions.createList.mutate({ id: newId(), name: "To-do", statusRole: "TODO" });
     actions.createList.mutate({ id: newId(), name: "Doing", statusRole: "DOING" });
@@ -252,12 +290,13 @@ function mergeDrag(items: ItemDnd["rootProps"], files: ReturnType<typeof useFile
 }
 
 /** Section / column header callbacks shared by both views. */
-function listCallbacks(actions: ProjectActions, listId: string, selectAll: () => void) {
+function listCallbacks(actions: ProjectActions, list: VisibleList, selectAll: () => void, requestRole: (list: VisibleList, role: ItemStatus | null) => void) {
+  const listId = list.id;
   return {
     onRename: (name: string) => actions.updateList.mutate({ id: listId, name }),
     onIconChange: (icon: IconName | null) => actions.updateList.mutate({ id: listId, icon }),
-    onStatusRoleChange: (role: ItemStatus | null) => actions.updateList.mutate({ id: listId, statusRole: role }),
-    onHide: () => actions.updateList.mutate({ id: listId, hidden: true }),
+    onStatusRoleChange: (role: ItemStatus | null) => requestRole(list, role),
+    onHide: () => actions.hideList(listId),
     onSelectAll: selectAll,
   };
 }
@@ -287,11 +326,11 @@ function ProjectList(props: ViewProps) {
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
     <>
-      <ListView ref={root} onAddList={() => actions.addList()} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps}>
+      <ListView ref={root} onAddList={() => actions.addList()} after={v.hiddenMenu} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps}>
         {v.lists.map((list) => {
           const rows = v.rowsOf(list.id);
           return (
-            <ListSection key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list.id, () => v.onItemSelect(rows.map((r) => r.id), "all"))}>
+            <ListSection key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
               {rows.map((r) => (
                 <ListRow
                   key={r.id}
@@ -329,11 +368,11 @@ function ProjectBoard(props: ViewProps) {
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
     <>
-      <BoardView ref={root} onAddList={() => actions.addList()} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps}>
+      <BoardView ref={root} onAddList={() => actions.addList()} after={v.hiddenMenu} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps}>
         {v.lists.map((list) => {
           const rows = v.rowsOf(list.id);
           return (
-            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed) => actions.addItem(list.id, title, parsed)} {...listCallbacks(actions, list.id, () => v.onItemSelect(rows.map((r) => r.id), "all"))}>
+            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed) => actions.addItem(list.id, title, parsed)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
               {rows.map((r) => {
                 const it = props.items.find((x) => x.id === r.id);
                 return (

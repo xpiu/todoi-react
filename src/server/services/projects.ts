@@ -107,7 +107,8 @@ export async function updateList(id: string, { applyToExisting, ...patch }: Upda
       const rows = await tx
         .update(items)
         .set({ status: list.statusRole, done, priorStatus: done ? sql`case when ${items.done} or ${items.status} = 'DONE' then ${items.priorStatus} else ${items.status} end` : null })
-        .where(and(eq(items.listId, id), isNull(items.parentItemId), isNull(items.deletedAt)))
+        // Exactly the items the review dialog counted: live top-level items (archived ones keep their Status).
+        .where(and(eq(items.listId, id), isNull(items.parentItemId), itemIsLive))
         .returning({ id: items.id });
       rewritten = rows.length;
     }

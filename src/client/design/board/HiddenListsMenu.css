@@ -1,0 +1,26 @@
+@layer components {
+  .td-hiddenlists {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 var(--sp-3);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--chrome-text);
+    opacity: 0.8;
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    cursor: pointer;
+    transition: background var(--duration-base) var(--ease-standard);
+  }
+  .td-hiddenlists:hover,
+  .td-hiddenlists[aria-expanded="true"] {
+    background: var(--chrome-active);
+    opacity: 1;
+  }
+  .td-hiddenlists:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--chrome-border);
+  }
+}

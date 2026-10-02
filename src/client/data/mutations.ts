@@ -216,7 +216,8 @@ export function useCreateList(projectId: string) {
 export function useUpdateList(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { id: string } & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<unknown>(r)),
+    // `rewritten`: how many items an applyToExisting role change updated.
+    mutationFn: (vars: { id: string } & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<{ rewritten: number }>(r)),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.project(projectId) });
       void qc.invalidateQueries({ queryKey: keys.items({ projectId }) });
