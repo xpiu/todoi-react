@@ -135,16 +135,7 @@
     background: var(--surface-list);
   }
   .td-auth-error {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
     margin: calc(-1 * var(--sp-1)) 0 var(--sp-3);
-    font: var(--type-small);
-    color: var(--danger);
-  }
-  .td-auth-error-ico {
-    flex-shrink: 0;
-    margin-top: 1px;
   }
   .td-auth-links {
     display: flex;

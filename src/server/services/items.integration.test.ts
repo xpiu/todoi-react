@@ -73,9 +73,9 @@ describe("cross-project moves", () => {
     const moved = await moveItem(f.parent, { listId: f.destList }, f.owner);
     expect(moved?.changed).toMatchObject({ project: true, key: "DST-3", subitems: 1, labelsCreated: ["Docs"], assigneesRemoved: 1, watchersRemoved: 1, relationsRemoved: 1 });
     const family = await db.select().from(items).where(inArray(items.id, [f.parent, f.child]));
-    expect(family.every((it) => it.projectId === f.dest && it.listId === f.destList)).toBe(true);
+    expect(family.every((row) => row.projectId === f.dest && row.listId === f.destList)).toBe(true);
     // Keys are unique in the destination: issued from its group, not carried from the source's numbering.
-    expect(family.map((it) => it.keyNumber).sort()).toEqual([3, 4]);
+    expect(family.map((row) => row.keyNumber).sort()).toEqual([3, 4]);
     expect((await db.select({ n: groups.nextItemNumber }).from(groups).where(eq(groups.keyPrefix, "DST")))[0]?.n).toBe(5);
     // Labels map to the destination's by name; a missing one is created there.
     const destLabels = await db.select().from(labels).where(eq(labels.projectId, f.dest));

@@ -85,6 +85,15 @@ export interface OverlayActivity {
   text: string;
 }
 export type OverlayMenuAction = "duplicate" | "archive" | "delete" | "share";
+/** Unsent work the overlay can resume: the comment (and whom it replies to) and the description edit. */
+export interface OverlayDrafts {
+  comment?: string;
+  replyTo?: { id: string; author: string } | null;
+  /** null or absent = not editing the description */
+  description?: string | null;
+}
+/** A save the overlay waits for: it keeps the draft and shows the reason when the promise rejects. */
+type Save = void | Promise<unknown>;
 
 export interface ItemOverlayProps {
   open: boolean;
@@ -102,7 +111,7 @@ export interface ItemOverlayProps {
   autoEditTitle?: boolean;
   today?: string;
   onClose: () => void;
-  onRename: (title: string) => void;
+  onRename: (title: string) => Save;
   onMoveToList: (listId: string) => void;
   onCreateList?: () => void;
   onManageLinks?: () => void;
@@ -117,7 +126,7 @@ export interface ItemOverlayProps {
   onSetAssignees: (ids: string[]) => void;
   onSetCover: (cover: CoverValue | null) => void;
   onToggleWatch?: (watching: boolean) => void;
-  onSetDescription: (md: string) => void;
+  onSetDescription: (md: string) => Save;
   onAddSubitem: (title: string) => void;
   onToggleSubitem: (id: string, done: boolean) => void;
   onReorderSubitem: (id: string, index: number) => void;
@@ -130,8 +139,8 @@ export interface ItemOverlayProps {
   onRemoveRelation: (type: RelationType, itemId: string) => void;
   onOpenItem?: (id: string) => void;
   onOpenKey?: (key: string) => void;
-  onAddComment: (text: string, replyToId?: string) => void;
-  onEditComment: (id: string, text: string) => void;
+  onAddComment: (text: string, replyToId?: string) => Save;
+  onEditComment: (id: string, text: string) => Save;
   onDeleteComment: (id: string) => void;
   onReactComment: (id: string, emoji: string) => void;
   onMakeSubitemOf?: (parent: PickableItem) => void;
@@ -146,13 +155,22 @@ export interface ItemOverlayProps {
   onMoveToProject?: (project: PickableProject, list: PickableList) => void;
   onCopyToProject?: (project: PickableProject, list: PickableList) => void;
   onSuggestShortcut?: (id: string, delay?: number) => void;
+  /** Drafts kept from an earlier visit */
+  drafts?: OverlayDrafts;
+  /** Every draft change, so the consumer can keep them while the overlay is closed */
+  onDraftsChange?: (drafts: OverlayDrafts) => void;
 }
+
+const reason = (err: unknown) => (err instanceof Error && err.message ? err.message : "something went wrong");
 
 export function ItemOverlay(p: ItemOverlayProps) {
   const { item, open, onClose } = p;
-  const [draft, setDraft] = useState("");
-  const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(null);
-  const [descDraft, setDescDraft] = useState<string | null>(null);
+  const [draft, setDraft] = useState(p.drafts?.comment ?? "");
+  const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(p.drafts?.replyTo ?? null);
+  const [descDraft, setDescDraft] = useState<string | null>(p.drafts?.description ?? null);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const saveDescription = useRef<(() => Promise<boolean>) | null>(null);
   const [titleEdit, setTitleEdit] = useState<string | null>(p.autoEditTitle ? item.title : null);
   const [subDraft, setSubDraft] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -166,22 +184,48 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const searchRef = useRef<HTMLDivElement>(null);
   const files = item.attachments ?? [];
   const [dragging, dropHandlers] = useFileDrop((fs) => p.onAddFiles?.(fs), { disabled: !p.onAddFiles });
-  const commitTitle = () => {
+  /** A failed rename reopens the title with what was typed. */
+  const commitTitle = async (): Promise<boolean> => {
     const t = (titleEdit ?? "").trim();
-    if (t && t !== item.title) p.onRename(t);
     setTitleEdit(null);
+    if (!t || t === item.title) return true;
+    try {
+      await p.onRename(t);
+      return true;
+    } catch {
+      setTitleEdit(t);
+      return false;
+    }
   };
   const addSubitem = (t: string) => {
     p.onAddSubitem(t);
     setAddOpen(true);
   };
-  const send = (t?: string) => {
+  /** The draft and reply target clear only once the comment is saved; a failure keeps both and says why. */
+  const send = async (t?: string): Promise<boolean> => {
     const text = (t ?? draft).trim();
-    if (!text) return;
-    p.onAddComment(text, replyTo?.id);
-    setDraft("");
-    setReplyTo(null);
+    if (!text || sending) return !text;
+    setSending(true);
+    setSendError(null);
+    try {
+      await p.onAddComment(text, replyTo?.id);
+      setDraft("");
+      setReplyTo(null);
+      return true;
+    } catch (err) {
+      setSendError(`Couldn't send: ${reason(err)}`);
+      return false;
+    } finally {
+      setSending(false);
+    }
   };
+  const onDraftsChange = useRef(p.onDraftsChange);
+  useEffect(() => {
+    onDraftsChange.current = p.onDraftsChange;
+  });
+  useEffect(() => {
+    onDraftsChange.current?.({ comment: draft, replyTo, description: descDraft });
+  }, [draft, replyTo, descDraft]);
   const copyLink = () => {
     const url = `${location.origin}${location.pathname}?item=${item.id}`;
     const done = () => {
@@ -190,18 +234,17 @@ export function ItemOverlay(p: ItemOverlayProps) {
     };
     navigator.clipboard?.writeText(url).then(done, done);
   };
-  // ctrl+↵: commit whatever is mid-edit (title, description, new subitem, comment), then close.
+  // ctrl+↵: commit whatever is mid-edit (title, description, new subitem, comment), then close once
+  // every save has landed; a failure keeps the overlay open with that draft and its reason.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (!SHORTCUTS.is("save-close", e)) return;
       e.preventDefault();
       e.stopPropagation();
-      if (titleEdit != null) commitTitle();
-      if (descDraft != null) p.onSetDescription(descDraft);
       if (subDraft.trim()) addSubitem(subDraft.trim());
-      if (draft.trim()) send();
-      onClose();
+      const saves = [titleEdit != null ? commitTitle() : null, saveDescription.current?.() ?? null, draft.trim() ? send() : null];
+      void Promise.all(saves).then((ok) => ok.every((v) => v !== false) && onClose());
     };
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
@@ -355,7 +398,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
       <DropOverlay active={dragging} hint="Images can become the cover" />
       <div className="td-overlay-main">
         <div className="td-overlay-desc">
-          <DescriptionEditor value={item.description ?? ""} members={members} onOpenKey={p.onOpenKey} onChange={p.onSetDescription} onDraft={setDescDraft} onSuggestShortcut={p.onSuggestShortcut} />
+          <DescriptionEditor value={item.description ?? ""} members={members} onOpenKey={p.onOpenKey} onChange={p.onSetDescription} onDraft={setDescDraft} initialDraft={p.drafts?.description} saveRef={saveDescription} onSuggestShortcut={p.onSuggestShortcut} />
         </div>
         {item.subitems.length ? (
           <div className="td-overlay-subitems">
@@ -405,7 +448,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
               </div>
             ) : null}
           </div>
-          <CommentComposer value={draft} onChange={setDraft} members={members} onSubmit={send} replyTo={replyTo?.author ?? null} onCancelReply={() => setReplyTo(null)} />
+          <CommentComposer value={draft} onChange={(v) => { setDraft(v); setSendError(null); }} members={members} onSubmit={(t) => void send(t)} pending={sending} error={sendError} replyTo={replyTo?.author ?? null} onCancelReply={() => setReplyTo(null)} />
           {p.comments.filter((c) => matches(c.text, c.author)).map((c) => (
             <Comment
               key={c.id}

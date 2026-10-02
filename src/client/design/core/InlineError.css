@@ -1,0 +1,14 @@
+/* InlineError — small danger text with a leading alert glyph. */
+@layer components {
+  .td-inline-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font: var(--type-small);
+    color: var(--danger);
+  }
+  .td-inline-error-ico {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}

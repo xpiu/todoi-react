@@ -1,7 +1,7 @@
 // Everything that hangs off an item or a project besides lists: labels, assignees, watchers, comments,
 // reactions, relations, saved views, the activity log and the Inbox's "Mark all read".
 import { zValidator } from "@hono/zod-validator";
-import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -139,12 +139,16 @@ export const itemContentRoute = new Hono()
     const viewer = viewerOf(c);
     const [item] = await db.select().from(items).where(eq(items.id, id));
     if (!item) return c.json({ error: "Not found" }, 404);
+    // The client keeps one id per draft, so a retry after a lost response updates instead of duplicating.
     const [row] = await db
       .insert(comments)
       .values({ ...c.req.valid("json"), itemId: id, authorId: viewer.userId })
-      .returning();
-    await logActivity(db, { projectId: item.projectId, actorId: viewer.userId, type: "comment", text: `commented on ${quote(item.title)}`, itemId: id });
-    return c.json({ ...row!, reactions: [] }, 201);
+      .onConflictDoUpdate({ target: comments.id, set: { body: sql`excluded.body` }, setWhere: and(eq(comments.itemId, id), eq(comments.authorId, viewer.userId)) })
+      .returning({ ...getTableColumns(comments), inserted: sql<boolean>`(xmax = 0)` });
+    if (!row) return c.json({ error: "That comment id is already in use" }, 409);
+    const { inserted, ...comment } = row;
+    if (inserted) await logActivity(db, { projectId: item.projectId, actorId: viewer.userId, type: "comment", text: `commented on ${quote(item.title)}`, itemId: id });
+    return c.json({ ...comment, reactions: [] }, 201);
   })
   .post("/:id/relations", idParam, zValidator("json", relationSchema), async (c) => {
     const { id } = c.req.valid("param");

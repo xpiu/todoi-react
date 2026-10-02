@@ -19,8 +19,9 @@ function useItemContentMutation<TVars>(itemId: string, fn: (vars: TVars) => Prom
   });
 }
 
+/** `id` is the draft's: resending the same draft after a failure cannot post it twice. */
 export function useAddComment(itemId: string) {
-  return useItemContentMutation(itemId, (vars: { body: string; replyToId?: string }) => api.api.items[":id"].comments.$post({ param: { id: itemId }, json: { id: newId(), ...vars } }).then((r) => unwrap(r)));
+  return useItemContentMutation(itemId, ({ id = newId(), ...vars }: { id?: string; body: string; replyToId?: string }) => api.api.items[":id"].comments.$post({ param: { id: itemId }, json: { id, ...vars } }).then((r) => unwrap(r)));
 }
 export function useEditComment(itemId: string) {
   return useItemContentMutation(itemId, (vars: { id: string; body: string }) => api.api.comments[":id"].$patch({ param: { id: vars.id }, json: { body: vars.body } }).then((r) => unwrap(r)));

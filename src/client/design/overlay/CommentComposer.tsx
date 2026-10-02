@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
 import { IconButton } from "../core/IconButton";
+import { InlineError } from "../core/InlineError";
 import "./CommentComposer.css";
 
 export interface MentionMember {
@@ -163,10 +164,14 @@ export interface CommentComposerProps {
   replyTo?: string | null;
   onCancelReply?: () => void;
   sendLabel?: string;
+  /** A send is in flight: the text stays, Send waits */
+  pending?: boolean;
+  /** Why the last send failed; the text stays and Send retries */
+  error?: string | null;
   style?: CSSProperties;
 }
 
-export function CommentComposer({ value, onChange, onSubmit, members = [], placeholder = "Write a comment…", autoFocus, replyTo, onCancelReply, sendLabel = "Send", style }: CommentComposerProps) {
+export function CommentComposer({ value, onChange, onSubmit, members = [], placeholder = "Write a comment…", autoFocus, replyTo, onCancelReply, sendLabel = "Send", pending, error, style }: CommentComposerProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (replyTo && ref.current) {
@@ -175,7 +180,7 @@ export function CommentComposer({ value, onChange, onSubmit, members = [], place
       ref.current.setSelectionRange(n, n);
     }
   }, [replyTo]);
-  const can = !!value.trim();
+  const can = !!value.trim() && !pending;
   return (
     <div className="td-composer" style={style}>
       {replyTo ? (
@@ -185,14 +190,15 @@ export function CommentComposer({ value, onChange, onSubmit, members = [], place
         </span>
       ) : null}
       <MentionField inputRef={ref} value={value} onChange={onChange} members={members} placeholder={placeholder} autoFocus={autoFocus} onSubmit={() => can && onSubmit(value.trim())} />
-      {can ? (
+      {value.trim() ? (
         <div className="td-composer-foot">
-          <Button variant="primary" onClick={() => onSubmit(value.trim())}>
-            {sendLabel}
+          <Button variant="primary" disabled={!can} onClick={() => onSubmit(value.trim())}>
+            {pending ? "Sending…" : error ? "Retry" : sendLabel}
           </Button>
           <span className="td-composer-hint">↵ send · ⇧↵ new line · @ mention</span>
         </div>
       ) : null}
+      <InlineError message={error} />
     </div>
   );
 }

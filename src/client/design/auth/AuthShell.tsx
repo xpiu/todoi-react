@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { Icon, type IconName } from "../core/Icon";
+import { InlineError } from "../core/InlineError";
 import "./AuthShell.css";
 
 export function AuthShell({ brand = "Todoi", footer, children, width, style }: { brand?: string; footer?: ReactNode | null; children: ReactNode; width?: number; style?: CSSProperties }) {
@@ -56,11 +57,5 @@ export const AuthLink = ({ label, onClick }: { label: string; onClick?: () => vo
 );
 
 export function AuthError({ error }: { error?: string | null }) {
-  if (!error) return null;
-  return (
-    <div className="td-auth-error" role="alert">
-      <Icon name="circle-alert" size={14} className="td-auth-error-ico" />
-      {error}
-    </div>
-  );
+  return <InlineError message={error} className="td-auth-error" />;
 }

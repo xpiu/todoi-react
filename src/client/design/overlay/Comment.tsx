@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
 import { Icon } from "../core/Icon";
+import { InlineError } from "../core/InlineError";
 import { Markdown } from "../core/Markdown";
 import { Popover, usePopover } from "../core/Popover";
 import { MentionField, type MentionMember } from "./CommentComposer";
@@ -56,7 +57,8 @@ export interface CommentProps {
   members?: ReadonlyArray<MentionMember>;
   reactions?: CommentReaction[];
   onReact?: (emoji: string) => void;
-  onEdit?: (text: string) => void;
+  /** May return a promise: editing stays open until it resolves, and shows why it rejected */
+  onEdit?: (text: string) => void | Promise<unknown>;
   onDelete?: () => void;
   onReply?: () => void;
   onOpenKey?: (key: string) => void;
@@ -71,10 +73,27 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
     setDraft(body ?? "");
     setEditing(true);
   };
-  const save = () => {
-    const t = draft.trim();
-    if (t && t !== body) onEdit?.(t);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const stopEditing = () => {
+    setError(null);
     setEditing(false);
+  };
+  /** Stay in edit with the text until the change is saved; a failure says why and Save retries. */
+  const save = async () => {
+    const t = draft.trim();
+    if (pending) return;
+    if (!t || t === body) return stopEditing();
+    setPending(true);
+    setError(null);
+    try {
+      await onEdit?.(t);
+      stopEditing();
+    } catch (err) {
+      setError(`Couldn't save: ${err instanceof Error ? err.message : "something went wrong"}`);
+    } finally {
+      setPending(false);
+    }
   };
   const act = (f: () => void, label: string, cls?: string) => (
     <button type="button" className={"td-comment-act" + (cls ? ` ${cls}` : "")} onClick={f}>
@@ -105,22 +124,23 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
                     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                       e.preventDefault();
                       e.stopPropagation();
-                      save();
+                      void save();
                     } else if (e.key === "Escape") {
                       e.stopPropagation();
-                      setEditing(false);
+                      stopEditing();
                     }
                   }}
                 />
                 <div className="td-comment-edit-foot">
-                  <Button variant="primary" onClick={save}>
-                    Save
+                  <Button variant="primary" disabled={pending} onClick={() => void save()}>
+                    {pending ? "Saving…" : error ? "Retry" : "Save"}
                   </Button>
-                  <Button variant="ghost" onClick={() => setEditing(false)}>
+                  <Button variant="ghost" disabled={pending} onClick={stopEditing}>
                     Cancel
                   </Button>
                   <span className="td-comment-edit-hint">ctrl ↵ save · esc</span>
                 </div>
+                <InlineError message={error} />
               </div>
             ) : (
               <div className="td-comment-bubble">{body != null ? <Markdown text={body} members={members} onOpenKey={onOpenKey} /> : children}</div>

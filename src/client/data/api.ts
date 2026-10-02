@@ -16,13 +16,32 @@ export class ApiError extends Error {
   }
 }
 
+/** The request validator's first issue ("Too big: expected string to have <=20000 characters"). */
+function validationMessage(issues: string | undefined): string {
+  try {
+    const first = (JSON.parse(issues ?? "") as Array<{ message?: string }>)[0]?.message;
+    if (first) return first;
+  } catch {
+    /* not a validator error */
+  }
+  return "That change isn't valid";
+}
+
+/** A failed request in words for the person: the server's reason, or that it never arrived. */
+export function errorMessage(err: unknown): string {
+  if (err instanceof ApiError) return err.message;
+  if (err instanceof TypeError) return "Couldn't reach Todoi. Check your connection.";
+  return err instanceof Error && err.message ? err.message : "Something went wrong.";
+}
+
 /** Throws on a non-2xx response so TanStack Query sees an error. */
 export async function unwrap<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let msg = `${res.status} ${res.statusText}`;
     try {
-      const body = (await res.json()) as { error?: string };
-      if (body?.error) msg = body.error;
+      const body = (await res.json()) as { error?: string | { message?: string } };
+      if (typeof body?.error === "string") msg = body.error;
+      else if (body?.error) msg = validationMessage(body.error.message);
     } catch {
       /* no body */
     }

@@ -7,19 +7,25 @@ import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Markdown as TiptapMarkdown } from "@tiptap/markdown";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 
 import { Button } from "../core/Button";
 import { IconButton } from "../core/IconButton";
+import { InlineError } from "../core/InlineError";
 import type { IconName } from "../core/Icon";
 import { Markdown, type MarkdownMember } from "../core/Markdown";
 import "./DescriptionEditor.css";
 
 export interface DescriptionEditorProps {
   value?: string;
-  onChange?: (markdown: string) => void;
-  /** Mirrors the unsaved draft (null when none) so a ctrl+↵ on the overlay can commit it */
+  /** May return a promise: the editor stays open with the draft until it resolves, and shows why it rejected */
+  onChange?: (markdown: string) => void | Promise<unknown>;
+  /** Mirrors the unsaved draft (null when none) so it can be kept while the overlay is closed */
   onDraft?: (draft: string | null) => void;
+  /** A kept draft to resume: the editor opens with it */
+  initialDraft?: string | null;
+  /** Filled with the editor's own save, so the overlay's ctrl+↵ can await it (false = not saved) */
+  saveRef?: RefObject<(() => Promise<boolean>) | null>;
   members?: ReadonlyArray<MarkdownMember>;
   onOpenKey?: (key: string) => void;
   placeholder?: string;
@@ -58,8 +64,46 @@ const TOOLS: Array<Tool | null> = [
   ["heading", "Heading", null, (e) => e.chain().focus().toggleHeading({ level: 2 }).run(), (e) => e.isActive("heading")],
 ];
 
-export function DescriptionEditor({ value = "", onChange, onDraft, members, onOpenKey, placeholder = "Add a more detailed description…", autoFocus, saveLabel = "Save", onSuggestShortcut, style }: DescriptionEditorProps) {
-  const [editing, setEditing] = useState(!!autoFocus);
+export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft, saveRef, members, onOpenKey, placeholder = "Add a more detailed description…", autoFocus, saveLabel = "Save", onSuggestShortcut, style }: DescriptionEditorProps) {
+  const [editing, setEditing] = useState(!!autoFocus || initialDraft != null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const draft = useRef<string | null>(initialDraft ?? null);
+  const track = (d: string | null) => {
+    draft.current = d;
+    onDraft?.(d);
+  };
+  const close = () => {
+    track(null);
+    setError(null);
+    setEditing(false);
+  };
+  /** Leave edit only once the change is saved; a failure keeps the draft and says why. */
+  const commit = async (md: string): Promise<boolean> => {
+    if (md === value) {
+      close();
+      return true;
+    }
+    setPending(true);
+    setError(null);
+    try {
+      await onChange?.(md);
+      close();
+      return true;
+    } catch (err) {
+      setError(`Couldn't save: ${err instanceof Error ? err.message : "something went wrong"}`);
+      return false;
+    } finally {
+      setPending(false);
+    }
+  };
+  useEffect(() => {
+    if (!saveRef) return;
+    saveRef.current = () => (editing && draft.current != null ? commit(draft.current) : Promise.resolve(true));
+    return () => {
+      saveRef.current = null;
+    };
+  });
   if (!editing)
     return (
       <div
@@ -82,18 +126,14 @@ export function DescriptionEditor({ value = "", onChange, onDraft, members, onOp
   return (
     <DescriptionEdit
       value={value}
+      initialDraft={initialDraft}
       placeholder={placeholder}
-      saveLabel={saveLabel}
-      onDraft={onDraft}
-      onSave={(md) => {
-        if (md !== value) onChange?.(md);
-        onDraft?.(null);
-        setEditing(false);
-      }}
-      onCancel={() => {
-        onDraft?.(null);
-        setEditing(false);
-      }}
+      saveLabel={pending ? "Saving…" : error ? "Retry" : saveLabel}
+      pending={pending}
+      error={error}
+      onDraft={track}
+      onSave={(md) => void commit(md)}
+      onCancel={close}
       onSuggestShortcut={onSuggestShortcut}
       style={style}
     />
@@ -101,12 +141,12 @@ export function DescriptionEditor({ value = "", onChange, onDraft, members, onOp
 }
 
 /** Mounts per edit session so the editor's content starts from the saved value every time. */
-function DescriptionEdit({ value, placeholder, saveLabel, onDraft, onSave, onCancel, onSuggestShortcut, style }: { value: string; placeholder: string; saveLabel: string; onDraft?: (d: string | null) => void; onSave: (md: string) => void; onCancel: () => void; onSuggestShortcut?: (id: string, delay?: number) => void; style?: CSSProperties }) {
-  const [dirty, setDirty] = useState(false);
+function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, pending, error, onDraft, onSave, onCancel, onSuggestShortcut, style }: { value: string; initialDraft?: string | null; placeholder: string; saveLabel: string; pending: boolean; error: string | null; onDraft?: (d: string | null) => void; onSave: (md: string) => void; onCancel: () => void; onSuggestShortcut?: (id: string, delay?: number) => void; style?: CSSProperties }) {
+  const [dirty, setDirty] = useState(initialDraft != null && initialDraft !== value);
   const [, bump] = useState(0);
   const editor = useEditor({
     extensions: [StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: { openOnClick: false, autolink: true }, underline: false }), TaskList, TaskItem.configure({ nested: true }), TiptapMarkdown],
-    content: value,
+    content: initialDraft ?? value,
     contentType: "markdown",
     autofocus: "end",
     editorProps: { attributes: { class: "td-desc-ta", "aria-label": "Description", "data-placeholder": placeholder } },
@@ -119,7 +159,7 @@ function DescriptionEdit({ value, placeholder, saveLabel, onDraft, onSave, onCan
     onSelectionUpdate: () => bump((n) => n + 1),
     onTransaction: () => bump((n) => n + 1),
   });
-  const save = () => onSave(editor ? editor.getMarkdown().replace(/\s+$/, "") : value);
+  const save = () => !pending && onSave(editor ? editor.getMarkdown().replace(/\s+$/, "") : value);
   const hint = () => onSuggestShortcut?.("description", 200);
   useEffect(() => () => editor?.destroy(), [editor]);
   return (
@@ -144,6 +184,7 @@ function DescriptionEdit({ value, placeholder, saveLabel, onDraft, onSave, onCan
       <div className="td-desc-actions">
         <Button
           variant="primary"
+          disabled={pending}
           onClick={() => {
             save();
             hint();
@@ -153,15 +194,17 @@ function DescriptionEdit({ value, placeholder, saveLabel, onDraft, onSave, onCan
         </Button>
         <Button
           variant="ghost"
+          disabled={pending}
           onClick={() => {
             onCancel();
             hint();
           }}
         >
-          Cancel
+          {dirty ? "Discard" : "Cancel"}
         </Button>
         {dirty ? <span className="td-desc-unsaved">Unsaved</span> : null}
       </div>
+      <InlineError message={error} className="td-desc-error" />
     </div>
   );
 }

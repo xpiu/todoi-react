@@ -1,9 +1,9 @@
 // ItemOverlayScreen — the item overlay on real data: the item from the project's items, its details
 // (comments, relations, watching), the project's activity filtered to it, and every edit as a mutation.
 // Undoable outcomes (archive, delete, duplicate) raise the one Toast. Spec: DESIGN.md › Item overlay.
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
-import type { Item, Label, ProjectDetail } from "../data/api";
+import { errorMessage, type Item, type Label, type ProjectDetail } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
 import { newId, useCreateItem, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
@@ -15,6 +15,7 @@ import type { PickableItem } from "../design/core/ItemPicker";
 import { formatDate, formatRelative, toISO } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
+import { useDrafts } from "./drafts";
 import { quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
 import { peopleOf, useCurrentUser } from "./session";
@@ -60,6 +61,11 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const { user } = useCurrentUser();
   const people: Person[] = useMemo(() => peopleOf(project), [project]);
   const personOf = (id: string) => people.find((p) => p.id === id);
+  // Drafts kept from an earlier visit (read once; the overlay reports every change back).
+  const [drafts] = useState(() => useDrafts.getState().byItem[itemId]);
+  const keepDrafts = useDrafts((s) => s.set);
+  // One id per comment draft: resending after a failure cannot post it twice.
+  const commentId = useRef(newId());
   if (!item) return null;
 
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name;
@@ -96,6 +102,10 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const activityRows = (activity.data ?? []).filter((a) => a.itemId === item.id).map((a) => ({ id: a.id, author: a.actor?.name ?? "Todoi", meta: formatRelative(a.createdAt, now), text: a.text }));
   const relations = (details.data?.relations ?? []).map((r) => ({ type: r.type, item: { id: r.item.id, title: r.item.title, itemId: keyOf(r.item, project.keyPrefix), listName: listName(r.item.listId), status: r.item.status, done: r.item.done } }));
   const patch = (changes: Parameters<typeof updateItem.mutate>[0] extends infer V ? Omit<V, "id"> : never) => updateItem.mutate({ id: item.id, ...changes });
+  /** A save the overlay waits on: it keeps the draft and shows this reason when the request fails. */
+  const saving = (request: Promise<unknown>) => request.catch((err: unknown) => {
+    throw new Error(errorMessage(err));
+  });
   const openKey = (key: string) => {
     const target = items.find((it) => keyOf(it, project.keyPrefix) === key);
     if (target) onOpen(target.id);
@@ -116,7 +126,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       autoEditTitle={editTitle}
       today={toISO(now)!}
       onClose={onClose}
-      onRename={(title) => patch({ title })}
+      onRename={(title) => saving(updateItem.mutateAsync({ id: item.id, title, quiet: true }))}
       onMoveToList={(listId) => moveItem.mutate({ id: item.id, listId })}
       onSetStatus={(status) => patch(status === "DONE" ? { done: true } : item.done ? { done: false, status } : { status })}
       onSetPriority={(priority) => patch({ priority })}
@@ -132,7 +142,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       onSetAssignees={(userIds) => setAssignees.mutate({ id: item.id, userIds })}
       onSetCover={(cover) => patch({ cover: cover ? (cover.src ? { attachmentId: cover.attachmentId } : { color: cover.color?.replace(/^var\(--label-([a-z]+)\)$/, "$1") }) : null })}
       onToggleWatch={(watching) => setWatching.mutate({ watching })}
-      onSetDescription={(description) => patch({ description })}
+      onSetDescription={(description) => saving(updateItem.mutateAsync({ id: item.id, description, quiet: true }))}
       onAddSubitem={(title) => createItem.mutate({ id: newId(), title, listId: item.listId, parentItemId: item.id })}
       onToggleSubitem={(id, done) => updateItem.mutate({ id, done })}
       onReorderSubitem={(id, index) => {
@@ -157,8 +167,12 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
       onRemoveRelation={(type, targetId) => removeRelation.mutate({ type, targetId })}
       onOpenItem={(id) => onOpen(id)}
       onOpenKey={openKey}
-      onAddComment={(body, replyToId) => addComment.mutate({ body, replyToId })}
-      onEditComment={(id, body) => editComment.mutate({ id, body })}
+      onAddComment={(body, replyToId) => saving(addComment.mutateAsync({ id: commentId.current, body, replyToId }).then(() => {
+        commentId.current = newId();
+      }))}
+      onEditComment={(id, body) => saving(editComment.mutateAsync({ id, body }))}
+      drafts={drafts}
+      onDraftsChange={(d) => keepDrafts(item.id, d)}
       onDeleteComment={(id) => deleteComment.mutate({ id })}
       onReactComment={(id, emoji) => reactComment.mutate({ id, emoji })}
       onMakeSubitemOf={(parent) => {
