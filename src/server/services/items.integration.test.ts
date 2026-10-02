@@ -1,11 +1,11 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
 import { db } from "../db";
 import { groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, users } from "../db/schema";
 import { readableItemIds } from "../access";
-import { moveItem } from "./items";
+import { moveItem, placeAmongSiblings } from "./items";
 
 /** Two projects in different groups; the family's numbers 1–2 are already used in the destination. */
 async function fixture() {
@@ -125,5 +125,32 @@ describe("cross-project moves", () => {
     await db.update(projects).set({ visibility: "shared" }).where(eq(projects.id, f.dest));
     expect(await readableItemIds({ userId: f.outsider, inboxListId: "none" }, moved)).toEqual(new Set([f.parent, f.stay]));
     expect(await readableItemIds(null, moved)).toEqual(new Set());
+  });
+});
+
+describe("placing items among siblings", () => {
+  it("keeps a trashed item's place, so restoring it after other additions puts it back where it was", async () => {
+    const f = await fixture();
+    const rows = async () => (await db.select({ id: items.id, position: items.position, deletedAt: items.deletedAt }).from(items).where(and(eq(items.listId, f.srcList), isNull(items.parentItemId)))).sort((a, b) => a.position - b.position);
+    // Source list top level: parent (0), stay (1).
+    await db.update(items).set({ deletedAt: new Date() }).where(eq(items.id, f.parent));
+    const added = nanoid();
+    await db.transaction(async (tx) => {
+      const patch: { position?: number } = {};
+      await placeAmongSiblings(tx, added, f.srcList, 0, patch);
+      await tx.insert(items).values({ id: added, projectId: f.src, listId: f.srcList, title: "Added on top", position: patch.position! });
+    });
+    // `position` 0 is "before the first item people see", which is "stay"; the trashed parent keeps its slot.
+    await db.update(items).set({ deletedAt: null }).where(eq(items.id, f.parent));
+    expect((await rows()).map((r) => r.id)).toEqual([f.parent, added, f.stay]);
+  });
+
+  it("appends after removed items and counts the requested index among live ones", async () => {
+    const f = await fixture();
+    await db.update(items).set({ archivedAt: new Date() }).where(eq(items.id, f.stay));
+    const patch: { position?: number } = {};
+    await db.transaction((tx) => placeAmongSiblings(tx, nanoid(), f.srcList, 1, patch));
+    // One live sibling (parent): index 1 is the end, after the archived item too.
+    expect(patch.position).toBe(2);
   });
 });

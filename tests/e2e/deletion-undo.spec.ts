@@ -42,7 +42,14 @@ const test = base.extend<{ fixture: Fixture }>({
 for (const via of ["keyboard", "overlay"] as const) {
   test(`delete and undo via ${via} preserves the complete item after reload`, async ({ page, fixture: f }) => {
     const items = async () => await (await page.request.get(`/api/items?projectId=${f.projectId}`)).json() as Item[];
-    const before = (await items()).find((it) => it.id === f.parent)!;
+    // Rank, not the raw number: an item added to the list meanwhile renumbers positions without reordering.
+    const ranked = async () => {
+      const all = await items();
+      const it = all.find((x) => x.id === f.parent)!;
+      const rank = all.filter((x) => x.listId === it.listId && !x.parentItemId && [f.parent, f.other].includes(x.id)).sort((a, b) => a.position - b.position).findIndex((x) => x.id === f.parent);
+      return { ...it, position: rank };
+    };
+    const before = await ranked();
     const details = await (await page.request.get(`/api/items/${f.parent}/details`)).json() as ItemDetails;
     await page.goto(`/p/${f.projectId}?v=list${via === "overlay" ? `&item=${f.parent}` : ""}`);
     if (via === "keyboard") {
@@ -58,7 +65,7 @@ for (const via of ["keyboard", "overlay"] as const) {
     else await page.getByRole("button", { name: /^Undo/ }).click();
     await expect(page.getByRole("status").filter({ hasText: /Deleted|Undid:|could not be deleted/ })).toContainText("Undid:");
     await page.reload();
-    const after = (await items()).find((it) => it.id === f.parent)!;
+    const after = await ranked();
     expect({ ...after, updatedAt: before.updatedAt }).toEqual(before);
     expect(await (await page.request.get(`/api/items/${f.parent}/details`)).json()).toEqual(details);
   });

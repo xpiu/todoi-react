@@ -145,7 +145,10 @@ test("existing-account login merges rich guest content and both Inboxes without 
   const guest = await session(page);
   const { project, list } = await workspace(page);
   await addThroughGui(page, "Guest content to keep");
-  const item = (await (await page.request.get(`/api/items?projectId=${project.id}`)).json())[0];
+  // The row shows before the create request lands; wait for the item itself.
+  let item: { id: string; title: string } | undefined;
+  await expect.poll(async () => (item = (await (await page.request.get(`/api/items?projectId=${project.id}`)).json())[0])?.id).toBeTruthy();
+  item = item!;
   const label = { id: nanoid(), projectId: project.id, name: "Guest label", color: "teal" };
   const comment = { id: nanoid(), body: "A comment written before login" };
   const savedView = { id: nanoid(), projectId: project.id, name: "Guest saved view", definition: { view: "board" } };

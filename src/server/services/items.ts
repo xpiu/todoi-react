@@ -169,16 +169,22 @@ async function carryRelations(tx: Tx, ids: string[], dest: { projectId: string |
 }
 
 /**
- * Shift a list's live top-level items (the indices the views show) to make room for `id` at `position` (or
- * append) and set its own position in `patch`. Moves and creations both place items through here.
+ * Renumber a list's top-level items to make room for `id` just before the live item now at index
+ * `position` (or append), and set its own position in `patch`. Archived and trashed items keep their
+ * slots, so stored positions can have gaps; `position` is always an index among live items.
+ * Moves and creations both place items through here.
  */
 export async function placeAmongSiblings(tx: Tx, id: string, listId: string, position: number | undefined, patch: Partial<Item>) {
+  // Archived and trashed siblings are renumbered too, so a restored item comes back to its own place.
   const siblings = await tx
-    .select({ id: items.id, position: items.position })
+    .select({ id: items.id, position: items.position, live: sql<boolean>`${itemIsLive}` })
     .from(items)
-    .where(and(eq(items.listId, listId), isNull(items.parentItemId), itemIsLive, ne(items.id, id)))
+    .where(and(eq(items.listId, listId), isNull(items.parentItemId), ne(items.id, id)))
     .orderBy(asc(items.position), asc(items.createdAt));
-  const at = position == null ? siblings.length : Math.max(0, Math.min(position, siblings.length));
+  // `position` counts the items people see: land just before the live sibling now at that index.
+  const live = siblings.filter((s) => s.live);
+  const before = position == null ? undefined : live[Math.max(0, position)];
+  const at = before ? siblings.indexOf(before) : siblings.length;
   patch.position = at;
   for (const [i, s] of siblings.entries()) {
     const next = i < at ? i : i + 1;

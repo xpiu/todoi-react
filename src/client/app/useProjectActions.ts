@@ -53,6 +53,8 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const people: Person[] = useMemo(() => peopleOf(project), [project]);
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name ?? "the list";
   const byId = (id: string) => items.find((x) => x.id === id);
+  /** A top-level item's index among its list's items — what a move's `position` means (stored positions can have gaps). */
+  const rankOf = (it: Item) => (it.parentItemId ? it.position : items.filter((x) => x.listId === it.listId && !x.parentItemId).sort((a, b) => a.position - b.position).findIndex((x) => x.id === it.id));
 
   const smartDates = usePrefs((s) => s.smartDates);
   const defaultPriority = usePrefs((s) => s.defaultPriority);
@@ -74,7 +76,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const move = (id: string, target: DropTarget) => {
     const it = byId(id);
     if (!it) return;
-    const from = { listId: it.listId, position: it.position };
+    const from = { listId: it.listId, position: rankOf(it) };
     const crossList = target.listId !== it.listId;
     moveItem.mutate(
       { id, listId: target.listId, position: target.position },
@@ -96,8 +98,8 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     const li = order.indexOf(it.listId);
     if (dir === "left" || dir === "right") {
       const target = order[li + (dir === "left" ? -1 : 1)];
-      if (target) move(id, { listId: target, position: it.position });
-    } else move(id, { listId: it.listId, position: Math.max(0, it.position + (dir === "up" ? -1 : 1)) });
+      if (target) move(id, { listId: target, position: rankOf(it) });
+    } else move(id, { listId: it.listId, position: Math.max(0, rankOf(it) + (dir === "up" ? -1 : 1)) });
   };
 
   const removeMany = async (ids: string[], noun = "item") => {
@@ -205,8 +207,6 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     const what = moved.length === 1 ? quote(moved[0]!.it.title) : count(moved.length, "item");
     const base = `Moved ${what} to ${dest}`;
     // Back in original order, each handing back what the move took; relations rejoin once both ends are home.
-    // A top-level item returns to its index among its list's items (stored positions can have gaps).
-    const rankOf = (it: Item) => (it.parentItemId ? it.position : items.filter((x) => x.listId === it.listId && !x.parentItemId).sort((a, b) => a.position - b.position).findIndex((x) => x.id === it.id));
     const back = moved.map((m) => ({ ...m, at: rankOf(m.it) })).sort((a, b) => a.at - b.at);
     notify({
       message: `Moved ${what}${subitems ? ` and ${count(subitems, "subitem")}` : ""} to ${dest}${details ? ` — ${details}` : ""}`,
@@ -262,7 +262,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       return true;
     }
     const noun = count(sel.length, "item");
-    const snapshot = sel.map((it) => ({ ...it }));
+    const snapshot = sel.map((it) => ({ ...it, position: rankOf(it) }));
     if (action === "move" && value) {
       const end = items.filter((it) => it.listId === value && !it.parentItemId).length;
       sel.forEach((it, i) => moveItem.mutate({ id: it.id, listId: value, position: end + i }));
