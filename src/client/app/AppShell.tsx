@@ -62,7 +62,6 @@ export function AppShell() {
   // Project members can edit unless their role is Viewer; nonmembers read only.
   const readonly = !!projectId && !!project.data && (!myRole || myRole === "viewer");
   const guestReason: "public" | "viewer" | null = !readonly ? null : myRole === "viewer" ? "viewer" : "public";
-  const logout = () => void authClient.signOut().then(({ error }) => { if (!error) window.location.assign("/"); });
   const pm = useProjectMutations();
   const toast = useFeedback((s) => s.toast);
   const dismiss = useFeedback((s) => s.dismiss);
@@ -145,6 +144,10 @@ export function AppShell() {
   const barChips = [...available.filter((f) => f.type === "label" || f.type === "due"), ...filters.filter((f) => f.type !== "label" && f.type !== "due").map((f) => available.find((a) => sameFilter(a, f)) ?? f)].map((f) => ({ ...f, selected: filters.some((a) => sameFilter(a, f)) }));
   const hiddenCount = filters.length ? topItems.length - topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length : 0;
   const notify = useFeedback((s) => s.notify);
+  const logout = () => void authClient.signOut().then(({ error }) => {
+    if (error) notify({ message: `Couldn't log out: ${error.message ?? "the server refused the request"}`, icon: "circle-alert" });
+    else window.location.assign("/");
+  });
   const exportView = (format: "pdf" | "md" | "csv") => {
     const p = project.data;
     if (!p) return;

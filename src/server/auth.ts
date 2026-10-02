@@ -14,14 +14,15 @@ import { db } from "./db";
 import { createHash } from "node:crypto";
 
 import { accounts, apiTokens, lists, sessions, users, verifications } from "./db/schema";
-import { env } from "./env";
+import { DEV, env } from "./env";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
 
 export const auth = betterAuth({
   baseURL: env.APP_URL,
   basePath: "/api/auth",
   secret: env.BETTER_AUTH_SECRET,
-  trustedOrigins: [env.APP_URL, `http://localhost:${env.PORT}`],
+  // Vite moves to the next port when 5173 is taken; in development any loopback port may call the API.
+  trustedOrigins: [env.APP_URL, `http://localhost:${env.PORT}`, ...(DEV ? ["http://localhost:*", "http://127.0.0.1:*"] : [])],
   database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications } }),
   emailAndPassword: { enabled: true, minPasswordLength: 10 },
   plugins: [anonymous({
