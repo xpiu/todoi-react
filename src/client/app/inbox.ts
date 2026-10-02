@@ -4,9 +4,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { errorMessage, type Label } from "../data/api";
+import type { Label } from "../data/api";
 import { listItemsQuery } from "../data/queries";
-import { quote, useFeedback } from "./feedback";
+import { notifyFailure, quote, useFeedback } from "./feedback";
 import { inboxContainer, useCurrentUser } from "./session";
 import { useProjectActions } from "./useProjectActions";
 import { useProjectPicker } from "./useProjectPicker";
@@ -31,7 +31,7 @@ export function useInbox(enabled = true) {
       if (!list) notify({ message: `${quote(project.name)} has no lists yet — add one there first`, icon: "circle-alert" });
       else await actions.transfer([itemId], project, list, false);
     } catch (err) {
-      notify({ message: errorMessage(err), icon: "circle-alert" });
+      notifyFailure(err);
     }
   };
   return { items, container, actions, picker, fileTo };

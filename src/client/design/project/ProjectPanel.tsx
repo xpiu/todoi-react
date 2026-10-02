@@ -8,7 +8,9 @@ import type { LabelColor, MemberRole, ProjectView, ProjectVisibility } from "../
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
 import { Dialog } from "../core/Dialog";
+import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
+import { InlineError } from "../core/InlineError";
 import { IconButton } from "../core/IconButton";
 import { Select } from "../core/Select";
 import { Switch } from "../core/Switch";
@@ -72,16 +74,22 @@ export interface ProjectPanelProps {
   archivedCount?: number;
   currentUserId: string;
   section?: "members" | "activity";
-  onChange: (patch: ProjectPatch) => void;
+  /** A returned promise that rejects means the change did not land (the parent explains why); the field goes back */
+  onChange: (patch: ProjectPatch) => void | Promise<unknown>;
   onAction: (action: PanelAction) => void;
   onChangeRole?: (member: PanelMember, role: MemberRole) => void;
   onRemoveMember?: (member: PanelMember) => void;
-  onInvite?: (email: string, role: MemberRole) => void;
+  /** The form keeps the address and shows the reason when a returned promise rejects */
+  onInvite?: (email: string, role: MemberRole) => void | Promise<unknown>;
   onOpenKey?: (key: string) => void;
   onClose: () => void;
 }
 
-export function ProjectPanel(p: ProjectPanelProps) {
+/** Inside the panel a change resolves to whether it landed. */
+type InnerProps = Omit<ProjectPanelProps, "onChange"> & { onChange: (patch: ProjectPatch) => Promise<boolean> };
+
+export function ProjectPanel(props: ProjectPanelProps) {
+  const p: InnerProps = { ...props, onChange: (patch) => Promise.resolve(props.onChange(patch)).then(() => true, () => false) };
   return (
     <Dialog open={p.open} onClose={p.onClose} width={640} closeLabel="Close project settings" title={<PanelTitle {...p} />} titleExtra={p.project.url ? <CopyLink url={p.project.url} /> : null}>
       {p.open ? <PanelBody {...p} /> : null}
@@ -90,24 +98,20 @@ export function ProjectPanel(p: ProjectPanelProps) {
 }
 
 function CopyLink({ url }: { url: string }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, copy] = useCopy(900);
   return (
     <IconButton
-      name={copied ? "check" : "link"}
+      name={copyIcon(copied, "link")}
       label="Copy project link"
-      tooltip="Copy project link"
+      tooltip={copied === "failed" ? COPY_FAILED : "Copy project link"}
       size={28}
       iconSize={16}
-      onClick={() => {
-        void navigator.clipboard?.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 900);
-      }}
+      onClick={() => void copy(url)}
     />
   );
 }
 
-function PanelTitle({ project, onChange }: ProjectPanelProps) {
+function PanelTitle({ project, onChange }: InnerProps) {
   const isAdmin = project.role === "owner" || project.role === "admin";
   return (
     <span className="td-pp-head">
@@ -125,7 +129,7 @@ function PanelTitle({ project, onChange }: ProjectPanelProps) {
   );
 }
 
-function PanelBody({ project, members, activity, archivedCount, currentUserId, section, onChange, onAction, onChangeRole, onRemoveMember, onInvite, onOpenKey }: ProjectPanelProps) {
+function PanelBody({ project, members, activity, archivedCount, currentUserId, section, onChange, onAction, onChangeRole, onRemoveMember, onInvite, onOpenKey }: InnerProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [confirm, setConfirm] = useState<PanelAction | null>(null);
   const [desc, setDesc] = useState(project.description ?? "");
@@ -142,7 +146,7 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
   }, [section]);
   const commitName = () => {
     const v = nameDraft.trim();
-    if (v && v !== project.name) onChange({ name: v });
+    if (v && v !== project.name) void onChange({ name: v }).then((landed) => landed || setNameDraft(project.name));
     else setNameDraft(project.name);
   };
   const row = (id: string, label: ReactNode, hint: ReactNode, ctl: ReactNode) => (
@@ -190,10 +194,21 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
     </section>
   );
   const validMail = /^\S+@\S+\.\S+$/.test(inviteMail.trim());
-  const invite = () => {
-    if (!validMail) return;
-    onInvite?.(inviteMail.trim(), inviteRole);
-    setInviteMail("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  /** The address clears only once the invite exists; a failure keeps it and says why. */
+  const invite = async () => {
+    if (!validMail || inviting) return;
+    setInviting(true);
+    setInviteError(null);
+    try {
+      await onInvite?.(inviteMail.trim(), inviteRole);
+      setInviteMail("");
+    } catch (err) {
+      setInviteError(`Couldn't invite: ${err instanceof Error && err.message ? err.message : "something went wrong"}`);
+    } finally {
+      setInviting(false);
+    }
   };
   return (
     <div ref={bodyRef}>
@@ -231,15 +246,16 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
               <TextField type="email" icon="user-plus" value={inviteMail} aria-label="Invite by email" placeholder="name@company.com" className="td-pp-invitefield" onChange={(e) => setInviteMail(e.target.value)} onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  invite();
+                  void invite();
                 } else if (e.key.length === 1) e.stopPropagation();
               }} />
               <Select aria-label="Invite role" value={inviteRole} options={PROJECT_ROLES} onChange={(v) => setInviteRole(v)} placement="bottom-end" tier="detached" width={160} />
-              <Button variant="primary" disabled={!validMail} onClick={invite}>
-                Invite
+              <Button variant="primary" disabled={!validMail || inviting} onClick={() => void invite()}>
+                {inviting ? "Inviting…" : "Invite"}
               </Button>
             </div>
           ) : null}
+          <InlineError message={inviteError} className="td-pp-inviteerror" />
           {!isAdmin ? <div className="td-pp-cap">Only admins can invite people or change roles.</div> : null}
         </>
       ))}

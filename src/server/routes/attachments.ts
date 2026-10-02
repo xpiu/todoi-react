@@ -1,5 +1,4 @@
 // Attachments: files on an item; the bytes go through services/uploads. Spec: DESIGN.md › Attachments.
-import { zValidator } from "@hono/zod-validator";
 import { asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -14,8 +13,9 @@ import { attachmentHeaders } from "../services/attachmentResponse";
 import { safeName, storeAttachments, UploadRejected } from "../services/attachments";
 import { openUpload } from "../services/uploads";
 import { drainUploadCleanup } from "../services/uploadCleanup";
+import { fail, validate } from "../errors";
 
-const idParam = zValidator("param", z.object({ id: z.string().min(1).max(64) }));
+const idParam = validate("param", z.object({ id: z.string().min(1).max(64) }));
 
 export const itemAttachmentsRoute = new Hono()
   .get("/:id/attachments", idParam, async (c) => {
@@ -27,19 +27,19 @@ export const itemAttachmentsRoute = new Hono()
   .post(
     "/:id/attachments",
     idParam,
-    bodyLimit({ maxSize: MAX_UPLOAD_REQUEST_BYTES, onError: (c) => c.json({ error: `Uploads are limited to ${MAX_ATTACHMENT_BYTES / MB} MB per file` }, 413) }),
+    bodyLimit({ maxSize: MAX_UPLOAD_REQUEST_BYTES, onError: (c) => fail(c, 413, `Uploads are limited to ${MAX_ATTACHMENT_BYTES / MB} MB per file`) }),
     async (c) => {
       const { id } = c.req.valid("param");
       const viewer = viewerOf(c);
       const [item] = await db.select().from(items).where(eq(items.id, id));
-      if (!item) return c.json({ error: "Not found" }, 404);
+      if (!item) return fail(c, 404, "Not found");
       const body = await c.req.parseBody({ all: true });
       const raw = body["files"] ?? body["file"];
       const files = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((f): f is File => f instanceof File);
       try {
         return c.json(await storeAttachments(item, files, viewer), 201);
       } catch (error) {
-        if (error instanceof UploadRejected) return c.json({ error: error.message }, error.status);
+        if (error instanceof UploadRejected) return fail(c, error.status, error.message);
         throw error;
       }
     },
@@ -48,15 +48,15 @@ export const itemAttachmentsRoute = new Hono()
 export const attachmentsRoute = new Hono()
   .get("/:id/file", idParam, async (c) => {
     const [row] = await db.select().from(attachments).where(eq(attachments.id, c.req.valid("param").id));
-    if (!row) return c.json({ error: "Not found" }, 404);
+    if (!row) return fail(c, 404, "Not found");
     const file = await openUpload(row.storageKey);
-    if (!file) return c.json({ error: "File missing" }, 404);
+    if (!file) return fail(c, 404, "File missing");
     const download = c.req.query("download") != null;
     return c.body(file.stream, 200, attachmentHeaders(file.head, file.size, row.name, download));
   })
-  .patch("/:id", idParam, zValidator("json", z.object({ name: z.string().trim().min(1).max(200) })), async (c) => {
+  .patch("/:id", idParam, validate("json", z.object({ name: z.string().trim().min(1).max(200) })), async (c) => {
     const [row] = await db.update(attachments).set({ name: safeName(c.req.valid("json").name) }).where(eq(attachments.id, c.req.valid("param").id)).returning();
-    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
+    return row ? c.json(row) : fail(c, 404, "Not found");
   })
   .delete("/:id", idParam, async (c) => {
     const row = await db.transaction(async (tx) => {
@@ -66,7 +66,7 @@ export const attachmentsRoute = new Hono()
       if (item?.cover?.attachmentId === removed.id) await tx.update(items).set({ cover: null }).where(eq(items.id, item.id));
       return removed;
     });
-    if (!row) return c.json({ error: "Not found" }, 404);
+    if (!row) return fail(c, 404, "Not found");
     await drainUploadCleanup();
     return c.body(null, 204);
   });

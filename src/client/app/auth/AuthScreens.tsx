@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { authClient, forgetBrowserSession } from "../../auth";
-import { api, unwrap, type InviteDetail } from "../../data/api";
+import { api, explain, unwrap, type InviteDetail } from "../../data/api";
 import { InvitePage, type InviteState } from "../../design/auth/InvitePage";
 import { ResetPasswordPage, type ResetStage } from "../../design/auth/ResetPasswordPage";
 import { SignInPage } from "../../design/auth/SignInPage";
@@ -123,8 +123,8 @@ export function InviteScreen() {
       signedIn={!!user && !user.isAnonymous}
       user={user && !user.isAnonymous ? { name: user.name, email: user.email, color: avatarColorVar(user.avatarColor) } : undefined}
       onAccept={async () => {
-        const r = await api.api.invites[":code"].accept.$post({ param: { code } });
-        if (r.ok) setAccepted(true);
+        await api.api.invites[":code"].accept.$post({ param: { code } }).then((r) => unwrap(r)).catch(explain);
+        setAccepted(true);
       }}
       onDecline={() => navigate({ to: "/" })}
       onLogin={() => navigate({ to: "/login", search: { next: `/i/${code}`, email: d.invite.email ?? undefined } })}

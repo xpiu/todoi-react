@@ -1,5 +1,4 @@
 // The signed-in person: profile (name, handle, avatar colour) and project invites.
-import { zValidator } from "@hono/zod-validator";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
@@ -14,24 +13,25 @@ import { apiTokens, groups, invites, items, labels, lists, members, projects, us
 import { env } from "../env";
 import { logActivity } from "../services/activity";
 import { memberProjectIds } from "../services/projects";
+import { fail, validate } from "../errors";
 
 export const meRoute = new Hono()
   .get("/", async (c) => {
     const v = viewerOf(c);
     const [u] = await db.select().from(users).where(eq(users.id, v.userId));
-    if (!u) return c.json({ error: "Not found" }, 404);
+    if (!u) return fail(c, 404, "Not found");
     return c.json({ ...u, prefs: prefsOf(u.prefs), inboxListId: v.inboxListId });
   })
   // Merge a change into the account's preferences (concurrent devices each change their own keys).
-  .patch("/prefs", zValidator("json", prefsPatchSchema), async (c) => {
+  .patch("/prefs", validate("json", prefsPatchSchema), async (c) => {
     const v = viewerOf(c);
     const [u] = await db.update(users).set({ prefs: sql`${users.prefs} || ${JSON.stringify(c.req.valid("json"))}::jsonb` }).where(eq(users.id, v.userId)).returning({ prefs: users.prefs });
-    return u ? c.json(prefsOf(u.prefs)) : c.json({ error: "Not found" }, 404);
+    return u ? c.json(prefsOf(u.prefs)) : fail(c, 404, "Not found");
   })
-  .patch("/", zValidator("json", z.object({ name: z.string().trim().min(1).max(80).optional(), nickname: z.string().trim().min(1).max(40).regex(/^[a-z0-9._-]+$/i).nullable().optional(), avatarColor: z.enum(LABEL_COLORS).nullable().optional() })), async (c) => {
+  .patch("/", validate("json", z.object({ name: z.string().trim().min(1).max(80).optional(), nickname: z.string().trim().min(1).max(40).regex(/^[a-z0-9._-]+$/i).nullable().optional(), avatarColor: z.enum(LABEL_COLORS).nullable().optional() })), async (c) => {
     const v = viewerOf(c);
     const [u] = await db.update(users).set(c.req.valid("json")).where(eq(users.id, v.userId)).returning();
-    return u ? c.json(u) : c.json({ error: "Not found" }, 404);
+    return u ? c.json(u) : fail(c, 404, "Not found");
   });
 
 const DAY = 86400000;
@@ -41,7 +41,7 @@ export const tokensRoute = new Hono()
     const rows = await db.select().from(apiTokens).where(eq(apiTokens.userId, v.userId));
     return c.json(rows.map(({ hash: _h, ...t }) => t));
   })
-  .post("/", zValidator("json", z.object({ name: z.string().trim().min(1).max(80), days: z.number().int().min(1).max(365).default(90) })), async (c) => {
+  .post("/", validate("json", z.object({ name: z.string().trim().min(1).max(80), days: z.number().int().min(1).max(365).default(90) })), async (c) => {
     const v = viewerOf(c);
     const { name, days } = c.req.valid("json");
     const secret = `tdi_${nanoid(32)}`;
@@ -52,7 +52,7 @@ export const tokensRoute = new Hono()
     const { hash: _h, ...t } = row!;
     return c.json({ ...t, secret }, 201);
   })
-  .delete("/:id", zValidator("param", z.object({ id: z.string().min(1) })), async (c) => {
+  .delete("/:id", validate("param", z.object({ id: z.string().min(1) })), async (c) => {
     const v = viewerOf(c);
     await db.update(apiTokens).set({ revokedAt: new Date() }).where(and(eq(apiTokens.id, c.req.valid("param").id), eq(apiTokens.userId, v.userId)));
     return c.body(null, 204);
@@ -88,12 +88,12 @@ const inviteOut = async (code: string) => {
 };
 
 export const projectInvitesRoute = new Hono()
-  .get("/:id/invites", zValidator("param", z.object({ id: idSchema })), async (c) => {
+  .get("/:id/invites", validate("param", z.object({ id: idSchema })), async (c) => {
     viewerOf(c);
     const rows = await db.select().from(invites).where(and(eq(invites.projectId, c.req.valid("param").id), isNull(invites.acceptedAt), isNull(invites.revokedAt)));
     return c.json(rows.map((r) => ({ ...r, url: `${env.APP_URL}/i/${r.code}` })));
   })
-  .post("/:id/invites", zValidator("param", z.object({ id: idSchema })), zValidator("json", z.object({ email: z.string().email().optional(), role: z.enum(MEMBER_ROLES).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
+  .post("/:id/invites", validate("param", z.object({ id: idSchema })), validate("json", z.object({ email: z.string().email().optional(), role: z.enum(MEMBER_ROLES).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
     const v = viewerOf(c);
     const { id } = c.req.valid("param");
     const { email, role, days } = c.req.valid("json");
@@ -108,7 +108,7 @@ export const projectInvitesRoute = new Hono()
 export const invitesRoute = new Hono()
   .get("/:code", async (c) => {
     const inv = await inviteOut(c.req.param("code"));
-    if (!inv) return c.json({ error: "Not found" }, 404);
+    if (!inv) return fail(c, 404, "Not found");
     const v = maybeViewer(c);
     const already = v ? (await db.select().from(members).where(and(eq(members.projectId, inv.project.id), eq(members.userId, v.userId)))).length > 0 : false;
     const state = inv.invite.revokedAt ? "revoked" : inv.invite.acceptedAt ? "accepted" : inv.invite.expiresAt < new Date() ? "expired" : already ? "member" : "open";
@@ -117,9 +117,9 @@ export const invitesRoute = new Hono()
   .post("/:code/accept", async (c) => {
     const v = viewerOf(c);
     const inv = await inviteOut(c.req.param("code"));
-    if (!inv) return c.json({ error: "Not found" }, 404);
-    if (inv.invite.revokedAt || inv.invite.acceptedAt || inv.invite.expiresAt < new Date()) return c.json({ error: "This invite is no longer open" }, 410);
-    if (inv.invite.email && inv.invite.email.toLowerCase() !== v.email.toLowerCase()) return c.json({ error: "This invite is for a different email address" }, 403);
+    if (!inv) return fail(c, 404, "Not found");
+    if (inv.invite.revokedAt || inv.invite.acceptedAt || inv.invite.expiresAt < new Date()) return fail(c, 410, "This invite is no longer open");
+    if (inv.invite.email && inv.invite.email.toLowerCase() !== v.email.toLowerCase()) return fail(c, 403, "This invite is for a different email address");
     await db.transaction(async (tx) => {
       await tx.insert(members).values({ projectId: inv.project.id, userId: v.userId, role: inv.invite.role }).onConflictDoNothing();
       await tx.update(invites).set({ acceptedAt: new Date(), acceptedBy: v.userId }).where(eq(invites.id, inv.invite.id));

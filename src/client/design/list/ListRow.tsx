@@ -1,7 +1,7 @@
 // ListRow — one item as a flat row: circle checkbox, wrapping title, then right-pinned labels,
 // badges, due pill, repeat glyph, priority flag, avatar stack and the mono key (click copies).
 // Subitems render beneath as indented rows. Spec: DESIGN.md › List view, Notifications.
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type SyntheticEvent } from "react";
+import type { CSSProperties, MouseEvent, SyntheticEvent } from "react";
 
 const stack = (n: number) => ({ "--td-z": n }) as CSSProperties;
 
@@ -9,6 +9,7 @@ import { DueDatePill, type DueState } from "../board/DueDatePill";
 import { LabelChip } from "../board/LabelChip";
 import { Avatar } from "../core/Avatar";
 import { Checkbox } from "../core/Checkbox";
+import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
 import { StatusChip } from "../core/StatusChip";
 import type { StatusLike } from "../core/statuses";
@@ -58,23 +59,16 @@ export interface ListRowProps {
 }
 
 function RowKey({ itemId }: { itemId: string }) {
-  const [copied, setCopied] = useState(false);
-  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (t.current) clearTimeout(t.current);
-  }, []);
+  const [copied, doCopy] = useCopy();
   const copy = (e: MouseEvent) => {
     e.stopPropagation();
-    void navigator.clipboard?.writeText(itemId);
-    setCopied(true);
-    if (t.current) clearTimeout(t.current);
-    t.current = setTimeout(() => setCopied(false), 1200);
+    void doCopy(itemId);
   };
   return (
-    <button type="button" className={"td-lrow-key" + (copied ? " is-copied" : "")} title={`Click to copy ${itemId}`} aria-label={`Copy ${itemId}`} onClick={copy} onKeyDown={(e) => e.stopPropagation()}>
+    <button type="button" className={"td-lrow-key" + (copied !== "idle" ? " is-copied" : "")} title={copied === "failed" ? COPY_FAILED : `Click to copy ${itemId}`} aria-label={`Copy ${itemId}`} onClick={copy} onKeyDown={(e) => e.stopPropagation()}>
       <span className="td-lrow-key-txt">{itemId}</span>
       <span className="td-lrow-key-ico" aria-hidden>
-        <Icon name={copied ? "check" : "copy"} size={12} />
+        <Icon name={copyIcon(copied, "copy")} size={12} />
       </span>
     </button>
   );

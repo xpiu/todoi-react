@@ -8,7 +8,7 @@ import { newId, useCreateList } from "../data/mutations";
 import { useQuery } from "@tanstack/react-query";
 
 import { listItemsQuery, projectsOf, useGroups, useInboxUnread, useLabels, useProject, useProjectItems } from "../data/queries";
-import type { SearchHit } from "../data/api";
+import { explain, type SearchHit } from "../data/api";
 import { useAppearance } from "../design/core/appearance";
 import { SHORTCUTS } from "../design/core/shortcuts";
 import { ShortcutHint, useShortcutHints } from "../design/core/ShortcutHint";
@@ -30,11 +30,11 @@ import { projectUrl } from "./links";
 import { count } from "../design/core/text";
 import { CommandPalette } from "../design/overlay/CommandPalette";
 import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
-import { quote, useFeedback } from "./feedback";
+import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { downloadText, fileSlug, itemsToCsv, viewToMarkdown } from "./exportData";
 import { availableFilters, describeSort, FILTER_SECTIONS, filterKey, matchesFilters, nextSort, sameFilter, SORT_OPTS, type SortDim } from "./filters";
 import { keyOf } from "./items";
-import { useLifecycle } from "./lifecycle";
+import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LifecycleDialogs } from "./LifecycleDialogs";
 import { useProjectMutations } from "../data/projects";
 import { avatarColorVar, peopleOf, useCurrentUser } from "./session";
@@ -77,6 +77,7 @@ export function AppShell() {
   const readonly = !!projectId && !!project.data && (!myRole || myRole === "viewer");
   const guestReason: "public" | "viewer" | null = !readonly ? null : myRole === "viewer" ? "viewer" : "public";
   const pm = useProjectMutations();
+  const removeProject = useRemoveProject();
   const toast = useFeedback((s) => s.toast);
   const dismiss = useFeedback((s) => s.dismiss);
   const setUndoScope = useFeedback((s) => s.setScope);
@@ -197,30 +198,30 @@ export function AppShell() {
           canSave={(filters.length > 0 || sortActive.length > 0) && (!activeSaved || svDirty)}
           currentDef={currentDef}
           onSelect={goSaved}
-          onSave={(name, shared) => {
+          onSave={async (name, shared) => {
             const id = newId();
-            svm.create.mutate({ id, name, shared, definition: currentDef }, { onSuccess: () => {
-              notify({ message: `Saved the view ${quote(name)}`, icon: "bookmark-plus" });
-              goSaved(id);
-            } });
+            await svm.create.mutateAsync({ id, name, shared, definition: currentDef, quiet: true }).catch(explain);
+            notify({ message: `Saved the view ${quote(name)}`, icon: "bookmark-plus" });
+            goSaved(id);
           }}
           onAction={(id, action, value) => {
             const v = resolved.savedViews.find((x) => x.id === id);
             if (!v) return;
             if (action === "copy-link") {
-              void navigator.clipboard?.writeText(projectUrl(projectId, `?view=${id}`));
-              notify({ message: `Copied the link to ${quote(v.name)}`, icon: "link" });
+              void copyAndNotify(projectUrl(projectId, `?view=${id}`), `Copied the link to ${quote(v.name)}`);
             } else if (action === "update") {
-              svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => goSaved(id) });
-              notify({ message: `Updated ${quote(v.name)} with the current filters and sort`, icon: "save" });
+              svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => {
+                goSaved(id);
+                notify({ message: `Updated ${quote(v.name)} with the current filters and sort`, icon: "save" });
+              } });
             } else if (action === "rename" && typeof value === "string") svm.update.mutate({ id, name: value });
             else if (action === "share" && typeof value === "boolean") {
-              svm.update.mutate({ id, shared: value });
-              notify({ message: value ? `${quote(v.name)} is now shared with the project` : `${quote(v.name)} is now only yours`, icon: value ? "users" : "lock" });
+              svm.update.mutate({ id, shared: value }, { onSuccess: () => notify({ message: value ? `${quote(v.name)} is now shared with the project` : `${quote(v.name)} is now only yours`, icon: value ? "users" : "lock" }) });
             } else if (action === "delete") {
-              svm.remove.mutate({ id });
-              if (activeSavedId === id) goSaved(null);
-              notify({ message: `Deleted the view ${quote(v.name)}`, icon: "trash-2", restore: () => svm.create.mutate({ id: v.id, name: v.name, shared: v.shared, definition: v.definition }) });
+              svm.remove.mutate({ id }, { onSuccess: () => {
+                if (activeSavedId === id) goSaved(null);
+                notify({ message: `Deleted the view ${quote(v.name)}`, icon: "trash-2", restore: () => svm.create.mutateAsync({ id: v.id, name: v.name, shared: v.shared, definition: v.definition, quiet: true }) });
+              } });
             }
           }}
         />
@@ -322,14 +323,8 @@ export function AppShell() {
             else if (action === "duplicate") {
               const src = (groups.data ?? []).flatMap((g) => g.projects).find((x) => x.id === id);
               if (src) pm.createProject.mutate({ id: newId(), groupId: src.groupId, name: `${src.name} (copy)`, copyFrom: src.id }, { onSuccess: () => notify({ message: `Duplicated “${src.name}” — lists and settings, not the items`, icon: "copy" }) });
-            } else if (action === "archive") {
-              pm.archiveProject.mutate({ id });
-              notify({ message: `Archived “${p?.name ?? "the project"}”`, icon: "archive", restore: () => pm.restoreProject.mutate({ id }) });
-              if (projectId === id) void navigate({ to: "/projects" });
-            } else if (action === "delete") {
-              pm.deleteProject.mutate({ id });
-              notify({ message: `Deleted “${p?.name ?? "the project"}”`, icon: "trash-2", restore: () => pm.restoreProject.mutate({ id }) });
-              if (projectId === id) void navigate({ to: "/projects" });
+            } else if (action === "archive" || action === "delete") {
+              removeProject({ id, name: p?.name ?? "the project" }, action, () => projectId === id && void navigate({ to: "/projects" }));
             }
           }}
           onSelect={(id) => {

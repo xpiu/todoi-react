@@ -1,4 +1,3 @@
-import { zValidator } from "@hono/zod-validator";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -8,14 +7,15 @@ import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { statusChange } from "../../shared/completion";
-import { duplicateItem, ItemRejected, moveItem, placeAmongSiblings, updateItem } from "../services/items";
+import { duplicateItem, moveItem, placeAmongSiblings, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
 import { deliver, notifyPeople } from "../services/notifications";
+import { fail, validate } from "../errors";
 
-const idParam = zValidator("param", z.object({ id: idSchema }));
-const listQuery = zValidator("query", z.object({ listId: idSchema.optional(), projectId: idSchema.optional() }));
+const idParam = validate("param", z.object({ id: idSchema }));
+const listQuery = validate("query", z.object({ listId: idSchema.optional(), projectId: idSchema.optional() }));
 
 type ItemRow = typeof items.$inferSelect;
 /** Attach each item's label and assignee ids (one query each for the whole set). */
@@ -42,12 +42,12 @@ export const itemsRoute = new Hono()
       .orderBy(asc(items.position), asc(items.createdAt));
     return c.json(await withRelations(rows));
   })
-  .post("/", zValidator("json", createItemSchema), async (c) => {
+  .post("/", validate("json", createItemSchema), async (c) => {
     const viewer = viewerOf(c);
     const input = c.req.valid("json");
     const listId = input.listId ?? viewer.inboxListId;
     const [list] = await db.select().from(lists).where(eq(lists.id, listId));
-    if (!list) return c.json({ error: "List not found" }, 404);
+    if (!list) return fail(c, 404, "List not found");
     const { labelIds = [], assigneeIds = [], position: where = "bottom", ...fields } = input;
     // Created in a Done list (or as Done) means done, by the same rule as every other path.
     const state = statusChange({ status: null, done: false, priorStatus: null }, fields.status === undefined ? (list.statusRole ?? null) : fields.status);
@@ -75,7 +75,7 @@ export const itemsRoute = new Hono()
     if (assigneeIds.length) await deliver(notifyPeople("assignment", assigneeIds, viewer, row));
     return c.json({ ...row, labelIds, assigneeIds, attachmentCount: 0 }, 201);
   })
-  .patch("/:id", idParam, zValidator("json", updateItemSchema), async (c) => {
+  .patch("/:id", idParam, validate("json", updateItemSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { done, status, ifDue, archived, deleted, parentItemId, ...rest } = c.req.valid("json");
     const changes: Partial<ItemRow> = { ...rest };
@@ -84,39 +84,33 @@ export const itemsRoute = new Hono()
       changes.parentItemId = parentItemId;
       if (parentItemId) {
         const [parent] = await db.select({ listId: items.listId, projectId: items.projectId }).from(items).where(eq(items.id, parentItemId));
-        if (!parent) return c.json({ error: "Not found" }, 404);
+        if (!parent) return fail(c, 404, "Not found");
         changes.listId = parent.listId;
         changes.projectId = parent.projectId;
       }
     }
-    let result: Awaited<ReturnType<typeof updateItem>>;
-    try {
-      result = await updateItem(id, { done, status, ifDue }, changes, { archived, deleted }, viewerOf(c).userId);
-    } catch (error) {
-      if (error instanceof ItemRejected) return c.json({ error: error.message }, 400);
-      throw error;
-    }
-    if (!result) return c.json({ error: "Not found" }, 404);
+    const result = await updateItem(id, { done, status, ifDue }, changes, { archived, deleted }, viewerOf(c).userId);
+    if (!result) return fail(c, 404, "Not found");
     // `occurrence`: the recurring occurrence this request completed, for the client's toast and Undo.
     return c.json({ ...result.item, occurrence: result.occurrence });
   })
   // Move within or across lists; a linked list role updates the Status in the same transaction.
-  .post("/:id/move", idParam, zValidator("json", moveItemSchema), async (c) => {
+  .post("/:id/move", idParam, validate("json", moveItemSchema), async (c) => {
     const result = await moveItem(c.req.valid("param").id, c.req.valid("json"), viewerOf(c).userId);
-    return result ? c.json(result) : c.json({ error: "Not found" }, 404);
+    return result ? c.json(result) : fail(c, 404, "Not found");
   })
   // Copy into a list: the copy and its subitems (root first), and what was not carried over.
-  .post("/:id/duplicate", idParam, zValidator("json", duplicateItemSchema), async (c) => {
+  .post("/:id/duplicate", idParam, validate("json", duplicateItemSchema), async (c) => {
     const input = c.req.valid("json");
     const [taken] = await db.select({ id: items.id }).from(items).where(eq(items.id, input.id));
-    if (taken) return c.json({ error: "That copy already exists" }, 409);
+    if (taken) return fail(c, 409, "That copy already exists");
     const result = await duplicateItem(c.req.valid("param").id, input, viewerOf(c).userId);
-    if (!result) return c.json({ error: "Not found" }, 404);
+    if (!result) return fail(c, 404, "Not found");
     return c.json({ items: await withRelations(result.items), report: result.report }, 201);
   })
   .delete("/:id", idParam, async (c) => {
     // Delete = move to the Trash (90 days); "Delete forever" is a later, explicit action.
     const row = await setItemLifecycle(c.req.valid("param").id, { deleted: true }, viewerOf(c).userId);
-    if (!row) return c.json({ error: "Not found" }, 404);
+    if (!row) return fail(c, 404, "Not found");
     return c.body(null, 204);
   });

@@ -37,15 +37,15 @@ async function datesOf(page: Page, f: Fixture, id: string) {
 
 test("the API refuses impossible dates and times and a start after the due, naming the field", async ({ page, fixture: f }) => {
   const id = await f.item("Validated", { startDate: "2026-10-12", dueDate: "2026-10-14" });
-  for (const [body, message] of [
-    [{ dueDate: "2026-02-31" }, "Use a real date written as YYYY-MM-DD"],
-    [{ dueTime: "29:99" }, "Use a time from 00:00 to 23:59"],
-    [{ startDate: "2026-10-20" }, "The start date must be on or before the due date"],
-    [{ dueDate: "2026-10-01" }, "The start date must be on or before the due date"],
+  for (const [body, field, message] of [
+    [{ dueDate: "2026-02-31" }, "dueDate", "Use a real date written as YYYY-MM-DD"],
+    [{ dueTime: "29:99" }, "dueTime", "Use a time from 00:00 to 23:59"],
+    [{ startDate: "2026-10-20" }, "startDate", "The start date must be on or before the due date"],
+    [{ dueDate: "2026-10-01" }, "startDate", "The start date must be on or before the due date"],
   ] as const) {
     const response = await page.request.patch(`/api/items/${id}`, { data: body });
     expect(response.status(), JSON.stringify(body)).toBe(400);
-    expect(await response.text()).toContain(message);
+    expect(await response.json()).toMatchObject({ error: message, code: "invalid", fields: { [field]: message } });
   }
   expect(await datesOf(page, f, id)).toBe("2026-10-12 → 2026-10-14");
   // A leap day exists; a saved time reads back as HH:MM.

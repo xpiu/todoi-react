@@ -16,6 +16,7 @@ import { createHash } from "node:crypto";
 import { accounts, apiTokens, lists, sessions, users, verifications } from "./db/schema";
 import { DEV, env } from "./env";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
+import { fail } from "./errors";
 
 export const auth = betterAuth({
   baseURL: env.APP_URL,
@@ -100,7 +101,7 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   }
   c.set(VIEWER, null);
   if (c.req.method === "GET") return next();
-  return c.json({ error: "Sign in to continue" }, 401);
+  return fail(c, 401, "Sign in to continue");
 };
 
 export function maybeViewer(c: Context): Viewer | null {

@@ -1,5 +1,5 @@
 // InlineError — a quiet danger line next to the control that failed ("Couldn't save: …"), announced
-// as an alert. Errors stay where the work is; the Toast is for undoable outcomes only.
+// as an alert. Errors stay where the work is; the Toast explains only failures that have no such place.
 import type { CSSProperties } from "react";
 
 import { Icon } from "./Icon";

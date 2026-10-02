@@ -15,13 +15,14 @@ import { ViewSkeleton } from "../design/core/Skeleton";
 import { Switch } from "../design/core/Switch";
 import { ProjectIconPicker, projectColorVar } from "../design/project/ProjectIconPicker";
 import { quote, useFeedback } from "./feedback";
-import { useLifecycle } from "./lifecycle";
+import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LoadFailed } from "./LoadFailed";
 import "./tables.css";
 
 export function ProjectsScreen() {
   const groups = useGroups();
   const m = useProjectMutations();
+  const removeProject = useRemoveProject();
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
   const openNewProject = useLifecycle((s) => s.openNewProject);
@@ -136,20 +137,14 @@ export function ProjectsScreen() {
                           <MenuDivider />
                           <MenuItem
                             icon="archive"
-                            onSelect={() => {
-                              m.archiveProject.mutate({ id: p.id });
-                              notify({ message: `Archived ${quote(p.name)}`, icon: "archive", restore: () => m.restoreProject.mutate({ id: p.id }) });
-                            }}
+                            onSelect={() => removeProject(p, "archive")}
                           >
                             Archive
                           </MenuItem>
                           <MenuItem
                             icon="trash-2"
                             danger
-                            onSelect={() => {
-                              m.deleteProject.mutate({ id: p.id });
-                              notify({ message: `Deleted ${quote(p.name)}`, icon: "trash-2", restore: () => m.restoreProject.mutate({ id: p.id }) });
-                            }}
+                            onSelect={() => removeProject(p, "delete")}
                           >
                             Delete
                           </MenuItem>

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Button } from "../core/Button";
 import { Checkbox } from "../core/Checkbox";
 import { Icon } from "../core/Icon";
+import { InlineError } from "../core/InlineError";
 import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
 import { Popover, usePopover } from "../core/Popover";
 import { summarizeView, type ViewDefinition } from "./viewState";
@@ -32,7 +33,8 @@ export interface SavedViewTabsProps {
   currentDef?: ViewDefinition;
   allLabel?: string;
   onSelect: (id: string | null) => void;
-  onSave: (name: string, shared: boolean) => void;
+  /** The popover stays open with the name and shows the reason when a returned promise rejects */
+  onSave: (name: string, shared: boolean) => void | Promise<unknown>;
   onAction: (id: string, action: SavedViewAction, value?: string | boolean) => void;
 }
 
@@ -43,12 +45,22 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const active = views.find((v) => v.id === activeId) ?? null;
-  const commitSave = () => {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const commitSave = async () => {
     const n = name.trim();
-    if (!n) return;
-    onSave(n, shared);
-    save.close();
-    setName("");
+    if (!n || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(n, shared);
+      save.close();
+      setName("");
+    } catch (err) {
+      setSaveError(`Couldn't save the view: ${err instanceof Error && err.message ? err.message : "something went wrong"}`);
+    } finally {
+      setSaving(false);
+    }
   };
   const commitRename = () => {
     const n = draft.trim();
@@ -149,7 +161,7 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== "Escape") e.stopPropagation();
-                if (e.key === "Enter") commitSave();
+                if (e.key === "Enter") void commitSave();
               }}
             />
             {summary.length ? (
@@ -160,11 +172,12 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
               </div>
             ) : null}
             <Checkbox checked={shared} onChange={setShared} label="Share with the project" />
+            <InlineError message={saveError} />
             <div className="td-sv-row">
               <Button variant="subtle" onClick={save.close}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={!name.trim()} onClick={commitSave}>
+              <Button variant="primary" disabled={!name.trim() || saving} onClick={() => void commitSave()}>
                 Save
               </Button>
             </div>

@@ -1,6 +1,5 @@
 // Everything that hangs off an item or a project besides lists: labels, assignees, watchers, comments,
 // reactions, relations, saved views, the activity log and the Inbox's "Mark all read".
-import { zValidator } from "@hono/zod-validator";
 import { and, asc, desc, eq, getTableColumns, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -29,9 +28,10 @@ import { logActivity, quote } from "../services/activity";
 import { deliver, notifyComment, notifyPeople } from "../services/notifications";
 
 import { itemIsLive } from "../services/lifecycle";
+import { fail, validate } from "../errors";
 
-const idParam = zValidator("param", z.object({ id: idSchema }));
-const projectQuery = zValidator("query", z.object({ projectId: idSchema }));
+const idParam = validate("param", z.object({ id: idSchema }));
+const projectQuery = validate("query", z.object({ projectId: idSchema }));
 
 const INVERSE: Record<RelationType, RelationType> = { blocked_by: "blocks", blocks: "blocked_by", related: "related" };
 
@@ -41,7 +41,7 @@ export const labelsRoute = new Hono()
     const rows = await db.select().from(labels).where(eq(labels.projectId, c.req.valid("query").projectId)).orderBy(asc(labels.position), asc(labels.name));
     return c.json(rows);
   })
-  .post("/", zValidator("json", createLabelSchema), async (c) => {
+  .post("/", validate("json", createLabelSchema), async (c) => {
     const input = c.req.valid("json");
     const max = (await db.select({ max: sql<number>`coalesce(max(${labels.position}), -1)` }).from(labels).where(eq(labels.projectId, input.projectId)))[0]?.max ?? -1;
     const [row] = await db
@@ -50,12 +50,12 @@ export const labelsRoute = new Hono()
       .returning();
     return c.json(row!, 201);
   })
-  .patch("/:id", idParam, zValidator("json", updateLabelSchema), async (c) => {
+  .patch("/:id", idParam, validate("json", updateLabelSchema), async (c) => {
     const [row] = await db.update(labels).set(c.req.valid("json")).where(eq(labels.id, c.req.valid("param").id)).returning();
-    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
+    return row ? c.json(row) : fail(c, 404, "Not found");
   })
   // Merge: every item with this label gets the target instead; the source label disappears.
-  .post("/:id/merge", idParam, zValidator("json", mergeLabelSchema), async (c) => {
+  .post("/:id/merge", idParam, validate("json", mergeLabelSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { intoLabelId } = c.req.valid("json");
     const moved = await db.transaction(async (tx) => {
@@ -68,7 +68,7 @@ export const labelsRoute = new Hono()
   })
   .delete("/:id", idParam, async (c) => {
     const [row] = await db.delete(labels).where(eq(labels.id, c.req.valid("param").id)).returning({ id: labels.id });
-    return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
+    return row ? c.body(null, 204) : fail(c, 404, "Not found");
   });
 
 // ── On one item ────────────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ export const itemContentRoute = new Hono()
     const { id } = c.req.valid("param");
     const viewer = viewerOf(c);
     const [item] = await db.select().from(items).where(eq(items.id, id));
-    if (!item) return c.json({ error: "Not found" }, 404);
+    if (!item) return fail(c, 404, "Not found");
     const [labelRows, assigneeRows, watcherRows, commentRows, relationRows, subitems, attachmentRows] = await Promise.all([
       db.select({ labelId: itemLabels.labelId }).from(itemLabels).where(eq(itemLabels.itemId, id)),
       db.select({ userId: itemAssignees.userId }).from(itemAssignees).where(eq(itemAssignees.itemId, id)),
@@ -109,7 +109,7 @@ export const itemContentRoute = new Hono()
       attachments: attachmentRows,
     });
   })
-  .put("/:id/labels", idParam, zValidator("json", setItemLabelsSchema), async (c) => {
+  .put("/:id/labels", idParam, validate("json", setItemLabelsSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { labelIds } = c.req.valid("json");
     await db.transaction(async (tx) => {
@@ -118,7 +118,7 @@ export const itemContentRoute = new Hono()
     });
     return c.json({ labelIds });
   })
-  .put("/:id/assignees", idParam, zValidator("json", setAssigneesSchema), async (c) => {
+  .put("/:id/assignees", idParam, validate("json", setAssigneesSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { userIds } = c.req.valid("json");
     const before = await db.transaction(async (tx) => {
@@ -132,7 +132,7 @@ export const itemContentRoute = new Hono()
     if (item) await deliver(notifyPeople("assignment", added, viewerOf(c), item));
     return c.json({ userIds });
   })
-  .put("/:id/watch", idParam, zValidator("json", setWatchingSchema), async (c) => {
+  .put("/:id/watch", idParam, validate("json", setWatchingSchema), async (c) => {
     const { id } = c.req.valid("param");
     const viewer = viewerOf(c);
     const { watching } = c.req.valid("json");
@@ -140,18 +140,18 @@ export const itemContentRoute = new Hono()
     else await db.delete(itemWatchers).where(and(eq(itemWatchers.itemId, id), eq(itemWatchers.userId, viewer.userId)));
     return c.json({ watching });
   })
-  .post("/:id/comments", idParam, zValidator("json", createCommentSchema), async (c) => {
+  .post("/:id/comments", idParam, validate("json", createCommentSchema), async (c) => {
     const { id } = c.req.valid("param");
     const viewer = viewerOf(c);
     const [item] = await db.select().from(items).where(eq(items.id, id));
-    if (!item) return c.json({ error: "Not found" }, 404);
+    if (!item) return fail(c, 404, "Not found");
     // The client keeps one id per draft, so a retry after a lost response updates instead of duplicating.
     const [row] = await db
       .insert(comments)
       .values({ ...c.req.valid("json"), itemId: id, authorId: viewer.userId })
       .onConflictDoUpdate({ target: comments.id, set: { body: sql`excluded.body` }, setWhere: and(eq(comments.itemId, id), eq(comments.authorId, viewer.userId)) })
       .returning({ ...getTableColumns(comments), inserted: sql<boolean>`(xmax = 0)` });
-    if (!row) return c.json({ error: "That comment id is already in use" }, 409);
+    if (!row) return fail(c, 409, "That comment id is already in use");
     const { inserted, ...comment } = row;
     if (inserted) {
       await logActivity(db, { projectId: item.projectId, actorId: viewer.userId, type: "comment", text: `commented on ${quote(item.title)}`, itemId: id });
@@ -159,16 +159,16 @@ export const itemContentRoute = new Hono()
     }
     return c.json({ ...comment, reactions: [] }, 201);
   })
-  .post("/:id/relations", idParam, zValidator("json", relationSchema), async (c) => {
+  .post("/:id/relations", idParam, validate("json", relationSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { targetId, type } = c.req.valid("json");
-    if (targetId === id) return c.json({ error: "An item cannot relate to itself" }, 400);
+    if (targetId === id) return fail(c, 400, "An item cannot relate to itself");
     // Stored once: "blocks" is written as the target's "blocked_by".
     const stored = type === "blocks" ? { itemId: targetId, targetId: id, type: "blocked_by" as const } : { itemId: id, targetId, type };
     await db.insert(itemRelations).values(stored).onConflictDoNothing();
     return c.json({ targetId, type }, 201);
   })
-  .delete("/:id/relations", idParam, zValidator("json", relationSchema), async (c) => {
+  .delete("/:id/relations", idParam, validate("json", relationSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { targetId, type } = c.req.valid("json");
     const stored = type === "blocks" ? { itemId: targetId, targetId: id, type: "blocked_by" as const } : { itemId: id, targetId, type };
@@ -178,20 +178,20 @@ export const itemContentRoute = new Hono()
 
 // ── Comments ───────────────────────────────────────────────────────────────────
 export const commentsRoute = new Hono()
-  .patch("/:id", idParam, zValidator("json", updateCommentSchema), async (c) => {
+  .patch("/:id", idParam, validate("json", updateCommentSchema), async (c) => {
     const [row] = await db
       .update(comments)
       .set({ body: c.req.valid("json").body, editedAt: new Date() })
       .where(eq(comments.id, c.req.valid("param").id))
       .returning();
-    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
+    return row ? c.json(row) : fail(c, 404, "Not found");
   })
   .delete("/:id", idParam, async (c) => {
     const [row] = await db.delete(comments).where(eq(comments.id, c.req.valid("param").id)).returning({ id: comments.id });
-    return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
+    return row ? c.body(null, 204) : fail(c, 404, "Not found");
   })
   // Toggle the caller's reaction.
-  .post("/:id/reactions", idParam, zValidator("json", reactSchema), async (c) => {
+  .post("/:id/reactions", idParam, validate("json", reactSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { emoji } = c.req.valid("json");
     const viewer = viewerOf(c);
@@ -217,7 +217,7 @@ export const savedViewsRoute = new Hono()
       .orderBy(asc(savedViews.position), asc(savedViews.createdAt));
     return c.json(rows);
   })
-  .post("/", zValidator("json", createSavedViewSchema), async (c) => {
+  .post("/", validate("json", createSavedViewSchema), async (c) => {
     const viewer = viewerOf(c);
     const input = c.req.valid("json");
     const max = (await db.select({ max: sql<number>`coalesce(max(${savedViews.position}), -1)` }).from(savedViews).where(eq(savedViews.projectId, input.projectId)))[0]?.max ?? -1;
@@ -227,17 +227,17 @@ export const savedViewsRoute = new Hono()
       .returning();
     return c.json(row!, 201);
   })
-  .patch("/:id", idParam, zValidator("json", updateSavedViewSchema), async (c) => {
+  .patch("/:id", idParam, validate("json", updateSavedViewSchema), async (c) => {
     const [row] = await db.update(savedViews).set(c.req.valid("json")).where(eq(savedViews.id, c.req.valid("param").id)).returning();
-    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
+    return row ? c.json(row) : fail(c, 404, "Not found");
   })
   .delete("/:id", idParam, async (c) => {
     const [row] = await db.delete(savedViews).where(eq(savedViews.id, c.req.valid("param").id)).returning({ id: savedViews.id });
-    return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
+    return row ? c.body(null, 204) : fail(c, 404, "Not found");
   });
 
 // ── Activity (read) ────────────────────────────────────────────────────────────
-export const activityRoute = new Hono().get("/", projectQuery, zValidator("query", z.object({ projectId: idSchema, limit: z.coerce.number().int().min(1).max(200).default(60) })), async (c) => {
+export const activityRoute = new Hono().get("/", projectQuery, validate("query", z.object({ projectId: idSchema, limit: z.coerce.number().int().min(1).max(200).default(60) })), async (c) => {
   const { projectId, limit } = c.req.valid("query");
   const rows = await db
     .select({ entry: activity, actor: { id: users.id, name: users.name, nickname: users.nickname, avatarColor: users.avatarColor } })

@@ -62,9 +62,9 @@ export function itemsToCsv(items: Item[], ctx: ExportContext): string {
   return rows.map((r) => r.map(cell).join(",")).join("\n") + "\n";
 }
 
-/** Hand the browser a file. */
-export function downloadText(name: string, text: string, mime = "text/plain") {
-  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+/** Hand the browser a file (text built here, or a Blob the server sent). */
+export function downloadText(name: string, text: string | Blob, mime = "text/plain") {
+  const blob = typeof text === "string" ? new Blob([text], { type: `${mime};charset=utf-8` }) : text;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

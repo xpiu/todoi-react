@@ -5,13 +5,15 @@ import { nanoid } from "nanoid";
 
 import type { CreateItemInput, DuplicateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
 import type { CreateListInput, UpdateListInput } from "../../shared/projects";
-import { useFeedback } from "../app/feedback";
 import { applyCompletion, statusChange } from "../../shared/completion";
 import type { ItemStatus } from "../../shared/item-status";
-import { api, errorMessage, unwrap, type DuplicateResult, type Item, type MoveResult, type ProjectDetail, type UpdatedItem } from "./api";
+import { api, unwrap, type DuplicateResult, type Item, type MoveResult, type ProjectDetail, type UpdatedItem } from "./api";
 import { keys } from "./queries";
 
 export const newId = () => nanoid();
+
+/** A call that reports its own failure (next to its draft, in an Undo toast, in a summary) passes `quiet`. */
+export type Quiet = { quiet?: boolean };
 
 export type ItemsScope = { projectId: string } | { listId: string };
 
@@ -27,11 +29,9 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
       qc.setQueryData<Item[]>(key, (old = []) => patch(old, vars));
       return { previous };
     },
-    // Roll back and say why: a guest's or viewer's edit comes back 403 and would otherwise just snap back.
-    // A `quiet` call shows the reason next to its own draft instead.
-    onError: (err, vars, ctx) => {
+    // Roll back; the query client's mutation cache says why (src/client/queryClient.ts).
+    onError: (_err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
-      if (!(vars as { quiet?: boolean }).quiet) useFeedback.getState().notify({ message: errorMessage(err), icon: "circle-alert" });
     },
     onSettled: (_data, _err, vars) => {
       void qc.invalidateQueries({ queryKey: key });
@@ -112,7 +112,7 @@ export function useCreateItem(scope: ItemsScope) {
 export function useUpdateItem(scope: ItemsScope) {
   return useOptimistic(
     scope,
-    ({ quiet: _quiet, ...vars }: { id: string; quiet?: boolean } & UpdateItemInput) => api.api.items[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<UpdatedItem>(r)),
+    ({ quiet: _quiet, ...vars }: { id: string } & Quiet & UpdateItemInput) => api.api.items[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<UpdatedItem>(r)),
     // The API's own completion rules predict the result (a recurring item moves to its next due).
     (items, { id, quiet: _quiet, done, status, ifDue, ...changes }) =>
       items.map((it) => {
@@ -128,7 +128,7 @@ export function useDeleteItem(scope: ItemsScope) {
   const projectId = "projectId" in scope ? scope.projectId : null;
   return useOptimistic(
     scope,
-    (vars: { id: string }) => api.api.items[":id"].$delete({ param: vars }).then((r) => unwrap<void>(r)),
+    ({ id }: { id: string } & Quiet) => api.api.items[":id"].$delete({ param: { id } }).then((r) => unwrap<void>(r)),
     (items, { id }) => items.filter((it) => it.id !== id && it.parentItemId !== id),
     projectId ? [keys.project(projectId)] : [],
   );
@@ -138,7 +138,7 @@ export function useDeleteItem(scope: ItemsScope) {
 export function useRestoreItem(scope: ItemsScope) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id }: { id: string }) => api.api.items[":id"].$patch({ param: { id }, json: { deleted: false } }).then((r) => unwrap(r)),
+    mutationFn: ({ id }: { id: string } & Quiet) => api.api.items[":id"].$patch({ param: { id }, json: { deleted: false } }).then((r) => unwrap(r)),
     onSuccess: async () => {
       const refresh: QueryKey[] = [keys.items(scope), keys.groups, ["archive"], ["item"]];
       if ("projectId" in scope) refresh.push(keys.project(scope.projectId));
@@ -185,7 +185,7 @@ export function useMoveItem(scope: ItemsScope) {
   const projectId = "projectId" in scope ? scope.projectId : null;
   return useOptimistic(
     scope,
-    (vars: { id: string; toProjectId?: string | null } & MoveItemInput) => api.api.items[":id"].move.$post({ param: { id: vars.id }, json: { listId: vars.listId, position: vars.position, restore: vars.restore } }).then((r) => unwrap<MoveResult>(r)),
+    (vars: { id: string; toProjectId?: string | null } & Quiet & MoveItemInput) => api.api.items[":id"].move.$post({ param: { id: vars.id }, json: { listId: vars.listId, position: vars.position, restore: vars.restore } }).then((r) => unwrap<MoveResult>(r)),
     (items, { id, listId, position, toProjectId }) => {
       if (toProjectId !== undefined && toProjectId !== projectId) {
         const family = familyIds(items, id);
@@ -239,7 +239,7 @@ export function useUpdateList(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
     // `rewritten`: how many items an applyToExisting role change updated.
-    mutationFn: (vars: { id: string } & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<{ rewritten: number }>(r)),
+    mutationFn: ({ quiet: _quiet, ...vars }: { id: string } & Quiet & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<{ rewritten: number }>(r)),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.project(projectId) });
       void qc.invalidateQueries({ queryKey: keys.items({ projectId }) });

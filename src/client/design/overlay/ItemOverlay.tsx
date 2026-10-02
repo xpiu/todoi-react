@@ -15,6 +15,7 @@ import type { RelationType } from "../../../shared/enums";
 import { listIconFor } from "../board/listIcons";
 import { Button } from "../core/Button";
 import { DatesPicker, type DatesValue } from "../core/DatesPicker";
+import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { ItemPicker, type PickableItem } from "../core/ItemPicker";
@@ -180,7 +181,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkCopied, copy] = useCopy(900);
   const [subitemOf, setSubitemOf] = useState(false);
   const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
   const [menuView, setMenuView] = useState<"main" | "export">("main");
@@ -230,14 +231,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
   useEffect(() => {
     onDraftsChange.current?.({ comment: draft, replyTo, description: descDraft });
   }, [draft, replyTo, descDraft]);
-  const copyLink = () => {
-    const url = `${location.origin}${location.pathname}?item=${item.id}`;
-    const done = () => {
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 900);
-    };
-    navigator.clipboard?.writeText(url).then(done, done);
-  };
+  const copyLink = () => void copy(`${location.origin}${location.pathname}?item=${item.id}`);
   // ctrl+↵: commit whatever is mid-edit (title, description, new subitem, comment), then close once
   // every save has landed; a failure keeps the overlay open with that draft and its reason.
   useEffect(() => {
@@ -305,11 +299,11 @@ export function ItemOverlay(p: ItemOverlayProps) {
       corner={
         <>
           {item.itemId ? (
-            <span className="td-modal-key" data-on-dark={onDark ? "true" : undefined} title="Copy item link" onClick={copyLink}>
-              {linkCopied ? "Copied" : item.itemId}
+            <span className="td-modal-key" data-on-dark={onDark ? "true" : undefined} title={linkCopied === "failed" ? COPY_FAILED : "Copy item link"} onClick={copyLink}>
+              {linkCopied === "copied" ? "Copied" : linkCopied === "failed" ? "Couldn't copy" : item.itemId}
             </span>
           ) : null}
-          <IconButton name={linkCopied ? "check" : "link"} label="Copy item link" tooltip="Copy item link" iconSize={16} variant={cornerVariant} onClick={copyLink} />
+          <IconButton name={copyIcon(linkCopied, "link")} label="Copy item link" tooltip={linkCopied === "failed" ? COPY_FAILED : "Copy item link"} iconSize={16} variant={cornerVariant} onClick={copyLink} />
           <MenuButton label="Item options" variant={cornerVariant} tier="detached" width={menuView === "export" ? 236 : 220} onOpenChange={(o) => !o && setMenuView("main")}>
             {(close) =>
               menuView === "export" && p.onExport ? (

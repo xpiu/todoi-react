@@ -1,8 +1,11 @@
 // InvitePage — what an invite link opens: the project first, "X invited you to join as Editor",
 // then exactly the next step for this state (accept, log in to accept, or a closed state).
+import { useState } from "react";
+
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
 import { Icon, type IconName } from "../core/Icon";
+import { InlineError } from "../core/InlineError";
 import { AuthLink, AuthShell, AuthState } from "./AuthShell";
 
 const ROLE: Record<string, string> = { owner: "Owner", admin: "Admin", editor: "Editor", viewer: "Viewer" };
@@ -28,7 +31,8 @@ export interface InvitePageProps {
   state: InviteState;
   signedIn: boolean;
   user?: { name: string; email?: string; color?: string };
-  onAccept?: () => void;
+  /** The button waits on a returned promise and shows the reason when it rejects */
+  onAccept?: () => void | Promise<unknown>;
   onDecline?: () => void;
   onLogin?: () => void;
   onCreateAccount?: () => void;
@@ -38,6 +42,19 @@ export interface InvitePageProps {
 
 export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline, onLogin, onCreateAccount, onSwitchAccount, onOpenProject }: InvitePageProps) {
   const p = invite.project;
+  const [accepting, setAccepting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const accept = async () => {
+    setAccepting(true);
+    setError(null);
+    try {
+      await onAccept?.();
+    } catch (err) {
+      setError(`Couldn't accept the invite: ${err instanceof Error && err.message ? err.message : "something went wrong"}`);
+    } finally {
+      setAccepting(false);
+    }
+  };
   const roleName = ROLE[invite.role] ?? invite.role;
   const meta = [invite.groupName, invite.itemCount != null ? `${invite.itemCount} item${invite.itemCount === 1 ? "" : "s"}` : null, invite.memberCount != null ? `${invite.memberCount} member${invite.memberCount === 1 ? "" : "s"}` : null].filter(Boolean).join(" · ");
   const head = (
@@ -86,8 +103,9 @@ export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline,
             {onSwitchAccount ? <AuthLink label="Not you?" onClick={onSwitchAccount} /> : null}
           </div>
           <div className="td-auth-stack">
-            <Button variant="primary" size="lg" onClick={onAccept}>
-              Accept invite
+            <InlineError message={error} />
+            <Button variant="primary" size="lg" disabled={accepting} onClick={() => void accept()}>
+              {accepting ? "Accepting…" : "Accept invite"}
             </Button>
             {onDecline ? (
               <Button variant="ghost" onClick={onDecline}>

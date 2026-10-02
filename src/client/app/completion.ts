@@ -29,8 +29,9 @@ export function useCompletion(scope: ItemsScope) {
   /** Put an item back exactly as it was before this request. */
   const undo = ({ it, occurrence }: Outcome) =>
     updateItem.mutateAsync(
-      occurrence ? { id: it.id, dueDate: it.dueDate, startDate: it.startDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { done: false } : {}) }
-      : it.done ? { id: it.id, status: "DONE" } : { id: it.id, done: false },
+      // Undo reports its own failure ("Couldn't undo. …" with Retry Undo).
+      { quiet: true, ...(occurrence ? { id: it.id, dueDate: it.dueDate, startDate: it.startDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { done: false } : {}) }
+      : it.done ? { id: it.id, status: "DONE" as const } : { id: it.id, done: false }) },
     );
 
   /** One item: a recurring completion raises an undoable toast ("— next due Sep 3"); others need none. */

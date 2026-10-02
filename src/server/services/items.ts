@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 
 import { dateRangeIssue, type MoveItemInput, type MoveRestore } from "../../shared/items";
 import { db } from "../db";
+import { ApiFailure } from "../errors";
 import { attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type Project } from "../db/schema";
 import { applyCompletion, statusChange, type Occurrence } from "../../shared/completion";
 import { logActivity, quote } from "./activity";
@@ -15,8 +16,6 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type ItemState = { done?: boolean; status?: Item["status"]; ifDue?: string };
 
-/** An update the item's stored values make invalid (a start after the due it keeps); nothing was written. */
-export class ItemRejected extends Error {}
 
 /**
  * Update an item in one locked transaction: plain fields, then done / Status by the shared completion rules
@@ -35,7 +34,8 @@ export async function updateItem(id: string, state: ItemState, fields: Partial<I
     if (fields.dueDate === null && fields.dueTime === undefined && cur.dueTime) changes.dueTime = null;
     if ("startDate" in fields || "dueDate" in fields || "dueTime" in fields) {
       const issue = dateRangeIssue({ ...next, ...changes });
-      if (issue) throw new ItemRejected(issue.message);
+      // An update the stored dates make invalid (a start after the due it keeps): nothing is written.
+      if (issue) throw new ApiFailure(400, issue.message, { [issue.path]: issue.message });
     }
     // Nothing left to write (a retried completion): answer with the item as it is.
     if (!Object.keys(changes).length && lifecycle.archived === undefined && lifecycle.deleted === undefined) return { item: cur, occurrence: null };

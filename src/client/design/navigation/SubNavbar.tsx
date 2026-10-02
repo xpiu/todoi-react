@@ -1,10 +1,11 @@
 // SubNavbar — view switcher (List / Board / Cal. + optional Views toggle) and the Filter / Sort /
 // Style / Members / Share actions. Style is the quick appearance menu on the shared store (a dialog
 // Popover); Share is a Menu with Copy project URL and share targets. Spec: DESIGN.md › Subnavbar.
-import { useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
 
 import { useAppearance } from "../core/appearance";
 import { Checkbox } from "../core/Checkbox";
+import { copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
 import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
 import { MenuDivider, MenuHeading, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
@@ -98,17 +99,9 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
   const ap = useAppearance();
   const active = activeView ?? views[0]?.id;
   const stylePop = usePopover();
-  const [copied, setCopied] = useState(false);
+  const [copied, copy] = useCopy();
   const shareUrl = projectUrl ?? (typeof location !== "undefined" ? location.href : "");
-  const copyUrl = () => {
-    void navigator.clipboard?.writeText(shareUrl).then(
-      () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1200);
-      },
-      () => {},
-    );
-  };
+  const copyUrl = () => void copy(shareUrl);
   const styleMenu = (
     <div className="td-style-menu">
       <div className="td-style-label">Theme</div>
@@ -234,8 +227,8 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                 </button>
               }
             >
-              <MenuItem icon={copied ? "check" : "link"} onSelect={copyUrl} closeOnSelect={false} trailing={<span className="td-share-vis"><Icon name={VIS_ICONS[visibility] ?? "lock"} size={12} />{visibility}</span>}>
-                {copied ? "Link copied!" : "Copy project URL"}
+              <MenuItem icon={copyIcon(copied, "link")} onSelect={copyUrl} closeOnSelect={false} trailing={<span className="td-share-vis"><Icon name={VIS_ICONS[visibility] ?? "lock"} size={12} />{visibility}</span>}>
+                {copied === "copied" ? "Link copied!" : copied === "failed" ? "Couldn't copy. Use the address bar." : "Copy project URL"}
               </MenuItem>
               <MenuNote title={shareUrl}>{shareUrl}</MenuNote>
               <MenuDivider />

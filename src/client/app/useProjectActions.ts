@@ -126,7 +126,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       restore: async () => {
         // Retain only unfinished work if a bulk restore fails midway through.
         while (pending.length) {
-          await restoreItem.mutateAsync({ id: pending[0]! });
+          await restoreItem.mutateAsync({ id: pending[0]!, quiet: true });
           pending.shift();
         }
       },
@@ -160,7 +160,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     const next = { startDate: shiftISO(it.startDate, n), dueDate: shiftISO(it.dueDate, n) };
     updateItem.mutate({ id, ...next });
     const when = next.startDate && next.startDate !== next.dueDate ? formatDateRange(next.startDate, next.dueDate, null, { year: "auto" }) : formatDate(next.dueDate, { year: "auto" });
-    notify({ message: `Moved ${quote(it.title)} to ${when}`, icon: "calendar", restore: () => updateItem.mutate({ id, ...prev }) });
+    notify({ message: `Moved ${quote(it.title)} to ${when}`, icon: "calendar", restore: () => updateItem.mutateAsync({ id, ...prev, quiet: true }).then(() => undefined) });
   };
 
   /** Calendar "+": a fresh item due that day in the first list, undoable (the overlay then names it). */
@@ -210,7 +210,11 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       meta: made.length < roots.length ? `${roots.length - made.length} not copied` : undefined,
       icon: "copy",
       restore: async () => {
-        for (const m of made) await deleteItem.mutateAsync({ id: m.result.items[0]!.id });
+        // One at a time, so a failed Undo retries only the copies still there.
+        while (made.length) {
+          await deleteItem.mutateAsync({ id: made[0]!.result.items[0]!.id, quiet: true });
+          made.shift();
+        }
         if (dest.projectId !== projectId) await qc.invalidateQueries({ queryKey: dest.projectId ? keys.items({ projectId: dest.projectId }) : ["items"] });
       },
     });
@@ -261,7 +265,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       restore: async () => {
         while (back.length) {
           const { it, at, result: forward } = back[0]!;
-          const result = await moveItem.mutateAsync({ id: it.id, listId: it.listId, position: at, toProjectId: projectId, restore: { ...carried, parentItemId: forward.undo?.parentItemId ?? null } });
+          const result = await moveItem.mutateAsync({ id: it.id, listId: it.listId, position: at, toProjectId: projectId, restore: { ...carried, parentItemId: forward.undo?.parentItemId ?? null }, quiet: true });
           mergeRestore(carried, { ...emptyRestore(), relations: result.undo?.relations ?? [] });
           back.shift();
         }
@@ -275,7 +279,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const hideList = (listId: string) =>
     updateList.mutate(
       { id: listId, hidden: true },
-      { onSuccess: () => notify({ message: `Hid ${quote(listName(listId))} for everyone in this project`, history: `Hid ${quote(listName(listId))}`, icon: "eye-off", restore: () => updateList.mutateAsync({ id: listId, hidden: false }).then(() => undefined) }) },
+      { onSuccess: () => notify({ message: `Hid ${quote(listName(listId))} for everyone in this project`, history: `Hid ${quote(listName(listId))}`, icon: "eye-off", restore: () => updateList.mutateAsync({ id: listId, hidden: false, quiet: true }).then(() => undefined) }) },
     );
   const showLists = (ids: string[]) => ids.forEach((id) => updateList.mutate({ id, hidden: false }));
   /** Set a list's Status role; `applyToExisting` also sets it on the list's live items in the same request. */

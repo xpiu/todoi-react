@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { db } from "../db";
 import { activity, groups, items, lists, members, projects, users } from "../db/schema";
-import { ItemRejected, moveItem, updateItem } from "./items";
+import { ApiFailure } from "../errors";
+import { moveItem, updateItem } from "./items";
 import { importProject, updateList } from "./projects";
 
 async function fixture() {
@@ -102,7 +103,7 @@ describe("item dates on the server", () => {
   it("checks a one-field change against the dates the item keeps, and writes nothing when it fails", async () => {
     const f = await fixture();
     await updateItem(f.plain, {}, { startDate: "2026-09-10", dueDate: "2026-09-12", dueTime: "09:00" }, {}, f.userId);
-    await expect(updateItem(f.plain, {}, { startDate: "2026-09-13" }, {}, f.userId)).rejects.toThrow(ItemRejected);
+    await expect(updateItem(f.plain, {}, { startDate: "2026-09-13" }, {}, f.userId)).rejects.toThrow(ApiFailure);
     await expect(updateItem(f.plain, {}, { dueDate: "2026-09-09" }, {}, f.userId)).rejects.toThrow("The start date must be on or before the due date");
     expect(await row(f.plain)).toMatchObject({ startDate: "2026-09-10", dueDate: "2026-09-12", dueTime: "09:00" });
     // A whole-range move (the calendar drag) changes both at once.

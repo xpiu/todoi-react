@@ -1,9 +1,10 @@
 // ItemCard — a board item: optional cover, title (green check when done), compact labels, a badge row
 // (description, due, repeat, subitems progress, attachments, priority, avatars) with the mono key
 // pinned right, and a hover ⋯ menu. Spec: DESIGN.md › Board, Item keys.
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type SyntheticEvent } from "react";
+import type { CSSProperties, DragEvent, MouseEvent, SyntheticEvent } from "react";
 
 import { Avatar } from "../core/Avatar";
+import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
 import { StatusChip } from "../core/StatusChip";
@@ -62,25 +63,18 @@ function setCleanDragImage(e: DragEvent, card: HTMLElement) {
 }
 
 function ItemKey({ itemId }: { itemId: string }) {
-  const [copied, setCopied] = useState(false);
-  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (t.current) clearTimeout(t.current);
-  }, []);
+  const [copy, doCopy] = useCopy();
   return (
     <span
-      className={"td-card-id" + (copied ? " is-copied" : "")}
-      title={`Click to copy ${itemId}`}
+      className={"td-card-id" + (copy !== "idle" ? " is-copied" : "")}
+      title={copy === "failed" ? COPY_FAILED : `Click to copy ${itemId}`}
       onClick={(e: MouseEvent) => {
         e.stopPropagation();
-        void navigator.clipboard?.writeText(itemId);
-        setCopied(true);
-        if (t.current) clearTimeout(t.current);
-        t.current = setTimeout(() => setCopied(false), 1200);
+        void doCopy(itemId);
       }}
     >
       <span className="td-card-id-pop" aria-hidden>
-        <Icon name={copied ? "check" : "copy"} size={11} />
+        <Icon name={copyIcon(copy, "copy")} size={11} />
       </span>
       {itemId}
     </span>

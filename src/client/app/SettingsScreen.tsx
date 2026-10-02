@@ -8,7 +8,7 @@ import { LABEL_COLORS, type LabelColor } from "../../shared/enums";
 import { authClient } from "../auth";
 import { useAccountMutations, useMe, useSessions, useTokens } from "../data/account";
 import { useLabelMutations } from "../data/itemContent";
-import { api, unwrap } from "../data/api";
+import { api, apiError } from "../data/api";
 import { useArchive } from "../data/projects";
 import { projectsOf, useGroups, useLabels, useProjectItems } from "../data/queries";
 import { Avatar } from "../design/core/Avatar";
@@ -17,6 +17,7 @@ import { Button } from "../design/core/Button";
 import { Checkbox } from "../design/core/Checkbox";
 import { formatDate, formatRelative } from "../design/core/dates";
 import { Dialog } from "../design/core/Dialog";
+import { copyIcon, copyText, type CopyState } from "../design/core/clipboard";
 import type { IconName } from "../design/core/Icon";
 import { IconButton } from "../design/core/IconButton";
 import { nextLabelColor } from "../design/core/LabelPicker";
@@ -34,7 +35,8 @@ import { relativeSync } from "../design/core/ConnectionStatus";
 import { useSaveState } from "./saveState";
 import { PasswordField } from "../design/auth/PasswordField";
 import { MonoValue, SettingsLink, SettingsShell, StatusDot, type SettingsGroup, type SettingsPage, type SettingsRow } from "../design/settings/SettingsShell";
-import { quote, useFeedback } from "./feedback";
+import { downloadText } from "./exportData";
+import { copyAndNotify, notifyFailure, quote, useFeedback } from "./feedback";
 import { useLifecycle } from "./lifecycle";
 import { projectUrl } from "./links";
 import { usePrefs, type Prefs } from "./prefs";
@@ -86,12 +88,33 @@ export function SettingsScreen({ page }: { page: Page }) {
   );
 }
 
+/** Fetches the export first, so "Exported" means the file was handed to the browser; a failure says why. */
+function ExportAllButton({ notify }: { notify: Notify }) {
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    try {
+      const res = await api.api.me.export.$get();
+      if (!res.ok) throw await apiError(res);
+      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "todoi-export.json";
+      downloadText(name, await res.blob());
+      notify({ message: "Exported everything as JSON", icon: "download" });
+    } catch (err) {
+      notifyFailure(err, "Couldn't export: ");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button icon="download" disabled={busy} onClick={() => void run()}>
+      {busy ? "Exporting…" : "Export .json"}
+    </Button>
+  );
+}
+
 /** The export rows appear under Settings › Storage and Account › Data alike. */
 const exportRows = (notify: Notify, navigate: UseNavigateResult<string>): SettingsRow[] => [
-  { id: "exportJson", label: "Export everything", hint: "One JSON file with your groups, projects, lists, labels and items", control: <Button icon="download" onClick={() => {
-    window.open("/api/me/export", "_blank", "noopener");
-    notify({ message: "Exported everything as JSON", icon: "download" });
-  }}>Export .json</Button> },
+  { id: "exportJson", label: "Export everything", hint: "One JSON file with your groups, projects, lists, labels and items", control: <ExportAllButton notify={notify} /> },
   { id: "exportMd", label: "Export a project", hint: "Share › Export this view on the project writes Markdown or CSV of what you see", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/projects" })}>Projects</Button> },
 ];
 
@@ -312,9 +335,10 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
             variant="primary"
             disabled={!e.name.trim()}
             onClick={() => {
-              if (e.id) ops.update.mutate({ id: e.id, name: e.name.trim(), color: e.color });
-              else ops.create.mutate({ name: e.name.trim(), color: e.color });
-              setEdit(null);
+              // The editor stays open with the draft until the server has it.
+              const done = { onSuccess: () => setEdit(null) };
+              if (e.id) ops.update.mutate({ id: e.id, name: e.name.trim(), color: e.color }, done);
+              else ops.create.mutate({ name: e.name.trim(), color: e.color }, done);
             }}
           >
             {e.id ? "Save" : "Create"}
@@ -339,11 +363,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
               setMerging(null);
               if (!v) return;
               const into = others.find((o) => o.id === v);
-              void api.api.labels[":id"].merge.$post({ param: { id: l.id }, json: { intoLabelId: v } }).then((r) => unwrap<{ moved: number }>(r)).then((res) => {
-                notify({ message: `Merged the label ${l.name} into ${into?.name ?? "the other label"} — ${count(res.moved, "item")} relabelled`, icon: "merge" });
-                labels.refetch();
-                items.refetch();
-              });
+              ops.merge.mutate({ id: l.id, intoLabelId: v }, { onSuccess: (res) => notify({ message: `Merged the label ${l.name} into ${into?.name ?? "the other label"} — ${count(res.moved, "item")} relabelled`, icon: "merge" }) });
             }} width={220} tier="detached" />
             <Button variant="ghost" onClick={() => setMerging(null)}>
               Cancel
@@ -361,10 +381,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
             <MenuItem
               icon="trash-2"
               danger
-              onSelect={() => {
-                ops.remove.mutate({ id: l.id });
-                notify({ message: `Deleted the label ${l.name} — removed from ${count(n, "item")}`, icon: "trash-2" });
-              }}
+              onSelect={() => ops.remove.mutate({ id: l.id }, { onSuccess: () => notify({ message: `Deleted the label ${l.name} — removed from ${count(n, "item")}`, icon: "trash-2" }) })}
             >
               Delete
             </MenuItem>
@@ -409,7 +426,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const [pwOpen, setPwOpen] = useState(false);
   const [tokenName, setTokenName] = useState("");
   const [tokenDays, setTokenDays] = useState("90");
-  const [secret, setSecret] = useState<{ name: string; value: string; copied: boolean } | null>(null);
+  const [secret, setSecret] = useState<{ name: string; value: string; copied: CopyState } | null>(null);
   const [now] = useState(() => new Date());
   const m = me.data;
   const name = draft?.name ?? m?.name ?? user?.name ?? "";
@@ -417,8 +434,11 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const dirty = !!draft && (draft.name !== (m?.name ?? "") || draft.nickname !== (m?.nickname ?? ""));
   const saveProfile = () => {
     if (!dirty) return;
-    am.updateMe.mutate({ name: name.trim(), nickname: nickname.trim() || null }, { onSuccess: () => notify({ message: "Profile saved", icon: "check" }) });
-    setDraft(null);
+    // The typed name stays in the field until the server has it.
+    am.updateMe.mutate({ name: name.trim(), nickname: nickname.trim() || null }, { onSuccess: () => {
+      setDraft(null);
+      notify({ message: "Profile saved", icon: "check" });
+    } });
   };
   const currentToken = (session.data as { session?: { token?: string } } | null)?.session?.token;
   const sessionRows = (sessions.data ?? []).map((s) => ({ ...s, current: s.token === currentToken }));
@@ -505,17 +525,14 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
               { id: "tokenName", label: "Token name", hint: "Where the token will be used, e.g. CI deploy", control: <TextField value={tokenName} aria-label="Token name" placeholder="CI deploy" onChange={(e) => setTokenName(e.target.value)} /> },
               { id: "tokenExpiry", label: "Expires", control: <Select aria-label="Expires" value={tokenDays} options={TOKEN_EXPIRIES} onChange={(v) => v && setTokenDays(v)} placement="bottom-end" tier="detached" width={160} /> },
               { id: "tokenCreate", label: "Create token", hint: "The token is shown once, right after you create it", control: <Button variant="primary" icon="plus" disabled={!tokenName.trim()} onClick={() => am.createToken.mutate({ name: tokenName.trim(), days: Number(tokenDays) }, { onSuccess: (t) => {
-                setSecret({ name: t.name, value: t.secret, copied: false });
+                setSecret({ name: t.name, value: t.secret, copied: "idle" });
                 setTokenName("");
               } })}>Create token</Button> },
             ],
           },
-          ...(secret ? [{ id: "secret", title: "Copy your new token now", tone: "info" as const, rows: [{ id: "secretValue", label: secret.value, mono: true, hint: secret.copied ? "Copied. It won't be shown again." : "Copy it once — it won't be shown again", control: (
+          ...(secret ? [{ id: "secret", title: "Copy your new token now", tone: "info" as const, rows: [{ id: "secretValue", label: secret.value, mono: true, hint: secret.copied === "copied" ? "Copied. It won't be shown again." : secret.copied === "failed" ? "Couldn't copy. Select the token and copy it yourself; it won't be shown again." : "Copy it once — it won't be shown again", control: (
             <>
-              <Button icon={secret.copied ? "check" : "copy"} onClick={() => {
-                void navigator.clipboard?.writeText(secret.value);
-                setSecret({ ...secret, copied: true });
-              }}>{secret.copied ? "Copied" : "Copy"}</Button>
+              <Button icon={copyIcon(secret.copied, "copy")} onClick={() => void copyText(secret.value).then((ok) => setSecret({ ...secret, copied: ok ? "copied" : "failed" }))}>{secret.copied === "copied" ? "Copied" : "Copy"}</Button>
               <IconButton name="x" label="Dismiss" size={28} iconSize={16} onClick={() => setSecret(null)} />
             </>
           ) }] }] : []),
@@ -581,8 +598,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             rows: [
               { id: `pj-${p.id}-members`, label: "Members and invites", hint: "Roles, invites and the project link live in Project settings", control: <Button icon="users" onClick={() => lifecycle.openSettings(p.id, "members")}>Open</Button> },
               { id: `pj-${p.id}-link`, label: "Share link", hint: p.visibility === "public" ? "Anyone with the link can read this project" : p.visibility === "shared" ? "Members and guests can open the link" : "Only members can open the link", control: <Button icon="link" onClick={() => {
-                void navigator.clipboard?.writeText(projectUrl(p.id));
-                notify({ message: `Copied the link to ${quote(p.name)}`, icon: "link" });
+                void copyAndNotify(projectUrl(p.id), `Copied the link to ${quote(p.name)}`);
               }}>Copy link</Button> },
               { id: `pj-${p.id}-storage`, label: "Storage", hint: "Where this project's data lives", control: <MonoValue value="Todoi database" /> },
             ],

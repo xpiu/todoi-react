@@ -152,6 +152,9 @@
   .td-pp-invite .td-field-wrap {
     flex: 1;
   }
+  .td-pp-inviteerror {
+    padding-bottom: var(--sp-1);
+  }
   .td-pp-invitefield {
     height: 32px;
     padding-top: 0;
