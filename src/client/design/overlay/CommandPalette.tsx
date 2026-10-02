@@ -4,6 +4,7 @@ import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useRef, useState } from "react";
 
 import { Icon } from "../core/Icon";
+import { useToastHost } from "../core/ToastPortal";
 import "./CommandPalette.css";
 import "../core/kbd.css";
 
@@ -31,14 +32,16 @@ export function CommandPalette({ open, onClose, ...body }: CommandPaletteProps) 
         <BaseDialog.Backdrop className="td-pal-backdrop" />
         <BaseDialog.Viewport className="td-pal-viewport">
           {/* The popup unmounts on close, so the query and cursor start fresh every time */}
-          <PaletteBody onClose={onClose} {...body} />
+          <PaletteBody open={open} onClose={onClose} {...body} />
         </BaseDialog.Viewport>
       </BaseDialog.Portal>
     </BaseDialog.Root>
   );
 }
 
-function PaletteBody({ items, onSelect, onClose, placeholder = "Jump to an item…" }: Omit<CommandPaletteProps, "open">) {
+function PaletteBody({ open, items, onSelect, onClose, placeholder = "Jump to an item…" }: CommandPaletteProps) {
+  const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
+  useToastHost(open ? popupEl : null);
   const [q, setQ] = useState("");
   const [cur, setCur] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +65,7 @@ function PaletteBody({ items, onSelect, onClose, placeholder = "Jump to an item�
     onClose();
   };
   return (
-    <BaseDialog.Popup className="td-pal" aria-label="Jump to item" initialFocus={inputRef}>
+    <BaseDialog.Popup ref={setPopupEl} className="td-pal" aria-label="Jump to item" initialFocus={inputRef}>
             <div className="td-pal-input">
               <Icon name="search" size={18} />
               <input

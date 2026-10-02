@@ -10,6 +10,7 @@ import { useAppearance } from "../design/core/appearance";
 import { SHORTCUTS } from "../design/core/shortcuts";
 import { ShortcutHint, useShortcutHints } from "../design/core/ShortcutHint";
 import { Toast } from "../design/core/Toast";
+import { ToastPortalProvider } from "../design/core/ToastPortal";
 import { useViewport } from "../design/core/viewport";
 import { FilterBar } from "../design/navigation/FilterBar";
 import { FilterMenu } from "../design/navigation/FilterMenu";
@@ -225,6 +226,7 @@ export function AppShell() {
   const paletteItems = (projectItems.data ?? []).filter((it) => !it.parentItemId).map((it) => ({ id: it.id, title: it.title, itemId: keyOf(it, prefix), listName: project.data?.lists.find((l) => l.id === it.listId)?.name, done: it.done }));
 
   return (
+    <ToastPortalProvider toast={toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}>
     <div className="td-app" data-sidebar-side={ap.sidebarLeft ? "left" : "right"}>
       <TopNavbar
         title={title}
@@ -292,7 +294,6 @@ export function AppShell() {
           }}
         />
       </div>
-      {toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}
       <ShortcutHint hint={hints.hint} />
       <LifecycleDialogs />
       <ShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
@@ -307,5 +308,6 @@ export function AppShell() {
         }}
       />
     </div>
+    </ToastPortalProvider>
   );
 }

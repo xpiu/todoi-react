@@ -6,6 +6,7 @@ import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { PortalContainerContext } from "../core/portalContainer";
+import { useToastHost } from "../core/ToastPortal";
 import { useViewport } from "../core/viewport";
 import "./Modal.css";
 
@@ -36,6 +37,7 @@ export function Modal({ open, onClose, title, cover, corner, aside, children, wi
   const vp = useViewport();
   const sheet = sheetProp ?? vp.phone;
   const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
+  useToastHost(open ? popupEl : null);
   const titleRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLDivElement>(null);
   // The title row sits above the two-column body; cap it to the main column's width so it lines up.

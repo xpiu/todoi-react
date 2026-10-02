@@ -4,9 +4,7 @@
 import { create } from "zustand";
 
 import type { IconName } from "../design/core/Icon";
-import type { UndoEntry } from "../design/core/undoStack";
-
-export const UNDO_DEPTH = 10;
+import { UNDO_DEPTH, undoneMessage, type UndoEntry } from "../design/core/undoStack";
 
 export interface ToastState {
   message: string;
@@ -24,10 +22,11 @@ interface FeedbackStore {
   toast: (ToastState & { key: number }) | null;
   stack: UndoEntry[];
   /** Raise a toast; with `restore` it is undoable and lands on the stack. */
-  notify: (t: ToastState & { restore?: () => void }) => void;
+  notify: (t: ToastState & { restore?: UndoEntry["restore"] }) => void;
   dismiss: () => void;
-  /** Z / Ctrl+Z: pops the top entry whether or not its toast still shows. */
-  undo: () => void;
+  /** Z / Ctrl+Z: remove the entry only after restoration succeeds. */
+  undo: () => Promise<void>;
+  undoing: UndoEntry | null;
   /** The screen the history belongs to (project id or path); changing it clears the stack. */
   scope: string;
   setScope: (scope: string) => void;
@@ -38,21 +37,35 @@ let seq = 0;
 export const useFeedback = create<FeedbackStore>()((set, get) => ({
   toast: null,
   stack: [],
+  undoing: null,
   notify: ({ restore, ...t }) => {
     const stack = restore ? [{ message: t.history ?? t.message, restore }, ...get().stack].slice(0, UNDO_DEPTH) : get().stack;
     set({ stack, toast: { ...t, key: ++seq, undo: restore ? () => get().undo() : t.undo } });
   },
   dismiss: () => set({ toast: null }),
-  undo: () => {
-    const [entry, ...rest] = get().stack;
-    if (!entry) return;
-    entry.restore();
-    const message = "Undid: " + entry.message.charAt(0).toLowerCase() + entry.message.slice(1);
-    set({ stack: rest, toast: { key: ++seq, message, icon: "undo-2", meta: rest.length ? `${rest.length} more` : undefined, undo: rest.length ? () => get().undo() : undefined, actionLabel: rest.length ? "Undo more" : undefined } });
+  undo: async () => {
+    const [entry] = get().stack;
+    if (!entry || get().undoing) return;
+    const toastKey = ++seq;
+    set({ undoing: entry, toast: { key: toastKey, message: "Undoing…", icon: "undo-2" } });
+    try {
+      await entry.restore();
+      // A newer outcome or navigation may have arrived while the request was pending.
+      if (!get().stack.includes(entry)) return;
+      const rest = get().stack.filter((e) => e !== entry);
+      set({ stack: rest });
+      if (get().toast?.key === toastKey) set({ toast: { key: ++seq, message: undoneMessage(entry), icon: "undo-2", meta: rest.length ? `${rest.length} more` : undefined, undo: rest.length ? () => get().undo() : undefined, actionLabel: rest.length ? "Undo more" : undefined } });
+    } catch (error) {
+      if (get().stack.includes(entry) && get().toast?.key === toastKey) set({ toast: { key: ++seq, message: "Couldn't undo. " + (error instanceof Error ? error.message : "Please try again."), icon: "circle-alert", undo: () => get().undo(), actionLabel: "Retry Undo" } });
+    } finally {
+      if (get().undoing === entry) set({ undoing: null });
+    }
   },
   scope: "",
   setScope: (scope) => {
-    if (scope !== get().scope) set({ scope, stack: [] });
+    if (scope === get().scope) return;
+    const toast = get().undoing ? null : get().toast;
+    set({ scope, stack: [], undoing: null, toast: toast ? { ...toast, undo: undefined } : null });
   },
 }));
 

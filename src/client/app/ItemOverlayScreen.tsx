@@ -151,16 +151,8 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
         updateItem.mutate({ id, parentItemId: target.id });
         if (s) notify({ message: `Moved ${quote(s.title)} under ${target.itemId ?? target.title}`, icon: "corner-down-right", restore: () => updateItem.mutate({ id, parentItemId: item.id }) });
       }}
-      onDeleteSubitem={(id) => {
-        const s = subitems.find((x) => x.id === id);
-        deleteItem.mutate({ id });
-        if (s) notify({ message: `Deleted ${quote(s.title)}`, icon: "trash-2", restore: () => createItem.mutate({ id: s.id, title: s.title, listId: s.listId, parentItemId: item.id }) });
-      }}
-      onDeleteSubitems={() => {
-        const snapshot = subitems.map((s) => ({ ...s }));
-        snapshot.forEach((s) => deleteItem.mutate({ id: s.id }));
-        notify({ message: `Deleted ${snapshot.length} subitem${snapshot.length === 1 ? "" : "s"}`, icon: "trash-2", restore: () => snapshot.forEach((s) => createItem.mutate({ id: s.id, title: s.title, listId: s.listId, parentItemId: item.id })) });
-      }}
+      onDeleteSubitem={(id) => void actions.remove(id)}
+      onDeleteSubitems={() => void actions.removeMany(subitems.map((s) => s.id), "subitem")}
       onAddRelation={(type, target) => addRelation.mutate({ type, targetId: target.id })}
       onRemoveRelation={(type, targetId) => removeRelation.mutate({ type, targetId })}
       onOpenItem={(id) => onOpen(id)}
@@ -184,9 +176,7 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
           notify({ message: `Archived ${quote(item.title)}`, icon: "archive", restore: () => updateItem.mutate({ id: item.id, archived: false }) });
           onClose();
         } else if (action === "delete") {
-          const snapshot = { ...item };
-          deleteItem.mutate({ id: item.id });
-          notify({ message: `Deleted ${quote(item.title)}`, icon: "trash-2", restore: () => createItem.mutate({ id: snapshot.id, title: snapshot.title, listId: snapshot.listId, status: snapshot.status, priority: snapshot.priority, startDate: snapshot.startDate, dueDate: snapshot.dueDate, description: snapshot.description ?? undefined, labelIds: snapshot.labelIds, assigneeIds: snapshot.assigneeIds }) });
+          void actions.remove(item.id);
           onClose();
         } else if (action === "share") {
           void navigator.clipboard?.writeText(`${location.origin}${location.pathname}?item=${item.id}`);

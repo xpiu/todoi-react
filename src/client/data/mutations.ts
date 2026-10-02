@@ -109,6 +109,19 @@ export function useDeleteItem(scope: ItemsScope) {
   );
 }
 
+/** Restore the existing record, then fetch its complete relationships instead of reconstructing it. */
+export function useRestoreItem(scope: ItemsScope) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => api.api.items[":id"].$patch({ param: { id }, json: { deleted: false } }).then((r) => unwrap(r)),
+    onSuccess: async () => {
+      const refresh: QueryKey[] = [keys.items(scope), keys.groups, ["archive"], ["item"]];
+      if ("projectId" in scope) refresh.push(keys.project(scope.projectId));
+      await Promise.all(refresh.map((queryKey) => qc.invalidateQueries({ queryKey })));
+    },
+  });
+}
+
 export function useSetItemLabels(scope: ItemsScope) {
   return useOptimistic(
     scope,

@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import type { ItemPriority } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
 import type { Item, Label, ProjectDetail } from "../data/api";
-import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
+import { newId, useCreateItem, useCreateList, useDeleteItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
 import { formatDate } from "../design/core/dates";
 import { completeRecurring } from "../design/core/repeat";
@@ -32,6 +32,7 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const updateItem = useUpdateItem(scope);
   const moveItem = useMoveItem(scope);
   const deleteItem = useDeleteItem(scope);
+  const restoreItem = useRestoreItem(scope);
   const setLabels = useSetItemLabels(scope);
   const setAssignees = useSetItemAssignees(scope);
   const createList = useCreateList(projectId);
@@ -84,14 +85,33 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
     } else move(id, { listId: it.listId, position: Math.max(0, it.position + (dir === "up" ? -1 : 1)) });
   };
 
-  const recreate = (it: Item) => createItem.mutate({ id: it.id, title: it.title, listId: it.listId, status: it.status, priority: it.priority, startDate: it.startDate, dueDate: it.dueDate, description: it.description ?? undefined, labelIds: it.labelIds, assigneeIds: it.assigneeIds });
-
-  const remove = (id: string) => {
-    const it = byId(id);
-    if (!it) return;
-    deleteItem.mutate({ id });
-    notify({ message: `Deleted ${quote(it.title)}`, icon: "trash-2", restore: () => recreate(it) });
+  const removeMany = async (ids: string[], noun = "item") => {
+    const selected = [...new Set(ids)].map(byId).filter((it): it is Item => !!it);
+    const undoScope = useFeedback.getState().scope;
+    const removed: Item[] = [];
+    // Serial deletion keeps one failed request from rolling back another deletion's cache patch.
+    for (const it of selected) {
+      try {
+        await deleteItem.mutateAsync({ id: it.id });
+        removed.push(it);
+      } catch { /* The mutation reports the request error; only successful deletes become undoable. */ }
+    }
+    if (!removed.length || useFeedback.getState().scope !== undoScope) return;
+    const pending = removed.map((it) => it.id);
+    notify({
+      message: `Deleted ${removed.length === 1 ? quote(removed[0]!.title) : count(removed.length, noun)}`,
+      meta: removed.length < selected.length ? `${selected.length - removed.length} could not be deleted` : undefined,
+      icon: "trash-2",
+      restore: async () => {
+        // Retain only unfinished work if a bulk restore fails midway through.
+        while (pending.length) {
+          await restoreItem.mutateAsync({ id: pending[0]! });
+          pending.shift();
+        }
+      },
+    });
   };
+  const remove = (id: string) => removeMany([id]);
 
   /** Done toggle. A recurring item checked done reopens on its next due instead (one toast, undoable). */
   const setDone = (id: string, done: boolean) => {
@@ -173,6 +193,10 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
   const bulk = (action: string, value: string | null | undefined, selectedIds: string[]): boolean => {
     const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
     if (!sel.length) return false;
+    if (action === "delete") {
+      void removeMany(selectedIds);
+      return true;
+    }
     const noun = count(sel.length, "item");
     const snapshot = sel.map((it) => ({ ...it }));
     if (action === "move" && value) {
@@ -202,13 +226,9 @@ export function useProjectActions(projectId: string, project: ProjectDetail, ite
       const allDone = sel.every((it) => it.done);
       sel.forEach((it) => updateItem.mutate({ id: it.id, done: !allDone }));
       notify({ message: `Marked ${noun} ${allDone ? "not done" : "done"}`, icon: "circle-check", restore: () => snapshot.forEach((it) => updateItem.mutate({ id: it.id, done: it.done })) });
-    } else if (action === "delete") {
-      sel.forEach((it) => deleteItem.mutate({ id: it.id }));
-      notify({ message: `Deleted ${noun}`, icon: "trash-2", restore: () => snapshot.forEach(recreate) });
-      return true;
     }
     return false;
   };
 
-  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer };
+  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer };
 }

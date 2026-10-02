@@ -8,6 +8,7 @@ import { useCallback, useId, useState, type CSSProperties, type ReactNode, type 
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
 import { PortalContainerContext } from "./portalContainer";
+import { useToastHost } from "./ToastPortal";
 import "./Dialog.css";
 
 export type DialogCloseReason = "escape" | "outside" | "close" | "cancel";
@@ -45,6 +46,7 @@ export function Dialog({ open, onClose, title, titleExtra, width, footer, footer
   const id = useId();
   // Popovers opened inside the dialog portal into its popup (see portalContainer.ts).
   const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
+  useToastHost(open ? popupEl : null);
   const handleOpenChange = useCallback(
     (next: boolean, details: { reason?: string }) => {
       if (!next) onClose(dialogReason(details.reason));
