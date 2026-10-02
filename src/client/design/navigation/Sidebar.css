@@ -1,4 +1,4 @@
-/* Sidebar — chrome rail; collapse animates width only. Below the desktop class it overlays the content. */
+/* Sidebar — chrome rail; collapse animates width only. Below the desktop class it is a modal sheet (.td-sidebar-sheet). */
 @layer components {
   .td-sidebar {
     position: relative;
@@ -13,27 +13,61 @@
     flex-shrink: 0;
     transition: width var(--duration-base) var(--ease-standard);
   }
-  html:not([data-device="desktop"]) .td-sidebar {
-    position: absolute;
+  /* Phone and tablet: a modal sheet on the dock side, full height, over a scrim (Base UI Dialog). */
+  .td-sidebar-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    background: var(--scrim);
+    transition: opacity var(--duration-base) var(--ease-standard);
+  }
+  .td-sidebar-scrim[data-starting-style],
+  .td-sidebar-scrim[data-ending-style] {
+    opacity: 0;
+  }
+  .td-sidebar.td-sidebar-sheet {
+    position: fixed;
     top: 0;
     bottom: 0;
+    z-index: var(--z-modal);
     height: auto;
+    max-width: calc(100vw - 48px);
     box-shadow: var(--shadow-overlay);
+    outline: none;
+    transition: transform var(--duration-base) var(--ease-standard);
   }
-  html:not([data-device="desktop"]) .td-sidebar-right {
+  .td-sidebar-sheet.td-sidebar-right {
     right: 0;
   }
-  html:not([data-device="desktop"]) .td-sidebar-left {
+  .td-sidebar-sheet.td-sidebar-left {
     left: 0;
   }
-  html:not([data-device="desktop"]) .td-sidebar[data-hidden="true"] {
-    box-shadow: none;
+  .td-sidebar-sheet.td-sidebar-right[data-starting-style],
+  .td-sidebar-sheet.td-sidebar-right[data-ending-style] {
+    transform: translateX(100%);
   }
-  .td-sidebar-scrim {
-    position: absolute;
-    inset: 0;
-    z-index: calc(var(--z-above-content) - 1);
-    background: var(--scrim);
+  .td-sidebar-sheet.td-sidebar-left[data-starting-style],
+  .td-sidebar-sheet.td-sidebar-left[data-ending-style] {
+    transform: translateX(-100%);
+  }
+  .td-sidebar-sheethead {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: var(--size-topbar);
+    padding: 0 var(--sp-2);
+  }
+  .td-sidebar-right .td-sidebar-sheethead {
+    justify-content: flex-end;
+  }
+  .td-sidebar-sheetbody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .td-sidebar-sheet .td-sidebar-inner {
+    width: 100% !important;
   }
   .td-sidebar-right {
     border-left: 1px solid var(--chrome-hover);
@@ -199,6 +233,28 @@
   .td-sidebar-rowwrap:hover .td-sidebar-add,
   .td-sidebar-add:focus-visible {
     opacity: 1;
+  }
+  /* Touch has no hover: the row menus and adds stay visible, rows grow to a 44px target, and the
+     label keeps clear of the button. Desktop density is unchanged. */
+  html[data-touch="true"] .td-sidebar-rowwrap .td-sidebar-more,
+  html[data-touch="true"] .td-sidebar-rowwrap .td-sidebar-add,
+  html[data-touch="true"] .td-sidebar-head .td-iconbtn {
+    opacity: 1;
+  }
+  /* IconButton's touch hit area sets position: relative; these stay pinned to the row's end. */
+  html[data-touch="true"] .td-sidebar-rowwrap .td-sidebar-more,
+  html[data-touch="true"] .td-sidebar-rowwrap .td-sidebar-add {
+    position: absolute;
+  }
+  html[data-touch="true"] .td-sidebar-row,
+  html[data-touch="true"] .td-sidebar-head {
+    min-height: 44px;
+  }
+  html[data-touch="true"] .td-sidebar-rowwrap:has(.td-sidebar-more, .td-sidebar-add) > .td-sidebar-row {
+    padding-right: 36px;
+  }
+  .td-sidebar-rowwrap .td-sidebar-more[hidden] {
+    display: none;
   }
   .td-sidebar-rowwrap[data-current="true"] .td-sidebar-more,
   .td-sidebar-rowwrap[data-current="true"] .td-sidebar-add {

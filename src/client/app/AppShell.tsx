@@ -304,12 +304,13 @@ export function AppShell() {
           {/* Dates render in the person's format: a change re-renders the screen (Settings, where it is made, stays put) */}
           <Outlet key={section === "settings" ? section : conventions} />
         </main>
-        {!vp.desktop && sidebarOpen ? <div className="td-sidebar-scrim" onClick={() => setSidebarOpen(false)} /> : null}
         <Sidebar
           groups={sidebarGroups}
           navItems={navItems}
           activeId={activeId}
           collapsed={!sidebarOpen}
+          modal={!vp.desktop}
+          onClose={() => setOverlaySidebar(false)}
           onAdd={(groupId) => lifecycle.openNewProject(groupId)}
           onNavAdd={(id) => {
             if (id === "projects") lifecycle.openNewProject(project.data?.groupId);
