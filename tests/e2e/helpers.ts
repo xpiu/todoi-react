@@ -103,7 +103,9 @@ export function trackAccounts(test: TestType<any, any>) {
       // Only accounts born in this test: guests (anonymous) and fresh sign-ups — never an existing
       // account a test signs in to (the seeded dev user owns the sample workspace).
       if (!/\/api\/auth\/(sign-up|get-session)/.test(response.url())) return;
-      responses.push(response.json().then((data) => { if (data?.user?.id && (data.user.isAnonymous || /sign-up/.test(response.url()))) ownedUsers.add(data.user.id); }).catch(() => undefined));
+      // A body that never arrives (the page navigated on) must not hold the cleanup up.
+      const read = response.json().then((data) => { if (data?.user?.id && (data.user.isAnonymous || /sign-up/.test(response.url()))) ownedUsers.add(data.user.id); });
+      responses.push(Promise.race([read, new Promise<void>((resolve) => setTimeout(resolve, 2000))]).catch(() => undefined));
     });
   };
   test.beforeEach(({ context }: { context: BrowserContext }) => { ownedUsers.clear(); responses.length = 0; watch(context); });
@@ -115,6 +117,8 @@ export function trackAccounts(test: TestType<any, any>) {
     const client = await pool.connect();
     try {
       await client.query("begin");
+      // Fail loudly rather than wait out the test timeout behind another test's transaction.
+      await client.query("set local lock_timeout = '10s'");
       // Belt and braces: never the seeded dev account, whatever was recorded.
       const ids = (await client.query("select id from users where id = any($1) and email <> $2", [[...ownedUsers], DEV_USER.email])).rows.map((u) => u.id as string);
       const { rows: ps } = await client.query("select id from projects where group_id in (select id from groups where owner_id = any($1))", [ids]);

@@ -30,7 +30,8 @@ import { Switch } from "../design/core/Switch";
 import { count } from "../design/core/text";
 import { TextField } from "../design/core/TextField";
 import { MODES, THEMES } from "../design/core/themes";
-import { useOnline } from "../design/core/ConnectionStatus";
+import { relativeSync } from "../design/core/ConnectionStatus";
+import { useSaveState } from "./saveState";
 import { PasswordField } from "../design/auth/PasswordField";
 import { MonoValue, SettingsLink, SettingsShell, StatusDot, type SettingsGroup, type SettingsPage, type SettingsRow } from "../design/settings/SettingsShell";
 import { quote, useFeedback } from "./feedback";
@@ -100,7 +101,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const ap = useAppearance();
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
-  const online = useOnline();
+  const save = useSaveState();
+  const online = save.online;
   const groups = useGroups();
   const projects = useMemo(() => projectsOf(groups.data), [groups.data]);
   const lifecycle = useLifecycle();
@@ -164,8 +166,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             id: "offline",
             title: "Offline editing",
             rows: [
-              { id: "online", label: "Connection", hint: "Edits made offline queue up and sync when you're back online", control: <StatusDot on={online} label={online ? "Online" : "Offline"} /> },
-              { id: "pending", label: "Pending changes", hint: "Nothing waiting to sync", control: <Button icon="trash-2" disabled>Clear</Button> },
+              { id: "online", label: "Connection", hint: "Edits made offline wait in this tab and save when you're back online. They don't survive reloading or closing the tab; Todoi asks before you leave with edits waiting", control: <StatusDot on={online} label={online ? "Online" : "Offline"} /> },
+              { id: "pending", label: "Waiting changes", hint: save.waiting ? `${save.waiting === 1 ? "1 edit is" : `${save.waiting} edits are`} waiting to save. Discard puts back what the server has` : save.failed ? `${save.failed === 1 ? "1 edit" : `${save.failed} edits`} didn't save — each was undone and a message said why` : `Nothing waiting to save · ${relativeSync(save.lastSaved)}`, control: save.waiting ? <Button icon="trash-2" onClick={save.discardWaiting}>Discard</Button> : save.failed ? <Button icon="check" onClick={save.clearFailed}>Dismiss</Button> : <Button icon="trash-2" disabled>Discard</Button> },
               { id: "install", label: "Install app", hint: "Opens Todoi in its own window and keeps working offline — available once the app ships as a PWA", control: <Button icon="monitor-down" disabled>Install</Button> },
             ],
           },

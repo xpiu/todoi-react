@@ -3,7 +3,7 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { authClient } from "../../auth";
+import { authClient, forgetBrowserSession } from "../../auth";
 import { api, unwrap, type InviteDetail } from "../../data/api";
 import { InvitePage, type InviteState } from "../../design/auth/InvitePage";
 import { ResetPasswordPage, type ResetStage } from "../../design/auth/ResetPasswordPage";
@@ -129,7 +129,10 @@ export function InviteScreen() {
       onDecline={() => navigate({ to: "/" })}
       onLogin={() => navigate({ to: "/login", search: { next: `/i/${code}`, email: d.invite.email ?? undefined } })}
       onCreateAccount={() => navigate({ to: "/signup", search: { next: `/i/${code}`, email: d.invite.email ?? undefined, invite: code } })}
-      onSwitchAccount={() => void authClient.signOut().then(() => invite.refetch())}
+      onSwitchAccount={() => void authClient.signOut().then(() => {
+        forgetBrowserSession();
+        return invite.refetch();
+      })}
       onOpenProject={openProject}
     />
   );

@@ -44,6 +44,8 @@ import { useAppShortcuts } from "./useAppShortcuts";
 import { hitContext, hitKey, useItemSearch, useOpenResult } from "./search";
 import { useInbox } from "./inbox";
 import { useDateConventionsKey, usePrefs, usePrefsSync } from "./prefs";
+import { useLeaveGuard, useSaveState } from "./saveState";
+import { ConnectionStatus } from "../design/core/ConnectionStatus";
 import "./AppShell.css";
 
 const SIDEBAR_KEY = "td-sidebar-open";
@@ -68,6 +70,8 @@ export function AppShell() {
   usePrefsSync(!!user);
   const inboxBadge = usePrefs((s) => s.inboxBadge);
   const conventions = useDateConventionsKey();
+  const save = useSaveState();
+  useLeaveGuard(save.waiting + save.saving);
   const myRole = user ? project.data?.members.find((m) => m.userId === user.id)?.role : undefined;
   // Project members can edit unless their role is Viewer; nonmembers read only.
   const readonly = !!projectId && !!project.data && (!myRole || myRole === "viewer");
@@ -259,6 +263,7 @@ export function AppShell() {
     <div className="td-app" data-sidebar-side={ap.sidebarLeft ? "left" : "right"}>
       <TopNavbar
         title={title}
+        status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} onClearFailed={save.clearFailed} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
         search
         searchSources={searchSources}
         searchStatus={navHits.status}

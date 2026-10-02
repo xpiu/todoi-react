@@ -6,8 +6,12 @@ export const authClient = createAuthClient({ baseURL: `${window.location.origin}
 export const { useSession } = authClient;
 
 let openingSession: Promise<void> | undefined;
+let sessionReady = false;
 /** Route preloads and tabs share one guest session instead of creating competing workspaces. */
 export function ensureBrowserSession(): Promise<void> {
+  // Once per page load: in-app navigation must not need the network (offline it would fail the whole
+  // route), and a session that expires later shows up as refused saves. Sign-out reloads the page.
+  if (sessionReady) return Promise.resolve();
   const open = async () => {
     const session = await authClient.getSession();
     if (session.error) throw new Error(session.error.message ?? "Could not open your workspace");
@@ -18,9 +22,14 @@ export function ensureBrowserSession(): Promise<void> {
   openingSession ??= (async () => {
     if (navigator.locks) await navigator.locks.request("todoi-session", open);
     else await open();
-  })().finally(() => { openingSession = undefined; });
+  })().then(() => { sessionReady = true; }).finally(() => { openingSession = undefined; });
   return openingSession;
 }
+
+/** After a sign-out without a page reload: the next app route checks the session again. */
+export const forgetBrowserSession = () => {
+  sessionReady = false;
+};
 
 /** The session user as the UI names people (additional fields come from the server's user model). */
 export interface SessionUser {

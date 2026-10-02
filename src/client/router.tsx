@@ -63,7 +63,10 @@ export const projectsRoute = createRoute({ getParentRoute: () => appRoute, path:
 export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "/groups", component: GroupsScreen });
 export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: "/archive", component: ArchiveScreen, validateSearch: (search: Record<string, unknown>) => z.object({ project: z.string().optional().catch(undefined) }).parse(search) });
 // Settings, Account and Import load on demand, like the design gallery.
-const SettingsScreen = lazy(() => import("./app/SettingsScreen").then((m) => ({ default: m.SettingsScreen })));
+const loadSettings = () => import("./app/SettingsScreen");
+const SettingsScreen = lazy(() => loadSettings().then((m) => ({ default: m.SettingsScreen })));
+// Fetched once the app is idle, so Settings (Storage & sync above all) still opens after the connection drops.
+if (typeof window !== "undefined") (window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1500)))(() => void loadSettings().catch(() => undefined));
 const ImportScreen = lazy(() => import("./app/ImportScreen").then((m) => ({ default: m.ImportScreen })));
 const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });
