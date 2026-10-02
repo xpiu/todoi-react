@@ -4,6 +4,7 @@
 // long-press layer both reschedule a chip onto the day under the pointer. Spec: DESIGN.md › Calendar.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from "react";
 
+import { isReadOnly } from "../auth/GuestBar";
 import { Icon } from "../core/Icon";
 import { useTouchDrag } from "../core/touchDrag";
 import { addDays, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
@@ -96,6 +97,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
     selector: ".td-calchip[data-drag-id]",
     disabled: !onReschedule,
     onLift: (el) => {
+      if (isReadOnly(el)) return false;
       dragId.current = el.getAttribute("data-drag-id");
     },
     onMove: (p) => setDropIso(isoUnder(p.target)),
@@ -226,6 +228,10 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                           overdue={!it.done && due < todayD}
                           dragId={onReschedule ? it.id : undefined}
                           onDragStart={(e) => {
+                            if (isReadOnly(e.currentTarget)) {
+                              e.preventDefault();
+                              return;
+                            }
                             dragId.current = it.id;
                             e.dataTransfer.setData("text/plain", it.id);
                             e.dataTransfer.effectAllowed = "move";

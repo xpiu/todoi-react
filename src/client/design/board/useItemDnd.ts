@@ -4,6 +4,7 @@
 // The touch layer (useTouchDrag) reuses the same cue logic through `cueAt`. Spec: DESIGN.md › Drag & drop.
 import { useEffect, useMemo, useRef, type DragEvent, type RefObject } from "react";
 
+import { isReadOnly } from "../auth/GuestBar";
 import { ITEM_DRAG_TYPE } from "../navigation/Sidebar";
 
 export interface DropTarget {
@@ -92,6 +93,10 @@ export function useItemDnd(rootRef: RefObject<HTMLElement | null>, { itemSelecto
         const el = (e.target as HTMLElement).closest<HTMLElement>(itemSelector);
         const id = el?.getAttribute("data-drag-id") ?? null;
         if (!el || isSubitem(id)) return;
+        if (isReadOnly(el)) {
+          e.preventDefault();
+          return;
+        }
         draggingId.current = id;
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData(ITEM_DRAG_TYPE, id!);

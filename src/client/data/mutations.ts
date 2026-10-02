@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 
 import type { CreateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
 import type { CreateListInput, UpdateListInput } from "../../shared/projects";
+import { useFeedback } from "../app/feedback";
 import { api, unwrap, type Item, type MoveResult } from "./api";
 import { keys } from "./queries";
 
@@ -24,8 +25,10 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
       qc.setQueryData<Item[]>(key, (old = []) => patch(old, vars));
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
+    // Roll back and say why: a guest's or viewer's edit comes back 403 and would otherwise just snap back.
+    onError: (err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
+      useFeedback.getState().notify({ message: err.message, icon: "circle-alert" });
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: key });

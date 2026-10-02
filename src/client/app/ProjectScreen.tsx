@@ -12,6 +12,7 @@ import { BoardView } from "../design/board/BoardView";
 import { ItemCard } from "../design/board/ItemCard";
 import { ListColumn } from "../design/board/ListColumn";
 import { useItemDnd, type ItemDnd } from "../design/board/useItemDnd";
+import { isReadOnly } from "../design/auth/GuestBar";
 import { CalendarView } from "../design/calendar/CalendarView";
 import type { CalendarItem } from "../design/calendar/calendar";
 import { BulkBar } from "../design/core/BulkBar";
@@ -285,7 +286,7 @@ function listCallbacks(actions: ProjectActions, listId: string, selectAll: () =>
 function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: ItemDnd, selector: string, move: ProjectActions["move"]) {
   useTouchDrag(root, {
     selector,
-    onLift: (el) => (el.getAttribute("data-drag-id")?.includes("/") ? false : undefined),
+    onLift: (el) => (isReadOnly(el) || el.getAttribute("data-drag-id")?.includes("/") ? false : undefined),
     onMove: (p, d) => {
       dnd.cueAt(p.x, p.y, d.dragId);
     },

@@ -6,6 +6,11 @@ import { Button } from "../core/Button";
 import { Icon } from "../core/Icon";
 import "./GuestBar.css";
 
+/** The read-only contract's marker on the content wrapper (AppShell sets it for guests and viewers). */
+export const READONLY_SELECTOR = '[data-readonly="true"]';
+/** True inside a read-only view: a drag must not lift there, the stylesheet already hides the edit affordances. */
+export const isReadOnly = (el: Element | null | undefined) => !!el?.closest(READONLY_SELECTOR);
+
 export interface GuestBarProps {
   reason?: "public" | "viewer";
   projectName?: string;
