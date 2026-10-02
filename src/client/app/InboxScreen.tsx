@@ -53,7 +53,7 @@ export function InboxScreen() {
             </Button>
           ) : null
         }
-        onAddItem={(title, parsed) => createItem.mutate({ id: newId(), title, priority: parsed.priority ? (parsed.priority.toUpperCase() as "URGENT" | "HIGH" | "MEDIUM" | "LOW") : undefined, dueDate: parsed.due ?? undefined })}
+        onAddItem={(title, parsed, position) => createItem.mutate({ id: newId(), title, priority: parsed.priority ? (parsed.priority.toUpperCase() as "URGENT" | "HIGH" | "MEDIUM" | "LOW") : undefined, dueDate: parsed.due ?? undefined, position })}
       >
         {rows.length ? (
           rows.map((r) => <ListRow key={r.id} dragId={r.id} title={r.title} done={r.done} onDone={(done) => {

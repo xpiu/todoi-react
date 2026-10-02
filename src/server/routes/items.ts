@@ -8,7 +8,7 @@ import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { statusChange } from "../../shared/completion";
-import { moveItem, updateItem } from "../services/items";
+import { moveItem, placeAmongSiblings, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
@@ -47,11 +47,15 @@ export const itemsRoute = new Hono()
     const listId = input.listId ?? viewer.inboxListId;
     const [list] = await db.select().from(lists).where(eq(lists.id, listId));
     if (!list) return c.json({ error: "List not found" }, 404);
-    const { labelIds = [], assigneeIds = [], ...fields } = input;
+    const { labelIds = [], assigneeIds = [], position: where = "bottom", ...fields } = input;
     // Created in a Done list (or as Done) means done, by the same rule as every other path.
     const state = statusChange({ status: null, done: false, priorStatus: null }, fields.status === undefined ? (list.statusRole ?? null) : fields.status);
     const row = await db.transaction(async (tx) => {
-      const max = (await tx.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, listId)))[0]?.max ?? -1;
+      // Additions to one list take turns, so simultaneous ones each get their own place.
+      await tx.select({ id: lists.id }).from(lists).where(eq(lists.id, listId)).for("update");
+      const placed: { position?: number } = {};
+      if (fields.parentItemId) placed.position = ((await tx.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, listId)))[0]?.max ?? -1) + 1;
+      else await placeAmongSiblings(tx, fields.id, listId, where === "top" ? 0 : undefined, placed);
       // Items in a project get a key from the group's counter at once; Inbox items get one when filed.
       let keyNumber: number | null = null;
       if (list.projectId) {
@@ -60,7 +64,7 @@ export const itemsRoute = new Hono()
       }
       const [created] = await tx
         .insert(items)
-        .values({ ...fields, ...state, listId, projectId: list.projectId, keyNumber, position: max + 1, createdBy: viewer.userId })
+        .values({ ...fields, ...state, listId, projectId: list.projectId, keyNumber, position: placed.position!, createdBy: viewer.userId })
         .returning();
       if (labelIds.length) await tx.insert(itemLabels).values(labelIds.map((labelId) => ({ itemId: created!.id, labelId }))).onConflictDoNothing();
       if (assigneeIds.length) await tx.insert(itemAssignees).values(assigneeIds.map((userId) => ({ itemId: created!.id, userId }))).onConflictDoNothing();
