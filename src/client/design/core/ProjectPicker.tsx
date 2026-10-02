@@ -1,9 +1,11 @@
 // ProjectPicker — move or copy items to another project: pick the project (search, glyph in its
 // colour, group at the trailing edge; projects without lists are inert), then the destination list.
 // Panel body only. onPick(project, list) fires once; the consumer moves / copies and raises ONE toast.
+// TransferDialog puts it in the "Move to project" / "Copy to project" dialog.
 import { useEffect, useState } from "react";
 
 import { listIconFor } from "../board/listIcons";
+import { Dialog } from "./Dialog";
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
 import "./ItemPicker.css";
@@ -122,5 +124,26 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
         {!list.length ? <div className="td-menu-note">No projects match</div> : null}
       </div>
     </div>
+  );
+}
+
+export type TransferKind = "move" | "copy";
+
+/** The picker in its dialog: open while `kind` is set, closing first on a pick; it keeps saying Move or Copy while it closes. */
+export function TransferDialog({ kind, onClose, onPick, ...picker }: { kind: TransferKind | null; onClose: () => void; onPick: (kind: TransferKind, project: PickableProject, list: PickableList) => void } & Omit<ProjectPickerProps, "action" | "onPick" | "showHeading">) {
+  const [shown, setShown] = useState<TransferKind>("move");
+  if (kind && kind !== shown) setShown(kind);
+  return (
+    <Dialog open={!!kind} onClose={onClose} title={shown === "copy" ? "Copy to project" : "Move to project"} width={380}>
+      <ProjectPicker
+        {...picker}
+        action={shown}
+        showHeading={false}
+        onPick={(project, list) => {
+          onClose();
+          onPick(shown, project, list);
+        }}
+      />
+    </Dialog>
   );
 }

@@ -1,7 +1,7 @@
 // Shared view logic for items: the row shape ListRow / ItemCard consume, grouped by list and parent.
 import type { ItemPriority } from "../../shared/enums";
 import type { Item, Label } from "../data/api";
-import { formatDate, toISO } from "../design/core/dates";
+import { formatDate } from "../design/core/dates";
 import { describeRepeat } from "../design/core/repeat";
 import type { RowLabel, RowPerson, RowPriority } from "../design/list/ListRow";
 import type { DueState } from "../design/board/DueDatePill";
@@ -17,7 +17,8 @@ export interface Person {
   avatarColor?: string | null;
 }
 
-export function dueStateOf(item: Pick<Item, "dueDate" | "done">, today = toISO(new Date())!): DueState {
+/** Overdue against `today` (ISO, from `useToday`, so it turns over at midnight). */
+export function dueStateOf(item: Pick<Item, "dueDate" | "done">, today: string): DueState {
   if (item.done) return "complete";
   if (item.dueDate && item.dueDate < today) return "overdue";
   return "default";
@@ -55,7 +56,7 @@ export interface RowModel {
 }
 
 /** Items of one list as row models: top-level rows in position order, each with its subitems. */
-export function rowsForList(items: Item[], listId: string, opts: { prefix: string; labels: Label[]; people: Person[]; today?: string; withCreated?: boolean; /** Overrides board order (a sort) */ order?: ((a: Item, b: Item) => number) | null }): RowModel[] {
+export function rowsForList(items: Item[], listId: string, opts: { prefix: string; labels: Label[]; people: Person[]; today: string; withCreated?: boolean; /** Overrides board order (a sort) */ order?: ((a: Item, b: Item) => number) | null }): RowModel[] {
   const labelById = new Map(opts.labels.map((l) => [l.id, l]));
   const personById = new Map(opts.people.map((p) => [p.id, p]));
   const toRow = (it: Item): RowModel => ({

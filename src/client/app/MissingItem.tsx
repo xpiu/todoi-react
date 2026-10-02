@@ -4,49 +4,34 @@
 // always works. Spec: DESIGN.md › States.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { ApiError, errorMessage } from "../data/api";
-import { useUpdateItem } from "../data/mutations";
+import { scopeOf, useUpdateItem } from "../data/mutations";
 import { itemLocationQuery, keys } from "../data/queries";
 import { quote, useFeedback } from "./feedback";
+import { useOpenResult } from "./search";
 import { StateDialog, type StateDialogProps } from "./StateDialog";
 
 export function MissingItem({ itemId, projectId, onClose }: { itemId: string; projectId: string | null; onClose: () => void }) {
   const found = useQuery(itemLocationQuery(itemId));
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const scope = projectId ? { projectId } : { listId: "inbox" };
+  const open = useOpenResult();
+  const scope = scopeOf(projectId);
   const updateItem = useUpdateItem(scope);
   const notify = useFeedback((s) => s.notify);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const it = found.data;
   const here = !!it && (it.projectId ?? null) === projectId;
   // Live and here, but not in the list on screen yet (made or restored elsewhere a moment ago): fetch it.
   const stale = here && it.state === "live";
   useEffect(() => {
-    if (stale) void qc.invalidateQueries({ queryKey: keys.items(projectId ? { projectId } : { listId: "inbox" }) });
+    if (stale) void qc.invalidateQueries({ queryKey: keys.items(scopeOf(projectId)) });
   }, [stale, projectId, qc]);
 
-  const restore = async (field: "archived" | "deleted") => {
-    if (!it) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await updateItem.mutateAsync({ id: it.id, [field]: false, quiet: true });
-      notify({ message: `Restored ${quote(it.title)}`, icon: "archive-restore", restore: () => updateItem.mutateAsync({ id: it.id, [field]: true, quiet: true }).then(() => undefined) });
-    } catch (err) {
-      setError(`Couldn't restore it: ${errorMessage(err)}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-  const openThere = () => {
-    if (!it) return;
-    if (it.projectId) void navigate({ to: "/p/$projectId", params: { projectId: it.projectId }, search: { item: it.id } });
-    else void navigate({ to: "/inbox", search: { item: it.id } });
-  };
+  // Restoring brings the item back into the list on screen, and the overlay opens on it.
+  const restore = (field: "archived" | "deleted") =>
+    it && updateItem.mutate({ id: it.id, [field]: false, quiet: true }, { onSuccess: () => notify({ message: `Restored ${quote(it.title)}`, icon: "archive-restore", restore: () => updateItem.mutateAsync({ id: it.id, [field]: true, quiet: true }).then(() => undefined) }) });
 
   let title: string;
   let body: StateDialogProps["body"];
@@ -80,7 +65,8 @@ export function MissingItem({ itemId, projectId, onClose }: { itemId: string; pr
   } else {
     title = `${quote(it.title)} is ${it.projectId ? `in ${it.projectName ?? "another project"}` : "in your Inbox"}`;
     body = `It isn't in ${projectId ? "this project" : "your Inbox"}: it was moved, or the link points elsewhere.`;
-    action = { label: "Open it there", onClick: openThere };
+    action = { label: "Open it there", onClick: () => open.item(it) };
   }
-  return <StateDialog title={title} body={body} action={action} busy={busy} error={error} onClose={onClose} />;
+  const error = updateItem.error ? `Couldn't restore it: ${errorMessage(updateItem.error)}` : null;
+  return <StateDialog title={title} body={body} action={action} busy={updateItem.isPending} error={error} onClose={onClose} />;
 }

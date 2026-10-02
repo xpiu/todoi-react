@@ -30,7 +30,7 @@ describe("item helpers", () => {
     expect(rows.map((r) => r.title)).toEqual(["First", "Second"]);
     expect(rows[0]).toMatchObject({ itemId: "MP-7", dueState: "overdue", priority: "High", attachments: 2, labels: [{ color: "pink", text: "design" }], assignees: [{ name: "Lena", color: "var(--label-teal)" }] });
     expect(rows[0]!.subitems.map((s) => s.title)).toEqual(["Sub"]);
-    const sorted = rowsForList(items, "l1", { prefix: "MP", labels, people, order: (a, b) => b.title.localeCompare(a.title) });
+    const sorted = rowsForList(items, "l1", { prefix: "MP", labels, people, today: "2026-10-01", order: (a, b) => b.title.localeCompare(a.title) });
     expect(sorted.map((r) => r.title)).toEqual(["Second", "First"]);
   });
 });

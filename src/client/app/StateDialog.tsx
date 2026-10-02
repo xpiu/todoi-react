@@ -1,17 +1,17 @@
 // StateDialog — a dialog that explains why something asked for cannot show yet: still loading (placeholder
-// lines after 150ms), failed (Retry), or not available (a way on). Close always works. Used where a link or
+// lines after the skeleton delay), failed (Retry), or not available (a way on). Close always works. Used where a link or
 // a menu opens a dialog-sized surface whose data is missing. Spec: DESIGN.md › States.
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "../design/core/Button";
 import { Dialog } from "../design/core/Dialog";
 import { InlineError } from "../design/core/InlineError";
-import { Skeleton } from "../design/core/Skeleton";
+import { Skeleton, SKELETON_DELAY_MS } from "../design/core/Skeleton";
 
 export interface StateDialogProps {
   title: string;
   /** A sentence, or "pending" for placeholder lines */
-  body: ReactNode | "pending";
+  body: string;
   action?: { label: string; onClick: () => void } | null;
   busy?: boolean;
   error?: string | null;
@@ -24,7 +24,7 @@ export function StateDialog({ title, body, action, busy, error, onClose }: State
       open
       title={title}
       width={440}
-      onClose={() => onClose()}
+      onClose={onClose}
       footer={
         <>
           <Button variant="outline" onClick={onClose} autoFocus={!action}>
@@ -38,17 +38,17 @@ export function StateDialog({ title, body, action, busy, error, onClose }: State
         </>
       }
     >
-      {body === "pending" ? <PendingLines /> : typeof body === "string" ? <p className="td-confirm-body">{body}</p> : body}
+      {body === "pending" ? <PendingLines /> : <p className="td-confirm-body">{body}</p>}
       <InlineError message={error} />
     </Dialog>
   );
 }
 
-/** Nothing for the first 150ms, so a quick answer never flashes; then two placeholder lines. */
+/** Nothing for the first moment (the skeleton delay), so a quick answer never flashes; then two placeholder lines. */
 function PendingLines() {
   const [shown, setShown] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setShown(true), 150);
+    const t = setTimeout(() => setShown(true), SKELETON_DELAY_MS);
     return () => clearTimeout(t);
   }, []);
   return (

@@ -1,6 +1,6 @@
 // Item and list mutations with optimistic cache patches (README: "TanStack Query with optimistic
 // mutations"). Each mutation knows the items scope it touches so the patch lands in the right cache.
-import { useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type QueryClient, type QueryKey } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
 
 import type { CreateItemInput, DuplicateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
@@ -16,6 +16,10 @@ export const newId = () => nanoid();
 export type Quiet = { quiet?: boolean };
 
 export type ItemsScope = { projectId: string } | { listId: string };
+/** The caller's Inbox as an items scope (its list id is the server's to know). */
+export const INBOX_SCOPE = { listId: "inbox" } as const;
+/** A project's items, or the Inbox's when there is no project. */
+export const scopeOf = (projectId: string | null): ItemsScope => (projectId ? { projectId } : INBOX_SCOPE);
 
 /**
  * What any item change can leave stale besides the items cache it patched (DESIGN.md › Data freshness):
@@ -23,6 +27,9 @@ export type ItemsScope = { projectId: string } | { listId: string };
  * Caches on screen refetch at once; the rest are only marked stale and refetch when shown.
  */
 export const ITEM_DEPENDENTS: readonly QueryKey[] = [keys.groups, ["archive"], keys.inboxUnread, ["item"], ["activity"], ["search"]];
+
+/** Mark these queries stale (those on screen refetch); resolves once the refetches are done. */
+export const invalidate = (qc: QueryClient, queryKeys: readonly QueryKey[]) => Promise.all(queryKeys.map((queryKey) => qc.invalidateQueries({ queryKey })));
 
 /** Optimistic helper: patch the scope's items cache before the request, roll back on error, refetch after. */
 function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVars) => Promise<TResult>, patch: (items: Item[], vars: TVars) => Item[], extraKeys: QueryKey[] | ((vars: TVars) => QueryKey[]) = []) {
@@ -40,9 +47,7 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
     },
-    onSettled: (_data, _err, vars) => {
-      for (const k of [key, ...ITEM_DEPENDENTS, ...(typeof extraKeys === "function" ? extraKeys(vars) : extraKeys)]) void qc.invalidateQueries({ queryKey: k });
-    },
+    onSettled: (_data, _err, vars) => void invalidate(qc, [key, ...ITEM_DEPENDENTS, ...(typeof extraKeys === "function" ? extraKeys(vars) : extraKeys)]),
   });
 }
 
@@ -142,11 +147,7 @@ export function useRestoreItem(scope: ItemsScope) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id }: { id: string } & Quiet) => api.api.items[":id"].$patch({ param: { id }, json: { deleted: false } }).then((r) => unwrap(r)),
-    onSuccess: async () => {
-      const refresh: QueryKey[] = [keys.items(scope), ...ITEM_DEPENDENTS];
-      if ("projectId" in scope) refresh.push(keys.project(scope.projectId));
-      await Promise.all(refresh.map((queryKey) => qc.invalidateQueries({ queryKey })));
-    },
+    onSuccess: () => invalidate(qc, [keys.items(scope), ...ITEM_DEPENDENTS, ...("projectId" in scope ? [keys.project(scope.projectId)] : [])]),
   });
 }
 
@@ -215,18 +216,16 @@ export function useMoveItem(scope: ItemsScope) {
 export function useDuplicateItem(scope: ItemsScope) {
   const qc = useQueryClient();
   const projectId = "projectId" in scope ? scope.projectId : null;
-  return useOptimistic(
-    scope,
-    (vars: { sourceId: string; toProjectId: string | null } & DuplicateItemInput) =>
-      api.api.items[":id"].duplicate.$post({ param: { id: vars.sourceId }, json: { id: vars.id, listId: vars.listId } }).then(async (r) => {
-        const made = await unwrap<DuplicateResult>(r);
-        // The Inbox scope has no project: a copy lands here when it stays in the same project (or Inbox).
-        if (vars.toProjectId === projectId) qc.setQueryData<Item[]>(keys.items(scope), (old) => (old ? [...old.filter((it) => !made.items.some((m) => m.id === it.id)), ...made.items] : old));
-        return made;
-      }),
-    (items) => items,
-    ({ toProjectId }) => (toProjectId ? [keys.project(toProjectId), keys.items({ projectId: toProjectId }), ["labels"]] : [["items"]]),
-  );
+  return useMutation({
+    mutationFn: ({ sourceId, id, listId }: { sourceId: string; toProjectId: string | null } & DuplicateItemInput) =>
+      api.api.items[":id"].duplicate.$post({ param: { id: sourceId }, json: { id, listId } }).then((r) => unwrap<DuplicateResult>(r)),
+    // A copy in this scope (same project, or the Inbox) lands from the response; the refetch follows.
+    onSuccess: (made, { toProjectId }) => {
+      if (toProjectId === projectId) qc.setQueryData<Item[]>(keys.items(scope), (old) => (old ? [...old.filter((it) => !made.items.some((m) => m.id === it.id)), ...made.items] : old));
+    },
+    onSettled: (_data, _err, { toProjectId }) =>
+      void invalidate(qc, [keys.items(scope), ...ITEM_DEPENDENTS, ...(toProjectId ? [keys.project(toProjectId), keys.items({ projectId: toProjectId }), ["labels"]] : [["items"]])]),
+  });
 }
 
 // ── Lists ──────────────────────────────────────────────────────────────────────
@@ -244,9 +243,7 @@ export function useUpdateList(projectId: string) {
     // `rewritten`: how many items an applyToExisting role change updated.
     mutationFn: ({ quiet: _quiet, ...vars }: { id: string } & Quiet & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<{ rewritten: number }>(r)),
     // A role applied to existing items changes their Status and done, so counts and activity too.
-    onSettled: () => {
-      for (const k of [keys.project(projectId), keys.items({ projectId }), ...ITEM_DEPENDENTS]) void qc.invalidateQueries({ queryKey: k });
-    },
+    onSettled: () => void invalidate(qc, [keys.project(projectId), keys.items({ projectId }), ...ITEM_DEPENDENTS]),
   });
 }
 

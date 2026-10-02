@@ -1,6 +1,6 @@
 // Completion rules, shared so the API applies them and the client predicts them identically
 // (DESIGN.md › Recurring item completion, Lists & Status linking). Pure: no I/O, no zod.
-import { addDays, addMonths, daysBetween, parseDateValue, shiftISO, toISO, type DateInput } from "./dates";
+import { addDays, addMonths, daysBetweenISO, parseDateValue, shiftISO, toISO, type DateInput } from "./dates";
 import type { ItemStatus } from "./item-status";
 import type { RepeatRule } from "./items";
 
@@ -75,7 +75,7 @@ export function complete(cur: CompletionFields): { patch: Partial<CompletionFiel
     const next = nextOccurrence(cur.repeatRule, cur.dueDate, cur.repeatCount);
     const count = cur.repeatCount + 1;
     const occurrence = { from: cur.dueDate, next, count, ended: !next };
-    const startDate = next && cur.startDate ? { startDate: shiftISO(cur.startDate, daysBetween(parseDateValue(cur.dueDate)!, parseDateValue(next)!)) } : {};
+    const startDate = next && cur.startDate ? { startDate: shiftISO(cur.startDate, daysBetweenISO(cur.dueDate, next)) } : {};
     return { patch: next ? { dueDate: next, ...startDate, repeatCount: count } : { ...statusChange(cur, "DONE"), repeatCount: count }, occurrence };
   }
   return { patch: statusChange(cur, "DONE"), occurrence: null };

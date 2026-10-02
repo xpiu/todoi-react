@@ -28,11 +28,11 @@ import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
 import { coverOf, rowsForList } from "./items";
-import { ConfirmDialog, Dialog } from "../design/core/Dialog";
+import { ConfirmDialog } from "../design/core/Dialog";
 import { statusById } from "../design/core/statuses";
 import { count } from "../design/core/text";
 import { HiddenListsMenu } from "../design/board/HiddenListsMenu";
-import { ProjectPicker } from "../design/core/ProjectPicker";
+import { TransferDialog, type TransferKind } from "../design/core/ProjectPicker";
 import { useFileDropTargets } from "../design/overlay/Attachments";
 import { attachFiles } from "./uploads";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
@@ -91,6 +91,12 @@ export function ProjectScreen() {
   );
 }
 
+/** What filters read: the project's labels and people, and today's date (Overdue, age windows). */
+function useFilterContext(project: ProjectDetail, labels: Label[]) {
+  const today = useToday();
+  return useMemo(() => ({ labels, people: peopleOf(project), today }), [labels, project, today]);
+}
+
 interface ViewProps {
   projectId: string;
   project: ProjectDetail;
@@ -122,16 +128,13 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   // Files dropped on a card or row attach to that item.
   const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
-  const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
-  // The dialog keeps saying Copy (or Move) while it closes.
-  const [transferKind, setTransferKind] = useState<"move" | "copy">("move");
+  const [transfer, setTransfer] = useState<TransferKind | null>(null);
   // A new Status role on a list with items waits for the review: existing items, or future moves only.
   const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
   const picker = useProjectPicker(projectId);
   const anchor = useRef<string | null>(null);
 
-  const today = useToday();
-  const ctx = useMemo(() => ({ labels, people: peopleOf(project), today }), [labels, project, today]);
+  const ctx = useFilterContext(project, labels);
   const showCompleted = usePrefs((s) => s.showCompleted);
   const visibleItems = useMemo(() => {
     if (!filters.length && showCompleted) return items;
@@ -147,7 +150,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
     }),
     sort.lists,
   );
-  const rowsOf = (listId: string) => rowsForList(visibleItems, listId, { prefix: project.keyPrefix, labels, people: actions.people, order, today });
+  const rowsOf = (listId: string) => rowsForList(visibleItems, listId, { prefix: project.keyPrefix, labels, people: actions.people, order, today: ctx.today });
   const allFiltered = filters.length > 0 && lists.length > 0 && lists.every((l) => !l.count) && lists.some((l) => l.total);
   const hiddenCount = lists.reduce((n, l) => n + (l.total - l.count), 0);
 
@@ -208,9 +211,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           actions={actions.bulkActions(selectedIds)}
           onAction={(id, value) => {
             if (id === "move" && (value === "__move" || value === "__copy")) {
-              const kind = value === "__copy" ? "copy" : "move";
-              setTransfer(kind);
-              setTransferKind(kind);
+              setTransfer(value === "__copy" ? "copy" : "move");
               return;
             }
             if (actions.bulk(id, value, selectedIds)) setSelectedIds([]);
@@ -218,14 +219,10 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           onClear={() => setSelectedIds([])}
         />
       ) : null}
-      <Dialog open={!!transfer} onClose={() => setTransfer(null)} title={transferKind === "copy" ? "Copy to project" : "Move to project"} width={380}>
-        <ProjectPicker projects={picker.projects} action={transferKind} count={selectedIds.length} showHeading={false} loadLists={picker.loadLists} onPick={(proj, list) => {
-          const t = transfer;
-          setTransfer(null);
-          void actions.transfer(selectedIds, proj, list, t === "copy");
-          if (t === "move") setSelectedIds([]);
-        }} />
-      </Dialog>
+      <TransferDialog kind={transfer} onClose={() => setTransfer(null)} projects={picker.projects} count={selectedIds.length} loadLists={picker.loadLists} onPick={(kind, proj, list) => {
+        void actions.transfer(selectedIds, proj, list, kind === "copy");
+        if (kind === "move") setSelectedIds([]);
+      }} />
     </>
   );
   const requestRole = (list: VisibleList, role: ItemStatus | null) => {
@@ -418,8 +415,8 @@ function ProjectBoard(props: ViewProps) {
 /** Calendar: dated items (filters apply) on the grid; drag a chip to reschedule; "+" adds an item due that day. */
 function ProjectCalendar({ projectId, project, items, labels, filters, openItem }: ViewProps) {
   const actions = useProjectActions(projectId, project, items, labels);
-  const today = useToday();
-  const ctx = useMemo(() => ({ labels, people: peopleOf(project), today }), [labels, project, today]);
+  const ctx = useFilterContext(project, labels);
+  const { today } = ctx;
   const showCompleted = usePrefs((s) => s.showCompleted);
   const calItems = useMemo<CalendarItem[]>(() => {
     const visibleListIds = new Set(actions.lists.map((l) => l.id));

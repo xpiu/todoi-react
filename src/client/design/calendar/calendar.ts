@@ -1,10 +1,10 @@
 // Calendar model — pure helpers shared by the grid, the day list and the year view. Items land on
 // their due day; an item with a start and a due at least a day apart is a span. Undated items never
 // reach the calendar (the List view is where they live). Spec: DESIGN.md › Views › Calendar.
-import { addDays, addMonths, daysBetween, parseDateValue, sameDay, toISO } from "../core/dates";
+import { addDays, addMonths, daysBetween, daysBetweenISO, parseDateValue, sameDay, toISO } from "../core/dates";
 
 export type { DateInput } from "../core/dates";
-export { addDays, daysBetween, parseDateValue, sameDay, toISO };
+export { addDays, daysBetween, daysBetweenISO, parseDateValue, sameDay, toISO };
 
 export interface CalendarLabel {
   color: string;
@@ -39,9 +39,8 @@ export const isSpan = (it: Pick<CalendarItem, "start" | "due">): boolean => {
 };
 
 export const coversDay = (it: Pick<CalendarItem, "start" | "due">, d: Date): boolean => {
-  const st = parseDateValue(it.start), due = parseDateValue(it.due);
-  if (st && due && daysBetween(st, due) >= 1) return d >= st && d <= due;
-  return sameDay(due, d);
+  const due = parseDateValue(it.due);
+  return isSpan(it) ? d >= parseDateValue(it.start)! && d <= due! : sameDay(due, d);
 };
 
 /** The weeks a period shows: one for "week", every week touching the month for "month". */
@@ -98,12 +97,10 @@ export function placeSpans(spans: Array<{ it: CalendarItem; st: Date; due: Date 
 
 /** Shift a cursor date by n periods. */
 export function shiftPeriod(c: Date, period: CalendarPeriod, n: number): Date {
-  const d = new Date(c);
-  if (period === "month") d.setMonth(d.getMonth() + n, Math.min(c.getDate(), 28));
-  else if (period === "week") d.setDate(d.getDate() + 7 * n);
-  else if (period === "day") d.setDate(d.getDate() + n);
-  else return addMonths(c, 12 * n);
-  return d;
+  if (period === "month") return new Date(c.getFullYear(), c.getMonth() + n, Math.min(c.getDate(), 28));
+  if (period === "week") return addDays(c, 7 * n);
+  if (period === "day") return addDays(c, n);
+  return addMonths(c, 12 * n);
 }
 
 const f = (x: Date, o: Intl.DateTimeFormatOptions) => x.toLocaleDateString("en-US", o);

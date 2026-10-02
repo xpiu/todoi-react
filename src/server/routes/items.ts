@@ -115,10 +115,8 @@ export const itemsRoute = new Hono()
   })
   // Copy into a list: the copy and its subitems (root first), and what was not carried over.
   .post("/:id/duplicate", idParam, validate("json", duplicateItemSchema), async (c) => {
-    const input = c.req.valid("json");
-    const [taken] = await db.select({ id: items.id }).from(items).where(eq(items.id, input.id));
-    if (taken) return fail(c, 409, "That copy already exists");
-    const result = await duplicateItem(c.req.valid("param").id, input, viewerOf(c).userId);
+    // A resent copy id fails on the primary key (409, "That already exists") and changes nothing.
+    const result = await duplicateItem(c.req.valid("param").id, c.req.valid("json"), viewerOf(c).userId);
     if (!result) return fail(c, 404, "Not found");
     return c.json({ items: await withRelations(result.items), report: result.report }, 201);
   })

@@ -18,12 +18,6 @@ export function realDate(y: number, m0: number, d: number): Date | null {
   return x.getFullYear() === y && x.getMonth() === m0 && x.getDate() === d ? x : null;
 }
 
-/** "2026-02-28" yes, "2026-02-31" no. */
-export function isRealISODate(v: string): boolean {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
-  return !!m && !!realDate(+m[1]!, +m[2]! - 1, +m[3]!);
-}
-
 /** ISO "2026-09-12" or anything Date parses ("Sep 12, 2026") → local-midnight Date; null for empty / invalid (Feb 31 too). */
 export function parseDateValue(v: DateInput): Date | null {
   if (!v) return null;
@@ -47,9 +41,18 @@ export function addMonths(d: Date, n: number): Date {
   return new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), last));
 }
 
+/** "2026-02-28" yes, "2026-02-31" no (and not "2026-9-1"). */
+export const isRealISODate = (v: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(v) && !!parseDateValue(v);
+
 /** Whole calendar days from `a` to `b` (negative when `b` is earlier); exact across DST changes. */
 export const daysBetween = (a: Date, b: Date): number =>
   Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / DAY_MS);
+
+/** `daysBetween` for two ISO dates (0 when either is missing or not a real date). */
+export function daysBetweenISO(a: string | null, b: string | null): number {
+  const x = parseDateValue(a), y = parseDateValue(b);
+  return x && y ? daysBetween(x, y) : 0;
+}
 
 /** An ISO date `n` days on; null stays null. */
 export function shiftISO(iso: string | null, n: number): string | null {

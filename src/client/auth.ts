@@ -7,6 +7,8 @@ export const { useSession } = authClient;
 
 let openingSession: Promise<void> | undefined;
 let sessionReady = false;
+/** The browser session (a guest workspace on first visit) could not be opened; the app frame's error screen says so. */
+export class SessionStartError extends Error {}
 /** The reason a session step failed, for the error screen's detail line ("Session check: 503 Service Unavailable"). */
 const failure = (step: "session" | "guest", e: { message?: string; status?: number; statusText?: string }) =>
   `${step === "session" ? "Session check" : "Guest workspace"}: ${e.message || [e.status, e.statusText].filter(Boolean).join(" ") || "no answer"}`;
@@ -17,20 +19,20 @@ export function ensureBrowserSession(): Promise<void> {
   if (sessionReady) return Promise.resolve();
   const open = async () => {
     const session = await authClient.getSession();
-    if (session.error) throw new Error(failure("session", session.error));
+    if (session.error) throw new SessionStartError(failure("session", session.error));
     if (session.data) return;
     const result = await authClient.signIn.anonymous();
-    if (result.error) throw new Error(failure("guest", result.error));
+    if (result.error) throw new SessionStartError(failure("guest", result.error));
   };
   openingSession ??= (async () => {
     if (navigator.locks) await navigator.locks.request("todoi-session", open);
     else await open();
-  })().then(() => { sessionReady = true; }).finally(() => { openingSession = undefined; });
+  })()
+    .then(() => { sessionReady = true; })
+    .catch((e: unknown) => { throw e instanceof SessionStartError ? e : new SessionStartError(failure("session", { message: e instanceof Error ? e.message : String(e) })); })
+    .finally(() => { openingSession = undefined; });
   return openingSession;
 }
-
-/** Whether this page load has a session (the app frame's start succeeded). */
-export const hasBrowserSession = () => sessionReady;
 
 /** After a sign-out without a page reload: the next app route checks the session again. */
 export const forgetBrowserSession = () => {

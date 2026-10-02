@@ -2,50 +2,42 @@ import { expect, test as base, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
 import type { GroupWithProjects, Item, Label, ProjectDetail } from "../../src/client/data/api";
-import { seedProjectId, signIn } from "./helpers";
+import { freshProject, seedProjectId, signIn } from "./helpers";
 
-// Duplication (DESIGN.md › Item overlay, Duplicate): a richly populated item in the seeded project (Sam is
-// an editor there) is duplicated in place and copied to a fresh project in another group, where Sam is not
-// a member and one label exists only by name. Included fields survive a reload; what stays behind is said.
-// Its dates lie years ahead, so the seeded project's calendar (a visual gate running alongside) never shows it.
-type Fixture = { source: ProjectDetail; listId: string; dest: ProjectDetail; rich: string; title: string; labels: Label[]; sam: string };
+// Duplication (DESIGN.md › Item overlay, Duplicate): a richly populated item in a fresh project where Sam
+// is an editor is duplicated in place and copied to a fresh project in another group, where Sam is not a
+// member and one label exists only by name. Included fields survive a reload; what stays behind is said.
+type Fixture = { source: { id: string }; listId: string; dest: { id: string; name: string }; rich: string; title: string; labels: Array<{ id: string; name: string }>; sam: string };
 const test = base.extend<{ fixture: Fixture }>({
   fixture: async ({ page }, use) => {
     await signIn(page);
-    const source = await (await page.request.get(`/api/projects/${await seedProjectId(page)}`)).json() as ProjectDetail;
+    const seed = await (await page.request.get(`/api/projects/${await seedProjectId(page)}`)).json() as ProjectDetail;
+    const owner = seed.members.find((m) => m.role === "owner")!.userId;
+    const sam = seed.members.find((m) => m.userId !== owner)!.userId;
     const groups = await (await page.request.get("/api/groups")).json() as GroupWithProjects[];
-    const owner = source.members.find((m) => m.role === "owner")!.userId;
-    const sam = source.members.find((m) => m.userId !== owner)!.userId;
-    const otherGroup = groups.find((g) => g.id !== source.groupId && g.ownerId === owner) ?? groups.find((g) => g.id !== source.groupId)!;
-    const labels = (await (await page.request.get(`/api/labels?projectId=${source.id}`)).json() as Label[]).slice(0, 2);
-    const listId = nanoid(), destId = nanoid(), rich = nanoid(), other = nanoid();
-    const title = `Copy fixture ${rich.slice(0, 6)}`;
-    expect((await page.request.post("/api/lists", { data: { id: listId, projectId: source.id, name: `Copy source ${listId.slice(0, 6)}` } })).status()).toBe(201);
-    expect((await page.request.post("/api/projects", { data: { id: destId, groupId: otherGroup.id, name: `Copy target ${destId.slice(0, 6)}`, lists: [["Arrivals", null]] } })).status()).toBe(201);
-    expect((await page.request.post("/api/labels", { data: { id: nanoid(), projectId: destId, name: labels[0]!.name.toUpperCase(), color: "teal" } })).status()).toBe(201);
+    const otherGroup = groups.find((g) => g.id !== seed.groupId && g.ownerId === owner) ?? groups.find((g) => g.id !== seed.groupId)!;
+    const source = await freshProject(page, "Copy source", { lists: [["Copy source", null]] });
+    const dest = await freshProject(page, "Copy target", { lists: [["Arrivals", null]], groupId: otherGroup.id });
     try {
-      expect((await page.request.post("/api/items", { data: { id: rich, title, listId, description: "**Keep** this", priority: "HIGH", startDate: "2031-03-10", dueDate: "2031-03-12", dueTime: "09:30", labelIds: labels.map((l) => l.id), assigneeIds: [owner, sam] } })).status()).toBe(201);
+      expect((await page.request.put(`/api/projects/${source.projectId}/members/${sam}`, { data: { role: "editor" } })).ok()).toBeTruthy();
+      const labels = [{ id: nanoid(), name: "Design" }, { id: nanoid(), name: "Shop" }];
+      for (const l of labels) expect((await page.request.post("/api/labels", { data: { ...l, projectId: source.projectId, color: "blue" } })).status()).toBe(201);
+      // Same name, different case: the copy reuses it instead of creating a duplicate.
+      expect((await page.request.post("/api/labels", { data: { id: nanoid(), projectId: dest.projectId, name: labels[0]!.name.toUpperCase(), color: "teal" } })).status()).toBe(201);
+      const title = `Copy fixture ${source.projectId.slice(0, 6)}`;
+      const rich = await source.item(title, { description: "**Keep** this", priority: "HIGH", startDate: "2026-10-12", dueDate: "2026-10-14", dueTime: "09:30", labelIds: labels.map((l) => l.id), assigneeIds: [owner, sam] });
       expect((await page.request.patch(`/api/items/${rich}`, { data: { repeatRule: { freq: "weekly" }, cover: { color: "teal" } } })).ok()).toBeTruthy();
-      for (const [sub, done] of [["First step", true], ["Second step", false]] as const) {
-        const id = nanoid();
-        expect((await page.request.post("/api/items", { data: { id, title: sub, listId, parentItemId: rich } })).status()).toBe(201);
-        if (done) expect((await page.request.patch(`/api/items/${id}`, { data: { done: true } })).ok()).toBeTruthy();
-      }
-      expect((await page.request.post("/api/items", { data: { id: other, title: `Copy neighbour ${other.slice(0, 6)}`, listId } })).status()).toBe(201);
+      const first = await source.item("First step", { parentItemId: rich });
+      await source.item("Second step", { parentItemId: rich });
+      expect((await page.request.patch(`/api/items/${first}`, { data: { done: true } })).ok()).toBeTruthy();
+      const other = await source.item("Copy neighbour");
       expect((await page.request.post(`/api/items/${rich}/comments`, { data: { id: nanoid(), body: "Stays here" } })).status()).toBe(201);
       expect((await page.request.post(`/api/items/${rich}/relations`, { data: { targetId: other, type: "related" } })).status()).toBe(201);
       expect((await page.request.post(`/api/items/${rich}/attachments`, { multipart: { files: { name: "plan.txt", mimeType: "text/plain", buffer: Buffer.from("plan") } } })).status()).toBe(201);
-      const dest = await (await page.request.get(`/api/projects/${destId}`)).json() as ProjectDetail;
-      await use({ source, listId, dest, rich, title, labels, sam });
+      await use({ source: { id: source.projectId }, listId: source.lists[0]!.id, dest: { id: dest.projectId, name: dest.name }, rich, title, labels, sam });
     } finally {
-      // Everything in the fixture list (the original, its neighbour and the copies) goes with it.
-      const live = ((await (await page.request.get(`/api/items?projectId=${source.id}`)).json()) as Item[]).filter((it) => it.listId === listId && !it.parentItemId);
-      // A copy undone from its toast waits in the Trash; it is this fixture's too.
-      const trashed = ((await (await page.request.get(`/api/archive?projectId=${source.id}`)).json()) as { items: Array<{ id: string; listId: string; parentItemId: string | null }> }).items.filter((it) => it.listId === listId && !it.parentItemId);
-      for (const it of [...live, ...trashed]) expect([204, 404]).toContain((await page.request.delete(`/api/archive/items/${it.id}`)).status());
-      expect([204, 404]).toContain((await page.request.delete(`/api/archive/items/${rich}`)).status());
-      expect([204, 404]).toContain((await page.request.delete(`/api/lists/${listId}`)).status());
-      expect([204, 404]).toContain((await page.request.delete(`/api/archive/projects/${destId}`)).status());
+      await source.cleanup();
+      await dest.cleanup();
     }
   },
 });
@@ -64,7 +56,7 @@ async function copiesIn(page: Page, f: Fixture, projectId: string) {
       subitems: all.filter((s) => s.parentItemId === it.id).map((s) => `${s.title}:${s.done}`).sort(),
     }));
 }
-const INCLUDED = ["**Keep** this", "HIGH", "2031-03-10", "2031-03-12", "09:30", { freq: "weekly" }, { color: "teal" }, false];
+const INCLUDED = ["**Keep** this", "HIGH", "2026-10-12", "2026-10-14", "09:30", { freq: "weekly" }, { color: "teal" }, false];
 
 test("Duplicate in the overlay copies every included field beside the original and says what stays behind", async ({ page, fixture: f }) => {
   await page.goto(`/p/${f.source.id}?v=list&item=${f.rich}`);

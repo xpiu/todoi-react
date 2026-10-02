@@ -1,8 +1,6 @@
 import { expect, test as base } from "@playwright/test";
-import { nanoid } from "nanoid";
 
-import type { ProjectDetail } from "../../src/client/data/api";
-import { seedProjectId, signIn } from "./helpers";
+import { freshProject, signIn } from "./helpers";
 
 // Data freshness (DESIGN.md › Data freshness): counts agree across screens and tabs without a reload, and
 // another person's change shows within the 30-second poll. A fresh project keeps the numbers exact.
@@ -10,16 +8,11 @@ type Fixture = { projectId: string; name: string; first: string; second: string 
 const test = base.extend<{ fixture: Fixture }>({
   fixture: async ({ page }, use) => {
     await signIn(page);
-    const seed = await (await page.request.get(`/api/projects/${await seedProjectId(page)}`)).json() as ProjectDetail;
-    const projectId = nanoid(), name = `Fresh ${projectId.slice(0, 6)}`;
-    expect((await page.request.post("/api/projects", { data: { id: projectId, groupId: seed.groupId, name, lists: [["To-do", "TODO"], ["Done", "DONE"]] } })).status()).toBe(201);
+    const f = await freshProject(page, "Fresh", { lists: [["To-do", "TODO"], ["Done", "DONE"]] });
     try {
-      const listId = ((await (await page.request.get(`/api/projects/${projectId}`)).json()) as ProjectDetail).lists[0]!.id;
-      const [first, second] = [nanoid(), nanoid()];
-      for (const [id, title] of [[first, "Fresh first"], [second, "Fresh second"]]) expect((await page.request.post("/api/items", { data: { id, title, listId } })).status()).toBe(201);
-      await use({ projectId, name, first, second });
+      await use({ projectId: f.projectId, name: f.name, first: await f.item("Fresh first"), second: await f.item("Fresh second") });
     } finally {
-      expect([204, 404]).toContain((await page.request.delete(`/api/archive/projects/${projectId}`)).status());
+      await f.cleanup();
     }
   },
 });

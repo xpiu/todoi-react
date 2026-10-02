@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from "react";
 
 import { errorMessage, explain, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
-import { newId, useCreateItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
+import { newId, scopeOf, useCreateItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
 import { attachmentUrl, useAttachmentMutations } from "../data/attachments";
 import { downloadText, fileSlug, itemToMarkdown, itemsToCsv } from "./exportData";
@@ -39,11 +39,17 @@ export interface ItemOverlayScreenProps {
 
 const memberOf = (p: Person) => ({ id: p.id, name: p.name, nickname: p.nickname ?? undefined, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined });
 
-export function ItemOverlayScreen({ projectId, project, items, labels, itemId, editTitle, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps) {
-  const item = items.find((it) => it.id === itemId);
+/** The overlay for an item among the live items on screen; otherwise why it is not there (MissingItem). */
+export function ItemOverlayScreen(props: ItemOverlayScreenProps) {
+  const item = props.items.find((it) => it.id === props.itemId);
+  if (!item) return <MissingItem itemId={props.itemId} projectId={props.projectId} onClose={props.onClose} />;
+  return <ItemOverlayBody {...props} item={item} />;
+}
+
+function ItemOverlayBody({ projectId, project, items, labels, itemId, item, editTitle, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps & { item: Item }) {
   const details = useItemDetails(itemId);
   const activity = useActivity(projectId ?? "");
-  const scope = useMemo(() => (projectId ? { projectId } : { listId: "inbox" }), [projectId]);
+  const scope = useMemo(() => scopeOf(projectId), [projectId]);
   const updateItem = useUpdateItem(scope);
   const moveItem = useMoveItem(scope);
   const createItem = useCreateItem(scope);
@@ -72,7 +78,6 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const keepDrafts = useDrafts((s) => s.set);
   // One id per comment draft: resending after a failure cannot post it twice.
   const commentId = useRef(newId());
-  if (!item) return <MissingItem itemId={itemId} projectId={projectId} onClose={onClose} />;
 
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name;
   const subitems = items.filter((it) => it.parentItemId === item.id).sort((a, b) => a.position - b.position);

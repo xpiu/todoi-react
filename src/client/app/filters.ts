@@ -2,7 +2,6 @@
 // and Calendar share one model, and the URL (`f`, `s`) can reproduce it. Spec: DESIGN.md › Filtering.
 import type { ItemPriority } from "../../shared/enums";
 import type { Item, Label } from "../data/api";
-import { toISO } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import { STATUSES } from "../design/core/statuses";
 import type { SortSpec, ViewFilter } from "../design/navigation/viewState";
@@ -52,8 +51,8 @@ export const sameFilter = (a: ViewFilter, b: ViewFilter) => a.type === b.type &&
 export interface FilterContext {
   labels: Label[];
   people: Person[];
-  /** ISO date @default today */
-  today?: string;
+  /** ISO date (`useToday`) */
+  today: string;
 }
 
 const DAY = 864e5;
@@ -66,7 +65,7 @@ const inWindow = (iso: string | null | undefined, days: number, today: string) =
 /** Filters of one type OR together; types AND. */
 export function matchesFilters(it: Item, filters: ViewFilter[], ctx: FilterContext): boolean {
   if (!filters.length) return true;
-  const today = ctx.today ?? toISO(new Date())!;
+  const { today } = ctx;
   const by = new Map<string, string[]>();
   for (const f of filters) by.set(f.type, [...(by.get(f.type) ?? []), f.value]);
   for (const [type, vals] of by) {

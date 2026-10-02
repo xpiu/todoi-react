@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { dateRangeIssue, type MoveItemInput, type MoveRestore } from "../../shared/items";
 import { db } from "../db";
 import { ApiFailure } from "../errors";
-import { attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type Project } from "../db/schema";
+import { attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type List, type Project } from "../db/schema";
 import { applyCompletion, statusChange, type Occurrence } from "../../shared/completion";
 import { logActivity, quote } from "./activity";
 import { itemIsLive, setItemLifecycle } from "./lifecycle";
@@ -117,13 +117,24 @@ async function familyKeys(tx: Tx, family: Item[], dest: Project | null, restore:
   return { keys, prefix: group!.keyPrefix };
 }
 
-/** Labels belong to a project: the destination's label of the same name, created when missing; none in an Inbox. */
-async function carryLabels(tx: Tx, ids: string[], destProjectId: string | null, undo: MoveRestore, changed: MoveResult["changed"]) {
-  const rows = await tx
+/** The labels on these items, with the name, color and project they belong to. */
+const labelRowsOf = (tx: Tx, ids: string[]) =>
+  tx
     .select({ itemId: itemLabels.itemId, labelId: itemLabels.labelId, name: labels.name, color: labels.color, projectId: labels.projectId })
     .from(itemLabels)
     .innerJoin(labels, eq(labels.id, itemLabels.labelId))
     .where(inArray(itemLabels.itemId, ids));
+
+/** Who may be assigned in a list: its project's members, or the owner of an Inbox. */
+const assignableIn = async (tx: Tx, dest: List) =>
+  new Set(dest.projectId ? (await tx.select({ userId: members.userId }).from(members).where(eq(members.projectId, dest.projectId))).map((m) => m.userId) : [dest.userId]);
+
+/** The Status a linked list role gives an item arriving from another list, if it changes it. */
+const arrivingRole = (dest: List, destProject: Project | null, item: Item) => (dest.id !== item.listId && dest.statusRole && destProject?.linkStatuses && dest.statusRole !== item.status ? dest.statusRole : null);
+
+/** Labels belong to a project: the destination's label of the same name, created when missing; none in an Inbox. */
+async function carryLabels(tx: Tx, ids: string[], destProjectId: string | null, undo: MoveRestore, changed: MoveResult["changed"]) {
+  const rows = await labelRowsOf(tx, ids);
   const foreign = rows.filter((l) => l.projectId !== destProjectId);
   if (!foreign.length) return;
   await tx.delete(itemLabels).where(and(inArray(itemLabels.itemId, ids), inArray(itemLabels.labelId, foreign.map((l) => l.labelId))));
@@ -227,9 +238,10 @@ export async function moveItem(id: string, { listId, position, restore }: MoveIt
     const patch: Partial<Item> = { listId: dest.id, projectId: dest.projectId };
     const changed: MoveResult["changed"] = { list: dest.id !== cur.listId, project: crossProject, status: null, key: null, subitems: 0, labelsCreated: [], labelsRemoved: 0, assigneesRemoved: 0, watchersRemoved: 0, relationsRemoved: 0 };
     // Placing an item in a Done list is a literal Status change: it is done there, not a recurring occurrence.
-    if (dest.id !== cur.listId && dest.statusRole && destProject?.linkStatuses && dest.statusRole !== cur.status) {
-      changed.status = { from: cur.status, to: dest.statusRole };
-      Object.assign(patch, statusChange(cur, dest.statusRole));
+    const role = arrivingRole(dest, destProject, cur);
+    if (role) {
+      changed.status = { from: cur.status, to: role };
+      Object.assign(patch, statusChange(cur, role));
     }
     // A subitem leaving its parent's project becomes an item of its own there; its Undo nests it again.
     if (crossProject && cur.parentItemId) patch.parentItemId = null;
@@ -266,7 +278,7 @@ export async function moveItem(id: string, { listId, position, restore }: MoveIt
         await tx.delete(labels).where(and(inArray(labels.id, restore.createdLabelIds), eq(labels.projectId, cur.projectId), sql`not exists (select 1 from ${itemLabels} where ${itemLabels.labelId} = ${labels.id})`));
       }
       // Assignees must be members; watchers must be able to read it. An Inbox belongs to its owner alone.
-      const memberIds = new Set(dest.projectId ? (await tx.select({ userId: members.userId }).from(members).where(eq(members.projectId, dest.projectId))).map((m) => m.userId) : [dest.userId]);
+      const memberIds = await assignableIn(tx, dest);
       const canRead = (userId: string) => memberIds.has(userId) || (!!destProject && destProject.visibility !== "private");
       changed.assigneesRemoved = await carryPeople(tx, itemAssignees, ids, (u) => memberIds.has(u), undo.assignees, restore?.assignees);
       changed.watchersRemoved = await carryPeople(tx, itemWatchers, ids, canRead, undo.watchers, restore?.watchers);
@@ -333,27 +345,29 @@ export async function duplicateItem(sourceId: string, { id, listId }: { id: stri
       const at = live.findIndex((s) => s.id === root.id);
       await placeAmongSiblings(tx, id, dest.id, at >= 0 ? at + 1 : undefined, placed);
     }
-    const state = !sameList && dest.statusRole && destProject?.linkStatuses && dest.statusRole !== root.status ? statusChange(root, dest.statusRole) : {};
+    const role = arrivingRole(dest, destProject, root);
+    const state = role ? statusChange(root, role) : {};
     const first = destProject ? await issueKeyNumbers(tx, destProject.groupId, family.length) : null;
 
     const report: DuplicateReport = { subitems: family.length - 1, labelsCreated: [], labelsDropped: 0, assigneesDropped: 0, left: { comments: 0, attachments: 0, relations: 0 } };
-    const made: Item[] = [];
-    for (const [i, it] of family.entries()) {
-      const cover = it.cover?.attachmentId ? null : it.cover;
-      const [row] = await tx
-        .insert(items)
-        .values({
+    // One statement, root first: the copies' parent links are checked at its end.
+    const made = await tx
+      .insert(items)
+      .values(
+        family.map((it, i) => ({
           id: newId.get(it.id)!, listId: dest.id, projectId: dest.projectId, parentItemId: i === 0 ? parentItemId : newId.get(it.parentItemId!)!,
           keyNumber: first == null ? null : first + i, title: it.title, description: it.description, status: it.status, priorStatus: it.priorStatus, done: it.done,
-          priority: it.priority, startDate: it.startDate, dueDate: it.dueDate, dueTime: it.dueTime, repeatRule: it.repeatRule, repeatCount: it.repeatCount, cover,
+          priority: it.priority, startDate: it.startDate, dueDate: it.dueDate, dueTime: it.dueTime, repeatRule: it.repeatRule, repeatCount: it.repeatCount,
+          // An attachment cover stays with the original's files.
+          cover: it.cover?.attachmentId ? null : it.cover,
           position: i === 0 ? placed.position! : it.position, createdBy: actorId, ...(i === 0 ? state : {}),
-        })
-        .returning();
-      made.push(row!);
-    }
+        })),
+      )
+      .returning();
+    made.sort((a, b) => Number(b.id === id) - Number(a.id === id));
 
     // Labels: the same ones in the same project; by name in another; none in an Inbox.
-    const labelRows = await tx.select({ itemId: itemLabels.itemId, labelId: itemLabels.labelId, name: labels.name, color: labels.color, projectId: labels.projectId }).from(itemLabels).innerJoin(labels, eq(labels.id, itemLabels.labelId)).where(inArray(itemLabels.itemId, ids));
+    const labelRows = await labelRowsOf(tx, ids);
     if (labelRows.length && !dest.projectId) report.labelsDropped = new Set(labelRows.map((l) => l.labelId)).size;
     else if (labelRows.length) {
       const foreign = labelRows.filter((l) => l.projectId !== dest.projectId);
@@ -363,7 +377,7 @@ export async function duplicateItem(sourceId: string, { id, listId }: { id: stri
     }
     // Assignees must be members of the destination (an Inbox belongs to its owner).
     const assigneeRows = await tx.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids));
-    const memberIds = new Set(dest.projectId ? (await tx.select({ userId: members.userId }).from(members).where(eq(members.projectId, dest.projectId))).map((m) => m.userId) : [dest.userId]);
+    const memberIds = await assignableIn(tx, dest);
     const kept = assigneeRows.filter((a) => memberIds.has(a.userId));
     report.assigneesDropped = new Set(assigneeRows.filter((a) => !memberIds.has(a.userId)).map((a) => a.userId)).size;
     if (kept.length) await tx.insert(itemAssignees).values(kept.map((a) => ({ itemId: newId.get(a.itemId)!, userId: a.userId }))).onConflictDoNothing();

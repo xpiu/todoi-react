@@ -11,7 +11,7 @@ import { inboxContainer, useCurrentUser } from "./session";
 import { useProjectActions } from "./useProjectActions";
 import { useProjectPicker } from "./useProjectPicker";
 
-export const INBOX_SCOPE = { listId: "inbox" } as const;
+export { INBOX_SCOPE } from "../data/mutations";
 /** Inbox items carry no labels: labels belong to a project. */
 export const NO_LABELS: Label[] = [];
 

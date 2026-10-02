@@ -1,25 +1,15 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import type { ProjectDetail } from "../../src/client/data/api";
-import { seedProjectId, signIn, trackAccounts } from "./helpers";
+import { freshProject, signIn, trackAccounts } from "./helpers";
 
 // Honest states (DESIGN.md › States): an item link to something not on screen says why and offers a way
 // on; a details failure is never shown as an item without comments; a session that cannot start says so.
 const { own } = trackAccounts(test);
 
-async function project(page: import("@playwright/test").Page) {
+async function project(page: Page) {
   await signIn(page);
-  const seed = await (await page.request.get(`/api/projects/${await seedProjectId(page)}`)).json() as ProjectDetail;
-  const projectId = nanoid();
-  expect((await page.request.post("/api/projects", { data: { id: projectId, groupId: seed.groupId, name: `States ${projectId.slice(0, 6)}`, lists: [["To-do", "TODO"]] } })).status()).toBe(201);
-  const listId = ((await (await page.request.get(`/api/projects/${projectId}`)).json()) as ProjectDetail).lists[0]!.id;
-  const item = async (title: string) => {
-    const id = nanoid();
-    expect((await page.request.post("/api/items", { data: { id, title, listId } })).status()).toBe(201);
-    return id;
-  };
-  return { projectId, item, cleanup: async () => expect([204, 404]).toContain((await page.request.delete(`/api/archive/projects/${projectId}`)).status()) };
+  return freshProject(page, "States");
 }
 
 test("item links explain missing and archived items, and Restore opens the item", async ({ page }) => {

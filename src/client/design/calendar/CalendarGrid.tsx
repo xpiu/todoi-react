@@ -7,7 +7,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { isReadOnly } from "../auth/GuestBar";
 import { Icon } from "../core/Icon";
 import { useTouchDrag } from "../core/touchDrag";
-import { addDays, daysBetween, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
+import { addDays, daysBetweenISO, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
 import { dateConventions } from "../core/dates";
 import { CalendarItemChip } from "./CalendarItemChip";
 import "./CalendarGrid.css";
@@ -93,7 +93,6 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
 
   // Reschedule by drag: native and touch (long-press), chips and span bars alike. A drag moves the whole
   // item by the days between the grabbed day and the drop day, so a range keeps its length.
-  const drag = useRef<{ id: string; from: string } | null>(null);
   const [dropIso, setDropIso] = useState<string | null>(null);
   const [dragging, setDragging] = useState<{ id: string; from: string } | null>(null);
   const isoUnder = (t: Element | null) => t?.closest?.("[data-iso]")?.getAttribute("data-iso") ?? null;
@@ -101,15 +100,12 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
   const isoAt = (x: number, y: number) => document.elementsFromPoint(x, y).map(isoUnder).find(Boolean) ?? null;
   const begin = (id: string, from: string | null) => {
     if (!from) return false;
-    drag.current = { id, from };
-    setDragging(drag.current);
+    setDragging({ id, from });
   };
   const end = (to: string | null) => {
-    const d = drag.current;
-    drag.current = null;
     setDragging(null);
     setDropIso(null);
-    if (d && to && to !== d.from) onReschedule?.(d.id, d.from, to);
+    if (dragging && to && to !== dragging.from) onReschedule?.(dragging.id, dragging.from, to);
   };
   useTouchDrag(wrapRef, {
     selector: "[data-drag-id]",
@@ -134,7 +130,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
     onReschedule
       ? {
           onDragOver: (e: DragEvent) => {
-            if (!drag.current) return;
+            if (!dragging) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
             setDropIso(dIso);
@@ -149,8 +145,8 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
   // The days the dragged item would cover if dropped here.
   const dropDays = new Set<string>();
   const moving = dragging && dropIso ? items.find((it) => it.id === dragging.id) : null;
-  if (moving && dragging && dropIso) {
-    const n = daysBetween(parseDateValue(dragging.from)!, parseDateValue(dropIso)!);
+  if (moving) {
+    const n = daysBetweenISO(dragging!.from, dropIso!);
     const due = parseDateValue(moving.due), st = parseDateValue(moving.start) ?? due;
     if (st && due) for (let d = addDays(st, n); d <= addDays(due, n); d = addDays(d, 1)) dropDays.add(toISO(d)!);
   }
@@ -192,20 +188,22 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                 const wk = d.getDay() === 0 || d.getDay() === 6;
                 const label = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) + (total ? `, ${total} item${total > 1 ? "s" : ""}` : ", no items");
                 return (
-                  <CellPair
+                  // One cell per day, its chips inside it (on the week's last row, through subgrid), so the week row holds only cells.
+                  <div
                     key={dIso}
-                    dIso={dIso}
-                    column={di + 1}
+                    role="gridcell"
+                    data-iso={dIso}
+                    style={{ gridColumn: di + 1 }}
                     className={"td-calcell" + (wk ? " is-wknd" : "") + (dropDays.has(dIso) || dropIso === dIso ? " is-drop" : "")}
-                    cellRef={(el) => {
+                    ref={(el) => {
                       cellRefs.current[dIso] = el;
                     }}
                     tabIndex={dIso === shown ? 0 : -1}
-                    label={label}
-                    isToday={isT}
+                    aria-label={label}
+                    aria-current={isT ? "date" : undefined}
                     onClick={(e) => {
-                      // A chip, "+N more" or "+" inside the cell does its own thing.
-                      if ((e.target as HTMLElement).closest(".td-calcell-add, .td-calchip, .td-calmore")) return;
+                      // A button inside the cell (a chip, "+N more", "+") does its own thing.
+                      if ((e.target as HTMLElement).closest("button")) return;
                       onAddItem?.(dIso);
                     }}
                     onKeyDown={(e) => {
@@ -219,54 +217,48 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                         onShowMore?.(dIso);
                       }
                     }}
-                    drop={dropHandlers(dIso)}
-                    number={period === "month" ? <span className={"td-calnum" + (isT ? " is-today" : out ? " is-out" : "")}>{d.getDate() === 1 ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : d.getDate()}</span> : null}
-                    add={
-                      onAddItem ? (
-                        <button
-                          type="button"
-                          className="td-calcell-add td-tip"
-                          tabIndex={-1}
-                          data-tip="Add an item"
-                          data-tip-side="bottom-end"
-                          aria-label={`Add an item on ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAddItem(dIso);
-                          }}
-                        >
-                          <Icon name="plus" size={14} />
-                        </button>
-                      ) : null
-                    }
+                    {...dropHandlers(dIso)}
                   >
-                    {dayChips.slice(0, visible).map((it) => {
-                      const due = parseDateValue(it.due)!;
-                      return (
-                        <CalendarItemChip
-                          key={it.id}
-                          title={it.title}
-                          itemId={it.itemId}
-                          showId={showItemIds}
-                          labels={showLabels ? it.labels : []}
-                          done={it.done}
-                          overdue={!it.done && due < todayD}
-                          dragId={onReschedule ? it.id : undefined}
-                          dragFrom={dIso}
-                          onDragStart={dragStart(it.id, dIso)}
-                          onClick={() => onOpenItem?.(it.id)}
-                        />
-                      );
-                    })}
-                    {hidden > 0 ? (
-                      <button type="button" className="td-calmore" tabIndex={-1} onClick={(e) => {
-                        e.stopPropagation();
-                        onShowMore?.(dIso);
-                      }}>
-                        +{hidden} more
+                    {period === "month" ? <span className={"td-calnum" + (isT ? " is-today" : out ? " is-out" : "")}>{d.getDate() === 1 ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : d.getDate()}</span> : null}
+                    {onAddItem ? (
+                      <button
+                        type="button"
+                        className="td-calcell-add td-tip"
+                        tabIndex={-1}
+                        data-tip="Add an item"
+                        data-tip-side="bottom-end"
+                        aria-label={`Add an item on ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}
+                        onClick={() => onAddItem(dIso)}
+                      >
+                        <Icon name="plus" size={14} />
                       </button>
                     ) : null}
-                  </CellPair>
+                    <div className="td-calchips">
+                      {dayChips.slice(0, visible).map((it) => {
+                        const due = parseDateValue(it.due)!;
+                        return (
+                          <CalendarItemChip
+                            key={it.id}
+                            title={it.title}
+                            itemId={it.itemId}
+                            showId={showItemIds}
+                            labels={showLabels ? it.labels : []}
+                            done={it.done}
+                            overdue={!it.done && due < todayD}
+                            dragId={onReschedule ? it.id : undefined}
+                            dragFrom={dIso}
+                            onDragStart={dragStart(it.id, dIso)}
+                            onClick={() => onOpenItem?.(it.id)}
+                          />
+                        );
+                      })}
+                      {hidden > 0 ? (
+                        <button type="button" className="td-calmore" tabIndex={-1} onClick={() => onShowMore?.(dIso)}>
+                          +{hidden} more
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
                 );
               })}
               {weekSpans[wi]!.map((s, si) => {
@@ -296,20 +288,6 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-/** A day: the full-height cell (number, hover +, drop target) holding its chip stack below the span lanes. */
-function CellPair({ dIso, column, className, cellRef, tabIndex, label, isToday, onClick, onKeyDown, drop, number, add, children }: { dIso: string; column: number; className: string; cellRef: (el: HTMLDivElement | null) => void; tabIndex: number; label: string; isToday: boolean; onClick: (e: React.MouseEvent) => void; onKeyDown: (e: React.KeyboardEvent) => void; drop: Record<string, unknown>; number: React.ReactNode; add: React.ReactNode; children: React.ReactNode }) {
-  // One cell per day, its chips inside it (on the week's last row, through subgrid), so the week row holds only cells.
-  return (
-    <div className={className} role="gridcell" data-iso={dIso} ref={cellRef} tabIndex={tabIndex} aria-label={label} aria-current={isToday ? "date" : undefined} style={{ gridColumn: column }} onClick={onClick} onKeyDown={onKeyDown} {...drop}>
-      {number}
-      {add}
-      <div className="td-calchips" data-iso={dIso}>
-        {children}
       </div>
     </div>
   );

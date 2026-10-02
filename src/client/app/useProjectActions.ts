@@ -7,17 +7,17 @@ import { useMemo } from "react";
 import type { ItemPriority } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
 import type { MoveRestore } from "../../shared/items";
-import type { DuplicateResult, Item, Label, MoveResult } from "../data/api";
+import type { Item, Label } from "../data/api";
 import { keys } from "../data/queries";
-import { newId, useCreateItem, useCreateList, useDeleteItem, useDuplicateItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
+import { newId, scopeOf, useCreateItem, useCreateList, useDeleteItem, useDuplicateItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
-import { daysBetween, formatDate, formatDateRange, parseDateValue, shiftISO } from "../design/core/dates";
+import { daysBetweenISO, formatDate, formatDateRange, shiftISO } from "../design/core/dates";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction } from "../design/core/BulkBar";
 import type { QuickAddResult } from "../design/core/quickAdd";
 import type { ItemAction } from "../design/core/shortcuts";
 import { STATUSES } from "../design/core/statuses";
-import { count } from "../design/core/text";
+import { count, joinAnd } from "../design/core/text";
 import { useCompletion } from "./completion";
 import { quote, useFeedback } from "./feedback";
 import { PRIORITY_LABEL, type Person } from "./items";
@@ -28,6 +28,27 @@ const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
 const statusName = (id: string | null | undefined) => STATUSES.find((s) => s.id === id)?.name ?? "None";
 const emptyRestore = (): MoveRestore => ({ keys: [], labels: [], assignees: [], watchers: [], relations: [], createdLabelIds: [] });
+/** The selected items without a selected parent: a subitem travels with its selected parent. */
+function rootsOf(sel: Item[]): Item[] {
+  const picked = new Set(sel.map((it) => it.id));
+  return sel.filter((it) => !it.parentItemId || !picked.has(it.parentItemId));
+}
+/** "label “Design” added" / "2 labels added" when a move or copy made labels in the destination. */
+const labelsAdded = (names: string[]) => (names.length === 1 ? `label ${quote(names[0]!)} added` : names.length ? `${count(names.length, "label")} added` : null);
+/**
+ * Run a request per item, one after another; each failure reports itself and only finished ones come back.
+ * Null when nothing finished, or when the screen changed meanwhile (its toast and Undo belong elsewhere).
+ */
+async function inTurn<T>(items: Item[], run: (it: Item) => Promise<T>): Promise<Array<{ it: Item; result: T }> | null> {
+  const undoScope = useFeedback.getState().scope;
+  const done: Array<{ it: Item; result: T }> = [];
+  for (const it of items) {
+    try {
+      done.push({ it, result: await run(it) });
+    } catch { /* The mutation reports the request error. */ }
+  }
+  return done.length && useFeedback.getState().scope === undoScope ? done : null;
+}
 /** Fold one move's record into a running one (a subitem's own parent link is per item, so it stays out). */
 function mergeRestore(into: MoveRestore, from: MoveRestore | null | undefined) {
   if (!from) return;
@@ -38,7 +59,7 @@ export type ProjectActions = ReturnType<typeof useProjectActions>;
 
 /** `projectId` null: the Inbox (with `inboxContainer`). */
 export function useProjectActions(projectId: string | null, project: ItemContainer, items: Item[], labels: Label[]) {
-  const scope = useMemo(() => (projectId ? { projectId } : { listId: "inbox" }), [projectId]);
+  const scope = useMemo(() => scopeOf(projectId), [projectId]);
   const createItem = useCreateItem(scope);
   const updateItem = useUpdateItem(scope);
   const completion = useCompletion(scope);
@@ -154,13 +175,12 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   /** Calendar drop: the item's start and due move together by the days dragged (a range keeps its length); one Undo. */
   const reschedule = (id: string, from: string, to: string) => {
     const it = byId(id);
-    const n = daysBetween(parseDateValue(from)!, parseDateValue(to)!);
+    const n = daysBetweenISO(from, to);
     if (!it || !it.dueDate || !n) return;
     const prev = { startDate: it.startDate, dueDate: it.dueDate };
     const next = { startDate: shiftISO(it.startDate, n), dueDate: shiftISO(it.dueDate, n) };
     updateItem.mutate({ id, ...next });
-    const when = next.startDate && next.startDate !== next.dueDate ? formatDateRange(next.startDate, next.dueDate, null, { year: "auto" }) : formatDate(next.dueDate, { year: "auto" });
-    notify({ message: `Moved ${quote(it.title)} to ${when}`, icon: "calendar", restore: () => updateItem.mutateAsync({ id, ...prev, quiet: true }).then(() => undefined) });
+    notify({ message: `Moved ${quote(it.title)} to ${formatDateRange(next.startDate, next.dueDate, null, { year: "auto" })}`, icon: "calendar", restore: () => updateItem.mutateAsync({ id, ...prev, quiet: true }).then(() => undefined) });
   };
 
   /** Calendar "+": a fresh item due that day in the first list, undoable (the overlay then names it). */
@@ -178,32 +198,26 @@ export function useProjectActions(projectId: string | null, project: ItemContain
    * originals; one Undo removes the copies.
    */
   const copyItems = async (ids: string[], dest: { projectId: string | null; listId: string; name: string | null }) => {
-    const picked = new Set(ids);
-    const roots = ids.map(byId).filter((it): it is Item => !!it && (!it.parentItemId || !picked.has(it.parentItemId)));
-    if (!roots.length) return;
-    const undoScope = useFeedback.getState().scope;
-    const made: Array<{ it: Item; result: DuplicateResult }> = [];
-    for (const it of roots) {
-      try {
-        made.push({ it, result: await duplicateItem.mutateAsync({ sourceId: it.id, id: newId(), listId: dest.listId, toProjectId: dest.projectId }) });
-      } catch { /* The mutation reports the request error; only finished copies are announced. */ }
-    }
-    if (!made.length || useFeedback.getState().scope !== undoScope) return;
+    const roots = rootsOf(ids.map(byId).filter((it): it is Item => !!it));
+    const made = await inTurn(roots, (it) => duplicateItem.mutateAsync({ sourceId: it.id, id: newId(), listId: dest.listId, toProjectId: dest.projectId }));
+    if (!made) return;
     const sum = (k: "subitems" | "labelsDropped" | "assigneesDropped") => made.reduce((n, m) => n + m.result.report[k], 0);
     const left = (k: "comments" | "attachments" | "relations") => made.reduce((n, m) => n + m.result.report.left[k], 0);
-    const created = [...new Set(made.flatMap((m) => m.result.report.labelsCreated))];
-    const behind = [left("comments") && count(left("comments"), "comment"), left("attachments") && count(left("attachments"), "file"), left("relations") && count(left("relations"), "link")].filter((x): x is string => !!x);
+    const behind = ([["comments", "comment"], ["attachments", "file"], ["relations", "link"]] as const).filter(([k]) => left(k)).map(([k, word]) => count(left(k), word));
     const changes = [
-      created.length === 1 ? `label ${quote(created[0]!)} added` : created.length ? `${count(created.length, "label")} added` : null,
+      labelsAdded([...new Set(made.flatMap((m) => m.result.report.labelsCreated))]),
       sum("labelsDropped") ? `${count(sum("labelsDropped"), "label")} left off` : null,
       sum("assigneesDropped") ? `${count(sum("assigneesDropped"), "non-member")} not assigned` : null,
     ].filter(Boolean).join(", ");
-    const stays = behind.length ? `${behind.length > 1 ? `${behind.slice(0, -1).join(", ")} and ${behind.at(-1)}` : behind[0]} stay${behind.length === 1 && behind[0]!.startsWith("1 ") ? "s" : ""} with the original${made.length > 1 ? "s" : ""}` : "";
+    const one = left("comments") + left("attachments") + left("relations") === 1;
+    const stays = behind.length ? `${joinAnd(behind)} stay${one ? "s" : ""} with the original${made.length > 1 ? "s" : ""}` : "";
     const details = [changes, stays].filter(Boolean).join("; ");
     const what = made.length === 1 ? quote(made[0]!.it.title) : count(made.length, "item");
     const verb = dest.name ? "Copied" : "Duplicated";
     const where = dest.name ? ` to ${dest.name}` : "";
     const subitems = sum("subitems");
+    // Undo needs only the copies' ids.
+    const copies = made.map((m) => m.result.items[0]!.id);
     notify({
       message: `${verb} ${what}${subitems ? ` with ${count(subitems, "subitem")}` : ""}${where}${details ? ` — ${details}` : ""}`,
       history: `${verb} ${what}${where}`,
@@ -211,9 +225,9 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       icon: "copy",
       restore: async () => {
         // One at a time, so a failed Undo retries only the copies still there.
-        while (made.length) {
-          await deleteItem.mutateAsync({ id: made[0]!.result.items[0]!.id, quiet: true });
-          made.shift();
+        while (copies.length) {
+          await deleteItem.mutateAsync({ id: copies[0]!, quiet: true });
+          copies.shift();
         }
         if (dest.projectId !== projectId) await qc.invalidateQueries({ queryKey: dest.projectId ? keys.items({ projectId: dest.projectId }) : ["items"] });
       },
@@ -222,31 +236,23 @@ export function useProjectActions(projectId: string | null, project: ItemContain
 
   /** Move or copy items to a list in another project: one undo toast; a copy gets new keys. */
   const transfer = async (ids: string[], project: { id: string; name: string }, list: { id: string; name: string }, copy: boolean) => {
-    const picked = new Set(ids);
-    const sel = ids.map(byId).filter((x): x is Item => !!x);
-    if (!sel.length) return;
     const dest = `${project.name} › ${list.name}`;
     if (copy) return copyItems(ids, { projectId: project.id, listId: list.id, name: dest });
     // Subitems travel with a selected parent; one at a time, so relations between moved items survive.
-    const roots = sel.filter((it) => !it.parentItemId || !picked.has(it.parentItemId));
-    const undoScope = useFeedback.getState().scope;
-    const moved: Array<{ it: Item; result: MoveResult }> = [];
+    const roots = rootsOf(ids.map(byId).filter((x): x is Item => !!x));
     const carried = emptyRestore();
-    for (const it of roots) {
-      try {
-        const result = await moveItem.mutateAsync({ id: it.id, listId: list.id, toProjectId: project.id, restore: carried.relations.length ? { ...emptyRestore(), relations: carried.relations } : undefined });
-        moved.push({ it, result });
-        mergeRestore(carried, result.undo);
-      } catch { /* The mutation reports the request error; only completed moves become undoable. */ }
-    }
-    if (!moved.length || useFeedback.getState().scope !== undoScope) return;
+    const moved = await inTurn(roots, async (it) => {
+      const result = await moveItem.mutateAsync({ id: it.id, listId: list.id, toProjectId: project.id, restore: carried.relations.length ? { ...emptyRestore(), relations: carried.relations } : undefined });
+      mergeRestore(carried, result.undo);
+      return result;
+    });
+    if (!moved) return;
     // What the destination changed, in the message (it wraps); the history keeps the short form.
     const keyed = moved.filter((m) => m.result.changed.key);
     const sum = (k: "subitems" | "labelsRemoved" | "assigneesRemoved" | "watchersRemoved" | "relationsRemoved") => moved.reduce((n, m) => n + m.result.changed[k], 0);
-    const created = [...new Set(moved.flatMap((m) => m.result.changed.labelsCreated))];
     const details = [
       keyed.length === 1 && moved.length === 1 ? `now ${keyed[0]!.result.changed.key}` : keyed.length ? count(keyed.length, "new key") : null,
-      created.length === 1 ? `label ${quote(created[0]!)} added` : created.length ? `${count(created.length, "label")} added` : null,
+      labelsAdded([...new Set(moved.flatMap((m) => m.result.changed.labelsCreated))]),
       sum("labelsRemoved") ? `${count(sum("labelsRemoved"), "label")} removed` : null,
       sum("assigneesRemoved") ? `${count(sum("assigneesRemoved"), "non-member")} unassigned` : null,
       sum("watchersRemoved") ? `${count(sum("watchersRemoved"), "watcher")} without access removed` : null,

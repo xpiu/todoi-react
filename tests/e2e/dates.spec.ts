@@ -1,36 +1,26 @@
 import { expect, test as base, type Page } from "@playwright/test";
-import { nanoid } from "nanoid";
 
-import type { Item, ProjectDetail } from "../../src/client/data/api";
-import { seedProjectId, signIn } from "./helpers";
+import type { Item } from "../../src/client/data/api";
+import { freshProject, signIn, type FreshProject } from "./helpers";
 
 // Item dates (DESIGN.md › Dates): the API refuses days and times that do not exist and a start after the
 // due; a calendar drag moves an item's whole range and one Undo puts both dates back; today turns over at
 // midnight in an open tab. A fresh, empty project keeps the calendar cells free of seed chips.
-type Fixture = { projectId: string; listId: string; item: (title: string, dates: Partial<Pick<Item, "startDate" | "dueDate" | "dueTime">>) => Promise<string> };
-const test = base.extend<{ fixture: Fixture }>({
+const test = base.extend<{ fixture: FreshProject }>({
   fixture: async ({ page }, use) => {
     await signIn(page);
-    const seed = await (await page.request.get(`/api/projects/${await seedProjectId(page)}`)).json() as ProjectDetail;
-    const projectId = nanoid();
-    expect((await page.request.post("/api/projects", { data: { id: projectId, groupId: seed.groupId, name: `Dates ${projectId.slice(0, 6)}`, lists: [["To-do", "TODO"]] } })).status()).toBe(201);
+    const f = await freshProject(page, "Dates");
     try {
-      const listId = ((await (await page.request.get(`/api/projects/${projectId}`)).json()) as ProjectDetail).lists[0]!.id;
-      const item = async (title: string, dates: object) => {
-        const id = nanoid();
-        expect((await page.request.post("/api/items", { data: { id, title, listId, ...dates } })).status()).toBe(201);
-        return id;
-      };
-      await use({ projectId, listId, item });
+      await use(f);
     } finally {
-      expect([204, 404]).toContain((await page.request.delete(`/api/archive/projects/${projectId}`)).status());
+      await f.cleanup();
     }
   },
 });
 
 /** This month's day `d` in the browser's zone (Europe/Brussels, from the Playwright config). */
 const day = (d: number) => `${new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Brussels" }).format(new Date()).slice(0, 8)}${String(d).padStart(2, "0")}`;
-async function datesOf(page: Page, f: Fixture, id: string) {
+async function datesOf(page: Page, f: FreshProject, id: string) {
   const it = ((await (await page.request.get(`/api/items?projectId=${f.projectId}`)).json()) as Item[]).find((x) => x.id === id)!;
   return `${it.startDate} → ${it.dueDate}`;
 }
@@ -93,4 +83,17 @@ test("an open tab's today turns over at midnight", async ({ page, fixture: f }) 
   await page.clock.runFor(2 * 60_000);
   await expect(today).toHaveAttribute("data-iso", "2026-10-03");
   await expect(overdue).toHaveCount(1);
+});
+
+test("in the calendar a chip opens its item, and clicking an empty day adds one", async ({ page, fixture: f }) => {
+  const chip = await f.item("Chip to open", { dueDate: day(9) });
+  await page.goto(`/p/${f.projectId}?v=calendar`);
+  await page.locator(".td-calchip", { hasText: "Chip to open" }).click();
+  await expect(page.getByRole("dialog", { name: "Chip to open", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`item=${chip}`));
+  await page.keyboard.press("Escape");
+  const count = async () => ((await (await page.request.get(`/api/items?projectId=${f.projectId}`)).json()) as Item[]).length;
+  expect(await count()).toBe(1);
+  await page.locator(`.td-calcell[data-iso="${day(23)}"]`).click({ position: { x: 60, y: 80 } });
+  await expect.poll(count).toBe(2);
 });

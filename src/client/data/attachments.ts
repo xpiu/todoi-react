@@ -4,6 +4,7 @@ import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-q
 
 import type { ErrorBody } from "../../shared/errors";
 import { api, fromErrorBody, unwrap, type ItemDetails } from "./api";
+import { scopeOf } from "./mutations";
 import { keys } from "./queries";
 
 export type Attachment = ItemDetails["attachments"][number];
@@ -14,7 +15,7 @@ export const attachmentUrl = (id: string, download = false) => `/api/attachments
 export const settleAttachments = (qc: QueryClient, itemId: string, projectId: string | null) =>
   Promise.all([
     qc.invalidateQueries({ queryKey: keys.itemDetails(itemId) }),
-    qc.invalidateQueries({ queryKey: keys.items(projectId ? { projectId } : { listId: "inbox" }) }),
+    qc.invalidateQueries({ queryKey: keys.items(scopeOf(projectId)) }),
     qc.invalidateQueries({ queryKey: ["activity"] }),
   ]);
 

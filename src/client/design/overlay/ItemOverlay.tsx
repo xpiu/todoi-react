@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
-import { ProjectPicker, type PickableList, type PickableProject } from "../core/ProjectPicker";
+import { TransferDialog, type PickableList, type PickableProject, type TransferKind } from "../core/ProjectPicker";
 import { AttachmentList, DropOverlay, isImageFile, useFileDrop, type AttachmentFile } from "./Attachments";
 import { ItemSection } from "./ItemSection";
 
@@ -187,7 +187,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const [query, setQuery] = useState("");
   const [linkCopied, copy] = useCopy(900);
   const [subitemOf, setSubitemOf] = useState(false);
-  const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
+  const [transfer, setTransfer] = useState<TransferKind | null>(null);
   const [menuView, setMenuView] = useState<"main" | "export">("main");
   const pickerRef = useRef<(() => void) | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -509,13 +509,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
           ))}
         </div>
       </div>
-      <Dialog open={!!transfer} onClose={() => setTransfer(null)} title={transfer === "copy" ? "Copy to project" : "Move to project"} width={380}>
-        <ProjectPicker projects={p.projects ?? []} action={transfer ?? "move"} showHeading={false} loadLists={p.loadLists} onPick={(proj, list) => {
-          const t = transfer;
-          setTransfer(null);
-          (t === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list);
-        }} />
-      </Dialog>
+      <TransferDialog kind={transfer} onClose={() => setTransfer(null)} projects={p.projects ?? []} loadLists={p.loadLists} onPick={(kind, proj, list) => (kind === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list)} />
       <Dialog open={subitemOf} onClose={() => setSubitemOf(false)} title="Make subitem of" width={360}>
         <ItemPicker
           items={others}

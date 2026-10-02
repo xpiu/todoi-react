@@ -3,9 +3,9 @@
 // "YYYY-MM-DD" strings at the edges; times are "HH:MM".
 // Spec: DESIGN.md › Content fundamentals (timestamps), Item editing › Dates, Quick-add grammar.
 
-import { addDays, addMonths, daysBetween, parseDateValue, pad, realDate, shiftISO, toISO, type DateInput } from "../../../shared/dates";
+import { addDays, addMonths, daysBetween, daysBetweenISO, parseDateValue, pad, realDate, shiftISO, toISO, type DateInput } from "../../../shared/dates";
 
-export { addDays, addMonths, daysBetween, parseDateValue, realDate, shiftISO, toISO, type DateInput };
+export { addDays, addMonths, daysBetween, daysBetweenISO, parseDateValue, realDate, shiftISO, toISO, type DateInput };
 
 export type DateFormat = "mdy-text" | "dmy-text" | "iso" | "mdy" | "dmy";
 export interface DateConventions {

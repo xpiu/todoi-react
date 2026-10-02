@@ -3,6 +3,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { loadEnvFile } from "node:process";
+import { nanoid } from "nanoid";
 import { Pool } from "pg";
 
 import { DEV_USER } from "../../src/shared/devUser";
@@ -42,6 +43,34 @@ export function seedProjectId(page: Page): Promise<string> {
     return p.id;
   })();
   return seeded;
+}
+
+export interface FreshProject {
+  projectId: string;
+  name: string;
+  groupId: string;
+  /** The project's lists, in order */
+  lists: Array<{ id: string; name: string }>;
+  /** Add an item to the first list (or `listId`), with any other fields; returns its id */
+  item: (title: string, fields?: Record<string, unknown>) => Promise<string>;
+  /** Delete it forever with everything in it — only this project's rows */
+  cleanup: () => Promise<void>;
+}
+
+/** A new project of the signed-in user (in `groupId`, else the seeded project's group), for a test's own rows. */
+export async function freshProject(page: Page, label: string, { lists = [["To-do", "TODO"]], groupId }: { lists?: Array<[string, string | null]>; groupId?: string } = {}): Promise<FreshProject> {
+  const projectId = nanoid(), name = `${label} ${projectId.slice(0, 6)}`;
+  groupId ??= ((await (await page.request.get(`/api/projects/${await seedProjectId(page)}`)).json()) as { groupId: string }).groupId;
+  const made = await page.request.post("/api/projects", { data: { id: projectId, groupId, name, lists } });
+  expect(made.status()).toBe(201);
+  const madeLists = ((await made.json()) as { lists: Array<{ id: string; name: string }> }).lists;
+  const item = async (title: string, fields: Record<string, unknown> = {}) => {
+    const id = nanoid();
+    expect((await page.request.post("/api/items", { data: { id, title, listId: madeLists[0]!.id, ...fields } })).status()).toBe(201);
+    return id;
+  };
+  const cleanup = async () => expect([204, 404]).toContain((await page.request.delete(`/api/archive/projects/${projectId}`)).status());
+  return { projectId, name, groupId, lists: madeLists, item, cleanup };
 }
 
 export async function firstItemId(page: Page, projectId: string): Promise<string> {
