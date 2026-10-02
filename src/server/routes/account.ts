@@ -105,13 +105,14 @@ export const invitesRoute = new Hono()
     const v = maybeViewer(c);
     const already = v ? (await db.select().from(members).where(and(eq(members.projectId, inv.project.id), eq(members.userId, v.userId)))).length > 0 : false;
     const state = inv.invite.revokedAt ? "revoked" : inv.invite.acceptedAt ? "accepted" : inv.invite.expiresAt < new Date() ? "expired" : already ? "member" : "open";
-    return c.json({ ...inv, state, signedIn: !!v });
+    return c.json({ ...inv, state, signedIn: !!v && !v.isAnonymous });
   })
   .post("/:code/accept", async (c) => {
     const v = viewerOf(c);
     const inv = await inviteOut(c.req.param("code"));
     if (!inv) return c.json({ error: "Not found" }, 404);
     if (inv.invite.revokedAt || inv.invite.acceptedAt || inv.invite.expiresAt < new Date()) return c.json({ error: "This invite is no longer open" }, 410);
+    if (inv.invite.email && inv.invite.email.toLowerCase() !== v.email.toLowerCase()) return c.json({ error: "This invite is for a different email address" }, 403);
     await db.transaction(async (tx) => {
       await tx.insert(members).values({ projectId: inv.project.id, userId: v.userId, role: inv.invite.role }).onConflictDoNothing();
       await tx.update(invites).set({ acceptedAt: new Date(), acceptedBy: v.userId }).where(eq(invites.id, inv.invite.id));

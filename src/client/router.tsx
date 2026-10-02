@@ -8,7 +8,7 @@ import { z } from "zod";
 import { PROJECT_VIEWS } from "../shared/enums";
 import { AppShell } from "./app/AppShell";
 import { InviteScreen, LoginScreen, ResetScreen, SignupScreen } from "./app/auth/AuthScreens";
-import { authClient } from "./auth";
+import { authClient, ensureBrowserSession } from "./auth";
 import { InboxScreen } from "./app/InboxScreen";
 import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
@@ -32,16 +32,11 @@ export type ProjectSearch = z.infer<typeof viewSearchSchema>;
 export const rootRoute = createRootRoute({ component: Outlet });
 
 /** Everything inside the app frame (top bar + sidebar). */
-/** Signed-in only, except project pages: those decide per project (public projects read as a guest). */
 export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "app",
   component: AppShell,
-  beforeLoad: async ({ location }) => {
-    if (/^\/p\//.test(location.pathname)) return;
-    const s = await authClient.getSession();
-    if (!s.data) throw redirect({ to: "/login", search: { next: location.href } });
-  },
+  beforeLoad: ensureBrowserSession,
 });
 
 export const indexRoute = createRoute({
@@ -71,7 +66,10 @@ const SettingsScreen = lazy(() => import("./app/SettingsScreen").then((m) => ({ 
 const ImportScreen = lazy(() => import("./app/ImportScreen").then((m) => ({ default: m.ImportScreen })));
 const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });
-export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <SettingsScreen page="account" />, validateSearch: sectionSearch });
+export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <SettingsScreen page="account" />, validateSearch: sectionSearch, beforeLoad: async () => {
+  const session = await authClient.getSession();
+  if (!session.data || session.data.user.isAnonymous) throw redirect({ to: "/login", search: { next: "/account" } });
+} });
 export const importRoute = createRoute({ getParentRoute: () => appRoute, path: "/import", component: ImportScreen });
 const authSearch = z.object({ next: z.string().optional().catch(undefined), email: z.string().optional().catch(undefined), invite: z.string().optional().catch(undefined) });
 export const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: "/login", component: LoginScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });

@@ -1,8 +1,20 @@
 # Todoi (web application
 
+## Visitors and accounts
+
+The app opens directly into a private visitor workspace: **Projects → New project → To do**, with no
+items. Visitors can use the same editing tools as account holders. The avatar menu offers **Log in**
+and **Create account**; `/account` also opens login. Registering or logging into an existing account
+moves the visitor's workspace and Inbox into that account, preserving content IDs and existing account work.
+
+Visitor access uses a Better Auth anonymous session in this browser's cookie, with the existing
+seven-day session lifetime renewed during use. Refreshing or reopening the browser retains the
+workspace while that session is valid. Clearing cookies or letting the session expire loses guest
+access; signing in gives the content a durable account owner. No onboarding or reminder banner is shown.
+
 ## Signing in (development)
 
-Better Auth (email + password) guards the app. The seed creates two people with the password `todoi-dev-password`:
+Better Auth provides browser guest sessions and email/password accounts. The seed creates two people with the password `todoi-dev-password`:
 `flo@todoi.com` and `sam@helicopterseurope.com`. Flo owns the Design System examples and has a verified email. Create more accounts at `/signup`; invites come from
 Project settings › Members (the link is copied to the clipboard).
 
@@ -102,6 +114,8 @@ when nothing listens on :5173; Postgres must be up). They sign in as the seeded 
 scopes (Standard / Minimal × Dark / Light), open the list, board, calendar, item overlay and Settings screens, assert
 the scope landed on `<html>`, run **axe** (WCAG 2.1 A + AA; serious and critical violations fail), and compare a
 **visual-regression** snapshot. Two more specs check the reduced-motion rule and the list keyboard model.
+The guest spec checks the empty starter, browser isolation, GUI editing, concurrent tabs, avatar and
+account entry, and preservation on sign-up and existing-account login. It cleans up its own test users and uploads.
 
 Snapshots live in `tests/e2e/__screenshots__` and are recorded per platform. After an intentional visual change run
 `npm run test:e2e:update` and commit the new baselines. CI (`.github/workflows/ci.yml`) runs `npm run check`, then

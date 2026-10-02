@@ -120,8 +120,8 @@ export function InviteScreen() {
     <InvitePage
       invite={{ project: { name: d.project.name, icon: d.project.icon as IconName | null, color: d.project.color ? `var(--label-${d.project.color})` : undefined, description: d.project.description }, groupName: d.groupName, itemCount: d.itemCount, memberCount: d.memberCount, inviter: d.inviter, role: d.invite.role, email: d.invite.email, expiresAt: d.invite.expiresAt }}
       state={state}
-      signedIn={!!user}
-      user={user ? { name: user.name, email: user.email, color: avatarColorVar(user.avatarColor) } : undefined}
+      signedIn={!!user && !user.isAnonymous}
+      user={user && !user.isAnonymous ? { name: user.name, email: user.email, color: avatarColorVar(user.avatarColor) } : undefined}
       onAccept={async () => {
         const r = await api.api.invites[":code"].accept.$post({ param: { code } });
         if (r.ok) setAccepted(true);

@@ -57,11 +57,12 @@ export function AppShell() {
   const createList = useCreateList(projectId ?? "");
   const lifecycle = useLifecycle();
   const { user } = useCurrentUser();
+  const signedIn = !!user && !user.isAnonymous;
   const myRole = user ? project.data?.members.find((m) => m.userId === user.id)?.role : undefined;
-  // Guests: anonymous on a public project, or a Viewer inside one → read only.
-  const readonly = !!projectId && !!project.data && (!user || myRole === "viewer" || (!myRole && project.data.visibility === "public"));
+  // Project members can edit unless their role is Viewer; nonmembers read only.
+  const readonly = !!projectId && !!project.data && (!myRole || myRole === "viewer");
   const guestReason: "public" | "viewer" | null = !readonly ? null : myRole === "viewer" ? "viewer" : "public";
-  const logout = () => void authClient.signOut().then(() => navigate({ to: "/login" }));
+  const logout = () => void authClient.signOut().then(({ error }) => { if (!error) window.location.assign("/"); });
   const pm = useProjectMutations();
   const toast = useFeedback((s) => s.toast);
   const dismiss = useFeedback((s) => s.dismiss);
@@ -226,9 +227,10 @@ export function AppShell() {
         title={title}
         search
         user={user ? { name: user.name, nickname: user.nickname ?? undefined, email: user.email, src: user.image ?? undefined, avatarColor: avatarColorVar(user.avatarColor) } : { name: "Guest" }}
-        signedIn={!!user}
+        signedIn={signedIn}
         onLogout={logout}
-        onLogin={() => navigate({ to: "/login" })}
+        onLogin={() => navigate({ to: "/login", search: { next: location.href } })}
+        onCreateAccount={() => navigate({ to: "/signup", search: { next: location.href } })}
         onOpenSettings={() => navigate({ to: "/settings", search: {} })}
         onOpenAccount={() => navigate({ to: "/account", search: {} })}
         sidebarOpen={sidebarOpen}
@@ -245,7 +247,7 @@ export function AppShell() {
       {!vp.desktop && nav ? <div className="td-app-subrow">{nav}</div> : null}
       {savedViewsRow}
       {filterBar}
-      {guestReason ? <GuestBar reason={guestReason} projectName={project.data?.name} signedIn={!!user} onLogin={() => navigate({ to: "/login" })} onCreateAccount={!user ? () => navigate({ to: "/signup" }) : undefined} /> : null}
+      {guestReason && signedIn ? <GuestBar reason={guestReason} projectName={project.data?.name} signedIn /> : null}
       <div className="td-app-body">
         <main className="td-app-content" data-readonly={readonly ? "true" : undefined}>
           <Outlet />

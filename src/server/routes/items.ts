@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import { createItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
-import { maybeViewer, viewerOf } from "../auth";
+import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { moveItem, setDone } from "../services/items";
@@ -35,7 +35,6 @@ export const itemsRoute = new Hono()
   .get("/", listQuery, async (c) => {
     const { listId, projectId } = c.req.valid("query");
     const scope = projectId ? eq(items.projectId, projectId) : eq(items.listId, listId ?? viewerOf(c).inboxListId);
-    void maybeViewer;
     const rows = await db
       .select()
       .from(items)

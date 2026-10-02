@@ -122,6 +122,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
   image: text("image"),
   /** @handle used for mentions and quick-add */
   nickname: text("nickname"),

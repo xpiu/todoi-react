@@ -49,6 +49,7 @@ export interface TopNavbarProps {
   onOpenAccount?: () => void;
   onLogout?: () => void;
   onLogin?: () => void;
+  onCreateAccount?: () => void;
   sidebarOpen?: boolean;
   /** Renders the sidebar toggle */
   onToggleSidebar?: (open: boolean) => void;
@@ -84,6 +85,7 @@ export function TopNavbar({
   onOpenAccount,
   onLogout,
   onLogin,
+  onCreateAccount,
   sidebarOpen = true,
   onToggleSidebar,
   sidebarSide,
@@ -186,7 +188,7 @@ export function TopNavbar({
     />
   ) : null;
 
-  const hasUserMenu = !!(onOpenSettings || onOpenAccount || onLogout || onLogin);
+  const hasUserMenu = !!(onOpenSettings || onOpenAccount || onLogout || onLogin || onCreateAccount);
   const avatarEl = user ? signedIn ? <Avatar name={user.name} src={user.src} color={user.avatarColor} size={28} /> : <GuestAvatar size={28} tone="chrome" /> : null;
 
   return (
@@ -308,6 +310,7 @@ export function TopNavbar({
                     Log in
                   </MenuItem>
                 ) : null}
+                {!signedIn && onCreateAccount ? <MenuItem icon="user" onSelect={onCreateAccount}>Create account</MenuItem> : null}
               </MenuPopover>
             ) : (
               avatarEl

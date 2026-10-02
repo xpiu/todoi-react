@@ -1,8 +1,9 @@
 // Who is calling. Better Auth (email + password; sessions in Postgres) answers that per request; the
-// `authMiddleware` resolves the session once and stores the viewer on the context. Anonymous requests
-// may only read public projects. Spec: DESIGN.md › Sign-in, Guest.
+// `authMiddleware` resolves the session once and stores the viewer on the context. Visitors receive
+// an anonymous session; resource permissions also cover direct public reads without a session.
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth";
+import { anonymous } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -12,8 +13,9 @@ import { DEV_USER } from "../shared/devUser";
 import { db } from "./db";
 import { createHash } from "node:crypto";
 
-import { accounts, apiTokens, lists, projects, sessions, users, verifications } from "./db/schema";
+import { accounts, apiTokens, lists, sessions, users, verifications } from "./db/schema";
 import { env } from "./env";
+import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
 
 export const auth = betterAuth({
   baseURL: env.APP_URL,
@@ -22,6 +24,17 @@ export const auth = betterAuth({
   trustedOrigins: [env.APP_URL, `http://localhost:${env.PORT}`],
   database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications } }),
   emailAndPassword: { enabled: true, minPasswordLength: 10 },
+  plugins: [anonymous({
+    generateName: () => "Guest",
+    onLinkAccount: async ({ anonymousUser, newUser }) => {
+      if (!newUser.user.isAnonymous && anonymousUser.user.id !== newUser.user.id) {
+        await transferGuestWorkspace(anonymousUser.user.id, newUser.user.id);
+      }
+    },
+  })],
+  databaseHooks: { user: { create: { after: async (user) => {
+    if (user.isAnonymous) await createGuestWorkspace(user.id);
+  } } } },
   user: { additionalFields: { nickname: { type: "string", required: false }, avatarColor: { type: "string", required: false } } },
   session: { cookieCache: { enabled: true, maxAge: 60 } },
 });
@@ -36,6 +49,7 @@ export interface Viewer {
   name: string;
   email: string;
   inboxListId: string;
+  isAnonymous: boolean;
 }
 
 const VIEWER = "viewer";
@@ -45,11 +59,14 @@ async function inboxFor(userId: string): Promise<string> {
   const [row] = await db.select({ id: lists.id }).from(lists).where(and(eq(lists.kind, "inbox"), eq(lists.userId, userId)));
   if (row) return row.id;
   const id = userId === LOCAL_USER_ID ? LOCAL_INBOX_ID : nanoid();
-  await db.insert(lists).values({ id, kind: "inbox", userId, name: "Inbox", position: 0 }).onConflictDoNothing();
-  return id;
+  const [inserted] = await db.insert(lists).values({ id, kind: "inbox", userId, name: "Inbox", position: 0 }).onConflictDoNothing().returning({ id: lists.id });
+  if (inserted) return inserted.id;
+  // Another request may have created the Inbox while this one was resolving its session.
+  const [created] = await db.select({ id: lists.id }).from(lists).where(and(eq(lists.kind, "inbox"), eq(lists.userId, userId)));
+  return created!.id;
 }
 
-/** Resolves the session once per request. Anonymous callers pass only for public-project reads. */
+/** Resolves the session once per request; workspaceAccess checks resource permissions afterward. */
 export const hashToken = (secret: string) => createHash("sha256").update(secret).digest("hex");
 
 const LAST_USED_GRANULARITY = 60_000;
@@ -65,7 +82,7 @@ async function viewerFromBearer(header: string | undefined): Promise<Viewer | nu
   if (!row.token.lastUsedAt || now.getTime() - row.token.lastUsedAt.getTime() > LAST_USED_GRANULARITY) {
     void db.update(apiTokens).set({ lastUsedAt: now }).where(eq(apiTokens.id, row.token.id)).catch(() => undefined);
   }
-  return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id) };
+  return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id), isAnonymous: row.user.isAnonymous };
 }
 
 export const authMiddleware: MiddlewareHandler = async (c, next) => {
@@ -77,24 +94,13 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (session) {
     const u = session.user;
-    c.set(VIEWER, { userId: u.id, name: u.name, email: u.email, inboxListId: await inboxFor(u.id) } satisfies Viewer);
+    c.set(VIEWER, { userId: u.id, name: u.name, email: u.email, inboxListId: await inboxFor(u.id), isAnonymous: !!u.isAnonymous } satisfies Viewer);
     return next();
   }
   c.set(VIEWER, null);
-  if (c.req.method === "GET" && (await isPublicRead(c))) return next();
+  if (c.req.method === "GET") return next();
   return c.json({ error: "Sign in to continue" }, 401);
 };
-
-/** GET /projects/:id, /items?projectId=, /labels?projectId=, /invites/:code, /attachments/:id/file for public projects. */
-async function isPublicRead(c: Context): Promise<boolean> {
-  const path = c.req.path.replace(/^\/api/, "");
-  if (/^\/invites\/[^/]+$/.test(path) || /^\/attachments\/[^/]+\/file$/.test(path)) return true;
-  const m = /^\/projects\/([^/]+)$/.exec(path);
-  const projectId = m?.[1] ?? c.req.query("projectId");
-  if (!projectId || !/^\/(projects\/[^/]+|items|labels)$/.test(path)) return false;
-  const [p] = await db.select({ visibility: projects.visibility }).from(projects).where(eq(projects.id, projectId));
-  return p?.visibility === "public";
-}
 
 export function maybeViewer(c: Context): Viewer | null {
   return (c.get(VIEWER) as Viewer | null | undefined) ?? null;

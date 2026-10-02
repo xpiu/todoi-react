@@ -1,0 +1,275 @@
+// Guest work stays private and survives both registration and an existing-account login.
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { nanoid } from "nanoid";
+import { loadEnvFile } from "node:process";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
+import { Pool } from "pg";
+
+import { checkA11y } from "./helpers";
+
+if (!process.env.DATABASE_URL) loadEnvFile(".env");
+const password = "guest-test-password";
+const ownedUsers = new Set<string>();
+const responses: Promise<void>[] = [];
+function watch(context: BrowserContext) {
+  context.on("response", (response) => {
+    if (!/\/api\/auth\/(sign-in|sign-up|get-session)/.test(response.url())) return;
+    responses.push(response.json().then((data) => { if (data?.user?.id) ownedUsers.add(data.user.id); }).catch(() => undefined));
+  });
+}
+async function session(page: Page) {
+  const data = await (await page.request.get("/api/auth/get-session")).json();
+  ownedUsers.add(data.user.id);
+  return data.user as { id: string; isAnonymous: boolean; email: string };
+}
+async function workspace(page: Page) {
+  const groups = await (await page.request.get("/api/groups")).json();
+  const group = groups[0];
+  const project = await (await page.request.get(`/api/projects/${group.projects[0].id}`)).json();
+  return { group, project, list: project.lists[0] };
+}
+async function addThroughGui(page: Page, title: string) {
+  await page.getByRole("button", { name: "Add an item", exact: true }).last().click();
+  const input = page.getByRole("textbox", { name: "New item in To do", exact: true });
+  await input.fill(title);
+  await input.press("Enter");
+  await input.press("Escape");
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+}
+
+test.beforeEach(({ context }) => { ownedUsers.clear(); responses.length = 0; watch(context); });
+test.afterEach(async () => {
+  await Promise.all(responses);
+  if (!ownedUsers.size) return;
+  // Remove only identities created by these tests, their workspaces, and their uploaded bytes.
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const ids = [...ownedUsers];
+    const { rows: ps } = await client.query("select id from projects where group_id in (select id from groups where owner_id = any($1))", [ids]);
+    const projectIds = ps.map((p) => p.id);
+    const { rows: files } = await client.query("select storage_key from attachments where item_id in (select id from items where project_id = any($1) or list_id in (select id from lists where user_id = any($2)))", [projectIds, ids]);
+    await client.query("delete from items where project_id = any($1) or list_id in (select id from lists where user_id = any($2))", [projectIds, ids]);
+    for (const table of ["activity", "saved_views", "labels", "invites", "lists", "members"]) {
+      await client.query(`delete from ${table} where project_id = any($1)`, [projectIds]);
+    }
+    await client.query("delete from projects where id = any($1)", [projectIds]);
+    await client.query("delete from lists where user_id = any($1)", [ids]);
+    await client.query("delete from groups where owner_id = any($1)", [ids]);
+    await client.query("delete from users where id = any($1)", [ids]);
+    await client.query("commit");
+    await Promise.all(files.map((f) => rm(join(process.env.UPLOAD_DIR ?? ".data/uploads", f.storage_key), { force: true })));
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally { client.release(); await pool.end(); }
+});
+
+test("new browser gets an empty, editable private workspace; avatar and /account expose authentication", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/p\//);
+  await expect(page.getByText("New project", { exact: true }).first()).toBeVisible();
+  const user = await session(page);
+  expect(user.isAnonymous).toBe(true);
+  const { group, project, list } = await workspace(page);
+  expect(group.name).toBe("Projects");
+  expect(project.name).toBe("New project");
+  expect(project.visibility).toBe("private");
+  expect(project.lists).toHaveLength(1);
+  expect(list.name).toBe("To do");
+  expect(await (await page.request.get(`/api/items?projectId=${project.id}`)).json()).toEqual([]);
+  expect(await (await page.request.get("/api/archive")).json()).toEqual({ items: [], projects: [] });
+  await expect(page.getByText(/Log in|Create account|Not signed in/)).toHaveCount(0);
+  await checkA11y(page, "guest workspace");
+  await page.screenshot({ path: ".tmp/guest-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("html")).toHaveAttribute("data-device", "phone");
+  await expect(page.getByRole("button", { name: "Add an item", exact: true }).last()).toBeVisible();
+  await page.screenshot({ path: ".tmp/guest-mobile.png", animations: "disabled" });
+  await page.getByRole("button", { name: "Account (not signed in)" }).click();
+  await expect(page.getByRole("menuitem", { name: "Log in", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Create account", exact: true })).toBeVisible();
+  await page.screenshot({ path: ".tmp/guest-avatar-mobile.png", animations: "disabled" });
+  await page.getByRole("menuitem", { name: "Log in", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Log in" })).toBeVisible();
+  await page.goto("/account");
+  await expect(page).toHaveURL(/\/login\?next=%2Faccount/);
+  expect((await session(page)).id).toBe(user.id);
+});
+
+test("GUI items and subitems survive refresh, registration and logout/login", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/p\//);
+  const guest = await session(page);
+  const { group, project, list } = await workspace(page);
+  await addThroughGui(page, "Plan my first project");
+  const rows = await (await page.request.get(`/api/items?projectId=${project.id}`)).json();
+  const item = rows[0];
+  await page.goto(`/p/${project.id}?item=${item.id}`);
+  await page.getByRole("button", { name: "Add a subitem", exact: true }).click();
+  await page.getByRole("textbox", { name: "New subitem" }).fill("Write the brief");
+  await page.getByRole("textbox", { name: "New subitem" }).press("Enter");
+  await expect(page.getByRole("group", { name: "Subitems", exact: true }).getByText("Write the brief", { exact: true })).toBeVisible();
+  await page.goto(`/p/${project.id}`);
+  await page.reload();
+  await expect(page.getByText(item.title, { exact: true })).toBeVisible();
+  expect((await session(page)).id).toBe(guest.id);
+  await page.getByRole("button", { name: "Account (not signed in)" }).click();
+  await page.getByRole("menuitem", { name: "Create account", exact: true }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Guest test registration");
+  await page.getByLabel("Email", { exact: true }).fill(`guest-${nanoid()}@example.test`);
+  await page.getByLabel(/^Password/).fill(password);
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/p/${project.id}$`));
+  const registered = await session(page);
+  expect(registered.isAnonymous).toBe(false);
+  expect(registered.id).not.toBe(guest.id);
+  const after = await workspace(page);
+  expect(after.group.id).toBe(group.id);
+  expect(after.group.ownerId).toBe(registered.id);
+  expect(after.list.id).toBe(list.id);
+  expect(after.project.members).toContainEqual(expect.objectContaining({ userId: registered.id, role: "owner" }));
+  const preserved = await (await page.request.get(`/api/items?projectId=${project.id}`)).json();
+  expect(preserved).toHaveLength(2);
+  expect(preserved).toContainEqual(expect.objectContaining({ id: item.id, title: item.title, createdBy: registered.id }));
+  expect(preserved).toContainEqual(expect.objectContaining({ title: "Write the brief", parentItemId: item.id, createdBy: registered.id }));
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  expect((await pool.query("select id from users where id = $1", [guest.id])).rowCount).toBe(0);
+  await pool.end();
+  await page.getByRole("button", { name: "Account: Guest test registration" }).click();
+  await page.getByRole("menuitem", { name: "Log out" }).click();
+  await expect(page.getByRole("button", { name: "Account (not signed in)" })).toBeVisible();
+  await expect(page.getByText(item.title, { exact: true })).toHaveCount(0);
+  await session(page);
+  await page.goto(`/login?next=/p/${project.id}`);
+  await page.getByLabel("Email", { exact: true }).fill(registered.email);
+  await page.getByLabel(/^Password/).fill(password);
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page.getByText(item.title, { exact: true })).toBeVisible();
+});
+
+test("concurrent first visits in two tabs share one guest workspace", async ({ page, context }) => {
+  const second = await context.newPage();
+  await Promise.all([page.goto("/"), second.goto("/")]);
+  await expect(page).toHaveURL(/\/p\//);
+  await expect(second).toHaveURL(page.url());
+  const user = await session(page);
+  expect((await session(second)).id).toBe(user.id);
+  const groups = await (await page.request.get("/api/groups")).json();
+  expect(groups).toHaveLength(1);
+  expect(groups[0].projects).toHaveLength(1);
+});
+
+test("existing-account login merges rich guest content and both Inboxes without replacing existing work", async ({ page, browser }) => {
+  const accountContext = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+  watch(accountContext);
+  const accountPage = await accountContext.newPage();
+  const email = `existing-${nanoid()}@example.test`;
+  const signup = await accountPage.request.post("/api/auth/sign-up/email", { data: { name: "Existing test account", email, password } });
+  expect(signup.ok()).toBe(true);
+  const registered = await session(accountPage);
+  const existingGroup = { id: nanoid(), name: "Existing work", keyPrefix: "OLD" };
+  expect((await accountPage.request.post("/api/groups", { data: existingGroup })).ok()).toBe(true);
+  const existingProjectId = nanoid();
+  const existingProject = await (await accountPage.request.post("/api/projects", { data: { id: existingProjectId, groupId: existingGroup.id, name: "Keep this project", lists: [["Existing list", "TODO"]] } })).json();
+  const existingItem = { id: nanoid(), title: "Keep this item", listId: existingProject.lists[0].id };
+  expect((await accountPage.request.post("/api/items", { data: existingItem })).ok()).toBe(true);
+  const oldInboxItem = { id: nanoid(), title: "Already in Inbox" };
+  expect((await accountPage.request.post("/api/items", { data: oldInboxItem })).ok()).toBe(true);
+
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/p\//);
+  const guest = await session(page);
+  const { project, list } = await workspace(page);
+  await addThroughGui(page, "Guest content to keep");
+  const item = (await (await page.request.get(`/api/items?projectId=${project.id}`)).json())[0];
+  const label = { id: nanoid(), projectId: project.id, name: "Guest label", color: "teal" };
+  const comment = { id: nanoid(), body: "A comment written before login" };
+  const savedView = { id: nanoid(), projectId: project.id, name: "Guest saved view", definition: { view: "board" } };
+  expect((await page.request.post("/api/labels", { data: label })).ok()).toBe(true);
+  expect((await page.request.put(`/api/items/${item.id}/labels`, { data: { labelIds: [label.id] } })).ok()).toBe(true);
+  expect((await page.request.put(`/api/items/${item.id}/assignees`, { data: { userIds: [guest.id] } })).ok()).toBe(true);
+  expect((await page.request.put(`/api/items/${item.id}/watch`, { data: { watching: true } })).ok()).toBe(true);
+  expect((await page.request.post(`/api/items/${item.id}/comments`, { data: comment })).ok()).toBe(true);
+  expect((await page.request.post(`/api/comments/${comment.id}/reactions`, { data: { emoji: "👍" } })).ok()).toBe(true);
+  expect((await page.request.post("/api/saved-views", { data: savedView })).ok()).toBe(true);
+  const attachmentResponse = await page.request.post(`/api/items/${item.id}/attachments`, { multipart: { files: { name: "guest.txt", mimeType: "text/plain", buffer: Buffer.from("keep these bytes") } } });
+  expect(attachmentResponse.ok()).toBe(true);
+  const attachment = (await attachmentResponse.json())[0];
+  const inboxItem = { id: nanoid(), title: "Guest Inbox item" };
+  expect((await page.request.post("/api/items", { data: inboxItem })).ok()).toBe(true);
+  const removedItem = { id: nanoid(), title: "Guest archived item", listId: list.id };
+  expect((await page.request.post("/api/items", { data: removedItem })).ok()).toBe(true);
+  expect((await page.request.patch(`/api/items/${removedItem.id}`, { data: { archived: true } })).ok()).toBe(true);
+
+  await page.goto(`/signup?next=/p/${project.id}`);
+  await page.getByLabel("Name", { exact: true }).fill("Already registered");
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel(/^Password/).fill(password);
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  expect((await session(page)).id).toBe(guest.id);
+  await page.goto(`/login?next=/p/${project.id}`);
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel(/^Password/).fill("wrong-password");
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  expect((await session(page)).id).toBe(guest.id);
+  await page.getByLabel(/^Password/).fill(password);
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page.getByText(item.title, { exact: true })).toBeVisible();
+  expect((await session(page)).id).toBe(registered.id);
+  const groups = await (await page.request.get("/api/groups")).json();
+  expect(groups.flatMap((g: { projects: Array<{ id: string }> }) => g.projects).map((p: { id: string }) => p.id)).toEqual(expect.arrayContaining([existingProjectId, project.id]));
+  expect(await (await page.request.get(`/api/items?projectId=${existingProjectId}`)).json()).toContainEqual(expect.objectContaining({ id: existingItem.id }));
+  expect(await (await page.request.get("/api/items")).json()).toEqual(expect.arrayContaining([expect.objectContaining({ id: oldInboxItem.id }), expect.objectContaining({ id: inboxItem.id })]));
+  const detail = await (await page.request.get(`/api/items/${item.id}/details`)).json();
+  expect(detail.labelIds).toEqual([label.id]);
+  expect(detail.assigneeIds).toEqual([registered.id]);
+  expect(detail.watcherIds).toEqual([registered.id]);
+  expect(detail.comments[0]).toMatchObject({ id: comment.id, body: comment.body, authorId: registered.id, reactions: [expect.objectContaining({ userId: registered.id, emoji: "👍" })] });
+  expect(detail.attachments[0]).toMatchObject({ id: attachment.id, uploadedBy: registered.id });
+  expect(await (await page.request.get(`/api/attachments/${attachment.id}/file`)).text()).toBe("keep these bytes");
+  expect(await (await page.request.get(`/api/saved-views?projectId=${project.id}`)).json()).toContainEqual(expect.objectContaining({ id: savedView.id, ownerId: registered.id }));
+  expect((await (await page.request.get("/api/archive")).json()).items).toContainEqual(expect.objectContaining({ id: removedItem.id }));
+  await accountPage.goto(`/p/${project.id}`);
+  await expect(accountPage.getByText(item.title, { exact: true })).toBeVisible();
+  await accountContext.close();
+});
+
+test("a second visitor cannot read or change private guest content; public links stay read-only", async ({ page, browser }) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/p\//);
+  const owner = await session(page);
+  const { group, project, list } = await workspace(page);
+  const item = { id: nanoid(), listId: list.id, title: "Private guest item" };
+  expect((await page.request.post("/api/items", { data: item })).ok()).toBe(true);
+  const context = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+  watch(context);
+  const stranger = await context.newPage();
+  await stranger.goto("/");
+  await expect(stranger).toHaveURL(/\/p\//);
+  expect((await session(stranger)).id).not.toBe(owner.id);
+  const other = await workspace(stranger);
+  expect(other.project.id).not.toBe(project.id);
+  expect((await stranger.request.get(`/api/projects/${project.id}`)).status()).toBe(403);
+  expect((await stranger.request.get(`/api/items?projectId=${project.id}`)).status()).toBe(403);
+  expect((await stranger.request.get(`/api/items?listId=${list.id}`)).status()).toBe(403);
+  expect((await stranger.request.get(`/api/items/${item.id}/details`)).status()).toBe(403);
+  expect((await stranger.request.patch(`/api/items/${item.id}`, { data: { title: "Stolen" } })).status()).toBe(403);
+  expect((await stranger.request.patch(`/api/groups/${group.id}`, { data: { name: "Stolen" } })).status()).toBe(403);
+  expect((await stranger.request.post("/api/projects", { data: { id: nanoid(), groupId: group.id, name: "Intruder" } })).status()).toBe(403);
+  expect((await stranger.request.post("/api/items", { data: { id: nanoid(), listId: other.list.id, parentItemId: item.id, title: "Intruder subitem" } })).status()).toBe(403);
+  expect((await stranger.request.post("/api/me/tokens", { data: { name: "Guest token" } })).status()).toBe(401);
+  expect((await page.request.patch(`/api/projects/${project.id}`, { data: { visibility: "public" } })).ok()).toBe(true);
+  await stranger.goto(`/p/${project.id}`);
+  await expect(stranger.getByText(item.title, { exact: true })).toBeVisible();
+  await expect(stranger.getByRole("button", { name: "Add an item", exact: true }).last()).toBeHidden();
+  await expect(stranger.getByText(/Log in|Create account|Not signed in/)).toHaveCount(0);
+  expect((await stranger.request.patch(`/api/items/${item.id}`, { data: { title: "Still stolen" } })).status()).toBe(403);
+  expect((await (await stranger.request.get("/api/groups")).json())[0].projects).toHaveLength(1);
+  expect((await (await page.request.get(`/api/items?projectId=${project.id}`)).json())[0].title).toBe(item.title);
+  await context.close();
+});

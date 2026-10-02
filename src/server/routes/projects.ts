@@ -1,12 +1,12 @@
 import { zValidator } from "@hono/zod-validator";
-import { and, asc, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { idSchema } from "../../shared/items";
 import { importProjectSchema } from "../../shared/import";
 import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
-import { maybeViewer, viewerOf } from "../auth";
+import { viewerOf } from "../auth";
 import { db } from "../db";
 import { groups, items, lists, members, projects, users } from "../db/schema";
 import { createProject, importProject, listsWithCounts, memberProjectIds, updateList } from "../services/projects";
@@ -19,17 +19,17 @@ export const groupsRoute = new Hono()
   // The sidebar: every live group with its live projects.
   .get("/", async (c) => {
     const viewer = viewerOf(c);
-    const gs = await db.select().from(groups).where(liveGroups).orderBy(asc(groups.position), asc(groups.createdAt));
-    const mine = new Set(await memberProjectIds(viewer.userId));
-    // Projects the viewer belongs to, plus shared / public ones.
-    const ps = (await db.select().from(projects).where(liveProjects).orderBy(asc(projects.position), asc(projects.createdAt))).filter((p) => mine.has(p.id) || p.visibility !== "private");
+    const mine = await memberProjectIds(viewer.userId);
+    const ps = mine.length ? await db.select().from(projects).where(and(liveProjects, inArray(projects.id, mine))).orderBy(asc(projects.position), asc(projects.createdAt)) : [];
+    const groupIds = [...new Set(ps.map((p) => p.groupId))];
+    const gs = await db.select().from(groups).where(and(liveGroups, or(eq(groups.ownerId, viewer.userId), groupIds.length ? inArray(groups.id, groupIds) : undefined))).orderBy(asc(groups.position), asc(groups.createdAt));
     const [counts, owners] = await Promise.all([
       db
         .select({ projectId: items.projectId, items: sql<number>`count(*)::int`, done: sql<number>`count(*) filter (where ${items.done})::int` })
         .from(items)
-        .where(and(isNull(items.parentItemId), isNull(items.deletedAt), isNull(items.archivedAt)))
+        .where(and(inArray(items.projectId, mine), isNull(items.parentItemId), isNull(items.deletedAt), isNull(items.archivedAt)))
         .groupBy(items.projectId),
-      db.select({ projectId: members.projectId, name: users.name }).from(members).innerJoin(users, eq(users.id, members.userId)).where(eq(members.role, "owner")),
+      db.select({ projectId: members.projectId, name: users.name }).from(members).innerJoin(users, eq(users.id, members.userId)).where(and(inArray(members.projectId, mine), eq(members.role, "owner"))),
     ]);
     const stat = (id: string) => {
       const c = counts.find((x) => x.projectId === id);
@@ -39,7 +39,7 @@ export const groupsRoute = new Hono()
   })
   .post("/", zValidator("json", createGroupSchema), async (c) => {
     const viewer = viewerOf(c);
-    const max = (await db.select({ max: sql<number>`coalesce(max(${groups.position}), -1)` }).from(groups))[0]?.max ?? -1;
+    const max = (await db.select({ max: sql<number>`coalesce(max(${groups.position}), -1)` }).from(groups).where(eq(groups.ownerId, viewer.userId)))[0]?.max ?? -1;
     const [row] = await db
       .insert(groups)
       .values({ ...c.req.valid("json"), ownerId: viewer.userId, position: max + 1 })
@@ -60,11 +60,6 @@ export const projectsRoute = new Hono()
     const { id } = c.req.valid("param");
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
     if (!project) return c.json({ error: "Not found" }, 404);
-    const viewer = maybeViewer(c);
-    if (project.visibility === "private") {
-      const member = viewer ? (await db.select({ userId: members.userId }).from(members).where(and(eq(members.projectId, id), eq(members.userId, viewer.userId)))).length > 0 : false;
-      if (!member) return c.json({ error: viewer ? "You're not a member of this project" : "Sign in to continue" }, viewer ? 403 : 401);
-    }
     const [group] = await db.select().from(groups).where(eq(groups.id, project.groupId));
     const ls = await listsWithCounts(id);
     const ms = await db
@@ -121,6 +116,8 @@ export const membersRoute = new Hono()
 export const archiveRoute = new Hono()
   .get("/", zValidator("query", z.object({ projectId: idSchema.optional() })), async (c) => {
     const { projectId } = c.req.valid("query");
+    const viewer = viewerOf(c);
+    const mine = await memberProjectIds(viewer.userId);
     const removed = or(isNotNull(items.archivedAt), isNotNull(items.deletedAt));
     const its = await db
       .select({ item: items, listName: lists.name, projectName: projects.name, keyPrefix: groups.keyPrefix })
@@ -128,7 +125,7 @@ export const archiveRoute = new Hono()
       .leftJoin(lists, eq(lists.id, items.listId))
       .leftJoin(projects, eq(projects.id, items.projectId))
       .leftJoin(groups, eq(groups.id, projects.groupId))
-      .where(projectId ? and(eq(items.projectId, projectId), removed) : removed)
+      .where(and(removed, projectId ? and(inArray(items.projectId, mine), eq(items.projectId, projectId)) : or(inArray(items.projectId, mine), eq(items.listId, viewer.inboxListId))))
       .orderBy(desc(items.updatedAt));
     const ps = projectId
       ? []
@@ -136,7 +133,7 @@ export const archiveRoute = new Hono()
           .select({ project: projects, groupName: groups.name })
           .from(projects)
           .leftJoin(groups, eq(groups.id, projects.groupId))
-          .where(or(isNotNull(projects.archivedAt), isNotNull(projects.deletedAt)))
+          .where(and(inArray(projects.id, mine), or(isNotNull(projects.archivedAt), isNotNull(projects.deletedAt))))
           .orderBy(desc(projects.updatedAt));
     return c.json({
       items: its.map((r) => ({ ...r.item, listName: r.listName, projectName: r.projectName, keyPrefix: r.keyPrefix })),
