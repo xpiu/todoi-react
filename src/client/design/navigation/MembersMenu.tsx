@@ -89,7 +89,7 @@ export function MembersMenu({ members, currentUserId, canManage, visibility, onV
         <div className="td-mm-sec">Project link</div>
         <div className="td-mm-link">
           <Icon name="link" size={14} />
-          <input className="td-mm-url" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Project link" />
+          <input className="td-mm-url" readOnly tabIndex={-1} value={url} onClick={(e) => e.currentTarget.select()} aria-label="Project link" />
           <Button className="td-mm-copy" icon={copyIcon(copied, "copy")} title={copied === "failed" ? COPY_FAILED : undefined} onClick={() => void copy(url)}>
             {copied === "copied" ? "Copied" : "Copy"}
           </Button>

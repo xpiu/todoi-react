@@ -409,7 +409,7 @@ html[data-theme="minimal"] .td-fm-scroll,html[data-theme="minimal"] .td-sm-scrol
 html[data-theme="minimal"] .td-fm-sec,html[data-theme="minimal"] .td-sm-sec,html[data-theme="minimal"] .td-mm-sec{padding:10px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-fm-row,html[data-theme="minimal"] .td-sm-row,html[data-theme="minimal"] .td-mm-row{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-fm-row:hover,html[data-theme="minimal"] .td-sm-row:hover,html[data-theme="minimal"] button.td-mm-row:hover:not(:disabled){background:var(--chrome-hover);color:var(--ink-900)}
-html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"]{color:var(--ink-400)}
+html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"],html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"] .td-mm-line{color:var(--ink-400)}
 /* Checked rows stay bare paper: the checkbox or the check carries the state, so a hover fill never reads as "picked" */
 html[data-theme="minimal"] .td-fm-row[aria-checked="true"]:not(:hover),html[data-theme="minimal"] .td-sm-row[aria-checked="true"]:not(:hover){background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-fm-row .td-check{margin-right:2px}
