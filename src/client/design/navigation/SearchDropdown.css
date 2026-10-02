@@ -72,8 +72,21 @@
   }
   .td-sd-meta {
     flex-shrink: 0;
+    max-width: 35%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font: var(--type-small);
     color: var(--ink-400);
+  }
+  .td-sd-note {
+    padding: var(--sp-2) 10px;
+    font: var(--type-small);
+    color: var(--ink-400);
+  }
+  .td-sd-note:is([data-tone="error"], [data-tone="offline"]),
+  .td-sd-empty:is([data-tone="error"], [data-tone="offline"]) {
+    color: var(--danger);
   }
   .td-sd-empty {
     padding: 22px var(--sp-4);

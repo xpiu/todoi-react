@@ -36,6 +36,7 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
       void qc.invalidateQueries({ queryKey: key });
       void qc.invalidateQueries({ queryKey: ["activity"] });
       void qc.invalidateQueries({ queryKey: ["item"] });
+      void qc.invalidateQueries({ queryKey: ["search"] });
       for (const k of typeof extraKeys === "function" ? extraKeys(vars) : extraKeys) void qc.invalidateQueries({ queryKey: k });
     },
   });

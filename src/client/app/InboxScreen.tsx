@@ -1,7 +1,8 @@
 // InboxScreen — the account-level list that catches items without a project and every notification.
 // One ListSection with its own page title; "Mark all read" while anything is unread. Spec: DESIGN.md › Notifications.
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useSearch } from "@tanstack/react-router";
+import { useEffect, useMemo } from "react";
 
 import { api, unwrap } from "../data/api";
 import { newId, useCreateItem } from "../data/mutations";
@@ -23,6 +24,15 @@ export function InboxScreen() {
   const scope = useMemo(() => ({ listId: "inbox" }), []);
   const createItem = useCreateItem(scope);
   const completion = useCompletion(scope);
+  // A search result or link names an item: bring its row into view and focus it.
+  const target = useSearch({ from: "/app/inbox" }).item;
+  const loaded = !!items.data;
+  useEffect(() => {
+    if (!target || !loaded) return;
+    const row = document.querySelector<HTMLElement>(`[data-drag-id="${CSS.escape(target)}"]`);
+    row?.scrollIntoView({ block: "center" });
+    row?.focus();
+  }, [target, loaded]);
   const markAllRead = useMutation({
     mutationFn: () => api.api.inbox["mark-all-read"].$post().then((r) => unwrap<{ marked: number }>(r)),
     onSettled: () => {

@@ -99,6 +99,10 @@
   }
   .td-pal-list-name {
     flex-shrink: 0;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font: var(--type-small);
     color: var(--ink-400);
   }
@@ -107,6 +111,9 @@
     font: var(--type-body);
     color: var(--ink-600);
     text-align: center;
+  }
+  .td-pal-empty[data-tone="error"] {
+    color: var(--danger);
   }
   .td-pal-foot {
     display: flex;

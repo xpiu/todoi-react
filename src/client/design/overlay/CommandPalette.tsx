@@ -10,6 +10,8 @@ import "../core/kbd.css";
 
 export interface PaletteItem {
   id: string;
+  /** Where the item lives (null = Inbox), carried back to `onSelect` */
+  projectId?: string | null;
   title: string;
   itemId?: string;
   listName?: string;
@@ -21,6 +23,12 @@ export interface CommandPaletteProps {
   items: PaletteItem[];
   onSelect?: (id: string, item: PaletteItem) => void;
   onClose: () => void;
+  /** The query as typed — for items fetched per query */
+  onQueryChange?: (query: string) => void;
+  /** State of those per-query items: a "Searching…" or failure line instead of a false "No items" */
+  status?: "idle" | "loading" | "offline" | "error" | "ready";
+  /** Shown when there is no query and nothing to list */
+  emptyHint?: string;
   /** @default "Jump to an item…" */
   placeholder?: string;
 }
@@ -39,7 +47,7 @@ export function CommandPalette({ open, onClose, ...body }: CommandPaletteProps) 
   );
 }
 
-function PaletteBody({ open, items, onSelect, onClose, placeholder = "Jump to an item…" }: CommandPaletteProps) {
+function PaletteBody({ open, items, onSelect, onClose, onQueryChange, status, emptyHint, placeholder = "Jump to an item…" }: CommandPaletteProps) {
   const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
   useToastHost(open ? popupEl : null);
   const [q, setQ] = useState("");
@@ -74,6 +82,7 @@ function PaletteBody({ open, items, onSelect, onClose, placeholder = "Jump to an
                 placeholder={placeholder}
                 onChange={(e) => {
                   setQ(e.target.value);
+                  onQueryChange?.(e.target.value);
                   setCur(0);
                 }}
                 onKeyDown={(e) => {
@@ -108,7 +117,9 @@ function PaletteBody({ open, items, onSelect, onClose, placeholder = "Jump to an
                 ))}
               </div>
             ) : (
-              <div className="td-pal-empty">No items match “{q}”</div>
+              <div className="td-pal-empty" aria-live="polite" data-tone={needle && (status === "error" || status === "offline") ? "error" : undefined}>
+                {!needle ? (emptyHint ?? "No items yet") : status === "loading" ? "Searching…" : status === "offline" ? "You’re offline. Item search needs a connection." : status === "error" ? "Couldn’t search items. Try again in a moment." : `No items match “${q.trim()}”`}
+              </div>
             )}
             <div className="td-pal-foot">
               <span>

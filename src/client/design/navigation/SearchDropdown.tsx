@@ -22,6 +22,8 @@ export interface SearchSourceProject {
 }
 export interface SearchSourceItem {
   id: string;
+  /** Where the item lives (null = Inbox), carried back to `onSelect` */
+  projectId?: string | null;
   itemId?: string;
   title: string;
   listName?: string;
@@ -59,13 +61,15 @@ export interface SearchDropdownProps {
   recent?: SearchRecent[];
   onSelect?: (type: SearchResultType, id: string, entity: SearchEntity) => void;
   onClose?: () => void;
+  /** State of the sources fetched per query (items): a "Searching…" or failure line instead of a false "No results" */
+  status?: "idle" | "loading" | "offline" | "error" | "ready";
   /** @default 4 */
   maxPerSection?: number;
   style?: CSSProperties;
   className?: string;
 }
 
-export function SearchDropdown({ query = "", sources = {}, recent = [], onSelect, onClose, maxPerSection = 4, style, className }: SearchDropdownProps) {
+export function SearchDropdown({ query = "", sources = {}, status, recent = [], onSelect, onClose, maxPerSection = 4, style, className }: SearchDropdownProps) {
   const needle = query.trim().toLowerCase();
   const has = (s?: string) => !!s && s.toLowerCase().includes(needle);
   const { groups = [], projects = [], items = [], inbox = [] } = sources;
@@ -123,10 +127,11 @@ export function SearchDropdown({ query = "", sources = {}, recent = [], onSelect
     return () => document.removeEventListener("keydown", onKey, true);
   });
   let idx = -1;
+  const note = !needle ? null : status === "loading" ? "Searching items…" : status === "offline" ? "You’re offline. Item search needs a connection." : status === "error" ? "Couldn’t search items. Try again in a moment." : null;
   return (
     <div className={["td-sd", className ?? ""].join(" ").trim()} style={style} role="listbox" id="td-sd-listbox" aria-label="Search results" onMouseDown={(e) => e.preventDefault()}>
       {flat.length ? (
-        <div className="td-sd-scroll">
+        <div className="td-sd-scroll" aria-busy={status === "loading" || undefined}>
           {sections.map((s) => (
             <div key={s.label}>
               <div className="td-sd-head">{s.label}</div>
@@ -151,9 +156,10 @@ export function SearchDropdown({ query = "", sources = {}, recent = [], onSelect
               })}
             </div>
           ))}
+          {note ? <div className="td-sd-note" role="status" data-tone={status}>{note}</div> : null}
         </div>
       ) : (
-        <div className="td-sd-empty">No results for “{query}”</div>
+        <div className="td-sd-empty" role="status" data-tone={note ? status : undefined}>{note ?? `No projects or items match “${query.trim()}”`}</div>
       )}
       <div className="td-sd-foot">
         <span>

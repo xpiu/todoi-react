@@ -11,7 +11,7 @@ import { IconButton } from "../core/IconButton";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
 import { IS_MAC } from "../core/shortcuts";
 import { TextField } from "../core/TextField";
-import { SearchDropdown, type SearchEntity, type SearchRecent, type SearchResultType, type SearchSources } from "./SearchDropdown";
+import { SearchDropdown, type SearchDropdownProps, type SearchEntity, type SearchRecent, type SearchResultType, type SearchSources } from "./SearchDropdown";
 import "./TopNavbar.css";
 
 export type CreateKind = "group" | "project" | "list" | "item";
@@ -40,6 +40,10 @@ export interface TopNavbarProps {
   searchPlaceholder?: string;
   searchSources?: SearchSources;
   onSearchSelect?: (type: SearchResultType, id: string, entity: SearchEntity) => void;
+  /** The query as typed and whether the dropdown is open — for sources fetched per query */
+  onSearchChange?: (query: string, open: boolean) => void;
+  /** State of the per-query sources (items), shown in the dropdown */
+  searchStatus?: SearchDropdownProps["status"];
   /** Renders the + create menu; the host decides where the kind lands */
   onCreate?: (kind: CreateKind) => void;
   user?: TopNavbarUser;
@@ -78,6 +82,8 @@ export function TopNavbar({
   searchPlaceholder = "Search",
   searchSources,
   onSearchSelect,
+  onSearchChange,
+  searchStatus,
   onCreate,
   user,
   signedIn = true,
@@ -105,6 +111,7 @@ export function TopNavbar({
   const [sFocus, setSFocus] = useState(false);
   const [sRecent, setSRecent] = useState<SearchRecent[]>([]);
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => onSearchChange?.(sQ, sOpen), [sQ, sOpen, onSearchChange]);
   useEffect(() => {
     if (!sOpen) return;
     const onDown = (e: MouseEvent) => {
@@ -230,7 +237,7 @@ export function TopNavbar({
               {kbdHint}
             </span>
           ) : null}
-          {searchSources && sOpen ? <SearchDropdown query={sQ} sources={searchSources} recent={sRecent} onSelect={pickResult} onClose={closeSearch} /> : null}
+          {searchSources && sOpen ? <SearchDropdown query={sQ} sources={searchSources} status={searchStatus} recent={sRecent} onSelect={pickResult} onClose={closeSearch} /> : null}
         </div>
       ) : null}
       {onCreate ? (

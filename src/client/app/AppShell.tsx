@@ -5,7 +5,10 @@ import { Outlet, useLocation, useMatch, useNavigate } from "@tanstack/react-rout
 import { useEffect, useState } from "react";
 
 import { newId, useCreateList } from "../data/mutations";
-import { useGroups, useInboxUnread, useLabels, useProject, useProjectItems } from "../data/queries";
+import { useQuery } from "@tanstack/react-query";
+
+import { listItemsQuery, projectsOf, useGroups, useInboxUnread, useLabels, useProject, useProjectItems } from "../data/queries";
+import type { SearchHit } from "../data/api";
 import { useAppearance } from "../design/core/appearance";
 import { SHORTCUTS } from "../design/core/shortcuts";
 import { ShortcutHint, useShortcutHints } from "../design/core/ShortcutHint";
@@ -38,6 +41,7 @@ import { avatarColorVar, peopleOf, useCurrentUser } from "./session";
 import { authClient } from "../auth";
 import { GuestBar } from "../design/auth/GuestBar";
 import { useAppShortcuts } from "./useAppShortcuts";
+import { hitContext, hitKey, useItemSearch, useOpenResult } from "./search";
 import "./AppShell.css";
 
 const SIDEBAR_KEY = "td-sidebar-open";
@@ -73,6 +77,13 @@ export function AppShell() {
   const setSidebarOpen = vp.desktop ? setDesktopSidebar : setOverlaySidebar;
   const [helpOpen, setHelpOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState("");
+  const [navSearch, setNavSearch] = useState({ query: "", open: false });
+  const navHits = useItemSearch(navSearch.query, navSearch.open);
+  const paletteHits = useItemSearch(paletteQuery, paletteOpen);
+  // The Inbox section of the dropdown before anything is typed.
+  const inboxPreview = useQuery({ ...listItemsQuery(), enabled: navSearch.open && !navSearch.query.trim() });
+  const openResult = useOpenResult();
   // "Suggest shortcuts": nudges after pointer actions a key could have done.
   const hints = useShortcutHints(ap.suggestShortcuts);
   const suggest = hints.suggest;
@@ -223,7 +234,17 @@ export function AppShell() {
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
   const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: unread.data?.unread ?? 0 } : n));
   const prefix = project.data?.keyPrefix ?? "";
-  const paletteItems = (projectItems.data ?? []).filter((it) => !it.parentItemId).map((it) => ({ id: it.id, title: it.title, itemId: keyOf(it, prefix), listName: project.data?.lists.find((l) => l.id === it.listId)?.name, done: it.done }));
+  const hitSource = (h: SearchHit) => ({ id: h.id, projectId: h.projectId, title: h.title, itemId: hitKey(h), listName: hitContext(h, projectId), done: h.done });
+  // Before a query the palette lists this project's items; a query searches everything the viewer can open.
+  const paletteItems = paletteQuery.trim()
+    ? paletteHits.hits.map(hitSource)
+    : (projectItems.data ?? []).filter((it) => !it.parentItemId).map((it) => ({ id: it.id, projectId: it.projectId, title: it.title, itemId: keyOf(it, prefix), listName: project.data?.lists.find((l) => l.id === it.listId)?.name, done: it.done }));
+  const searchSources = {
+    groups: (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects })),
+    projects: projectsOf(groups.data).map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined, groupName: p.groupName })),
+    items: navHits.hits.filter((h) => h.projectId).map(hitSource),
+    inbox: navSearch.query.trim() ? navHits.hits.filter((h) => !h.projectId).map(hitSource) : (inboxPreview.data ?? []).filter((it) => !it.parentItemId).map((it) => ({ id: it.id, projectId: null, title: it.title, done: it.done })),
+  };
 
   return (
     <ToastPortalProvider toast={toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}>
@@ -231,6 +252,15 @@ export function AppShell() {
       <TopNavbar
         title={title}
         search
+        searchSources={searchSources}
+        searchStatus={navHits.status}
+        onSearchChange={(query, open) => setNavSearch((s) => (s.query === query && s.open === open ? s : { query, open }))}
+        onSearchSelect={(type, id, entity) => {
+          if (type === "group") openResult.groups();
+          else if (type === "project") openResult.project(id);
+          else openResult.item({ id, projectId: type === "inbox" ? null : ((entity as { projectId?: string | null }).projectId ?? null) });
+          if (!vp.desktop) setSidebarOpen(false);
+        }}
         user={user ? { name: user.name, nickname: user.nickname ?? undefined, email: user.email, src: user.image ?? undefined, avatarColor: avatarColorVar(user.avatarColor) } : { name: "Guest" }}
         signedIn={signedIn}
         onLogout={logout}
@@ -300,12 +330,14 @@ export function AppShell() {
       <CommandPalette
         open={paletteOpen}
         items={paletteItems}
-        onClose={() => setPaletteOpen(false)}
-        onSelect={(id) => {
-          const el = document.querySelector<HTMLElement>(`[data-drag-id="${CSS.escape(id)}"]`);
-          el?.scrollIntoView({ block: "center" });
-          el?.focus();
+        status={paletteHits.status}
+        emptyHint="Type to find any item in your projects or Inbox"
+        onQueryChange={setPaletteQuery}
+        onClose={() => {
+          setPaletteOpen(false);
+          setPaletteQuery("");
         }}
+        onSelect={(id, it) => openResult.item({ id, projectId: it.projectId ?? null })}
       />
     </div>
     </ToastPortalProvider>

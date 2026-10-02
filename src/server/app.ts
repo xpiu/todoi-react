@@ -5,6 +5,7 @@ import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { exportRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
 import { itemsRoute } from "./routes/items";
+import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
 import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } from "./routes/projects";
 import { workspaceAccess } from "./access";
@@ -36,6 +37,7 @@ export const app = new Hono()
   .route("/comments", commentsRoute)
   .route("/saved-views", savedViewsRoute)
   .route("/activity", activityRoute)
-  .route("/inbox", inboxRoute);
+  .route("/inbox", inboxRoute)
+  .route("/search", searchRoute);
 
 export type AppType = typeof app;

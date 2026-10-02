@@ -2,7 +2,7 @@
 // the items of a project or the Inbox, labels. Keys are grouped so a mutation can invalidate a scope.
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
-import { api, unwrap, type GroupWithProjects, type Item, type ItemDetails, type Label, type ProjectDetail, type ActivityEntry } from "./api";
+import { api, unwrap, type GroupWithProjects, type Item, type ItemDetails, type Label, type ProjectDetail, type ActivityEntry, type SearchHit } from "./api";
 
 export const keys = {
   groups: ["groups"] as const,
@@ -12,6 +12,7 @@ export const keys = {
   labels: (projectId: string) => ["labels", projectId] as const,
   inboxUnread: ["inbox", "unread"] as const,
   activity: (projectId: string) => ["activity", projectId] as const,
+  search: (q: string) => ["search", q] as const,
 };
 
 export const groupsQuery = () =>
@@ -65,6 +66,15 @@ export const inboxUnreadQuery = () =>
   queryOptions({
     queryKey: keys.inboxUnread,
     queryFn: () => api.api.inbox.unread.$get().then((r) => unwrap<{ unread: number }>(r)),
+  });
+
+/** Items across the viewer's projects and Inbox by title or key (bounded by the server). */
+export const searchQuery = (q: string) =>
+  queryOptions({
+    queryKey: keys.search(q),
+    queryFn: () => api.api.search.$get({ query: { q } }).then((r) => unwrap<SearchHit[]>(r)),
+    enabled: !!q,
+    staleTime: 10_000,
   });
 
 export const useGroups = () => useQuery(groupsQuery());
