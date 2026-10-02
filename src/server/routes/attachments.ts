@@ -1,24 +1,20 @@
-// Attachments: files on an item. Bytes live on local disk under UPLOAD_DIR (an object store is a
-// later swap: only `storageKey` and the two file helpers change). Spec: DESIGN.md › Attachments.
+// Attachments: files on an item; the bytes go through services/uploads. Spec: DESIGN.md › Attachments.
 import { zValidator } from "@hono/zod-validator";
 import { asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { nanoid } from "nanoid";
-import { join } from "node:path";
 import { z } from "zod";
 
 import { idSchema } from "../../shared/items";
 import { viewerOf } from "../auth";
 import { db } from "../db";
 import { attachments, items } from "../db/schema";
-import { env } from "../env";
 import { logActivity, quote } from "../services/activity";
+import { readUpload, removeUpload, saveUpload } from "../services/uploads";
 
 const idParam = zValidator("param", z.object({ id: z.string().min(1).max(64) }));
 const MAX_BYTES = 25 * 1024 * 1024;
-const safeName = (n: string) => n.replace(/[\\/]/g, "_").slice(0, 200) || "file";
-const pathOf = (storageKey: string) => join(env.UPLOAD_DIR, storageKey);
+export const safeName = (n: string) => n.replace(/[\\/]/g, "_").slice(0, 200) || "file";
 
 export const itemAttachmentsRoute = new Hono()
   .get("/:id/attachments", idParam, async (c) => {
@@ -35,12 +31,10 @@ export const itemAttachmentsRoute = new Hono()
     const raw = body["files"] ?? body["file"];
     const files = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((f): f is File => f instanceof File);
     if (!files.length) return c.json({ error: "No files" }, 400);
-    await mkdir(env.UPLOAD_DIR, { recursive: true });
     const made = [];
     for (const f of files) {
       if (f.size > MAX_BYTES) return c.json({ error: `${f.name} is larger than 25 MB` }, 413);
-      const storageKey = nanoid();
-      await writeFile(pathOf(storageKey), Buffer.from(await f.arrayBuffer()));
+      const storageKey = await saveUpload(new Uint8Array(await f.arrayBuffer()));
       const [row] = await db
         .insert(attachments)
         .values({ id: nanoid(), itemId: id, name: safeName(f.name), size: f.size, mime: f.type || null, storageKey, uploadedBy: viewer.userId })
@@ -55,7 +49,7 @@ export const attachmentsRoute = new Hono()
   .get("/:id/file", idParam, async (c) => {
     const [row] = await db.select().from(attachments).where(eq(attachments.id, c.req.valid("param").id));
     if (!row) return c.json({ error: "Not found" }, 404);
-    const bytes = await readFile(pathOf(row.storageKey)).catch(() => null);
+    const bytes = await readUpload(row.storageKey);
     if (!bytes) return c.json({ error: "File missing" }, 404);
     const download = c.req.query("download") != null;
     return c.body(bytes, 200, {
@@ -72,7 +66,7 @@ export const attachmentsRoute = new Hono()
   .delete("/:id", idParam, async (c) => {
     const [row] = await db.delete(attachments).where(eq(attachments.id, c.req.valid("param").id)).returning();
     if (!row) return c.json({ error: "Not found" }, 404);
-    await rm(pathOf(row.storageKey), { force: true });
+    await removeUpload(row.storageKey);
     // A cover that pointed at this file goes with it.
     const [item] = await db.select({ id: items.id, cover: items.cover }).from(items).where(eq(items.id, row.itemId));
     if (item?.cover?.attachmentId === row.id) await db.update(items).set({ cover: null }).where(eq(items.id, item.id));

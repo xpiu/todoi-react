@@ -56,7 +56,7 @@ export interface Viewer {
 const VIEWER = "viewer";
 
 /** Each user has one Inbox list (kind inbox); created on first sight. */
-async function inboxFor(userId: string): Promise<string> {
+export async function inboxFor(userId: string): Promise<string> {
   const [row] = await db.select({ id: lists.id }).from(lists).where(and(eq(lists.kind, "inbox"), eq(lists.userId, userId)));
   if (row) return row.id;
   const id = userId === LOCAL_USER_ID ? LOCAL_INBOX_ID : nanoid();

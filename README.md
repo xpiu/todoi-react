@@ -15,7 +15,7 @@ access; signing in gives the content a durable account owner. No onboarding or r
 ## Signing in (development)
 
 Better Auth provides browser guest sessions and email/password accounts. The seed creates two people with the password `todoi-dev-password`:
-`flo@todoi.com` and `sam@helicopterseurope.com`. Flo owns the Design System examples and has a verified email. Create more accounts at `/signup`; invites come from
+`flo@todoi.com` and `sam@helicopterseurope.com`. Flo owns the Design System examples (the Helicopters Europe projects, the helicopter photos on MP-115, Sam's comments and a filled Inbox; the seed adds whatever is missing on every start) and has a verified email. Create more accounts at `/signup`; invites come from
 Project settings › Members (the link is copied to the clipboard).
 
 ## ℹ️ About
