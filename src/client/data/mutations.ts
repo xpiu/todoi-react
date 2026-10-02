@@ -3,12 +3,12 @@
 import { useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
 
-import type { CreateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
+import type { CreateItemInput, DuplicateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
 import type { CreateListInput, UpdateListInput } from "../../shared/projects";
 import { useFeedback } from "../app/feedback";
 import { applyCompletion, statusChange } from "../../shared/completion";
 import type { ItemStatus } from "../../shared/item-status";
-import { api, errorMessage, unwrap, type Item, type MoveResult, type ProjectDetail, type UpdatedItem } from "./api";
+import { api, errorMessage, unwrap, type DuplicateResult, type Item, type MoveResult, type ProjectDetail, type UpdatedItem } from "./api";
 import { keys } from "./queries";
 
 export const newId = () => nanoid();
@@ -202,6 +202,27 @@ export function useMoveItem(scope: ItemsScope) {
     },
     // Across projects both sides change (items, keys, labels, counts); inactive caches only go stale.
     ({ toProjectId }) => (toProjectId === undefined ? (projectId ? [keys.project(projectId)] : []) : [["items"], ["project"], ["labels"], keys.groups]),
+  );
+}
+
+/**
+ * Copy an item (with its subitems) into a list. The API decides keys, labels and placement, so nothing is
+ * predicted: a copy in this scope lands from the response; a copy elsewhere only refreshes that destination.
+ */
+export function useDuplicateItem(scope: ItemsScope) {
+  const qc = useQueryClient();
+  const projectId = "projectId" in scope ? scope.projectId : null;
+  return useOptimistic(
+    scope,
+    (vars: { sourceId: string; toProjectId: string | null } & DuplicateItemInput) =>
+      api.api.items[":id"].duplicate.$post({ param: { id: vars.sourceId }, json: { id: vars.id, listId: vars.listId } }).then(async (r) => {
+        const made = await unwrap<DuplicateResult>(r);
+        // The Inbox scope has no project: a copy lands here when it stays in the same project (or Inbox).
+        if (vars.toProjectId === projectId) qc.setQueryData<Item[]>(keys.items(scope), (old) => (old ? [...old.filter((it) => !made.items.some((m) => m.id === it.id)), ...made.items] : old));
+        return made;
+      }),
+    (items) => items,
+    ({ toProjectId }) => [keys.groups, ...(toProjectId ? [keys.project(toProjectId), keys.items({ projectId: toProjectId }), ["labels"]] : [["items"]])],
   );
 }
 

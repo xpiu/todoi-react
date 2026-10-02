@@ -119,6 +119,10 @@ export const moveRestoreSchema = z.object({
 });
 export type MoveRestore = z.infer<typeof moveRestoreSchema>;
 
+/** Copy an item (and its subitems) into a list; `id` is the copy's, generated app-side like a creation. */
+export const duplicateItemSchema = z.object({ id: idSchema, listId: idSchema });
+export type DuplicateItemInput = z.infer<typeof duplicateItemSchema>;
+
 /** Move within or across lists (and projects): the list and the position among its siblings. */
 export const moveItemSchema = z.object({
   listId: idSchema,

@@ -123,6 +123,8 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
   const [transfer, setTransfer] = useState<"move" | "copy" | null>(null);
+  // The dialog keeps saying Copy (or Move) while it closes.
+  const [transferKind, setTransferKind] = useState<"move" | "copy">("move");
   // A new Status role on a list with items waits for the review: existing items, or future moves only.
   const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
   const picker = useProjectPicker(projectId);
@@ -206,7 +208,9 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           actions={actions.bulkActions(selectedIds)}
           onAction={(id, value) => {
             if (id === "move" && (value === "__move" || value === "__copy")) {
-              setTransfer(value === "__copy" ? "copy" : "move");
+              const kind = value === "__copy" ? "copy" : "move";
+              setTransfer(kind);
+              setTransferKind(kind);
               return;
             }
             if (actions.bulk(id, value, selectedIds)) setSelectedIds([]);
@@ -214,8 +218,8 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           onClear={() => setSelectedIds([])}
         />
       ) : null}
-      <Dialog open={!!transfer} onClose={() => setTransfer(null)} title={transfer === "copy" ? "Copy to project" : "Move to project"} width={380}>
-        <ProjectPicker projects={picker.projects} action={transfer ?? "move"} count={selectedIds.length} showHeading={false} loadLists={picker.loadLists} onPick={(proj, list) => {
+      <Dialog open={!!transfer} onClose={() => setTransfer(null)} title={transferKind === "copy" ? "Copy to project" : "Move to project"} width={380}>
+        <ProjectPicker projects={picker.projects} action={transferKind} count={selectedIds.length} showHeading={false} loadLists={picker.loadLists} onPick={(proj, list) => {
           const t = transfer;
           setTransfer(null);
           void actions.transfer(selectedIds, proj, list, t === "copy");

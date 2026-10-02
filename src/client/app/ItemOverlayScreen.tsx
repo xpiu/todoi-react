@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from "react";
 
 import { errorMessage, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
-import { newId, useCreateItem, useDeleteItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
+import { newId, useCreateItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
 import { attachmentUrl, useAttachmentMutations } from "../data/attachments";
 import { downloadText, fileSlug, itemToMarkdown, itemsToCsv } from "./exportData";
@@ -46,7 +46,6 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
   const updateItem = useUpdateItem(scope);
   const moveItem = useMoveItem(scope);
   const createItem = useCreateItem(scope);
-  const deleteItem = useDeleteItem(scope);
   const setLabels = useSetItemLabels(scope);
   const setAssignees = useSetItemAssignees(scope);
   const addComment = useAddComment(itemId);
@@ -190,11 +189,8 @@ export function ItemOverlayScreen({ projectId, project, items, labels, itemId, e
         onClose();
       }}
       onMenuAction={(action) => {
-        if (action === "duplicate") {
-          const id = newId();
-          createItem.mutate({ id, title: item.title, listId: item.listId, status: item.status, priority: item.priority, startDate: item.startDate, dueDate: item.dueDate, description: item.description ?? undefined, labelIds: item.labelIds, assigneeIds: item.assigneeIds });
-          notify({ message: `Duplicated ${quote(item.title)}`, icon: "copy", restore: () => deleteItem.mutate({ id }) });
-        } else if (action === "archive") {
+        if (action === "duplicate") void actions.copyItems([item.id], { projectId, listId: item.listId, name: null });
+        else if (action === "archive") {
           patch({ archived: true });
           notify({ message: `Archived ${quote(item.title)}`, icon: "archive", restore: () => updateItem.mutate({ id: item.id, archived: false }) });
           onClose();
