@@ -34,6 +34,7 @@ import { ProjectPicker } from "../design/core/ProjectPicker";
 import { useFileDropTargets } from "../design/overlay/Attachments";
 import { useFeedback } from "./feedback";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
+import { usePrefs } from "./prefs";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
 import { peopleOf } from "./session";
@@ -124,11 +125,12 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const anchor = useRef<string | null>(null);
 
   const ctx = useMemo(() => ({ labels, people: peopleOf(project) }), [labels, project]);
+  const showCompleted = usePrefs((s) => s.showCompleted);
   const visibleItems = useMemo(() => {
-    if (!filters.length) return items;
-    const keep = new Set(items.filter((it) => !it.parentItemId && matchesFilters(it, filters, ctx)).map((it) => it.id));
+    if (!filters.length && showCompleted) return items;
+    const keep = new Set(items.filter((it) => !it.parentItemId && (showCompleted || !it.done) && matchesFilters(it, filters, ctx)).map((it) => it.id));
     return items.filter((it) => (it.parentItemId ? keep.has(it.parentItemId) : keep.has(it.id)));
-  }, [items, filters, ctx]);
+  }, [items, filters, ctx, showCompleted]);
   const order = itemComparator(sort.items);
   const lists: VisibleList[] = sortLists(
     actions.lists.map((l) => {
@@ -392,17 +394,18 @@ function ProjectBoard(props: ViewProps) {
 function ProjectCalendar({ projectId, project, items, labels, filters, openItem }: ViewProps) {
   const actions = useProjectActions(projectId, project, items, labels);
   const ctx = useMemo(() => ({ labels, people: peopleOf(project) }), [labels, project]);
+  const showCompleted = usePrefs((s) => s.showCompleted);
   const calItems = useMemo<CalendarItem[]>(() => {
     const visibleListIds = new Set(actions.lists.map((l) => l.id));
     const subs = new Map<string, Item[]>();
     for (const it of items) if (it.parentItemId) subs.set(it.parentItemId, [...(subs.get(it.parentItemId) ?? []), it]);
     return items
-      .filter((it) => !it.parentItemId && it.dueDate && visibleListIds.has(it.listId) && matchesFilters(it, filters, ctx))
+      .filter((it) => !it.parentItemId && it.dueDate && (showCompleted || !it.done) && visibleListIds.has(it.listId) && matchesFilters(it, filters, ctx))
       .map((it) => {
         const row = rowsForList([it, ...(subs.get(it.id) ?? [])], it.listId, { prefix: project.keyPrefix, labels, people: actions.people })[0]!;
         return { id: it.id, title: it.title, itemId: row.itemId, labels: row.labels.map((l) => (typeof l === "string" ? { color: l } : l)), done: it.done, due: it.dueDate, start: it.startDate, priority: row.priority, assignees: row.assignees.map((a) => (typeof a === "string" ? { name: a } : a)), subitems: row.subitems.map((s) => ({ id: s.id, title: s.title, itemId: s.itemId, done: s.done })), dueState: row.dueState };
       });
-  }, [items, filters, ctx, actions.lists, actions.people, project.keyPrefix, labels]);
+  }, [items, filters, ctx, showCompleted, actions.lists, actions.people, project.keyPrefix, labels]);
   if (!actions.lists.length) return <NoLists actions={actions} />;
   return <CalendarView items={calItems} onOpenItem={(id) => openItem(id)} onReschedule={actions.reschedule} onAddItem={actions.addItemOn} onToggleDone={actions.setDone} onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)} />;
 }

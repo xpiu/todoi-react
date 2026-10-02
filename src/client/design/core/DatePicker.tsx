@@ -5,7 +5,7 @@ import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Button, type ButtonVariant } from "./Button";
 import { DateCalendar, type WeekStart } from "./DateCalendar";
-import { formatDate, parseDateValue, resolveDate, toISO, type DateInput } from "./dates";
+import { dateConventions, formatDate, parseDateValue, resolveDate, toISO, type DateInput } from "./dates";
 import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
 import "./DatePicker.css";
@@ -54,7 +54,7 @@ export function DatePicker({
   value,
   onChange,
   today,
-  weekStartsOn = 1,
+  weekStartsOn = dateConventions().weekStart,
   min,
   max,
   placeholder = "Dates",

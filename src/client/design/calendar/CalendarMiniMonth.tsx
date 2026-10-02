@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 
 import { parseDateValue, sameDay, toISO } from "./calendar";
+import { dateConventions } from "../core/dates";
 import "./CalendarMiniMonth.css";
 
 export interface CalendarMiniMonthProps {
@@ -16,7 +17,7 @@ export interface CalendarMiniMonthProps {
   style?: CSSProperties;
 }
 
-export function CalendarMiniMonth({ year, month, dates, today, weekStartsOn = 1, onOpen, style }: CalendarMiniMonthProps) {
+export function CalendarMiniMonth({ year, month, dates, today, weekStartsOn = dateConventions().weekStart, onOpen, style }: CalendarMiniMonthProps) {
   const first = new Date(year, month, 1);
   const daysIn = new Date(year, month + 1, 0).getDate();
   const lead = (first.getDay() - weekStartsOn + 7) % 7;

@@ -7,6 +7,21 @@ import { addDays, parseDateValue, pad, toISO, type DateInput } from "../../../sh
 
 export { addDays, parseDateValue, toISO, type DateInput };
 
+export type DateFormat = "mdy-text" | "dmy-text" | "iso" | "mdy" | "dmy";
+export interface DateConventions {
+  /** "Sep 12, 2026" · "12 Sep 2026" · "2026-09-12" · "09/12/2026" · "12/09/2026" */
+  dateFormat: DateFormat;
+  timeFormat: "24h" | "12h";
+  /** 0 Sunday … 6 Saturday — the first column of every calendar */
+  weekStart: 0 | 1 | 6;
+}
+/** How dates read everywhere — the person's Settings › General, set once by the app (`setDateConventions`). */
+const conventions: DateConventions = { dateFormat: "mdy-text", timeFormat: "24h", weekStart: 1 };
+export const dateConventions = (): Readonly<DateConventions> => conventions;
+export function setDateConventions(next: Partial<DateConventions>) {
+  Object.assign(conventions, next);
+}
+
 export const sameDay = (a: Date | null | undefined, b: Date | null | undefined): boolean =>
   !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
@@ -24,15 +39,22 @@ export interface FormatDateOptions {
   weekday?: boolean;
 }
 
-/** "Sep 12, 2026" — the system's absolute-date form. */
+/** "Sep 12, 2026" — the absolute-date form, in the person's date format (ISO always keeps its year). */
 export function formatDate(v: DateInput, { year = "always", today, weekday }: FormatDateOptions = {}): string {
   const d = parseDateValue(v);
   if (!d) return "";
   const t = parseDateValue(today) ?? new Date();
-  const o: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  if (weekday) o.weekday = "short";
-  if (year === "always" || (year === "auto" && d.getFullYear() !== t.getFullYear())) o.year = "numeric";
-  return d.toLocaleDateString("en-US", o);
+  const withYear = year === "always" || (year === "auto" && d.getFullYear() !== t.getFullYear());
+  const day = d.toLocaleDateString("en-US", { weekday: "short" });
+  const [y, m, dd] = [d.getFullYear(), pad(d.getMonth() + 1), pad(d.getDate())];
+  const { dateFormat } = conventions;
+  let out: string;
+  if (dateFormat === "iso") out = `${y}-${m}-${dd}`;
+  else if (dateFormat === "mdy") out = withYear ? `${m}/${dd}/${y}` : `${m}/${dd}`;
+  else if (dateFormat === "dmy") out = withYear ? `${dd}/${m}/${y}` : `${dd}/${m}`;
+  else if (dateFormat === "dmy-text") out = `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })}${withYear ? ` ${y}` : ""}`;
+  else out = d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}) });
+  return weekday ? `${day}, ${out}` : out;
 }
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -103,11 +125,13 @@ export function parseTime(str: string): string | null {
   return `${pad(h)}:${pad(min)}`;
 }
 
-/** "HH:MM" → "14:30" (24h); empty for null. */
+/** "HH:MM" → "14:30", or "2:30 pm" in the 12-hour format; empty for null. */
 export function formatTime(t: string | null | undefined): string {
   if (!t) return "";
   const m = /^(\d{1,2}):(\d{2})$/.exec(t);
-  return m ? `${pad(+m[1]!)}:${m[2]}` : t;
+  if (!m) return t;
+  const h = +m[1]!;
+  return conventions.timeFormat === "12h" ? `${h % 12 || 12}:${m[2]} ${h < 12 ? "am" : "pm"}` : `${pad(h)}:${m[2]}`;
 }
 
 /** "Sep 10 – Sep 12, 2026 · 14:00" / "Sep 12, 2026" / "From Sep 10, 2026" / "". */

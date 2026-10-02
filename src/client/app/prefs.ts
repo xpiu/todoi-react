@@ -1,27 +1,45 @@
-// Per-device preferences behind Settings › General and › Notifications (persisted locally; the
-// Appearance store keeps its own). Spec: DESIGN.md › Settings.
+// Account preferences behind Settings › General and › Notifications (shared/prefs.ts). The store is
+// the device's copy, so the app renders at once and offline; the account's copy wins when it loads
+// (`usePrefsSync`) and every change is written through. Date conventions reach the date utilities
+// from here. Appearance keeps its own, device-only store. Spec: DESIGN.md › Settings.
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface Prefs {
-  language: string;
-  timeZone: string;
-  timeFormat: "24h" | "12h";
-  weekStart: "mon" | "sun" | "sat";
-  dateFormat: string;
-  showCompleted: boolean;
-  smartDates: boolean;
-  defaultPriority: string;
-  showTips: boolean;
-  notifyMentions: boolean;
-  notifyAssignments: boolean;
-  notifyWatched: boolean;
-  notifyNews: boolean;
-  notifyEmail: boolean;
-  inboxBadge: boolean;
-}
-export const DEFAULT_PREFS: Prefs = { language: "en", timeZone: "auto", timeFormat: "24h", weekStart: "mon", dateFormat: "mdy-text", showCompleted: true, smartDates: true, defaultPriority: "none", showTips: true, notifyMentions: true, notifyAssignments: true, notifyWatched: true, notifyNews: true, notifyEmail: false, inboxBadge: true };
+import { DEFAULT_PREFS, prefsOf, type Prefs } from "../../shared/prefs";
+import { api, errorMessage, unwrap } from "../data/api";
+import { setDateConventions } from "../design/core/dates";
+import { useFeedback } from "./feedback";
 
-export const usePrefs = create<Prefs & { set: (patch: Partial<Prefs>) => void; reset: () => void }>()(
-  persist((set) => ({ ...DEFAULT_PREFS, set: (patch) => set(patch), reset: () => set(DEFAULT_PREFS) }), { name: "td-prefs", partialize: (s) => Object.fromEntries(Object.keys(DEFAULT_PREFS).map((k) => [k, s[k as keyof Prefs]])) as Partial<Prefs> }),
+export { DEFAULT_PREFS, type Prefs };
+
+const WEEK_START = { mon: 1, sun: 0, sat: 6 } as const;
+
+export const usePrefs = create<Prefs & { set: (patch: Partial<Prefs>) => void }>()(
+  persist(
+    (set) => ({
+      ...DEFAULT_PREFS,
+      set: (patch) => {
+        set(patch);
+        api.api.me.prefs.$patch({ json: patch }).then((r) => unwrap(r)).catch((err: unknown) => useFeedback.getState().notify({ message: `Couldn't save that setting to your account: ${errorMessage(err)}`, icon: "circle-alert" }));
+      },
+    }),
+    { name: "td-prefs", partialize: (s) => prefsOf(s), merge: (stored, current) => ({ ...current, ...prefsOf(stored) }) },
+  ),
 );
+
+const applyConventions = (p: Prefs) => setDateConventions({ dateFormat: p.dateFormat, timeFormat: p.timeFormat, weekStart: WEEK_START[p.weekStart] });
+applyConventions(usePrefs.getState());
+usePrefs.subscribe(applyConventions);
+
+/** Adopt the account's preferences once they load (another device may have changed them). */
+export function usePrefsSync(enabled: boolean) {
+  const account = useQuery({ queryKey: ["me", "prefs"], queryFn: () => api.api.me.$get().then((r) => unwrap<{ prefs: Prefs }>(r)).then((me) => me.prefs), enabled });
+  useEffect(() => {
+    if (account.data) usePrefs.setState(account.data);
+  }, [account.data]);
+}
+
+/** A key that changes with the date conventions, so date-bearing screens render again in the new form. */
+export const useDateConventionsKey = () => usePrefs((s) => `${s.dateFormat}|${s.timeFormat}|${s.weekStart}`);

@@ -49,7 +49,6 @@ const opts = <V extends string>(pairs: ReadonlyArray<readonly [V, string]>): Opt
 
 const DATE_FORMATS = opts([["mdy-text", "Jan 10, 2020"], ["dmy-text", "10 Jan 2020"], ["iso", "2020-01-10"], ["mdy", "01/10/2020"], ["dmy", "10/01/2020"]] as const);
 const WEEK_STARTS = opts([["mon", "Monday"], ["sun", "Sunday"], ["sat", "Saturday"]] as const);
-const LANGUAGES = opts([["en", "English"], ["nl", "Nederlands"], ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"]] as const);
 const PRIORITIES = opts([["none", "None"], ["URGENT", "Urgent"], ["HIGH", "High"], ["MEDIUM", "Medium"], ["LOW", "Low"]] as const);
 const TOKEN_EXPIRIES = opts([["30", "30 days"], ["90", "90 days"], ["180", "180 days"], ["365", "1 year"]] as const);
 const STATUS_DISPLAYS = STATUS_DISPLAY_OPTIONS.map((o) => ({ value: o.id, label: o.label }));
@@ -60,15 +59,6 @@ const BROWSER_TZ = (() => {
   } catch {
     return "UTC";
   }
-})();
-const TIME_ZONES: Opt[] = (() => {
-  let zones: string[] = [];
-  try {
-    zones = Intl.supportedValuesOf("timeZone");
-  } catch {
-    zones = [BROWSER_TZ, "UTC", "Europe/Brussels", "Europe/London", "America/New_York", "Asia/Tokyo"];
-  }
-  return [{ value: "auto", label: `Automatic (${BROWSER_TZ.replace(/_/g, " ")})` }, ...zones.map((z) => ({ value: z, label: z.replace(/_/g, " ") }))];
 })();
 const HELP_TOPICS = [
   { id: "h-add", label: "Add items fast", hint: "Quick-add and its inline syntax", body: "Press N to open quick-add in the list you're in. Type #label @name !high due fri >List and the properties land on the new item; the row under the field previews them. Enter adds the item and keeps the field open for the next one." },
@@ -137,8 +127,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             id: "date",
             title: "Language and time",
             rows: [
-              { id: "language", label: "Language", hint: "Menus, buttons and dates. Smart date recognition reads this language", control: sel("Language", prefs.language, LANGUAGES, (v) => prefs.set({ language: v })) },
-              { id: "timeZone", label: "Time zone", hint: "Due times and “today” follow this zone on every device", control: sel("Time zone", prefs.timeZone, TIME_ZONES, (v) => prefs.set({ timeZone: v }), 300) },
+              { id: "language", label: "Language", hint: "Todoi is in English for now; other languages come later", control: <MonoValue value="English" /> },
+              { id: "timeZone", label: "Time zone", hint: "Due times and “today” follow this device's zone; picking another zone comes later", control: <MonoValue value={BROWSER_TZ.replace(/_/g, " ")} /> },
               { id: "timeFormat", label: "Time format", hint: "14:00 or 2:00 pm on items and in the calendar", control: <Segmented aria-label="Time format" value={prefs.timeFormat} options={[{ id: "24h", label: "24-hour" }, { id: "12h", label: "12-hour" }]} onChange={(v) => prefs.set({ timeFormat: v })} /> },
               { id: "weekStart", label: "Week starts on", hint: "First column in Week and Month views", control: sel("Week starts on", prefs.weekStart, WEEK_STARTS, (v) => prefs.set({ weekStart: v })) },
               { id: "dateFormat", label: "Date format", hint: "How dates appear on items and in the calendar", control: sel("Date format", prefs.dateFormat, DATE_FORMATS, (v) => prefs.set({ dateFormat: v })) },
@@ -236,7 +226,6 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             title: "Getting started",
             rows: [
               { id: "sample", label: "Sample project", hint: "A small project to click around in; delete it whenever you like", control: <Button icon="kanban" onClick={() => lifecycle.openNewProject()}>Create a project</Button> },
-              { id: "showTips", label: "Show tips", hint: "Short one-time hints on empty lists, the first item and the first filter", control: prefSwitch("showTips", "Show tips") },
               { id: "shortcuts", label: "Keyboard shortcuts", hint: "The full map, also behind ? anywhere in the app", control: <Button icon="keyboard" onClick={() => navigate({ to: "/settings", search: { s: "keyboard" } })}>Open</Button> },
             ],
           },
@@ -264,18 +253,18 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         label: "Notifications",
         icon: "bell",
         groups: [
-          { id: "nt-where", title: "Where they land", rows: [{ id: "ntInbox", label: "Inbox", hint: "Mentions, assignments, changes to items you watch and news from Todoi arrive as items in your Inbox", control: <Button icon="inbox" onClick={() => navigate({ to: "/inbox" })}>Open Inbox</Button> }] },
+          { id: "nt-where", title: "Where they land", rows: [{ id: "ntInbox", label: "Inbox", hint: "Mentions, assignments and comments on items you watch arrive as unread items in your Inbox", control: <Button icon="inbox" onClick={() => navigate({ to: "/inbox" })}>Open Inbox</Button> }] },
           {
             id: "nt-events",
             title: "Events",
             rows: [
               { id: "notifyMentions", label: "Mentions", hint: "When someone @mentions you in a comment", control: prefSwitch("notifyMentions", "Mentions") },
               { id: "notifyAssignments", label: "Assignments", hint: "When an item is assigned to you", control: prefSwitch("notifyAssignments", "Assignments") },
-              { id: "notifyWatched", label: "Watched items", hint: "Comments, moves, due dates and completion on items you watch", control: prefSwitch("notifyWatched", "Watched items") },
-              { id: "notifyNews", label: "Todoi news", hint: "Releases and changes to the service, a few times a year", control: prefSwitch("notifyNews", "Todoi news") },
+              { id: "notifyWatched", label: "Watched items", hint: "New comments on items you watch (Watch is in the item’s side panel)", control: prefSwitch("notifyWatched", "Watched items") },
+              { id: "notifyNews", label: "Todoi news", hint: "Todoi doesn't send release news yet", control: <MonoValue value="Not sent yet" /> },
             ],
           },
-          { id: "nt-channels", title: "Channels", rows: [{ id: "notifyEmail", label: "Email delivery", hint: "Also send these by email — once email sending is set up", control: prefSwitch("notifyEmail", "Email delivery") }] },
+          { id: "nt-channels", title: "Channels", rows: [{ id: "notifyEmail", label: "Email delivery", hint: "Email sending isn't set up yet — notifications arrive in your Inbox only", control: <MonoValue value="Inbox only" /> }] },
           { id: "nt-display", title: "Display", rows: [{ id: "inboxBadge", label: "Unread count on Inbox", hint: "Show a dot on the sidebar Inbox row while it holds unread items", control: prefSwitch("inboxBadge", "Unread count on Inbox") }] },
         ],
       },

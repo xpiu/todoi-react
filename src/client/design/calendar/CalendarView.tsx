@@ -4,6 +4,7 @@
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 
 import { addDays, coversDay, parseDateValue, periodTitle, shiftPeriod, toISO, type CalendarItem, type CalendarPeriod } from "./calendar";
+import { dateConventions } from "../core/dates";
 import { CalendarDayList } from "./CalendarDayList";
 import { CalendarGrid } from "./CalendarGrid";
 import { CalendarHeader } from "./CalendarHeader";
@@ -32,7 +33,7 @@ export interface CalendarViewProps {
   className?: string;
 }
 
-export function CalendarView({ items, period: periodProp, defaultPeriod = "month", onPeriodChange, date, today, weekStartsOn = 1, showItemIds = true, showLabels = true, onOpenItem, onAddItem, onReschedule, onToggleDone, onToggleSubitem, style, className }: CalendarViewProps) {
+export function CalendarView({ items, period: periodProp, defaultPeriod = "month", onPeriodChange, date, today, weekStartsOn = dateConventions().weekStart, showItemIds = true, showLabels = true, onOpenItem, onAddItem, onReschedule, onToggleDone, onToggleSubitem, style, className }: CalendarViewProps) {
   const controlled = periodProp != null;
   const [selfP, setSelfP] = useState<CalendarPeriod>(defaultPeriod);
   const period = controlled ? periodProp : selfP;

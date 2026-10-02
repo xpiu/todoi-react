@@ -2,7 +2,7 @@
 // filled action blue, arrow keys move the focused day, PageUp/PageDown change month, Enter picks.
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
-import { addDays, formatDate, parseDateValue, sameDay, toISO, type DateInput } from "./dates";
+import { addDays, dateConventions, formatDate, parseDateValue, sameDay, toISO, type DateInput } from "./dates";
 import { IconButton } from "./IconButton";
 import "./DatePicker.css";
 
@@ -25,7 +25,7 @@ export interface DateCalendarProps {
   className?: string;
 }
 
-export function DateCalendar({ value, onChange, today, weekStartsOn = 1, min, max, range, style, className }: DateCalendarProps) {
+export function DateCalendar({ value, onChange, today, weekStartsOn = dateConventions().weekStart, min, max, range, style, className }: DateCalendarProps) {
   const sel = parseDateValue(value);
   // The real "today" is read once per mount; `today` (tests, previews) overrides it.
   const [realToday] = useState(() => parseDateValue(new Date())!);

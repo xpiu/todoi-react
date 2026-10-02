@@ -43,6 +43,7 @@ import { GuestBar } from "../design/auth/GuestBar";
 import { useAppShortcuts } from "./useAppShortcuts";
 import { hitContext, hitKey, useItemSearch, useOpenResult } from "./search";
 import { useInbox } from "./inbox";
+import { useDateConventionsKey, usePrefs, usePrefsSync } from "./prefs";
 import "./AppShell.css";
 
 const SIDEBAR_KEY = "td-sidebar-open";
@@ -64,6 +65,9 @@ export function AppShell() {
   const lifecycle = useLifecycle();
   const { user } = useCurrentUser();
   const signedIn = !!user && !user.isAnonymous;
+  usePrefsSync(!!user);
+  const inboxBadge = usePrefs((s) => s.inboxBadge);
+  const conventions = useDateConventionsKey();
   const myRole = user ? project.data?.members.find((m) => m.userId === user.id)?.role : undefined;
   // Project members can edit unless their role is Viewer; nonmembers read only.
   const readonly = !!projectId && !!project.data && (!myRole || myRole === "viewer");
@@ -236,7 +240,7 @@ export function AppShell() {
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
-  const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: unread.data?.unread ?? 0 } : n));
+  const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: inboxBadge ? (unread.data?.unread ?? 0) : 0 } : n));
   const prefix = project.data?.keyPrefix ?? "";
   const hitSource = (h: SearchHit) => ({ id: h.id, projectId: h.projectId, title: h.title, itemId: hitKey(h), listName: hitContext(h, projectId), done: h.done });
   // Before a query the palette lists this project's items; a query searches everything the viewer can open.
@@ -289,7 +293,8 @@ export function AppShell() {
       {guestReason && signedIn ? <GuestBar reason={guestReason} projectName={project.data?.name} signedIn /> : null}
       <div className="td-app-body">
         <main className="td-app-content" data-readonly={readonly ? "true" : undefined}>
-          <Outlet />
+          {/* Dates render in the person's format: a change re-renders the screen (Settings, where it is made, stays put) */}
+          <Outlet key={section === "settings" ? section : conventions} />
         </main>
         {!vp.desktop && sidebarOpen ? <div className="td-sidebar-scrim" onClick={() => setSidebarOpen(false)} /> : null}
         <Sidebar
@@ -303,7 +308,7 @@ export function AppShell() {
             else if (id === "groups") lifecycle.openNewGroup();
             else if (id === "inbox") capture();
           }}
-          onItemDrop={section === "inbox" ? (projectId, itemId) => void inbox.fileTo(itemId, projectId) : undefined}
+          onItemDrop={section === "inbox" ? (target, itemId) => void inbox.fileTo(itemId, target) : undefined}
           onProjectRename={(id, name) => pm.updateProject.mutate({ id, name })}
           onProjectIconChange={(id, icon) => pm.updateProject.mutate({ id, icon })}
           onProjectAction={(id, action) => {

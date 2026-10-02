@@ -1,12 +1,13 @@
 // The signed-in person: profile (name, handle, avatar colour) and project invites.
 import { zValidator } from "@hono/zod-validator";
-import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { LABEL_COLORS, MEMBER_ROLES } from "../../shared/enums";
 import { idSchema } from "../../shared/items";
+import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
 import { apiTokens, groups, invites, items, labels, lists, members, projects, users } from "../db/schema";
@@ -19,7 +20,13 @@ export const meRoute = new Hono()
     const v = viewerOf(c);
     const [u] = await db.select().from(users).where(eq(users.id, v.userId));
     if (!u) return c.json({ error: "Not found" }, 404);
-    return c.json({ ...u, inboxListId: v.inboxListId });
+    return c.json({ ...u, prefs: prefsOf(u.prefs), inboxListId: v.inboxListId });
+  })
+  // Merge a change into the account's preferences (concurrent devices each change their own keys).
+  .patch("/prefs", zValidator("json", prefsPatchSchema), async (c) => {
+    const v = viewerOf(c);
+    const [u] = await db.update(users).set({ prefs: sql`${users.prefs} || ${JSON.stringify(c.req.valid("json"))}::jsonb` }).where(eq(users.id, v.userId)).returning({ prefs: users.prefs });
+    return u ? c.json(prefsOf(u.prefs)) : c.json({ error: "Not found" }, 404);
   })
   .patch("/", zValidator("json", z.object({ name: z.string().trim().min(1).max(80).optional(), nickname: z.string().trim().min(1).max(40).regex(/^[a-z0-9._-]+$/i).nullable().optional(), avatarColor: z.enum(LABEL_COLORS).nullable().optional() })), async (c) => {
     const v = viewerOf(c);

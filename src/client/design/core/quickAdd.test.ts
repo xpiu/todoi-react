@@ -54,3 +54,12 @@ describe("parseQuickAdd", () => {
     expect(stripToken("Fix bug #design now", r.tokens[0]!)).toBe("Fix bug now");
   });
 });
+
+describe("smart date recognition off", () => {
+  it("keeps date words in the title and sets no due", () => {
+    const r = parseQuickAdd("Call the broker due fri !high", { today: "2026-08-25", dates: false });
+    expect(r.title).toBe("Call the broker due fri");
+    expect(r.due).toBeFalsy();
+    expect(r.priority).toBe("High");
+  });
+});

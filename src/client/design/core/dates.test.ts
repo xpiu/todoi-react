@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { addDays, formatDate, formatDateRange, formatTime, parseDateValue, parseTime, resolveDate, toISO } from "./dates";
+import { addDays, formatDate, formatDateRange, formatTime, parseDateValue, parseTime, resolveDate, setDateConventions, toISO } from "./dates";
 
 // Fixed anchor: Tuesday 2026-08-25.
 const TODAY = "2026-08-25";
@@ -97,5 +97,26 @@ describe("formatDateRange", () => {
 describe("addDays", () => {
   it("crosses month ends", () => {
     expect(toISO(addDays(parseDateValue("2026-08-31")!, 1))).toBe("2026-09-01");
+  });
+});
+
+describe("date conventions (Settings › General)", () => {
+  afterEach(() => setDateConventions({ dateFormat: "mdy-text", timeFormat: "24h", weekStart: 1 }));
+  it("every date format, with and without the year", () => {
+    const cases = [["dmy-text", "12 Sep 2026", "12 Sep"], ["iso", "2026-09-12", "2026-09-12"], ["mdy", "09/12/2026", "09/12"], ["dmy", "12/09/2026", "12/09"]] as const;
+    for (const [dateFormat, full, short] of cases) {
+      setDateConventions({ dateFormat });
+      expect(formatDate("2026-09-12")).toBe(full);
+      expect(formatDate("2026-09-12", { year: "auto", today: TODAY })).toBe(short);
+    }
+    setDateConventions({ dateFormat: "dmy" });
+    expect(formatDate("2026-09-12", { weekday: true })).toBe("Sat, 12/09/2026");
+    expect(formatDateRange("2026-09-10", "2026-09-12", "14:00")).toBe("10/09 – 12/09/2026 · 14:00");
+  });
+  it("12-hour times", () => {
+    setDateConventions({ timeFormat: "12h" });
+    expect(formatTime("14:30")).toBe("2:30 pm");
+    expect(formatTime("00:05")).toBe("12:05 am");
+    expect(formatTime("12:00")).toBe("12:00 pm");
   });
 });

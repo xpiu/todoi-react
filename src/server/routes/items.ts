@@ -12,6 +12,7 @@ import { moveItem, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
+import { deliver, notifyPeople } from "../services/notifications";
 
 const idParam = zValidator("param", z.object({ id: idSchema }));
 const listQuery = zValidator("query", z.object({ listId: idSchema.optional(), projectId: idSchema.optional() }));
@@ -67,6 +68,7 @@ export const itemsRoute = new Hono()
       await logActivity(tx, { projectId: list.projectId, actorId: viewer.userId, type: "item", text: `added ${quote(created!.title)} to ${list.name}`, itemId: created!.id, itemKey: keyNumber != null ? String(keyNumber) : null });
       return created!;
     });
+    if (assigneeIds.length) await deliver(notifyPeople("assignment", assigneeIds, viewer, row));
     return c.json({ ...row, labelIds, assigneeIds, attachmentCount: 0 }, 201);
   })
   .patch("/:id", idParam, zValidator("json", updateItemSchema), async (c) => {

@@ -19,6 +19,7 @@ import { count } from "../design/core/text";
 import { useCompletion } from "./completion";
 import { quote, useFeedback } from "./feedback";
 import { PRIORITY_LABEL, type Person } from "./items";
+import { usePrefs } from "./prefs";
 import { peopleOf, type ItemContainer } from "./session";
 
 const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
@@ -52,16 +53,20 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name ?? "the list";
   const byId = (id: string) => items.find((x) => x.id === id);
 
+  const smartDates = usePrefs((s) => s.smartDates);
+  const defaultPriority = usePrefs((s) => s.defaultPriority);
+  /** Settings › Default priority, unless quick-add set one. */
+  const priorityOf = (parsed?: Pick<QuickAddResult, "priority">): ItemPriority | undefined => (parsed?.priority ? (parsed.priority.toUpperCase() as ItemPriority) : defaultPriority === "none" ? undefined : defaultPriority);
   const quickAdd = useMemo(
-    () => ({ labels: labels.map((l) => ({ text: l.name, color: l.color })), members: people.map((p) => ({ name: p.name, nickname: p.nickname ?? undefined })), lists: project.lists.map((l) => ({ name: l.name, value: l.id })) }),
-    [labels, project.lists, people],
+    () => ({ labels: labels.map((l) => ({ text: l.name, color: l.color })), members: people.map((p) => ({ name: p.name, nickname: p.nickname ?? undefined })), lists: project.lists.map((l) => ({ name: l.name, value: l.id })), dates: smartDates }),
+    [labels, project.lists, people, smartDates],
   );
 
   const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom") => {
     const destination = parsed.list ? (project.lists.find((l) => l.name === parsed.list)?.id ?? listId) : listId;
     const labelIds = parsed.labels.map((pl) => labels.find((l) => l.name.toLowerCase() === pl.text.toLowerCase())?.id).filter((id): id is string => !!id);
     const assigneeIds = parsed.assignee ? people.filter((p) => p.name === parsed.assignee).map((p) => p.id) : [];
-    createItem.mutate({ id: newId(), title, listId: destination, priority: parsed.priority ? (parsed.priority.toUpperCase() as ItemPriority) : undefined, dueDate: parsed.due ?? undefined, labelIds, assigneeIds, position });
+    createItem.mutate({ id: newId(), title, listId: destination, priority: priorityOf(parsed), dueDate: parsed.due ?? undefined, labelIds, assigneeIds, position });
   };
 
   /** Move with the undo toast for cross-list moves; same-list reorders stay quiet. */
@@ -153,7 +158,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     const list = lists[0];
     if (!list) return;
     const id = newId();
-    createItem.mutate({ id, title: "New item", listId: list.id, dueDate: iso });
+    createItem.mutate({ id, title: "New item", listId: list.id, dueDate: iso, priority: priorityOf() });
     notify({ message: `Added an item due ${formatDate(iso, { year: "auto" })} to ${list.name}`, icon: "plus", restore: () => deleteItem.mutate({ id }) });
   };
 
@@ -272,5 +277,5 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     return false;
   };
 
-  return { lists, people, quickAdd, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer };
+  return { lists, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer };
 }

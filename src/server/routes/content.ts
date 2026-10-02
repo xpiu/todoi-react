@@ -26,6 +26,7 @@ import { viewerOf } from "../auth";
 import { db } from "../db";
 import { activity, attachments, commentReactions, comments, itemAssignees, itemLabels, itemRelations, itemWatchers, items, labels, savedViews, users } from "../db/schema";
 import { logActivity, quote } from "../services/activity";
+import { deliver, notifyComment, notifyPeople } from "../services/notifications";
 
 import { itemIsLive } from "../services/lifecycle";
 
@@ -120,10 +121,15 @@ export const itemContentRoute = new Hono()
   .put("/:id/assignees", idParam, zValidator("json", setAssigneesSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { userIds } = c.req.valid("json");
-    await db.transaction(async (tx) => {
-      await tx.delete(itemAssignees).where(eq(itemAssignees.itemId, id));
+    const before = await db.transaction(async (tx) => {
+      const prior = (await tx.delete(itemAssignees).where(eq(itemAssignees.itemId, id)).returning({ userId: itemAssignees.userId })).map((a) => a.userId);
       if (userIds.length) await tx.insert(itemAssignees).values(userIds.map((userId) => ({ itemId: id, userId })));
+      return prior;
     });
+    // Only people newly assigned hear about it.
+    const added = userIds.filter((u) => !before.includes(u));
+    const [item] = added.length ? await db.select().from(items).where(eq(items.id, id)) : [];
+    if (item) await deliver(notifyPeople("assignment", added, viewerOf(c), item));
     return c.json({ userIds });
   })
   .put("/:id/watch", idParam, zValidator("json", setWatchingSchema), async (c) => {
@@ -147,7 +153,10 @@ export const itemContentRoute = new Hono()
       .returning({ ...getTableColumns(comments), inserted: sql<boolean>`(xmax = 0)` });
     if (!row) return c.json({ error: "That comment id is already in use" }, 409);
     const { inserted, ...comment } = row;
-    if (inserted) await logActivity(db, { projectId: item.projectId, actorId: viewer.userId, type: "comment", text: `commented on ${quote(item.title)}`, itemId: id });
+    if (inserted) {
+      await logActivity(db, { projectId: item.projectId, actorId: viewer.userId, type: "comment", text: `commented on ${quote(item.title)}`, itemId: id });
+      await deliver(notifyComment(viewer, item, comment.body));
+    }
     return c.json({ ...comment, reactions: [] }, 201);
   })
   .post("/:id/relations", idParam, zValidator("json", relationSchema), async (c) => {

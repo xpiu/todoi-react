@@ -4,7 +4,7 @@
 // sidebar), reorder by drag, and take the list keyboard model. Spec: DESIGN.md › Notifications.
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { api, errorMessage, unwrap, type Item } from "../data/api";
 import { newId, useCreateItem, useUpdateItem } from "../data/mutations";
@@ -22,6 +22,7 @@ import { INBOX_SCOPE, NO_LABELS, useInbox } from "./inbox";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
 import { rowsForList } from "./items";
 import { LoadFailed } from "./LoadFailed";
+import { usePrefs } from "./prefs";
 import { hitKey, useOpenResult } from "./search";
 import "./screens.css";
 
@@ -34,6 +35,9 @@ export function InboxScreen() {
   const updateItem = useUpdateItem(INBOX_SCOPE);
   const openResult = useOpenResult();
   const notify = useFeedback((s) => s.notify);
+  const showCompleted = usePrefs((s) => s.showCompleted);
+  // Inbox capture parses dates and priority only: labels, people and lists belong to a project.
+  const inboxQuickAdd = useMemo(() => ({ dates: actions.quickAdd.dates }), [actions.quickAdd.dates]);
   const root = useRef<HTMLDivElement | null>(null);
   const dnd = useItemDnd(root, { listSelector: ".td-lsec", itemSelector: ".td-lrow[data-drag-id]", cardsSelector: ".td-lsec-body", onDrop: actions.move });
   const markAllRead = useMutation({
@@ -84,7 +88,8 @@ export function InboxScreen() {
 
   if (items.isError) return <LoadFailed what="the Inbox" error={items.error} onRetry={() => void items.refetch()} />;
   if (!items.data) return <ViewSkeleton view="inbox" />;
-  const data = items.data;
+  // Done items stay out of sight when Settings › Show completed items is off (subitems stay with their parent).
+  const data = showCompleted ? items.data : items.data.filter((it) => !it.done || it.parentItemId);
   const byId = (id: string) => data.find((x) => x.id === id);
   const listId = data[0]?.listId;
   const rows = listId ? rowsForList(data, listId, { prefix: "", labels: [], people: [], withCreated: true }) : [];
@@ -110,7 +115,8 @@ export function InboxScreen() {
               </Button>
             ) : null
           }
-          onAddItem={(title, parsed, position) => createItem.mutate({ id: newId(), title, position, priority: parsed.priority ? (parsed.priority.toUpperCase() as "URGENT" | "HIGH" | "MEDIUM" | "LOW") : undefined, dueDate: parsed.due ?? undefined })}
+          quickAdd={inboxQuickAdd}
+          onAddItem={(title, parsed, position) => createItem.mutate({ id: newId(), title, position, priority: actions.priorityOf(parsed), dueDate: parsed.due ?? undefined })}
         >
           {rows.length ? (
             rows.map((r) => {
@@ -140,7 +146,7 @@ export function InboxScreen() {
           )}
         </ListSection>
       </ListView>
-      {opened ? <ItemOverlayScreen key={opened.id} projectId={null} project={container} items={data} labels={NO_LABELS} itemId={opened.id} editTitle={search.edit} onClose={close} onOpen={open} /> : null}
+      {opened ? <ItemOverlayScreen key={opened.id} projectId={null} project={container} items={items.data} labels={NO_LABELS} itemId={opened.id} editTitle={search.edit} onClose={close} onOpen={open} /> : null}
     </>
   );
 }

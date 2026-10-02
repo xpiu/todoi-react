@@ -7,7 +7,7 @@ import { useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEve
 
 import { Button, type ButtonVariant } from "./Button";
 import { DateCalendar, type WeekStart } from "./DateCalendar";
-import { formatDate, formatDateRange, formatTime, parseDateValue, parseTime, resolveDate, toISO, type DateInput } from "./dates";
+import { dateConventions, formatDate, formatDateRange, formatTime, parseDateValue, parseTime, resolveDate, toISO, type DateInput } from "./dates";
 import { QUICK_PICKS } from "./DatePicker";
 import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
@@ -62,7 +62,7 @@ export function DatesPicker({
   time,
   onChange,
   today,
-  weekStartsOn = 1,
+  weekStartsOn = dateConventions().weekStart,
   placeholder = "Dates",
   icon = "clock",
   variant = "outline",

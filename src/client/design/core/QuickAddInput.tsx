@@ -85,9 +85,9 @@ function TokenPreview({ t }: { t: QuickAddToken }) {
   );
 }
 
-export function QuickAddInput({ defaultValue = "", placeholder = "Item title", labels, members, lists, today, defaultLabelColor, onSubmit, onCancel, onBlur, autoFocus = true, inputRef, style, className, ...rest }: QuickAddInputProps) {
+export function QuickAddInput({ defaultValue = "", placeholder = "Item title", labels, members, lists, today, defaultLabelColor, dates, onSubmit, onCancel, onBlur, autoFocus = true, inputRef, style, className, ...rest }: QuickAddInputProps) {
   const [text, setText] = useState(defaultValue);
-  const parsed = useMemo(() => parseQuickAdd(text, { labels, members, lists, today, defaultLabelColor }), [text, labels, members, lists, today, defaultLabelColor]);
+  const parsed = useMemo(() => parseQuickAdd(text, { labels, members, lists, today, defaultLabelColor, dates }), [text, labels, members, lists, today, defaultLabelColor, dates]);
   const submit = () => {
     if (!parsed.title) return;
     onSubmit?.(parsed, text);

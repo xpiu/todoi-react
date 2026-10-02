@@ -7,6 +7,7 @@ import { boolean, date, index, integer, jsonb, pgEnum, pgTable, text, time, time
 import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES } from "../../shared/enums";
 import { ITEM_STATUSES } from "../../shared/item-status";
 import type { RepeatRule } from "../../shared/items";
+import type { Prefs } from "../../shared/prefs";
 
 export const itemStatusEnum = pgEnum("item_status", ITEM_STATUSES);
 export const itemPriorityEnum = pgEnum("item_priority", ITEM_PRIORITIES);
@@ -128,6 +129,8 @@ export const users = pgTable("users", {
   nickname: text("nickname"),
   /** One of the eight label tokens, e.g. "teal"; null = derived from the name */
   avatarColor: text("avatar_color"),
+  /** Account preferences (shared/prefs.ts); read through `prefsOf`, so missing keys take the defaults */
+  prefs: jsonb("prefs").$type<Partial<Prefs>>().notNull().default({}),
   ...timestamps,
 });
 

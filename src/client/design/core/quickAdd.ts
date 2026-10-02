@@ -28,6 +28,8 @@ export interface QuickAddOptions {
   today?: DateInput;
   /** @default "teal" */
   defaultLabelColor?: string;
+  /** Smart date recognition: "due fri" becomes the due date; off keeps it in the title @default true */
+  dates?: boolean;
 }
 
 export type QuickAddTokenKind = "label" | "assignee" | "priority" | "due" | "list";
@@ -63,14 +65,15 @@ const listName = (l: ListOption) => (typeof l === "string" ? l : (l.name ?? l.va
 const DUE_RE = /(^|\s)(due|by)\s+(next\s+[a-z]{3,}|in\s+\d+\s*(?:d|days?|w|wks?|weeks?)|\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[ /-][a-z]{3,}|[a-z]{3,}[ /-]\d{1,2}|\d{1,2}\/\d{1,2}|[a-z]{3,})(?=\s|$)/gi;
 const TOKEN_RE = /(^|\s)([#@!>])([^\s#@!>]+)/g;
 
-export function parseQuickAdd(text: string, { labels = [], members = [], lists = [], today, defaultLabelColor = "teal" }: QuickAddOptions = {}): QuickAddResult {
+export function parseQuickAdd(text: string, { labels = [], members = [], lists = [], today, defaultLabelColor = "teal", dates = true }: QuickAddOptions = {}): QuickAddResult {
   const src = String(text ?? "");
   const tokens: QuickAddToken[] = [];
   const consumed: Array<[number, number]> = [];
   let m: RegExpExecArray | null;
 
   DUE_RE.lastIndex = 0;
-  while ((m = DUE_RE.exec(src))) {
+  // With smart dates off, "due fri" stays in the title as typed.
+  while ((m = dates ? DUE_RE.exec(src) : null)) {
     const d = resolveDate(m[3]!, today);
     if (!d) continue;
     const start = m.index + m[1]!.length;
