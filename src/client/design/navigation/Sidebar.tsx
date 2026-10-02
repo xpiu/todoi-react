@@ -1,7 +1,11 @@
 // Sidebar — the chrome rail below the TopNavbar: group sections with project rows (⋯ menu: Project
 // settings, Rename, Change icon, Duplicate, Archive, Delete), then Projects / Project groups / Inbox
 // nav rows. Docks right by default or left when the appearance store says so; collapses to width 0.
-// Project rows accept item drags (application/x-todoi-item) to file Inbox items. Spec: DESIGN.md › Sidebar.
+// Project rows accept item drags (application/x-todoi-item) to file Inbox items. Below the desktop class
+// (`modal`) the same rail is a modal sheet on Base UI Dialog: focus stays inside, Escape or the scrim
+// closes it, focus returns to the toggle, and the page behind neither scrolls nor responds.
+// Spec: DESIGN.md › Sidebar.
+import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 
 import { useAppearance } from "../core/appearance";
@@ -9,6 +13,8 @@ import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { IconPicker } from "../core/IconPicker";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
+import { PortalContainerContext } from "../core/portalContainer";
+import { useToastHost } from "../core/ToastPortal";
 import "./Sidebar.css";
 
 export const ITEM_DRAG_TYPE = "application/x-todoi-item";
@@ -68,8 +74,12 @@ export interface SidebarProps {
   onItemDrop?: (projectId: string, itemId: string) => void;
   /** @default "Drop on a project to file it" */
   dropHint?: string;
-  /** true fully hides the sidebar (animated width to 0) */
+  /** true fully hides the sidebar (animated width to 0; a closed sheet when `modal`) */
   collapsed?: boolean;
+  /** Phone and tablet: a modal sheet over the page instead of a rail beside it */
+  modal?: boolean;
+  /** The sheet asks to close (Escape, the scrim, its close button) */
+  onClose?: () => void;
   /** @default 264 (max) */
   width?: number;
   side?: "left" | "right";
@@ -77,12 +87,17 @@ export interface SidebarProps {
   className?: string;
 }
 
-export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelect, onAdd, onNavAdd, onProjectRename, onProjectIconChange, onProjectAction, onItemDrop, dropHint = "Drop on a project to file it", collapsed = false, width = 264, side, style, className }: SidebarProps) {
+export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelect, onAdd, onNavAdd, onProjectRename, onProjectIconChange, onProjectAction, onItemDrop, dropHint = "Drop on a project to file it", collapsed = false, modal = false, onClose, width = 264, side, style, className }: SidebarProps) {
   width = Math.min(width, 264);
+  // The sheet's popup hosts its menus and the app toast, so both stay usable while the page is inert.
+  const [sheetEl, setSheetEl] = useState<HTMLElement | null>(null);
+  useToastHost(modal && !collapsed ? sheetEl : null);
   const ap = useAppearance();
   const dock = side ?? (ap.sidebarLeft ? "left" : "right");
   const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  // Rename replaces the row (and its ⋯ trigger), so the closing menu hands focus to the field instead.
+  const renameRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState("");
   const asideRef = useRef<HTMLElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -151,27 +166,30 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
 
   const projectRow = (p: SidebarProject) => {
     const current = p.id === activeId;
-    if (p.id === renamingId) {
-      return (
-        <div key={p.id} className="td-sidebar-row" data-static="true">
-          <Icon name={p.icon ?? "kanban"} size={16} color={p.color} />
-          <input
-            className="td-sidebar-rename"
-            autoFocus
-            value={draft}
-            aria-label={`Rename ${p.name}`}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => commitRename(p)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitRename(p);
-              else if (e.key === "Escape") setRenamingId(null);
-            }}
-          />
-        </div>
-      );
-    }
+    const renaming = p.id === renamingId;
     const canDrop = !!onItemDrop;
-    const btn = (
+    const btn = renaming ? (
+      <div className="td-sidebar-row" data-static="true">
+        <Icon name={p.icon ?? "kanban"} size={16} color={p.color} />
+        <input
+          ref={renameRef}
+          className="td-sidebar-rename"
+          autoFocus
+          value={draft}
+          aria-label={`Rename ${p.name}`}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => commitRename(p)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitRename(p);
+            else if (e.key === "Escape") {
+              // Ends the rename only; the sidebar sheet stays open.
+              e.stopPropagation();
+              setRenamingId(null);
+            }
+          }}
+        />
+      </div>
+    ) : (
       <button type="button" className="td-sidebar-row" tabIndex={collapsed ? -1 : undefined} data-droptarget={canDrop && dragging ? "true" : undefined} data-drop={canDrop && dropId === p.id ? "true" : undefined} aria-current={current ? "true" : undefined} onClick={() => onSelect?.(p.id)}>
         <span className="td-sidebar-iconwrap">
           <Icon name={p.icon ?? "kanban"} size={16} color={p.color} />
@@ -181,10 +199,11 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
       </button>
     );
     return (
-      <div key={p.id} className="td-sidebar-rowwrap" data-current={current ? "true" : undefined} {...(canDrop ? dropProps(p) : null)}>
+      <div key={p.id} className="td-sidebar-rowwrap" data-current={current ? "true" : undefined} {...(canDrop && !renaming ? dropProps(p) : null)}>
         {btn}
+        {/* Stays mounted while renaming (trigger hidden) so the closing menu hands focus to the field. */}
         {editable ? (
-          <MenuPopover label={`Settings for ${p.name}`} placement="bottom-end" minWidth={184} trigger={<IconButton name="ellipsis" label={`Settings for ${p.name}`} tooltip="Project settings" tooltipSide="bottom-end" size={24} iconSize={16} variant="chrome" className="td-sidebar-more" tabIndex={collapsed ? -1 : undefined} />}>
+          <MenuPopover label={`Settings for ${p.name}`} placement="bottom-end" minWidth={184} finalFocus={() => renameRef.current ?? true} trigger={<IconButton name="ellipsis" label={`Settings for ${p.name}`} tooltip="Project settings" tooltipSide="bottom-end" size={24} iconSize={16} variant="chrome" className="td-sidebar-more" hidden={renaming} tabIndex={collapsed ? -1 : undefined} />}>
             {(close) => <ProjectMenu project={p} close={close} onRename={() => { setDraft(p.name); setRenamingId(p.id); }} onIconChange={onProjectIconChange} onAction={onProjectAction} />}
           </MenuPopover>
         ) : null}
@@ -231,8 +250,8 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
         onDragEnd: endDrag,
       }
     : null;
-  return (
-    <aside ref={asideRef} className={cls} data-hidden={String(!!collapsed)} data-dragging={dragging ? "true" : undefined} aria-hidden={collapsed || undefined} style={{ width: collapsed ? 0 : width, ...style }} aria-label="Sidebar" {...asideDnd}>
+  const inner = (
+    <>
       <div className="td-sidebar-inner" style={{ width }}>
         {groups.map((g) => {
           const open = !closedGroups[g.id];
@@ -261,6 +280,28 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
           {dropHint}
         </div>
       ) : null}
+    </>
+  );
+  if (modal) {
+    return (
+      <BaseDialog.Root open={!collapsed} onOpenChange={(open) => !open && onClose?.()}>
+        <BaseDialog.Portal>
+          <BaseDialog.Backdrop className="td-sidebar-scrim" />
+          <BaseDialog.Popup ref={setSheetEl} className={cls + " td-sidebar-sheet"} aria-label="Sidebar" style={{ width, ...style }} {...asideDnd}>
+            <PortalContainerContext.Provider value={sheetEl}>
+              <div className="td-sidebar-sheethead">
+                <IconButton name="x" label="Hide sidebar" size={32} iconSize={18} variant="chrome" onClick={() => onClose?.()} />
+              </div>
+              <div className="td-sidebar-sheetbody">{inner}</div>
+            </PortalContainerContext.Provider>
+          </BaseDialog.Popup>
+        </BaseDialog.Portal>
+      </BaseDialog.Root>
+    );
+  }
+  return (
+    <aside ref={asideRef} className={cls} data-hidden={String(!!collapsed)} data-dragging={dragging ? "true" : undefined} aria-hidden={collapsed || undefined} style={{ width: collapsed ? 0 : width, ...style }} aria-label="Sidebar" {...asideDnd}>
+      {inner}
     </aside>
   );
 }

@@ -117,12 +117,14 @@ export interface MenuPopoverProps {
   block?: boolean;
   /** MenuItem / MenuDivider / MenuNote children, or a render function (close) => children */
   children?: ReactNode | ((close: () => void) => ReactNode);
+  /** Where focus goes when the menu closes @default the trigger. Return an element (a field the choice opened) or true for the default. */
+  finalFocus?: () => HTMLElement | boolean | null;
   style?: CSSProperties;
   className?: string;
 }
 
 /** A menu behind any trigger. Uncontrolled unless `open` is given. */
-export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", width, minWidth = 184, block, children, style, className }: MenuPopoverProps) {
+export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", width, minWidth = 184, block, children, finalFocus, style, className }: MenuPopoverProps) {
   const vp = useViewport();
   const container = usePortalContainer();
   const isSheet = vp.phone;
@@ -150,6 +152,7 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
             className={["td-pop", "td-menu", className ?? ""].filter(Boolean).join(" ")}
             data-sheet={isSheet ? "true" : undefined}
             aria-label={label}
+            finalFocus={finalFocus}
             style={{ ...(width != null ? { width } : null), ...(minWidth != null ? { minWidth } : null), ...style }}
           >
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
