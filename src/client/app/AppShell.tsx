@@ -45,6 +45,7 @@ import { hitContext, hitKey, useItemSearch, useOpenResult } from "./search";
 import { useInbox } from "./inbox";
 import { useDateConventionsKey, usePrefs, usePrefsSync } from "./prefs";
 import { useLeaveGuard, useSaveState } from "./saveState";
+import { useFreshness } from "./freshness";
 import { ConnectionStatus } from "../design/core/ConnectionStatus";
 import "./AppShell.css";
 
@@ -68,6 +69,7 @@ export function AppShell() {
   const { user } = useCurrentUser();
   const signedIn = !!user && !user.isAnonymous;
   usePrefsSync(!!user);
+  useFreshness(!!user);
   const inboxBadge = usePrefs((s) => s.inboxBadge);
   const conventions = useDateConventionsKey();
   const save = useSaveState();

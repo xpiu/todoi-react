@@ -17,6 +17,13 @@ export type Quiet = { quiet?: boolean };
 
 export type ItemsScope = { projectId: string } | { listId: string };
 
+/**
+ * What any item change can leave stale besides the items cache it patched (DESIGN.md › Data freshness):
+ * the sidebar and Projects counts, Archive and Trash, the Inbox badge, item details, activity and search.
+ * Caches on screen refetch at once; the rest are only marked stale and refetch when shown.
+ */
+export const ITEM_DEPENDENTS: readonly QueryKey[] = [keys.groups, ["archive"], keys.inboxUnread, ["item"], ["activity"], ["search"]];
+
 /** Optimistic helper: patch the scope's items cache before the request, roll back on error, refetch after. */
 function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVars) => Promise<TResult>, patch: (items: Item[], vars: TVars) => Item[], extraKeys: QueryKey[] | ((vars: TVars) => QueryKey[]) = []) {
   const qc = useQueryClient();
@@ -34,11 +41,7 @@ function useOptimistic<TVars, TResult>(scope: ItemsScope, mutationFn: (vars: TVa
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
     },
     onSettled: (_data, _err, vars) => {
-      void qc.invalidateQueries({ queryKey: key });
-      void qc.invalidateQueries({ queryKey: ["activity"] });
-      void qc.invalidateQueries({ queryKey: ["item"] });
-      void qc.invalidateQueries({ queryKey: ["search"] });
-      for (const k of typeof extraKeys === "function" ? extraKeys(vars) : extraKeys) void qc.invalidateQueries({ queryKey: k });
+      for (const k of [key, ...ITEM_DEPENDENTS, ...(typeof extraKeys === "function" ? extraKeys(vars) : extraKeys)]) void qc.invalidateQueries({ queryKey: k });
     },
   });
 }
@@ -140,7 +143,7 @@ export function useRestoreItem(scope: ItemsScope) {
   return useMutation({
     mutationFn: ({ id }: { id: string } & Quiet) => api.api.items[":id"].$patch({ param: { id }, json: { deleted: false } }).then((r) => unwrap(r)),
     onSuccess: async () => {
-      const refresh: QueryKey[] = [keys.items(scope), keys.groups, ["archive"], ["item"]];
+      const refresh: QueryKey[] = [keys.items(scope), ...ITEM_DEPENDENTS];
       if ("projectId" in scope) refresh.push(keys.project(scope.projectId));
       await Promise.all(refresh.map((queryKey) => qc.invalidateQueries({ queryKey })));
     },
@@ -201,7 +204,7 @@ export function useMoveItem(scope: ItemsScope) {
       return [...rest.map((it) => (pos.has(it.id) ? { ...it, position: pos.get(it.id)! } : it)), { ...moving, listId, position: pos.get(id)! }];
     },
     // Across projects both sides change (items, keys, labels, counts); inactive caches only go stale.
-    ({ toProjectId }) => (toProjectId === undefined ? (projectId ? [keys.project(projectId)] : []) : [["items"], ["project"], ["labels"], keys.groups]),
+    ({ toProjectId }) => (toProjectId === undefined ? (projectId ? [keys.project(projectId)] : []) : [["items"], ["project"], ["labels"]]),
   );
 }
 
@@ -222,7 +225,7 @@ export function useDuplicateItem(scope: ItemsScope) {
         return made;
       }),
     (items) => items,
-    ({ toProjectId }) => [keys.groups, ...(toProjectId ? [keys.project(toProjectId), keys.items({ projectId: toProjectId }), ["labels"]] : [["items"]])],
+    ({ toProjectId }) => (toProjectId ? [keys.project(toProjectId), keys.items({ projectId: toProjectId }), ["labels"]] : [["items"]]),
   );
 }
 
@@ -240,9 +243,9 @@ export function useUpdateList(projectId: string) {
   return useMutation({
     // `rewritten`: how many items an applyToExisting role change updated.
     mutationFn: ({ quiet: _quiet, ...vars }: { id: string } & Quiet & UpdateListInput) => api.api.lists[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<{ rewritten: number }>(r)),
+    // A role applied to existing items changes their Status and done, so counts and activity too.
     onSettled: () => {
-      void qc.invalidateQueries({ queryKey: keys.project(projectId) });
-      void qc.invalidateQueries({ queryKey: keys.items({ projectId }) });
+      for (const k of [keys.project(projectId), keys.items({ projectId }), ...ITEM_DEPENDENTS]) void qc.invalidateQueries({ queryKey: k });
     },
   });
 }

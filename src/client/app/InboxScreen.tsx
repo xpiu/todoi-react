@@ -50,7 +50,7 @@ export function InboxScreen() {
     },
   });
   const markRead = (it: Item) => {
-    if (it.unread) updateItem.mutate({ id: it.id, unread: false, quiet: true }, { onSettled: () => void qc.invalidateQueries({ queryKey: keys.inboxUnread }) });
+    if (it.unread) updateItem.mutate({ id: it.id, unread: false, quiet: true });
   };
   const open = (id: string, edit?: boolean) => void navigate({ to: "/inbox", search: { item: id, ...(edit ? { edit: true } : {}) } });
   const close = () => void navigate({ to: "/inbox", search: {} });
@@ -63,8 +63,8 @@ export function InboxScreen() {
   useEffect(() => {
     if (!readId || tried.current.has(readId)) return;
     tried.current.add(readId);
-    patchItem({ id: readId, unread: false, quiet: true }, { onSettled: () => void qc.invalidateQueries({ queryKey: keys.inboxUnread }) });
-  }, [readId, patchItem, qc]);
+    patchItem({ id: readId, unread: false, quiet: true });
+  }, [readId, patchItem]);
   // "Create › Item" lands here with `capture`: open the quick-add field once the list is up.
   const loaded = !!items.data;
   useEffect(() => {
