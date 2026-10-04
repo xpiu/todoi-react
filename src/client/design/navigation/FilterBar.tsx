@@ -1,48 +1,37 @@
-// FilterBar — the chip row under the SubNavbar: active filters always show here (the view never
-// silently looks empty), quick-toggle chips for labels and Overdue, the sort summary, and
-// "Clear filters". Spec: DESIGN.md › Filtering.
+// FilterBar — the "Filter by" row under the SubNavbar. While the Filter menu is open it shows every
+// quick option as a chip (active ones selected); once it closes, only the active ones — so the view
+// never silently looks empty. Hidden when the menu is closed and nothing is filtered.
+// Spec: DESIGN.md › Subnavbar rows.
 import { FilterChip } from "../board/FilterChip";
-import { Icon, type IconName } from "../core/Icon";
-import "./FilterBar.css";
+import type { IconName } from "../core/Icon";
+import { ChipBar, ChipBarAction } from "./ChipBar";
 
-export interface FilterBarChip {
+export interface FilterBarOption {
   type: string;
   value: string;
   color?: string;
   icon?: IconName;
-  selected: boolean;
 }
 export interface FilterBarProps {
-  chips: FilterBarChip[];
-  /** "Items by Due date · Soonest first" pills */
-  sorts?: Array<{ dim: string; label: string }>;
-  onToggle: (chip: FilterBarChip) => void;
-  onClearFilters?: () => void;
-  onClearSort?: (dim: string) => void;
-  /** Number of items the filters hide, for the quiet count */
-  hidden?: number;
+  /** The Filter menu is open */
+  open: boolean;
+  /** Chips offered while open (the quick filters plus anything active) */
+  available: FilterBarOption[];
+  filters: ReadonlyArray<{ type: string; value: string }>;
+  onToggle: (f: FilterBarOption) => void;
+  /** "Reset filters": clears them and closes the menu */
+  onClear: () => void;
 }
 
-export function FilterBar({ chips, sorts = [], onToggle, onClearFilters, onClearSort, hidden }: FilterBarProps) {
-  const active = chips.filter((c) => c.selected).length;
+export function FilterBar({ open, available, filters, onToggle, onClear }: FilterBarProps) {
+  const isOn = (f: FilterBarOption) => filters.some((a) => a.type === f.type && a.value === f.value);
+  if (!open && !filters.length) return null;
+  const shown = open ? available : available.filter(isOn);
   return (
-    <div className="td-fbar" role="group" aria-label="Filters and sort">
-      <span className="td-fbar-lead">
-        <Icon name="filter" size={14} />
-      </span>
-      {chips.map((c) => (
-        <FilterChip key={`${c.type}:${c.value}`} value={c.value} category={c.type === "label" || c.type === "due" ? undefined : c.type} color={c.color} icon={c.icon} selected={c.selected} onClick={() => onToggle(c)} onRemove={() => onToggle(c)} />
+    <ChipBar label="Filter by" icon="filter" aria-label="Filters" moreLabel="More filters" backLabel="Previous filters" actions={<ChipBarAction icon="x" active={filters.length > 0} onClick={onClear}>Reset filters</ChipBarAction>}>
+      {shown.map((f) => (
+        <FilterChip key={`${f.type}:${f.value}`} value={f.value} category={f.type === "label" ? "label" : undefined} color={f.color} icon={f.icon} selected={isOn(f)} onClick={() => onToggle(f)} onRemove={() => onToggle(f)} />
       ))}
-      {sorts.map((s) => (
-        <FilterChip key={`sort:${s.dim}`} value={s.label} icon="arrow-up-narrow-wide" selected onRemove={() => onClearSort?.(s.dim)} />
-      ))}
-      {active ? (
-        <button type="button" className="td-fbar-clear" onClick={onClearFilters}>
-          Clear filters
-          <kbd className="td-fbar-kbd">X</kbd>
-        </button>
-      ) : null}
-      {active && hidden ? <span className="td-fbar-count">{hidden} hidden</span> : null}
-    </div>
+    </ChipBar>
   );
 }

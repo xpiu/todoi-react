@@ -69,6 +69,8 @@ export interface PopoverProps {
   className?: string;
   /** Class on the trigger wrapper */
   anchorClassName?: string;
+  /** Selector of outside regions whose presses don't close it (the chip row a toolbar menu drives) */
+  keepOpenWithin?: string;
 }
 
 const SWIPE_CLOSE_PX = 80;
@@ -91,6 +93,7 @@ export function Popover({
   style,
   className,
   anchorClassName,
+  keepOpenWithin,
   ...rest
 }: PopoverProps) {
   const vp = useViewport();
@@ -122,8 +125,13 @@ export function Popover({
   };
 
   const handleOpenChange = useCallback(
-    (next: boolean, details: { reason?: string }) => onOpenChange(next, next ? undefined : closeReasonOf(details.reason)),
-    [onOpenChange],
+    (next: boolean, details: { reason?: string; event?: Event }) => {
+      const ev = details.event;
+      const target = details.reason === "focus-out" && ev instanceof FocusEvent ? ev.relatedTarget : details.reason === "outside-press" ? ev?.target : null;
+      if (!next && keepOpenWithin && target instanceof Element && target.closest(keepOpenWithin)) return;
+      onOpenChange(next, next ? undefined : closeReasonOf(details.reason));
+    },
+    [onOpenChange, keepOpenWithin],
   );
 
   // A bottom sheet spans the screen: the anchored width would leave it short of the right edge.

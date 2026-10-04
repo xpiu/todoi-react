@@ -26,4 +26,16 @@
     flex-direction: column;
     overflow: hidden;
   }
+  /* Views · Filter by · Sort by rows: full canvas on Board and Calendar; in List view they match the
+     list column (900px, centred; 8px here + the rows' own 12px = the list's 20px inset). */
+  .td-app-rows {
+    flex-shrink: 0;
+    background: var(--chrome-canvas);
+  }
+  .td-app-rows[data-view="list"] > .td-app-rows-inner {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 0 var(--sp-2);
+    box-sizing: border-box;
+  }
 }

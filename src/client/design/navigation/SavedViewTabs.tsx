@@ -1,6 +1,6 @@
-// SavedViewTabs — named, shareable tabs that capture a project's view type + filters + sort, on their
-// own chrome row under the toolbar: "All items" plus one tab per saved view (shared ones carry a users
-// glyph), a blue dot while the live state drifts from the active view, a per-tab ⋯ menu, and Save view.
+// SavedViewTabs — the "Views" row under the toolbar: named, shareable tabs that capture a project's view
+// type + filters + sort — "All items" plus one tab per saved view (shared ones carry a users glyph), a
+// dot while the live state drifts from the active view, a per-tab ⋯ menu, Save view and Hide.
 // ARIA: a navigation of buttons with aria-current (not a tablist — there are no tab panels, and the
 // per-tab ⋯ and Save view sit in the same row). Spec: DESIGN.md › Saved views.
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { Icon } from "../core/Icon";
 import { InlineError } from "../core/InlineError";
 import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
 import { Popover, usePopover } from "../core/Popover";
+import { ChipBar, ChipBarAction } from "./ChipBar";
 import { summarizeView, type ViewDefinition } from "./viewState";
 import "./SavedViewTabs.css";
 
@@ -20,7 +21,6 @@ export interface SavedViewTab {
   shared: boolean;
   definition: ViewDefinition;
 }
-const MENU_WIDTH = 24;
 export type SavedViewAction = "copy-link" | "update" | "rename" | "share" | "delete";
 
 export interface SavedViewTabsProps {
@@ -36,9 +36,13 @@ export interface SavedViewTabsProps {
   /** The popover stays open with the name and shows the reason when a returned promise rejects */
   onSave: (name: string, shared: boolean) => void | Promise<unknown>;
   onAction: (id: string, action: SavedViewAction, value?: string | boolean) => void;
+  /** "Hide" at the trailing end, the same as pressing the Views toggle again */
+  onHide?: () => void;
+  /** Target of the Views toggle's aria-controls */
+  id?: string;
 }
 
-export function SavedViewTabs({ views, activeId = null, dirty = false, canSave = false, currentDef, allLabel = "All items", onSelect, onSave, onAction }: SavedViewTabsProps) {
+export function SavedViewTabs({ views, activeId = null, dirty = false, canSave = false, currentDef, allLabel = "All items", onSelect, onSave, onAction, onHide, id: rowId }: SavedViewTabsProps) {
   const save = usePopover();
   const [name, setName] = useState("");
   const [shared, setShared] = useState(true);
@@ -69,8 +73,58 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
     if (n && id) onAction(id, "rename", n);
   };
   const summary = currentDef ? summarizeView(currentDef) : [];
+  const saveButton = canSave ? (
+    <Popover
+      open={save.open}
+      onOpenChange={save.setOpen}
+      tier="toolbar"
+      offset={6}
+      width={280}
+      role="dialog"
+      aria-label="Save view"
+      trigger={
+        <button type="button" className="td-sv-save" title={active ? "Save these filters as a new view" : "Save the current filters and sort as a view"}>
+          <Icon name="bookmark-plus" size={15} />
+          {active && dirty ? "Save as new" : "Save view"}
+        </button>
+      }
+    >
+      <div className="td-sv-pop">
+        <div className="td-sv-pop-title">Save as a view</div>
+        <input
+          className="td-sv-input"
+          value={name}
+          autoFocus
+          placeholder="Name, e.g. Bugs this sprint"
+          aria-label="View name"
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape") e.stopPropagation();
+            if (e.key === "Enter") void commitSave();
+          }}
+        />
+        {summary.length ? (
+          <div className="td-sv-summary">
+            {summary.map((s, i) => (
+              <code key={i}>{s}</code>
+            ))}
+          </div>
+        ) : null}
+        <Checkbox checked={shared} onChange={setShared} label="Share with the project" />
+        <InlineError message={saveError} />
+        <div className="td-sv-row">
+          <Button variant="subtle" onClick={save.close}>
+            Cancel
+          </Button>
+          <Button variant="primary" disabled={!name.trim() || saving} onClick={() => void commitSave()}>
+            Save
+          </Button>
+        </div>
+      </div>
+    </Popover>
+  ) : null;
   return (
-    <nav className="td-sv" aria-label="Saved views">
+    <ChipBar as="nav" id={rowId} label="Views" icon="bookmark" aria-label="Saved views" moreLabel="More views" backLabel="Previous views" after={saveButton} actions={onHide ? <ChipBarAction icon="eye-off" onClick={onHide}>Hide</ChipBarAction> : null}>
       <button type="button" className="td-sv-tab" aria-current={!activeId ? "true" : undefined} onClick={() => onSelect(null)}>
         {allLabel}
       </button>
@@ -96,7 +150,7 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
             ) : (
               // The ⋯ menu sits beside the tab (never inside it: a button can't hold a button).
               <>
-                <button type="button" className="td-sv-tab" aria-current={isA ? "true" : undefined} style={{ paddingRight: MENU_WIDTH }} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
+                <button type="button" className="td-sv-tab has-menu" aria-current={isA ? "true" : undefined} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
                   {v.shared ? <Icon name="users" size={13} className="td-sv-shared" /> : null}
                   {v.name}
                   {isA && dirty ? <span className="td-sv-dot" title="Filters changed since this view was saved" aria-label="unsaved changes" /> : null}
@@ -134,56 +188,6 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
           </div>
         );
       })}
-      {canSave ? (
-        <Popover
-          open={save.open}
-          onOpenChange={save.setOpen}
-          tier="toolbar"
-          offset={6}
-          width={280}
-          role="dialog"
-          aria-label="Save view"
-          trigger={
-            <button type="button" className="td-sv-save" title={active ? "Save these filters as a new view" : "Save the current filters and sort as a view"}>
-              <Icon name="bookmark-plus" size={15} />
-              {active && dirty ? "Save as new" : "Save view"}
-            </button>
-          }
-        >
-          <div className="td-sv-pop">
-            <div className="td-sv-pop-title">Save as a view</div>
-            <input
-              className="td-sv-input"
-              value={name}
-              autoFocus
-              placeholder="Name, e.g. Bugs this sprint"
-              aria-label="View name"
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Escape") e.stopPropagation();
-                if (e.key === "Enter") void commitSave();
-              }}
-            />
-            {summary.length ? (
-              <div className="td-sv-summary">
-                {summary.map((s, i) => (
-                  <code key={i}>{s}</code>
-                ))}
-              </div>
-            ) : null}
-            <Checkbox checked={shared} onChange={setShared} label="Share with the project" />
-            <InlineError message={saveError} />
-            <div className="td-sv-row">
-              <Button variant="subtle" onClick={save.close}>
-                Cancel
-              </Button>
-              <Button variant="primary" disabled={!name.trim() || saving} onClick={() => void commitSave()}>
-                Save
-              </Button>
-            </div>
-          </div>
-        </Popover>
-      ) : null}
-    </nav>
+    </ChipBar>
   );
 }

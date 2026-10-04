@@ -19,8 +19,9 @@ import { FilterBar } from "../design/navigation/FilterBar";
 import { FilterMenu } from "../design/navigation/FilterMenu";
 import { MembersMenu } from "../design/navigation/MembersMenu";
 import { DEFAULT_NAV, Sidebar } from "../design/navigation/Sidebar";
+import { SortBar } from "../design/navigation/SortBar";
 import { SortMenu } from "../design/navigation/SortMenu";
-import { SubNavbar } from "../design/navigation/SubNavbar";
+import { SubNavbar, type SubNavbarMenu } from "../design/navigation/SubNavbar";
 import { TopNavbar } from "../design/navigation/TopNavbar";
 import { encodeViewState, nextViewSearch, sameDefinition, type ViewDefinition } from "../design/navigation/viewState";
 import { SavedViewTabs } from "../design/navigation/SavedViewTabs";
@@ -33,7 +34,7 @@ import { CommandPalette } from "../design/overlay/CommandPalette";
 import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { downloadText, fileSlug, itemsToCsv, viewToMarkdown } from "./exportData";
-import { availableFilters, describeSort, FILTER_SECTIONS, filterKey, matchesFilters, nextSort, sameFilter, SORT_OPTS, type SortDim } from "./filters";
+import { availableFilters, FILTER_SECTIONS, filterKey, matchesFilters, nextSort, sameFilter, SORT_OPTS, type SortDim } from "./filters";
 import { keyOf } from "./items";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LifecycleDialogs } from "./LifecycleDialogs";
@@ -53,6 +54,10 @@ import "./AppShell.css";
 
 const SIDEBAR_KEY = "td-sidebar-open";
 const SAVED_VIEWS_KEY = "td-saved-views-open";
+const SORT_DIMS: ReadonlyArray<[string, SortDim]> = [
+  ["Lists", "lists"],
+  ["Items", "items"],
+];
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -108,7 +113,6 @@ export function AppShell() {
       if (!t?.closest) return;
       if (t.closest("[data-add-item]")) suggest("add-item");
       else if (t.closest(".td-listview-addlist, .td-board-addlist")) suggest("add-list");
-      else if (t.closest(".td-fbar-clear")) suggest("clear-filters");
     };
     const onDrop = (e: DragEvent) => {
       if ((e.target as HTMLElement | null)?.closest?.(".td-board, .td-listview")) suggest("move-item");
@@ -136,8 +140,14 @@ export function AppShell() {
   const view = resolved.view;
   const svm = useSavedViewMutations(projectId ?? "");
   // The saved-views row: remembered per device; opens by itself when a saved-view link loads.
-  const [svOpen, setSavedViewsOpen] = usePersistedFlag(SAVED_VIEWS_KEY, false);
-  const savedViewsOpen = svOpen || !!resolved.raw.savedView;
+  const [savedViewsOpen, setSavedViewsOpen] = usePersistedFlag(SAVED_VIEWS_KEY, false);
+  const linkedView = resolved.raw.savedView;
+  useEffect(() => {
+    if (linkedView) setSavedViewsOpen(true);
+  }, [linkedView, setSavedViewsOpen]);
+  // The SubNavbar's one open dropdown: the Filter / Sort rows list every option while theirs is open.
+  const [openMenu, setOpenMenu] = useState<SubNavbarMenu | null>(null);
+  const closeMenu = (m: SubNavbarMenu) => setOpenMenu((cur) => (cur === m ? null : cur));
   // The tab stays active (with a dot) while the live state drifts from its definition.
   const [lastSaved, setLastSaved] = useState<{ projectId: string; id: string } | null>(null);
   const activeSavedId = resolved.raw.savedView ?? (lastSaved && lastSaved.projectId === projectId ? lastSaved.id : null);
@@ -171,8 +181,9 @@ export function AppShell() {
   const filters = state?.filters ?? [];
   const sort = state?.sort ?? { lists: null, items: null };
   const sortActive = (["lists", "items"] as const).filter((d) => sort[d]);
-  const barChips = [...available.filter((f) => f.type === "label" || f.type === "due"), ...filters.filter((f) => f.type !== "label" && f.type !== "due").map((f) => available.find((a) => sameFilter(a, f)) ?? f)].map((f) => ({ ...f, selected: filters.some((a) => sameFilter(a, f)) }));
-  const hiddenCount = filters.length ? topItems.length - topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length : 0;
+  // The Filter row offers the quick filters (labels, Overdue) plus whatever else is active.
+  const barAvailable = [...available.filter((f) => f.type === "label" || f.type === "due"), ...filters.filter((f) => f.type !== "label" && f.type !== "due").map((f) => available.find((a) => sameFilter(a, f)) ?? f)];
+  const resetSort = () => setViewState({ sort: { lists: null, items: null } });
   const notify = useFeedback((s) => s.notify);
   const logout = () => void authClient.signOut().then(({ error }) => {
     if (error) notify({ message: `Couldn't log out: ${error.message ?? "the server refused the request"}`, icon: "circle-alert" });
@@ -195,47 +206,73 @@ export function AppShell() {
   };
   const savedViewsRow =
     projectId && savedViewsOpen ? (
-      <div className="td-sv-row-wrap" id="td-saved-views">
-        <SavedViewTabs
-          views={resolved.savedViews}
-          activeId={activeSavedId}
-          dirty={svDirty}
-          canSave={(filters.length > 0 || sortActive.length > 0) && (!activeSaved || svDirty)}
-          currentDef={currentDef}
-          onSelect={goSaved}
-          onSave={async (name, shared) => {
-            const id = newId();
-            await svm.create.mutateAsync({ id, name, shared, definition: currentDef, quiet: true }).catch(explain);
-            notify({ message: `Saved the view ${quote(name)}`, icon: "bookmark-plus" });
-            goSaved(id);
+      <SavedViewTabs
+        id="td-saved-views"
+        onHide={() => setSavedViewsOpen(false)}
+        views={resolved.savedViews}
+        activeId={activeSavedId}
+        dirty={svDirty}
+        canSave={(filters.length > 0 || sortActive.length > 0) && (!activeSaved || svDirty)}
+        currentDef={currentDef}
+        onSelect={goSaved}
+        onSave={async (name, shared) => {
+          const id = newId();
+          await svm.create.mutateAsync({ id, name, shared, definition: currentDef, quiet: true }).catch(explain);
+          notify({ message: `Saved the view ${quote(name)}`, icon: "bookmark-plus" });
+          goSaved(id);
+        }}
+        onAction={(id, action, value) => {
+          const v = resolved.savedViews.find((x) => x.id === id);
+          if (!v) return;
+          if (action === "copy-link") {
+            void copyAndNotify(projectUrl(projectId, `?view=${id}`), `Copied the link to ${quote(v.name)}`);
+          } else if (action === "update") {
+            svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => {
+              goSaved(id);
+              notify({ message: `Updated ${quote(v.name)} with the current filters and sort`, icon: "save" });
+            } });
+          } else if (action === "rename" && typeof value === "string") svm.update.mutate({ id, name: value });
+          else if (action === "share" && typeof value === "boolean") {
+            svm.update.mutate({ id, shared: value }, { onSuccess: () => notify({ message: value ? `${quote(v.name)} is now shared with the project` : `${quote(v.name)} is now only yours`, icon: value ? "users" : "lock" }) });
+          } else if (action === "delete") {
+            svm.remove.mutate({ id }, { onSuccess: () => {
+              if (activeSavedId === id) goSaved(null);
+              notify({ message: `Deleted the view ${quote(v.name)}`, icon: "trash-2", restore: () => svm.create.mutateAsync({ id: v.id, name: v.name, shared: v.shared, definition: v.definition, quiet: true }) });
+            } });
+          }
+        }}
+      />
+    ) : null;
+  // Views · Filter by · Sort by, stacked under the toolbar; in List view they match the list column.
+  const viewRows = projectId ? (
+    <div className="td-app-rows" data-view={view}>
+      <div className="td-app-rows-inner">
+        {savedViewsRow}
+        <FilterBar
+          open={openMenu === "filter"}
+          available={barAvailable}
+          filters={filters}
+          onToggle={toggleFilter}
+          onClear={() => {
+            clearFilters();
+            closeMenu("filter");
+            suggest("clear-filters");
           }}
-          onAction={(id, action, value) => {
-            const v = resolved.savedViews.find((x) => x.id === id);
-            if (!v) return;
-            if (action === "copy-link") {
-              void copyAndNotify(projectUrl(projectId, `?view=${id}`), `Copied the link to ${quote(v.name)}`);
-            } else if (action === "update") {
-              svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => {
-                goSaved(id);
-                notify({ message: `Updated ${quote(v.name)} with the current filters and sort`, icon: "save" });
-              } });
-            } else if (action === "rename" && typeof value === "string") svm.update.mutate({ id, name: value });
-            else if (action === "share" && typeof value === "boolean") {
-              svm.update.mutate({ id, shared: value }, { onSuccess: () => notify({ message: value ? `${quote(v.name)} is now shared with the project` : `${quote(v.name)} is now only yours`, icon: value ? "users" : "lock" }) });
-            } else if (action === "delete") {
-              svm.remove.mutate({ id }, { onSuccess: () => {
-                if (activeSavedId === id) goSaved(null);
-                notify({ message: `Deleted the view ${quote(v.name)}`, icon: "trash-2", restore: () => svm.create.mutateAsync({ id: v.id, name: v.name, shared: v.shared, definition: v.definition, quiet: true }) });
-              } });
-            }
+        />
+        <SortBar
+          open={openMenu === "sort"}
+          dims={SORT_DIMS}
+          options={SORT_OPTS}
+          sort={sort}
+          onSelect={selectSort}
+          onReset={() => {
+            resetSort();
+            closeMenu("sort");
           }}
         />
       </div>
-    ) : null;
-  const filterBar =
-    projectId && (filters.length || sortActive.length) ? (
-      <FilterBar chips={barChips} sorts={sortActive.map((d) => ({ dim: d, label: describeSort(d, sort[d]!) }))} onToggle={toggleFilter} onClearFilters={clearFilters} onClearSort={(d) => selectSort(d, "none")} hidden={hiddenCount} />
-    ) : null;
+    </div>
+  ) : null;
 
   useAppShortcuts({
     projectId,
@@ -243,6 +280,7 @@ export function AppShell() {
     openPalette: () => setPaletteOpen(true),
     openHelp: () => setHelpOpen(true),
     clearFilters,
+    openFilter: projectId ? () => setOpenMenu("filter") : undefined,
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
@@ -259,7 +297,7 @@ export function AppShell() {
       url={projectUrl(pd.id)}
     />
   ) : undefined;
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={() => setViewState({ sort: { lists: null, items: null } })} />} filterCount={filters.length} sortCount={sortActive.length} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} openMenu={openMenu} onOpenMenuChange={setOpenMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
@@ -312,11 +350,10 @@ export function AppShell() {
         {vp.desktop ? nav : null}
       </TopNavbar>
       {!vp.desktop && nav ? <div className="td-app-subrow">{nav}</div> : null}
-      {savedViewsRow}
-      {filterBar}
       {guestReason && signedIn ? <GuestBar reason={guestReason} projectName={project.data?.name} signedIn /> : null}
       <div className="td-app-body">
         <main className="td-app-content" data-readonly={readonly ? "true" : undefined}>
+          {viewRows}
           {/* Dates render in the person's format: a change re-renders the screen (Settings, where it is made, stays put) */}
           <Outlet key={section === "settings" ? section : conventions} />
         </main>

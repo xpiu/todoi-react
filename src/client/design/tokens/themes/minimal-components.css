@@ -279,6 +279,32 @@ html[data-theme="minimal"] .td-fchip-off:hover{background:none;color:var(--ink-9
 html[data-theme="minimal"] .td-fchip-dot{width:6px;height:6px;border-radius:1px}
 html[data-theme="minimal"] .td-btn-chrome,html[data-theme="minimal"] .td-btn-chrome-ghost{background:none;color:var(--ink-400);font-weight:400}
 html[data-theme="minimal"] .td-btn-chrome:hover,html[data-theme="minimal"] .td-btn-chrome:active,html[data-theme="minimal"] .td-btn-chrome-ghost:hover,html[data-theme="minimal"] .td-btn-chrome-ghost:active{background:none;color:var(--ink-900)}
+/* Row actions (Reset filters · Reset sorting · Hide): grey words at the chip size, no pill, no padding; the icon shrinks to the text; hover inks the word */
+html[data-theme="minimal"] .td-btn.td-bar-act{height:24px;padding:0 2px;gap:5px;border-radius:2px;background:none;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-btn.td-bar-act.td-btn-chrome{color:var(--ink-900)}
+html[data-theme="minimal"] .td-btn.td-bar-act svg{width:12px;height:12px}
+html[data-theme="minimal"] .td-btn.td-bar-act:hover,html[data-theme="minimal"] .td-btn.td-bar-act:active{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-btn.td-bar-act:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px}
+/* The rail's "…" pager: grey word + chevron, no pill */
+html[data-theme="minimal"] .td-btn.td-chiprail-page{height:24px;padding:0 2px;background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-btn.td-chiprail-page:hover{background:none;color:var(--ink-900)}
+/* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
+html[data-theme="minimal"] nav.td-cbar .td-chiprail{gap:16px}
+html[data-theme="minimal"] .td-sv-tab,html[data-theme="minimal"] .td-sv-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast) var(--ease-standard)}
+html[data-theme="minimal"] .td-sv-tab:hover,html[data-theme="minimal"] .td-sv-save:hover,html[data-theme="minimal"] .td-sv-save[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sv-tab[aria-current="true"],html[data-theme="minimal"] .td-sv-tab[aria-current="true"]:hover{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-sv-tab.has-menu{padding-right:0}
+html[data-theme="minimal"] .td-sv-tab:focus-visible,html[data-theme="minimal"] .td-sv-save:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-sv-dot{width:5px;height:5px;border-radius:0;background:var(--ink-900)}
+html[data-theme="minimal"] .td-sv-tab[aria-current="true"] .td-sv-dot{background:var(--ink-900)}
+html[data-theme="minimal"] .td-sv-wrap{align-items:center;gap:4px}
+html[data-theme="minimal"] .td-sv-more{position:static;transform:none;opacity:1}
+html[data-theme="minimal"] .td-sv-more .td-iconbtn,html[data-theme="minimal"] .td-sv-wrap[data-selected="true"] .td-sv-more .td-iconbtn{border-radius:0;background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-sv-more .td-iconbtn:hover,html[data-theme="minimal"] .td-sv-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sv-pop{padding:8px 14px 10px}
+html[data-theme="minimal"] .td-sv-pop-title{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-sv-summary{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sv-summary code{padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-900)}
 /* ── Shared controls: buttons, icon buttons, segmented and menus drop their fills for hairlines */
 html[data-theme="minimal"] .td-btn{font-weight:500;font-size:13px}
 html[data-theme="minimal"] .td-btn-outline{box-shadow:none;border-color:var(--border-divider)}
@@ -416,7 +442,8 @@ html[data-theme="minimal"] .td-fm-row .td-check{margin-right:2px}
 html[data-theme="minimal"] .td-fm-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
 html[data-theme="minimal"] .td-fm-row>svg{stroke:currentColor!important;width:14px;height:14px;stroke-width:1.75}
 /* The Filter / Sort count reads as a plain mono figure beside the glyph (no white pill: invisible on light paper, loud on dark) */
-html[data-theme="minimal"] .td-subnav-badge{min-width:0;height:auto;padding:0;margin-left:2px;border-radius:0;background:none;color:var(--chrome-text);font:400 11px/1.45 var(--font-mono)}
+/* No trigger marker in Minimal: the chip rows under the toolbar are the indicator */
+html[data-theme="minimal"] .td-subnav-dot{display:none}
 html[data-theme="minimal"] .td-fm-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sm-hint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sm-dir{font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}

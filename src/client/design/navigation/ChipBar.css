@@ -1,0 +1,80 @@
+@layer components {
+  /* One chip row under the toolbar: label · chips · (Save view) · trailing Reset / Hide. */
+  .td-cbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 10px var(--sp-3) 0;
+    background: var(--chrome-canvas);
+    flex-shrink: 0;
+  }
+  .td-cbar[data-desktop="true"] {
+    flex-wrap: nowrap;
+  }
+  .td-cbar-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-right: 2px;
+    flex-shrink: 0;
+    color: var(--chrome-text);
+    font: var(--weight-semibold) 13px / 18px var(--font-ui);
+  }
+  .td-cbar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .td-cbar-actions .td-btn,
+  .td-chiprail-page {
+    height: 28px;
+    padding: 0 var(--sp-2);
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+  }
+  .td-chiprail-page {
+    flex-shrink: 0;
+    gap: 2px;
+    letter-spacing: 1px;
+  }
+
+  /* Desktop rail: chips never wrap; the overflowing edge fades out over 28px. */
+  .td-chiprail {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    overflow: auto hidden;
+    overscroll-behavior-x: contain;
+    padding: 2px 0;
+    margin: -2px 0;
+    scrollbar-width: none;
+  }
+  .td-chiprail::-webkit-scrollbar {
+    display: none;
+  }
+  .td-chiprail > * {
+    flex-shrink: 0;
+  }
+  .td-chiprail[data-overflow-right="true"] {
+    cursor: grab;
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+  }
+  .td-chiprail[data-overflow-left="true"] {
+    cursor: grab;
+    mask-image: linear-gradient(to right, transparent, black 28px);
+  }
+  .td-chiprail[data-overflow-left="true"][data-overflow-right="true"] {
+    mask-image: linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent);
+  }
+  .td-chiprail[data-dragging="true"] {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .td-chiprail[data-dragging="true"] * {
+    pointer-events: none;
+  }
+}

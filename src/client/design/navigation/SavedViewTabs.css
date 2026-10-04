@@ -1,21 +1,4 @@
 @layer components {
-  .td-sv-row-wrap {
-    display: flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 0 var(--sp-4) var(--sp-2);
-    background: var(--chrome-canvas);
-    flex-shrink: 0;
-  }
-  .td-sv {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
-    min-width: 0;
-    flex: 0 1 auto;
-    max-width: 100%;
-  }
   .td-sv-tab {
     position: relative;
     display: inline-flex;
@@ -47,6 +30,10 @@
   }
   .td-sv-tab[aria-current="true"]:hover {
     background: var(--btn-inverse-bg);
+  }
+  /* Room for the ⋯ that sits over the tab's right edge */
+  .td-sv-tab.has-menu {
+    padding-right: 24px;
   }
   .td-sv-shared {
     opacity: 0.7;

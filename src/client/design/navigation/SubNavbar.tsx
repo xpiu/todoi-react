@@ -1,7 +1,9 @@
 // SubNavbar — view switcher (List / Board / Cal. + optional Views toggle) and the Filter / Sort /
-// Style / Members / Share actions. Style is the quick appearance menu on the shared store (a dialog
-// Popover); Share is a Menu with Copy project URL and share targets. Spec: DESIGN.md › Subnavbar.
-import type { CSSProperties, ReactElement, ReactNode } from "react";
+// Style / Members / Share actions. It owns its five dropdowns with ONE open-menu value (controllable
+// via openMenu / onOpenMenuChange), so exactly one is open at a time and the host can show the Filter
+// and Sort rows while their menu is open. Style is the quick appearance menu on the shared store (a
+// dialog Popover); Share is a Menu with Copy project URL and share targets. Spec: DESIGN.md › Subnavbar.
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 
 import { useAppearance } from "../core/appearance";
 import { Checkbox } from "../core/Checkbox";
@@ -9,7 +11,7 @@ import { copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
 import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
 import { MenuDivider, MenuHeading, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
-import { Popover, usePopover } from "../core/Popover";
+import { Popover } from "../core/Popover";
 import { Segmented } from "../core/Segmented";
 import { SwatchGroup } from "../core/SwatchGroup";
 import { MODES, THEMES } from "../core/themes";
@@ -43,16 +45,17 @@ const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; 
   { id: "discord", label: "Discord", icon: "discord", href: () => "https://discord.com/channels/@me" },
 ];
 
+export type SubNavbarMenu = "filter" | "sort" | "style" | "members" | "share";
+/** The chip row each menu drives: presses there toggle chips without closing the menu. */
+const MENU_ROWS: Partial<Record<SubNavbarMenu, string>> = { filter: '[role="toolbar"][aria-label="Filters"]', sort: '[role="toolbar"][aria-label="Sorting"]' };
+
 /** A toolbar-tier dialog Popover behind an action button (Filter, Sort, Members); its body draws its own header, so the popup is flush. */
-function ActionPopover({ label, trigger, children, width = 296, onOpen }: { label: string; trigger: ReactElement; children: ReactNode; width?: number; onOpen?: () => void }) {
-  const pop = usePopover();
+function ActionPopover({ label, trigger, children, width = 296, open, onOpenChange, keepOpenWithin }: { label: string; trigger: ReactElement; children: ReactNode; width?: number; open: boolean; onOpenChange: (open: boolean) => void; keepOpenWithin?: string }) {
   return (
     <Popover
-      open={pop.open}
-      onOpenChange={(open) => {
-        pop.setOpen(open);
-        if (open) onOpen?.();
-      }}
+      open={open}
+      onOpenChange={onOpenChange}
+      keepOpenWithin={keepOpenWithin}
       tier="toolbar"
       placement="bottom-start"
       role="dialog"
@@ -71,17 +74,18 @@ export interface SubNavbarProps {
   activeView?: string;
   onViewChange?: (id: string) => void;
   actions?: SubNavbarAction[];
-  /** Filter / Sort pressed or their panel opened (Style opens its own menu) */
+  /** An action was opened (or pressed, when it has no menu) */
   onAction?: (id: string) => void;
-  /** Which action currently shows its panel (pressed look) */
-  activeAction?: string | null;
+  /** The one open dropdown; leave undefined to let the SubNavbar keep it */
+  openMenu?: SubNavbarMenu | null;
+  onOpenMenuChange?: (menu: SubNavbarMenu | null) => void;
   /** Body of the Filter action's Popover (a FilterMenu); without it the action only fires onAction */
   filterMenu?: ReactNode;
   /** Body of the Sort action's Popover (a SortMenu) */
   sortMenu?: ReactNode;
-  /** Count badges on the Filter / Sort actions while something is active */
-  filterCount?: number;
-  sortCount?: number;
+  /** Something is filtered / sorted: Rounded marks the trigger with a dot (Minimal relies on the chip rows) */
+  filterActive?: boolean;
+  sortActive?: boolean;
   /** "Export this view" rows at the end of the Share menu */
   onExport?: (format: ExportFormatId) => void;
   exportCount?: number;
@@ -103,10 +107,32 @@ export interface SubNavbarProps {
   className?: string;
 }
 
-export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, activeAction, filterMenu, sortMenu, filterCount = 0, sortCount = 0, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
+export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, filterActive = false, sortActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
   const ap = useAppearance();
   const active = activeView ?? views[0]?.id;
-  const stylePop = usePopover();
+  // One open-menu value for all five dropdowns. The ref guards against a late close of the previous
+  // menu (its outside press) clearing the one that has just opened.
+  const [ownMenu, setOwnMenu] = useState<SubNavbarMenu | null>(null);
+  const curMenu = openMenu !== undefined ? openMenu : ownMenu;
+  const menuRef = useRef(curMenu);
+  useLayoutEffect(() => {
+    menuRef.current = curMenu;
+  }, [curMenu]);
+  const setMenu = (m: SubNavbarMenu | null) => {
+    menuRef.current = m;
+    if (openMenu === undefined) setOwnMenu(m);
+    onOpenMenuChange?.(m);
+  };
+  const menuState = (id: SubNavbarMenu) => ({
+    open: curMenu === id,
+    onOpenChange: (open: boolean) => {
+      if (open) {
+        setMenu(id);
+        onAction?.(id);
+      } else if (menuRef.current === id) setMenu(null);
+    },
+  });
+  const closeMenu = () => setMenu(null);
   const [copied, copy] = useCopy();
   const shareUrl = projectUrl ?? (typeof location !== "undefined" ? location.href : "");
   const copyUrl = () => void copy(shareUrl);
@@ -119,7 +145,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
         value={ap.theme}
         onChange={(t) => {
           ap.set({ theme: t });
-          stylePop.close();
+          closeMenu();
         }}
         options={THEMES.map((t) => ({ id: t.id, label: t.label }))}
       />
@@ -163,7 +189,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
           type="button"
           className="td-style-more"
           onClick={() => {
-            stylePop.close();
+            closeMenu();
             onOpenAppearance();
           }}
         >
@@ -183,15 +209,14 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
               return (
                 <Popover
                   key={a.id}
-                  open={stylePop.open}
-                  onOpenChange={stylePop.setOpen}
+                  {...menuState("style")}
                   tier="toolbar"
                   placement="bottom-start"
                   role="dialog"
                   aria-label="Board style"
                   width={264}
                   trigger={
-                    <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label}>
+                    <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-menu="style">
                       {a.icon ? <Icon name={a.icon} size={16} /> : null}
                       {a.label}
                     </button>
@@ -202,17 +227,24 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
               );
             }
             const menu = a.id === "filter" ? filterMenu : a.id === "sort" ? sortMenu : null;
-            const badge = a.id === "filter" ? filterCount : a.id === "sort" ? sortCount : 0;
+            const marked = a.id === "filter" ? filterActive : a.id === "sort" ? sortActive : false;
+            // The active marker is its own element: the trigger's ::after belongs to the tooltip.
             const button = (
-              <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-active={badge ? "true" : undefined} aria-expanded={menu ? undefined : activeAction === a.id} onClick={menu ? undefined : () => onAction?.(a.id)}>
+              <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-menu={menu ? a.id : undefined} data-active={marked ? "true" : undefined} onClick={menu ? undefined : () => onAction?.(a.id)}>
                 {a.icon ? <Icon name={a.icon} size={16} /> : null}
                 {a.label}
-                {badge ? <span className="td-subnav-badge">{badge}</span> : null}
+                {marked ? (
+                  <>
+                    <span className="td-subnav-dot" aria-hidden />
+                    <span className="td-sr-only"> (active)</span>
+                  </>
+                ) : null}
               </button>
             );
             if (!menu) return <span key={a.id}>{button}</span>;
+            const id = a.id as SubNavbarMenu;
             return (
-              <ActionPopover key={a.id} label={`${a.label} options`} trigger={button} onOpen={() => onAction?.(a.id)}>
+              <ActionPopover key={a.id} label={`${a.label} options`} trigger={button} {...menuState(id)} keepOpenWithin={MENU_ROWS[id]}>
                 {menu}
               </ActionPopover>
             );
@@ -221,8 +253,9 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             <ActionPopover
               label="Project members and sharing"
               width={320}
+              {...menuState("members")}
               trigger={
-                <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip="Members">
+                <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip="Members" data-menu="members">
                   <Icon name="users" size={16} />
                   Members
                 </button>
@@ -233,12 +266,13 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
           ) : null}
           {share ? (
             <MenuPopover
+              {...menuState("share")}
               label="Share project"
               tier="toolbar"
               placement="bottom-end"
               minWidth={296}
               trigger={
-                <button type="button" className="td-subnav-act td-tip" aria-label="Share" data-tip="Share">
+                <button type="button" className="td-subnav-act td-tip" aria-label="Share" data-tip="Share" data-menu="share">
                   <Icon name="share-2" size={16} />
                 </button>
               }

@@ -84,20 +84,14 @@
   .td-subnav-act[aria-expanded="true"] {
     background: var(--chrome-active);
   }
-  .td-subnav-act[data-active="true"] {
-    color: var(--chrome-selected);
-  }
-  .td-subnav-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
+  /* Something is filtered / sorted: a 6px dot after the label (its own element; ::after is the tooltip's). */
+  .td-subnav-dot {
+    width: 6px;
+    height: 6px;
+    margin-left: -2px;
     border-radius: var(--radius-full);
-    background: var(--chrome-selected);
-    color: var(--chrome-selected-text);
-    font: var(--weight-semibold) 11px / 16px var(--font-ui);
+    background: currentcolor;
+    flex-shrink: 0;
   }
   .td-share-vis {
     flex-shrink: 0;
