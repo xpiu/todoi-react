@@ -1,4 +1,4 @@
-// Segmented — one-of-N picker for 2–4 short, equally likely options (Standard / Minimal, Dark / Light).
+// Segmented — one-of-N picker for 2–4 short, equally likely options (Rounded / Minimal, Dark / Light).
 import type { CSSProperties } from "react";
 
 import { Icon, type IconName } from "./Icon";

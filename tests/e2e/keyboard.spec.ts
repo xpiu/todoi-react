@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 import { seedProjectId, signIn, useScope } from "./helpers";
 
 test("list rows: arrows move focus, S selects, Enter opens the item", async ({ page }) => {
-  await useScope(page, "standard-dark");
+  await useScope(page, "rounded-dark");
   await signIn(page);
   const pid = await seedProjectId(page);
   await page.goto(`/p/${pid}?v=list`);

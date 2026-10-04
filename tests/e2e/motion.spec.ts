@@ -7,7 +7,7 @@ import { seedProjectId, signIn, useScope } from "./helpers";
 test.describe("prefers-reduced-motion", () => {
   test.use({ reducedMotion: "reduce" });
   test("transitions collapse, interactions still work", async ({ page }) => {
-    await useScope(page, "standard-dark");
+    await useScope(page, "rounded-dark");
     await signIn(page);
     const pid = await seedProjectId(page);
     await page.goto(`/p/${pid}?v=board`);
@@ -28,7 +28,7 @@ test.describe("prefers-reduced-motion", () => {
 
 test.describe("motion on", () => {
   test("tokens drive transitions by default", async ({ page }) => {
-    await useScope(page, "standard-dark");
+    await useScope(page, "rounded-dark");
     await signIn(page);
     const pid = await seedProjectId(page);
     await page.goto(`/p/${pid}?v=board`);

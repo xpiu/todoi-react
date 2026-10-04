@@ -1,16 +1,16 @@
-/* ═══ Standard theme ═══════════════════════════════════════════════════════════════════
-   Todoi's default app theme. Scope contract (see tokens/colors.css):
-     dark  → :root (no attribute needed) and [data-theme="standard"]
-     light → [data-theme="standard"][data-mode="light"], plus html:not([data-theme])[data-mode="light"] for a page that sets
-             only the mode (Standard is the default theme). Never a bare [data-mode="light"]: that would also match Minimal light and
+/* ═══ Rounded theme ═══════════════════════════════════════════════════════════════════
+   Todoi's rounded app theme. New users start with Minimal light via index.html and the Appearance store. Scope contract (see tokens/colors.css):
+     dark  → :root (no attribute needed) and [data-theme="rounded"]
+     light → [data-theme="rounded"][data-mode="light"], plus html:not([data-theme])[data-mode="light"] for a page that sets
+             only the mode (legacy CSS fallback). Never a bare [data-mode="light"]: that would also match Minimal light and
              make Minimal depend on source order to win it back — each of the four scopes must name its theme.
    Every color token below MUST appear in both scopes (the Theme parity audit enforces it); tokens that
    deliberately keep one value across modes live in tokens/colors.css with a "fixed" marker (the comment marker on the declaration).
    Background (chrome canvas) and Foreground (list/card/panel) picks are applied on top of these values
-   by components/core/Appearance.jsx from the palettes in components/core/Themes.jsx (STANDARD_*). */
+   by components/core/Appearance.jsx from the palettes in components/core/Themes.jsx (ROUNDED_*). */
 
-/* ── Standard · dark (default) ── */
-:root,[data-theme="standard"]{color-scheme:dark;
+/* ── Rounded · dark (legacy CSS fallback) ── */
+:root,[data-theme="rounded"]{color-scheme:dark;
 /* Chrome (app frame): top bar, sidebar, sub-navbar and canvas share one near-black neutral with white ink */
 --chrome-topbar:#0b0b0c;--chrome-canvas:#161617;--chrome-hover:rgba(255,255,255,.10);--chrome-active:rgba(255,255,255,.16);--chrome-pressed:rgba(255,255,255,.22);--chrome-border:rgba(255,255,255,.2);--chrome-text:#ffffff;--chrome-text-dim:rgba(255,255,255,.68);
 /* Primary action blue */
@@ -36,8 +36,8 @@
 --status-todo-hue:#7db0ff;--status-todo-list:color-mix(in srgb,var(--surface-list) 89%,var(--status-todo-hue));--status-todo-card:color-mix(in srgb,var(--surface-card) 92%,var(--status-todo-hue));--status-doing-hue:#3d84ff;--status-doing-list:color-mix(in srgb,var(--surface-list) 84%,var(--status-doing-hue));--status-doing-card:color-mix(in srgb,var(--surface-card) 87%,var(--status-doing-hue));--status-done-list:color-mix(in srgb,var(--surface-list) 88%,var(--success-icon));--status-done-card:color-mix(in srgb,var(--surface-card) 90%,var(--success-icon));
 }
 
-/* ── Standard · light ── */
-[data-theme="standard"][data-mode="light"],html:not([data-theme])[data-mode="light"]{color-scheme:light;
+/* ── Rounded · light ── */
+[data-theme="rounded"][data-mode="light"],html:not([data-theme])[data-mode="light"]{color-scheme:light;
 /* Chrome: one cornflower with near-black navy ink (7:1); --chrome-topbar is the toast/navy accent only */
 --chrome-topbar:#12215e;--chrome-canvas:#7c9fff;--chrome-hover:rgba(11,18,51,.10);--chrome-active:rgba(11,18,51,.16);--chrome-pressed:rgba(11,18,51,.24);--chrome-border:rgba(11,18,51,.32);--chrome-text:#0b1233;--chrome-text-dim:rgba(11,18,51,.82);
 --blue-700:#10289e;--blue-600:#1a3bc9;--blue-500:#264de3;--blue-400:#507cf7;--blue-100:#e5efff;

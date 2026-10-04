@@ -207,7 +207,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             id: "theme",
             title: "Theme and mode",
             rows: [
-              { id: "apTheme", label: "Theme", hint: "Standard is the full look; Minimal is the ledger — type, hairlines and ink", control: <Segmented aria-label="Theme" value={ap.theme} options={THEMES.map((t) => ({ id: t.id, label: t.label }))} onChange={(t) => ap.set({ theme: t })} /> },
+              { id: "apTheme", label: "Theme", hint: "Rounded is the full look; Minimal is the ledger — type, hairlines and ink", control: <Segmented aria-label="Theme" value={ap.theme} options={THEMES.map((t) => ({ id: t.id, label: t.label }))} onChange={(t) => ap.set({ theme: t })} /> },
               { id: "apMode", label: "Mode", hint: "Dark or light inside the theme", control: <Segmented aria-label="Mode" value={ap.mode} options={MODES.map((m) => ({ id: m.id, icon: m.icon, label: m.label }))} onChange={(m) => ap.set({ mode: m })} /> },
               { id: "apBackground", label: "Background", hint: "The canvas behind lists and cards", control: <SwatchGroup aria-label="Background color" options={ap.backgrounds} value={ap.background} onChange={(c) => ap.set({ background: c })} /> },
               ...(ap.foregrounds.length ? [{ id: "apForeground", label: "Foreground", hint: "List and card surfaces", control: <SwatchGroup aria-label="Foreground color" options={ap.foregrounds.map((o) => ({ value: o.id, label: o.label, title: o.title, swatch: `linear-gradient(90deg, ${o.list} 50%, ${o.card} 50%)`, ink: o.ink }))} value={ap.foreground} onChange={(id) => ap.set({ foreground: id })} /> }] : []),
@@ -229,7 +229,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             rows: [
               { id: "apSidebar", label: "Sidebar on left side", hint: "The rail docks right by default", control: <Switch aria-label="Sidebar on left side" checked={ap.sidebarLeft} onChange={(v) => ap.set({ sidebarLeft: v })} /> },
               { id: "apHints", label: "Suggest shortcuts", hint: "A quiet nudge after pointer actions a key could have done", control: <Switch aria-label="Suggest shortcuts" checked={ap.suggestShortcuts} onChange={(v) => ap.set({ suggestShortcuts: v })} /> },
-              { id: "apReset", label: "Reset appearance", hint: "Standard theme, dark mode, the default background, sidebar on the right, everything shown", control: <Button icon="rotate-ccw" onClick={() => ap.reset()}>Reset</Button> },
+              { id: "apReset", label: "Reset appearance", hint: "Minimal theme, light mode, white background, sidebar on the right, item IDs and labels shown", control: <Button icon="rotate-ccw" onClick={() => ap.reset()}>Reset</Button> },
             ],
           },
         ],

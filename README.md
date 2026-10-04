@@ -171,7 +171,7 @@ removes the bytes after commit. Project activity survives individual item deleti
 
 `npm run test:e2e` runs the browser gates in `tests/e2e/` with Playwright against the dev servers (started for you
 when nothing listens on :5173; Postgres must be up). They sign in as the seeded dev user and, for each of the four
-scopes (Standard / Minimal × Dark / Light), open the list, board, calendar, item overlay and Settings screens, assert
+scopes (Rounded / Minimal × Dark / Light), open the list, board, calendar, item overlay and Settings screens, assert
 the scope landed on `<html>`, run **axe** (WCAG 2.1 A + AA; serious and critical violations fail), and compare a
 **visual-regression** snapshot. Two more specs check the reduced-motion rule and the list keyboard model.
 The guest spec checks the empty starter, browser isolation, GUI editing, concurrent tabs, avatar and

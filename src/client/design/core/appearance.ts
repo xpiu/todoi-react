@@ -3,7 +3,7 @@
 //
 // Two axes from themes.ts: theme × mode. Background and Foreground picks are remembered PER
 // theme × mode slot; Colorize Board columns, Suggest shortcuts and Sidebar on left side are
-// remembered PER theme (Standard ships Colorize + Suggest on, Minimal off; sidebar-left off in both).
+// remembered PER theme (Rounded ships Colorize + Suggest on, Minimal off; sidebar-left off in both).
 // Persisted under one localStorage key, `td-appearance`; the design-system kit's td-* keys migrate
 // on first read. DOM effects (<html data-theme data-mode data-colorize-columns data-sidebar-side>,
 // --chrome-canvas and the surface overrides) are applied from here, before React mounts.
@@ -50,7 +50,7 @@ interface ThemePrefs {
 }
 
 const THEME_PREF_DEFAULTS: Record<ThemeId, ThemePrefs> = {
-  standard: { colorizeColumns: true, suggestShortcuts: true, sidebarLeft: false },
+  rounded: { colorizeColumns: true, suggestShortcuts: true, sidebarLeft: false },
   minimal: { colorizeColumns: false, suggestShortcuts: false, sidebarLeft: false },
 };
 
@@ -84,7 +84,7 @@ export const APPEARANCE_DEFAULTS: AppearanceState = {
   showItemIds: true,
   showLabels: true,
   statusDisplay: "informative",
-  ...THEME_PREF_DEFAULTS.standard,
+  ...THEME_PREF_DEFAULTS[DEFAULT_THEME],
 };
 
 const PERSISTED_DEFAULTS: PersistedState = {
@@ -98,6 +98,22 @@ const PERSISTED_DEFAULTS: PersistedState = {
 };
 
 const slotKey = (theme: ThemeId, mode: ModeId) => `${theme}-${mode}` as const;
+
+/** Preserve saved colors and per-theme settings when Standard becomes Rounded. */
+function migrateStoredAppearance(persisted: unknown): Partial<PersistedState> {
+  const p = (persisted ?? {}) as Omit<Partial<PersistedState>, "theme"> & { theme?: ThemeId | "standard" };
+  const slots: Record<string, Partial<SlotPicks>> = { ...p.slots };
+  const themePrefs: Record<string, Partial<ThemePrefs>> = { ...p.themePrefs };
+  for (const mode of MODE_IDS) {
+    const oldKey = `standard-${mode}`;
+    const newKey = slotKey("rounded", mode);
+    if (slots[oldKey]) slots[newKey] ??= slots[oldKey];
+    delete slots[oldKey];
+  }
+  if (themePrefs.standard) themePrefs.rounded ??= themePrefs.standard;
+  delete themePrefs.standard;
+  return { ...p, theme: p.theme === "standard" ? "rounded" : p.theme, slots, themePrefs };
+}
 
 // ── Resolution ─────────────────────────────────────────────────────────────────
 function resolveSlot(s: PersistedState, theme: ThemeId, mode: ModeId): SlotPicks {
@@ -135,7 +151,8 @@ function migrateLegacyKeys(): Partial<PersistedState> | null {
       return null;
     }
   };
-  const theme = get("td-theme");
+  const savedTheme = get("td-theme");
+  const theme = savedTheme === "standard" ? "rounded" : savedTheme;
   const mode = get("td-mode");
   if (theme == null && mode == null) return null;
   const out: Partial<PersistedState> = { slots: {}, themePrefs: {} };
@@ -147,15 +164,16 @@ function migrateLegacyKeys(): Partial<PersistedState> | null {
   const sd = get("td-status-display");
   if (sd && STATUS_DISPLAY_OPTIONS.some((o) => o.id === sd)) out.statusDisplay = sd as StatusDisplay;
   for (const t of THEME_IDS) {
+    const legacyTheme = t === "rounded" ? "standard" : t;
     for (const m of MODE_IDS) {
-      const background = get(`td-bg-${t}-${m}`);
-      const foreground = get(`td-fg-${t}-${m}`);
+      const background = get(`td-bg-${legacyTheme}-${m}`);
+      const foreground = get(`td-fg-${legacyTheme}-${m}`);
       if (background != null || foreground != null) out.slots![slotKey(t, m)] = { background, foreground };
     }
     const prefs: Partial<ThemePrefs> = {};
-    const c = bool(`td-colorize-columns-${t}`);
-    const s = bool(`td-suggest-shortcuts-${t}`);
-    const l = bool(`td-sidebar-left-${t}`);
+    const c = bool(`td-colorize-columns-${legacyTheme}`);
+    const s = bool(`td-suggest-shortcuts-${legacyTheme}`);
+    const l = bool(`td-sidebar-left-${legacyTheme}`);
     if (c !== undefined) prefs.colorizeColumns = c;
     if (s !== undefined) prefs.suggestShortcuts = s;
     if (l !== undefined) prefs.sidebarLeft = l;
@@ -237,6 +255,7 @@ export const useAppearanceStore = create<AppearanceStore>()(
         };
       },
       version: APPEARANCE_STORAGE_VERSION,
+      migrate: migrateStoredAppearance,
     },
   ),
 );

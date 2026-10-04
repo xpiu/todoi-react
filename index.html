@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="standard" data-mode="dark">
+<html lang="en" data-theme="minimal" data-mode="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -12,7 +12,8 @@
           var raw = localStorage.getItem("td-appearance");
           var s = raw ? JSON.parse(raw).state : null;
           var root = document.documentElement;
-          if (s && (s.theme === "standard" || s.theme === "minimal")) root.setAttribute("data-theme", s.theme);
+          if (s && s.theme === "standard") s.theme = "rounded";
+          if (s && (s.theme === "rounded" || s.theme === "minimal")) root.setAttribute("data-theme", s.theme);
           if (s && (s.mode === "dark" || s.mode === "light")) root.setAttribute("data-mode", s.mode);
         } catch (e) {}
       })();

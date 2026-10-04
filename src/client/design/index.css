@@ -5,7 +5,7 @@
 @layer tokens, base, components, theme;
 
 @import "./tokens/colors.css" layer(tokens);
-@import "./tokens/themes/standard.css" layer(tokens);
+@import "./tokens/themes/rounded.css" layer(tokens);
 @import "./tokens/themes/minimal.css" layer(tokens);
 @import "./tokens/typography.css" layer(tokens);
 @import "./tokens/spacing.css" layer(tokens);

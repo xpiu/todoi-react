@@ -3,7 +3,7 @@
    Design source: explorations/minimal-theme-board.html (B · Ledger). Scopes:
      dark  → [data-theme="minimal"]
      light → [data-theme="minimal"][data-mode="light"]
-   Token SET stays identical to tokens/themes/standard.css (the Theme parity audit diffs the two).
+   Token SET stays identical to tokens/themes/rounded.css (the Theme parity audit diffs the two).
    Shape, density and per-component rules live in tokens/themes/minimal-components.css; type in tokens/typography.css.
    Palettes: components/core/Themes.jsx (MINIMAL_*) — one Background per mode, no Foreground. */
 

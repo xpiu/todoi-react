@@ -1,6 +1,6 @@
 // Icon — the one glyph API. Lucide through an explicit map (icons.ts), plus Todoi's own glyphs:
 // "circle-todo" (the To-do status: a dial at zero), Ledger variants for the Minimal theme, and
-// pixel-snapped panel / list / kanban / calendar glyphs for Standard, where Lucide's 24-unit grid
+// pixel-snapped panel / list / kanban / calendar glyphs for Rounded, where Lucide's 24-unit grid
 // would blur axis-aligned lines at 16–20px. Spec: DESIGN.md › Iconography.
 import type { CSSProperties } from "react";
 
@@ -92,7 +92,7 @@ const LEDGER: Record<string, SvgNode[]> = {
   ],
 };
 
-/** Standard theme: glyphs made only of axis-aligned lines, drawn in device pixels with an integer stroke. */
+/** Rounded theme: glyphs made only of axis-aligned lines, drawn in device pixels with an integer stroke. */
 const SNAPPED: Record<string, (size: number, stroke: number) => SvgNode[]> = {
   list: (s, w) => {
     const snap = (v: number) => Math.round(v - w / 2) + w / 2;

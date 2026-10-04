@@ -31,11 +31,11 @@ function tokensInScope(css: string, selectorStart: string): Set<string> {
   return new Set([...body.matchAll(/--([a-z0-9-]+)\s*:/g)].map((m) => m[1]!));
 }
 
-const standard = read("themes/standard.css");
+const rounded = read("themes/rounded.css");
 const minimal = read("themes/minimal.css");
 const SCOPES = {
-  "standard dark": tokensInScope(standard, ":root,[data-theme=\"standard\"]"),
-  "standard light": tokensInScope(standard, '[data-theme="standard"][data-mode="light"]'),
+  "rounded dark": tokensInScope(rounded, ":root,[data-theme=\"rounded\"]"),
+  "rounded light": tokensInScope(rounded, '[data-theme="rounded"][data-mode="light"]'),
   "minimal dark": tokensInScope(minimal, '[data-theme="minimal"]{'),
   "minimal light": tokensInScope(minimal, '[data-theme="minimal"][data-mode="light"]'),
 };
@@ -93,7 +93,7 @@ describe("component CSS adherence", () => {
 
   it("references only tokens that exist", () => {
     const defined = new Set<string>();
-    for (const f of ["colors.css", "typography.css", "spacing.css", "radius.css", "elevation.css", "motion.css", "themes/standard.css", "themes/minimal.css"]) {
+    for (const f of ["colors.css", "typography.css", "spacing.css", "radius.css", "elevation.css", "motion.css", "themes/rounded.css", "themes/minimal.css"]) {
       for (const m of read(f).matchAll(/--([a-z0-9-]+)\s*:/g)) defined.add(m[1]!);
     }
     const unknown = new Set<string>();

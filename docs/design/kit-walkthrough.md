@@ -54,7 +54,7 @@ sync notice (Dealers & stock), the phone item sheet (390px) and the tablet two-r
 
 ## Observations that confirm the spec
 
-- Standard dark: neutral black chrome, Carbon foreground, blue action; Standard light: Butter
+- Rounded dark: neutral black chrome, Carbon foreground, blue action; Rounded light: Butter
   canvas by default (the token fallback is Cornflower), cream lists, navy ink.
 - Minimal (Ledger): 48px chrome, hairlines, Inter + Geist Mono, square checkboxes, done items
   struck through in grey, the priority word in text, no fills or shadows.
