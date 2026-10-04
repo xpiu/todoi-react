@@ -104,7 +104,7 @@ html[data-theme="minimal"] .td-card-body{padding:0!important;display:flex!import
 html[data-theme="minimal"] .td-card-body>.td-card-title{width:100%;white-space:normal;margin-bottom:2px;font:400 12.5px/1.28 var(--font-ui)!important;color:var(--ink-900)!important;padding-right:0!important;order:-1}
 html[data-theme="minimal"] .td-card-title>svg{display:none!important}
 html[data-theme="minimal"] .td-card-title.is-done{color:var(--ink-400)!important}
-html[data-theme="minimal"] .td-card-labels,html[data-theme="minimal"] .td-card-badges{display:contents;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-card-labels,html[data-theme="minimal"] .td-card-badges{display:contents!important;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-card-badges.is-compact .td-meta-text{display:inline}
 html[data-theme="minimal"] .td-card-body>*,html[data-theme="minimal"] .td-card-labels>*,html[data-theme="minimal"] .td-card-badges>*{white-space:nowrap;flex:none}
 html[data-theme="minimal"] .td-card-badge,html[data-theme="minimal"] .td-due{display:inline-flex;gap:0;order:1}
@@ -129,7 +129,7 @@ html[data-theme="minimal"] .td-card.td-file-target::after{border-radius:0;font:4
 /* Labels are words; assignees are initials; both comma-separated, grey */
 html[data-theme="minimal"] .td-card-labels .td-label,html[data-theme="minimal"] .td-lrow-labels .td-lpill{display:inline!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important;overflow:visible!important;position:static!important;transition:none!important}
 html[data-theme="minimal"] .td-card-labels .td-label+.td-label::before,html[data-theme="minimal"] .td-lrow-labels .td-lpill+.td-lpill::before{content:", "}
-html[data-theme="minimal"] .td-card-labels .td-label:not(:last-of-type){margin-right:-4px!important}
+html[data-theme="minimal"] .td-card-labels .td-label:not(:last-of-type){margin-right:-10px!important}
 html[data-theme="minimal"] .td-lrow-labels .td-lpill-n,html[data-theme="minimal"] .td-lrow-avs .td-lav-n,html[data-theme="minimal"] .td-card-avs .td-cav-n{display:none!important}
 html[data-theme="minimal"] .td-lrow-labels,html[data-theme="minimal"] .td-lrow-labels.is-float .td-lrow-labels-in{position:static;width:auto!important;height:auto;padding:0;overflow:visible;background:none!important;max-width:none!important}
 html[data-theme="minimal"] .td-card-avs,html[data-theme="minimal"] .td-lrow-avs{gap:0;color:var(--ink-400)}
@@ -363,7 +363,6 @@ html[data-theme="minimal"] .td-lrow-from .td-avatar{width:auto!important;height:
 html[data-theme="minimal"] .td-lrow-from .td-avatar::after{content:attr(data-initials);font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-lrow-from .td-nmark{background:none;border-radius:0;color:var(--ink-400);width:auto!important;height:auto!important}
 html[data-theme="minimal"] .td-lrow-from .td-nmark svg{width:14px;height:14px;stroke-width:1.75}
-html[data-theme="minimal"] .td-lrow.is-unread{background:none;box-shadow:none}
 html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-title{font-weight:500;letter-spacing:-.005em}
 html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-from{position:relative}
 html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-from::after{content:"";position:absolute;right:-6px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--ink-900)}
@@ -412,6 +411,7 @@ html[data-theme="minimal"] .td-switch:focus-visible .td-switch-track{box-shadow:
 html[data-theme="minimal"] .td-pop,html[data-theme="minimal"] .td-usermenu,html[data-theme="minimal"] .td-createmenu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
 html[data-theme="minimal"] .td-pop{padding:6px 0}
 html[data-theme="minimal"] .td-pop.td-pop-flush:not([data-sheet]){padding:0}
+html[data-theme="minimal"] .td-pop.td-style-menu{padding:12px}
 html[data-theme="minimal"] .td-menu{gap:0}
 html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-usermenu-item,html[data-theme="minimal"] .td-usermenu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-usermenu-item:hover,html[data-theme="minimal"] .td-usermenu-item:focus-visible,html[data-theme="minimal"] button.td-usermenu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
@@ -660,3 +660,223 @@ html[data-theme="minimal"] .td-react-add:hover{border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-react-grid{padding:0}
 html[data-theme="minimal"] .td-react-pick{border-radius:0}
 html[data-theme="minimal"] .td-react-pick:hover{background:var(--blue-100)}
+/* ═══ Minimal coverage · the surfaces that only had a Rounded specimen (pickers, dialogs, states, project lifecycle, archive, saved views, guests, bulk bar). Same four rules as everywhere above: square, hairlines instead of fills and shadows, 500 instead of 600, colour only as a 6px square or overdue red; people are initials in mono */
+/* Buttons: the default (subtle) variant is a hairline box, ghost is a grey word; primary and danger are filled with 2px corners; no rounded icon buttons */
+html[data-theme="minimal"] .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse){background:none;box-shadow:inset 0 0 0 1px var(--border-divider);border-radius:2px;font-weight:400}
+html[data-theme="minimal"] .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse):hover{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse):active{background:var(--n-a06)}
+html[data-theme="minimal"] .td-btn-ghost{color:var(--ink-400);font-weight:400;border-radius:0}
+html[data-theme="minimal"] .td-btn-ghost:hover,html[data-theme="minimal"] .td-btn-ghost:active{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-btn-primary,html[data-theme="minimal"] .td-btn-danger{border-radius:2px;font-weight:500}
+html[data-theme="minimal"] .td-btn-inverse{background:var(--ink-900);color:var(--chrome-canvas);border-radius:2px;font-weight:500}
+html[data-theme="minimal"] .td-btn-inverse:hover,html[data-theme="minimal"] .td-btn-inverse:active{background:var(--blue-600);color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-btn:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-iconbtn:not(.td-iconbtn-round){border-radius:0}
+/* Avatars: wherever a disc would sit beside a name, the initials in mono instead (images stay, 14px) */
+html[data-theme="minimal"] .td-mp-row span.td-avatar,html[data-theme="minimal"] .td-pp-member span.td-avatar,html[data-theme="minimal"] .td-pp-head span.td-avatar,html[data-theme="minimal"] .td-al-row span.td-avatar,html[data-theme="minimal"] .td-arc-row span.td-avatar,html[data-theme="minimal"] .td-avstack span.td-avatar,html[data-theme="minimal"] .td-ip-row span.td-avatar,html[data-theme="minimal"] .td-mp-value span.td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-mono)!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-mp-row img.td-avatar,html[data-theme="minimal"] .td-pp-member img.td-avatar,html[data-theme="minimal"] .td-al-row img.td-avatar,html[data-theme="minimal"] .td-arc-row img.td-avatar,html[data-theme="minimal"] .td-avstack img.td-avatar{width:14px!important;height:14px!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-avstack>*{box-shadow:none;border-radius:0}
+html[data-theme="minimal"] .td-avstack>*+*{margin-left:0}
+html[data-theme="minimal"] .td-avstack>*+*::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-avstack-more{width:auto!important;height:auto!important;background:none;color:var(--ink-400);font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-btn .td-avstack{display:none}
+html[data-theme="minimal"] .td-lp-value{gap:0}
+html[data-theme="minimal"] .td-lp-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+html[data-theme="minimal"] .td-lp-value .td-label+.td-label::before{content:", "}
+/* Picker search fields (Members · Labels · Project · Item · Icon · typed date): a hairline, not a filled bar; lists flush with the sheet */
+html[data-theme="minimal"] .td-lp-search,html[data-theme="minimal"] .td-mp-search,html[data-theme="minimal"] .td-prp-search,html[data-theme="minimal"] .td-ip-search,html[data-theme="minimal"] .td-dp-type,html[data-theme="minimal"] .td-ipk-search{margin:0 14px 6px;padding:0;height:28px;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);color:var(--ink-400)}
+html[data-theme="minimal"] .td-lp-search:focus-within,html[data-theme="minimal"] .td-mp-search:focus-within,html[data-theme="minimal"] .td-prp-search:focus-within,html[data-theme="minimal"] .td-ip-search:focus-within,html[data-theme="minimal"] .td-dp-type:focus-within,html[data-theme="minimal"] .td-ipk-search:focus-within{box-shadow:none;border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-lp-input,html[data-theme="minimal"] .td-mp-input,html[data-theme="minimal"] .td-prp-input,html[data-theme="minimal"] .td-ip-input,html[data-theme="minimal"] .td-dp-input,html[data-theme="minimal"] .td-ipk-search input,html[data-theme="minimal"] .td-dts-input{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-lp-list,html[data-theme="minimal"] .td-mp-list,html[data-theme="minimal"] .td-prp-list,html[data-theme="minimal"] .td-ip-list,html[data-theme="minimal"] .td-select-list{margin:0;padding:0}
+html[data-theme="minimal"] .td-prp-head{padding:4px 14px 8px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-prp-row .td-menu-item-label>svg{color:var(--ink-900)!important}
+html[data-theme="minimal"] .td-prp-group,html[data-theme="minimal"] .td-ip-list-name,html[data-theme="minimal"] .td-mp-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-ip-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-ip-title[data-done="true"]{text-decoration:none}
+/* Labels: a 6px square of colour before the word; the edit form is hairline fields and square swatches ringed in ink when picked */
+html[data-theme="minimal"] .td-lp-bar,html[data-theme="minimal"] .td-cp-dot,html[data-theme="minimal"] .td-bulk-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
+html[data-theme="minimal"] .td-lp-form{padding:6px 14px 8px}
+html[data-theme="minimal"] .td-lp-form-head{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-lp-name,html[data-theme="minimal"] .td-rp-num,html[data-theme="minimal"] .td-rp-inline,html[data-theme="minimal"] .td-sv-input{padding-left:0;padding-right:0;border:0;border-bottom:1px solid var(--border-input);border-radius:0;background:none;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-lp-name:focus,html[data-theme="minimal"] .td-rp-num:focus,html[data-theme="minimal"] .td-rp-inline:focus,html[data-theme="minimal"] .td-sv-input:focus{border-color:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-rp-num{text-align:left;width:32px}
+html[data-theme="minimal"] .td-lp-swatch,html[data-theme="minimal"] .td-cp-swatch,html[data-theme="minimal"] .td-cp-img,html[data-theme="minimal"] .td-cp-upload,html[data-theme="minimal"] .td-pip-swatch{border-radius:0}
+html[data-theme="minimal"] .td-lp-swatch{height:20px}
+html[data-theme="minimal"] .td-pip-swatch{width:20px;height:20px;box-shadow:none}
+html[data-theme="minimal"] .td-lp-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cp-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cp-img[aria-pressed="true"],html[data-theme="minimal"] .td-pip-swatch[aria-pressed="true"]{box-shadow:0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas)}
+html[data-theme="minimal"] .td-lp-swatch:focus-visible,html[data-theme="minimal"] .td-cp-swatch:focus-visible,html[data-theme="minimal"] .td-cp-img:focus-visible,html[data-theme="minimal"] .td-pip-swatch:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+html[data-theme="minimal"] .td-cp-swatches,html[data-theme="minimal"] .td-cp-imgs{padding:0 14px 4px}
+html[data-theme="minimal"] .td-cp-upload{border-color:var(--ink-400);color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-cp-upload:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-lp-foot,html[data-theme="minimal"] .td-dp-foot,html[data-theme="minimal"] .td-dts-foot,html[data-theme="minimal"] .td-rp-foot{padding:8px 14px 2px;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-lp-foot .td-btn,html[data-theme="minimal"] .td-dp-foot .td-btn,html[data-theme="minimal"] .td-dts-foot .td-btn,html[data-theme="minimal"] .td-rp-foot .td-btn,html[data-theme="minimal"] .td-dp-quick .td-btn,html[data-theme="minimal"] .td-dts-quick .td-btn{font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-dp-cur,html[data-theme="minimal"] .td-dts-cur,html[data-theme="minimal"] .td-rp-sum,html[data-theme="minimal"] .td-dp-preview,html[data-theme="minimal"] .td-dts-preview{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+/* Dates: the fields are hairlines with a mono label, the month a ruled grid — square days, today ringed grey, the picked day in ink, the span a paper-grey wash */
+html[data-theme="minimal"] .td-dp,html[data-theme="minimal"] .td-dts,html[data-theme="minimal"] .td-rp{padding:4px 0 0}
+html[data-theme="minimal"] .td-dts-fields{padding:0 14px}
+html[data-theme="minimal"] .td-dts-field{padding:0;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);transition:border-color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-dts-field[data-active="true"]{box-shadow:none;border-bottom-color:var(--ink-900);color:var(--ink-400)}
+html[data-theme="minimal"] .td-dts-label{font:400 11px/1.45 var(--font-mono);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-dts-addstart{margin-left:14px;padding:0;border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-dts-addstart:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-dp-quick,html[data-theme="minimal"] .td-dts-quick,html[data-theme="minimal"] .td-cal{padding:0 14px}
+html[data-theme="minimal"] .td-cal{width:auto}
+html[data-theme="minimal"] .td-cal-title{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-cal-wd{font:400 11px/20px var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-cal-grid{border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-cal-day{border-radius:0;font:400 13px/1.45 var(--font-ui);transition:none}
+html[data-theme="minimal"] .td-cal-day:hover{background:var(--n-a06)}
+html[data-theme="minimal"] .td-cal-day:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-cal-day[data-today="true"]{font-weight:500;box-shadow:inset 0 0 0 1px var(--ink-400)}
+html[data-theme="minimal"] .td-cal-day[aria-pressed="true"],html[data-theme="minimal"] .td-cal-day[aria-pressed="true"]:hover{background:var(--ink-900);color:var(--chrome-canvas);font-weight:500;box-shadow:none}
+html[data-theme="minimal"] .td-cal-day[data-in-range="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-cal-day[data-range-edge="start"],html[data-theme="minimal"] .td-cal-day[data-range-edge="end"]{border-radius:0}
+/* Repeat: the unit segment and weekday discs follow Segmented — no track, hairline below, ink when chosen; radios are hairline rings */
+html[data-theme="minimal"] .td-rp-head{padding:0 14px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-rp-row,html[data-theme="minimal"] .td-rp-days,html[data-theme="minimal"] .td-rp-inline{margin:0 14px}
+html[data-theme="minimal"] .td-rp-row .td-rp-inline{margin:0}
+html[data-theme="minimal"] .td-rp-seg{padding:0;gap:0;border-radius:0;background:none;box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-rp-seg button{border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-rp-seg button[aria-pressed="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-rp-seg button:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas),inset 0 0 0 3px var(--ink-900)}
+html[data-theme="minimal"] .td-rp-days{gap:2px}
+html[data-theme="minimal"] .td-rp-day{height:26px;border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-rp-day[aria-pressed="true"]{background:var(--ink-900);color:var(--chrome-canvas);box-shadow:none}
+html[data-theme="minimal"] .td-rp-day:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+html[data-theme="minimal"] .td-rp-opt{padding:0 14px;border-radius:0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-rp-opt:hover{background:var(--chrome-hover)}
+html[data-theme="minimal"] .td-rp-radio{border:1px solid var(--ink-400)}
+html[data-theme="minimal"] .td-rp-opt[aria-checked="true"] .td-rp-radio{border:4px solid var(--ink-900)}
+/* Icon picker: square cells, the chosen one on the paper-grey wash in ink */
+html[data-theme="minimal"] .td-ipk-opt,html[data-theme="minimal"] .td-ipk-auto,html[data-theme="minimal"] .td-pip-opt{border-radius:0;transition:none}
+html[data-theme="minimal"] .td-ipk-opt:hover,html[data-theme="minimal"] .td-ipk-auto:hover,html[data-theme="minimal"] .td-ipk-auto:focus-visible,html[data-theme="minimal"] .td-pip-opt:hover{background:var(--chrome-hover);color:var(--ink-900)}
+html[data-theme="minimal"] .td-ipk-opt[aria-pressed="true"],html[data-theme="minimal"] .td-pip-opt[aria-pressed="true"]{background:var(--blue-100);color:var(--ink-900)}
+html[data-theme="minimal"] .td-ipk-opt:focus-visible,html[data-theme="minimal"] .td-pip-opt:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-ipk-search{margin:2px 14px 6px}
+html[data-theme="minimal"] .td-ipk-empty{text-align:left;padding:8px 14px 12px;font:400 12px/1.45 var(--font-ui)}
+/* Project tile (New project · Project settings head): no fill behind the glyph; a hairline box that goes ink on hover */
+html[data-theme="minimal"] .td-pip-tile{border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-pip-tile:hover,html[data-theme="minimal"] .td-pip-tile[aria-expanded="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-pip-tile:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+html[data-theme="minimal"] .td-pip-glyph{border-radius:0;background:none}
+html[data-theme="minimal"] .td-pip-captioned{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-pip-panel{padding:4px 14px 8px}
+/* New project dialog: template rows are plain rows, the chosen one on the paper-grey wash with an ink check; the prefix in bare mono */
+html[data-theme="minimal"] .td-pd-label,html[data-theme="minimal"] .td-pd-tplhead,html[data-theme="minimal"] .td-pp-label{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-pd-hint,html[data-theme="minimal"] .td-pp-hint,html[data-theme="minimal"] .td-pp-crumb,html[data-theme="minimal"] .td-pp-cap{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-pd-tplrow{border-radius:0;padding:4px 0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-pd-tplrow:hover{background:var(--chrome-hover)}
+html[data-theme="minimal"] .td-pd-tplrow[aria-checked="true"]{background:var(--blue-100);box-shadow:inset 2px 0 0 var(--ink-900);padding-left:8px}
+html[data-theme="minimal"] .td-pd-tplrow:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-pd-tplrow[aria-checked="true"]:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900),inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-pd-tplname b{font-weight:500}
+html[data-theme="minimal"] .td-pd-tplname span{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-pd-tplcheck{color:var(--ink-900)}
+html[data-theme="minimal"] .td-pd-copyrow{padding-left:26px}
+html[data-theme="minimal"] .td-pd-mono,html[data-theme="minimal"] .td-pp-mono{font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-pd-name .td-field{font-size:15px}
+/* Project settings: 500-weight name and section titles, links as underlined words, member rows with initials */
+html[data-theme="minimal"] .td-pp-name{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-pp-sectitle{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-pp-mname b{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-pp-mname span,html[data-theme="minimal"] .td-pp-mrole{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-pp-linkbtn{border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:3px}
+html[data-theme="minimal"] .td-pp-linkbtn:hover{text-decoration-color:var(--ink-900)}
+html[data-theme="minimal"] .td-pp-linkbtn.td-pp-danger{color:var(--danger);text-decoration-color:var(--danger)}
+html[data-theme="minimal"] .td-pp-linkbtn:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+/* Empty, loading and error states: 500-weight title, the primary action filled ink, the key hint in bare mono; skeletons are square bars on no surface, laid out as the ledger */
+html[data-theme="minimal"] .td-empty-title{font:500 14px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-empty-hint{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-empty-chrome .td-empty-icon,html[data-theme="minimal"] .td-empty-icon{color:var(--ink-400)}
+html[data-theme="minimal"] .td-empty-danger .td-empty-icon{color:var(--danger)}
+html[data-theme="minimal"] .td-empty-icon svg{stroke-width:1.5}
+html[data-theme="minimal"] .td-empty-kbd{padding:0;border:0;border-radius:0;opacity:1;color:var(--ink-400);font:400 11px/1.45 var(--font-mono);margin-left:6px}
+html[data-theme="minimal"] .td-btn-inverse .td-empty-kbd{color:var(--chrome-canvas);opacity:.7}
+html[data-theme="minimal"] .td-notice{margin:12px 24px 0;padding:6px 6px 6px 14px;border-radius:0;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 13px/1.45 var(--font-ui);animation:none}
+html[data-theme="minimal"] .td-notice-fixed{margin:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
+html[data-theme="minimal"] .td-notice-msg{font-weight:500}
+html[data-theme="minimal"] .td-notice-detail{color:var(--ink-400)}
+html[data-theme="minimal"] .td-notice-icon svg{stroke-width:1.75}
+html[data-theme="minimal"] .td-sk,html[data-theme="minimal"] .td-sk-round{border-radius:0}
+html[data-theme="minimal"] .td-skview-board{gap:24px;padding:20px 24px 0}
+html[data-theme="minimal"] .td-sk-col,html[data-theme="minimal"] .td-sk-card,html[data-theme="minimal"] .td-sk-sec{background:none;border-radius:0;box-shadow:none;padding:0}
+html[data-theme="minimal"] .td-sk-col{gap:0}
+html[data-theme="minimal"] .td-sk-colhead,html[data-theme="minimal"] .td-sk-sechead{height:auto;padding:0 0 8px;margin:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-sk-colhead>.td-sk-round,html[data-theme="minimal"] .td-sk-sechead>.td-sk-round{display:none}
+html[data-theme="minimal"] .td-sk-card{padding:12px 0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-sk-colfoot{height:28px}
+html[data-theme="minimal"] .td-skview-list{padding:20px 24px 24px}
+html[data-theme="minimal"] .td-skview-list-inner{gap:24px}
+html[data-theme="minimal"] .td-sk-row{height:40px;border-bottom:1px solid var(--border-divider)}
+/* Bulk action bar: an ink bar, square, words only — the same voice as the toast; its menus are the square sheet */
+html[data-theme="minimal"] .td-bulk{padding:6px 6px 6px 16px;gap:4px;border-radius:0;box-shadow:none;background:var(--ink-900);color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);animation:none}
+html[data-theme="minimal"] .td-bulk-count{font-weight:500;border-right-color:var(--ink-400)}
+html[data-theme="minimal"] .td-bulk-btn{height:28px;padding:0 8px;border-radius:0;color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);transition:none}
+html[data-theme="minimal"] .td-bulk-btn:hover,html[data-theme="minimal"] .td-bulk-btn:active,html[data-theme="minimal"] .td-bulk-btn[aria-expanded="true"]{background:none;text-decoration:underline;text-underline-offset:3px}
+html[data-theme="minimal"] .td-bulk-btn:focus-visible{box-shadow:inset 0 0 0 1px var(--chrome-canvas)}
+html[data-theme="minimal"] .td-bulk-btn.is-danger{color:var(--label-red)}
+html[data-theme="minimal"] .td-bulk-kbd{padding:0;border:0;border-radius:0;color:inherit;opacity:.6;font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-bulk-menu{padding:6px 0;gap:0;border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);animation:none}
+html[data-theme="minimal"] .td-bulk-item{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-bulk-item:hover{background:var(--chrome-hover)}
+html[data-theme="minimal"] .td-bulk-item[aria-checked="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-bulk-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
+html[data-theme="minimal"] .td-bulk-div{margin:6px 0}
+/* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
+html[data-theme="minimal"] .td-sv-tab,html[data-theme="minimal"] .td-sv-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
+/* Guest bar: the same 48px hairline row as the top bar, words in ink */
+html[data-theme="minimal"] .td-guest{min-height:40px;padding:0 24px;gap:12px;border-bottom-color:var(--border-divider)}
+html[data-theme="minimal"] .td-guest-icon{color:var(--ink-900)}
+html[data-theme="minimal"] .td-guest-icon svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-guest-text{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-guest-text b{font-weight:500}
+html[data-theme="minimal"] .td-guest-text span{color:var(--ink-400)}
+/* Project activity log: day headings are grey words over a hairline, rows with a hairline below, the key in bare mono */
+html[data-theme="minimal"] .td-al-count{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-al-day{padding:16px 0 6px;border-bottom:1px solid var(--border-divider);font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-al-row{padding:10px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-al-row+.td-al-row{border-top:0}
+html[data-theme="minimal"] .td-al-text{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-al-text b{font-weight:500}
+html[data-theme="minimal"] .td-al-key,html[data-theme="minimal"] button.td-al-key{padding:0;margin-left:6px;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] button.td-al-key:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] button.td-al-key:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-al-time{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-al-kind{color:var(--ink-300)}
+/* Archive and trash: no white card — rows over hairlines; the project lead loses its fill; the confirming row takes the paper-grey wash */
+html[data-theme="minimal"] .td-arc{padding:20px 24px 24px;gap:12px}
+html[data-theme="minimal"] .td-arc-cap{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-arc-list,html[data-theme="minimal"] .td-arc-empty{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-arc-group{padding:12px 0 4px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-arc-row{padding:8px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-arc-row+.td-arc-row{border-top:0}
+html[data-theme="minimal"] .td-arc-row:hover,html[data-theme="minimal"] .td-arc-row:focus-within{background:none}
+html[data-theme="minimal"] .td-arc-row[data-confirm="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-arc-lead{border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-arc-lead[data-kind="project"]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider)}
+html[data-theme="minimal"] .td-arc-title{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-arc-title[data-done="true"]{color:var(--ink-400)}
+html[data-theme="minimal"] .td-arc-meta{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-arc-meta b{font-weight:500;color:var(--ink-400)}
+html[data-theme="minimal"] .td-arc-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-arc-bar .td-field{height:28px}
+/* Status role review · Keyboard shortcuts: the square sheet; keys in bare mono, section names plain grey words */
+html[data-theme="minimal"] .td-rolereview{padding:20px 24px;border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);animation:none}
+html[data-theme="minimal"] .td-rolereview-title{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-rolereview-body{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-scd-sec h4{font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400);padding-bottom:4px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-scd-kbd{padding:0;border:0;border-radius:0;background:none;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-scd-sep{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-scd-desc{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-scd-note{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+/* Connection status: a word with a glyph on the top bar, no pill; the Settings variant a hairline box */
+html[data-theme="minimal"] .td-conn{height:auto;padding:0;border-radius:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);animation:none;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-conn:hover,html[data-theme="minimal"] .td-conn:active,html[data-theme="minimal"] .td-conn[aria-expanded="true"]{background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-conn:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-conn-ico svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-conn-n{color:var(--ink-400)}
+html[data-theme="minimal"] .td-conn-card,html[data-theme="minimal"] .td-conn-card:hover,html[data-theme="minimal"] .td-conn-card[aria-expanded="true"]{height:28px;padding:0 10px;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);color:var(--ink-900)}
+html[data-theme="minimal"] .td-conn-card:hover,html[data-theme="minimal"] .td-conn-card[aria-expanded="true"]{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-conn-menu-head{padding:6px 14px 2px;font:500 13px/1.45 var(--font-ui)}
+/* Password field hint */
+html[data-theme="minimal"] .td-pwf-hint{font:400 11px/1.45 var(--font-ui)}
