@@ -22,7 +22,9 @@
     "test:integration": "node --env-file=.env node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:update": "playwright test --update-snapshots"
+    "test:e2e:update": "playwright test --update-snapshots",
+    "design-sync": "tsx tools/claude-design-sync/src/cli.ts",
+    "design-sync:check": "tsc --noEmit -p tools/claude-design-sync && vitest run --config tools/claude-design-sync/vitest.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

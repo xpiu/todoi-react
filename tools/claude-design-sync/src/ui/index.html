@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-theme="minimal" data-mode="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Todoi ⇄ Claude Design</title>
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function () {
+        var m = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+        var set = function () { document.documentElement.setAttribute("data-mode", m && m.matches ? "dark" : "light"); };
+        set();
+        if (m && m.addEventListener) m.addEventListener("change", set);
+      })();
+    </script>
+    <link rel="stylesheet" href="/tokens/colors.css" />
+    <link rel="stylesheet" href="/tokens/themes/rounded.css" />
+    <link rel="stylesheet" href="/tokens/themes/minimal.css" />
+    <link rel="stylesheet" href="/tokens/typography.css" />
+    <link rel="stylesheet" href="/tokens/spacing.css" />
+    <link rel="stylesheet" href="/tokens/radius.css" />
+    <link rel="stylesheet" href="/tokens/elevation.css" />
+    <link rel="stylesheet" href="/tokens/motion.css" />
+    <link rel="stylesheet" href="/tokens/base.css" />
+    <link rel="stylesheet" href="/ui/app.css" />
+  </head>
+  <body>
+    <!--
+      THESIS: the sync is a plan you read top to bottom and sign. Every changed feature is one ruled
+      line, its App work on the left and its Design work on the right, twinned around a centre rail
+      where its direction is set. Refuses the dashboard of status cards and the file-diff tree.
+      OWN-WORLD: Todoi's Minimal "Ledger": paper and ink, 12% hairlines, no radius, Inter 13/1.45 with
+      Geist Mono for keys, counts and paths; red only where both sides changed. The rail's keys are
+      printed marks: hairline at rest, filled when set, run through when unavailable.
+      STORY: the developer sees which side moved and how much, picks Full sync / App → Design /
+      Design → App once, overrides single features on the rail, reads the evidence and briefs, runs
+      the plan, then approves the exact upload list.
+      FIRST VIEWPORT: 48px bar (title, sync point, Design refresh, activity); a one-sentence verdict
+      with the three-way direction control; the column heads App | rail | Design; the first rows of
+      the ledger. The plan bar is pinned to the bottom with the primary action.
+      FORM: sync plan document with a centre rail (candidate 4, raised by the centre-rail reference
+      page). Seed 0bba6ca7.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <div id="root"></div>
+    <script type="module" src="/ui/app.js"></script>
+  </body>
+</html>

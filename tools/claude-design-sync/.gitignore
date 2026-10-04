@@ -1,0 +1,6 @@
+.state/
+.tmp-smoke/
+test-results/
+playwright-report/
+dist/
+.impeccable/

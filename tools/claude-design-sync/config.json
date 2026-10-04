@@ -1,0 +1,105 @@
+{
+  "$comment": "Claude Design Sync: what to compare and how App paths map to Design (kit) paths. Paths are relative to the repo root (app) or the Design project root (design).",
+  "design": {
+    "projectId": "13419b94-fc55-494b-8a6d-e08632bb71e0",
+    "projectName": "Todoi Design System",
+    "componentRoot": "components",
+    "tokensRoot": "tokens",
+    "spec": "readme.md",
+    "screensRoot": "ui_kits/todoi",
+    "ignore": [
+      "_ds_bundle.js",
+      "_ds_manifest.json",
+      "_adherence.oxlintrc.json",
+      "uploads/**",
+      "assets/**",
+      "**/.thumbnail",
+      "thumbnail.html",
+      "SKILL.md",
+      "templates/**"
+    ],
+    "assetFallbacks": {
+      "assets/fonts/": "src/client/design/fonts/",
+      "assets/covers/": "src/client/design/covers/"
+    },
+    "$assetFallbacks": "Binary kit assets aren't pulled; previews read the App's identical copies instead"
+  },
+  "app": {
+    "componentRoot": "src/client/design",
+    "tokensRoot": "src/client/design/tokens",
+    "spec": "DESIGN.md",
+    "screensRoot": "src/client/app",
+    "ignore": [
+      "**/*.test.ts",
+      "**/*.test.tsx"
+    ]
+  },
+  "syncTagPrefix": "design-sync/",
+  "renames": [
+    {
+      "design": "components/navigation/SavedViews.jsx",
+      "app": "src/client/design/navigation/SavedViewTabs.tsx"
+    },
+    {
+      "design": "components/navigation/ChipRail.jsx",
+      "app": "src/client/design/navigation/ChipBar.tsx"
+    },
+    {
+      "design": "components/core/QuickAdd.jsx",
+      "app": "src/client/design/core/QuickAddInput.tsx"
+    },
+    {
+      "design": "components/overlay/StateDialog.jsx",
+      "app": "src/client/app/StateDialog.tsx"
+    }
+  ],
+  "screens": [
+    {
+      "design": "ui_kits/todoi/BoardScreen.jsx",
+      "app": "src/client/app/ProjectScreen.tsx",
+      "name": "Project screen (Board)"
+    },
+    {
+      "design": "ui_kits/todoi/ListScreen.jsx",
+      "app": "src/client/app/ProjectScreen.tsx",
+      "name": "Project screen (List)"
+    },
+    {
+      "design": "ui_kits/todoi/CalendarScreen.jsx",
+      "app": "src/client/app/ProjectScreen.tsx",
+      "name": "Project screen (Calendar)"
+    },
+    {
+      "design": "ui_kits/todoi/InboxScreen.jsx",
+      "app": "src/client/app/InboxScreen.tsx",
+      "name": "Inbox"
+    },
+    {
+      "design": "ui_kits/todoi/ProjectsScreen.jsx",
+      "app": "src/client/app/ProjectsScreen.tsx",
+      "name": "Projects page"
+    },
+    {
+      "design": "ui_kits/todoi/GroupsScreen.jsx",
+      "app": "src/client/app/GroupsScreen.tsx",
+      "name": "Groups page"
+    },
+    {
+      "design": "ui_kits/todoi/SettingsScreen.jsx",
+      "app": "src/client/app/SettingsScreen.tsx",
+      "name": "Settings & Account"
+    },
+    {
+      "design": "ui_kits/todoi/TDItemOverlay.jsx",
+      "app": "src/client/app/ItemOverlayScreen.tsx",
+      "name": "Item overlay screen"
+    }
+  ],
+  "harness": {
+    "implement": "claude",
+    "claudeBin": "claude",
+    "codexBin": "codex",
+    "pullModel": "sonnet",
+    "implementModel": ""
+  }
+}
