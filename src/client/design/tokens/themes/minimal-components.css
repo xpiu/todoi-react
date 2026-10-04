@@ -154,6 +154,11 @@ html[data-theme="minimal"] .td-list-add:focus-visible,html[data-theme="minimal"]
 html[data-theme="minimal"] .td-board-addlist{align-self:flex-start;padding:0 0 8px;height:auto;width:var(--size-list-width);justify-content:flex-start}
 /* List view: "Add another list" is a section-level action, so it takes the list-title weight and tracking (.td-lsec-name) rather than the item-row weight */
 html[data-theme="minimal"] .td-listview-addlist{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;padding:0;align-self:flex-start}
+/* Hidden lists (after "Add another list" in Board and List): the same grey words as the add row, ink on hover or while its menu is open */
+html[data-theme="minimal"] .td-hiddenlists{height:auto;padding:0;border-radius:0;background:none;opacity:1;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
+html[data-theme="minimal"] .td-hiddenlists svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-hiddenlists:hover,html[data-theme="minimal"] .td-hiddenlists[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-hiddenlists:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-list-composer{margin:0;padding:10px 0;background:none;box-shadow:none;border-radius:0;border-bottom:1px solid var(--border-divider)}
 /* ── List view: sections are the same ledger, one column wide */
 html[data-theme="minimal"] .td-listview{padding:20px 24px 24px}
