@@ -162,14 +162,10 @@ em {
   margin: 0 auto;
   padding: 0 24px calc(var(--cds-plan) + 64px);
 }
+/* the open panel takes its width from the page, never covers the Design column */
 .cds.has-panel .cds-main {
-  margin-right: max(24px, calc((100vw - var(--cds-page)) / 2 - var(--cds-panel) / 2));
-}
-@media (min-width: 1600px) {
-  .cds.has-panel .cds-main {
-    margin-right: calc(var(--cds-panel) + 24px);
-    margin-left: max(24px, calc(100vw - var(--cds-panel) - var(--cds-page) - 48px));
-  }
+  margin-right: calc(var(--cds-panel) + 24px);
+  margin-left: max(24px, calc((100vw - var(--cds-panel) - var(--cds-page)) / 2));
 }
 
 .cds-verdict {
@@ -641,7 +637,7 @@ em {
 .cds-proposal h4,
 .cds-plan-h {
   margin: 0 0 6px;
-  font: 400 11px/1.45 var(--font-mono);
+  font: 400 12px/1.45 var(--font-ui);
   color: var(--ink-400);
 }
 .cds-steps {
@@ -735,7 +731,7 @@ em {
   margin: 10px 0;
 }
 .cds-field span {
-  font: 400 11px/1.45 var(--font-mono);
+  font-size: 12px;
   color: var(--ink-400);
 }
 .cds-field input {
@@ -1239,7 +1235,7 @@ em {
   .cds-twin > .cds-cell:last-child::before {
     display: block;
     margin-bottom: 2px;
-    font: 400 11px/1.45 var(--font-mono);
+    font-size: 12px;
     color: var(--ink-400);
   }
   .cds-row .cds-twin > .cds-cell:first-child::before {
@@ -1263,6 +1259,9 @@ em {
   }
   .cds.has-panel .cds-plan {
     right: 0;
+  }
+  .cds.has-panel .cds-main {
+    margin: 0 auto;
   }
   .cds-panel {
     width: 100vw;
