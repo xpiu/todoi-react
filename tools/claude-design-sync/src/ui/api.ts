@@ -71,11 +71,11 @@ export const DIRECTION_LABEL: Record<Direction, string> = {
   skip: "Skip",
 };
 
-export const DIRECTION_SUB: Record<Direction, string> = {
-  both: "both ways",
-  "app-to-design": "one way, from the App",
-  "design-to-app": "one way, from Design",
-  skip: "leave as is",
+export const DIRECTION_SUB: Record<Direction, [string, string]> = {
+  both: ["both ways", ""],
+  "app-to-design": ["one way", ", from the App"],
+  "design-to-app": ["one way", ", from Design"],
+  skip: ["leave as is", ""],
 };
 
 export const DIRECTION_HINT: Record<Direction, string> = {

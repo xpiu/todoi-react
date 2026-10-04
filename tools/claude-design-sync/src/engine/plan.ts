@@ -46,7 +46,7 @@ export function effectiveDirection(f: Feature, global: Direction, override?: Dir
 /** Every unit's direction: its own override, else its feature's choice as far as the unit allows */
 export function unitChoicesFor(cmp: Comparison, global: Direction, featureOverrides: Record<string, Direction> = {}, unitOverrides: Record<string, Direction> = {}): Record<string, Direction> {
   const out: Record<string, Direction> = {};
-  for (const f of cmp.features) for (const u of f.units) out[u.id] = unitDirection(f.directions, u.status, global, featureOverrides[f.id], unitOverrides[u.id]);
+  for (const f of cmp.features) for (const u of f.units) out[u.id] = unitDirection(f.directions, u.status, global, featureOverrides[f.id], unitOverrides[u.id], u.kind);
   return out;
 }
 
@@ -55,7 +55,7 @@ export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Dir
   const steps: Step[] = [];
   for (const f of cmp.features) {
     const fd = choices[f.id] ?? "skip";
-    const dir = (u: Unit) => unitChoices[u.id] ?? (fd === "skip" ? "skip" : unitDirection(f.directions, u.status, fd));
+    const dir = (u: Unit) => unitChoices[u.id] ?? (fd === "skip" ? "skip" : unitDirection(f.directions, u.status, fd, undefined, undefined, u.kind));
     if (f.units.every((u) => dir(u) === "skip")) continue;
     const toDesign = f.units.filter((u) => flows(u, dir(u)).includes("design"));
     const toApp = f.units.filter((u) => flows(u, dir(u)).includes("app"));

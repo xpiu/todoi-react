@@ -12,15 +12,17 @@ Then open http://localhost:4477. The tool binds to 127.0.0.1 only.
 
 - **The verdict:** one sentence, such as "Since *1 Oct export*, the App moved 12 features, Design moved 5, and 10 changed on both sides".
 - **The plan-wide direction**, applied to every feature:
+  - **Into the App:** one way, from Design. Kit work is ported into the app.
   - **Full sync:** both ways. App work goes to Design, Design work comes to the App.
-  - **App → Design:** one way. App work is ported into the kit.
-  - **Design → App:** one way. Kit work is ported into the app.
+  - **Into Design:** one way, from the App. App work is ported into the kit.
 - **The ledger:** one ruled line per *feature*, with the App's work on the left and Design's on the right. Each subfeature (component, tokens, spec section, screen, preview card) is listed with its evidence: commit subjects, new props, rule counts, "Minimal twin added".
-- **The rail:** the keys between the two columns set the direction for *that* feature: **←** Design → App · **⇄** Full sync · **→** App → Design · **⊘** Skip.
+- **The rail:** the keys between the two columns set the direction for *that* feature: **←** Into the App · **⇄** Full sync · **→** Into Design · **⊘** Skip.
   - Arrows point at the side that receives the work.
   - A key that makes no sense is struck through, and its tooltip says why (for example, there's nothing to pull when Design didn't change the feature).
-  - Overriding the plan direction shows "· reset".
+  - The rail stays quiet: a note appears only where a feature does something other than the plan. Overriding the plan direction shows "· reset".
   - With a key focused, the arrow keys move along the rail.
+  - **Subfeatures have their own rail** once a feature is open. A subfeature follows its feature as far as it can (a component that's new in the App has nothing to pull), unless you set it. A set subfeature runs even when its feature is skipped.
+  - Preview cards, guidelines and explorations exist only in Design. They're listed as Design work so you see them, but they're reference-only, never ported, so their keys stay on Skip.
 - **Opening a feature** (click its title) shows:
   - every subfeature with its file mapping (App paths ↔ kit paths);
   - App and Design diffs since the sync point;

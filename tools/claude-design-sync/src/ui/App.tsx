@@ -214,7 +214,10 @@ export function App() {
                       <Icon size={16} strokeWidth={1.75} className="cds-global-icon" aria-hidden />
                       <span className="cds-global-text">
                         <span className="cds-global-name">{DIRECTION_LABEL[d]}</span>
-                        <span className="cds-global-hint">{DIRECTION_SUB[d]}</span>
+                        <span className="cds-global-hint">
+                          {DIRECTION_SUB[d][0]}
+                          <span className="cds-hint-from">{DIRECTION_SUB[d][1]}</span>
+                        </span>
                       </span>
                     </button>
                   ))}

@@ -43,8 +43,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         const version = execFileSync(bin, ["--version"], { encoding: "utf8", timeout: 15000, stdio: ["ignore", "pipe", "pipe"] }).trim().split("\n")[0];
         return { ok: true, path, version };
       } catch (e) {
-        const msg = String((e as { stderr?: string }).stderr ?? (e as Error).message).split("\n").find((l) => /error/i.test(l)) ?? "it exits with an error";
-        return { ok: false, path, error: `${bin} is installed but doesn't start — ${msg.replace(/^.*Error:\s*/, "").trim()}` };
+        const out = String((e as { stderr?: string }).stderr ?? (e as Error).message);
+        const msg = /^(?:\w*Error): (.+)$/m.exec(out)?.[1] ?? out.split("\n").find((l) => l.trim() && !/^\s*(at |throw|\^|file:)/.test(l))?.trim() ?? "it exits with an error";
+        return { ok: false, path, error: `${bin} is installed but doesn't start: ${msg}` };
       }
     } catch {
       return { ok: false, error: `${bin} isn't on PATH` };

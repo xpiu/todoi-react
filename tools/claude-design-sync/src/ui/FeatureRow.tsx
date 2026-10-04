@@ -90,9 +90,10 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, onRunOne, globa
         <UnitDetail
           key={u.id}
           unit={u}
+          known={[feature.title, ...feature.appWork, ...feature.designWork]}
           baseId={baseId}
           snapshotId={snapshotId}
-          direction={unitDirection(feature.directions, u.status, global, featureOverride, unitOverrides[u.id])}
+          direction={unitDirection(feature.directions, u.status, global, featureOverride, unitOverrides[u.id], u.kind)}
           overridden={u.id in unitOverrides}
           onDirection={(d) => onUnitDirection(u.id, d)}
         />
@@ -149,6 +150,8 @@ export function StepLine({ step }: { step: Step }) {
   );
 }
 
+const REFERENCE_WHY: Partial<Record<Direction, string>> = { both: "Design-only reference (preview or guideline): nothing to port", "app-to-design": "Design-only reference: nothing to port", "design-to-app": "Design-only reference: nothing to port" };
+
 /** One path per line, with break opportunities after each slash instead of mid-word */
 function Paths({ paths }: { paths: string[] }) {
   return (
@@ -171,7 +174,8 @@ function Paths({ paths }: { paths: string[] }) {
   );
 }
 
-function UnitDetail({ unit, baseId, snapshotId, direction, overridden, onDirection }: { unit: Unit; baseId: string | null; snapshotId: string | null; direction: Direction; overridden: boolean; onDirection: (d: Direction | null) => void }) {
+function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, onDirection }: { unit: Unit; known: string[]; baseId: string | null; snapshotId: string | null; direction: Direction; overridden: boolean; onDirection: (d: Direction | null) => void }) {
+  const fresh = (list: string[]) => list.filter((e) => !known.includes(e));
   const [diff, setDiff] = useState<{ side: "app" | "design"; text: string | null } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const load = async (side: "app" | "design") => {
@@ -193,7 +197,7 @@ function UnitDetail({ unit, baseId, snapshotId, direction, overridden, onDirecti
             {displayName(unit)} <span className="cds-kind">{KIND_WORD[unit.kind]}</span>
           </p>
           {unit.app.paths.length ? <Paths paths={unit.app.paths} /> : <p className="cds-quiet">Not in the App</p>}
-          <ul className="cds-evlist">{unit.app.evidence.map((e) => <li key={e}>{e}</li>)}</ul>
+          <ul className="cds-evlist">{fresh(unit.app.evidence).map((e) => <li key={e}>{e}</li>)}</ul>
           {unit.app.changed ? (
             <button type="button" className="cds-link" aria-expanded={diff?.side === "app"} onClick={() => load("app")}>
               {diff?.side === "app" ? "Hide App diff" : "App diff"}
@@ -201,7 +205,7 @@ function UnitDetail({ unit, baseId, snapshotId, direction, overridden, onDirecti
           ) : null}
         </div>
         <div className="cds-rail-cell">
-          <RailKeys value={direction} allowed={directionsFor(unit.status).directions} onChange={(d) => onDirection(d)} label={`Direction for ${displayName(unit)}`} />
+          <RailKeys value={direction} allowed={directionsFor(unit.status, unit.kind).directions} onChange={(d) => onDirection(d)} label={`Direction for ${displayName(unit)}`} why={REFERENCE_WHY} />
           <span className="cds-rail-note">
             {STATUS_WORD[unit.status]}
             {overridden ? (
@@ -216,7 +220,7 @@ function UnitDetail({ unit, baseId, snapshotId, direction, overridden, onDirecti
             &nbsp;
           </p>
           {unit.design.paths.length ? <Paths paths={unit.design.paths} /> : <p className="cds-quiet">Not in the kit</p>}
-          <ul className="cds-evlist">{unit.design.evidence.map((e) => <li key={e}>{e}</li>)}</ul>
+          <ul className="cds-evlist">{fresh(unit.design.evidence).map((e) => <li key={e}>{e}</li>)}</ul>
           <span className="cds-unit-actions">
             {unit.design.changed ? (
               <button type="button" className="cds-link" aria-expanded={diff?.side === "design"} onClick={() => load("design")}>

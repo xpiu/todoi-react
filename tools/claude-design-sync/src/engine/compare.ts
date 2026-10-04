@@ -9,7 +9,7 @@ import { commitsAfter, head, showAt, type Commit } from "./git";
 import { buildInventory, cardInfo, normaliseSpec, propsOf, sections, type UnitDef } from "./inventory";
 import { getSnapshot, latestSnapshot, snapshotFilesDir } from "./snapshots";
 import { directionsFor } from "./directions";
-import type { Comparison, Feature, SideState, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "./types";
+import type { Comparison, Direction, Feature, SideState, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "./types";
 
 export interface Readers {
   appNow: (p: string) => string | null;
@@ -231,7 +231,11 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
     const own = [...g.units].filter((id) => assigned.get(id) === g).map((id) => byId.get(id)!).filter(Boolean);
     if (!own.length) continue;
     const status = featureStatus(own);
-    const { directions, suggested } = directionsFor(status);
+    // a feature can go wherever at least one of its parts can (reference-only parts never move)
+    const ORDER: Direction[] = ["both", "app-to-design", "design-to-app", "skip"];
+    const can = new Set(own.flatMap((u) => directionsFor(u.status, u.kind).directions));
+    const directions = ORDER.filter((d) => can.has(d) || d === "skip");
+    const suggested = directions.includes(directionsFor(status).suggested) ? directionsFor(status).suggested : (directions[0] ?? "skip");
     const kindOrder = ["component", "tokens", "card", "screen", "spec", "guideline"];
     own.sort((a, b) => kindOrder.indexOf(a.kind) - kindOrder.indexOf(b.kind) || a.name.localeCompare(b.name));
     features.push({

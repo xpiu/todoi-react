@@ -411,6 +411,7 @@ em {
   color: var(--ink-400);
 }
 .cds-reset {
+  margin-left: 4px;
   padding: 0;
   border: 0;
   background: none;
@@ -464,8 +465,10 @@ em {
   color: var(--chrome-canvas);
   box-shadow: inset 0 0 0 1px var(--ink-900);
 }
-.cds-key[aria-checked="true"]:hover {
+/* a set key stays filled under the pointer too (the hover rule above is more specific) */
+.cds-key[aria-checked="true"]:hover:not([aria-disabled]) {
   background: var(--ink-900);
+  color: var(--chrome-canvas);
 }
 .cds-key[aria-disabled] {
   color: var(--ink-300);
@@ -1205,6 +1208,10 @@ em {
     flex: 1;
     min-width: 0;
     padding: 8px 10px;
+    gap: 8px;
+  }
+  .cds-hint-from {
+    display: none;
   }
   .cds-heads {
     display: none;
