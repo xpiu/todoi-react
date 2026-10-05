@@ -12,6 +12,7 @@ import { parseProjectRef, projectUrl } from "../src/engine/project";
 import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor } from "../src/engine/plan";
 import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
+import { Jobs } from "../src/server/jobs";
 import { makeFixture, type Fixture } from "./fixture";
 
 describe("mergeCss", () => {
@@ -269,6 +270,34 @@ describe("DesignSync through the harness", () => {
     writeFileSync(saved, '{"method":"get_file","path":"big"}');
     expect(toolResultText([{ type: "text", text: `<persisted-output>\nOutput too large (120KB). Full output saved to: ${saved}\n</persisted-output>` }])).toContain('"big"');
     expect(parseClaudeLine(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: "DONE", total_cost_usd: 0.1 }))[0]).toMatchObject({ type: "done", ok: true, costUsd: 0.1 });
+  });
+});
+
+describe("staging copies", () => {
+  it("live only while their run waits for approval", () => {
+    const fx = makeFixture();
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const jobs = new Jobs(fx.ctx);
+    const uploaded = jobs.create("run", "uploaded", { stage: createStage(fx.ctx, cmp, "run-a") });
+    jobs.finish(uploaded, "awaiting-upload");
+    expect(existsSync(uploaded.stage!)).toBe(true);
+    jobs.finish(uploaded, "done");
+    expect(existsSync(uploaded.stage!)).toBe(false);
+
+    const waiting = jobs.create("run", "waiting", { stage: createStage(fx.ctx, cmp, "run-b") });
+    jobs.finish(waiting, "awaiting-upload");
+    const discarded = jobs.create("run", "discarded", { stage: createStage(fx.ctx, cmp, "run-c") });
+    jobs.finish(discarded, "awaiting-upload");
+    expect(jobs.discard(discarded.id)).toBe(true);
+    expect(discarded.state).toBe("cancelled");
+    expect(existsSync(discarded.stage!)).toBe(false);
+    expect(jobs.discard(uploaded.id)).toBe(false);
+
+    // a restart prunes leftovers but keeps the copy a run still waits on
+    const orphan = createStage(fx.ctx, cmp, "run-orphan");
+    new Jobs(fx.ctx);
+    expect(existsSync(orphan)).toBe(false);
+    expect(existsSync(waiting.stage!)).toBe(true);
   });
 });
 

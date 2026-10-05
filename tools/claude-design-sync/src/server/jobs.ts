@@ -1,6 +1,6 @@
 // Long-running work (pulls, plan runs, uploads) as jobs with an event log the GUI streams.
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve, sep } from "node:path";
 
 import type { Ctx } from "../engine/config";
 
@@ -62,6 +62,15 @@ export class Jobs {
         /* ignore a torn file */
       }
     }
+    // staging copies only live while their run waits for upload approval
+    const stages = join(this.ctx.state, "stage");
+    const keep = new Set(this.list().filter((j) => j.state === "awaiting-upload" && j.stage).map((j) => resolve(j.stage!)));
+    if (existsSync(stages)) for (const d of readdirSync(stages)) if (!keep.has(resolve(stages, d))) rmSync(join(stages, d), { recursive: true, force: true });
+  }
+  /** Delete a finished run's staging copy (a full copy of the Design project) */
+  private dropStage(j: Job) {
+    const stages = resolve(this.ctx.state, "stage") + sep;
+    if (j.stage && resolve(j.stage).startsWith(stages)) rmSync(j.stage, { recursive: true, force: true });
   }
   private dir() {
     return join(this.ctx.state, "jobs");
@@ -96,6 +105,14 @@ export class Jobs {
     const j = this.jobs.get(id);
     if (j && j.state === "running") this.finish(j, "cancelled", "Stopped by you");
   }
+  /** Give up on a run that waits for approval: nothing more is written anywhere, and its staging copy goes */
+  discard(id: string): boolean {
+    const j = this.jobs.get(id);
+    if (!j || j.state !== "awaiting-upload") return false;
+    if (j.steps.some((s) => s.id === "upload")) this.step(j, "upload", { state: "skipped", summary: "Discarded" });
+    this.finish(j, "cancelled", "Discarded: nothing was uploaded");
+    return true;
+  }
   log(j: Job, level: JobEvent["level"], text: string, stepId?: string) {
     const event: JobEvent = { at: new Date().toISOString(), level, text: text.slice(0, 4000), stepId };
     j.events.push(event);
@@ -118,7 +135,10 @@ export class Jobs {
     if (j.state !== "running" && j.state !== "awaiting-upload") return;
     j.state = state;
     j.result = result;
-    if (state !== "awaiting-upload") j.endedAt = new Date().toISOString();
+    if (state !== "awaiting-upload") {
+      j.endedAt = new Date().toISOString();
+      this.dropStage(j);
+    }
     this.persist(j);
     this.emit(j, { at: new Date().toISOString(), level: state === "failed" ? "error" : "done", text: result ?? state });
   }

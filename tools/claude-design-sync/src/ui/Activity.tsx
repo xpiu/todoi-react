@@ -54,7 +54,7 @@ export function Activity({ state, focus, onFocus, onClose, onChanged }: { state:
           {jobs.slice(0, 8).map((j) => (
             <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} onClick={() => onFocus(j.id)}>
               <span className="cds-job-mark" data-state={j.state} aria-hidden>
-                {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : <Upload size={12} />}
+                {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : <Upload size={12} />}
               </span>
               <span className="cds-job-title">{j.title}</span>
               <span className="cds-job-time">{fmtTime(j.startedAt)}</span>
@@ -75,6 +75,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [discarding, setDiscarding] = useState(false);
   const cardErr = useMemo(() => new Map((job.cards ?? []).map((c) => [c.card, c.errors])), [job.cards]);
   const stageId = job.stage?.split("/").pop();
   return (
@@ -150,6 +151,37 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
           >
             <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")}
           </button>
+          {discarding ? (
+            <span className="cds-discard" role="group" aria-label="Discard this run">
+              <span>Discard {plural(staged.length, "staged file")}? Nothing goes to Claude Design.</span>
+              <button
+                type="button"
+                className="cds-btn"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api.discard(job.id);
+                    onChanged();
+                  } catch (e) {
+                    setErr((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                    setDiscarding(false);
+                  }
+                }}
+              >
+                Discard
+              </button>
+              <button type="button" className="cds-link" onClick={() => setDiscarding(false)}>
+                Keep
+              </button>
+            </span>
+          ) : (
+            <button type="button" className="cds-link cds-discard-open" onClick={() => setDiscarding(true)} disabled={busy}>
+              Discard run…
+            </button>
+          )}
         </section>
       ) : null}
       {job.result && job.state !== "running" ? <p className={job.state === "failed" ? "cds-error-inline" : "cds-quiet"}>{job.result}</p> : null}

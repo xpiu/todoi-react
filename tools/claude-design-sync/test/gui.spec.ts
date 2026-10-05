@@ -1,5 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -120,8 +120,15 @@ test.describe.serial("Claude Design Sync", () => {
     await expect(panel.locator(".cds-jobview-head")).toContainText("waiting for your approval");
     await expect(panel.getByRole("checkbox", { name: other })).not.toBeChecked();
     expect(readFileSync(otherLive, "utf8")).toBe("// rewritten in Claude Design\n");
+    // Discard asks first; keeping the run changes nothing
+    await panel.getByRole("button", { name: "Discard run…" }).click();
+    await expect(panel.getByRole("group", { name: "Discard this run" })).toContainText("Nothing goes to Claude Design");
+    await panel.getByRole("button", { name: "Keep" }).click();
     await panel.getByRole("button", { name: /Upload \d+ files?/ }).click();
     await expect(panel.locator(".cds-jobview-head")).toContainText("done", { timeout: 30_000 });
+    // the uploaded run's staging copy is gone
+    const stages = join(tmpdir(), "cds-e2e", "state", "stage");
+    expect(existsSync(stages) ? readdirSync(stages) : []).toEqual([]);
     await expect(panel.locator(".cds-jobview")).toContainText("all read back intact");
     // the fake Design project received the merged tokens
     const fakeDesign = join(tmpdir(), "cds-e2e", "design-now", "tokens/themes/minimal-components.css");

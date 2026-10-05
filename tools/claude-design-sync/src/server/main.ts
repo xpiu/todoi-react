@@ -337,12 +337,15 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         jobs.step(job, "upload", { state: "done", summary: `${res.written} file(s) written and read back intact${res.planId ? ` · plan ${res.planId}` : ""}` });
         jobs.finish(job, "done", `Uploaded ${res.written} file(s) to Claude Design, all read back intact${check.fresh ? "" : ". Design had other changes too: pull to see them."}`);
       } catch (e) {
-        jobs.step(job, "upload", { state: "failed" });
-        jobs.finish(job, "failed", e instanceof Error ? e.message : String(e));
+        // nothing (or not everything) went up: keep the staged files so the upload can be tried again
+        jobs.step(job, "upload", { state: "failed", summary: "Upload failed; the staged files are kept" });
+        jobs.finish(job, "awaiting-upload", `Upload failed: ${e instanceof Error ? e.message : String(e)}. Try again, or discard the run.`);
       }
     })();
     return c.json({ ok: true });
   });
+
+  app.post("/api/jobs/:id/discard", (c) => (jobs.discard(c.req.param("id")) ? c.json({ ok: true }) : c.json({ error: "Only a run waiting for approval can be discarded" }, 400)));
 
   app.post("/api/jobs/:id/cancel", (c) => {
     jobs.cancel(c.req.param("id"));
@@ -385,9 +388,11 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     return new Response(readFileSync(file), { headers: { "content-type": MIME[extname(file)] ?? "application/octet-stream" } });
   });
 
-  // The GUI and the App's own tokens/fonts (the tool wears Todoi's Minimal look)
-  app.get("/tokens/*", (c) => fileFrom(join(ctx.repo, "src/client/design/tokens"), c.req.path.slice("/tokens/".length)));
-  app.get("/fonts/*", (c) => fileFrom(join(ctx.repo, "src/client/design/fonts"), c.req.path.slice("/fonts/".length)));
+  // The GUI wears Todoi's Minimal look: tokens and fonts from the repo the tool lives in (not the target
+  // repo, which in tests and the demo is a throwaway fixture)
+  const home = resolve(TOOL_DIR, "../..");
+  app.get("/tokens/*", (c) => fileFrom(join(home, "src/client/design/tokens"), c.req.path.slice("/tokens/".length)));
+  app.get("/fonts/*", (c) => fileFrom(join(home, "src/client/design/fonts"), c.req.path.slice("/fonts/".length)));
   app.get("/ui/*", (c) => fileFrom(join(TOOL_DIR, "dist"), c.req.path.slice("/ui/".length)));
   app.get("/", (c) => c.html(readFileSync(join(TOOL_DIR, "src/ui/index.html"), "utf8")));
 

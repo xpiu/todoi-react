@@ -131,8 +131,8 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 
 ### Neutral
 - **Paper** (`--chrome-canvas`): every surface: page, sticky bar, column heads, plan bar, panel. Also the text colour on ink fills.
-- **Quiet Ink** (`--ink-600`, `--ink-400`): secondary text, kind tags, counts, meta lines, unset key glyphs, tool buttons at rest. The tool uses 600 for "readable secondary" (work lines, log text) and 400 for "metadata"; in Minimal both resolve to the same grey, so the distinction is semantic only.
-- **Faint Ink** (`--ink-300`): "No change" cells, disabled keys, step numbers, log timestamps, the "—" bullet on work lines.
+- **Quiet Ink** (`--ink-600`, `--ink-400`): secondary text, kind tags, counts, meta lines, "No change" cells, unset key glyphs, tool buttons at rest. The tool uses 600 for "readable secondary" (work lines, log text) and 400 for "metadata"; in Minimal both resolve to the same grey, so the distinction is semantic only.
+- **Faint Ink** (`--ink-300`): disabled keys, step numbers, log timestamps, the "—" bullet on work lines.
 - **Hairline** (`--border-divider`, 12%): row rules, rail borders, dashed subfeature rules, diff and preview frames, disabled button outlines.
 - **Input Rule** (`--border-input`, 24%): key and button outlines at rest, underlines of fields and the sync-point select, link underlines at rest, the run-through on unavailable keys.
 - **Wash** (`--n-a03`): hover on keys, options and jobs; the background of diffs, briefs and the log.
@@ -141,7 +141,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 - **Both-Sides Red** (`--danger`): see the rule below.
 
 ### Named Rules
-**The One Colour Rule.** `--danger` appears only where both sides changed (the "changed on both" status, the both-sides count in the verdict) and for errors (error banners, inline errors, failed jobs and steps, warn/error log lines). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink.
+**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, inline errors, failed jobs and steps, warn/error log lines). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink.
 
 **The Borrowed Tokens Rule.** The tool loads the App's token files and consumes them by name. It never adds a raw hex, never forks a value, and adds only layout aliases prefixed `--cds-`.
 

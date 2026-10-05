@@ -364,8 +364,18 @@ em {
   color: var(--ink-400);
   white-space: nowrap;
 }
+/* red marks both-sides work; the words stay ink so they read at AA (red text at 12px doesn't) */
 .cds-status[data-status="both"] {
-  color: var(--danger);
+  color: var(--ink-900);
+}
+.cds-status[data-status="both"]::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  background: var(--danger);
 }
 .cds-status[data-status="app-ahead"],
 .cds-status[data-status="design-ahead"],
@@ -391,7 +401,7 @@ em {
   padding: 2px 0 14px 16px;
 }
 .cds-cell.is-quiet {
-  color: var(--ink-300);
+  color: var(--ink-400);
 }
 .cds-cell li {
   display: flex;
@@ -1193,6 +1203,18 @@ em {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.cds-discard-open {
+  margin-left: 16px;
+}
+.cds-discard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-600);
 }
 .cds-approve .cds-preview {
   margin-left: 0;

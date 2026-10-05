@@ -54,6 +54,7 @@ export const api = {
   job: (id: string) => call<Job>(`/api/jobs/${id}`),
   upload: (id: string, paths: string[]) => call<{ ok: true }>(`/api/jobs/${id}/upload`, { body: { paths } }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
+  discard: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/discard`, { method: "POST" }),
 };
 
 export const STATUS_WORD: Record<UnitStatus, string> = {
