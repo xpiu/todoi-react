@@ -13,7 +13,7 @@ Scope: this tool only (`tools/claude-design-sync/`). Todoi's own product truth l
 - **A three-way comparison:** this repo now, Claude Design now, and the last sync point (a `design-sync/<date>` git tag plus the Design snapshot taken then).
 - **Readable drift:** which components, tokens, spec sections, screens and preview cards are new or changed on each side, backed by evidence (commit subjects, prop changes, rule counts, spec text).
 - **Concrete proposals with buttons:** deterministic merges where both sides speak the same language (token CSS), and AI briefs where they don't (React 19 TSX in the repo ↔ the kit's hand-written React-18 UMD JSX, `.d.ts` contracts, `.prompt.md` usage notes, `*.card.html` previews with Minimal twins).
-- **Local AI execution:** each brief can be copied, or run on click (after a confirmation step) with the local coding harness — Claude Code (`claude -p`) or Codex (`codex exec`) — with the log streamed into the tool (confirmed 2026-10-05).
+- **Local AI execution:** each brief can be copied, or run on click (after a confirmation step) with the local coding harness — Claude Code (`claude -p`) — with the log streamed into the tool (confirmed 2026-10-05). Codex (`codex exec`) stays a config-only option until it can be tested (2026-10-05: no working install).
 - **Design data in two ways:** a harness pull through Claude Code's DesignSync tool into a local snapshot, or a project export (zip or folder) dropped in (confirmed 2026-10-05).
 
 ## Constraints

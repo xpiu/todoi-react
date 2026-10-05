@@ -554,33 +554,6 @@ em {
 .cds-files .cds-path {
   overflow-wrap: normal;
 }
-.cds-harness {
-  display: inline-flex;
-  vertical-align: baseline;
-  box-shadow: inset 0 0 0 1px var(--border-input);
-}
-.cds-harness button {
-  padding: 1px 8px;
-  border: 0;
-  background: none;
-  color: var(--ink-600);
-}
-.cds-harness button + button {
-  box-shadow: inset 1px 0 0 var(--border-input);
-}
-.cds-harness button[aria-checked="true"] {
-  background: var(--ink-900);
-  color: var(--chrome-canvas);
-}
-.cds-harness button:disabled {
-  color: var(--ink-300);
-  text-decoration: line-through;
-  cursor: not-allowed;
-}
-.cds-block {
-  display: block;
-  font-size: 12px;
-}
 .cds-evlist {
   margin: 4px 0;
   padding: 0;

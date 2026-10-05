@@ -47,7 +47,7 @@ Statuses, in the tool's words: *changed on both* (both sides moved; red, the one
 ## Safety
 
 - **AI runs need a confirmation step.**
-  - App-side ports run your harness (Claude Code `claude -p`, or Codex `codex exec`; set `harness.implement` in `config.json`) with permission to edit and to run commands in this repo.
+  - App-side ports run Claude Code (`claude -p`) with permission to edit and to run commands in this repo. Codex (`codex exec`) can be set with `harness.implement` in `config.json`, but it is untested (its output parser is a best guess), so the GUI never offers it.
   - Design-side ports edit only `.state/stage/<run>/`.
 - **Uploads go through DesignSync with a locked plan.** Only files you ticked are written, and nothing is ever deleted.
 - **An upload never overwrites newer Design work.** First it checks whether the project's `updatedAt` moved since the run's snapshot. If it did, it reads the live copy of every file about to go up and three-way merges Design's edits into the staged copy. A file that doesn't merge (the same lines edited, or deleted in Design) stops the upload, is unticked with the reason, and stays out until you pull and run the feature again.
@@ -76,7 +76,7 @@ The last three are what the AI harness uses to check kit work before you upload 
 - the Design project id;
 - where each side keeps components, tokens, spec and screens;
 - ignore globs, renames (`SavedViews.jsx` ↔ `SavedViewTabs.tsx` …) and screen mappings;
-- the harness (`implement`: `claude` or `codex`, binaries, `pullModel`, `implementModel`).
+- the harness (`implement`: `claude`, or the untested `codex`; binaries, `pullModel`, `implementModel`).
 
 Environment overrides (used by the tests): `CDS_REPO`, `CDS_STATE`, `CDS_CONFIG`, `CDS_PORT`, `CDS_FAKE_HARNESS=1` + `CDS_FAKE_DESIGN=<folder>` (a stand-in harness that serves a local folder as the Design project; both are required, and `design-sync:demo` sets them up).
 
@@ -101,5 +101,5 @@ The engine tests build a throwaway git repo and two Design folders. The GUI test
 - **A pull that misses files says so.** A file still failing after a retry is kept as it was in the previous snapshot, so it never reads as deleted in Design. Its units say "Not pulled", the Design header shows "N files not pulled" with **Pull again**, and the snapshot never passes as current.
 - **A pull first asks whether Design changed.** If the project's `updatedAt` matches the newest complete snapshot from the same project, it stops there ("Already up to date") and reads no files.
 - **Pulls are content pulls.** DesignSync has no per-file timestamps, so "Check for changes" compares the project's `updatedAt` with the snapshot's, and a pull reads every text file again. Binaries, uploads and Claude Design's generated `_ds_bundle.js` are skipped. Previews use a locally built bundle.
-- **Only Claude Code can talk to Claude Design** (DesignSync). Codex can do App-side ports only.
+- **Only Claude Code can talk to Claude Design** (DesignSync). Codex could do App-side ports only, and is untested.
 - **Feature grouping is heuristic.** Commit subjects make the best feature titles, so conventional, one-feature commits make this tool read like a changelog.

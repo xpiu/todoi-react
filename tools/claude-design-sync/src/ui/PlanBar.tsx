@@ -11,7 +11,7 @@ import { StepLine } from "./FeatureRow";
 const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (unitChoices[u.id] ?? "skip") === "skip";
 const allSkipped = (f: Feature, unitChoices: Record<string, Direction>) => f.units.some((u) => skipped(u, unitChoices)) && f.units.every((u) => skipped(u, unitChoices) || directionsFor(u.status, u.kind).directions.length === 1);
 
-export function PlanBar({ steps, features, global, overrides, unitChoices, state, harness, onHarness, onRun, busy, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; harness: "claude" | "codex"; onHarness: (h: "claude" | "codex") => void; onRun: () => void; busy: boolean; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
+export function PlanBar({ steps, features, global, overrides, unitChoices, state, onRun, busy, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: () => void; busy: boolean; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [mark, setMark] = useState(false);
@@ -39,7 +39,10 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
   const upload = steps.some((s) => s.kind === "upload");
   const work = steps.filter((s) => s.kind !== "upload").length;
   const h = state?.harnesses;
-  const missing = state?.fake ? null : (pushes.length || upload) && h && !h.claude.ok ? `${h.claude.error} — Claude Code is needed for DesignSync.` : pulls.length && h && !h[harness].ok ? h[harness].error : null;
+  // App ports run the harness config.json picks: Claude Code, or Codex (untested, so never offered here)
+  const harness = state?.implement ?? "claude";
+  const app = harness === "codex" ? h?.codex : h?.claude;
+  const missing = state?.fake ? null : (pushes.length || upload) && h && !h.claude.ok ? `${h.claude.error} — Claude Code is needed for DesignSync.` : pulls.length && app && !app.ok ? app.error : null;
 
   const kinds = ([[t.toDesign, "into Design"], [t.toApp, "into the App"], [t.both, "both ways"]] as const).filter(([n]) => n > 0);
   const moving = t.toDesign + t.toApp + t.both;
@@ -65,16 +68,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                 {merges.length ? <li>Writes {plural(merges.length, "token file")} by deterministic rule merge ({merges.filter((s) => s.target === "app").length} in the repo, {merges.filter((s) => s.target === "design").length} staged for Design).</li> : null}
                 {pulls.length ? (
                   <li>
-                    Runs{" "}
-                    <span className="cds-harness" role="radiogroup" aria-label="Harness for App ports">
-                      {(["claude", "codex"] as const).map((k) => (
-                        <button key={k} type="button" role="radio" aria-checked={harness === k} disabled={!state?.fake && !h?.[k].ok} title={h?.[k].ok ? h[k].version : h?.[k].error} onClick={() => onHarness(k)}>
-                          {k === "codex" ? "Codex" : "Claude Code"}
-                        </button>
-                      ))}
-                    </span>{" "}
-                    {plural(pulls.length, "time")} with permission to edit files in {state?.repo.split("/").pop()} and run its checks; each port ends with its own commit.
-                    {h && !h.codex.ok && !state?.fake ? <span className="cds-quiet cds-block">Codex: {h.codex.error}</span> : null}
+                    Runs {harness === "codex" ? "Codex (untested, set in config.json)" : "Claude Code"} {plural(pulls.length, "time")} with permission to edit files in {state?.repo.split("/").pop()} and run its checks; each port ends with its own commit.
                   </li>
                 ) : null}
                 {pushes.length ? <li>Runs Claude Code {plural(pushes.length, "time")} to port App work into a staging copy of the kit.</li> : null}

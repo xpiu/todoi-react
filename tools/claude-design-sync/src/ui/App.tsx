@@ -47,7 +47,6 @@ export function App() {
   const [global, setGlobal] = useState<Direction>(() => store.get<Direction>("cds-global", "both"));
   const [overrides, setOverrides] = useState<Record<string, Direction>>(() => store.get("cds-overrides", {}));
   const [unitOverrides, setUnitOverrides] = useState<Record<string, Direction>>(() => store.get("cds-unit-overrides", {}));
-  const [harnessPick, setHarnessPick] = useState<"claude" | "codex" | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [unitChoices, setUnitChoices] = useState<Record<string, Direction>>({});
   const [activity, setActivity] = useState<string | null>(null);
@@ -94,7 +93,6 @@ export function App() {
   useEffect(() => store.set("cds-global", global), [global]);
   useEffect(() => store.set("cds-overrides", overrides), [overrides]);
   useEffect(() => store.set("cds-unit-overrides", unitOverrides), [unitOverrides]);
-  const harness = harnessPick ?? state?.implement ?? "claude";
 
   // the plan follows every decision
   useEffect(() => {
@@ -131,7 +129,7 @@ export function App() {
   };
   const run = async (only?: string[]) => {
     try {
-      const r = await api.run(cmp?.base?.id ?? null, global, overrides, unitOverrides, harness, only);
+      const r = await api.run(cmp?.base?.id ?? null, global, overrides, unitOverrides, only);
       openJob(r.job);
     } catch (e) {
       setError((e as Error).message);
@@ -376,7 +374,7 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} harness={harness} onHarness={setHarnessPick} onRun={() => void run()} busy={!!running} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} onRun={() => void run()} busy={!!running} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);

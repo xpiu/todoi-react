@@ -52,8 +52,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       return { ok: false, error: `${bin} isn't on PATH` };
     }
   };
-  let probed: { claude: HarnessInfo; codex: HarnessInfo } | null = null;
-  const harnesses = () => (opts.fake ? { claude: { ok: true, version: "fake" }, codex: { ok: true, version: "fake" } } : (probed ??= { claude: probe(ctx.config.harness.claudeBin), codex: probe(ctx.config.harness.codexBin) }));
+  // Codex is untested (no working install to test against), so it's only probed when config.json picks it
+  let probed: { claude: HarnessInfo; codex?: HarnessInfo } | null = null;
+  const harnesses = () =>
+    opts.fake ? { claude: { ok: true, version: "fake" } } : (probed ??= { claude: probe(ctx.config.harness.claudeBin), ...(ctx.config.harness.implement === "codex" ? { codex: probe(ctx.config.harness.codexBin) } : {}) });
 
   /** DesignSync always goes through Claude Code (it's the only harness with the tool) */
   const designRunner = (job?: Job): Runner =>
@@ -231,14 +233,14 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
 
   app.post("/api/run", async (c) => {
     if (jobs.running()) return c.json({ error: "Another job is running" }, 409);
-    const body = await c.req.json<{ base?: string; snapshot?: string; global: Direction; overrides: Record<string, Direction>; unitOverrides?: Record<string, Direction>; harness?: HarnessKind; only?: string[] }>();
+    const body = await c.req.json<{ base?: string; snapshot?: string; global: Direction; overrides: Record<string, Direction>; unitOverrides?: Record<string, Direction>; only?: string[] }>();
     const cmp = getComparison(body.base, body.snapshot);
     const choices = Object.fromEntries(cmp.features.map((f) => [f.id, effectiveDirection(f, body.global, body.overrides[f.id])]));
     let steps = planSteps(ctx, cmp, choices, unitChoicesFor(cmp, body.global, body.overrides, body.unitOverrides));
     if (body.only?.length) steps = steps.filter((s) => body.only!.includes(s.id) || (s.kind === "upload" && steps.some((x) => body.only!.includes(x.id) && x.target === "design")));
     if (!steps.length) return c.json({ error: "Nothing to do: every feature is skipped or already in sync" }, 400);
     const job = jobs.create("run", `Sync ${new Set(steps.map((s) => s.featureId)).size - (steps.some((s) => s.kind === "upload") ? 1 : 0)} feature(s)`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: steps.map((s) => ({ id: s.id, title: s.title, kind: s.kind, target: s.target, state: "pending" as const })) });
-    void runPlan(job, cmp, steps, body.harness ?? ctx.config.harness.implement);
+    void runPlan(job, cmp, steps, ctx.config.harness.implement);
     return c.json({ job: job.id });
   });
 
