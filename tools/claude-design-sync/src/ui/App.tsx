@@ -3,10 +3,11 @@ import { ArrowLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, History, LoaderCir
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
+import { api, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, projectUrl, type AppState, type Comparison, type Direction, type Step } from "./api";
 import { FeatureRow } from "./FeatureRow";
 import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
+import { ProjectFooter } from "./ProjectFooter";
 
 // Each option draws its route: App box, arrow, Design box, with the receiving side filled
 const GLOBALS: Array<{ d: Direction; Icon: typeof ArrowLeft; into: { app: boolean; design: boolean } }> = [
@@ -155,6 +156,8 @@ export function App() {
   const base = cmp?.base ?? null;
   const snap = cmp?.designSnapshot ?? state?.snapshots[0] ?? null;
   const unpulled = snap?.unpulled ? [...snap.unpulled.carried, ...snap.unpulled.missing] : [];
+  // the newest snapshot came from a project the tool no longer targets
+  const otherProject = !!snap?.projectId && !!state && snap.projectId !== state.project.id;
   const running = state?.jobs.find((j) => j.state === "running" || j.state === "awaiting-upload");
   const synced = cmp?.units.filter((u) => u.status === "in-sync").length ?? 0;
 
@@ -164,7 +167,7 @@ export function App() {
       <header className="cds-bar">
         <h1 className="cds-wordmark">
           <ArrowLeftRight size={14} strokeWidth={1.75} className="cds-wordmark-mark" aria-hidden />
-          Claude Design sync tool
+          <span className="cds-wordmark-name">Claude Design sync tool</span>
         </h1>
         <div className="cds-bar-tools">
           {state?.syncPoints.length ? (
@@ -186,7 +189,7 @@ export function App() {
           <button type="button" className={`cds-tool ${running ? "is-live" : ""}`} aria-pressed={panel} aria-label="Activity" onClick={() => setPanel((p) => !p)}>
             <PanelRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Activity</span>{running ? <span className="cds-live" aria-label="A job is running" /> : null}
           </button>
-          <a className="cds-tool" href="https://claude.ai/design" target="_blank" rel="noreferrer" aria-label="Claude Design (opens in a new tab)">
+          <a className="cds-tool" href={state ? projectUrl(state.project.id) : "https://claude.ai/design"} target="_blank" rel="noreferrer" aria-label={`${state?.project.name ?? "Claude Design"} in Claude Design (opens in a new tab)`}>
             <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Claude Design</span>
           </a>
         </div>
@@ -268,6 +271,11 @@ export function App() {
                 <span className="cds-head-name">Design</span>
                 <span className="cds-head-meta">
                   {state?.project.name} · {snap ? `${snap.label}, ${fmtTime(snap.createdAt)}` : "no snapshot"}
+                  {otherProject ? (
+                    <span className="cds-head-warn" title={`This snapshot was pulled from project ${snap?.projectId}, not ${state?.project.id}`}>
+                      {" "}· from another project
+                    </span>
+                  ) : null}
                   {unpulled.length ? (
                     <span className="cds-head-warn" title={`Not pulled:\n${unpulled.join("\n")}${snap?.unpulled?.from ? `\nKept as in ${snap.unpulled.from}` : ""}`}>
                       {" "}· {plural(unpulled.length, "file")} not pulled
@@ -278,7 +286,7 @@ export function App() {
                   <button type="button" className="cds-link" onClick={checkDesign} disabled={check?.busy}>
                     {check?.busy ? "Checking…" : check?.stale ? "Design changed — pull" : check && !check.error ? "Up to date" : "Check for changes"}
                   </button>
-                  {check?.stale || check?.error || unpulled.length ? (
+                  {check?.stale || check?.error || unpulled.length || otherProject ? (
                     <button type="button" className="cds-link" onClick={pull}>
                       {unpulled.length && !check?.stale ? "Pull again" : "Pull now"}
                     </button>
@@ -364,6 +372,7 @@ export function App() {
           </>
         )}
       </main>
+      {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
       {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} harness={harness} onHarness={setHarnessPick} onRun={() => void run()} busy={!!running} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);

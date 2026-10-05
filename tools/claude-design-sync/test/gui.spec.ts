@@ -140,4 +140,35 @@ test.describe.serial("Claude Design Sync", () => {
     // the kept-open feature is still compared, from where it was
     await expect(row(page, "Chips").locator(".cds-cell-design")).toContainText("Kept open since Start");
   });
+
+  test("names the target Claude Design project in the footer, and switches it", async ({ page }) => {
+    await fresh(page);
+    const foot = page.getByRole("contentinfo");
+    await expect(foot).toContainText("Todoi Design System");
+    await expect(foot.getByRole("link", { name: /claude\.ai\/design\/p\/fake/ })).toHaveAttribute("href", "https://claude.ai/design/p/fake");
+    await expect(page.getByRole("link", { name: /in Claude Design/ })).toHaveAttribute("href", "https://claude.ai/design/p/fake");
+
+    await foot.getByRole("button", { name: "Edit" }).click();
+    const field = foot.getByLabel("Project link or id");
+    await expect(field).toHaveValue("https://claude.ai/design/p/fake");
+    await field.fill("https://claude.ai/design");
+    await foot.getByRole("button", { name: "Use this project" }).click();
+    await expect(foot.locator(".cds-error-inline")).toContainText("Paste a Claude Design project link");
+    await field.fill("missing-project");
+    await foot.getByRole("button", { name: "Use this project" }).click();
+    await expect(foot.locator(".cds-error-inline")).toContainText("no project missing-project");
+
+    await field.fill("https://claude.ai/design/p/fake-2");
+    await foot.getByRole("button", { name: "Use this project" }).click();
+    await expect(foot).toContainText("Other Design System");
+    await expect(foot.getByRole("link", { name: /fake-2/ })).toHaveAttribute("href", "https://claude.ai/design/p/fake-2");
+    const config = JSON.parse(readFileSync(join(tmpdir(), "cds-e2e", "config.json"), "utf8")) as { design: { projectId: string; projectName: string } };
+    expect(config.design).toMatchObject({ projectId: "fake-2", projectName: "Other Design System" });
+
+    // and back, so the fixture targets its own project again
+    await foot.getByRole("button", { name: "Edit" }).click();
+    await foot.getByLabel("Project link or id").fill("fake");
+    await foot.getByRole("button", { name: "Use this project" }).click();
+    await expect(foot).toContainText("Fake Design System");
+  });
 });

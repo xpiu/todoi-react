@@ -50,10 +50,16 @@ async function run(runner: Runner, prompt: string, model: string | undefined, on
   return { done, results: jsonResults(events) };
 }
 
-export async function projectStatus(ctx: Ctx, runner: Runner, onLog?: (e: HarnessEvent) => void): Promise<{ updatedAt: string | null; name: string | null }> {
+/** One Claude Design project as list_projects reports it, or null when the account has no such project */
+export async function findProject(ctx: Ctx, runner: Runner, projectId: string, onLog?: (e: HarnessEvent) => void): Promise<{ projectId: string; name: string; updatedAt: string } | null> {
   const { done, results } = await run(runner, `${LOAD} Call DesignSync with method "list_projects". Reply only: DONE.`, ctx.config.harness.pullModel, onLog, 4);
-  const p = results.flatMap((r) => r.projects ?? []).find((x) => x.projectId === ctx.config.design.projectId);
-  if (!p && !done.ok) throw new Error(done.result || "DesignSync list_projects failed");
+  const listed = results.some((r) => Array.isArray(r.projects));
+  if (!listed) throw new Error(done.ok ? "DesignSync didn't list any projects. Is Claude Code signed in to claude.ai with Claude Design access?" : done.result || "DesignSync list_projects failed");
+  return results.flatMap((r) => r.projects ?? []).find((x) => x.projectId === projectId) ?? null;
+}
+
+export async function projectStatus(ctx: Ctx, runner: Runner, onLog?: (e: HarnessEvent) => void): Promise<{ updatedAt: string | null; name: string | null }> {
+  const p = await findProject(ctx, runner, ctx.config.design.projectId, onLog);
   return { updatedAt: p?.updatedAt ?? null, name: p?.name ?? null };
 }
 
@@ -128,7 +134,7 @@ export async function pullSnapshot(ctx: Ctx, runner: Runner, opts: { paths?: str
     }
   }
   const unpulled = failed.length ? { carried, missing, from: carried.length ? prev?.label : undefined } : undefined;
-  return writeSnapshotMeta(ctx, { id, label: opts.label ?? "Pulled from Claude Design", source: "pull", createdAt: new Date().toISOString(), projectUpdatedAt: unpulled ? undefined : (opts.updatedAt ?? undefined), unpulled });
+  return writeSnapshotMeta(ctx, { id, label: opts.label ?? "Pulled from Claude Design", source: "pull", createdAt: new Date().toISOString(), projectId: ctx.config.design.projectId, projectUpdatedAt: unpulled ? undefined : (opts.updatedAt ?? undefined), unpulled });
 }
 
 export interface UploadCheck {

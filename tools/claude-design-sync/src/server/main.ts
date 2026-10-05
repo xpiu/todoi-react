@@ -8,13 +8,14 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 
 import { compare, unitBaseline } from "../engine/compare";
-import { defaultCtx, TOOL_DIR, type Ctx } from "../engine/config";
-import { checkUpload, projectStatus, pullSnapshot, pushFiles, type Runner } from "../engine/designsync";
+import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
+import { checkUpload, findProject, projectStatus, pullSnapshot, pushFiles, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { readText } from "../engine/fsutil";
 import { diffNoIndex, diffSince, head, isDirty, showAt } from "../engine/git";
 import { runHarness, type HarnessEvent, type HarnessKind } from "../engine/harness";
 import { sections } from "../engine/inventory";
+import { parseProjectRef } from "../engine/project";
 import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapshotFilesDir } from "../engine/snapshots";
@@ -147,6 +148,28 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     const choices = Object.fromEntries(cmp.features.map((f) => [f.id, effectiveDirection(f, body.global, body.overrides[f.id])]));
     const units = unitChoicesFor(cmp, body.global, body.overrides, body.unitOverrides);
     return c.json({ steps: planSteps(ctx, cmp, choices, units), choices, units });
+  });
+
+  // Switch the Claude Design project the tool targets (checked against the account's projects first)
+  app.post("/api/project", async (c) => {
+    const { project } = await c.req.json<{ project: string }>();
+    const id = parseProjectRef(project ?? "");
+    if (!id) return c.json({ error: "Paste a Claude Design project link (https://claude.ai/design/p/…) or its id." }, 400);
+    if (id === ctx.config.design.projectId) return c.json({ project: { id, name: ctx.config.design.projectName } });
+    if (jobs.running()) return c.json({ error: "A job is running. Switch projects when it has finished." }, 409);
+    const waiting = jobs.list().find((j) => j.state === "awaiting-upload");
+    if (waiting) return c.json({ error: `“${waiting.title}” is waiting to upload to ${ctx.config.design.projectName}. Upload or discard it first.` }, 409);
+    try {
+      const found = await findProject(ctx, designRunner(), id);
+      if (!found) return c.json({ error: `Claude Design has no project ${id} on this account.` }, 404);
+      ctx.config.design.projectId = found.projectId;
+      ctx.config.design.projectName = found.name;
+      saveConfig(ctx);
+      cache.clear();
+      return c.json({ project: { id: found.projectId, name: found.name } });
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
   });
 
   app.post("/api/status-check", async (c) => {

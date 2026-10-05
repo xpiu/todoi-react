@@ -17,7 +17,8 @@ export function fakeRunner(designDir: string, repo: string): Runner {
     const emit = (e: HarnessEvent) => on(e);
     await new Promise((r) => setTimeout(r, 30));
     if (prompt.includes('"list_projects"')) {
-      emit(result({ method: "list_projects", projects: [{ projectId: "fake", name: "Fake Design System", updatedAt: updatedAt(designDir) }] }));
+      // a second project, so switching the target can be tried
+      emit(result({ method: "list_projects", projects: [{ projectId: "fake", name: "Fake Design System", updatedAt: updatedAt(designDir) }, { projectId: "fake-2", name: "Other Design System", updatedAt: "2026-01-01T00:00:00.000Z" }] }));
     } else if (prompt.includes('"list_files"')) {
       emit(result({ method: "list_files", paths: listFiles(designDir) }));
     } else if (prompt.includes('"get_file"')) {

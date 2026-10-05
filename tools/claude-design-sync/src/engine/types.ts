@@ -82,6 +82,8 @@ export interface SnapshotMeta {
   label: string;
   source: "pull" | "import" | "upload";
   createdAt: string;
+  /** The Claude Design project it was taken from (unknown for an imported export) */
+  projectId?: string;
   /** Design project's updatedAt when the snapshot was taken, when known (never set on an incomplete pull) */
   projectUpdatedAt?: string;
   fileCount: number;

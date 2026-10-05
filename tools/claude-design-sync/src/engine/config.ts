@@ -1,6 +1,6 @@
 // Loads config.json and resolves the tool's paths. Every module takes a Ctx so tests can point the
 // engine at fixture trees instead of the real repo and state folder.
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,6 +25,8 @@ export interface Ctx {
   /** Where snapshots, sync points, staging and job logs live (gitignored) */
   state: string;
   config: Config;
+  /** Where `config` was read from, so the GUI can save a new target project (unset in tests that build a Ctx by hand) */
+  configFile?: string;
 }
 
 export const TOOL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -36,6 +38,12 @@ export function loadConfig(file = join(TOOL_DIR, "config.json")): Config {
 export function defaultCtx(): Ctx {
   const repo = process.env.CDS_REPO ? resolve(process.env.CDS_REPO) : resolve(TOOL_DIR, "../..");
   const state = process.env.CDS_STATE ? resolve(process.env.CDS_STATE) : join(TOOL_DIR, ".state");
-  const config = loadConfig(process.env.CDS_CONFIG ? resolve(process.env.CDS_CONFIG) : undefined);
-  return { repo, state, config };
+  const configFile = process.env.CDS_CONFIG ? resolve(process.env.CDS_CONFIG) : join(TOOL_DIR, "config.json");
+  return { repo, state, config: loadConfig(configFile), configFile };
+}
+
+/** Write the config back where it came from (same 2-space JSON the file is kept in) */
+export function saveConfig(ctx: Ctx): void {
+  if (!ctx.configFile) throw new Error("This session has no config file to save to");
+  writeFileSync(ctx.configFile, JSON.stringify(ctx.config, null, 2) + "\n");
 }

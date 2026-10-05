@@ -158,13 +158,15 @@ em {
 }
 
 /* ── Page ────────────────────────────────────────────────────────────────────── */
-.cds-main {
+.cds-main,
+.cds-foot {
   max-width: var(--cds-page);
   margin: 0 auto;
-  padding: 0 24px calc(var(--cds-plan) + 64px);
+  padding: 0 24px;
 }
 /* the open panel takes its width from the page, never covers the Design column */
-.cds.has-panel .cds-main {
+.cds.has-panel .cds-main,
+.cds.has-panel .cds-foot {
   margin-right: calc(var(--cds-panel) + 24px);
   margin-left: max(24px, calc((100vw - var(--cds-panel) - var(--cds-page)) / 2));
 }
@@ -845,6 +847,60 @@ em {
   break-inside: avoid;
 }
 
+/* ── Footer: the Claude Design project every pull and upload targets ─────────── */
+/* the page's last block: clears the pinned plan bar */
+.cds-foot {
+  padding-bottom: calc(var(--cds-plan) + 64px);
+}
+.cds-foot::before {
+  content: "";
+  display: block;
+  margin: 40px 0 16px;
+  border-top: var(--cds-hair);
+}
+.cds-foot-label {
+  margin: 0 0 6px;
+  font: 400 12px/1.45 var(--font-ui);
+  color: var(--ink-400);
+}
+.cds-foot-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+}
+.cds-foot-name {
+  font-weight: 500;
+}
+.cds-foot-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  font: 400 11px/1.45 var(--font-mono);
+  color: var(--ink-600);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.cds-foot-url:hover {
+  color: var(--ink-900);
+  text-decoration: underline;
+}
+.cds-foot-edit {
+  max-width: 560px;
+}
+.cds-foot-edit .cds-field {
+  margin-top: 0;
+}
+.cds-foot-edit .cds-field input {
+  font: 400 12px/1.45 var(--font-mono);
+}
+.cds-foot-edit p {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+
 /* ── Onboarding ──────────────────────────────────────────────────────────────── */
 .cds-onboard {
   padding: 56px 0;
@@ -1218,13 +1274,21 @@ em {
   .cds-since > svg {
     display: none;
   }
+  /* the select gives way, so the icon buttons never sit on top of it */
+  .cds-since {
+    flex: 0 1 132px;
+  }
   .cds-since select {
-    max-width: 132px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
   .cds-tool-label {
     display: none;
   }
   .cds-bar-tools {
+    flex: 1;
+    justify-content: flex-end;
     gap: 12px;
   }
   .cds-row-head {
@@ -1242,8 +1306,12 @@ em {
   .cds-row-head .cds-row-toggle {
     flex-basis: 100%;
   }
-  .cds-main {
-    padding: 0 16px calc(var(--cds-plan) + 96px);
+  .cds-main,
+  .cds-foot {
+    padding: 0 16px;
+  }
+  .cds-foot {
+    padding-bottom: calc(var(--cds-plan) + 96px);
   }
   .cds-verdict {
     padding: 28px 0 20px;
@@ -1316,7 +1384,8 @@ em {
   .cds.has-panel .cds-plan {
     right: 0;
   }
-  .cds.has-panel .cds-main {
+  .cds.has-panel .cds-main,
+  .cds.has-panel .cds-foot {
     margin: 0 auto;
   }
   .cds-panel {
@@ -1326,5 +1395,17 @@ em {
   .cds-preview,
   .cds-proposal {
     margin-left: 0;
+  }
+}
+
+/* phones: the wordmark keeps its mark, its name goes to screen readers only, so "Since" stays usable */
+@media (max-width: 420px) {
+  .cds-wordmark-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

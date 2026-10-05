@@ -4,10 +4,11 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
-import { checkUpload, projectStatus, pullable, pullSnapshot, pushFiles, type Runner } from "../src/engine/designsync";
+import { checkUpload, findProject, projectStatus, pullable, pullSnapshot, pushFiles, type Runner } from "../src/engine/designsync";
 import { fakeRunner } from "../src/engine/fakeHarness";
 import { parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
+import { parseProjectRef, projectUrl } from "../src/engine/project";
 import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor } from "../src/engine/plan";
 import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
@@ -230,6 +231,25 @@ describe("DesignSync through the harness", () => {
     writeFileSync(saved, '{"method":"get_file","path":"big"}');
     expect(toolResultText([{ type: "text", text: `<persisted-output>\nOutput too large (120KB). Full output saved to: ${saved}\n</persisted-output>` }])).toContain('"big"');
     expect(parseClaudeLine(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: "DONE", total_cost_usd: 0.1 }))[0]).toMatchObject({ type: "done", ok: true, costUsd: 0.1 });
+  });
+});
+
+describe("the target project", () => {
+  it("reads a project id from a pasted link or a bare id", () => {
+    const id = "13419b94-fc55-494b-8a6d-e08632bb71e0";
+    expect(projectUrl(id)).toBe(`https://claude.ai/design/p/${id}`);
+    expect(parseProjectRef(` https://claude.ai/design/p/${id}?tab=files `)).toBe(id);
+    expect(parseProjectRef(id)).toBe(id);
+    expect(parseProjectRef("https://claude.ai/design")).toBeNull();
+    expect(parseProjectRef("not an id")).toBeNull();
+  });
+  it("finds a project on the account, and says when the listing never came", async () => {
+    const fx = makeFixture();
+    const runner = fakeRunner(fx.designNowDir, fx.repo);
+    expect(await findProject(fx.ctx, runner, "fake-2")).toMatchObject({ name: "Other Design System" });
+    expect(await findProject(fx.ctx, runner, "nope")).toBeNull();
+    const silent: Runner = async () => ({ type: "done", ok: true, result: "DONE" });
+    await expect(findProject(fx.ctx, silent, "fake")).rejects.toThrow(/signed in/);
   });
 });
 
