@@ -48,6 +48,7 @@ export function App() {
   const [unitOverrides, setUnitOverrides] = useState<Record<string, Direction>>(() => store.get("cds-unit-overrides", {}));
   const [harnessPick, setHarnessPick] = useState<"claude" | "codex" | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
+  const [unitChoices, setUnitChoices] = useState<Record<string, Direction>>({});
   const [activity, setActivity] = useState<string | null>(null);
   const [panel, setPanel] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -96,7 +97,14 @@ export function App() {
   useEffect(() => {
     if (!cmp) return;
     let live = true;
-    api.plan(cmp.base?.id ?? null, global, overrides, unitOverrides).then((r) => live && setSteps(r.steps), (e) => live && setError((e as Error).message));
+    api.plan(cmp.base?.id ?? null, global, overrides, unitOverrides).then(
+      (r) => {
+        if (!live) return;
+        setSteps(r.steps);
+        setUnitChoices(r.units);
+      },
+      (e) => live && setError((e as Error).message),
+    );
     return () => {
       live = false;
     };
@@ -357,9 +365,11 @@ export function App() {
         )}
       </main>
 
-      {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} state={state} harness={harness} onHarness={setHarnessPick} onRun={() => void run()} busy={!!running} onSyncPoint={async (label, tag) => {
-        await api.syncPoint(label, tag);
-        refresh(true);
+      {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} harness={harness} onHarness={setHarnessPick} onRun={() => void run()} busy={!!running} onSyncPoint={async (label, tag, hold) => {
+        const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
+        // compare from the new point (the base change reloads); re-recording the same point just refreshes
+        if (syncPoint.id !== baseId) setBaseId(syncPoint.id);
+        else refresh(true);
       }} /> : null}
 
       {panel ? <Activity state={state} focus={activity} onFocus={setActivity} onClose={() => setPanel(false)} onChanged={() => refresh(true)} /> : null}

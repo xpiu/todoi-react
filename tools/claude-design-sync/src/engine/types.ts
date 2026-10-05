@@ -39,6 +39,8 @@ export interface Unit {
   status: UnitStatus;
   /** Both sides speak the same language (token CSS), so a deterministic merge exists */
   mergeable: boolean;
+  /** Kept open at the sync point (skipped, not synced): the older baseline it's still compared against */
+  heldFrom?: Baseline;
 }
 
 export interface Feature {
@@ -56,6 +58,13 @@ export interface Feature {
   suggested: Direction;
 }
 
+/** Where a comparison starts: the App's git rev and the Design snapshot taken with it */
+export interface Baseline {
+  rev: string;
+  designSnapshot: string | null;
+  label: string;
+}
+
 export interface SyncPoint {
   id: string;
   label: string;
@@ -64,6 +73,8 @@ export interface SyncPoint {
   /** Design snapshot taken at this sync point (null when none was kept) */
   designSnapshot: string | null;
   createdAt: string;
+  /** Units kept open when this point was recorded, by unit id: they keep comparing against their older baseline */
+  held?: Record<string, Baseline>;
 }
 
 export interface SnapshotMeta {

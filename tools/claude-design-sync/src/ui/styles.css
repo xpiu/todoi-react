@@ -963,6 +963,25 @@ em {
 .cds-mark p {
   margin: 0 0 6px;
 }
+.cds-mark-features {
+  margin: 14px 0 8px;
+  padding: 0;
+  border: 0;
+}
+.cds-mark-features legend {
+  padding: 0;
+  font-size: 12px;
+  color: var(--ink-400);
+}
+.cds-mark-features ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cds-mark-features .cds-check {
+  align-items: baseline;
+  margin: 4px 0;
+}
 
 /* ── Activity panel ──────────────────────────────────────────────────────────── */
 .cds-panel {

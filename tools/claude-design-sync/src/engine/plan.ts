@@ -11,7 +11,8 @@ import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags }
 import { sections } from "./inventory";
 import { getSnapshot, saveSyncPoint, snapshotFilesDir } from "./snapshots";
 import { featureDirection, unitDirection } from "./directions";
-import type { Comparison, Direction, Feature, SyncPoint, Unit } from "./types";
+import { unitBaseline } from "./compare";
+import type { Baseline, Comparison, Direction, Feature, SyncPoint, Unit } from "./types";
 
 export type StepKind = "merge-css" | "ai-pull" | "ai-push" | "upload";
 
@@ -77,15 +78,16 @@ export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Dir
 
 /** Replay one side's token changes onto the other side's file; returns the new text for `target` */
 export function cssMergeFor(ctx: Ctx, cmp: Comparison, unit: Unit, target: "app" | "design"): { text: string; summary: string } {
-  if (!cmp.base) throw new Error("A deterministic merge needs a sync point to diff from");
+  const base = unitBaseline(cmp, unit);
+  if (!base) throw new Error("A deterministic merge needs a sync point to diff from");
   const appPath = unit.app.paths[0]!;
   const designPath = unit.design.paths[0]!;
   const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
-  const baseSnap = cmp.base.designSnapshot ? snapshotFilesDir(ctx, cmp.base.designSnapshot) : null;
+  const baseSnap = base.designSnapshot ? snapshotFilesDir(ctx, base.designSnapshot) : null;
   const designNow = snap ? readText(join(snap, designPath)) ?? "" : "";
   const designBase = baseSnap ? readText(join(baseSnap, designPath)) ?? "" : designNow;
   const appNow = readText(join(ctx.repo, appPath)) ?? "";
-  const appBase = showAt(ctx.repo, cmp.base.rev, appPath) ?? "";
+  const appBase = showAt(ctx.repo, base.rev, appPath) ?? "";
   const r = target === "app" ? mergeCss(designBase, designNow, appNow) : mergeCss(appBase, appNow, designNow);
   const bits = [r.added && `${r.added} added`, r.updated && `${r.updated} updated`, r.removed && `${r.removed} removed`].filter(Boolean).join(", ") || "nothing to apply";
   return { text: r.text, summary: `${unit.name}: ${bits}${r.conflicts.length ? ` · ${r.conflicts.length} left as the target has them` : ""}` };
@@ -119,7 +121,11 @@ export function stagedChanges(ctx: Ctx, cmp: Comparison, stageDir: string): Arra
 
 // ── Sync points ──────────────────────────────────────────────────────────────────────────────
 
-export function recordSyncPoint(ctx: Ctx, o: { label: string; snapshotId: string | null; tag?: boolean; rev?: string }): SyncPoint {
+/**
+ * Record App HEAD + a Design snapshot as the new starting line. `hold` keeps units open (skipped, not
+ * synced): they go on comparing against the baseline they had under `from`, the sync point being replaced.
+ */
+export function recordSyncPoint(ctx: Ctx, o: { label: string; snapshotId: string | null; tag?: boolean; rev?: string; from?: SyncPoint | null; hold?: string[] }): SyncPoint {
   const rev = o.rev ? resolveRev(ctx.repo, o.rev) ?? o.rev : head(ctx.repo);
   const date = new Date().toISOString().slice(0, 10);
   let id = `sp-${date}-${rev}`;
@@ -130,7 +136,10 @@ export function recordSyncPoint(ctx: Ctx, o: { label: string; snapshotId: string
     createTag(ctx.repo, tag, `Sync point with Claude Design project ${ctx.config.design.projectId}${o.snapshotId ? ` (snapshot ${o.snapshotId})` : ""}: ${o.label}`);
     id = tag;
   }
-  const point: SyncPoint = { id, label: o.label, rev, designSnapshot: o.snapshotId, createdAt: new Date().toISOString() };
+  const from = o.from;
+  const held: Record<string, Baseline> = {};
+  if (from) for (const u of o.hold ?? []) held[u] = from.held?.[u] ?? { rev: from.rev, designSnapshot: from.designSnapshot, label: from.label };
+  const point: SyncPoint = { id, label: o.label, rev, designSnapshot: o.snapshotId, createdAt: new Date().toISOString(), ...(Object.keys(held).length ? { held } : {}) };
   saveSyncPoint(ctx, point);
   return point;
 }
@@ -142,7 +151,8 @@ const capped = (s: string, n = CAP) => (s.length > n ? `${s.slice(0, n)}\n… (t
 
 function designDiff(ctx: Ctx, cmp: Comparison, u: Unit): string {
   const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
-  const baseSnap = cmp.base?.designSnapshot ? getSnapshot(ctx, cmp.base.designSnapshot) : null;
+  const b = unitBaseline(cmp, u);
+  const baseSnap = b?.designSnapshot ? getSnapshot(ctx, b.designSnapshot) : null;
   if (!snap) return "";
   if (u.kind === "spec") {
     const now = sections(readText(join(snap, u.design.paths[0] ?? ""))).get(u.name) ?? "";
@@ -211,7 +221,8 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   lines.push("## What changed");
   let budget = CAP;
   for (const u of units) {
-    const src = target === "app" ? designDiff(ctx, cmp, u) : base ? diffSince(ctx.repo, base.rev, u.app.paths) : u.app.paths.map((p) => `File ${p}:\n${readText(join(ctx.repo, p)) ?? ""}`).join("\n");
+    const ub = unitBaseline(cmp, u);
+    const src = target === "app" ? designDiff(ctx, cmp, u) : ub ? diffSince(ctx.repo, ub.rev, u.app.paths) : u.app.paths.map((p) => `File ${p}:\n${readText(join(ctx.repo, p)) ?? ""}`).join("\n");
     if (!src.trim()) continue;
     const chunk = capped(src, Math.max(4000, budget));
     budget -= chunk.length;

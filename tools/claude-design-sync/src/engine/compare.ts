@@ -9,7 +9,7 @@ import { commitsAfter, head, showAt, type Commit } from "./git";
 import { buildInventory, cardInfo, normaliseSpec, propsOf, sections, type UnitDef } from "./inventory";
 import { getSnapshot, latestSnapshot, snapshotFilesDir } from "./snapshots";
 import { directionsFor } from "./directions";
-import type { Comparison, Direction, Feature, SideState, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "./types";
+import type { Baseline, Comparison, Direction, Feature, SideState, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "./types";
 
 export interface Readers {
   appNow: (p: string) => string | null;
@@ -18,7 +18,7 @@ export interface Readers {
   designBase: ((p: string) => string | null) | null;
 }
 
-export function readersFor(ctx: Ctx, base: SyncPoint | null, snapshot: SnapshotMeta | null): Readers {
+export function readersFor(ctx: Ctx, base: Pick<Baseline, "rev" | "designSnapshot"> | null, snapshot: SnapshotMeta | null): Readers {
   const snapDir = snapshot ? snapshotFilesDir(ctx, snapshot.id) : null;
   const baseSnap = base?.designSnapshot ? getSnapshot(ctx, base.designSnapshot) : null;
   const baseDir = baseSnap ? snapshotFilesDir(ctx, baseSnap.id) : null;
@@ -85,7 +85,7 @@ export const cleanSubject = (s: string) => {
 /** Commits that touched a unit (spec sections share DESIGN.md, so they never claim its commits) */
 const unitCommits = (def: UnitDef, log: Commit[]) => (def.kind === "spec" ? [] : log.filter((c) => c.files.some((f) => def.appPaths.includes(f))));
 
-function evidence(def: UnitDef, unit: Unit, r: Readers, base: SyncPoint | null, log: Commit[]) {
+function evidence(def: UnitDef, unit: Unit, r: Readers, base: Pick<Baseline, "rev"> | null, log: Commit[]) {
   if (base && unit.app.exists && unit.app.changed && def.kind !== "spec") {
     const commits = unitCommits(def, log);
     unit.app.evidence.push(...commits.slice(0, 6).map((c) => cleanSubject(c.subject)));
@@ -144,7 +144,7 @@ const DRIFT: UnitStatus[] = ["app-ahead", "design-ahead", "both", "app-only", "d
 const AREA_TITLE: Record<string, string> = { core: "Core components", board: "Board", list: "List view", calendar: "Calendar", overlay: "Item overlay", navigation: "Navigation", project: "Projects", auth: "Sign-in & guests", settings: "Settings", tokens: "Tokens & themes", spec: "Design spec", screens: "UI kit screens", guidelines: "Guidelines", explorations: "Explorations" };
 
 /** Group drifting units into features: App commits and Design preview cards, merged where they share a unit */
-export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: SyncPoint | null, r: Readers, log: Commit[]): Feature[] {
+export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: SyncPoint | null, r: Readers, logFor: (unitId: string) => Commit[]): Feature[] {
   const drifting = units.filter((u) => DRIFT.includes(u.status) || (u.status === "unknown" && (u.app.changed || u.design.changed)));
   const ids = new Set(drifting.map((u) => u.id));
   type Group = { title: string; source: Feature["source"]; units: Set<string>; appWork: Set<string>; designWork: Set<string> };
@@ -155,7 +155,7 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
     const byCommit = new Map<string, Group>();
     for (const u of drifting) {
       if (!u.app.changed) continue;
-      for (const c of unitCommits(defs.get(u.id)!, log)) {
+      for (const c of unitCommits(defs.get(u.id)!, logFor(u.id))) {
         const g = byCommit.get(c.hash) ?? { title: cleanSubject(c.subject), source: "commit" as const, units: new Set<string>(), appWork: new Set([cleanSubject(c.subject)]), designWork: new Set<string>() };
         g.units.add(u.id);
         byCommit.set(c.hash, g);
@@ -256,20 +256,39 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 
+/** The baseline a unit is compared against: its own when it was kept open, else the sync point's */
+export const unitBaseline = (cmp: Pick<Comparison, "base">, u: Pick<Unit, "heldFrom">): Pick<Baseline, "rev" | "designSnapshot"> | null => u.heldFrom ?? cmp.base;
+
 export function compare(ctx: Ctx, opts: { base: SyncPoint | null; snapshotId?: string | null }): Comparison {
   const snapshot = opts.snapshotId ? getSnapshot(ctx, opts.snapshotId) : latestSnapshot(ctx);
   const r = readersFor(ctx, opts.base, snapshot);
-  const log = opts.base ? commitsAfter(ctx.repo, opts.base.rev) : [];
+  // units kept open at the sync point compare against their own, older baseline (readers and commits per baseline)
+  const held = opts.base?.held ?? {};
+  const baseOf = (id: string): Pick<Baseline, "rev" | "designSnapshot"> | null => held[id] ?? opts.base;
+  const memo = <T,>(make: (b: Pick<Baseline, "rev" | "designSnapshot">) => T) => {
+    const m = new Map<string, T>();
+    return (b: Pick<Baseline, "rev" | "designSnapshot">) => {
+      const k = `${b.rev}|${b.designSnapshot}`;
+      if (!m.has(k)) m.set(k, make(b));
+      return m.get(k)!;
+    };
+  };
+  const readersAt = memo((b) => readersFor(ctx, b, snapshot));
+  const logAt = memo((b) => commitsAfter(ctx.repo, b.rev));
+  const readersOf = (id: string) => (held[id] ? readersAt(held[id]) : r);
+  const logOf = (id: string) => (baseOf(id) ? logAt(baseOf(id)!) : []);
   const designFiles = snapshot ? listFiles(snapshotFilesDir(ctx, snapshot.id)) : [];
   const defs = buildInventory(ctx, designFiles, r.designNow);
   const defMap = new Map(defs.map((d) => [d.id, d]));
   const carried = new Set(snapshot?.unpulled?.carried ?? []);
   const units: Unit[] = defs.map((def) => {
-    const app = sideState(def, "app", r);
-    const design = snapshot ? sideState(def, "design", r) : { paths: def.designPaths, exists: false, changed: null, added: false, evidence: [] };
-    const u: Unit = { id: def.id, kind: def.kind, area: def.area, name: def.name, app, design, status: "in-sync", mergeable: def.kind === "tokens" };
+    const ur = readersOf(def.id);
+    const app = sideState(def, "app", ur);
+    const design = snapshot ? sideState(def, "design", ur) : { paths: def.designPaths, exists: false, changed: null, added: false, evidence: [] };
+    const u: Unit = { id: def.id, kind: def.kind, area: def.area, name: def.name, app, design, status: "in-sync", mergeable: def.kind === "tokens", ...(held[def.id] ? { heldFrom: held[def.id] } : {}) };
     u.status = statusOf(u);
-    evidence(def, u, r, opts.base, log);
+    evidence(def, u, ur, baseOf(def.id), logOf(def.id));
+    if (u.heldFrom) for (const s of [u.app, u.design]) if (s.changed) s.evidence.unshift(`Kept open since ${u.heldFrom.label}`);
     if (u.design.paths.some((p) => carried.has(p))) u.design.evidence.push(`Not pulled: compared as of ${snapshot?.unpulled?.from ?? "an earlier snapshot"}`);
     return u;
   });
@@ -279,7 +298,7 @@ export function compare(ctx: Ctx, opts: { base: SyncPoint | null; snapshotId?: s
     appRev: opts.base?.rev ?? "",
     appHead: head(ctx.repo),
     designSnapshot: snapshot,
-    features: groupFeatures(defMap, units, opts.base, r, log),
+    features: groupFeatures(defMap, units, opts.base, r, logOf),
     units,
     counts,
     generatedAt: new Date().toISOString(),

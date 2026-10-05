@@ -1,18 +1,25 @@
 // The plan, pinned to the bottom: what the decisions add up to, every step with its brief, and the
-// confirmation that says exactly what a run will write and where. Also: marking a sync point.
+// confirmation that says exactly what a run will write and where. Also: marking a sync point, where
+// features this round didn't sync stay open instead of vanishing from the next comparison.
 import { ChevronRight, Flag, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { effective, plural, type AppState, type Direction, type Feature, type Step } from "./api";
+import { directionsFor, effective, plural, type AppState, type Direction, type Feature, type Step, type Unit } from "./api";
 import { StepLine } from "./FeatureRow";
 
-export function PlanBar({ steps, features, global, overrides, state, harness, onHarness, onRun, busy, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; state: AppState | null; harness: "claude" | "codex"; onHarness: (h: "claude" | "codex") => void; onRun: () => void; busy: boolean; onSyncPoint: (label: string, tag: boolean) => Promise<void> }) {
+/** A part the plan could move but skips: it stays open at a sync point. Reference-only parts never move, so they never hold a feature open. */
+const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (unitChoices[u.id] ?? "skip") === "skip";
+const allSkipped = (f: Feature, unitChoices: Record<string, Direction>) => f.units.some((u) => skipped(u, unitChoices)) && f.units.every((u) => skipped(u, unitChoices) || directionsFor(u.status, u.kind).directions.length === 1);
+
+export function PlanBar({ steps, features, global, overrides, unitChoices, state, harness, onHarness, onRun, busy, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; harness: "claude" | "codex"; onHarness: (h: "claude" | "codex") => void; onRun: () => void; busy: boolean; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [mark, setMark] = useState(false);
   const [label, setLabel] = useState("");
   const [tag, setTag] = useState(true);
   const [saving, setSaving] = useState(false);
+  /** Your ticks in the sync-point dialog; untouched features follow the plan (open when it skips them) */
+  const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
 
   const t = useMemo(() => {
@@ -36,6 +43,15 @@ export function PlanBar({ steps, features, global, overrides, state, harness, on
 
   const kinds = ([[t.toDesign, "into Design"], [t.toApp, "into the App"], [t.both, "both ways"]] as const).filter(([n]) => n > 0);
   const moving = t.toDesign + t.toApp + t.both;
+  const keepOpen = (f: Feature) => !(ticked[f.id] ?? !allSkipped(f, unitChoices));
+  const kept = features.filter(keepOpen).length;
+  const hold = features.flatMap((f) => (keepOpen(f) ? f.units : f.units.filter((u) => skipped(u, unitChoices))).map((u) => u.id));
+  const startMark = () => {
+    setTicked({});
+    setOpen(true);
+    setMark(true);
+    setConfirm(false);
+  };
   const summary = !moving ? "Nothing planned" : `${plural(moving, "feature")}${kinds.length === 1 ? ` · ${kinds[0]![1]}` : `: ${kinds.map(([n, l]) => `${n} ${l}`).join(" · ")}`}${t.skip ? ` · ${t.skip} skipped` : ""}`;
 
   return (
@@ -80,7 +96,7 @@ export function PlanBar({ steps, features, global, overrides, state, harness, on
               onSubmit={async (e) => {
                 e.preventDefault();
                 setSaving(true);
-                await onSyncPoint(label.trim() || "Synced", tag);
+                await onSyncPoint(label.trim() || "Synced", tag, hold);
                 setSaving(false);
                 setMark(false);
                 setOpen(false);
@@ -92,6 +108,29 @@ export function PlanBar({ steps, features, global, overrides, state, harness, on
                 <span>Label</span>
                 <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Hidden lists + offline copy" autoFocus />
               </label>
+              {features.length ? (
+                <fieldset className="cds-mark-features">
+                  <legend>Synced this round</legend>
+                  <p className="cds-quiet">Unticked features stay open: they keep their starting point and show up in the next comparison. Ticked ones start over from here.</p>
+                  <ul>
+                    {features.map((f) => {
+                      const open = keepOpen(f);
+                      const parts = open ? 0 : f.units.filter((u) => skipped(u, unitChoices)).length;
+                      return (
+                        <li key={f.id}>
+                          <label className="cds-check">
+                            <input type="checkbox" checked={!open} onChange={(e) => setTicked((t) => ({ ...t, [f.id]: e.target.checked }))} />
+                            <span>
+                              {f.title}
+                              {parts ? <span className="cds-quiet"> · {plural(parts, "skipped part")} stay{parts === 1 ? "s" : ""} open</span> : null}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </fieldset>
+              ) : null}
               <label className="cds-check">
                 <input type="checkbox" checked={tag} onChange={(e) => setTag(e.target.checked)} /> Also create the git tag {`design-sync/${today}`}
               </label>
@@ -99,6 +138,7 @@ export function PlanBar({ steps, features, global, overrides, state, harness, on
                 <button type="submit" className="cds-btn cds-btn-primary" disabled={saving}>
                   {saving ? "Saving…" : "Record sync point"}
                 </button>
+                {kept ? <span className="cds-quiet">{plural(kept, "feature")} stay{kept === 1 ? "s" : ""} open</span> : null}
                 <button type="button" className="cds-btn" onClick={() => setMark(false)}>
                   Cancel
                 </button>
@@ -126,7 +166,7 @@ export function PlanBar({ steps, features, global, overrides, state, harness, on
           </span>
         </button>
         <div className="cds-plan-actions">
-          <button type="button" className="cds-btn" onClick={() => { setOpen(true); setMark(true); setConfirm(false); }}>
+          <button type="button" className="cds-btn" onClick={startMark}>
             <Flag size={14} strokeWidth={1.75} aria-hidden /> Mark synced
           </button>
           {confirm ? null : (

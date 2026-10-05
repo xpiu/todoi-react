@@ -28,14 +28,14 @@ Then open http://localhost:4477. The tool binds to 127.0.0.1 only.
   - App and Design diffs since the sync point;
   - live previews of Design cards (rendered with a locally built bundle);
   - the exact steps that will run, each AI step with its full brief (*Read brief*, *Copy brief*), and **Run this feature only**.
-- **The plan bar** (bottom): what the decisions add up to and how many steps (merges, AI ports, upload). **Run plan** opens a confirmation that says exactly what will be written where. **Mark synced** records a new sync point.
+- **The plan bar** (bottom): what the decisions add up to and how many steps (merges, AI ports, upload). **Run plan** opens a confirmation that says exactly what will be written where. **Mark synced** records a new sync point and lists every feature. Features the plan moves start ticked. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old starting point and show up in the next comparison as "Kept open since …".
 - **Activity** (top right): jobs with a live log, step states and cost. A run that changed kit files stops here at **Upload to Claude Design**: every staged file is listed with a checkbox, cards show whether they render, with previews, and nothing is uploaded until you press Upload.
 
 ## How it works
 
 | Concept | What it is |
 |---|---|
-| **Sync point** | The App git rev and the Design snapshot taken at the same moment. Comparisons are three-way against it. Optionally tagged `design-sync/<date>` in git. |
+| **Sync point** | The App git rev and the Design snapshot taken at the same moment. Comparisons are three-way against it. Optionally tagged `design-sync/<date>` in git. Units kept open when it was recorded (`held`) keep their older baseline. |
 | **Design snapshot** | A local copy of the Claude Design project's text files in `.state/snapshots/<id>/files/`. Comes from a **pull** (Claude Code headless + DesignSync), an **import** (a project export, zip or folder), or an **upload** (the previous snapshot plus what you just uploaded). |
 | **Unit** | One comparable thing: a component (`components/<area>/X.jsx` + `.d.ts` + `.prompt.md` ↔ `src/client/design/<area>/X.tsx` + `.css`), a token file, a spec section (`readme.md` ↔ `DESIGN.md`, by `##` heading), a screen (`ui_kits/todoi/*` ↔ `src/client/app/*`), or a preview card with its Minimal twin. Mapping rules and renames live in `config.json`. |
 | **Feature** | Changed units grouped into work: App commits since the sync point, plus Design preview cards (with the components they render). A card merges with the commit that shares the most units, and hub components (Button, Menu…) don't glue unrelated features together. Cards whose only change is a new Minimal twin become one feature. |
@@ -61,7 +61,7 @@ npm run design-sync -- status                      # Design project's updatedAt 
 npm run design-sync -- pull                        # full pull into a new snapshot (~3 min, ~$2 with Sonnet)
 npm run design-sync -- import ~/Downloads/x.zip    # or an unzipped export folder
 npm run design-sync -- compare [--base <id>]       # print features per status
-npm run design-sync -- sync-point "label" [--tag]  # record App HEAD + newest snapshot
+npm run design-sync -- sync-point "label" [--tag]  # record App HEAD + newest snapshot (marks everything synced; keep features open from the GUI)
 npm run design-sync -- twin components/x/y.card.html          # write the Minimal twin of a card
 npm run design-sync -- bundle <projectDir>                    # local stand-in for _ds_bundle.js
 npm run design-sync -- check-cards <projectDir> <cards…>      # render cards in Chromium, report errors

@@ -47,7 +47,8 @@ export const api = {
   pull: () => call<{ job: string }>("/api/pull", { method: "POST" }),
   statusCheck: () => call<{ updatedAt: string | null; snapshotUpdatedAt: string | null; stale: boolean }>("/api/status-check", { method: "POST" }),
   importExport: (path: string) => call<{ snapshot: SnapshotMeta }>("/api/import", { body: { path } }),
-  syncPoint: (label: string, tag: boolean) => call<{ syncPoint: SyncPoint }>("/api/sync-point", { body: { label, tag } }),
+  /** `hold`: unit ids kept open, still compared against their baseline under `base` */
+  syncPoint: (label: string, tag: boolean, base: string | null, hold: string[]) => call<{ syncPoint: SyncPoint }>("/api/sync-point", { body: { label, tag, base, hold } }),
   job: (id: string) => call<Job>(`/api/jobs/${id}`),
   upload: (id: string, paths: string[]) => call<{ ok: true }>(`/api/jobs/${id}/upload`, { body: { paths } }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),

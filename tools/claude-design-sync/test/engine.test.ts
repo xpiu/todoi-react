@@ -8,7 +8,7 @@ import { checkUpload, projectStatus, pullable, pullSnapshot, pushFiles, type Run
 import { fakeRunner } from "../src/engine/fakeHarness";
 import { parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
-import { createStage, cssMergeFor, effectiveDirection, planSteps, stagedChanges, unitChoicesFor } from "../src/engine/plan";
+import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor } from "../src/engine/plan";
 import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
 import { makeFixture, type Fixture } from "./fixture";
@@ -127,6 +127,34 @@ describe("compare (three-way)", () => {
       { path: "components/core/New.jsx", status: "new" },
       { path: "components/core/Toast.jsx", status: "changed" },
     ]);
+  });
+});
+
+describe("sync points that keep skipped work open", () => {
+  it("carries held units forward on their old baseline, and lets go of the rest", () => {
+    const fx = makeFixture();
+    const start = listSyncPoints(fx.ctx)[0]!;
+    const before = compare(fx.ctx, { base: start });
+    const chips = before.features.find((f) => f.title === "Chips")!;
+    const hold = chips.units.map((u) => u.id);
+    const next = recordSyncPoint(fx.ctx, { label: "Round 1", snapshotId: fx.nowSnapshot, from: start, hold });
+    expect(next.held?.["component:core/Chip"]).toEqual({ rev: start.rev, designSnapshot: start.designSnapshot, label: "Start" });
+
+    const after = compare(fx.ctx, { base: next });
+    // synced work starts over from the new point; the held feature is still there, measured from Start
+    expect(after.features.map((f) => f.title)).toEqual(["Chips"]);
+    const chip = after.units.find((u) => u.id === "component:core/Chip")!;
+    expect(chip.status).toBe("design-only");
+    expect(chip.heldFrom?.label).toBe("Start");
+    expect(chip.design.evidence[0]).toBe("Kept open since Start");
+    expect(after.units.find((u) => u.id === "component:board/BoardView")!.status).toBe("in-sync");
+
+    // held again: still measured from Start (not from Round 1); not held: released
+    const round2 = recordSyncPoint(fx.ctx, { label: "Round 2", snapshotId: fx.nowSnapshot, from: next, hold: ["component:core/Chip"] });
+    expect(round2.held?.["component:core/Chip"]?.label).toBe("Start");
+    const round3 = recordSyncPoint(fx.ctx, { label: "Round 3", snapshotId: fx.nowSnapshot, from: round2, hold: [] });
+    expect(round3.held).toBeUndefined();
+    expect(compare(fx.ctx, { base: round3 }).features).toEqual([]);
   });
 });
 

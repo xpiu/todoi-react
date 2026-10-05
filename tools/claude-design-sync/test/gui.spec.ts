@@ -129,8 +129,15 @@ test.describe.serial("Claude Design Sync", () => {
     await page.getByRole("button", { name: "Close activity" }).click();
     await page.getByRole("button", { name: /Mark synced/ }).click();
     await page.getByLabel("Label").fill("After the e2e run");
-    await page.getByRole("checkbox").uncheck();
+    await page.getByRole("checkbox", { name: /git tag/ }).uncheck();
+    // everything ran, so every feature starts ticked; Chips is left open on purpose
+    const synced = page.getByRole("group", { name: "Synced this round" });
+    await expect(synced.getByRole("checkbox", { name: /Chips/ })).toBeChecked();
+    await synced.getByRole("checkbox", { name: /Chips/ }).uncheck();
+    await expect(page.locator(".cds-mark")).toContainText("1 feature stays open");
     await page.getByRole("button", { name: "Record sync point" }).click();
-    await expect(page.getByLabel("Compare since sync point")).toContainText("After the e2e run");
+    await expect(page.locator(".cds-verdict-line")).toContainText("Since After the e2e run");
+    // the kept-open feature is still compared, from where it was
+    await expect(row(page, "Chips").locator(".cds-cell-design")).toContainText("Kept open since Start");
   });
 });

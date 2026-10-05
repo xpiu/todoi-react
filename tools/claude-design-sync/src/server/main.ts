@@ -7,7 +7,7 @@ import { extname, join, resolve } from "node:path";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 
-import { compare } from "../engine/compare";
+import { compare, unitBaseline } from "../engine/compare";
 import { defaultCtx, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, projectStatus, pullSnapshot, pushFiles, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
@@ -120,16 +120,17 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     const unit = cmp.units.find((u) => u.id === c.req.query("unit"));
     if (!unit) return c.json({ error: "Unknown unit" }, 404);
     const side = c.req.query("side") === "design" ? "design" : "app";
+    const base = unitBaseline(cmp, unit);
     if (side === "app") {
       if (unit.kind === "spec") {
         const now = sections(readText(join(ctx.repo, unit.app.paths[0] ?? ""))).get(unit.name) ?? "";
-        const was = cmp.base ? sections(showAt(ctx.repo, cmp.base.rev, unit.app.paths[0] ?? "")).get(unit.name) ?? "" : "";
+        const was = base ? sections(showAt(ctx.repo, base.rev, unit.app.paths[0] ?? "")).get(unit.name) ?? "" : "";
         return c.json({ text: plainDiff(was, now) });
       }
-      return c.json({ text: cmp.base ? diffSince(ctx.repo, cmp.base.rev, unit.app.paths) : "" });
+      return c.json({ text: base ? diffSince(ctx.repo, base.rev, unit.app.paths) : "" });
     }
     const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
-    const baseSnap = cmp.base?.designSnapshot ? snapshotFilesDir(ctx, cmp.base.designSnapshot) : null;
+    const baseSnap = base?.designSnapshot ? snapshotFilesDir(ctx, base.designSnapshot) : null;
     if (!snap) return c.json({ text: "" });
     if (unit.kind === "spec") {
       const now = sections(readText(join(snap, unit.design.paths[0] ?? ""))).get(unit.name) ?? "";
@@ -191,9 +192,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   });
 
   app.post("/api/sync-point", async (c) => {
-    const { label, tag, snapshot } = await c.req.json<{ label: string; tag?: boolean; snapshot?: string }>();
+    const { label, tag, snapshot, base, hold } = await c.req.json<{ label: string; tag?: boolean; snapshot?: string; base?: string | null; hold?: string[] }>();
     try {
-      const p = recordSyncPoint(ctx, { label, tag, snapshotId: snapshot ?? latestSnapshot(ctx)?.id ?? null });
+      const p = recordSyncPoint(ctx, { label, tag, snapshotId: snapshot ?? latestSnapshot(ctx)?.id ?? null, from: baseFor(base), hold });
       cache.clear();
       return c.json({ syncPoint: p });
     } catch (e) {
