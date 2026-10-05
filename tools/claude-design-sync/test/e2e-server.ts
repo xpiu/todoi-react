@@ -1,4 +1,5 @@
 // Playwright's web server: a fresh fixture world + the tool with the fake harness on :4478.
+// Also a demo (npm run design-sync:demo): nothing touches the real repo, state or Claude Design.
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

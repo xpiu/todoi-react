@@ -77,13 +77,14 @@ The last three are what the AI harness uses to check kit work before you upload 
 - ignore globs, renames (`SavedViews.jsx` ↔ `SavedViewTabs.tsx` …) and screen mappings;
 - the harness (`implement`: `claude` or `codex`, binaries, `pullModel`, `implementModel`).
 
-Environment overrides (used by the tests): `CDS_REPO`, `CDS_STATE`, `CDS_CONFIG`, `CDS_PORT`, `CDS_FAKE_HARNESS=1` + `CDS_FAKE_DESIGN=<folder>` (a stand-in harness that serves a local folder as the Design project).
+Environment overrides (used by the tests): `CDS_REPO`, `CDS_STATE`, `CDS_CONFIG`, `CDS_PORT`, `CDS_FAKE_HARNESS=1` + `CDS_FAKE_DESIGN=<folder>` (a stand-in harness that serves a local folder as the Design project; both are required, and `design-sync:demo` sets them up).
 
 ## Tests
 
 ```bash
-npm run design-sync:check                                                      # typecheck + engine tests
-cd tools/claude-design-sync && ../../node_modules/.bin/playwright test -c playwright.config.ts   # GUI flows
+npm run design-sync:check   # typecheck + engine tests
+npm run design-sync:e2e     # GUI flows (Playwright, against a throwaway fixture on :4478)
+npm run design-sync:demo    # the same fixture world, to click through by hand at http://localhost:4478
 ```
 
 The engine tests build a throwaway git repo and two Design folders. The GUI tests run the full loop against that fixture with the fake harness:

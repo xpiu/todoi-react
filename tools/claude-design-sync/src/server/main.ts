@@ -385,7 +385,8 @@ function plainDiff(a: string, b: string): string {
 if (process.argv[1]?.endsWith("cli.ts") || process.argv[1]?.endsWith("main.ts")) {
   const ctx = defaultCtx();
   mkdirSync(ctx.state, { recursive: true });
-  const fake = process.env.CDS_FAKE_HARNESS ? { designDir: resolve(process.env.CDS_FAKE_DESIGN ?? join(TOOL_DIR, "test/fixtures/design")) } : undefined;
+  if (process.env.CDS_FAKE_HARNESS && !process.env.CDS_FAKE_DESIGN) throw new Error("CDS_FAKE_HARNESS needs CDS_FAKE_DESIGN=<folder that plays the Design project>. For a demo world, run npm run design-sync:demo.");
+  const fake = process.env.CDS_FAKE_HARNESS ? { designDir: resolve(process.env.CDS_FAKE_DESIGN!) } : undefined;
   await buildUi();
   const port = Number(process.env.CDS_PORT ?? 4477);
   serve({ fetch: createApp(ctx, { fake }).fetch, port, hostname: "127.0.0.1" }, (i) => console.log(`Claude Design Sync → http://localhost:${i.port}`));

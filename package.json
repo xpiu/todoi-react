@@ -24,7 +24,9 @@
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
     "design-sync": "tsx tools/claude-design-sync/src/cli.ts",
-    "design-sync:check": "tsc --noEmit -p tools/claude-design-sync && vitest run --config tools/claude-design-sync/vitest.config.ts"
+    "design-sync:check": "tsc --noEmit -p tools/claude-design-sync && vitest run --config tools/claude-design-sync/vitest.config.ts",
+    "design-sync:e2e": "playwright test -c tools/claude-design-sync/playwright.config.ts",
+    "design-sync:demo": "tsx tools/claude-design-sync/test/e2e-server.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
