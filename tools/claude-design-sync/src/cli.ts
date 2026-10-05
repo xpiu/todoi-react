@@ -33,6 +33,7 @@ async function main() {
       const st = await projectStatus(ctx, claude);
       const snap = await pullSnapshot(ctx, claude, { updatedAt: st.updatedAt, onProgress: (p) => process.stdout.write(`\r${p.done}/${p.total} files${p.failed.length ? ` · ${p.failed.length} failed` : ""}   `) });
       console.log(`\nSnapshot ${snap.id}: ${snap.fileCount} files`);
+      if (snap.unpulled) console.log(`Not pulled: ${[...snap.unpulled.carried, ...snap.unpulled.missing].join(", ")}${snap.unpulled.carried.length ? ` (${snap.unpulled.carried.length} kept as in ${snap.unpulled.from})` : ""}. Pull again.`);
       return;
     }
     case "import": {

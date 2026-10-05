@@ -8,7 +8,7 @@ import type { Ctx } from "./config";
 import { readText } from "./fsutil";
 import { mergeText } from "./git";
 import type { HarnessEvent } from "./harness";
-import { newSnapshotId, writeSnapshotFile, writeSnapshotMeta } from "./snapshots";
+import { latestSnapshot, newSnapshotId, snapshotFilesDir, writeSnapshotFile, writeSnapshotMeta } from "./snapshots";
 import type { SnapshotMeta } from "./types";
 
 export type Runner = (prompt: string, opts: { model?: string; maxTurns?: number }, onEvent: (e: HarnessEvent) => void) => Promise<Extract<HarnessEvent, { type: "done" }>>;
@@ -85,9 +85,14 @@ export interface PullProgress {
   failed: string[];
 }
 
-/** Pull `paths` into a new snapshot, in parallel batches of headless runs */
+/**
+ * Pull `paths` into a new snapshot, in parallel batches of headless runs. A file that still fails after
+ * a retry is carried from the previous snapshot (an absent file would read as "deleted in Design") and
+ * recorded in the meta, and the snapshot doesn't claim Design's updatedAt, so it never passes as current.
+ */
 export async function pullSnapshot(ctx: Ctx, runner: Runner, opts: { paths?: string[]; label?: string; batch?: number; parallel?: number; updatedAt?: string | null; onProgress?: (p: PullProgress) => void; onLog?: (e: HarnessEvent) => void }): Promise<SnapshotMeta> {
   const all = opts.paths ?? pullable(await listProjectFiles(ctx, runner, opts.onLog));
+  const prev = latestSnapshot(ctx);
   const id = newSnapshotId();
   const size = opts.batch ?? 40;
   const batches: string[][] = [];
@@ -112,7 +117,18 @@ export async function pullSnapshot(ctx: Ctx, runner: Runner, opts: { paths?: str
   await Promise.all(workers);
   report();
   if (!got.size) throw new Error("The pull returned no files. Is Claude Code signed in to claude.ai with Claude Design access?");
-  return writeSnapshotMeta(ctx, { id, label: opts.label ?? "Pulled from Claude Design", source: "pull", createdAt: new Date().toISOString(), projectUpdatedAt: opts.updatedAt ?? undefined });
+  const carried: string[] = [];
+  const missing: string[] = [];
+  for (const p of failed.sort()) {
+    const earlier = prev ? readText(join(snapshotFilesDir(ctx, prev.id), p)) : null;
+    if (earlier == null) missing.push(p);
+    else {
+      writeSnapshotFile(ctx, id, p, earlier);
+      carried.push(p);
+    }
+  }
+  const unpulled = failed.length ? { carried, missing, from: carried.length ? prev?.label : undefined } : undefined;
+  return writeSnapshotMeta(ctx, { id, label: opts.label ?? "Pulled from Claude Design", source: "pull", createdAt: new Date().toISOString(), projectUpdatedAt: unpulled ? undefined : (opts.updatedAt ?? undefined), unpulled });
 }
 
 export interface UploadCheck {

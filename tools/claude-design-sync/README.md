@@ -96,6 +96,7 @@ The engine tests build a throwaway git repo and two Design folders. The GUI test
 
 ## Limits worth knowing
 
+- **A pull that misses files says so.** A file still failing after a retry is kept as it was in the previous snapshot, so it never reads as deleted in Design. Its units say "Not pulled", the Design header shows "N files not pulled" with **Pull again**, and the snapshot never passes as current.
 - **Pulls are content pulls.** DesignSync has no per-file timestamps, so "Check for changes" compares the project's `updatedAt` with the snapshot's, and a pull reads every text file again. Binaries, uploads and Claude Design's generated `_ds_bundle.js` are skipped. Previews use a locally built bundle.
 - **Only Claude Code can talk to Claude Design** (DesignSync). Codex can do App-side ports only.
 - **Feature grouping is heuristic.** Commit subjects make the best feature titles, so conventional, one-feature commits make this tool read like a changelog.

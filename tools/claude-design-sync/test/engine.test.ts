@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
-import { checkUpload, projectStatus, pullable, pullSnapshot, pushFiles } from "../src/engine/designsync";
+import { checkUpload, projectStatus, pullable, pullSnapshot, pushFiles, type Runner } from "../src/engine/designsync";
 import { fakeRunner } from "../src/engine/fakeHarness";
 import { parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
@@ -177,6 +177,20 @@ describe("DesignSync through the harness", () => {
     const at = "2026-10-05T10:00:00.000Z";
     expect(getSnapshot(fx.ctx, deriveSnapshot(fx.ctx, fx.nowSnapshot, { "a.jsx": "a" }, "After upload", "upload", at).id)?.projectUpdatedAt).toBe(at);
     expect(getSnapshot(fx.ctx, deriveSnapshot(fx.ctx, fx.nowSnapshot, { "a.jsx": "a" }, "After upload", "upload").id)?.projectUpdatedAt).toBeUndefined();
+  });
+  it("never lets a file a pull couldn't fetch read as deleted in Design", async () => {
+    const fx = makeFixture();
+    writeFileSync(join(fx.designNowDir, "components/core/Newer.jsx"), "export const Newer = 1;\n");
+    const fake = fakeRunner(fx.designNowDir, fx.repo);
+    // Claude Design never sends these two, however often they're asked for
+    const lossy: Runner = (prompt, o, on) => fake(prompt, o, (e) => (e.type === "tool-result" && /"path":"components\/core\/(Chip|Newer)\.jsx"/.test(e.content) ? undefined : on(e)));
+    const snap = await pullSnapshot(fx.ctx, lossy, { updatedAt: "2026-10-05T10:00:00.000Z" });
+    expect(snap.unpulled).toEqual({ carried: ["components/core/Chip.jsx"], missing: ["components/core/Newer.jsx"], from: "Design now" });
+    expect(snap.projectUpdatedAt).toBeUndefined();
+    expect(readFileSync(join(snapshotFilesDir(fx.ctx, snap.id), "components/core/Chip.jsx"), "utf8")).toContain("Chip");
+    const chip = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! }).units.find((u) => u.id === "component:core/Chip")!;
+    expect(chip.status).toBe("design-only");
+    expect(chip.design.evidence).toContain("Not pulled: compared as of Design now");
   });
   it("keeps uploads, binaries and the generated bundle out of pulls", () => {
     expect(pullable(["a.jsx", "uploads/x.png", "assets/fonts/I.ttf", "_ds_bundle.js", "c/.thumbnail", "readme.md"])).toEqual(["a.jsx", "readme.md"]);

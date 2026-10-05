@@ -263,12 +263,14 @@ export function compare(ctx: Ctx, opts: { base: SyncPoint | null; snapshotId?: s
   const designFiles = snapshot ? listFiles(snapshotFilesDir(ctx, snapshot.id)) : [];
   const defs = buildInventory(ctx, designFiles, r.designNow);
   const defMap = new Map(defs.map((d) => [d.id, d]));
+  const carried = new Set(snapshot?.unpulled?.carried ?? []);
   const units: Unit[] = defs.map((def) => {
     const app = sideState(def, "app", r);
     const design = snapshot ? sideState(def, "design", r) : { paths: def.designPaths, exists: false, changed: null, added: false, evidence: [] };
     const u: Unit = { id: def.id, kind: def.kind, area: def.area, name: def.name, app, design, status: "in-sync", mergeable: def.kind === "tokens" };
     u.status = statusOf(u);
     evidence(def, u, r, opts.base, log);
+    if (u.design.paths.some((p) => carried.has(p))) u.design.evidence.push(`Not pulled: compared as of ${snapshot?.unpulled?.from ?? "an earlier snapshot"}`);
     return u;
   });
   const counts = Object.fromEntries((["in-sync", "app-ahead", "design-ahead", "both", "app-only", "design-only", "unknown"] as UnitStatus[]).map((s) => [s, units.filter((u) => u.status === s).length])) as Record<UnitStatus, number>;

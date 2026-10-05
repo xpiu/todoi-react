@@ -146,6 +146,7 @@ export function App() {
 
   const base = cmp?.base ?? null;
   const snap = cmp?.designSnapshot ?? state?.snapshots[0] ?? null;
+  const unpulled = snap?.unpulled ? [...snap.unpulled.carried, ...snap.unpulled.missing] : [];
   const running = state?.jobs.find((j) => j.state === "running" || j.state === "awaiting-upload");
   const synced = cmp?.units.filter((u) => u.status === "in-sync").length ?? 0;
 
@@ -259,14 +260,19 @@ export function App() {
                 <span className="cds-head-name">Design</span>
                 <span className="cds-head-meta">
                   {state?.project.name} · {snap ? `${snap.label}, ${fmtTime(snap.createdAt)}` : "no snapshot"}
+                  {unpulled.length ? (
+                    <span className="cds-head-warn" title={`Not pulled:\n${unpulled.join("\n")}${snap?.unpulled?.from ? `\nKept as in ${snap.unpulled.from}` : ""}`}>
+                      {" "}· {plural(unpulled.length, "file")} not pulled
+                    </span>
+                  ) : null}
                 </span>
                 <span className="cds-head-actions">
                   <button type="button" className="cds-link" onClick={checkDesign} disabled={check?.busy}>
                     {check?.busy ? "Checking…" : check?.stale ? "Design changed — pull" : check && !check.error ? "Up to date" : "Check for changes"}
                   </button>
-                  {check?.stale || check?.error ? (
+                  {check?.stale || check?.error || unpulled.length ? (
                     <button type="button" className="cds-link" onClick={pull}>
-                      Pull now
+                      {unpulled.length && !check?.stale ? "Pull again" : "Pull now"}
                     </button>
                   ) : null}
                 </span>

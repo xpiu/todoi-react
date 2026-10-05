@@ -299,6 +299,9 @@ em {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.cds-head-warn {
+  color: var(--danger);
+}
 .cds-head-actions {
   display: flex;
   gap: 12px;

@@ -169,7 +169,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         const snap = await pullSnapshot(ctx, runner, { updatedAt: st.updatedAt, label: `Pulled ${new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, onProgress: (p) => jobs.update(job, { progress: { done: p.done, total: p.total } }), onLog: (e) => e.type === "tool" && jobs.log(job, "tool", `${e.name} ${summarise(e.input)}`) });
         cache.clear();
         jobs.update(job, { snapshotId: snap.id });
-        jobs.finish(job, "done", `Snapshot ready: ${snap.fileCount} files`);
+        const un = snap.unpulled;
+        if (un) for (const p of [...un.carried, ...un.missing]) jobs.log(job, "warn", `${p}: couldn't be pulled${un.carried.includes(p) ? `, kept as in ${un.from}` : ""}`);
+        jobs.finish(job, "done", `Snapshot ready: ${snap.fileCount} files${un ? `. ${un.carried.length + un.missing.length} couldn't be pulled${un.carried.length ? ` (${un.carried.length} kept as in ${un.from})` : ""}: pull again` : ""}`);
       } catch (e) {
         jobs.finish(job, "failed", e instanceof Error ? e.message : String(e));
       }
