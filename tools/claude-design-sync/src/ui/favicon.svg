@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Claude Design Sync — App and Design exchanging changes</title>
+  <!--
+    THESIS: two workspaces exchanging changes, expressed as the ledger's printed marks.
+    OWN-WORLD: monochrome ink, square brackets, no radius or decorative fills.
+    STORY: opposing arrows identify a two-way sync between App and Design.
+    FIRST VIEWPORT: paired brackets frame two arrows on a transparent 32px canvas.
+    FORM: a compact extension of the existing rail glyphs, legible at 16px.
+  -->
+  <style>
+    path { stroke: #000; }
+    @media (prefers-color-scheme: dark) { path { stroke: #fff; } }
+  </style>
+  <g fill="none" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M10 4H4V28H10M22 4H28V28H22" />
+    <path d="M10 12H22L18 8M22 12L18 16M22 20H10L14 16M10 20L14 24" />
+  </g>
+</svg>
