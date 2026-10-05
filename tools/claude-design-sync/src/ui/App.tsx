@@ -1,5 +1,5 @@
 // The sync plan: verdict + direction, the ledger of features, the plan bar, and the activity panel.
-import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, History, LoaderCircle, PanelRight, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Activity } from "./Activity";
@@ -177,6 +177,9 @@ export function App() {
           <button type="button" className={`cds-tool ${running ? "is-live" : ""}`} aria-pressed={panel} aria-label="Activity" onClick={() => setPanel((p) => !p)}>
             <PanelRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Activity</span>{running ? <span className="cds-live" aria-label="A job is running" /> : null}
           </button>
+          <a className="cds-tool" href="https://claude.ai/design" target="_blank" rel="noreferrer" aria-label="Claude Design (opens in a new tab)">
+            <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Claude Design</span>
+          </a>
         </div>
       </header>
 
