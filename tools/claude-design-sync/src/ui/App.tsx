@@ -154,8 +154,8 @@ export function App() {
       <a className="cds-skip" href="#ledger">Skip to the features</a>
       <header className="cds-bar">
         <h1 className="cds-wordmark">
-          Todoi <ArrowLeftRight size={14} strokeWidth={1.75} className="cds-wordmark-mark" aria-hidden />
-          <span className="cds-sr"> and </span> Claude Design
+          <ArrowLeftRight size={14} strokeWidth={1.75} className="cds-wordmark-mark" aria-hidden />
+          Claude Design sync tool
         </h1>
         <div className="cds-bar-tools">
           {state?.syncPoints.length ? (
@@ -357,4 +357,3 @@ export function App() {
     </div>
   );
 }
-
