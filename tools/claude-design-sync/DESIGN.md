@@ -120,7 +120,7 @@ It refuses the status-card dashboard and the file-diff tree. Paths, SHAs and log
 - One colour (`danger`), reserved for "changed on both" and errors.
 - Inter 13/1.45 for everything you read; Geist Mono 11px only for data.
 - Arrows on the rail point at the column that receives the work.
-- Light and dark follow `prefers-color-scheme` through the App's `data-mode`; nothing in the tool branches on mode.
+- Light and dark use the App's `data-mode` tokens. The navbar's sun/moon button switches modes and remembers the choice across pages and reloads; until a choice is made, the tool follows `prefers-color-scheme`. The saved mode is applied before styles load.
 
 ## Colors
 
@@ -168,7 +168,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 ## Layout
 
 - **Page:** max 1180px (`--cds-page`), centred, 24px gutters; bottom padding clears the plan bar.
-- **Bar:** sticky, 48px (`--cds-bar`): wordmark left; sync-point select, Recompare and Activity right, 18px apart.
+- **Bar:** sticky, 48px (`--cds-bar`): wordmark left; sync-point select, Recompare, Activity, page links, the sun/moon mode toggle and Claude Design link right, 18px apart. The mode toggle is a 28×28 icon button whose accessible name and tooltip name the mode it switches to.
 - **Ledger grid:** `minmax(0,1fr) 132px minmax(0,1fr)` for the column heads, every row twin, the work twin and each subfeature unit, so the rail lines up down the whole page. Column heads are sticky under the bar. Cells inset 20px from the left (16px on the Design side's outer edge).
 - **Row:** feature head (chevron, title, status, count) across the full width at 14px top padding; then the twin. Closed rows show at most four moved parts per side plus "+n more".
 - **Plan bar:** fixed bottom, min 56px (`--cds-plan`), aligned to the page width; summary left, actions right. Its sheet opens above it, capped at min(56vh, 520px).

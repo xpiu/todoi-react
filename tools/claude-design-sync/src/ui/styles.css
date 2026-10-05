@@ -136,6 +136,11 @@ em {
   display: flex;
   gap: 18px;
 }
+.cds-mode-toggle {
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+}
 .cds-tool:hover,
 .cds-tool[aria-pressed="true"],
 .cds-tool[aria-current="page"] {

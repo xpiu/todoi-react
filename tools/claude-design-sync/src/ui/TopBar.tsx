@@ -1,9 +1,9 @@
 // The bar every page shares: the wordmark, the page's own tools, the pages (Plan, Mapping), and the
 // Claude Design project the tool targets.
-import { ArrowLeftRight, ArrowUpRight, ListChecks, Waypoints } from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowLeftRight, ArrowUpRight, ListChecks, Moon, Sun, Waypoints } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { projectUrl, type AppState } from "./api";
+import { projectUrl, store, type AppState } from "./api";
 
 const PAGES = [
   { id: "plan", href: "/", label: "Plan", Icon: ListChecks },
@@ -11,6 +11,32 @@ const PAGES = [
 ] as const;
 
 export function TopBar({ state, page, children }: { state: AppState | null; page: (typeof PAGES)[number]["id"]; children?: ReactNode }) {
+  const [mode, setMode] = useState(() => document.documentElement.dataset.mode === "dark" ? "dark" : "light");
+  const manual = useRef(false);
+
+  useEffect(() => {
+    const saved = store.get<unknown>("cds-mode", null);
+    manual.current = saved === "light" || saved === "dark";
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const followSystem = () => {
+      if (manual.current) return;
+      const next = media.matches ? "dark" : "light";
+      document.documentElement.dataset.mode = next;
+      setMode(next);
+    };
+    media.addEventListener("change", followSystem);
+    return () => media.removeEventListener("change", followSystem);
+  }, []);
+
+  const toggleMode = () => {
+    const next = mode === "dark" ? "light" : "dark";
+    manual.current = true;
+    document.documentElement.dataset.mode = next;
+    setMode(next);
+    store.set("cds-mode", next);
+  };
+  const modeLabel = `Switch to ${mode === "dark" ? "light" : "dark"} mode`;
+
   return (
     <header className="cds-bar">
       <h1 className="cds-wordmark">
@@ -26,6 +52,9 @@ export function TopBar({ state, page, children }: { state: AppState | null; page
             </a>
           ))}
         </nav>
+        <button type="button" className="cds-tool cds-mode-toggle" onClick={toggleMode} aria-label={modeLabel} title={modeLabel}>
+          {mode === "dark" ? <Sun size={14} strokeWidth={1.75} aria-hidden /> : <Moon size={14} strokeWidth={1.75} aria-hidden />}
+        </button>
         <a className="cds-tool" href={state ? projectUrl(state.project.id) : "https://claude.ai/design"} target="_blank" rel="noreferrer" aria-label={`${state?.project.name ?? "Claude Design"} in Claude Design (opens in a new tab)`}>
           <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Claude Design</span>
         </a>

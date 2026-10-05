@@ -8,9 +8,10 @@
     <script>
       (function () {
         var m = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
-        var set = function () { document.documentElement.setAttribute("data-mode", m && m.matches ? "dark" : "light"); };
-        set();
-        if (m && m.addEventListener) m.addEventListener("change", set);
+        var saved;
+        try { saved = JSON.parse(localStorage.getItem("cds-mode")); } catch (_) {}
+        var mode = saved === "light" || saved === "dark" ? saved : m && m.matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-mode", mode);
       })();
     </script>
     <link rel="stylesheet" href="/tokens/colors.css" />
