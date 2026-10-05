@@ -47,12 +47,13 @@ export function laneRules(config: Config): LaneRule[] {
     {
       id: "component",
       title: "Components",
-      app: `${A.componentRoot}/<area>/<Name>.tsx + .css`,
+      app: `${A.componentRoot}/<area>/<Name>.tsx + .css + .stories.ts(x) + .mdx / .md / .prompt.md`,
       design: `${D.componentRoot}/<area>/<Name>.jsx + .d.ts + .prompt.md`,
       match: `Same area and name (case-insensitive), else a name that is unique in the App.${config.renames.length ? ` ${config.renames.length === 1 ? "One pair is" : `${config.renames.length} pairs are`} pinned in config.json.` : ""}`,
       toApp: portApp,
       toDesign: portDesign,
       pairs: config.renames,
+      notes: ["Stories and colocated documentation belong to their component. Translate useful examples into kit usage notes and preview cards; Storybook runtime code stays in the App's development tooling."],
     },
     { id: "spec", title: "Spec", app: `${A.spec} § "## heading"`, design: `${D.spec} § "## heading"`, match: "Same ## heading; differences in whitespace don't count.", toApp: portApp, toDesign: portDesign },
     {
@@ -101,7 +102,7 @@ export function laneOf(config: Config, side: Side, path: string): LaneId {
   const bare = path.replace(/\.css$/, ".tsx");
   if (config.renames.some((r) => r.app === path || r.app === bare)) return "component";
   if (path.startsWith(`${A.tokensRoot}/`)) return path.endsWith(".css") ? "tokens" : "other";
-  if (path.startsWith(`${A.componentRoot}/`) && /\.(tsx|ts|css)$/.test(path)) return "component";
+  if (path.startsWith(`${A.componentRoot}/`) && /\.(tsx|ts|css|mdx|md)$/.test(path)) return "component";
   if (path === A.spec) return "spec";
   if (config.screens.some((s) => s.app === path)) return "screen";
   return "other";

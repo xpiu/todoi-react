@@ -24,6 +24,9 @@ const base = (p: string) => p.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
 const dirOf = (p: string) => p.replace(/\/[^/]*$/, "");
 const areaOf = (p: string, root: string) => p.slice(root.length + 1).split("/")[0] ?? "";
 
+/** Storybook examples belong to their component, never to a separate component unit. */
+export const isStoryFile = (path: string) => /\.stories\.tsx?$/.test(path);
+
 export function sections(markdown: string | null): Map<string, string> {
   const out = new Map<string, string>();
   if (!markdown) return out;
@@ -84,14 +87,15 @@ export function buildInventory(ctx: Ctx, designFiles: string[], readDesign: (pat
   const appByKey = new Map<string, string>(); // "area/lowername" → app path
   const appByName = new Map<string, string[]>();
   for (const p of appFiles) {
-    if (!/\.(tsx|ts)$/.test(p) || p.startsWith(A.tokensRoot + "/")) continue;
+    if (!/\.(tsx|ts)$/.test(p) || isStoryFile(p) || p.startsWith(A.tokensRoot + "/")) continue;
     const k = `${areaOf(p, A.componentRoot)}/${base(p).toLowerCase()}`;
     // a .tsx wins over a same-named .ts helper
     if (!appByKey.has(k) || p.endsWith(".tsx")) appByKey.set(k, p);
     appByName.set(base(p).toLowerCase(), [...(appByName.get(base(p).toLowerCase()) ?? []), p]);
   }
   const renames = new Map(config.renames.map((r) => [r.design, r.app]));
-  const appCompanions = (p: string) => [p, p.replace(/\.tsx?$/, ".css")].filter((f) => existsSync(join(repo, f)));
+  const appCompanions = (p: string) => [p, ...[".css", ".stories.ts", ".stories.tsx", ".mdx", ".md", ".prompt.md"].map((suffix) => p.replace(/\.tsx?$/, suffix))]
+    .filter((f) => existsSync(join(repo, f)) && !isIgnored(f, A.ignore));
   for (const p of dFiles) {
     if (!p.startsWith(D.componentRoot + "/") || !p.endsWith(".jsx")) continue;
     const area = areaOf(p, D.componentRoot);
@@ -107,7 +111,7 @@ export function buildInventory(ctx: Ctx, designFiles: string[], readDesign: (pat
     units.push({ id: `component:${area}/${name}`, kind: "component", area, name, designPaths, appPaths: app ? appCompanions(app) : [] });
   }
   for (const p of appFiles) {
-    if (!p.endsWith(".tsx") || usedApp.has(p) || p.startsWith(A.tokensRoot + "/")) continue;
+    if (!p.endsWith(".tsx") || isStoryFile(p) || usedApp.has(p) || p.startsWith(A.tokensRoot + "/")) continue;
     const area = areaOf(p, A.componentRoot);
     units.push({ id: `component:${area}/${base(p)}`, kind: "component", area, name: base(p), designPaths: [], appPaths: appCompanions(p) });
   }

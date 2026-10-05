@@ -178,6 +178,8 @@ function textDiff(a: string, b: string, label: string): string {
 }
 
 const KIT_RULES = `Kit conventions (Claude Design project, files under the staging folder):
+- Production architecture comes first, Claude Design readability second. Adapt exports to the kit runtime; never reshape the application to match it.
+- App .stories.ts/.stories.tsx and colocated .mdx/.md/.prompt.md are component examples and usage guidance, not additional components. Translate their relevant variants and compositions into the existing .prompt.md and preview cards. Do not copy Storybook imports, decorators, spies, or tests into the kit runtime.
 - Each component is components/<area>/<Name>.jsx (React 18 UMD at runtime, imported as "react"), with a <Name>.d.ts prop contract (a doc comment that explains behaviour, one interface, \`export declare function\`) and a <Name>.prompt.md usage note with a JSX example.
 - Styles live in the .jsx as a css string injected once: \`const css=\\\`…\\\`; if(typeof document!=="undefined"&&!document.getElementById("td-css-<name>")){…}\`. Tokens only, written var(--token,fallback). No hex outside var() fallbacks, no new fonts.
 - Hooks that must reach card scripts also export a capitalised alias (\`export const UseThing=useThing\`).
@@ -188,6 +190,9 @@ const KIT_RULES = `Kit conventions (Claude Design project, files under the stagi
 - Check your work: \`npm run design-sync -- bundle <stage>\` then \`npm run design-sync -- check-cards <stage> <cards…>\` must show no errors.`;
 
 const APP_RULES = `App conventions (this repo, React 19 + TypeScript; read CLAUDE.md and DESIGN.md first):
+- Production architecture comes first, Claude Design readability second. Storybook and this sync tool adapt to the application. Follow React purity and state ownership, Base UI composition with refs/behavioral props, server-side Hono validation/authorization, and focused Zustand selectors.
+- Preserve the boundary between design components, application screens, client data access, and server code. TanStack Query owns server data; Zustand owns shared client state; local interaction state stays local.
+- Colocated .stories.ts/.stories.tsx and .mdx/.md/.prompt.md belong to their component. Maintain relevant stories when behavior changes, using the actual component with props/providers/mocks in development tooling. Keep Storybook code outside the production import graph. Do not downgrade React 19 APIs or replace Base UI behavior to match the Design kit.
 - Components live in src/client/design/<area>/<Name>.tsx with a co-located <Name>.css (td-* classes, tokens only: no hex, no bare z-index, no @media in components). Behaviour comes from Base UI (@base-ui/react) where the kit has Popover/Menu/Select/Dialog. Icons via the explicit map in src/client/design/core/icons.ts (lucide-react).
 - The kit's .d.ts is the prop contract; translate its React-18 UMD idioms (React.createElement, injected css strings, window globals) into typed React 19 components and plain CSS. Reuse existing helpers (core/text.tsx, ShortcutHint Keys, usePersistedFlag…) instead of duplicating.
 - Minimal theme rules go in src/client/design/tokens/themes/minimal-components.css.
@@ -243,4 +248,3 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
 }
 
 export const fillStage = (brief: string, stage: string) => brief.replaceAll("<STAGE>", stage);
-
