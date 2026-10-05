@@ -44,7 +44,7 @@ export const api = {
   diff: (unit: string, side: "app" | "design", base?: string | null) => call<{ text: string }>(`/api/diff?${new URLSearchParams({ unit, side, ...(base ? { base } : {}) })}`),
   plan: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>) => call<{ steps: Step[]; choices: Record<string, Direction>; units: Record<string, Direction> }>("/api/plan", { body: { base, global, overrides, unitOverrides } }),
   run: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>, harness: "claude" | "codex", only?: string[]) => call<{ job: string }>("/api/run", { body: { base, global, overrides, unitOverrides, harness, only } }),
-  pull: () => call<{ job: string }>("/api/pull", { method: "POST" }),
+  pull: (force = false) => call<{ job: string }>("/api/pull", { body: { force } }),
   statusCheck: () => call<{ updatedAt: string | null; snapshotUpdatedAt: string | null; stale: boolean }>("/api/status-check", { method: "POST" }),
   importExport: (path: string) => call<{ snapshot: SnapshotMeta }>("/api/import", { body: { path } }),
   /** `hold`: unit ids kept open, still compared against their baseline under `base` */

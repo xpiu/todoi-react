@@ -59,7 +59,7 @@ Statuses, in the tool's words: *changed on both* (both sides moved; red, the one
 
 ```bash
 npm run design-sync -- status                      # Design project's updatedAt (via Claude Code)
-npm run design-sync -- pull                        # full pull into a new snapshot (~3 min, ~$2 with Sonnet)
+npm run design-sync -- pull [--force]              # pull into a new snapshot (~3 min, ~$2 with Sonnet); stops early when Design hasn't changed
 npm run design-sync -- import ~/Downloads/x.zip    # or an unzipped export folder
 npm run design-sync -- compare [--base <id>]       # print features per status
 npm run design-sync -- sync-point "label" [--tag]  # record App HEAD + newest snapshot (marks everything synced; keep features open from the GUI)
@@ -99,6 +99,7 @@ The engine tests build a throwaway git repo and two Design folders. The GUI test
 ## Limits worth knowing
 
 - **A pull that misses files says so.** A file still failing after a retry is kept as it was in the previous snapshot, so it never reads as deleted in Design. Its units say "Not pulled", the Design header shows "N files not pulled" with **Pull again**, and the snapshot never passes as current.
+- **A pull first asks whether Design changed.** If the project's `updatedAt` matches the newest complete snapshot from the same project, it stops there ("Already up to date") and reads no files.
 - **Pulls are content pulls.** DesignSync has no per-file timestamps, so "Check for changes" compares the project's `updatedAt` with the snapshot's, and a pull reads every text file again. Binaries, uploads and Claude Design's generated `_ds_bundle.js` are skipped. Previews use a locally built bundle.
 - **Only Claude Code can talk to Claude Design** (DesignSync). Codex can do App-side ports only.
 - **Feature grouping is heuristic.** Commit subjects make the best feature titles, so conventional, one-feature commits make this tool read like a changelog.

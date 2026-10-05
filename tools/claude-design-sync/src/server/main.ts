@@ -9,7 +9,7 @@ import { streamSSE } from "hono/streaming";
 
 import { compare, unitBaseline } from "../engine/compare";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
-import { checkUpload, findProject, projectStatus, pullSnapshot, pushFiles, type Runner } from "../engine/designsync";
+import { checkUpload, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { readText } from "../engine/fsutil";
 import { diffNoIndex, diffSince, head, isDirty, showAt } from "../engine/git";
@@ -176,21 +176,25 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     try {
       const st = await projectStatus(ctx, designRunner());
       const snap = latestSnapshot(ctx);
-      return c.json({ ...st, snapshotUpdatedAt: snap?.projectUpdatedAt ?? null, stale: !!st.updatedAt && st.updatedAt !== snap?.projectUpdatedAt });
+      return c.json({ ...st, snapshotUpdatedAt: snap?.projectUpdatedAt ?? null, stale: !!st.updatedAt && !isCurrent(ctx, snap, st.updatedAt) });
     } catch (e) {
       return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
     }
   });
 
-  app.post("/api/pull", (c) => {
+  app.post("/api/pull", async (c) => {
     if (jobs.running()) return c.json({ error: "Another job is running" }, 409);
+    const { force } = await c.req.json<{ force?: boolean }>().catch(() => ({ force: false }));
     const job = jobs.create("pull", "Pull from Claude Design");
     void (async () => {
       try {
-        jobs.log(job, "info", "Asking Claude Design for the project's status and file list…");
+        jobs.log(job, "info", "Asking Claude Design whether the project changed since the newest snapshot…");
         const runner = designRunner(job);
-        const st = await projectStatus(ctx, runner, logHarness(job));
-        const snap = await pullSnapshot(ctx, runner, { updatedAt: st.updatedAt, label: `Pulled ${new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, onProgress: (p) => jobs.update(job, { progress: { done: p.done, total: p.total } }), onLog: (e) => e.type === "tool" && jobs.log(job, "tool", `${e.name} ${summarise(e.input)}`) });
+        const { snapshot: snap, current } = await pullIfChanged(ctx, runner, { force, onLog: logHarness(job), label: `Pulled ${new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, onProgress: (p) => jobs.update(job, { progress: { done: p.done, total: p.total } }) });
+        if (!snap) {
+          jobs.finish(job, "done", `Already up to date: Claude Design hasn't changed since ${current?.label ?? "the newest snapshot"}. Nothing pulled.`);
+          return;
+        }
         cache.clear();
         jobs.update(job, { snapshotId: snap.id });
         const un = snap.unpulled;

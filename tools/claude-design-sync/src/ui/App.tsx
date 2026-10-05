@@ -86,6 +86,8 @@ export function App() {
   }, [load]);
   const refresh = (fresh = false) => {
     setLoading(true);
+    // a pull, upload or new target makes the last "Check for changes" answer stale
+    setCheck(null);
     void load(fresh);
   };
   useEffect(() => store.set("cds-base", baseId), [baseId]);

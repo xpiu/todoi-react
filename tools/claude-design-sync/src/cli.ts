@@ -1,9 +1,9 @@
 // Command line for the engine — the same operations the GUI offers, for scripts and for an AI harness.
-//   npm run design-sync -- serve | pull | status | import <zip|folder> | compare [--base <id>] | sync-point <label> [--tag]
+//   npm run design-sync -- serve | pull [--force] | status | import <zip|folder> | compare [--base <id>] | sync-point <label> [--tag]
 //   npm run design-sync -- twin <card.html> [out] | bundle <projectDir> | check-cards <projectDir> <card…>
 import { defaultCtx } from "./engine/config";
 import { compare } from "./engine/compare";
-import { projectStatus, pullSnapshot } from "./engine/designsync";
+import { projectStatus, pullIfChanged } from "./engine/designsync";
 import { runHarness } from "./engine/harness";
 import { recordSyncPoint } from "./engine/plan";
 import { importExport, latestSnapshot, listSyncPoints } from "./engine/snapshots";
@@ -30,8 +30,11 @@ async function main() {
       return;
     }
     case "pull": {
-      const st = await projectStatus(ctx, claude);
-      const snap = await pullSnapshot(ctx, claude, { updatedAt: st.updatedAt, onProgress: (p) => process.stdout.write(`\r${p.done}/${p.total} files${p.failed.length ? ` · ${p.failed.length} failed` : ""}   `) });
+      const { snapshot: snap, current } = await pullIfChanged(ctx, claude, { force: args.includes("--force"), onProgress: (p) => process.stdout.write(`\r${p.done}/${p.total} files${p.failed.length ? ` · ${p.failed.length} failed` : ""}   `) });
+      if (!snap) {
+        console.log(`Already up to date: Claude Design hasn't changed since ${current?.label}. Nothing pulled (--force pulls anyway).`);
+        return;
+      }
       console.log(`\nSnapshot ${snap.id}: ${snap.fileCount} files`);
       if (snap.unpulled) console.log(`Not pulled: ${[...snap.unpulled.carried, ...snap.unpulled.missing].join(", ")}${snap.unpulled.carried.length ? ` (${snap.unpulled.carried.length} kept as in ${snap.unpulled.from})` : ""}. Pull again.`);
       return;
@@ -70,7 +73,7 @@ async function main() {
       return;
     }
     default:
-      console.log("Commands: serve · status · pull · import <zip|folder> · compare [--base <id>] · sync-point <label> [--tag] · twin <card> [out] · bundle <dir> · check-cards <dir> <cards…>");
+      console.log("Commands: serve · status · pull [--force] · import <zip|folder> · compare [--base <id>] · sync-point <label> [--tag] · twin <card> [out] · bundle <dir> · check-cards <dir> <cards…>");
   }
 }
 

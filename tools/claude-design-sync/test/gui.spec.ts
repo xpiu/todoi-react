@@ -171,4 +171,17 @@ test.describe.serial("Claude Design Sync", () => {
     await foot.getByRole("button", { name: "Use this project" }).click();
     await expect(foot).toContainText("Fake Design System");
   });
+
+  test("checks Claude Design for changes, pulls, and then reads up to date", async ({ page }) => {
+    await fresh(page);
+    const head = page.locator(".cds-head-actions");
+    await head.getByRole("button", { name: "Check for changes" }).click();
+    await expect(head.getByRole("button", { name: "Design changed — pull" })).toBeVisible();
+    await head.getByRole("button", { name: "Pull now" }).click();
+    const panel = page.getByRole("complementary", { name: "Activity" });
+    await expect(panel.locator(".cds-jobview")).toContainText("Snapshot ready", { timeout: 30_000 });
+    await expect(head.getByRole("button", { name: "Check for changes" })).toBeVisible();
+    await head.getByRole("button", { name: "Check for changes" }).click();
+    await expect(head.getByRole("button", { name: "Up to date" })).toBeVisible();
+  });
 });

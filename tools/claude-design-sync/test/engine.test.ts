@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
-import { checkUpload, findProject, projectStatus, pullable, pullSnapshot, pushFiles, type Runner } from "../src/engine/designsync";
+import { checkUpload, findProject, projectStatus, pullable, pullIfChanged, pullSnapshot, pushFiles, type Runner } from "../src/engine/designsync";
 import { fakeRunner } from "../src/engine/fakeHarness";
 import { parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
@@ -220,6 +220,27 @@ describe("DesignSync through the harness", () => {
     const chip = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! }).units.find((u) => u.id === "component:core/Chip")!;
     expect(chip.status).toBe("design-only");
     expect(chip.design.evidence).toContain("Not pulled: compared as of Design now");
+  });
+  it("stops a pull early when Design hasn't changed since the newest snapshot", async () => {
+    const fx = makeFixture();
+    const fake = fakeRunner(fx.designNowDir, fx.repo);
+    let reads = 0;
+    const counting: Runner = (prompt, o, on) => {
+      if (prompt.includes('"get_file"')) reads++;
+      return fake(prompt, o, on);
+    };
+    const first = await pullIfChanged(fx.ctx, counting, {});
+    expect(first.snapshot?.projectUpdatedAt).toBe(first.updatedAt);
+    expect(first.snapshot?.projectId).toBe("fake");
+    const before = reads;
+    const again = await pullIfChanged(fx.ctx, counting, {});
+    expect(again.snapshot).toBeNull();
+    expect(again.current?.id).toBe(first.snapshot!.id);
+    expect(reads).toBe(before);
+    // a change in Design, or force, reads the files again
+    writeFileSync(join(fx.designNowDir, "components/core/Badge.jsx"), "export const Badge = 3;\n");
+    expect((await pullIfChanged(fx.ctx, counting, {})).snapshot).not.toBeNull();
+    expect((await pullIfChanged(fx.ctx, counting, { force: true })).snapshot).not.toBeNull();
   });
   it("keeps uploads, binaries and the generated bundle out of pulls", () => {
     expect(pullable(["a.jsx", "uploads/x.png", "assets/fonts/I.ttf", "_ds_bundle.js", "c/.thumbnail", "readme.md"])).toEqual(["a.jsx", "readme.md"]);

@@ -91,6 +91,19 @@ export interface PullProgress {
   failed: string[];
 }
 
+/** The snapshot is Design's state right now: same project, same updatedAt, and every file pulled */
+export function isCurrent(ctx: Ctx, snap: SnapshotMeta | null, updatedAt: string | null): boolean {
+  return !!snap && !!updatedAt && snap.projectUpdatedAt === updatedAt && !snap.unpulled && (snap.projectId ?? ctx.config.design.projectId) === ctx.config.design.projectId;
+}
+
+/** A pull that costs nothing when Design hasn't moved: asks for updatedAt first, and reads files only if needed (or `force`) */
+export async function pullIfChanged(ctx: Ctx, runner: Runner, opts: Parameters<typeof pullSnapshot>[2] & { force?: boolean }): Promise<{ snapshot: SnapshotMeta | null; current: SnapshotMeta | null; updatedAt: string | null }> {
+  const { updatedAt } = await projectStatus(ctx, runner, opts.onLog);
+  const latest = latestSnapshot(ctx);
+  if (!opts.force && isCurrent(ctx, latest, updatedAt)) return { snapshot: null, current: latest, updatedAt };
+  return { snapshot: await pullSnapshot(ctx, runner, { ...opts, updatedAt }), current: null, updatedAt };
+}
+
 /**
  * Pull `paths` into a new snapshot, in parallel batches of headless runs. A file that still fails after
  * a retry is carried from the previous snapshot (an absent file would read as "deleted in Design") and
