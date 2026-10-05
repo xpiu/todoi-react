@@ -1121,9 +1121,15 @@ em {
 }
 .cds-files li {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 10px;
+  gap: 0 10px;
   padding: 3px 0;
+}
+/* why a file can't go up: under its path, lined up with it */
+.cds-files .cds-file-note {
+  flex-basis: 100%;
+  margin: 0 0 0 21px;
 }
 .cds-files label {
   display: flex;

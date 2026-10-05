@@ -9,7 +9,7 @@ import { streamSSE } from "hono/streaming";
 
 import { compare } from "../engine/compare";
 import { defaultCtx, TOOL_DIR, type Ctx } from "../engine/config";
-import { projectStatus, pullSnapshot, pushFiles, type Runner } from "../engine/designsync";
+import { checkUpload, projectStatus, pullSnapshot, pushFiles, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { readText } from "../engine/fsutil";
 import { diffNoIndex, diffSince, head, isDirty, showAt } from "../engine/git";
@@ -269,16 +269,32 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     if (!files.length) return c.json({ error: "Pick at least one staged file" }, 400);
     job.state = "running";
     jobs.step(job, "upload", { state: "running" });
-    jobs.log(job, "step", `Uploading ${files.length} file(s) to ${ctx.config.design.projectName}…`, "upload");
     void (async () => {
       try {
-        const res = await pushFiles(ctx, designRunner(job), job.stage!, files, logHarness(job, "upload"));
+        const runner = designRunner(job);
+        const from = job.snapshotId ? getSnapshot(ctx, job.snapshotId) : latestSnapshot(ctx);
+        jobs.log(job, "step", "Checking Claude Design for edits made since this run's snapshot…", "upload");
+        const check = await checkUpload(ctx, runner, { stageDir: job.stage!, baseDir: from ? snapshotFilesDir(ctx, from.id) : null, baseUpdatedAt: from?.projectUpdatedAt, paths: files, onLog: logHarness(job, "upload") });
+        const conflict = new Map(check.conflicts.map((x) => [x.path, x.reason]));
+        jobs.update(job, { staged: job.staged!.map(({ conflict: _c, ...s }) => (conflict.has(s.path) ? { ...s, conflict: conflict.get(s.path) } : s)) });
+        if (check.fresh) jobs.log(job, "info", "Claude Design hasn't changed since the snapshot", "upload");
+        for (const p of check.merged) jobs.log(job, "info", `${p}: merged Claude Design's newer edits into the staged copy`, "upload");
+        if (conflict.size) {
+          for (const x of check.conflicts) jobs.log(job, "warn", `${x.path}: ${x.reason}`, "upload");
+          jobs.step(job, "upload", { state: "pending", summary: `${conflict.size} file(s) would overwrite newer Design work` });
+          jobs.finish(job, "awaiting-upload", `Nothing uploaded: Claude Design changed ${conflict.size === 1 ? "a file" : `${conflict.size} files`} since this run's snapshot. Untick ${conflict.size === 1 ? "it" : "them"} to upload the rest, or pull and run the feature again.`);
+          return;
+        }
+        jobs.log(job, "step", `Uploading ${files.length} file(s) to ${ctx.config.design.projectName}…`, "upload");
+        const res = await pushFiles(ctx, runner, job.stage!, files, logHarness(job, "upload"));
         const changes = Object.fromEntries(files.map((p) => [p, readFileSync(join(job.stage!, p), "utf8")]));
-        const from = job.snapshotId ?? latestSnapshot(ctx)?.id;
-        if (from) deriveSnapshot(ctx, from, changes, `After upload (${res.written} files)`, "upload");
+        // The new snapshot is Design's exact state only when nothing else moved before the upload; then
+        // it takes the post-upload updatedAt, so "Check for changes" doesn't ask for a pull it doesn't need.
+        const after = check.fresh ? await projectStatus(ctx, runner, logHarness(job, "upload")).catch(() => null) : null;
+        if (from) deriveSnapshot(ctx, from.id, changes, `After upload (${res.written} files)`, "upload", after?.updatedAt ?? undefined);
         cache.clear();
         jobs.step(job, "upload", { state: "done", summary: `${res.written} file(s) written${res.planId ? ` · plan ${res.planId}` : ""}` });
-        jobs.finish(job, "done", `Uploaded ${res.written} file(s) to Claude Design`);
+        jobs.finish(job, "done", `Uploaded ${res.written} file(s) to Claude Design${check.fresh ? "" : ". Design had other changes too: pull to see them."}`);
       } catch (e) {
         jobs.step(job, "upload", { state: "failed" });
         jobs.finish(job, "failed", e instanceof Error ? e.message : String(e));

@@ -49,6 +49,8 @@ Statuses, in the tool's words: *changed on both* (both sides moved; red, the one
   - App-side ports run your harness (Claude Code `claude -p`, or Codex `codex exec`; set `harness.implement` in `config.json`) with permission to edit and to run commands in this repo.
   - Design-side ports edit only `.state/stage/<run>/`.
 - **Uploads go through DesignSync with a locked plan.** Only files you ticked are written, and nothing is ever deleted.
+- **An upload never overwrites newer Design work.** First it checks whether the project's `updatedAt` moved since the run's snapshot. If it did, it reads the live copy of every file about to go up and three-way merges Design's edits into the staged copy. A file that doesn't merge (the same lines edited, or deleted in Design) stops the upload, is unticked with the reason, and stays out until you pull and run the feature again.
+- **After an upload, the new snapshot is marked current** (it takes Design's `updatedAt`) only when Design hadn't changed anything else. Otherwise "Check for changes" asks for a pull.
 - **POST endpoints require an `x-cds: 1` header**, so other websites in your browser can't trigger runs.
 - **The kit is changed file by file on top of the live Design version**, never regenerated wholesale.
 

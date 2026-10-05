@@ -1,5 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -110,6 +110,16 @@ test.describe.serial("Claude Design Sync", () => {
     const files = panel.locator(".cds-files li");
     expect(await files.count()).toBeGreaterThan(0);
     await expect(panel.locator(".cds-files")).toContainText("tokens/themes/minimal-components.css");
+    // Design rewrites a staged file meanwhile: the upload stops instead of overwriting it
+    const paths = await panel.locator(".cds-files .cds-path").allTextContents();
+    const other = paths.find((p) => !p.endsWith(".css"))!;
+    const otherLive = join(tmpdir(), "cds-e2e", "design-now", other);
+    writeFileSync(otherLive, "// rewritten in Claude Design\n");
+    await panel.getByRole("button", { name: /Upload \d+ files?/ }).click();
+    await expect(panel.locator(".cds-file-note")).toContainText("Claude Design");
+    await expect(panel.locator(".cds-jobview-head")).toContainText("waiting for your approval");
+    await expect(panel.getByRole("checkbox", { name: other })).not.toBeChecked();
+    expect(readFileSync(otherLive, "utf8")).toBe("// rewritten in Claude Design\n");
     await panel.getByRole("button", { name: /Upload \d+ files?/ }).click();
     await expect(panel.locator(".cds-jobview-head")).toContainText("done", { timeout: 30_000 });
     // the fake Design project received the merged tokens

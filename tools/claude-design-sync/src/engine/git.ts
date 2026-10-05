@@ -1,5 +1,8 @@
 // The App side's history: sync-point tags, file contents at a rev, commits touching a path.
 import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const git = (repo: string, args: string[]): string => execFileSync("git", ["-C", repo, ...args], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
 
@@ -83,6 +86,28 @@ export function diffNoIndex(a: string, b: string): string {
     // exit 1 means "differences found"; stdout carries the diff
     const out = (e as { stdout?: string }).stdout;
     return typeof out === "string" ? out : "";
+  }
+}
+
+/** Three-way merge of text (git merge-file): `ours` and `theirs` both started from `base` */
+export function mergeText(base: string, ours: string, theirs: string): { text: string; conflicts: number } {
+  const dir = mkdtempSync(join(tmpdir(), "cds-merge-"));
+  try {
+    const [o, b, t] = (["ours", "base", "theirs"] as const).map((n, i) => {
+      const f = join(dir, n);
+      writeFileSync(f, [ours, base, theirs][i]!);
+      return f;
+    });
+    try {
+      return { text: execFileSync("git", ["merge-file", "-p", o!, b!, t!], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }), conflicts: 0 };
+    } catch (e) {
+      // a positive exit status is the number of conflicts; stdout carries the text with markers
+      const { status, stdout } = e as { status?: number; stdout?: string };
+      if (typeof status === "number" && status > 0 && typeof stdout === "string") return { text: stdout, conflicts: status };
+      throw e;
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 

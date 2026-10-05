@@ -64,14 +64,14 @@ export function Activity({ state, focus, onFocus, onClose, onChanged }: { state:
       ) : (
         <p className="cds-quiet cds-pad">No jobs yet. Pulls, runs and uploads appear here with their full log.</p>
       )}
-      {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}`} job={shown} logRef={logRef} onChanged={onChanged} /> : null}
+      {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}:${shown.staged?.filter((s) => s.conflict).length ?? 0}`} job={shown} logRef={logRef} onChanged={onChanged} /> : null}
     </aside>
   );
 }
 
 function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject<HTMLOListElement | null>; onChanged: () => void }) {
   const staged = job.staged ?? [];
-  const [picked, setPicked] = useState<Set<string>>(() => new Set(staged.map((s) => s.path)));
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(staged.filter((s) => !s.conflict).map((s) => s.path)));
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -107,7 +107,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
       {job.state === "awaiting-upload" && staged.length ? (
         <section className="cds-approve" aria-labelledby="approve-h">
           <h4 id="approve-h">Upload to Claude Design</h4>
-          <p className="cds-quiet">Exactly these files go up, through DesignSync with a locked plan. Nothing is deleted. Untick anything you want to leave out.</p>
+          <p className="cds-quiet">Exactly these files go up, through DesignSync with a locked plan. Nothing is deleted. Untick anything you want to leave out. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't uploaded.</p>
           <ul className="cds-files">
             {staged.map((s) => {
               const errors = cardErr.get(s.path);
@@ -119,6 +119,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
                     <span className="cds-kind">{s.status}</span>
                     {errors ? <span className={errors.length ? "cds-error-inline" : "cds-ok"}>{errors.length ? `${plural(errors.length, "error")}` : "renders"}</span> : null}
                   </label>
+                  {s.conflict ? <p className="cds-error-inline cds-file-note">{s.conflict}</p> : null}
                   {/\.html$/.test(s.path) && stageId ? (
                     <button type="button" className="cds-link" onClick={() => setPreview((p) => (p === s.path ? null : s.path))}>
                       {preview === s.path ? "Close" : "Preview"}

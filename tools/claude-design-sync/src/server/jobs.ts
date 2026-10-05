@@ -35,7 +35,8 @@ export interface Job {
   progress?: { done: number; total: number };
   /** Run jobs: the staging folder and the files waiting for upload approval */
   stage?: string;
-  staged?: Array<{ path: string; status: "new" | "changed" }>;
+  /** `conflict`: why uploading this file would overwrite newer Design work (set by the pre-upload check) */
+  staged?: Array<{ path: string; status: "new" | "changed"; conflict?: string }>;
   cards?: Array<{ card: string; errors: string[] }>;
   costUsd?: number;
   result?: string;

@@ -1,15 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
-import { pullable, pullSnapshot, pushFiles } from "../src/engine/designsync";
+import { checkUpload, projectStatus, pullable, pullSnapshot, pushFiles } from "../src/engine/designsync";
 import { fakeRunner } from "../src/engine/fakeHarness";
 import { parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
 import { createStage, cssMergeFor, effectiveDirection, planSteps, stagedChanges, unitChoicesFor } from "../src/engine/plan";
-import { listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
+import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
 import { makeFixture, type Fixture } from "./fixture";
 
@@ -143,6 +143,40 @@ describe("DesignSync through the harness", () => {
     const res = await pushFiles(fx.ctx, runner, stage, ["components/core/Pushed.jsx"]);
     expect(res.written).toBe(1);
     expect(existsSync(join(fx.designNowDir, "components/core/Pushed.jsx"))).toBe(true);
+  });
+  it("never lets an upload overwrite Design work newer than the run's snapshot", async () => {
+    const fx = makeFixture();
+    const runner = fakeRunner(fx.designNowDir, fx.repo);
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const stage = createStage(fx.ctx, cmp, "guard");
+    const baseDir = snapshotFilesDir(fx.ctx, fx.nowSnapshot);
+    const paths = ["readme.md", "components/core/Toast.jsx", "components/core/Badge.jsx", "components/core/Fresh.jsx"];
+    writeFileSync(join(stage, "readme.md"), readFileSync(join(stage, "readme.md"), "utf8") + "\n## Lists\n\nHidden lists come back.\n");
+    writeFileSync(join(stage, "components/core/Toast.jsx"), 'import React from "react";\nexport function Toast({message}){return React.createElement("div",{role:"status"},message);}\n');
+    writeFileSync(join(stage, "components/core/Badge.jsx"), "export const Badge = 2;\n");
+    writeFileSync(join(stage, "components/core/Fresh.jsx"), "export const Fresh = 1;\n");
+
+    // Design unchanged since the snapshot: no file reads, nothing to merge
+    const { updatedAt } = await projectStatus(fx.ctx, runner);
+    expect(await checkUpload(fx.ctx, runner, { stageDir: stage, baseDir, baseUpdatedAt: updatedAt!, paths })).toMatchObject({ fresh: true, merged: [], conflicts: [] });
+
+    // Design moved: a separate edit merges in, the same line conflicts, a deleted file conflicts, a new file goes up
+    const live = (p: string) => join(fx.designNowDir, p);
+    writeFileSync(live("readme.md"), readFileSync(live("readme.md"), "utf8").replace("dense mode.", "dense mode and filters."));
+    writeFileSync(live("components/core/Toast.jsx"), 'import React from "react";\nexport function Toast({message}){return React.createElement("output",null,message);}\n');
+    rmSync(live("components/core/Badge.jsx"));
+    const check = await checkUpload(fx.ctx, runner, { stageDir: stage, baseDir, baseUpdatedAt: updatedAt!, paths });
+    expect(check.fresh).toBe(false);
+    expect(check.merged).toEqual(["readme.md"]);
+    expect(readFileSync(join(stage, "readme.md"), "utf8")).toMatch(/dense mode and filters[\s\S]*Hidden lists come back/);
+    expect(check.conflicts.map((c) => c.path)).toEqual(["components/core/Toast.jsx", "components/core/Badge.jsx"]);
+    expect(readFileSync(join(stage, "components/core/Toast.jsx"), "utf8")).not.toContain("<<<<<<<");
+  });
+  it("marks the snapshot after an upload with Design's updatedAt only when it is Design's exact state", () => {
+    const fx = makeFixture();
+    const at = "2026-10-05T10:00:00.000Z";
+    expect(getSnapshot(fx.ctx, deriveSnapshot(fx.ctx, fx.nowSnapshot, { "a.jsx": "a" }, "After upload", "upload", at).id)?.projectUpdatedAt).toBe(at);
+    expect(getSnapshot(fx.ctx, deriveSnapshot(fx.ctx, fx.nowSnapshot, { "a.jsx": "a" }, "After upload", "upload").id)?.projectUpdatedAt).toBeUndefined();
   });
   it("keeps uploads, binaries and the generated bundle out of pulls", () => {
     expect(pullable(["a.jsx", "uploads/x.png", "assets/fonts/I.ttf", "_ds_bundle.js", "c/.thumbnail", "readme.md"])).toEqual(["a.jsx", "readme.md"]);

@@ -1,7 +1,12 @@
 // Talking to Claude Design through Claude Code's DesignSync tool, run headless. File contents come
 // back as tool results in the event stream (or a file Claude Code saved them to), never through
 // the model's own reply, so a pull costs little more than the calls themselves.
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
 import type { Ctx } from "./config";
+import { readText } from "./fsutil";
+import { mergeText } from "./git";
 import type { HarnessEvent } from "./harness";
 import { newSnapshotId, writeSnapshotFile, writeSnapshotMeta } from "./snapshots";
 import type { SnapshotMeta } from "./types";
@@ -65,6 +70,15 @@ export function pullable(paths: string[]): string[] {
   return paths.filter((p) => !/^(uploads|assets)\//.test(p) && !/(^|\/)\.thumbnail$|_ds_bundle\.js$|\.(png|jpe?g|gif|webp|woff2?|ttf|otf|ico|pdf|mp4)$/i.test(p));
 }
 
+/** Live text content of `paths`, read in one headless run. Files Design doesn't have (or couldn't send) are left out. */
+export async function getFiles(ctx: Ctx, runner: Runner, paths: string[], onLog?: (e: HarnessEvent) => void): Promise<Map<string, string>> {
+  const prompt = `${LOAD} Then call DesignSync method "get_file" with projectId "${ctx.config.design.projectId}" once for EACH of these ${paths.length} paths, as parallel calls (several per message). Never repeat file contents in your replies. When every call has returned, reply only: DONE.\n\n${paths.map((p) => `- ${p}`).join("\n")}`;
+  const { results } = await run(runner, prompt, ctx.config.harness.pullModel, onLog, Math.max(8, Math.ceil(paths.length / 4) + 4));
+  const out = new Map<string, string>();
+  for (const r of results) if (r.method === "get_file" && r.path && typeof r.content === "string" && !r.isBase64) out.set(r.path, r.content);
+  return out;
+}
+
 export interface PullProgress {
   done: number;
   total: number;
@@ -82,12 +96,9 @@ export async function pullSnapshot(ctx: Ctx, runner: Runner, opts: { paths?: str
   const failed: string[] = [];
   const report = () => opts.onProgress?.({ done: got.size, total: all.length, failed: [...failed] });
   const pullBatch = async (paths: string[], attempt = 1): Promise<void> => {
-    const prompt = `${LOAD} Then call DesignSync method "get_file" with projectId "${ctx.config.design.projectId}" once for EACH of these ${paths.length} paths, as parallel calls (several per message). Never repeat file contents in your replies. When every call has returned, reply only: DONE.\n\n${paths.map((p) => `- ${p}`).join("\n")}`;
-    const { results } = await run(ctx.config.harness.pullModel ? runner : runner, prompt, ctx.config.harness.pullModel, opts.onLog, Math.max(8, Math.ceil(paths.length / 4) + 4));
-    for (const r of results) {
-      if (r.method !== "get_file" || !r.path || typeof r.content !== "string" || r.isBase64) continue;
-      writeSnapshotFile(ctx, id, r.path, r.content);
-      got.add(r.path);
+    for (const [path, content] of await getFiles(ctx, runner, paths, opts.onLog)) {
+      writeSnapshotFile(ctx, id, path, content);
+      got.add(path);
     }
     report();
     const missing = paths.filter((p) => !got.has(p));
@@ -102,6 +113,47 @@ export async function pullSnapshot(ctx: Ctx, runner: Runner, opts: { paths?: str
   report();
   if (!got.size) throw new Error("The pull returned no files. Is Claude Code signed in to claude.ai with Claude Design access?");
   return writeSnapshotMeta(ctx, { id, label: opts.label ?? "Pulled from Claude Design", source: "pull", createdAt: new Date().toISOString(), projectUpdatedAt: opts.updatedAt ?? undefined });
+}
+
+export interface UploadCheck {
+  /** Design's updatedAt right now */
+  updatedAt: string | null;
+  /** Design hasn't changed at all since the snapshot the stage was built from */
+  fresh: boolean;
+  /** Staged files Design edited meanwhile: its edits were merged into the staged copy */
+  merged: string[];
+  /** Staged files that can't go up as they are: uploading them would overwrite Design's newer work */
+  conflicts: Array<{ path: string; reason: string }>;
+}
+
+/**
+ * Before an upload: has Design moved since the snapshot the stage was built from? When it has (or the
+ * snapshot doesn't know its updatedAt), read the live copy of every file about to be written and
+ * three-way merge Design's edits into the staged copy, so an upload never overwrites newer work.
+ */
+export async function checkUpload(ctx: Ctx, runner: Runner, o: { stageDir: string; baseDir: string | null; baseUpdatedAt?: string; paths: string[]; onLog?: (e: HarnessEvent) => void }): Promise<UploadCheck> {
+  const { updatedAt } = await projectStatus(ctx, runner, o.onLog);
+  if (updatedAt && updatedAt === o.baseUpdatedAt) return { updatedAt, fresh: true, merged: [], conflicts: [] };
+  const live = await getFiles(ctx, runner, o.paths, o.onLog);
+  const merged: string[] = [];
+  const conflicts: UploadCheck["conflicts"] = [];
+  for (const p of o.paths) {
+    const base = o.baseDir ? readText(join(o.baseDir, p)) : null;
+    const ours = readFileSync(join(o.stageDir, p), "utf8");
+    const theirs = live.get(p) ?? null;
+    if (theirs === base || theirs === ours) continue;
+    if (theirs == null) conflicts.push({ path: p, reason: "Claude Design no longer has this file, or couldn't send it" });
+    else if (base == null) conflicts.push({ path: p, reason: "Claude Design created this file too, with other content" });
+    else {
+      const m = mergeText(base, ours, theirs);
+      if (m.conflicts) conflicts.push({ path: p, reason: `Claude Design edited the same lines (${m.conflicts} overlapping change${m.conflicts === 1 ? "" : "s"})` });
+      else {
+        writeFileSync(join(o.stageDir, p), m.text);
+        merged.push(p);
+      }
+    }
+  }
+  return { updatedAt, fresh: false, merged, conflicts };
 }
 
 /** Upload staged files (project paths under stageDir) with one locked plan. No deletes. */

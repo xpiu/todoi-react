@@ -87,12 +87,12 @@ export function importExport(ctx: Ctx, source: string, label?: string): Snapshot
   }
 }
 
-/** A new snapshot = an existing one with some files replaced (after an upload) */
-export function deriveSnapshot(ctx: Ctx, fromId: string, changes: Record<string, string>, label: string, source: SnapshotMeta["source"]): SnapshotMeta {
+/** A new snapshot = an existing one with some files replaced (after an upload). Pass projectUpdatedAt only when it is Design's exact state. */
+export function deriveSnapshot(ctx: Ctx, fromId: string, changes: Record<string, string>, label: string, source: SnapshotMeta["source"], projectUpdatedAt?: string): SnapshotMeta {
   const id = newSnapshotId();
   cpSync(snapshotFilesDir(ctx, fromId), snapshotFilesDir(ctx, id), { recursive: true });
   for (const [p, c] of Object.entries(changes)) writeSnapshotFile(ctx, id, p, c);
-  return writeSnapshotMeta(ctx, { id, label, source, createdAt: new Date().toISOString() });
+  return writeSnapshotMeta(ctx, { id, label, source, createdAt: new Date().toISOString(), projectUpdatedAt });
 }
 
 // ── Sync points ──────────────────────────────────────────────────────────────────────────────
