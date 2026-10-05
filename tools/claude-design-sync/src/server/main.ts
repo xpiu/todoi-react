@@ -9,7 +9,7 @@ import { streamSSE } from "hono/streaming";
 
 import { compare, unitBaseline } from "../engine/compare";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
-import { checkUpload, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, type Runner } from "../engine/designsync";
+import { checkUpload, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { readText } from "../engine/fsutil";
 import { diffNoIndex, diffSince, head, isDirty, showAt } from "../engine/git";
@@ -319,14 +319,23 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         }
         jobs.log(job, "step", `Uploading ${files.length} file(s) to ${ctx.config.design.projectName}…`, "upload");
         const res = await pushFiles(ctx, runner, job.stage!, files, logHarness(job, "upload"));
-        const changes = Object.fromEntries(files.map((p) => [p, readFileSync(join(job.stage!, p), "utf8")]));
-        // The new snapshot is Design's exact state only when nothing else moved before the upload; then
-        // it takes the post-upload updatedAt, so "Check for changes" doesn't ask for a pull it doesn't need.
-        const after = check.fresh ? await projectStatus(ctx, runner, logHarness(job, "upload")).catch(() => null) : null;
+        jobs.log(job, "step", `Reading the ${files.length} file(s) back from Claude Design…`, "upload");
+        const { contents, differ } = await verifyUpload(ctx, runner, job.stage!, files, logHarness(job, "upload"));
+        for (const p of differ) jobs.log(job, "warn", `${p}: ${contents.has(p) ? "Claude Design holds different content than was uploaded" : "couldn't be read back"}`, "upload");
+        // The snapshot keeps what Design holds now. It is Design's exact state only when nothing else moved
+        // before the upload and everything read back intact; then it takes the post-upload updatedAt, so
+        // "Check for changes" doesn't ask for a pull it doesn't need.
+        const changes = Object.fromEntries(files.map((p) => [p, contents.get(p) ?? readFileSync(join(job.stage!, p), "utf8")]));
+        const after = check.fresh && !differ.length ? await projectStatus(ctx, runner, logHarness(job, "upload")).catch(() => null) : null;
         if (from) deriveSnapshot(ctx, from.id, changes, `After upload (${res.written} files)`, "upload", after?.updatedAt ?? undefined);
         cache.clear();
-        jobs.step(job, "upload", { state: "done", summary: `${res.written} file(s) written${res.planId ? ` · plan ${res.planId}` : ""}` });
-        jobs.finish(job, "done", `Uploaded ${res.written} file(s) to Claude Design${check.fresh ? "" : ". Design had other changes too: pull to see them."}`);
+        if (differ.length) {
+          jobs.step(job, "upload", { state: "failed", summary: `${res.written} file(s) written · ${differ.length} didn't read back intact` });
+          jobs.finish(job, "failed", `Uploaded ${res.written} file(s), but ${differ.length === 1 ? "1 doesn't" : `${differ.length} don't`} read back as uploaded: ${differ.join(", ")}. Pull to see what Claude Design holds.`);
+          return;
+        }
+        jobs.step(job, "upload", { state: "done", summary: `${res.written} file(s) written and read back intact${res.planId ? ` · plan ${res.planId}` : ""}` });
+        jobs.finish(job, "done", `Uploaded ${res.written} file(s) to Claude Design, all read back intact${check.fresh ? "" : ". Design had other changes too: pull to see them."}`);
       } catch (e) {
         jobs.step(job, "upload", { state: "failed" });
         jobs.finish(job, "failed", e instanceof Error ? e.message : String(e));

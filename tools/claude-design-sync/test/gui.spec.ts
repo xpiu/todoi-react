@@ -122,6 +122,7 @@ test.describe.serial("Claude Design Sync", () => {
     expect(readFileSync(otherLive, "utf8")).toBe("// rewritten in Claude Design\n");
     await panel.getByRole("button", { name: /Upload \d+ files?/ }).click();
     await expect(panel.locator(".cds-jobview-head")).toContainText("done", { timeout: 30_000 });
+    await expect(panel.locator(".cds-jobview")).toContainText("all read back intact");
     // the fake Design project received the merged tokens
     const fakeDesign = join(tmpdir(), "cds-e2e", "design-now", "tokens/themes/minimal-components.css");
     expect(existsSync(fakeDesign) && readFileSync(fakeDesign, "utf8")).toContain(".td-hidden");

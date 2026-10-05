@@ -191,6 +191,19 @@ export async function checkUpload(ctx: Ctx, runner: Runner, o: { stageDir: strin
   return { updatedAt, fresh: false, merged, conflicts };
 }
 
+/** Same text, give or take line endings and trailing whitespace at the end of the file */
+const sameText = (a: string, b: string) => a.replace(/\r\n/g, "\n").trimEnd() === b.replace(/\r\n/g, "\n").trimEnd();
+
+/** After an upload: read every written file back and compare it with the staged copy. `contents` is what Design now holds. */
+export async function verifyUpload(ctx: Ctx, runner: Runner, stageDir: string, paths: string[], onLog?: (e: HarnessEvent) => void): Promise<{ contents: Map<string, string>; differ: string[] }> {
+  const contents = await getFiles(ctx, runner, paths, onLog);
+  const differ = paths.filter((p) => {
+    const back = contents.get(p);
+    return back == null || !sameText(back, readFileSync(join(stageDir, p), "utf8"));
+  });
+  return { contents, differ };
+}
+
 /** Upload staged files (project paths under stageDir) with one locked plan. No deletes. */
 export async function pushFiles(ctx: Ctx, runner: Runner, stageDir: string, paths: string[], onLog?: (e: HarnessEvent) => void): Promise<{ written: number; planId: string | null }> {
   const files = paths.map((p) => `{"path":${JSON.stringify(p)},"localPath":${JSON.stringify(p)}}`).join(",");

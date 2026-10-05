@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
-import { checkUpload, findProject, projectStatus, pullable, pullIfChanged, pullSnapshot, pushFiles, type Runner } from "../src/engine/designsync";
+import { checkUpload, findProject, projectStatus, pullable, pullIfChanged, pullSnapshot, pushFiles, verifyUpload, type Runner } from "../src/engine/designsync";
 import { fakeRunner } from "../src/engine/fakeHarness";
 import { parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
@@ -220,6 +220,23 @@ describe("DesignSync through the harness", () => {
     const chip = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! }).units.find((u) => u.id === "component:core/Chip")!;
     expect(chip.status).toBe("design-only");
     expect(chip.design.evidence).toContain("Not pulled: compared as of Design now");
+  });
+  it("reads an upload back and names every file that didn't arrive intact", async () => {
+    const fx = makeFixture();
+    const fake = fakeRunner(fx.designNowDir, fx.repo);
+    const stage = join(fx.ctx.state, "stage-verify");
+    mkdirSync(join(stage, "components/core"), { recursive: true });
+    const paths = ["components/core/A.jsx", "components/core/B.jsx", "components/core/C.jsx"];
+    for (const p of paths) writeFileSync(join(stage, p), `export const ${p.slice(-5, -4)} = 1;\n`);
+    await pushFiles(fx.ctx, fake, stage, paths);
+    expect((await verifyUpload(fx.ctx, fake, stage, paths)).differ).toEqual([]);
+    // Claude Design keeps B with Windows line endings (still intact), mangles C, and loses A
+    writeFileSync(join(fx.designNowDir, "components/core/B.jsx"), "export const B = 1;\r\n");
+    writeFileSync(join(fx.designNowDir, "components/core/C.jsx"), "export const C = 2;\n");
+    rmSync(join(fx.designNowDir, "components/core/A.jsx"));
+    const v = await verifyUpload(fx.ctx, fake, stage, paths);
+    expect(v.differ).toEqual(["components/core/A.jsx", "components/core/C.jsx"]);
+    expect(v.contents.get("components/core/C.jsx")).toBe("export const C = 2;\n");
   });
   it("stops a pull early when Design hasn't changed since the newest snapshot", async () => {
     const fx = makeFixture();
