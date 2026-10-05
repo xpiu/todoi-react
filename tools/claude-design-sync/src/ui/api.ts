@@ -71,11 +71,12 @@ export const DIRECTION_LABEL: Record<Direction, string> = {
   skip: "Skip",
 };
 
-export const DIRECTION_SUB: Record<Direction, [string, string]> = {
-  both: ["both ways", ""],
-  "app-to-design": ["one way", ", from the App"],
-  "design-to-app": ["one way", ", from Design"],
-  skip: ["leave as is", ""],
+// What each direction writes to: the jobs differ by which side ends up changed
+export const DIRECTION_SUB: Record<Direction, string> = {
+  both: "changes both sides",
+  "app-to-design": "changes only Design",
+  "design-to-app": "changes only the App",
+  skip: "changes nothing",
 };
 
 export const DIRECTION_HINT: Record<Direction, string> = {

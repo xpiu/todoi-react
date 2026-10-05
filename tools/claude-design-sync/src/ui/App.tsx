@@ -8,11 +8,18 @@ import { FeatureRow } from "./FeatureRow";
 import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
 
-const GLOBALS: Array<{ d: Direction; Icon: typeof ArrowLeft }> = [
-  { d: "design-to-app", Icon: ArrowLeft },
-  { d: "both", Icon: ArrowLeftRight },
-  { d: "app-to-design", Icon: ArrowRight },
+// Each option draws its route: App box, arrow, Design box, with the receiving side filled
+const GLOBALS: Array<{ d: Direction; Icon: typeof ArrowLeft; into: { app: boolean; design: boolean } }> = [
+  { d: "design-to-app", Icon: ArrowLeft, into: { app: true, design: false } },
+  { d: "both", Icon: ArrowLeftRight, into: { app: true, design: true } },
+  { d: "app-to-design", Icon: ArrowRight, into: { app: false, design: true } },
 ];
+// The empty ledger speaks to the planned direction, and offers the action that would surface new work for it
+const EMPTY: Partial<Record<Direction, { line: string; action: "check" | "recompare" }>> = {
+  both: { line: "Nothing to move either way. When either side changes, pull a fresh Design snapshot or recompare.", action: "check" },
+  "design-to-app": { line: "Nothing to bring into the App. When the kit changes in Claude Design, pull a fresh snapshot.", action: "check" },
+  "app-to-design": { line: "Nothing to put into Design. When the App changes, recompare to pick up the new work.", action: "recompare" },
+};
 const store = {
   get<T>(k: string, d: T): T {
     try {
@@ -209,16 +216,15 @@ export function App() {
                   Plan every feature
                 </span>
                 <div className="cds-global" role="radiogroup" aria-labelledby="dir-l">
-                  {GLOBALS.map(({ d, Icon }) => (
+                  {GLOBALS.map(({ d, Icon, into }) => (
                     <button key={d} type="button" role="radio" aria-checked={global === d} className="cds-global-opt" onClick={() => setGlobal(d)} title={DIRECTION_HINT[d]}>
-                      <Icon size={16} strokeWidth={1.75} className="cds-global-icon" aria-hidden />
-                      <span className="cds-global-text">
-                        <span className="cds-global-name">{DIRECTION_LABEL[d]}</span>
-                        <span className="cds-global-hint">
-                          {DIRECTION_SUB[d][0]}
-                          <span className="cds-hint-from">{DIRECTION_SUB[d][1]}</span>
-                        </span>
+                      <span className="cds-route" aria-hidden>
+                        <span className={`cds-route-end ${into.app ? "is-into" : ""}`}>App</span>
+                        <Icon size={14} strokeWidth={2} className="cds-route-arrow" />
+                        <span className={`cds-route-end ${into.design ? "is-into" : ""}`}>Design</span>
                       </span>
+                      <span className="cds-global-name">{DIRECTION_LABEL[d]}</span>
+                      <span className="cds-global-hint">{DIRECTION_SUB[d]}</span>
                     </button>
                   ))}
                 </div>
@@ -304,11 +310,17 @@ export function App() {
                   })}
               {cmp && features.length === 0 ? (
                 <div className="cds-empty">
-                  <p>Nothing to move. When either side changes, pull a fresh Design snapshot or recompare.</p>
+                  <p>{(EMPTY[global] ?? EMPTY.both!).line}</p>
                   <div className="cds-empty-actions">
-                    <button type="button" className="cds-btn" onClick={checkDesign}>
-                      Check Claude Design for changes
-                    </button>
+                    {(EMPTY[global] ?? EMPTY.both!).action === "recompare" ? (
+                      <button type="button" className="cds-btn" onClick={() => refresh(true)} disabled={loading}>
+                        Recompare the App
+                      </button>
+                    ) : (
+                      <button type="button" className="cds-btn" onClick={checkDesign} disabled={check?.busy}>
+                        {check?.busy ? "Checking…" : "Check Claude Design for changes"}
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : null}

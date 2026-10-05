@@ -203,7 +203,7 @@ Four printed marks in a radiogroup, joined edge to edge (`margin-left: -1px`), i
 - A rail note (12px) appears under the keys only when the line differs from the plan, with a "· reset" link when overridden.
 
 ### Direction control
-The global three-way segmented control (Into the App / Full sync / Into Design): each option is glyph + name (500) + hint (12px), min 150px, joined by inset hairlines; the set option is filled ink with the hint at 70%.
+The global three-way segmented control (Into the App / Full sync / Into Design): each option stacks a route, the name (500) and a hint (12px) saying which side it changes, min 170px, joined by inset hairlines; the set option is filled ink with the hint at 70%. The route draws the job: an `App` and a `Design` box (500, 10px) either side of the arrow, the receiving box filled, the other outlined, so the three options differ in shape and not only in words. The empty ledger's line and action follow the set option (Recompare the App for Into Design; Check Claude Design otherwise).
 
 ### Buttons
 - **Shape:** square, 30px tall, 12px side padding, 14px lucide glyph + label.

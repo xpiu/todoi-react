@@ -200,10 +200,11 @@ em {
 }
 .cds-global-opt {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 150px;
-  padding: 8px 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 170px;
+  padding: 10px 14px;
   border: 0;
   background: none;
   text-align: left;
@@ -222,14 +223,6 @@ em {
 .cds-global-name {
   font-weight: 500;
 }
-.cds-global-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.cds-global-icon {
-  flex: none;
-}
 .cds-global-hint {
   font-size: 12px;
   color: var(--ink-400);
@@ -237,6 +230,38 @@ em {
 .cds-global-opt[aria-checked="true"] .cds-global-hint {
   color: inherit;
   opacity: 0.7;
+}
+/* The route: App and Design as the ledger's columns, the receiving side filled, so each option has its own shape */
+.cds-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cds-route-end {
+  padding: 3px 6px;
+  font: 500 10px/1 var(--font-ui);
+  color: var(--ink-400);
+  box-shadow: inset 0 0 0 1px var(--border-input);
+}
+.cds-route-end.is-into {
+  background: var(--ink-900);
+  color: var(--chrome-canvas);
+  box-shadow: none;
+}
+.cds-route-arrow {
+  flex: none;
+}
+.cds-global-opt[aria-checked="true"] .cds-route-end {
+  color: inherit;
+  opacity: 0.6;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.cds-global-opt[aria-checked="true"] .cds-route-end.is-into {
+  background: var(--chrome-canvas);
+  color: var(--ink-900);
+  opacity: 1;
+  box-shadow: none;
 }
 
 /* ── Ledger: two columns twinned around the rail ───────────────────────────────── */
@@ -1204,10 +1229,12 @@ em {
     flex: 1;
     min-width: 0;
     padding: 8px 10px;
-    gap: 8px;
   }
-  .cds-hint-from {
-    display: none;
+  .cds-route {
+    gap: 3px;
+  }
+  .cds-route-end {
+    padding: 3px 3px;
   }
   .cds-heads {
     display: none;
