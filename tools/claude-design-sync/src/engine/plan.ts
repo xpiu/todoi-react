@@ -8,7 +8,7 @@ import type { Ctx } from "./config";
 import { mergeCss } from "./css";
 import { listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
-import { sections } from "./inventory";
+import { isStoryFile, sections } from "./inventory";
 import { getSnapshot, saveSyncPoint, snapshotFilesDir } from "./snapshots";
 import { featureDirection, unitDirection } from "./directions";
 import { unitBaseline } from "./compare";
@@ -223,8 +223,22 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   lines.push("");
   lines.push(target === "app" ? APP_RULES : KIT_RULES);
   lines.push("");
-  lines.push("## What changed");
   let budget = CAP;
+  const examples = units.filter((u) => u.kind === "component").flatMap((u) => u.app.paths.filter((p) => isStoryFile(p) || /\.mdx?$/.test(p)));
+  if (examples.length) {
+    lines.push("## Component examples (reference)");
+    lines.push("Read these as usage guidance; translate relevant examples into the receiving environment.");
+    for (const p of examples) {
+      const content = readText(join(ctx.repo, p));
+      if (content == null) continue;
+      const chunk = capped(content, Math.min(8000, budget));
+      lines.push(`### ${p}`, "```", chunk, "```");
+      budget -= chunk.length;
+      if (budget <= 0) break;
+    }
+    lines.push("");
+  }
+  lines.push("## What changed");
   for (const u of units) {
     const ub = unitBaseline(cmp, u);
     const src = target === "app" ? designDiff(ctx, cmp, u) : ub ? diffSince(ctx.repo, ub.rev, u.app.paths) : u.app.paths.map((p) => `File ${p}:\n${readText(join(ctx.repo, p)) ?? ""}`).join("\n");

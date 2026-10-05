@@ -8,6 +8,7 @@
     ],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "types": [
       "node",
@@ -24,8 +25,10 @@
   "include": [
     "src",
     "tests",
+    ".storybook",
     "vite.config.ts",
     "vitest.config.ts",
+    "vitest.storybook.config.ts",
     "vitest.integration.config.ts",
     "playwright.config.ts",
     "drizzle.config.ts"

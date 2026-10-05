@@ -17,6 +17,14 @@ Storybook renders the application's actual components; decorators supply their e
 
 Compatibility translation belongs here: export suitable examples into the kit's `.prompt.md` notes and preview cards, adapting React 19/Base UI code to the kit's current React 18 UMD runtime as needed. Never reshape the production architecture to match the kit runtime. Design-originated changes must pass application checks before acceptance, including accessibility, server boundaries, and state ownership.
 
+### Storybook examples in sync
+
+The inventory groups `<Name>.stories.ts`, `<Name>.stories.tsx`, and colocated `<Name>.mdx`, `<Name>.md`, or `<Name>.prompt.md` with `<Name>.tsx`/`.ts` and its CSS. These examples are never discovered as separate components. Changes to examples count as changes to their owner, so story-only edits can enter a sync plan. Configured `app.ignore` rules still apply to companions.
+
+Port briefs include current example content as reference material, including untracked new stories. Claude Code translates useful variants and compositions into the kit's usage notes and preview cards. Storybook imports, spies, decorators, and test code must stay out of the kit runtime. This uses the existing AI port and staged-upload workflow; it does not assume a native Storybook connector in Claude Design or automatically upload examples.
+
+See the application's [Storybook guide](../../README.md#storybook) for commands and coverage. When a port changes a component's behavior, maintain its stories and run `npm run test:storybook` as well as the application checks before accepting the port.
+
 ## Start the tool
 
 ```bash

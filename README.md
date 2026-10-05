@@ -26,6 +26,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - [Local development](#local-development)
 - [Production](#production)
 - [Quality gates](#quality-gates)
+- [Storybook](#storybook)
 - [Claude Design sync](#claude-design-sync)
 
 ## Features and limits
@@ -147,6 +148,25 @@ APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED
 Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration and Chromium tests on Linux with `--ignore-snapshots` until Linux baselines exist. Reports: `.tmp/`, uploaded on CI failure.
 
 Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Migration `0006_lifecycle_cleanup.sql` adds the parent foreign key (promoting legacy orphans to top-level) and cleanup outbox. The API removes bytes after commit, draining up to 100 due jobs at startup, after deletion and each minute; retries back off to one hour. Migrate before starting an updated API.
+
+## Storybook
+
+Storybook is a separate React/Vite component workshop and browser test suite. It renders the actual components in `src/client/design` with the application's layered CSS, fonts, Zustand appearance store, and viewport hooks. Production code never imports stories, mocks, or Storybook addons. Run it independently of the API and PostgreSQL:
+
+```sh
+npm run storybook           # http://localhost:6006
+npm run build-storybook     # separate output: storybook-static/
+npx playwright install chromium  # once, for browser tests
+npm run test:storybook
+```
+
+The first integration covers Button, TextField, Select, Dialog, and ItemCard with colocated typed `.stories.tsx` examples, Autodocs, and browser interaction tests. Theme/mode toolbars follow the existing registry. The viewport toolbar resizes the preview; the actual media queries drive `data-device`, `data-touch`, and `useViewport()`. Viewport width alone does not emulate touch hardware.
+
+The separate Vitest configuration runs stories in all four Rounded/Minimal × Dark/Light scopes using Playwright Chromium, with accessibility failures blocking tests. Like the existing application axe gate, color contrast is excluded: current tokens produce failures on primary buttons and overdue badges and need separate remediation. Accessibility scans include body portals after interactions settle; interaction examples cover selection/search, disabled actions, keyboard activation, and nested dialog Escape behavior. A separate axe scan also confirmed that Select's open listbox needs an accessible name; fixing that and adding stable open-popup accessibility coverage are follow-up work. Node unit tests, PostgreSQL integration tests, and full application Playwright tests remain separate. CI builds/tests Storybook without starting the API or database.
+
+Story metadata and component manifests provide readable examples for coding agents. Native automatic ingestion by standalone Claude Design is not assumed. The [sync tool](tools/claude-design-sync/README.md) associates stories and colocated documentation with the owning component and translates relevant examples into the Design kit's existing format.
+
+Add stories alongside components as they change, followed by composed views and API mocks when needed. The `/dev/ds` gallery remains available until its useful specimens/checks have migrated. Optional Storybook MCP integration and component screenshot baselines can follow after this foundation; [Storybook AI features](https://storybook.js.org/docs/ai) are currently in preview.
 
 ## Claude Design sync
 

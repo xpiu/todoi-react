@@ -136,6 +136,45 @@ describe("compare (three-way)", () => {
   });
 });
 
+describe("component stories and documentation", () => {
+  it("groups examples with their owner and supplies them to the Design port", () => {
+    const fx = makeFixture();
+    const source = "src/client/design/core/Badge";
+    const story = `${source}.stories.tsx`;
+    const docs = `${source}.mdx`;
+    writeFileSync(join(fx.repo, story), 'import { Badge } from "./Badge";\nexport const Overflow = { args: { n: 99 } };\n');
+    writeFileSync(join(fx.repo, docs), "# Badge\nUse Overflow for large counts.\n");
+    writeFileSync(join(fx.repo, "src/client/design/core/Orphan.stories.tsx"), "export const Example = {};\n");
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const badge = cmp.units.find((u) => u.id === "component:core/Badge")!;
+    expect(badge.app.paths).toEqual([`${source}.tsx`, story, docs]);
+    expect(badge.status).toBe("app-ahead");
+    expect(cmp.units.some((u) => u.name.endsWith(".stories"))).toBe(false);
+    expect(laneOf(fx.ctx.config, "app", docs)).toBe("component");
+    const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, "app-to-design" as const])));
+    const brief = steps.find((s) => s.units.includes(badge.id) && s.kind === "ai-push")!.brief!;
+    expect(brief).toContain(story);
+    expect(brief).toContain("Overflow");
+    expect(brief).toContain("Do not copy Storybook imports");
+    expect(brief).toContain("Production architecture comes first");
+  });
+
+  it("tracks later story-only edits and respects configured ignores", () => {
+    const fx = makeFixture();
+    const story = "src/client/design/core/Badge.stories.ts";
+    writeFileSync(join(fx.repo, story), "export const Basic = { args: { n: 1 } };\n");
+    git(fx.repo, ["add", story]);
+    git(fx.repo, ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "docs: badge examples"]);
+    const base = recordSyncPoint(fx.ctx, { label: "With stories", snapshotId: fx.nowSnapshot, hold: [] });
+    writeFileSync(join(fx.repo, story), "export const Basic = { args: { n: 2 } };\n");
+    const cmp = compare(fx.ctx, { base });
+    expect(cmp.units.find((u) => u.id === "component:core/Badge")!.status).toBe("app-ahead");
+    fx.ctx.config.app = { ...fx.ctx.config.app, ignore: [...fx.ctx.config.app.ignore, "**/*.stories.ts"] };
+    const ignored = compare(fx.ctx, { base });
+    expect(ignored.units.find((u) => u.id === "component:core/Badge")!.status).toBe("in-sync");
+  });
+});
+
 describe("sync points that keep skipped work open", () => {
   it("carries held units forward on their old baseline, and lets go of the rest", () => {
     const fx = makeFixture();

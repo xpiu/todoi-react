@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 
-// Unit tests for pure functions run in Node; component tests (Storybook + browser mode) come later.
+// Node unit tests. Storybook browser tests use vitest.storybook.config.ts separately.
 export default defineConfig({
   test: {
     include: ["src/**/*.test.{ts,tsx}"],
