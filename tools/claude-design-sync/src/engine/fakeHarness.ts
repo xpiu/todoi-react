@@ -1,5 +1,6 @@
 // A stand-in harness for tests and demos (CDS_FAKE_HARNESS=1): answers DesignSync calls from a
 // local folder that plays the Claude Design project, and "ports" by appending a marker comment.
+import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -37,13 +38,19 @@ export function fakeRunner(designDir: string, repo: string): Runner {
       }
       emit(result({ method: "write_files", written: writes.length }));
     } else {
-      // an implement brief: touch the first listed target file so the run has a visible result
+      // an implement brief: touch the first listed target file so the run has a visible result; an App
+      // port works in its worktree (`repo` here) and ends with a commit, as the brief asks
       const stage = /staging folder (\S+)/.exec(prompt)?.[1];
-      const target = /- \*\*[^*]+\*\* \([^)]*\) — App: ([^ ,·]+)[^·]*· Design: ([^ ,\n]+)/.exec(prompt);
+      const target = /- \*\*([^*]+)\*\* \([^)]*\) — App: ([^ ,·]+)[^·]*· Design: ([^ ,\n]+)/.exec(prompt);
       if (target) {
-        const file = stage ? join(stage, target[2]!) : join(repo, target[1]!);
-        if (existsSync(file)) writeFileSync(file, readFileSync(file, "utf8") + `\n/* ported by the fake harness */\n`);
+        const app = target[2] === "none" ? `ported-${target[1]!.replace(/\W+/g, "-")}.txt` : target[2]!;
+        const file = stage ? join(stage, target[3]!) : join(repo, app);
+        writeFileSync(file, (existsSync(file) ? readFileSync(file, "utf8") : "") + `\n/* ported by the fake harness */\n`);
         emit({ type: "text", text: `Edited ${file}` });
+        if (!stage) {
+          execFileSync("git", ["-C", repo, "add", "-A"], { stdio: "ignore" });
+          execFileSync("git", ["-C", repo, "-c", "user.name=fake", "-c", "user.email=fake@localhost", "commit", "-qm", `feat: port ${target[1]} (fake)`], { stdio: "ignore" });
+        }
       }
     }
     const done: Extract<HarnessEvent, { type: "done" }> = { type: "done", ok: true, result: "DONE", costUsd: 0, turns: 1 };

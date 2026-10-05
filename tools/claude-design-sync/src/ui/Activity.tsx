@@ -1,11 +1,12 @@
-// Activity: jobs with live logs. A run that staged kit files stops here for the upload approval —
-// every file listed, each card's render check, previews, then one explicit Upload.
-import { CircleAlert, Check, LoaderCircle, Upload, X } from "lucide-react";
+// Activity: jobs with live logs. A run stops here for approval: its verified App branch waits for Merge
+// (commits listed), its staged kit files for Upload (every file listed, cards checked, previews), and
+// Discard gives up whatever is still waiting.
+import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, fmtTime, plural, type AppState, type Job, type JobEvent } from "./api";
+import { api, appPending, fmtTime, plural, uploadPending, type AppState, type Job, type JobEvent } from "./api";
 
-const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-upload": "waiting for your approval", done: "done", failed: "failed", cancelled: "stopped" };
+const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", done: "done", failed: "failed", cancelled: "stopped" };
 
 export function Activity({ state, focus, onFocus, onClose, onChanged }: { state: AppState | null; focus: string | null; onFocus: (id: string) => void; onClose: () => void; onChanged: () => void }) {
   const jobs = state?.jobs ?? [];
@@ -54,7 +55,7 @@ export function Activity({ state, focus, onFocus, onClose, onChanged }: { state:
           {jobs.slice(0, 8).map((j) => (
             <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} onClick={() => onFocus(j.id)}>
               <span className="cds-job-mark" data-state={j.state} aria-hidden>
-                {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : <Upload size={12} />}
+                {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : j.app?.state === "ready" ? <GitMerge size={12} /> : <Upload size={12} />}
               </span>
               <span className="cds-job-title">{j.title}</span>
               <span className="cds-job-time">{fmtTime(j.startedAt)}</span>
@@ -78,6 +79,26 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
   const [discarding, setDiscarding] = useState(false);
   const cardErr = useMemo(() => new Map((job.cards ?? []).map((c) => [c.card, c.errors])), [job.cards]);
   const stageId = job.stage?.split("/").pop();
+  const app = job.app;
+  const uploadWaiting = job.state === "awaiting-approval" && uploadPending(job);
+  // what Discard would give up, in words
+  const held = [
+    ...(uploadWaiting ? [`${plural(staged.length, "staged kit file")} (nothing goes to Claude Design)`] : []),
+    ...(app && appPending(job) ? [`branch ${app.branch} with ${plural(app.commits.length, "commit")} (nothing reaches ${app.into})`] : []),
+  ];
+  /** One approval action at a time; its error shows under the sections */
+  const act = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await fn();
+      onChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <div className="cds-jobview">
       <div className="cds-jobview-head">
@@ -105,7 +126,40 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
           ))}
         </ol>
       ) : null}
-      {job.state === "awaiting-upload" && staged.length ? (
+      {app?.state === "ready" ? (
+        <section className="cds-approve" aria-labelledby="merge-h">
+          <h4 id="merge-h">Merge into the App</h4>
+          <p className="cds-quiet">
+            The ports ran on <span className="cds-mono">{app.branch}</span>, a separate worktree from <span className="cds-mono">{app.base.slice(0, 7)}</span> on {app.into}. Every port committed, and <span className="cds-mono">{app.check?.command}</span> passed there. Nothing in your checkout changes until you merge.
+          </p>
+          <ul className="cds-commits" aria-label="Commits to merge">
+            {app.commits.map((c) => (
+              <li key={c.hash}>
+                <span className="cds-mono">{c.hash}</span> {c.subject}
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="cds-btn cds-btn-primary" disabled={busy} onClick={() => act(() => api.merge(job.id))}>
+            <GitMerge size={14} strokeWidth={1.75} aria-hidden /> Merge {plural(app.commits.length, "commit")} into {app.into}
+          </button>
+        </section>
+      ) : null}
+      {app?.state === "failed" ? (
+        <section className="cds-approve" aria-labelledby="kept-h">
+          <h4 id="kept-h">App branch kept for a look</h4>
+          <p className="cds-error-inline">{app.reason}</p>
+          <p className="cds-quiet">
+            Nothing was merged. <span className="cds-mono">{app.branch}</span> ({plural(app.commits.length, "commit")}) is in <span className="cds-mono cds-break">{app.worktree}</span>. Discard removes both.
+          </p>
+          {app.check && !app.check.ok ? (
+            <details className="cds-check-output">
+              <summary>Output of {app.check.command}</summary>
+              <pre>{app.check.output.trim().split("\n").slice(-40).join("\n")}</pre>
+            </details>
+          ) : null}
+        </section>
+      ) : null}
+      {uploadWaiting ? (
         <section className="cds-approve" aria-labelledby="approve-h">
           <h4 id="approve-h">Upload to Claude Design</h4>
           <p className="cds-quiet">Exactly these files go up, through DesignSync with a locked plan. Nothing is deleted. Untick anything you want to leave out. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't uploaded.</p>
@@ -131,60 +185,30 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
             })}
           </ul>
           {preview && stageId ? <div className="cds-preview"><iframe title={`Staged ${preview}`} src={`/kit/stage/${stageId}/${preview}`} sandbox="allow-scripts allow-same-origin" /></div> : null}
-          {err ? <p className="cds-error-inline">{err}</p> : null}
-          <button
-            type="button"
-            className="cds-btn cds-btn-primary"
-            disabled={!picked.size || busy}
-            onClick={async () => {
-              setBusy(true);
-              setErr(null);
-              try {
-                await api.upload(job.id, [...picked]);
-                onChanged();
-              } catch (e) {
-                setErr((e as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
+          <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} onClick={() => act(() => api.upload(job.id, [...picked]))}>
             <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")}
           </button>
-          {discarding ? (
-            <span className="cds-discard" role="group" aria-label="Discard this run">
-              <span>Discard {plural(staged.length, "staged file")}? Nothing goes to Claude Design.</span>
-              <button
-                type="button"
-                className="cds-btn"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await api.discard(job.id);
-                    onChanged();
-                  } catch (e) {
-                    setErr((e as Error).message);
-                  } finally {
-                    setBusy(false);
-                    setDiscarding(false);
-                  }
-                }}
-              >
-                Discard
-              </button>
-              <button type="button" className="cds-link" onClick={() => setDiscarding(false)}>
-                Keep
-              </button>
-            </span>
-          ) : (
-            <button type="button" className="cds-link cds-discard-open" onClick={() => setDiscarding(true)} disabled={busy}>
-              Discard run…
-            </button>
-          )}
         </section>
       ) : null}
-      {job.result && job.state !== "running" ? <p className={job.state === "failed" ? "cds-error-inline" : "cds-quiet"}>{job.result}</p> : null}
+      {err ? <p className="cds-error-inline">{err}</p> : null}
+      {held.length ? (
+        discarding ? (
+          <div className="cds-discard" role="group" aria-label="Discard this run">
+            <span>Discard {held.join(" and ")}?</span>
+            <button type="button" className="cds-btn" disabled={busy} onClick={() => act(() => api.discard(job.id)).then(() => setDiscarding(false))}>
+              Discard
+            </button>
+            <button type="button" className="cds-link" onClick={() => setDiscarding(false)}>
+              Keep
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="cds-link cds-discard-open" onClick={() => setDiscarding(true)} disabled={busy}>
+            Discard run…
+          </button>
+        )
+      ) : null}
+      {job.result && job.state !== "running" && !(app?.state === "failed" && app.reason === job.result) ? <p className={job.state === "failed" ? "cds-error-inline" : "cds-quiet"}>{job.result}</p> : null}
       <ol ref={logRef} className="cds-log" aria-label="Log" aria-live="polite">
         {job.events.map((e, i) => (
           <li key={i} data-level={e.level}>

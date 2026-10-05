@@ -3,9 +3,11 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { join, resolve, sep } from "node:path";
 
 import type { Ctx } from "../engine/config";
+import { appPending, uploadPending } from "../engine/approvals";
+import { removeWorktree, type AppRun } from "../engine/worktree";
 
 export type JobKind = "pull" | "status" | "run" | "upload";
-export type JobState = "running" | "awaiting-upload" | "done" | "failed" | "cancelled";
+export type JobState = "running" | "awaiting-approval" | "done" | "failed" | "cancelled";
 
 export interface JobEvent {
   at: string;
@@ -42,7 +44,10 @@ export interface Job {
   result?: string;
   baseId?: string | null;
   snapshotId?: string | null;
+  /** App-side work: the worktree and branch it ran in, its verified commits, the check, and the merge */
+  app?: AppRun;
 }
+
 
 type Listener = (e: { job: Job; event?: JobEvent }) => void;
 
@@ -56,7 +61,9 @@ export class Jobs {
       if (!f.endsWith(".json")) continue;
       try {
         const j = JSON.parse(readFileSync(join(dir, f), "utf8")) as Job;
+        if ((j.state as string) === "awaiting-upload") j.state = "awaiting-approval"; // the name before App merges waited too
         if (j.state === "running") j.state = "failed";
+        if (j.app?.state === "working") Object.assign(j.app, { state: "failed", reason: "The tool stopped while the port was running" });
         this.jobs.set(j.id, j);
       } catch {
         /* ignore a torn file */
@@ -64,7 +71,7 @@ export class Jobs {
     }
     // staging copies only live while their run waits for upload approval
     const stages = join(this.ctx.state, "stage");
-    const keep = new Set(this.list().filter((j) => j.state === "awaiting-upload" && j.stage).map((j) => resolve(j.stage!)));
+    const keep = new Set(this.list().filter((j) => j.state === "awaiting-approval" && j.stage).map((j) => resolve(j.stage!)));
     if (existsSync(stages)) for (const d of readdirSync(stages)) if (!keep.has(resolve(stages, d))) rmSync(join(stages, d), { recursive: true, force: true });
   }
   /** Delete a finished run's staging copy (a full copy of the Design project) */
@@ -105,12 +112,26 @@ export class Jobs {
     const j = this.jobs.get(id);
     if (j && j.state === "running") this.finish(j, "cancelled", "Stopped by you");
   }
-  /** Give up on a run that waits for approval: nothing more is written anywhere, and its staging copy goes */
+  /**
+   * Give up on what a run still holds: its staged kit files (nothing is uploaded) and its App branch
+   * (worktree and branch deleted, nothing merged). Works on a waiting run, and on a failed run's kept branch.
+   */
   discard(id: string): boolean {
     const j = this.jobs.get(id);
-    if (!j || j.state !== "awaiting-upload") return false;
-    if (j.steps.some((s) => s.id === "upload")) this.step(j, "upload", { state: "skipped", summary: "Discarded" });
-    this.finish(j, "cancelled", "Discarded: nothing was uploaded");
+    if (!j || !(j.state === "awaiting-approval" || appPending(j))) return false;
+    const notes: string[] = [];
+    if (j.app && appPending(j)) {
+      removeWorktree(this.ctx, j.app, true);
+      j.app.state = "discarded";
+      notes.push(`branch ${j.app.branch} deleted, nothing merged`);
+    }
+    if (uploadPending(j)) {
+      this.step(j, "upload", { state: "skipped", summary: "Discarded" });
+      notes.push("nothing uploaded");
+    }
+    const text = `Discarded: ${notes.join("; ") || "nothing was left waiting"}`;
+    if (j.state === "awaiting-approval") this.finish(j, "cancelled", text);
+    else this.log(j, "done", text);
     return true;
   }
   log(j: Job, level: JobEvent["level"], text: string, stepId?: string) {
@@ -132,10 +153,10 @@ export class Jobs {
     this.emit(j);
   }
   finish(j: Job, state: JobState, result?: string) {
-    if (j.state !== "running" && j.state !== "awaiting-upload") return;
+    if (j.state !== "running" && j.state !== "awaiting-approval") return;
     j.state = state;
     j.result = result;
-    if (state !== "awaiting-upload") {
+    if (state !== "awaiting-approval") {
       j.endedAt = new Date().toISOString();
       this.dropStage(j);
     }

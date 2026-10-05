@@ -1,4 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -99,7 +100,7 @@ test.describe.serial("Claude Design Sync", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test("runs the plan, stops for upload approval, uploads, and marks a sync point", async ({ page }) => {
+  test("runs the plan, stops for merge and upload approval, does both, and marks a sync point", async ({ page }) => {
     await fresh(page);
     await page.getByRole("button", { name: /Run plan/ }).click();
     await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toBeVisible();
@@ -107,6 +108,13 @@ test.describe.serial("Claude Design Sync", () => {
     const panel = page.getByRole("complementary", { name: "Activity" });
     await expect(panel).toBeVisible();
     await expect(panel.getByRole("heading", { name: "Upload to Claude Design" })).toBeVisible({ timeout: 30_000 });
+    // App work waits on its own verified branch; the fixture's checkout hasn't moved
+    const repo = join(tmpdir(), "cds-e2e", "repo");
+    const headBefore = execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    const merge = panel.getByRole("region", { name: "Merge into the App" });
+    await expect(merge).toContainText("design-sync/run-");
+    await expect(merge.getByRole("list", { name: "Commits to merge" })).toContainText("(fake)");
+    await expect(panel.locator(".cds-jobsteps")).toContainText("passed");
     const files = panel.locator(".cds-files li");
     expect(await files.count()).toBeGreaterThan(0);
     await expect(panel.locator(".cds-files")).toContainText("tokens/themes/minimal-components.css");
@@ -122,14 +130,21 @@ test.describe.serial("Claude Design Sync", () => {
     expect(readFileSync(otherLive, "utf8")).toBe("// rewritten in Claude Design\n");
     // Discard asks first; keeping the run changes nothing
     await panel.getByRole("button", { name: "Discard run…" }).click();
-    await expect(panel.getByRole("group", { name: "Discard this run" })).toContainText("Nothing goes to Claude Design");
+    await expect(panel.getByRole("group", { name: "Discard this run" })).toContainText("nothing goes to Claude Design");
+    await expect(panel.getByRole("group", { name: "Discard this run" })).toContainText("nothing reaches main");
     await panel.getByRole("button", { name: "Keep" }).click();
     await panel.getByRole("button", { name: /Upload \d+ files?/ }).click();
-    await expect(panel.locator(".cds-jobview-head")).toContainText("done", { timeout: 30_000 });
+    // uploaded, but the App branch still waits for its merge
+    await expect(panel.locator(".cds-jobview")).toContainText("all read back intact", { timeout: 30_000 });
+    await expect(panel.locator(".cds-jobview-head")).toContainText("waiting for your approval");
+    expect(execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()).toBe(headBefore);
+    await merge.getByRole("button", { name: /Merge \d+ commits? into main/ }).click();
+    await expect(panel.locator(".cds-jobview-head")).toContainText("done");
+    expect(execFileSync("git", ["-C", repo, "log", "--format=%s", `${headBefore}..HEAD`], { encoding: "utf8" })).toContain("(fake)");
+    expect(execFileSync("git", ["-C", repo, "branch", "--list", "design-sync/run-*"], { encoding: "utf8" }).trim()).toBe("");
     // the uploaded run's staging copy is gone
     const stages = join(tmpdir(), "cds-e2e", "state", "stage");
     expect(existsSync(stages) ? readdirSync(stages) : []).toEqual([]);
-    await expect(panel.locator(".cds-jobview")).toContainText("all read back intact");
     // the fake Design project received the merged tokens
     const fakeDesign = join(tmpdir(), "cds-e2e", "design-now", "tokens/themes/minimal-components.css");
     expect(existsSync(fakeDesign) && readFileSync(fakeDesign, "utf8")).toContain(".td-hidden");

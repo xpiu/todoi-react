@@ -32,7 +32,8 @@
     "ignore": [
       "**/*.test.ts",
       "**/*.test.tsx"
-    ]
+    ],
+    "check": "npm run check"
   },
   "syncTagPrefix": "design-sync/",
   "renames": [

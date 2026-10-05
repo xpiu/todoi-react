@@ -38,6 +38,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
   const pushes = steps.filter((s) => s.kind === "ai-push");
   const upload = steps.some((s) => s.kind === "upload");
   const work = steps.filter((s) => s.kind !== "upload").length;
+  const appWork = steps.some((s) => s.target === "app" && s.kind !== "upload");
   const h = state?.harnesses;
   // App ports run the harness config.json picks: Claude Code, or Codex (untested, so never offered here)
   const harness = state?.implement ?? "claude";
@@ -65,10 +66,15 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
             <div className="cds-confirm" role="group" aria-labelledby="confirm-h">
               <h3 id="confirm-h">Run {plural(work, "step")}?</h3>
               <ul>
-                {merges.length ? <li>Writes {plural(merges.length, "token file")} by deterministic rule merge ({merges.filter((s) => s.target === "app").length} in the repo, {merges.filter((s) => s.target === "design").length} staged for Design).</li> : null}
+                {merges.length ? <li>Writes {plural(merges.length, "token file")} by deterministic rule merge ({merges.filter((s) => s.target === "app").length} on the App branch, {merges.filter((s) => s.target === "design").length} staged for Design).</li> : null}
+                {appWork ? (
+                  <li>
+                    App work happens on a new branch in a separate git worktree, from {state?.appHead}. Your checkout{state?.dirty ? ", uncommitted changes included," : ""} isn't touched. Afterwards <span className="cds-mono">{state?.check}</span> runs there, and the branch waits in Activity for you to merge it.
+                  </li>
+                ) : null}
                 {pulls.length ? (
                   <li>
-                    Runs {harness === "codex" ? "Codex (untested, set in config.json)" : "Claude Code"} {plural(pulls.length, "time")} with permission to edit files in {state?.repo.split("/").pop()} and run its checks; each port ends with its own commit.
+                    Runs {harness === "codex" ? "Codex (untested, set in config.json)" : "Claude Code"} {plural(pulls.length, "time")} with permission to edit and run commands in that worktree. Each port must end with its own commit; one that doesn't stops the run.
                   </li>
                 ) : null}
                 {pushes.length ? <li>Runs Claude Code {plural(pushes.length, "time")} to port App work into a staging copy of the kit.</li> : null}

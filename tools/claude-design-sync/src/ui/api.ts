@@ -24,6 +24,8 @@ export interface AppState {
   /** codex only when config.json picks it (untested) */
   harnesses: { claude: HarnessInfo; codex?: HarnessInfo };
   implement: "claude" | "codex";
+  /** What must pass on a run's App branch before it can be merged */
+  check: string;
   jobs: Array<Omit<Job, "events">>;
   fake: boolean;
 }
@@ -54,6 +56,7 @@ export const api = {
   job: (id: string) => call<Job>(`/api/jobs/${id}`),
   upload: (id: string, paths: string[]) => call<{ ok: true }>(`/api/jobs/${id}/upload`, { body: { paths } }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
+  merge: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { method: "POST" }),
   discard: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/discard`, { method: "POST" }),
 };
 
@@ -92,6 +95,7 @@ export const DIRECTION_HINT: Record<Direction, string> = {
 
 export { directionsFor, featureDirection, unitDirection } from "../engine/directions";
 export { parseProjectRef, projectUrl } from "../engine/project";
+export { appPending, uploadPending } from "../engine/approvals";
 import { featureDirection } from "../engine/directions";
 export const effective = (f: { directions: Direction[] }, global: Direction, override?: Direction) => featureDirection(f.directions, global, override);
 

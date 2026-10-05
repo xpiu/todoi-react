@@ -17,6 +17,8 @@ export interface RunOptions {
   edits?: boolean;
   maxTurns?: number;
   signal?: AbortSignal;
+  /** Folders outside cwd the run may read (Claude Code --add-dir) */
+  addDirs?: string[];
 }
 
 export type HarnessEvent =
@@ -41,6 +43,7 @@ export function commandFor(o: RunOptions): { cmd: string; args: string[] } {
   if (o.edits) tools.push("Read", "Edit", "Write", "Glob", "Grep", "Bash");
   if (tools.length) args.push("--allowedTools", [...new Set(tools)].join(","));
   if (o.edits) args.push("--permission-mode", "acceptEdits");
+  if (o.addDirs?.length) args.push("--add-dir", ...o.addDirs);
   return { cmd: o.bin, args };
 }
 

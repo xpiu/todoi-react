@@ -91,6 +91,8 @@ export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))):
   write(designNowDir, DESIGN_NOW);
   const config = { ...loadConfig(join(TOOL_DIR, "config.json")), renames: [], screens: [] };
   config.design = { ...config.design, projectId: "fake" };
+  // the fixture repo has no package.json: its "check" just confirms the branch has a commit to merge
+  config.app = { ...config.app, check: "git log -1 --format=%s" };
   const ctx: Ctx = { repo, state, config };
   const base = importExport(ctx, designBaseDir, "Design at the sync point");
   // ids are second-resolution timestamps: make sure the "now" snapshot sorts after the base

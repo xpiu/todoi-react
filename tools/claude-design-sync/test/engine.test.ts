@@ -13,6 +13,8 @@ import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoin
 import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
 import { Jobs } from "../src/server/jobs";
+import { commitAll, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../src/engine/worktree";
+import { git } from "../src/engine/git";
 import { makeFixture, type Fixture } from "./fixture";
 
 describe("mergeCss", () => {
@@ -273,21 +275,104 @@ describe("DesignSync through the harness", () => {
   });
 });
 
+describe("App runs in a worktree", () => {
+  const commitIn = (dir: string, file: string, text: string, msg: string) => {
+    writeFileSync(join(dir, file), text);
+    git(dir, ["add", "-A"]);
+    git(dir, ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", msg]);
+  };
+
+  it("works on its own branch, and counts only a committed, clean port", async () => {
+    const fx = makeFixture();
+    const run = createWorktree(fx.ctx, "r1");
+    expect(run).toMatchObject({ branch: "design-sync/run-r1", into: "main", state: "working" });
+    expect(existsSync(join(run.worktree, "DESIGN.md"))).toBe(true);
+    expect(run.worktree.startsWith(fx.repo)).toBe(false);
+
+    let before = headOf(run);
+    expect(verifyPort(run, before)).toEqual({ ok: false, reason: "It made no commit, so nothing was ported" });
+    writeFileSync(join(run.worktree, "DESIGN.md"), "# Spec, edited\n");
+    expect(verifyPort(run, before)).toMatchObject({ ok: false, reason: "It changed 1 file(s) but made no commit" });
+    commitIn(run.worktree, "DESIGN.md", "# Spec, edited\n", "docs: spec");
+    writeFileSync(join(run.worktree, "stray.txt"), "left behind");
+    expect(verifyPort(run, before)).toMatchObject({ ok: false, reason: "It committed, but left 1 file(s) uncommitted: stray.txt" });
+    rmSync(join(run.worktree, "stray.txt"));
+    expect(verifyPort(run, before)).toMatchObject({ ok: true, commits: [{ subject: "docs: spec" }] });
+
+    before = headOf(run);
+    writeFileSync(join(run.worktree, "tokens.css"), "a{}\n");
+    expect(commitAll(run, "style(tokens): merge")).toBe(true);
+    expect(commitAll(run, "nothing")).toBe(false);
+    expect(verifyPort(run, before).ok).toBe(true);
+
+    expect(await runCheck(run, "git log -1 --format=%s")).toMatchObject({ ok: true, output: "style(tokens): merge\n" });
+    expect((await runCheck(run, "echo broken >&2; exit 3")).ok).toBe(false);
+    // the developer's checkout never saw any of it
+    expect(readFileSync(join(fx.repo, "DESIGN.md"), "utf8")).not.toContain("edited");
+  });
+
+  it("merges by fast-forward, by merge commit, or not at all", () => {
+    const fx = makeFixture();
+    const ff = createWorktree(fx.ctx, "run-ff");
+    expect(ff.branch).toBe("design-sync/run-ff");
+    commitIn(ff.worktree, "a.txt", "a\n", "feat: a");
+    expect(mergeRun(fx.ctx, ff)).toBe("fast-forward");
+    removeWorktree(fx.ctx, ff, true);
+    expect(existsSync(ff.worktree)).toBe(false);
+    expect(git(fx.repo, ["branch", "--list", ff.branch]).trim()).toBe("");
+    expect(readFileSync(join(fx.repo, "a.txt"), "utf8")).toBe("a\n");
+
+    // the developer committed meanwhile: a merge commit
+    const mc = createWorktree(fx.ctx, "mc");
+    commitIn(mc.worktree, "b.txt", "b\n", "feat: b");
+    commitIn(fx.repo, "c.txt", "c\n", "feat: c");
+    expect(mergeRun(fx.ctx, mc)).toBe("merge");
+    removeWorktree(fx.ctx, mc, true);
+
+    // both edited the same line: nothing changes, and the branch stays for a look
+    const cf = createWorktree(fx.ctx, "cf");
+    commitIn(cf.worktree, "a.txt", "from the run\n", "feat: run");
+    commitIn(fx.repo, "a.txt", "from the developer\n", "feat: dev");
+    const head = git(fx.repo, ["rev-parse", "HEAD"]).trim();
+    expect(() => mergeRun(fx.ctx, cf)).toThrow(/Couldn't merge design-sync\/run-cf into main/);
+    expect(git(fx.repo, ["rev-parse", "HEAD"]).trim()).toBe(head);
+    expect(git(fx.repo, ["status", "--porcelain"]).trim()).toBe("");
+    expect(existsSync(cf.worktree)).toBe(true);
+
+    // a different branch checked out: refused
+    git(fx.repo, ["checkout", "-qb", "elsewhere"]);
+    expect(() => mergeRun(fx.ctx, cf)).toThrow(/on elsewhere now/);
+  });
+
+  it("discards a kept branch with its worktree", () => {
+    const fx = makeFixture();
+    const jobs = new Jobs(fx.ctx);
+    const run = createWorktree(fx.ctx, "kept");
+    const job = jobs.create("run", "kept", { app: { ...run, state: "failed", reason: "npm run check failed" } });
+    jobs.finish(job, "failed", "npm run check failed");
+    expect(jobs.discard(job.id)).toBe(true);
+    expect(job.app?.state).toBe("discarded");
+    expect(existsSync(run.worktree)).toBe(false);
+    expect(git(fx.repo, ["branch", "--list", run.branch]).trim()).toBe("");
+    expect(jobs.discard(job.id)).toBe(false);
+  });
+});
+
 describe("staging copies", () => {
   it("live only while their run waits for approval", () => {
     const fx = makeFixture();
     const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
     const jobs = new Jobs(fx.ctx);
     const uploaded = jobs.create("run", "uploaded", { stage: createStage(fx.ctx, cmp, "run-a") });
-    jobs.finish(uploaded, "awaiting-upload");
+    jobs.finish(uploaded, "awaiting-approval");
     expect(existsSync(uploaded.stage!)).toBe(true);
     jobs.finish(uploaded, "done");
     expect(existsSync(uploaded.stage!)).toBe(false);
 
     const waiting = jobs.create("run", "waiting", { stage: createStage(fx.ctx, cmp, "run-b") });
-    jobs.finish(waiting, "awaiting-upload");
+    jobs.finish(waiting, "awaiting-approval");
     const discarded = jobs.create("run", "discarded", { stage: createStage(fx.ctx, cmp, "run-c") });
-    jobs.finish(discarded, "awaiting-upload");
+    jobs.finish(discarded, "awaiting-approval");
     expect(jobs.discard(discarded.id)).toBe(true);
     expect(discarded.state).toBe("cancelled");
     expect(existsSync(discarded.stage!)).toBe(false);

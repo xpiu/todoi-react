@@ -158,7 +158,7 @@ export function App() {
   const unpulled = snap?.unpulled ? [...snap.unpulled.carried, ...snap.unpulled.missing] : [];
   // the newest snapshot came from a project the tool no longer targets
   const otherProject = !!snap?.projectId && !!state && snap.projectId !== state.project.id;
-  const running = state?.jobs.find((j) => j.state === "running" || j.state === "awaiting-upload");
+  const running = state?.jobs.find((j) => j.state === "running" || j.state === "awaiting-approval");
   const synced = cmp?.units.filter((u) => u.status === "in-sync").length ?? 0;
 
   return (

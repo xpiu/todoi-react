@@ -7,6 +7,7 @@ import { extname, join, resolve } from "node:path";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 
+import { uploadPending } from "../engine/approvals";
 import { compare, unitBaseline } from "../engine/compare";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, verifyUpload, type Runner } from "../engine/designsync";
@@ -17,6 +18,7 @@ import { runHarness, type HarnessEvent, type HarnessKind } from "../engine/harne
 import { sections } from "../engine/inventory";
 import { parseProjectRef } from "../engine/project";
 import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
+import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../engine/worktree";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapshotFilesDir } from "../engine/snapshots";
 import type { Comparison, Direction } from "../engine/types";
@@ -63,10 +65,11 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       ? fakeRunner(opts.fake.designDir, ctx.repo)
       : (prompt, o, on) => runHarness({ kind: "claude", bin: ctx.config.harness.claudeBin, cwd: ctx.repo, prompt, model: o.model, maxTurns: o.maxTurns, allowedTools: ["DesignSync", "ToolSearch"], signal: job ? jobs.signal(job.id) : undefined }, on);
 
-  const implementRunner = (kind: HarnessKind, job: Job, stage?: string): Runner =>
+  /** App ports run in their worktree (`cwd`, reading the Design snapshot via addDirs); kit ports in the repo, writing the stage */
+  const implementRunner = (kind: HarnessKind, job: Job, where: { cwd?: string; addDirs?: string[]; stage?: string }): Runner =>
     opts.fake
-      ? fakeRunner(opts.fake.designDir, ctx.repo)
-      : (prompt, _o, on) => runHarness({ kind, bin: kind === "codex" ? ctx.config.harness.codexBin : ctx.config.harness.claudeBin, cwd: ctx.repo, prompt: stage ? `${prompt}\n\n(Also allowed: files under ${stage}.)` : prompt, model: ctx.config.harness.implementModel || undefined, edits: true, maxTurns: 80, signal: jobs.signal(job.id) }, on);
+      ? fakeRunner(opts.fake.designDir, where.cwd ?? ctx.repo)
+      : (prompt, _o, on) => runHarness({ kind, bin: kind === "codex" ? ctx.config.harness.codexBin : ctx.config.harness.claudeBin, cwd: where.cwd ?? ctx.repo, prompt: where.stage ? `${prompt}\n\n(Also allowed: files under ${where.stage}.)` : prompt, model: ctx.config.harness.implementModel || undefined, edits: true, maxTurns: 80, addDirs: where.addDirs, signal: jobs.signal(job.id) }, on);
 
   const logHarness = (job: Job, stepId?: string) => (e: HarnessEvent) => {
     if (e.type === "text") jobs.log(job, "ai", e.text, stepId);
@@ -105,6 +108,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       snapshots: listSnapshots(ctx),
       harnesses: harnesses(),
       implement: ctx.config.harness.implement,
+      check: ctx.config.app.check,
       jobs: jobs.list().slice(0, 20).map(({ events: _e, ...j }) => j),
       fake: !!opts.fake,
     }),
@@ -159,7 +163,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     if (!id) return c.json({ error: "Paste a Claude Design project link (https://claude.ai/design/p/…) or its id." }, 400);
     if (id === ctx.config.design.projectId) return c.json({ project: { id, name: ctx.config.design.projectName } });
     if (jobs.running()) return c.json({ error: "A job is running. Switch projects when it has finished." }, 409);
-    const waiting = jobs.list().find((j) => j.state === "awaiting-upload");
+    const waiting = jobs.list().find((j) => j.state === "awaiting-approval" && uploadPending(j));
     if (waiting) return c.json({ error: `“${waiting.title}” is waiting to upload to ${ctx.config.design.projectName}. Upload or discard it first.` }, 409);
     try {
       const found = await findProject(ctx, designRunner(), id);
@@ -239,33 +243,100 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     let steps = planSteps(ctx, cmp, choices, unitChoicesFor(cmp, body.global, body.overrides, body.unitOverrides));
     if (body.only?.length) steps = steps.filter((s) => body.only!.includes(s.id) || (s.kind === "upload" && steps.some((x) => body.only!.includes(x.id) && x.target === "design")));
     if (!steps.length) return c.json({ error: "Nothing to do: every feature is skipped or already in sync" }, 400);
-    const job = jobs.create("run", `Sync ${new Set(steps.map((s) => s.featureId)).size - (steps.some((s) => s.kind === "upload") ? 1 : 0)} feature(s)`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: steps.map((s) => ({ id: s.id, title: s.title, kind: s.kind, target: s.target, state: "pending" as const })) });
+    const jobSteps: Job["steps"] = steps.map((s) => ({ id: s.id, title: s.title, kind: s.kind, target: s.target, state: "pending" as const }));
+    // App work ends with the repo's check on the run's branch, then waits for the developer's merge
+    if (steps.some((s) => s.target === "app")) {
+      const at = jobSteps.findIndex((s) => s.id === "upload");
+      jobSteps.splice(at < 0 ? jobSteps.length : at, 0, { id: "app-check", title: `Run ${ctx.config.app.check} on the run's branch`, kind: "check", target: "app", state: "pending" }, { id: "app-merge", title: "Merge the run's branch into your branch (after your review)", kind: "merge", target: "app", state: "pending" });
+    }
+    const job = jobs.create("run", `Sync ${new Set(steps.map((s) => s.featureId)).size - (steps.some((s) => s.kind === "upload") ? 1 : 0)} feature(s)`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: jobSteps });
     void runPlan(job, cmp, steps, ctx.config.harness.implement);
     return c.json({ job: job.id });
   });
 
+  /** A job ends only when nothing waits on the developer: no upload to approve, no verified branch to merge */
+  const settle = (job: Job, note: string, failed = false) => jobs.finish(job, uploadPending(job) || job.app?.state === "ready" ? "awaiting-approval" : failed ? "failed" : "done", note);
+
+  /** The App's branch is kept for a look when its run fails or stops; only Discard removes it */
+  const keepAppRun = (job: Job, reason: string) => {
+    const run = job.app;
+    if (!run || run.state !== "working") return;
+    try {
+      run.commits = commitsSince(run);
+    } catch {
+      /* the worktree is gone */
+    }
+    Object.assign(run, { state: "failed", reason });
+    jobs.update(job, {});
+    jobs.log(job, "warn", `The App branch ${run.branch} is kept for a look (${run.worktree}). Discard removes it.`);
+  };
+
   async function runPlan(job: Job, cmp: Comparison, steps: Step[], harness: HarnessKind) {
     const stage = steps.some((s) => s.target === "design") ? createStage(ctx, cmp, job.id) : undefined;
     if (stage) jobs.update(job, { stage });
+    const snapshotDir = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
     try {
+      // App work never touches the developer's checkout: a worktree on its own branch, merged on approval
+      const run = steps.some((s) => s.target === "app") ? createWorktree(ctx, job.id) : undefined;
+      if (run) {
+        jobs.update(job, { app: run });
+        jobs.log(job, "info", `App work runs on ${run.branch}, a separate worktree from ${run.base.slice(0, 7)} on ${run.into}. Your checkout isn't touched until you merge. (${run.worktree})`);
+      }
       for (const s of steps) {
-        if (jobs.signal(job.id)?.aborted) return;
+        if (jobs.signal(job.id)?.aborted) {
+          keepAppRun(job, "Stopped by you");
+          return;
+        }
         if (s.kind === "upload") continue;
         jobs.step(job, s.id, { state: "running" });
         jobs.log(job, "step", s.title, s.id);
         if (s.kind === "merge-css") {
           const unit = cmp.units.find((u) => u.id === s.units[0])!;
           const { text, summary } = cssMergeFor(ctx, cmp, unit, s.target);
-          const dest = s.target === "app" ? join(ctx.repo, unit.app.paths[0]!) : join(stage!, unit.design.paths[0]!);
+          const dest = s.target === "app" ? join(run!.worktree, unit.app.paths[0]!) : join(stage!, unit.design.paths[0]!);
           writeFileSync(dest, text);
+          if (s.target === "app") commitAll(run!, `style(tokens): merge Claude Design's ${unit.name} rules`);
           jobs.step(job, s.id, { state: "done", summary });
           jobs.log(job, "info", summary, s.id);
           continue;
         }
-        const brief = fillStage(s.brief ?? "", stage ?? "(no staging folder)");
-        const done = await implementRunner(s.target === "design" ? "claude" : harness, job, stage)(brief, {}, logHarness(job, s.id));
+        if (s.target === "app") {
+          const before = headOf(run!);
+          const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and finish with a commit there; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
+          const done = await implementRunner(harness, job, { cwd: run!.worktree, addDirs: snapshotDir ? [snapshotDir] : [] })(brief, {}, logHarness(job, s.id));
+          if (!done.ok) {
+            jobs.step(job, s.id, { state: "failed", summary: done.result.slice(0, 600) });
+            throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
+          }
+          // the harness's own "ok" isn't proof: the port must have committed, and left nothing behind
+          const v = verifyPort(run!, before);
+          if (!v.ok) {
+            jobs.step(job, s.id, { state: "failed", summary: v.reason });
+            throw new Error(`${s.title}: ${v.reason}`);
+          }
+          jobs.step(job, s.id, { state: "done", summary: v.commits.map((c) => `${c.hash} ${c.subject}`).join(" · ") });
+          continue;
+        }
+        const done = await implementRunner("claude", job, { stage })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
         jobs.step(job, s.id, { state: done.ok ? "done" : "failed", summary: done.result.slice(0, 600) });
         if (!done.ok) throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
+      }
+      const notes: string[] = [];
+      if (run) {
+        run.commits = commitsSince(run);
+        jobs.step(job, "app-check", { state: "running" });
+        jobs.log(job, "step", `Running ${ctx.config.app.check} on ${run.branch}…`, "app-check");
+        const check = await runCheck(run, ctx.config.app.check, jobs.signal(job.id));
+        run.check = check;
+        jobs.log(job, check.ok ? "info" : "error", check.output.trim().split("\n").slice(-12).join("\n") || "(no output)", "app-check");
+        if (!check.ok) {
+          jobs.step(job, "app-check", { state: "failed", summary: `${check.command} failed` });
+          throw new Error(`${check.command} failed on ${run.branch}, so it can't be merged. The branch is kept for a look; Discard removes it.`);
+        }
+        jobs.step(job, "app-check", { state: "done", summary: `${check.command} passed` });
+        run.state = "ready";
+        jobs.step(job, "app-merge", { state: "pending", summary: `${run.commits.length} commit(s) waiting for your merge` });
+        notes.push(`${run.commits.length} App commit(s) passed ${check.command}: review and merge`);
       }
       cache.clear();
       if (stage) {
@@ -281,20 +352,20 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         jobs.update(job, { staged, cards: checked });
         if (staged.length) {
           jobs.step(job, "upload", { state: "pending", summary: `${staged.length} file(s) waiting for your approval` });
-          jobs.finish(job, "awaiting-upload", `${staged.length} kit file(s) staged — review and approve the upload`);
-          return;
-        }
-        jobs.step(job, "upload", { state: "skipped", summary: "No kit files changed" });
+          notes.push(`${staged.length} kit file(s) staged: review and approve the upload`);
+        } else jobs.step(job, "upload", { state: "skipped", summary: "No kit files changed" });
       }
-      jobs.finish(job, "done", "All steps finished");
+      settle(job, notes.join(" · ") || "All steps finished");
     } catch (e) {
-      jobs.finish(job, "failed", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      keepAppRun(job, msg);
+      settle(job, msg, true);
     }
   }
 
   app.post("/api/jobs/:id/upload", async (c) => {
     const job = jobs.get(c.req.param("id"));
-    if (!job || job.state !== "awaiting-upload" || !job.stage) return c.json({ error: "This run has nothing waiting for upload" }, 400);
+    if (!job || job.state !== "awaiting-approval" || !job.stage || !uploadPending(job)) return c.json({ error: "This run has nothing waiting for upload" }, 400);
     const { paths } = await c.req.json<{ paths: string[] }>();
     const allowed = new Set((job.staged ?? []).map((s) => s.path));
     const files = paths.filter((p) => allowed.has(p));
@@ -314,7 +385,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         if (conflict.size) {
           for (const x of check.conflicts) jobs.log(job, "warn", `${x.path}: ${x.reason}`, "upload");
           jobs.step(job, "upload", { state: "pending", summary: `${conflict.size} file(s) would overwrite newer Design work` });
-          jobs.finish(job, "awaiting-upload", `Nothing uploaded: Claude Design changed ${conflict.size === 1 ? "a file" : `${conflict.size} files`} since this run's snapshot. Untick ${conflict.size === 1 ? "it" : "them"} to upload the rest, or pull and run the feature again.`);
+          jobs.finish(job, "awaiting-approval", `Nothing uploaded: Claude Design changed ${conflict.size === 1 ? "a file" : `${conflict.size} files`} since this run's snapshot. Untick ${conflict.size === 1 ? "it" : "them"} to upload the rest, or pull and run the feature again.`);
           return;
         }
         jobs.log(job, "step", `Uploading ${files.length} file(s) to ${ctx.config.design.projectName}…`, "upload");
@@ -331,21 +402,43 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         cache.clear();
         if (differ.length) {
           jobs.step(job, "upload", { state: "failed", summary: `${res.written} file(s) written · ${differ.length} didn't read back intact` });
-          jobs.finish(job, "failed", `Uploaded ${res.written} file(s), but ${differ.length === 1 ? "1 doesn't" : `${differ.length} don't`} read back as uploaded: ${differ.join(", ")}. Pull to see what Claude Design holds.`);
+          settle(job, `Uploaded ${res.written} file(s), but ${differ.length === 1 ? "1 doesn't" : `${differ.length} don't`} read back as uploaded: ${differ.join(", ")}. Pull to see what Claude Design holds.`, true);
           return;
         }
         jobs.step(job, "upload", { state: "done", summary: `${res.written} file(s) written and read back intact${res.planId ? ` · plan ${res.planId}` : ""}` });
-        jobs.finish(job, "done", `Uploaded ${res.written} file(s) to Claude Design, all read back intact${check.fresh ? "" : ". Design had other changes too: pull to see them."}`);
+        settle(job, `Uploaded ${res.written} file(s) to Claude Design, all read back intact${check.fresh ? "" : ". Design had other changes too: pull to see them."}${job.app?.state === "ready" ? " The App branch still waits for your merge." : " Mark synced when both sides look right."}`);
       } catch (e) {
         // nothing (or not everything) went up: keep the staged files so the upload can be tried again
         jobs.step(job, "upload", { state: "failed", summary: "Upload failed; the staged files are kept" });
-        jobs.finish(job, "awaiting-upload", `Upload failed: ${e instanceof Error ? e.message : String(e)}. Try again, or discard the run.`);
+        jobs.finish(job, "awaiting-approval", `Upload failed: ${e instanceof Error ? e.message : String(e)}. Try again, or discard the run.`);
       }
     })();
     return c.json({ ok: true });
   });
 
-  app.post("/api/jobs/:id/discard", (c) => (jobs.discard(c.req.param("id")) ? c.json({ ok: true }) : c.json({ error: "Only a run waiting for approval can be discarded" }, 400)));
+  // Bring a verified App branch into the developer's branch; conflicts leave everything as it was
+  app.post("/api/jobs/:id/merge", (c) => {
+    const job = jobs.get(c.req.param("id"));
+    const run = job?.app;
+    if (!job || !run || run.state !== "ready") return c.json({ error: "This run has no verified App branch waiting to merge" }, 400);
+    try {
+      const how = mergeRun(ctx, run);
+      removeWorktree(ctx, run, true);
+      run.state = "merged";
+      cache.clear();
+      const summary = `${run.commits.length} commit(s) merged into ${run.into} (${how === "fast-forward" ? "fast-forward" : "merge commit"})`;
+      jobs.step(job, "app-merge", { state: "done", summary });
+      jobs.log(job, "info", `${summary}; ${run.branch} and its worktree removed`, "app-merge");
+      settle(job, `${summary}.${uploadPending(job) ? " The kit upload still waits for your approval." : " Mark synced when both sides look right."}`);
+      return c.json({ ok: true });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      jobs.log(job, "warn", msg, "app-merge");
+      return c.json({ error: msg }, 409);
+    }
+  });
+
+  app.post("/api/jobs/:id/discard", (c) => (jobs.discard(c.req.param("id")) ? c.json({ ok: true }) : c.json({ error: "This run holds nothing to discard" }, 400)));
 
   app.post("/api/jobs/:id/cancel", (c) => {
     jobs.cancel(c.req.param("id"));
