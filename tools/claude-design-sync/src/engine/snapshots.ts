@@ -92,7 +92,7 @@ export function deriveSnapshot(ctx: Ctx, fromId: string, changes: Record<string,
   const id = newSnapshotId();
   cpSync(snapshotFilesDir(ctx, fromId), snapshotFilesDir(ctx, id), { recursive: true });
   for (const [p, c] of Object.entries(changes)) writeSnapshotFile(ctx, id, p, c);
-  return writeSnapshotMeta(ctx, { id, label, source, createdAt: new Date().toISOString(), projectId: getSnapshot(ctx, fromId)?.projectId, projectUpdatedAt });
+  return writeSnapshotMeta(ctx, { id, label, source, createdAt: new Date().toISOString(), projectId: getSnapshot(ctx, fromId)?.projectId, projectUpdatedAt, parent: fromId });
 }
 
 // ── Sync points ──────────────────────────────────────────────────────────────────────────────

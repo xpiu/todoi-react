@@ -87,6 +87,8 @@ export interface SnapshotMeta {
   /** Design project's updatedAt when the snapshot was taken, when known (never set on an incomplete pull) */
   projectUpdatedAt?: string;
   fileCount: number;
+  /** The snapshot an upload's snapshot was derived from (its changed files are what went up) */
+  parent?: string;
   /** A pull that couldn't fetch every file: `carried` came from the previous snapshot (`from`), `missing` had no earlier copy */
   unpulled?: { carried: string[]; missing: string[]; from?: string };
 }

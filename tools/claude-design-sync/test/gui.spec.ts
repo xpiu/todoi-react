@@ -207,4 +207,55 @@ test.describe.serial("Claude Design Sync", () => {
     await head.getByRole("button", { name: "Check for changes" }).click();
     await expect(head.getByRole("button", { name: "Up to date" })).toBeVisible();
   });
+
+  test("maps both sides lane by lane, replays recent moves, and brings its data up to date", async ({ page }) => {
+    await fresh(page);
+    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Mapping" }).click();
+    await expect(page).toHaveURL(/\/mapping$/);
+    await expect(page.getByRole("link", { name: "Mapping" })).toHaveAttribute("aria-current", "page");
+    await expect(page.locator(".cds-map-top h2")).toContainText(/pair up as \d+ units/);
+    const meta = page.locator(".cds-map-meta");
+    await expect(meta).toContainText("Fake Design System");
+    await expect(meta).toContainText("todoi-react");
+    await expect(meta).toContainText("Sync point");
+    await expect(page.locator(".cds-map-technique li")).toHaveCount(6);
+
+    // each lane names its technique on the rail; opening one shows its rules and units
+    const lane = (title: string) => page.locator(".cds-map-lane", { has: page.getByRole("button", { name: title, exact: true }) });
+    await expect(lane("Tokens").locator(".cds-map-tech")).toHaveText("CSS merge");
+    await expect(lane("Preview cards").locator(".cds-map-tech")).toHaveText("Reference only");
+    await lane("Components").locator(".cds-map-tech").click();
+    const comp = lane("Components");
+    await expect(comp.locator(".cds-map-detail")).toContainText("Paired by");
+    await expect(comp.locator(".cds-map-detail")).toContainText("AI port into a worktree");
+    await comp.getByRole("button", { name: /^All/ }).click();
+    await expect(comp.locator(".cds-map-units")).toContainText("BoardView");
+
+    // the run earlier in this suite merged into the App, uploaded to Design, and marked a sync point
+    const events = page.locator(".cds-map-event");
+    await expect(events.filter({ hasText: "Merged into main" })).toHaveCount(1);
+    await expect(events.filter({ hasText: "Marked synced" }).first()).toBeVisible();
+    const upload = events.filter({ hasText: "Uploaded to Claude Design" }).first();
+    await upload.getByRole("button", { name: "Show on the diagram" }).click();
+    await expect(page.locator(".cds-map-legend")).toContainText("Uploaded to Claude Design");
+    await expect(page.locator(".cds-map-lane[data-dim]").first()).toBeVisible();
+    await expect(page.locator('.cds-map-track.is-out[data-motion="once"] .cds-map-seg[data-on]').first()).toBeVisible();
+    await page.getByRole("button", { name: "Replay" }).click();
+    await page.getByLabel("What the diagram shows").selectOption("waiting");
+    await expect(page.locator(".cds-map-lane[data-dim]")).toHaveCount(0);
+
+    // the refresh asks Claude Design, pulls when it's behind, and recompares
+    await page.getByRole("button", { name: "Bring the mapping up to date" }).click();
+    await expect(page.getByRole("status")).toHaveText("Both sides are current.", { timeout: 30_000 });
+    await expect(meta.locator('.cds-map-fresh[data-ok="true"]')).toHaveCount(2);
+
+    const axe = await new AxeBuilder({ page }).analyze();
+    expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    // a move's log opens in the plan's Activity panel
+    await events.filter({ hasText: "Merged into main" }).getByRole("link", { name: "Log" }).click();
+    await expect(page.getByRole("complementary", { name: "Activity" })).toBeVisible();
+  });
 });

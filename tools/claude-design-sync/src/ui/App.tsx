@@ -1,13 +1,14 @@
 // The sync plan: verdict + direction, the ledger of features, the plan bar, and the activity panel.
-import { ArrowLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, History, LoaderCircle, PanelRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRight, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, projectUrl, type AppState, type Comparison, type Direction, type Step } from "./api";
+import { api, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
 import { FeatureRow } from "./FeatureRow";
 import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
 import { ProjectFooter } from "./ProjectFooter";
+import { TopBar } from "./TopBar";
 
 // Each option draws its route: App box, arrow, Design box, with the receiving side filled
 const GLOBALS: Array<{ d: Direction; Icon: typeof ArrowLeft; into: { app: boolean; design: boolean } }> = [
@@ -21,23 +22,6 @@ const EMPTY: Partial<Record<Direction, { line: string; action: "check" | "recomp
   "design-to-app": { line: "Nothing to bring into the App. When the kit changes in Claude Design, pull a fresh snapshot.", action: "check" },
   "app-to-design": { line: "Nothing to put into Design. When the App changes, recompare to pick up the new work.", action: "recompare" },
 };
-const store = {
-  get<T>(k: string, d: T): T {
-    try {
-      const v = localStorage.getItem(k);
-      return v ? (JSON.parse(v) as T) : d;
-    } catch {
-      return d;
-    }
-  },
-  set(k: string, v: unknown) {
-    try {
-      localStorage.setItem(k, JSON.stringify(v));
-    } catch {
-      /* private window */
-    }
-  },
-};
 
 export function App() {
   const [state, setState] = useState<AppState | null>(null);
@@ -49,8 +33,9 @@ export function App() {
   const [unitOverrides, setUnitOverrides] = useState<Record<string, Direction>>(() => store.get("cds-unit-overrides", {}));
   const [steps, setSteps] = useState<Step[]>([]);
   const [unitChoices, setUnitChoices] = useState<Record<string, Direction>>({});
-  const [activity, setActivity] = useState<string | null>(null);
-  const [panel, setPanel] = useState(false);
+  // /?job=<id> (linked from the Mapping page) opens that job in the activity panel
+  const [activity, setActivity] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
+  const [panel, setPanel] = useState(() => !!new URLSearchParams(location.search).get("job"));
   const [loading, setLoading] = useState(true);
   const [showSynced, setShowSynced] = useState(false);
   const [check, setCheck] = useState<{ busy: boolean; stale?: boolean; updatedAt?: string | null; error?: string } | null>(null);
@@ -164,36 +149,27 @@ export function App() {
   return (
     <div className={`cds ${panel ? "has-panel" : ""}`}>
       <a className="cds-skip" href="#ledger">Skip to the features</a>
-      <header className="cds-bar">
-        <h1 className="cds-wordmark">
-          <ArrowLeftRight size={14} strokeWidth={1.75} className="cds-wordmark-mark" aria-hidden />
-          <span className="cds-wordmark-name">Claude Design sync tool</span>
-        </h1>
-        <div className="cds-bar-tools">
-          {state?.syncPoints.length ? (
-            <label className="cds-since">
-              <History size={14} strokeWidth={1.75} aria-hidden />
-              <span>Since</span>
-              <select value={baseId ?? ""} onChange={(e) => setBaseId(e.target.value || null)} aria-label="Compare since sync point">
-                {state.syncPoints.map((p) => (
-                  <option key={p.id} value={p.id} title={`${p.label} — App @${p.rev}, ${fmtTime(p.createdAt)}`}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <button type="button" className="cds-tool" onClick={() => refresh(true)} disabled={loading} title="Re-read the App and the latest snapshot" aria-label="Recompare">
-            {loading ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} <span className="cds-tool-label">Recompare</span>
-          </button>
-          <button type="button" className={`cds-tool ${running ? "is-live" : ""}`} aria-pressed={panel} aria-label="Activity" onClick={() => setPanel((p) => !p)}>
-            <PanelRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Activity</span>{running ? <span className="cds-live" aria-label="A job is running" /> : null}
-          </button>
-          <a className="cds-tool" href={state ? projectUrl(state.project.id) : "https://claude.ai/design"} target="_blank" rel="noreferrer" aria-label={`${state?.project.name ?? "Claude Design"} in Claude Design (opens in a new tab)`}>
-            <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Claude Design</span>
-          </a>
-        </div>
-      </header>
+      <TopBar state={state} page="plan">
+        {state?.syncPoints.length ? (
+          <label className="cds-since">
+            <History size={14} strokeWidth={1.75} aria-hidden />
+            <span>Since</span>
+            <select value={baseId ?? ""} onChange={(e) => setBaseId(e.target.value || null)} aria-label="Compare since sync point">
+              {state.syncPoints.map((p) => (
+                <option key={p.id} value={p.id} title={`${p.label} — App @${p.rev}, ${fmtTime(p.createdAt)}`}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <button type="button" className="cds-tool" onClick={() => refresh(true)} disabled={loading} title="Re-read the App and the latest snapshot" aria-label="Recompare">
+          {loading ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} <span className="cds-tool-label">Recompare</span>
+        </button>
+        <button type="button" className={`cds-tool ${running ? "is-live" : ""}`} aria-pressed={panel} aria-label="Activity" onClick={() => setPanel((p) => !p)}>
+          <PanelRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Activity</span>{running ? <span className="cds-live" aria-label="A job is running" /> : null}
+        </button>
+      </TopBar>
 
       <main className="cds-main">
         {error ? (

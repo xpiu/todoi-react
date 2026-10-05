@@ -76,12 +76,15 @@ export function commitAll(run: AppRun, message: string): boolean {
 }
 
 /** Run the repo's check (e.g. `npm run check`) in the worktree; keeps the last part of its output */
+/** Colour codes some tools print even with NO_COLOR (ESC [ … m) */
+const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
+
 export function runCheck(run: AppRun, command: string, signal?: AbortSignal): Promise<{ command: string; ok: boolean; output: string }> {
   return new Promise((resolve) => {
     const child = spawn("/bin/sh", ["-c", command], { cwd: run.worktree, env: { ...process.env, CI: "1", FORCE_COLOR: "0", NO_COLOR: "1" }, stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     const keep = (d: Buffer) => {
-      output = (output + d.toString().replace(/\x1b\[[0-9;]*m/g, "")).slice(-6000);
+      output = (output + d.toString().replace(ANSI, "")).slice(-6000);
     };
     child.stdout.on("data", keep);
     child.stderr.on("data", keep);

@@ -118,3 +118,16 @@ export function createTag(repo: string, tag: string, message: string): void {
 export function isDirty(repo: string): boolean {
   return git(repo, ["status", "--porcelain"]).trim().length > 0;
 }
+
+/** Files the given commits touched, once each (commits git no longer has are skipped) */
+export function filesTouched(repo: string, hashes: string[]): string[] {
+  const out = new Set<string>();
+  for (const h of hashes) {
+    try {
+      for (const f of git(repo, ["show", "--name-only", "--format=", h]).split("\n")) if (f.trim()) out.add(f.trim());
+    } catch {
+      /* gone (a discarded branch, a gc) */
+    }
+  }
+  return [...out];
+}

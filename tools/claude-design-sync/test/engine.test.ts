@@ -13,6 +13,8 @@ import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoin
 import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
 import { Jobs } from "../src/server/jobs";
+import { laneOf, laneRules, LANE_ORDER } from "../src/engine/lanes";
+import { mappingHistory } from "../src/server/mapping";
 import { commitAll, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../src/engine/worktree";
 import { git } from "../src/engine/git";
 import { makeFixture, type Fixture } from "./fixture";
@@ -402,6 +404,42 @@ describe("the target project", () => {
     expect(await findProject(fx.ctx, runner, "nope")).toBeNull();
     const silent: Runner = async () => ({ type: "done", ok: true, result: "DONE" });
     await expect(findProject(fx.ctx, silent, "fake")).rejects.toThrow(/signed in/);
+  });
+});
+
+describe("the mapping", () => {
+  it("sorts every file into the lane of the unit it belongs to, on both sides", () => {
+    const fx = makeFixture();
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    for (const u of cmp.units) {
+      for (const p of u.app.paths) expect([u.id, laneOf(fx.ctx.config, "app", p)]).toEqual([u.id, u.kind]);
+      for (const p of u.design.paths) expect([u.id, laneOf(fx.ctx.config, "design", p)]).toEqual([u.id, u.kind]);
+    }
+    expect(laneOf(fx.ctx.config, "design", "_ds_bundle.js")).toBe("other");
+    expect(laneOf(fx.ctx.config, "app", "src/server/index.ts")).toBe("other");
+    expect(laneRules(fx.ctx.config).map((l) => l.id)).toEqual(LANE_ORDER);
+  });
+  it("reads recent moves from snapshots, merges and sync points, with each move's files per lane", () => {
+    const fx = makeFixture();
+    const up = deriveSnapshot(fx.ctx, fx.nowSnapshot, { "components/core/Chip.jsx": "x", "tokens/themes/minimal-components.css": "y" }, "After upload (2 files)", "upload");
+    const merged = git(fx.repo, ["log", "-1", "--format=%h"]).trim();
+    const jobs = new Jobs(fx.ctx);
+    const run = jobs.create("run", "Sync 1 feature(s)");
+    jobs.update(run, { app: { worktree: "/gone", branch: "design-sync/run-x", base: merged, into: "main", commits: [{ hash: merged, subject: "feat" }], state: "merged" } });
+    jobs.finish(run, "done", "merged");
+    const h = mappingHistory(fx.ctx, jobs.list());
+    const upload = h.find((e) => e.id === `snapshot:${up.id}`)!;
+    expect(upload).toMatchObject({ kind: "upload", moves: [{ flow: "to-design", side: "design", lanes: { component: 1, tokens: 1 } }] });
+    expect(upload.moves[0]!.files.sort()).toEqual(["components/core/Chip.jsx", "tokens/themes/minimal-components.css"]);
+    const merge = h.find((e) => e.kind === "merge")!;
+    expect(merge.moves[0]).toMatchObject({ flow: "to-app", side: "app" });
+    expect(merge.moves[0]!.files.length).toBeGreaterThan(0);
+    // the first snapshot brought every file; the next only what changed
+    const pulls = h.filter((e) => e.kind === "import");
+    expect(pulls.map((e) => e.detail)).toEqual([expect.stringMatching(/^\d+ files changed/), expect.stringMatching(/^First snapshot/)]);
+    expect(h.some((e) => e.kind === "sync-point")).toBe(true);
+    // newest first
+    expect(h.map((e) => e.at)).toEqual([...h.map((e) => e.at)].sort().reverse());
   });
 });
 

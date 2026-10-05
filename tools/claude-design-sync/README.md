@@ -30,6 +30,10 @@ Then open http://localhost:4477. The tool binds to 127.0.0.1 only.
   - the exact steps that will run, each AI step with its full brief (*Read brief*, *Copy brief*), and **Run this feature only**.
 - **The plan bar** (bottom): what the decisions add up to and how many steps (merges, AI ports, upload). **Run plan** opens a confirmation that says exactly what will be written where. **Mark synced** records a new sync point and lists every feature. Features the plan moves start ticked. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old starting point and show up in the next comparison as "Kept open since …".
 - **The footer** names the Claude Design project every pull and upload targets, with its link (`claude.ai/design/p/<id>`). **Edit** takes a project link or id, checks it against your Claude Design projects, and saves it to `config.json`. It refuses while a job is running or waiting to upload. A snapshot remembers the project it was pulled from, and the Design header warns "from another project" until you pull. The top bar's **Claude Design** link opens the same project.
+- **Mapping** (top bar, `/mapping`): how this repo and the Claude Design project pair up, on one page.
+  - **At the top:** the project, the App (branch, HEAD), the Design snapshot and the sync point. Each side says how fresh it is ("Up to date when asked", "HEAD moved", "Not asked yet", "N files not pulled") and offers the one action that fixes it (Check for changes, Pull now, Recompare). **Bring the mapping up to date** does all of it: it asks Claude Design, pulls when the snapshot is behind or incomplete, and recompares. Then come the six steps of the mapping technique.
+  - **The diagram:** one row per lane (tokens, components, spec, screens, preview cards, guidelines, left out), App on the left, Design on the right, and the tool in the middle. The rail names each lane's technique (CSS merge, AI port, reference only). Its top track carries App work into Design and its bottom track carries Design work into the App. A track moves while work waits, with the count. Opening a lane shows how it pairs files, how each direction moves, the pairs pinned in `config.json`, its units (filter: changed, all, in sync, one side only), and the recent moves through it.
+  - **Recent imports and exports:** pulls, imports, uploads, App merges, runs still waiting, and sync points, newest first. Each lists its files per lane. **Show on the diagram** replays that move on its lanes and dims the rest. **Log** opens the job in the plan's Activity panel (`/?job=<id>`).
 - **Activity** (top right): jobs with a live log, step states and cost. A run with App work stops at **Merge into the App**: the verified commits on the run's branch, and one Merge button. A run that changed kit files stops at **Upload to Claude Design**: every staged file is listed with a checkbox, cards show whether they render, with previews, and nothing is uploaded until you press Upload. **Discard run…** gives up whatever still waits (staged files, the App branch) instead. A run's staging copy of the project (`.state/stage/<run>`) is deleted once it is uploaded, discarded, stopped or failed; a failed upload attempt keeps it so you can try again.
 
 ## How it works
@@ -98,7 +102,8 @@ The engine tests build a throwaway git repo and two Design folders. The GUI test
 - rail overrides and keyboard;
 - diffs and briefs;
 - axe and phone width;
-- run → upload approval → upload → mark synced.
+- run → upload approval → upload → mark synced;
+- the Mapping page: lanes, replaying a move, bringing the data up to date.
 
 ## Limits worth knowing
 

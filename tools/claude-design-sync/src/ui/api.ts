@@ -2,10 +2,14 @@
 import type { Comparison, Direction, SnapshotMeta, SyncPoint, UnitStatus } from "../engine/types";
 import type { Job } from "../server/jobs";
 import type { Step } from "../engine/plan";
+import type { LaneRule } from "../engine/lanes";
+import type { MappingEvent } from "../server/mapping";
 
 export type { Comparison, Direction, Feature, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "../engine/types";
 export type { Job, JobEvent, StepState } from "../server/jobs";
 export type { Step } from "../engine/plan";
+export type { LaneId, LaneRule, Technique } from "../engine/lanes";
+export type { Flow, MappingEvent, Move } from "../server/mapping";
 
 export interface HarnessInfo {
   ok: boolean;
@@ -28,6 +32,15 @@ export interface AppState {
   check: string;
   jobs: Array<Omit<Job, "events">>;
   fake: boolean;
+}
+
+/** What the Mapping page adds to the state and the comparison */
+export interface MappingData {
+  lanes: LaneRule[];
+  history: MappingEvent[];
+  /** The last time Claude Design was asked whether it changed, while this server has run */
+  lastCheck: { at: string; updatedAt: string | null; stale: boolean } | null;
+  app: { branch: string | null; commitsSinceBase: number | null };
 }
 
 async function call<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
@@ -58,6 +71,41 @@ export const api = {
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
   merge: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { method: "POST" }),
   discard: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/discard`, { method: "POST" }),
+  mapping: (base?: string | null) => call<MappingData>(`/api/mapping?${new URLSearchParams(base ? { base } : {})}`),
+};
+
+/** Follow a job's event stream until it stops running; `onJob` sees every update (progress, steps) */
+export function followJob(id: string, onJob: (j: Job) => void = () => {}): Promise<Job> {
+  return new Promise((resolve) => {
+    const es = new EventSource(`/api/jobs/${id}/events`);
+    const seen = (j: Job) => {
+      onJob(j);
+      if (j.state === "running") return;
+      es.close();
+      resolve(j);
+    };
+    es.addEventListener("job", (e) => seen(JSON.parse((e as MessageEvent).data) as Job));
+    es.addEventListener("event", (e) => seen((JSON.parse((e as MessageEvent).data) as { job: Job }).job));
+  });
+}
+
+/** Per-browser memory (the chosen sync point, directions); a private window just forgets */
+export const store = {
+  get<T>(k: string, d: T): T {
+    try {
+      const v = localStorage.getItem(k);
+      return v ? (JSON.parse(v) as T) : d;
+    } catch {
+      return d;
+    }
+  },
+  set(k: string, v: unknown) {
+    try {
+      localStorage.setItem(k, JSON.stringify(v));
+    } catch {
+      /* private window */
+    }
+  },
 };
 
 export const STATUS_WORD: Record<UnitStatus, string> = {
@@ -93,7 +141,7 @@ export const DIRECTION_HINT: Record<Direction, string> = {
   skip: "Leave this as it is",
 };
 
-export { directionsFor, featureDirection, unitDirection } from "../engine/directions";
+export { directionsFor, featureDirection, REFERENCE_KINDS, unitDirection } from "../engine/directions";
 export { parseProjectRef, projectUrl } from "../engine/project";
 export { appPending, uploadPending } from "../engine/approvals";
 import { featureDirection } from "../engine/directions";

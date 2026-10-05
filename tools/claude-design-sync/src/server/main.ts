@@ -13,9 +13,10 @@ import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { readText } from "../engine/fsutil";
-import { diffNoIndex, diffSince, head, isDirty, showAt } from "../engine/git";
+import { commitsAfter, diffNoIndex, diffSince, git, head, isDirty, showAt } from "../engine/git";
 import { runHarness, type HarnessEvent, type HarnessKind } from "../engine/harness";
 import { sections } from "../engine/inventory";
+import { laneRules } from "../engine/lanes";
 import { parseProjectRef } from "../engine/project";
 import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../engine/worktree";
@@ -23,6 +24,7 @@ import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, rec
 import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapshotFilesDir } from "../engine/snapshots";
 import type { Comparison, Direction } from "../engine/types";
 import { Jobs, type Job } from "./jobs";
+import { mappingHistory } from "./mapping";
 import { buildUi } from "./ui-build";
 
 export interface HarnessInfo {
@@ -36,6 +38,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   const app = new Hono();
   const jobs = new Jobs(ctx);
   const cache = new Map<string, Comparison>();
+  /** The last time Claude Design was asked whether it changed (this server's lifetime) */
+  let lastCheck: { at: string; updatedAt: string | null; stale: boolean } | null = null;
 
   /** Is the harness on PATH, and does it actually start? (A broken install is worse than a missing one.) */
   const probe = (bin: string): HarnessInfo => {
@@ -114,6 +118,27 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     }),
   );
 
+  // The Mapping page: the lane rules from config.json, recent traffic, and how fresh each side's data is
+  app.get("/api/mapping", (c) => {
+    try {
+      const base = baseFor(c.req.query("base"));
+      let branch: string | null = null;
+      try {
+        branch = git(ctx.repo, ["symbolic-ref", "--short", "HEAD"]).trim();
+      } catch {
+        /* detached HEAD */
+      }
+      return c.json({
+        lanes: laneRules(ctx.config),
+        history: mappingHistory(ctx, jobs.list()),
+        lastCheck,
+        app: { branch, commitsSinceBase: base ? commitsAfter(ctx.repo, base.rev).length : null },
+      });
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+  });
+
   app.get("/api/compare", (c) => {
     try {
       return c.json(getComparison(c.req.query("base"), c.req.query("snapshot"), c.req.query("fresh") === "1"));
@@ -182,7 +207,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     try {
       const st = await projectStatus(ctx, designRunner());
       const snap = latestSnapshot(ctx);
-      return c.json({ ...st, snapshotUpdatedAt: snap?.projectUpdatedAt ?? null, stale: !!st.updatedAt && !isCurrent(ctx, snap, st.updatedAt) });
+      const stale = !!st.updatedAt && !isCurrent(ctx, snap, st.updatedAt);
+      lastCheck = { at: new Date().toISOString(), updatedAt: st.updatedAt, stale };
+      return c.json({ ...st, snapshotUpdatedAt: snap?.projectUpdatedAt ?? null, stale });
     } catch (e) {
       return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
     }
@@ -196,7 +223,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       try {
         jobs.log(job, "info", "Asking Claude Design whether the project changed since the newest snapshot…");
         const runner = designRunner(job);
-        const { snapshot: snap, current } = await pullIfChanged(ctx, runner, { force, onLog: logHarness(job), label: `Pulled ${new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, onProgress: (p) => jobs.update(job, { progress: { done: p.done, total: p.total } }) });
+        const { snapshot: snap, current, updatedAt } = await pullIfChanged(ctx, runner, { force, onLog: logHarness(job), label: `Pulled ${new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, onProgress: (p) => jobs.update(job, { progress: { done: p.done, total: p.total } }) });
+        // a complete pull (or none needed) leaves the tool holding Design's current state
+        if (!snap?.unpulled) lastCheck = { at: new Date().toISOString(), updatedAt: updatedAt ?? null, stale: false };
         if (!snap) {
           jobs.finish(job, "done", `Already up to date: Claude Design hasn't changed since ${current?.label ?? "the newest snapshot"}. Nothing pulled.`);
           return;
@@ -487,7 +516,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   app.get("/tokens/*", (c) => fileFrom(join(home, "src/client/design/tokens"), c.req.path.slice("/tokens/".length)));
   app.get("/fonts/*", (c) => fileFrom(join(home, "src/client/design/fonts"), c.req.path.slice("/fonts/".length)));
   app.get("/ui/*", (c) => fileFrom(join(TOOL_DIR, "dist"), c.req.path.slice("/ui/".length)));
-  app.get("/", (c) => c.html(readFileSync(join(TOOL_DIR, "src/ui/index.html"), "utf8")));
+  // One page app: the plan at /, the mapping at /mapping
+  for (const path of ["/", "/mapping"]) app.get(path, (c) => c.html(readFileSync(join(TOOL_DIR, "src/ui/index.html"), "utf8")));
 
   return app;
 }

@@ -228,6 +228,28 @@ Pinned summary ("n features · direction · n skipped" in 500, tallies in mono) 
 ### Activity panel
 Job list (square state mark, title, mono time; current job gets a 2px inset ink bar on the left), job view (title, mono state and cost, 2px progress line, step list with square marks: outline pending, pulsing running, ink done, red failed, run-through skipped), and the log on Wash in mono with step lines in 500 and warn/error lines red.
 
+### Mapping page (`/mapping`)
+A second page on the same ledger. The rail is 232px wide here, and it stands for the tool.
+- **Top:** a 12px "Mapping" kicker and a verdict-size sentence (units, lanes, waiting, red count for both sides). Then **Bring the mapping up to date** with a live status line. It is the page's primary action, filled only while something is behind or missing.
+- **Meta and technique:**
+  - A four-column definition list under an ink rule, with hairlines between the columns: Project, App, Design, Sync point. App and Design each end with a freshness line: a 6px square (filled ink when current, ink outline when behind or missing, faint outline when not known) and the link that fixes it.
+  - The six technique steps follow in six columns, with mono step numbers.
+- **Lanes:** ledger rows (chevron head, status, count) whose twin holds the App pattern | the rail | the Design pattern.
+  - The rail has two tracks around a 5px node (the tool): App → Design on top and Design → App below, with mono counts at the receiving ends.
+  - The lane's technique is a square key between the tracks:
+    - hairline at rest;
+    - filled when its lane is open;
+    - dashed for reference-only lanes;
+    - a red square inside when units changed on both sides.
+  - An open lane shows "Into the App | Paired by | Into Design" as a twin, then notes, pinned pairs, filtered units (the same twin, statuses on the rail) and its recent moves.
+- **Recent imports and exports:** twin rows under an ink rule: App files | arrow and time | Design files. The shown move gets Wash; a move still waiting for you gets a small ink square.
+- **Flow motion:** a lit track half is a 2px dashed ink line with an arrowhead, its dashes travelling toward the receiving side (0.8s linear).
+  - It loops only while work is waiting, so the loop reports status.
+  - A replayed move runs four passes and rests as static dashes.
+  - Lanes a move didn't touch drop to 35% opacity.
+  - Reduced motion leaves the static dashes and arrowheads, which carry the same information.
+- **Under 1000px:** the meta goes to two columns and the steps to three. **Under 820px:** both stack. The rail becomes a full-width strip that keeps both tracks, and the event actions wrap.
+
 ### States
 - **Loading:** skeleton bars (10px lines, a 22px verdict line) in a slow linear shimmer between `--n-a06` and `--n-a03`; four skeleton rows in the ledger.
 - **Empty / in sync:** centred quiet message with actions; when everything is in sync, a multi-column quiet list of synced features.
@@ -236,14 +258,14 @@ Job list (square state mark, title, mono time; current job gets a 2px inset ink 
 - **Awaiting upload approval:** an approval block in the panel under an ink rule: heading, the exact file list as checkboxes with mono paths and status, per-card render check ("renders" in mono, or "n errors" red), preview links, then the primary Upload n files button.
 
 ### Motion
-Short and functional only, all on `--ease-standard`: colour and outline changes at `--duration-fast` (100ms); `cds-in` (fade plus 2px drop) for opening a row's detail and the plan sheet at `--duration-base` (150ms); `cds-panel-in` (16px slide plus fade) for the panel at `--duration-overlay` (200ms); progress fill at 150ms. Loops exist only as status: the live square and running step pulse, the job spinner, the skeleton shimmer. The App's global reduced-motion rule collapses all of it.
+Short and functional only, all on `--ease-standard`: colour and outline changes at `--duration-fast` (100ms); `cds-in` (fade plus 2px drop) for opening a row's detail and the plan sheet at `--duration-base` (150ms); `cds-panel-in` (16px slide plus fade) for the panel at `--duration-overlay` (200ms); progress fill at 150ms. Loops exist only as status: the live square and running step pulse, the job spinner, the skeleton shimmer, and the Mapping rail's flowing tracks while work waits (a replayed move runs a few passes and stops). The App's global reduced-motion rule collapses all of it.
 
 ## Do's and Don'ts
 
 ### Do:
 - **Do** load the App's token files and consume them by name; add only `--cds-` layout aliases.
 - **Do** prefix every class with `cds-` (deliberately not the App's `td-`, so the tool's CSS can never be mistaken for, or collide with, App component CSS).
-- **Do** keep the App | rail | Design grid on any new twin so the rail stays one vertical line down the page.
+- **Do** keep the App | rail | Design grid on any new twin so the rail stays one vertical line down the page (a page may widen its rail, as Mapping does, but keeps one width throughout).
 - **Do** keep the direction vocabulary exact: Into the App ←, Full sync ⇄, Into Design →, Skip ⊘, with arrows pointing at the receiving column.
 - **Do** mark the top of a structure with an ink rule and divide inside it with hairlines.
 - **Do** show "unavailable" as a run-through mark plus a tooltip that says why.
