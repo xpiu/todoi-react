@@ -22,6 +22,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - [Features and limits](#features-and-limits)
 - [Visitors and accounts](#visitors-and-accounts)
 - [Tech stack](#tech-stack)
+- [Architecture and design-tool priorities](#architecture-and-design-tool-priorities)
 - [Local development](#local-development)
 - [Production](#production)
 - [Quality gates](#quality-gates)
@@ -58,6 +59,23 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 | Data | PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items. No global sync ID or versioned conflict-resolution engine. |
 | Authentication | Better Auth sessions/accounts in PostgreSQL; API tokens use `Authorization: Bearer tdi_…`. |
 | Jobs and logging | API drains a transactional attachment-cleanup outbox. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation. |
+
+## Architecture and design-tool priorities
+
+**Production architecture comes first, Claude Design readability second. Storybook and `claude-design-sync` must adapt to both.**
+
+| Area | Application conventions |
+|---|---|
+| React | Typed component APIs, composition, immutable state, and side effects outside render. Keep local interaction state local. [React guidance](https://react.dev/reference/rules/components-and-hooks-must-be-pure). |
+| Base UI | Use its primitives for interaction behavior. Custom components pass through refs and behavioral props correctly when composed through `render`. [Composition guidance](https://base-ui.com/react/handbook/composition). |
+| Hono | Keep validation, authorization, and database work on the server. Preserve the typed RPC client and type-only server imports. [RPC guidance](https://hono.dev/docs/guides/rpc). |
+| Zustand | Use focused selectors for shared client state and compute derived values. Introduce scoped stores when the application needs independent instances. [Zustand guidance](https://zustand.docs.pmnd.rs/learn/guides/beginner-typescript.html). |
+
+Preserve the separation between design components, application screens, client data access, and server code. Explicit prop types, named exports, concise behavioral documentation, reusable tokens, and representative stories help Claude Design read the system. Readability does not guarantee faithful reproduction of every interaction. [Claude Design guidance](https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design).
+
+Storybook renders the actual application components; its decorators supply props, providers, and API mocks as needed. Storybook configuration and examples stay outside the production import graph. The sync tool associates implementation, CSS, stories, and documentation with one component and handles compatibility translation into the Design kit's current React 18 UMD format. That format must not constrain idiomatic React 19 or Base UI code in the application.
+
+Design-originated changes pass through application checks before acceptance. Adapt visual proposals where needed to preserve accessibility, server boundaries, and state ownership. The sync tool's file discovery and export rules are implementation details we can change to support these priorities.
 
 ## Local development
 

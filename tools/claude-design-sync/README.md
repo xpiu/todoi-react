@@ -2,6 +2,23 @@
 
 A local tool that compares **this repo's React 19 app** (todoi-react) with the **Claude Design project "Todoi Design System"** (a hand-written JSX kit). It shows which features moved on which side, and moves the work across with buttons: one feature at a time, or the whole plan.
 
+## Architecture and design-tool priorities
+
+**Production architecture comes first, Claude Design readability second. Storybook and this sync tool must adapt to both.** See the application's [architecture policy](../../README.md#architecture-and-design-tool-priorities).
+
+- **React:** typed component APIs, composition, immutable state, and side effects outside render. Keep local interaction state local. [React guidance](https://react.dev/reference/rules/components-and-hooks-must-be-pure).
+- **Base UI:** retain its interaction primitives and pass refs and behavioral props through composition correctly. [Composition guidance](https://base-ui.com/react/handbook/composition).
+- **Hono:** validation, authorization, and database work stay on the server; preserve the typed RPC client and type-only server imports. [RPC guidance](https://hono.dev/docs/guides/rpc).
+- **Zustand:** use focused selectors, compute derived values, and introduce scoped stores when the application needs independent instances. [Zustand guidance](https://zustand.docs.pmnd.rs/learn/guides/beginner-typescript.html).
+
+Clear prop types, named exports, behavioral documentation, tokens, and real examples help Claude Design read the application. Readability does not guarantee faithful reproduction of every interaction. [Claude Design guidance](https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design).
+
+Storybook renders the application's actual components; decorators supply their environment. The sync tool must associate implementation, CSS, stories, and documentation with the same component rather than interpreting every `.tsx` file as a component. Its discovery and export rules are flexible implementation details.
+
+Compatibility translation belongs here: export suitable examples into the kit's `.prompt.md` notes and preview cards, adapting React 19/Base UI code to the kit's current React 18 UMD runtime as needed. Never reshape the production architecture to match the kit runtime. Design-originated changes must pass application checks before acceptance, including accessibility, server boundaries, and state ownership.
+
+## Start the tool
+
 ```bash
 npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
 ```
