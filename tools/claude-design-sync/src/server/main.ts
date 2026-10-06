@@ -583,8 +583,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   app.get("/fonts/*", (c) => fileFrom(join(home, "src/client/design/fonts"), c.req.path.slice("/fonts/".length)));
   app.get("/ui/*", (c) => fileFrom(join(TOOL_DIR, "dist"), c.req.path.slice("/ui/".length)));
   app.get("/favicon.svg", () => fileFrom(join(TOOL_DIR, "src/ui"), "favicon.svg"));
-  // One page app: the plan at /, the mapping at /mapping
-  for (const path of ["/", "/mapping"]) app.get(path, (c) => c.html(readFileSync(join(TOOL_DIR, "src/ui/index.html"), "utf8")));
+  // One page app: the plan at /, the mapping at /mapping, the guide at /guide
+  for (const path of ["/", "/mapping", "/guide"]) app.get(path, (c) => c.html(readFileSync(join(TOOL_DIR, "src/ui/index.html"), "utf8")));
 
   return app;
 }
