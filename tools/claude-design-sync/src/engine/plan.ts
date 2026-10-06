@@ -1,12 +1,11 @@
 // From decisions to work: each feature's direction becomes steps — deterministic CSS merges where both
 // sides speak the same language, AI port briefs where they don't, and an upload that waits for approval.
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Ctx } from "./config";
 import { mergeCss } from "./css";
-import { listFiles, readText } from "./fsutil";
+import { hash, listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
 import { isStoryFile, sections } from "./inventory";
 import { plannedDrafts } from "./kitDraft";
@@ -154,8 +153,9 @@ export function recordSyncPoint(ctx: Ctx, o: { label: string; snapshotId: string
 //
 // A brief says what changed and where to read it, never the changes themselves: the agent has Read and
 // Bash, so it reads every diff and file whole with the exact commands listed here. Nothing is cut off, and
-// the brief stays the same size however large the feature is. (A spec section is the exception: it lives
-// inside one long file no command can slice, so its diff, one section long, is quoted in full.)
+// the brief stays the same size however large the feature is. A spec section lives inside one long file no
+// command can slice, so its two versions are written to content-addressed files (.state/sections/) and the
+// brief gives a word diff of those: the kit's spec writes a paragraph per line, so word diffs stay short.
 
 /** Lines added and removed in a unified diff */
 function diffStat(diff: string): string {
@@ -176,7 +176,7 @@ const q = (p: string) => (/^[\w./@+-]+$/.test(p) ? p : `'${p.replaceAll("'", "'\
 function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design"): string[] {
   const b = unitBaseline(cmp, u);
   if (side === "app") {
-    if (u.kind === "spec") return specLines(b ? showAt(ctx.repo, b.rev, u.app.paths[0] ?? "") : null, readText(join(ctx.repo, u.app.paths[0] ?? "")), u.name, `${ctx.config.app.spec} § ${u.name}`);
+    if (u.kind === "spec") return specLines(ctx, b ? showAt(ctx.repo, b.rev, u.app.paths[0] ?? "") : null, readText(join(ctx.repo, u.app.paths[0] ?? "")), u.name, `${ctx.config.app.spec} § ${u.name}`);
     return u.app.paths.map((p) => {
       const now = readText(join(ctx.repo, p));
       const was = b ? showAt(ctx.repo, b.rev, p) : null;
@@ -188,7 +188,7 @@ function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design")
   const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
   const baseSnap = b?.designSnapshot ? snapshotFilesDir(ctx, b.designSnapshot) : null;
   if (!snap) return ["- (no Design snapshot to read)"];
-  if (u.kind === "spec") return specLines(baseSnap ? readText(join(baseSnap, u.design.paths[0] ?? "")) : null, readText(join(snap, u.design.paths[0] ?? "")), u.name, `${ctx.config.design.spec} § ${u.name}`);
+  if (u.kind === "spec") return specLines(ctx, baseSnap ? readText(join(baseSnap, u.design.paths[0] ?? "")) : null, readText(join(snap, u.design.paths[0] ?? "")), u.name, `${ctx.config.design.spec} § ${u.name}`);
   return u.design.paths.map((p) => {
     const now = join(snap, p);
     const was = baseSnap ? join(baseSnap, p) : null;
@@ -198,25 +198,19 @@ function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design")
   });
 }
 
-/** A spec section's change, quoted whole: no command can cut one "## " section out of a long file */
-function specLines(was: string | null, now: string | null, name: string, label: string): string[] {
+/** A spec section's two versions as files (named by their content), and the word diff that reads them */
+function specLines(ctx: Ctx, was: string | null, now: string | null, name: string, label: string): string[] {
   const before = sections(was).get(name) ?? "";
   const after = sections(now).get(name) ?? "";
   if (before === after) return [`- ${label}: unchanged`];
-  return [`- ${label} (one section, quoted in full):`, "```diff", textDiff(before, after, label).trimEnd(), "```"];
-}
-
-function textDiff(a: string, b: string, label: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "cds-diff-"));
-  try {
-    const fa = join(dir, "before");
-    const fb = join(dir, "after");
-    writeFileSync(fa, a + "\n");
-    writeFileSync(fb, b + "\n");
-    return `${label}\n${diffNoIndex(fa, fb).replaceAll(fa, "before").replaceAll(fb, "after")}`;
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  const dir = join(ctx.state, "sections");
+  mkdirSync(dir, { recursive: true });
+  const [a, b] = [before, after].map((text) => {
+    const f = join(dir, `${hash(text)}.md`);
+    if (!existsSync(f)) writeFileSync(f, `${text}\n`);
+    return f;
+  });
+  return [`- ${label}: \`git diff --no-index --word-diff ${q(a!)} ${q(b!)}\` (${diffStat(diffNoIndex(a!, b!))} lines; the section before and after, word by word), then read the whole section in \`${q(b!)}\``];
 }
 
 const KIT_RULES = `Kit conventions (Claude Design project, files under the staging folder):

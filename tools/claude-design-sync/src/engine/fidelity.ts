@@ -30,8 +30,24 @@ const FORWARDING = /\bref\s*=\s*\{|\bref\s*\??:|[{,]\s*ref\s*[,}]|\bforwardRef\b
 const ARIA = /\baria-[a-z]+\s*=|\brole\s*=/g;
 /** A Zustand hook called with nothing: the component re-renders on every change to the store */
 const WHOLE_STORE = /\buse[A-Z]\w*Store\(\s*\)/g;
-/** A click handler on an element that isn't interactive, without a role to make it one */
-const CLICK_TARGET = /<(div|span|li|p|section|article)\b(?![^>]*\brole=)[^>]*\bonClick=/g;
+/** Opening tags of non-interactive elements, read whole: a `>` inside `{…}` (an arrow function) doesn't end them */
+function plainTags(text: string): Array<{ name: string; tag: string }> {
+  const out: Array<{ name: string; tag: string }> = [];
+  for (const m of text.matchAll(/<(div|span|li|p|section|article)\b/g)) {
+    let depth = 0;
+    let i = m.index! + m[0].length;
+    for (; i < text.length; i++) {
+      const c = text[i];
+      if (c === "{") depth++;
+      else if (c === "}") depth--;
+      else if (c === ">" && depth === 0) break;
+    }
+    out.push({ name: m[1]!, tag: text.slice(m.index!, i + 1) });
+  }
+  return out;
+}
+/** A wrapper that only keeps clicks from reaching its parent isn't a control */
+const ONLY_STOPS = /onClick=\{\s*\(?\w*\)?\s*=>\s*\w+\.stopPropagation\(\)\s*\}/;
 
 /** Lines the draft added (whole-file comparison; good enough for counting new patterns) */
 const added = (before: string, after: string) => {
@@ -51,7 +67,8 @@ export function reviewFile(file: string, before: string, after: string): Fidelit
   if (aa < ab) out.push({ rule: "aria", file, detail: `Fewer roles and ARIA attributes (${ab} → ${aa})` });
   const fresh = added(before, after);
   for (const m of new Set(fresh.match(WHOLE_STORE) ?? [])) out.push({ rule: "store", file, detail: `${m} reads the whole store, so the component re-renders on any change: select the fields it uses` });
-  for (const m of fresh.matchAll(CLICK_TARGET)) out.push({ rule: "click-target", file, detail: `A <${m[1]}> with onClick and no role: use a button (or Base UI), or add a role and keyboard handling` });
+  // a click handler on an element that isn't interactive, without a role to make it one
+  for (const t of plainTags(fresh)) if (/\bonClick=/.test(t.tag) && !/\brole=/.test(t.tag) && !ONLY_STOPS.test(t.tag)) out.push({ rule: "click-target", file, detail: `A <${t.name}> with onClick and no role: use a button (or Base UI), or add a role and keyboard handling` });
   return out;
 }
 

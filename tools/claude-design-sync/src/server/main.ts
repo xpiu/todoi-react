@@ -361,8 +361,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     try {
       const stage = steps.some((s) => s.target === "design") ? createStage(ctx, cmp, job.id) : undefined;
       if (stage) jobs.update(job, { stage });
-      // briefs point at files in the newest snapshot and in each part's baseline snapshot: let the harness read them all
-      const snapshotsDir = snapRoot(ctx);
+      // briefs point at files in the newest snapshot, each part's baseline snapshot, and spec sections: let the harness read them
+      const readable = [snapRoot(ctx), join(ctx.state, "sections")];
+      for (const d of readable) mkdirSync(d, { recursive: true });
       // App work never touches the developer's checkout: a worktree on its own branch, merged on approval
       const run = steps.some((s) => s.target === "app") ? createWorktree(ctx, job.id) : undefined;
       if (run) {
@@ -393,7 +394,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         if (s.target === "app") {
           const before = headOf(run!);
           const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and finish with a commit there; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
-          const done = await implementRunner(harness, job, { cwd: run!.worktree, addDirs: [snapshotsDir] })(brief, {}, logHarness(job, s.id));
+          const done = await implementRunner(harness, job, { cwd: run!.worktree, addDirs: readable })(brief, {}, logHarness(job, s.id));
           if (!done.ok) {
             jobs.step(job, s.id, { state: "failed", summary: done.result.slice(0, 600) });
             throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
@@ -423,7 +424,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
             }
           }
         }
-        const done = await implementRunner("claude", job, { stage, addDirs: [snapshotsDir, ...(stage ? [stage] : [])] })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
+        const done = await implementRunner("claude", job, { stage, addDirs: [...readable, ...(stage ? [stage] : [])] })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
         jobs.step(job, s.id, { state: done.ok ? "done" : "failed", summary: done.result.slice(0, 600) });
         if (!done.ok) throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
       }

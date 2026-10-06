@@ -530,12 +530,15 @@ describe("briefs (read the changes, don't paste them)", () => {
     const appCmd = commands(push).find((c) => c.includes("Toast.tsx"))!;
     expect(appCmd).toMatch(/^git -C \S+ diff \w+ -- src\/client\/design\/core\/Toast\.tsx$/);
     expect(sh(appCmd)).toContain("+export function Toast({ message }: { message: string }) { return `!!${message}`; }");
-    // a new file is read whole; a spec section's diff is quoted, since no command can slice it out
+    // a new file is read whole
     const hidden = steps.find((s) => s.kind === "ai-push" && s.units.includes("component:board/HiddenListsMenu"))!.brief!;
     expect(hidden).toMatch(/New file, read it whole: `\S+HiddenListsMenu\.tsx` \(5 lines\)/);
     const spec = steps.find((s) => s.kind === "ai-pull" && s.units.includes("spec:Board"))!.brief!;
-    expect(spec).toContain("readme.md § Board (one section, quoted in full):");
-    expect(spec).toContain("+Boards show lists and dense mode.");
+    // a spec section can't be cut out of its file by a command, so its versions become files to word-diff
+    const sectionCmd = commands(spec).find((c) => c.includes("--word-diff"))!;
+    expect(spec).toMatch(/readme\.md § Board: `git diff --no-index --word-diff \S+\.md \S+\.md` \(\+1 −1 lines/);
+    expect(sh(sectionCmd)).toContain("{+lists and dense mode.+}");
+    expect(spec).not.toContain("Boards show lists and dense mode.");
   });
 });
 
@@ -662,6 +665,8 @@ export function RowMenu({ ref, render }: Props) {
     const after = before.replace('aria-label="Row menu"', 'aria-label="Item menu"').replace('<div role="menu" />', '<div role="menu" onClick={close} />');
     expect(reviewFile("src/client/design/list/RowMenu.tsx", before, after)).toEqual([]);
     expect(reviewFile("src/client/design/list/RowMenu.test.tsx", before, "")).toEqual([]);
+    // a wrapper that only stops propagation isn't a click target
+    expect(reviewFile("src/client/design/board/ItemCard.tsx", "", '<span className="anchor" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>')).toEqual([]);
     expect(reviewFile("src/client/design/list/RowMenu.stories.tsx", before, "")).toEqual([]);
     expect(baseUiParts('import { Dialog as D, type DialogProps } from "@base-ui/react/dialog";')).toEqual(new Set(["Dialog", "DialogProps"]));
   });
