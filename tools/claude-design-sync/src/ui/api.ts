@@ -70,7 +70,8 @@ export const api = {
   /** Read the handed-off files back from Claude Design; the upload step closes once all match */
   uploadCheck: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/upload-check`, { method: "POST" }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
-  merge: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { method: "POST" }),
+  /** `reviewed`: the developer confirmed their review of a draft (required for runs that ported kit code) */
+  merge: (id: string, reviewed = false) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { body: { reviewed } }),
   discard: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/discard`, { method: "POST" }),
   mapping: (base?: string | null) => call<MappingData>(`/api/mapping?${new URLSearchParams(base ? { base } : {})}`),
 };
@@ -158,8 +159,9 @@ export const DIRECTION_HINT: Record<Direction, string> = {
 };
 
 export { appMoved, designMoved, directionsFor, featureDirection, REFERENCE_KINDS, unitDirection } from "../engine/directions";
+import { REFERENCE_KINDS } from "../engine/directions";
 export { parseProjectRef, projectUrl } from "../engine/project";
-export { appPending, uploadPending } from "../engine/approvals";
+export { appPending, isDraft, REVIEW_POINTS, uploadPending, type FidelityFinding } from "../engine/approvals";
 import { featureDirection } from "../engine/directions";
 export const effective = (f: { directions: Direction[] }, global: Direction, override?: Direction) => featureDirection(f.directions, global, override);
 
@@ -171,10 +173,14 @@ export function displayName(u: { kind: string; name: string }): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+/** Design references (previews, screens, guidelines) are read, never ported */
+export const isReference = (u: { kind: string }) => (REFERENCE_KINDS as string[]).includes(u.kind);
+export const REFERENCE_NOTE = "Design references are read, never ported.";
+
 export const KIND_WORD: Record<string, string> = { component: "component", tokens: "tokens", spec: "spec", screen: "screen", card: "preview card", guideline: "guideline" };
 
 export const fmtTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
-export const plural = (n: number, w: string, p = `${w}s`) => `${n} ${n === 1 ? w : p}`;
+export { plural } from "../engine/words";
 
 /** Default acknowledgement scope: selected work, or an entirely reference-only feature. */
 export function selectedUnitIds(units: Unit[], choices: Record<string, Direction>) {

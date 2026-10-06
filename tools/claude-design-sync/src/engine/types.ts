@@ -41,6 +41,10 @@ export interface Unit {
   mergeable: boolean;
   /** Kept open at the sync point (skipped, not synced): the older baseline it's still compared against */
   heldFrom?: Baseline;
+  /** App files a Design-only reference corresponds to (a kit screen's App screen): read side by side, never written */
+  related?: string[];
+  /** A kit page that renders a Design reference (a screen's interactive kit app), relative to the project */
+  preview?: string;
 }
 
 export interface Feature {

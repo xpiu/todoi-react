@@ -24,7 +24,7 @@ const STEPS: Array<{ name: string; text: string }> = [
 const ARROW: Record<string, string> = { "to-design": "→", "from-design": "←", "to-app": "←" };
 
 function stats(units: Unit[]): LaneStats {
-  const s: LaneStats = { units, app: 0, design: 0, appChanged: 0, designChanged: 0, toDesign: 0, toApp: 0, both: 0 };
+  const s: LaneStats = { units, app: 0, design: 0, appChanged: 0, designChanged: 0, toDesign: 0, toApp: 0, both: 0, related: new Set(units.flatMap((u) => u.related ?? [])).size };
   for (const u of units) {
     if (u.app.exists) s.app++;
     if (u.design.exists) s.design++;

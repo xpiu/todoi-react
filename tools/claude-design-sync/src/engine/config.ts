@@ -33,7 +33,25 @@ export interface Ctx {
 export const TOOL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 export function loadConfig(file = join(TOOL_DIR, "config.json")): Config {
-  return JSON.parse(readFileSync(file, "utf8")) as Config;
+  const config = JSON.parse(readFileSync(file, "utf8")) as Config;
+  const problems = pairingProblems(config);
+  if (problems.length) throw new Error(`${file}: ${problems.join(" ")}`);
+  return config;
+}
+
+/**
+ * `renames` pair files that port into each other, so each side's file may appear once: a production file
+ * fed by two kit files would be rewritten from each in turn. (`screens` may share an App screen: they are
+ * references, read side by side, never ported.)
+ */
+export function pairingProblems(config: Pick<Config, "renames">): string[] {
+  const out: string[] = [];
+  for (const side of ["app", "design"] as const) {
+    const seen = new Map<string, string[]>();
+    for (const r of config.renames) seen.set(r[side], [...(seen.get(r[side]) ?? []), r[side === "app" ? "design" : "app"]]);
+    for (const [path, others] of seen) if (others.length > 1) out.push(`renames pairs ${path} with ${others.length} files (${others.join(", ")}); a rename must pair one ${side === "app" ? "App" : "kit"} file with one ${side === "app" ? "kit" : "App"} file.`);
+  }
+  return out;
 }
 
 export function defaultCtx(): Ctx {

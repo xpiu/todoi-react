@@ -124,7 +124,7 @@ test("checks the upload by itself when Claude Code pings back, and marks the run
     const points = listSyncPoints(fx.ctx);
     expect(points[0]!.label).toBe("Toast port");
     // parts the run didn't touch stay open on the old baseline
-    const others = cmp.units.filter((u) => u.id !== toast.id && u.status !== "in-sync" && u.kind !== "card" && u.kind !== "guideline");
+    const others = cmp.units.filter((u) => u.id !== toast.id && u.status !== "in-sync" && !["card", "screen", "guideline"].includes(u.kind));
     expect(Object.keys(points[0]!.held ?? {}).sort()).toEqual(others.map((u) => u.id).sort());
   } finally {
     if ("closeAllConnections" in own.server) own.server.closeAllConnections();

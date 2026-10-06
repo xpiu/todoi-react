@@ -2,8 +2,12 @@
 // engine, the server and the GUI share one answer.
 import type { Direction, UnitKind, UnitStatus } from "./types";
 
-/** Kinds that exist only in Design (previews, guidelines): shown as Design work, never ported */
-export const REFERENCE_KINDS: UnitKind[] = ["card", "guideline"];
+/**
+ * Kinds that are Design references (previews, screens, guidelines): shown as Design work, never ported. Kit
+ * screens are flat mockups, and several of them can stand for one production screen (Board, List and Calendar
+ * are all ProjectScreen.tsx), so a port from one would rewrite the code behind the others.
+ */
+export const REFERENCE_KINDS: UnitKind[] = ["card", "screen", "guideline"];
 
 export const appMoved = (status: UnitStatus) => status === "app-ahead" || status === "app-only" || status === "both";
 export const designMoved = (status: UnitStatus) => status === "design-ahead" || status === "design-only" || status === "both";

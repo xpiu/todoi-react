@@ -15,6 +15,8 @@ import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, createDesignRunner, findProject, isCurrent, projectStatus, pullIfChanged, uploadRequest as uploadHandoff, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { fileWithin, readText } from "../engine/fsutil";
+import { reviewDraft } from "../engine/fidelity";
+import { plural } from "../engine/words";
 import { commitsAfter, diffNoIndex, diffSince, git, head, isDirty, showAt } from "../engine/git";
 import { runHarness, type HarnessEvent, type HarnessInfo, type HarnessKind } from "../engine/harness";
 import { sections } from "../engine/inventory";
@@ -23,13 +25,13 @@ import { parseProjectRef } from "../engine/project";
 import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../engine/worktree";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
-import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapshotFilesDir } from "../engine/snapshots";
+import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
 import type { Comparison } from "../engine/types";
 import { stepsForSelection } from "../engine/selection";
 import { Jobs, type Job } from "./jobs";
 import { mappingHistory } from "./mapping";
 import { buildUi, distDir } from "./ui-build";
-import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, type PlanRequest } from "./requests";
+import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, type PlanRequest } from "./requests";
 
 export type { HarnessInfo } from "../engine/harness";
 
@@ -69,7 +71,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       ? fakeRunner(opts.fake.designDir, ctx.repo)
       : createDesignRunner(ctx, job ? jobs.signal(job.id) : undefined);
 
-  /** App ports run in their worktree (`cwd`, reading the Design snapshot via addDirs); kit ports in the repo, writing the stage */
+  /** App ports run in their worktree (`cwd`, reading Design snapshots via addDirs); kit ports in the repo, writing the stage */
   const implementRunner = (kind: HarnessKind, job: Job, where: { cwd?: string; addDirs?: string[]; stage?: string }): Runner =>
     opts.fake
       ? fakeRunner(opts.fake.designDir, where.cwd ?? ctx.repo)
@@ -283,11 +285,12 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     // App work ends with the repo's check on the run's branch, then waits for the developer's merge
     if (steps.some((s) => s.target === "app")) {
       const at = jobSteps.findIndex((s) => s.id === "upload");
-      jobSteps.splice(at < 0 ? jobSteps.length : at, 0, { id: "app-check", title: `Run ${ctx.config.app.check} on the run's branch`, kind: "check", target: "app", state: "pending" }, { id: "app-merge", title: "Merge the run's branch into your branch (after your review)", kind: "merge", target: "app", state: "pending" });
+      const draft = steps.some((s) => s.kind === "ai-pull");
+      jobSteps.splice(at < 0 ? jobSteps.length : at, 0, { id: "app-check", title: `Run ${ctx.config.app.check} on the run's branch`, kind: "check", target: "app", state: "pending" }, { id: "app-merge", title: draft ? "Review the draft against the App's architecture, then merge it into your branch" : "Merge the run's branch into your branch (after your review)", kind: "merge", target: "app", state: "pending" });
     }
     const titles = [...new Set(steps.filter((s) => s.kind !== "upload").map((s) => s.featureTitle))];
     const label = titles.join(", ");
-    const job = jobs.create("run", `Sync ${titles.length} feature(s)`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: jobSteps, covers: [...new Set(steps.flatMap((s) => s.units))], label: label.length > 80 ? `${label.slice(0, 79)}…` : label });
+    const job = jobs.create("run", titles.length === 1 ? titles[0]! : `Sync ${plural(titles.length, "feature")}`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: jobSteps, covers: [...new Set(steps.flatMap((s) => s.units))], label: label.length > 80 ? `${label.slice(0, 79)}…` : label });
     void runPlan(job, cmp, steps, ctx.config.harness.implement);
     return c.json({ job: job.id });
   });
@@ -340,7 +343,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     try {
       const stage = steps.some((s) => s.target === "design") ? createStage(ctx, cmp, job.id) : undefined;
       if (stage) jobs.update(job, { stage });
-      const snapshotDir = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
+      // briefs point at files in the newest snapshot and in each part's baseline snapshot: let the harness read them all
+      const snapshotsDir = snapRoot(ctx);
       // App work never touches the developer's checkout: a worktree on its own branch, merged on approval
       const run = steps.some((s) => s.target === "app") ? createWorktree(ctx, job.id) : undefined;
       if (run) {
@@ -368,7 +372,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         if (s.target === "app") {
           const before = headOf(run!);
           const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and finish with a commit there; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
-          const done = await implementRunner(harness, job, { cwd: run!.worktree, addDirs: snapshotDir ? [snapshotDir] : [] })(brief, {}, logHarness(job, s.id));
+          const done = await implementRunner(harness, job, { cwd: run!.worktree, addDirs: [snapshotsDir] })(brief, {}, logHarness(job, s.id));
           if (!done.ok) {
             jobs.step(job, s.id, { state: "failed", summary: done.result.slice(0, 600) });
             throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
@@ -382,7 +386,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
           jobs.step(job, s.id, { state: "done", summary: v.commits.map((c) => `${c.hash} ${c.subject}`).join(" · ") });
           continue;
         }
-        const done = await implementRunner("claude", job, { stage })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
+        const done = await implementRunner("claude", job, { stage, addDirs: [snapshotsDir, ...(stage ? [stage] : [])] })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
         jobs.step(job, s.id, { state: done.ok ? "done" : "failed", summary: done.result.slice(0, 600) });
         if (!done.ok) throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
       }
@@ -399,9 +403,16 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
           throw new Error(`${check.command} failed on ${run.branch}, so it can't be merged. The branch is kept for a look; Discard removes it.`);
         }
         jobs.step(job, "app-check", { state: "done", summary: `${check.command} passed` });
+        // a port from the kit is a draft: the check can't see a lost Base UI primitive or a whole-store
+        // subscription, so the branch is scanned for those and waits for the developer's review
+        if (steps.some((s) => s.kind === "ai-pull")) {
+          run.review = { findings: reviewDraft(run.worktree, run.base, "HEAD") };
+          for (const f of run.review.findings) jobs.log(job, "warn", `${f.file}: ${f.detail}`, "app-merge");
+        }
         run.state = "ready";
-        jobs.step(job, "app-merge", { state: "pending", summary: `${run.commits.length} commit(s) waiting for your merge` });
-        notes.push(`${run.commits.length} App commit(s) passed ${check.command}: review and merge`);
+        const flagged = run.review?.findings.length;
+        jobs.step(job, "app-merge", { state: "pending", summary: run.review ? `Draft: ${plural(run.commits.length, "commit")} to review${flagged ? `, ${plural(flagged, "architecture finding")}` : ""}` : `${plural(run.commits.length, "commit")} waiting for your merge` });
+        notes.push(run.review ? `${plural(run.commits.length, "drafted App commit")} passed ${check.command}${flagged ? ` with ${plural(flagged, "architecture finding")}` : ""}: review, then merge` : `${plural(run.commits.length, "App commit")} passed ${check.command}: review and merge`);
       }
       cache.clear();
       if (stage) {
@@ -512,11 +523,13 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   });
 
   // Bring a verified App branch into the developer's branch; conflicts leave everything as it was
-  app.post("/api/jobs/:id/merge", (c) => {
+  app.post("/api/jobs/:id/merge", validate("json", mergeRequest), (c) => {
     const job = jobs.get(c.req.param("id"));
     const run = job?.app;
     if (!job || !run || run.state !== "ready") return c.json({ error: "This run has no verified App branch waiting to merge" }, 400);
+    if (run.review && !c.req.valid("json").reviewed) return c.json({ error: `This run is a draft ported from the kit, so it merges only after your review: confirm you checked ${run.review.findings.length ? `its ${plural(run.review.findings.length, "architecture finding")} and ` : ""}Base UI, refs, store selectors and accessibility.` }, 409);
     try {
+      if (run.review) run.review.reviewedAt = new Date().toISOString();
       const how = mergeRun(ctx, run);
       removeWorktree(ctx, run, true);
       run.state = "merged";

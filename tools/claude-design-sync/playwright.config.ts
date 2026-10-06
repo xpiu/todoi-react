@@ -1,5 +1,11 @@
 // GUI tests against the fixture world and the fake harness (no network, no real repo writes).
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+
+// The web server bundles the GUI here, and servers that specs start themselves serve the same bundle,
+// never the dist/ of a developer's running tool
+process.env.CDS_DIST ??= join(tmpdir(), "cds-e2e", "dist");
 
 export default defineConfig({
   testDir: "test",

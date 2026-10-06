@@ -3,7 +3,7 @@
 import { ChevronRight, Play } from "lucide-react";
 import { Fragment, useState } from "react";
 
-import { api, appMoved, designMoved, directionsFor, displayName, DIRECTION_LABEL, KIND_WORD, plural, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
+import { api, appMoved, designMoved, directionsFor, displayName, DIRECTION_LABEL, isReference, KIND_WORD, plural, REFERENCE_NOTE, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
 import { CopyLink } from "./CopyLink";
 import { Diff } from "./Diff";
 import { RailKeys } from "./Rail";
@@ -37,18 +37,20 @@ interface UnitDirections {
 export function FeatureRow({ feature, direction, overridden, onDirection, baseId, snapshotId, steps, busy, onRunOne, onMarkSynced, ...dirs }: { feature: Feature; direction: Direction; overridden: boolean; onDirection: (d: Direction | null) => void; baseId: string | null; snapshotId: string | null; steps: Step[]; busy: boolean; onRunOne: () => void; onMarkSynced: () => void } & UnitDirections) {
   const [open, setOpen] = useState(false);
   const status = feature.status;
+  // a feature made only of Design references has nothing to decide: it says so instead of looking skipped
+  const reference = feature.units.every(isReference);
   const why: Partial<Record<Direction, string>> = {
     "design-to-app": "Design → App: Design hasn't changed this feature since the sync point",
     "app-to-design": "App → Design: the App hasn't changed this feature since the sync point",
   };
   return (
-    <section className={`cds-row ${open ? "is-open" : ""}`} data-status={status} data-direction={direction} aria-labelledby={`${feature.id}-t`}>
+    <section className={`cds-row ${open ? "is-open" : ""}`} data-status={status} data-direction={reference ? "reference" : direction} aria-labelledby={`${feature.id}-t`}>
       <header className="cds-row-head">
         <button type="button" className="cds-row-toggle" aria-expanded={open} aria-controls={`${feature.id}-d`} data-tip={open ? "Fold this feature away" : "Show each part's files, diffs and previews, and what runs for this feature"} onClick={() => setOpen((o) => !o)}>
           <ChevronRight size={14} strokeWidth={1.75} className="cds-chev" aria-hidden />
           <span id={`${feature.id}-t`} className="cds-row-title">{feature.title}</span>
         </button>
-        <span className="cds-status" data-status={status}>{STATUS_WORD[status]}</span>
+        <span className="cds-status" data-status={reference ? undefined : status}>{reference ? "changed in Design, not ported" : STATUS_WORD[status]}</span>
         <span className="cds-count">{plural(feature.units.length, "part")}</span>
       </header>
       <div className={`cds-twin ${open ? "is-head" : ""}`}>
@@ -56,7 +58,9 @@ export function FeatureRow({ feature, direction, overridden, onDirection, baseId
         <div className="cds-rail-cell">
           <RailKeys value={direction} allowed={feature.directions} onChange={(d) => onDirection(d)} label={`Direction for ${feature.title}`} why={why} />
           {/* quiet at rest: a note only where this feature does something other than the plan */}
-          {overridden || direction !== dirs.global ? (
+          {reference ? (
+            <span className="cds-rail-note">Reference only</span>
+          ) : overridden || direction !== dirs.global ? (
             <span className="cds-rail-note">
               {DIRECTION_LABEL[direction]}
               {overridden ? (
@@ -105,6 +109,8 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, busy, onRunOne,
               <StepLine key={s.id} step={s} />
             ))}
           </ol>
+        ) : feature.units.every(isReference) ? (
+          <p className="cds-quiet">Nothing runs: {REFERENCE_NOTE} Port the components it shows, then mark this feature synced to clear it.</p>
         ) : (
           <p className="cds-quiet">Nothing — this feature is skipped.</p>
         )}
@@ -125,7 +131,7 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, busy, onRunOne,
 
 export function StepLine({ step }: { step: Step }) {
   const [show, setShow] = useState(false);
-  const kind = { "merge-css": "deterministic merge", "ai-pull": "AI port → App", "ai-push": "AI port → Design", upload: "upload, after your approval" }[step.kind];
+  const kind = { "merge-css": "deterministic merge", "ai-pull": "AI draft → App, reviewed before merge", "ai-push": "AI port → Design", upload: "upload, after your approval" }[step.kind];
   return (
     <li className="cds-step" data-kind={step.kind}>
       <span className="cds-step-title">{step.title}</span>
@@ -143,7 +149,7 @@ export function StepLine({ step }: { step: Step }) {
   );
 }
 
-const REFERENCE_WHY: Partial<Record<Direction, string>> = { both: "Design-only reference (preview or guideline): nothing to port", "app-to-design": "Design-only reference: nothing to port", "design-to-app": "Design-only reference: nothing to port" };
+const REFERENCE_WHY: Partial<Record<Direction, string>> = { both: "Design reference (preview, screen or guideline): read it, nothing is ported", "app-to-design": "Design reference: nothing is ported", "design-to-app": "Design reference: nothing is ported" };
 
 /** One path per line, with break opportunities after each slash instead of mid-word */
 function Paths({ paths }: { paths: string[] }) {
@@ -189,7 +195,19 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
           <p className="cds-unit-name">
             {displayName(unit)} <span className="cds-kind">{KIND_WORD[unit.kind]}</span>
           </p>
-          {unit.app.paths.length ? <Paths paths={unit.app.paths} /> : <p className="cds-quiet">Not in the App</p>}
+          {unit.app.paths.length ? (
+            <Paths paths={unit.app.paths} />
+          ) : unit.related?.length ? (
+            <>
+              <p className="cds-related">Compare with (never written):</p>
+              <Paths paths={unit.related} />
+            </>
+          ) : unit.kind === "screen" ? (
+            <p className="cds-quiet">No App screen pinned: add a pair under screens in config.json</p>
+          ) : (
+            <p className="cds-quiet">Not in the App</p>
+          )}
+          {isReference(unit) ? <p className="cds-related">{REFERENCE_NOTE}</p> : null}
           <ul className="cds-evlist">{fresh(unit.app.evidence).map((e) => <li key={e}>{e}</li>)}</ul>
           {unit.app.changed ? (
             <button type="button" className="cds-link" aria-expanded={diff?.side === "app"} data-tip={diff?.side === "app" ? "Hide the App diff" : "Show what changed in these App files since the sync point"} onClick={() => load("app")}>
@@ -200,7 +218,7 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
         <div className="cds-rail-cell">
           <RailKeys value={direction} allowed={directionsFor(unit.status, unit.kind).directions} onChange={(d) => onDirection(d)} label={`Direction for ${displayName(unit)}`} why={REFERENCE_WHY} />
           <span className="cds-rail-note">
-            {STATUS_WORD[unit.status]}
+            {isReference(unit) ? "Reference only" : STATUS_WORD[unit.status]}
             {overridden ? (
               <button type="button" className="cds-reset" onClick={() => onDirection(null)} data-tip="Drop this part's own direction and follow its feature again">
                 · reset
@@ -219,6 +237,11 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
               <button type="button" className="cds-link" aria-expanded={diff?.side === "design"} data-tip={diff?.side === "design" ? "Hide the Design diff" : "Show what changed in these kit files since the sync point's snapshot"} onClick={() => load("design")}>
                 {diff?.side === "design" ? "Hide Design diff" : "Design diff"}
               </button>
+            ) : null}
+            {snapshotId && unit.preview ? (
+              <a className="cds-link" href={`/kit/snapshot/${snapshotId}/${unit.preview}`} target="_blank" rel="noreferrer" data-tip="Open the kit's interactive app from the newest snapshot, in a new tab">
+                Open the kit app
+              </a>
             ) : null}
             {snapshotId
               ? cards.map((c) => (

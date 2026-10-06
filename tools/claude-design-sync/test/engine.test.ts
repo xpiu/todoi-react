@@ -15,6 +15,8 @@ import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from ".
 import type { Comparison } from "../src/engine/types";
 import { Jobs } from "../src/server/jobs";
 import { laneOf, laneRules, LANE_ORDER } from "../src/engine/lanes";
+import { pairingProblems } from "../src/engine/config";
+import { baseUiParts, reviewDraft, reviewFile } from "../src/engine/fidelity";
 import { mappingHistory } from "../src/server/mapping";
 import { commitAll, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../src/engine/worktree";
 import { git } from "../src/engine/git";
@@ -99,7 +101,8 @@ describe("compare (three-way)", () => {
     expect(pullOnly.some((s) => s.kind === "upload")).toBe(false);
     const brief = all.find((s) => s.kind === "ai-pull")!.brief!;
     expect(brief).toMatch(/React 19/);
-    expect(brief).toMatch(/```diff/);
+    expect(brief).toContain("## Read the changes first");
+    expect(brief).toMatch(/`git diff --no-index \S+BoardView\.d\.ts \S+BoardView\.d\.ts` \(\+1 −0\)/);
   });
   it("lets a subfeature override its feature, even when the feature is skipped", () => {
     const hidden = cmp.features.find((f) => f.title === "Recover hidden lists")!;
@@ -166,8 +169,9 @@ describe("component stories and documentation", () => {
     expect(laneOf(fx.ctx.config, "app", docs)).toBe("component");
     const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, "app-to-design" as const])));
     const brief = steps.find((s) => s.units.includes(badge.id) && s.kind === "ai-push")!.brief!;
-    expect(brief).toContain(story);
-    expect(brief).toContain("Overflow");
+    // examples are listed for the agent to read whole, with their size, never pasted (or cut short)
+    expect(brief).toContain(`\`${join(fx.repo, story)}\` (3 lines)`);
+    expect(brief).toContain(`\`${join(fx.repo, docs)}\` (3 lines)`);
     expect(brief).toContain("Do not copy Storybook imports");
     expect(brief).toContain("Production architecture comes first");
   });
@@ -482,6 +486,119 @@ describe("the target project", () => {
     expect(await findProject(fx.ctx, runner, "nope")).toBeNull();
     const silent: Runner = async () => ({ type: "done", ok: true, result: "DONE" });
     await expect(findProject(fx.ctx, silent, "fake")).rejects.toThrow(/signed in/);
+  });
+});
+
+describe("briefs (read the changes, don't paste them)", () => {
+  /** Every `git …` command a brief lists */
+  const commands = (brief: string) => [...brief.matchAll(/`(git [^`]+)`/g)].map((m) => m[1]!);
+  const sh = (cmd: string) => {
+    try {
+      return execFileSync("/bin/sh", ["-c", cmd], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+    } catch (e) {
+      // git diff --no-index exits 1 when the files differ
+      return String((e as { stdout?: string }).stdout ?? "");
+    }
+  };
+  it("stays small however large the change, cuts nothing, and lists commands that show all of it", () => {
+    const fx = makeFixture();
+    // Design rewrote BoardView's contract at length: 12,000 new lines, far past any paste budget
+    const big = Array.from({ length: 6000 }, (_, i) => `  /** prop ${i} */\n  p${i}?: string;`).join("\n");
+    const contract = join(snapshotFilesDir(fx.ctx, fx.nowSnapshot), "components/board/BoardView.d.ts");
+    writeFileSync(contract, `export interface BoardViewProps {\n${big}\n  last?: "the very end";\n}\n`);
+    // and the App edited Toast in its working tree, uncommitted
+    writeFileSync(join(fx.repo, "src/client/design/core/Toast.tsx"), "export function Toast({ message }: { message: string }) { return `!!${message}`; }\n");
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, "both" as const])));
+    const pull = steps.find((s) => s.kind === "ai-pull" && s.units.includes("component:board/BoardView"))!.brief!;
+    expect(pull.length).toBeLessThan(12_000);
+    expect(pull).not.toMatch(/truncated|omitted/);
+    expect(pull).toContain("(+12001 −2)");
+    const designCmd = commands(pull).find((c) => c.includes("BoardView.d.ts"))!;
+    expect(sh(designCmd)).toContain('+  last?: "the very end";');
+    // the receiving App files are named relative to the repo root, so they point into the port's worktree
+    expect(pull).toContain("`src/client/design/board/BoardView.tsx`");
+    expect(pull).not.toContain(`\`${join(fx.repo, "src/client/design/board/BoardView.tsx")}\``);
+    // the push side reads the App's change, uncommitted edits included
+    const push = steps.find((s) => s.kind === "ai-push" && s.units.includes("component:core/Toast"))!.brief!;
+    const appCmd = commands(push).find((c) => c.includes("Toast.tsx"))!;
+    expect(appCmd).toMatch(/^git -C \S+ diff \w+ -- src\/client\/design\/core\/Toast\.tsx$/);
+    expect(sh(appCmd)).toContain("+export function Toast({ message }: { message: string }) { return `!!${message}`; }");
+    // a new file is read whole; a spec section's diff is quoted, since no command can slice it out
+    const hidden = steps.find((s) => s.kind === "ai-push" && s.units.includes("component:board/HiddenListsMenu"))!.brief!;
+    expect(hidden).toMatch(/New file, read it whole: `\S+HiddenListsMenu\.tsx` \(2 lines\)/);
+    const spec = steps.find((s) => s.kind === "ai-pull" && s.units.includes("spec:Board"))!.brief!;
+    expect(spec).toContain("readme.md § Board (one section, quoted in full):");
+    expect(spec).toContain("+Boards show lists and dense mode.");
+  });
+});
+
+describe("asymmetric lanes", () => {
+  it("treats kit screens as references: several may stand for one App screen, and none is ever ported", () => {
+    const fx = makeFixture();
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const board = cmp.units.find((u) => u.id === "screen:BoardScreen")!;
+    const list = cmp.units.find((u) => u.id === "screen:ListScreen")!;
+    // Design moved the Board mockup; the App moved ProjectScreen.tsx too, which is not kit work
+    expect(board).toMatchObject({ kind: "screen", status: "design-ahead", related: ["src/client/app/ProjectScreen.tsx"], preview: "ui_kits/todoi/index.html" });
+    expect(board.app.paths).toEqual([]);
+    expect(list.status).toBe("in-sync");
+    // asking for every direction on everything still plans no step for a screen
+    for (const d of ["both", "design-to-app", "app-to-design"] as const) {
+      const unitChoices = Object.fromEntries(cmp.units.map((u) => [u.id, d]));
+      const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, d])), unitChoices);
+      expect(steps.flatMap((s) => s.units).filter((id) => id.startsWith("screen:"))).toEqual([]);
+    }
+    const lane = laneRules(fx.ctx.config).find((l) => l.id === "screen")!;
+    expect(lane).toMatchObject({ reference: true, toApp: null, toDesign: null });
+    expect(lane.notes?.join(" ")).toContain("2 kit screens stand for src/client/app/ProjectScreen.tsx");
+  });
+  it("refuses renames that pair one file with several", () => {
+    expect(pairingProblems({ renames: [{ design: "a.jsx", app: "x.tsx" }, { design: "b.jsx", app: "y.tsx" }] })).toEqual([]);
+    const problems = pairingProblems({ renames: [{ design: "a.jsx", app: "x.tsx" }, { design: "b.jsx", app: "x.tsx" }] });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/x\.tsx with 2 files \(a\.jsx, b\.jsx\)/);
+  });
+});
+
+describe("draft review (architecture scan)", () => {
+  const before = `import { Menu } from "@base-ui/react/menu";
+import * as Popover from "@base-ui/react/popover";
+export function RowMenu({ ref, render }: Props) {
+  const open = useMenuStore((s) => s.open);
+  return <Menu.Root><Menu.Trigger ref={ref} render={render} aria-label="Row menu" /><div role="menu" /></Menu.Root>;
+}
+`;
+  it("flags what a careless translation loses: Base UI, forwarding, ARIA, focused selectors, real buttons", () => {
+    const after = `export function RowMenu() {
+  const menu = useMenuStore();
+  return <div onClick={() => {}}><span className="trigger" /></div>;
+}
+`;
+    const found = reviewFile("src/client/design/list/RowMenu.tsx", before, after);
+    expect(found.map((f) => f.rule).sort()).toEqual(["aria", "base-ui", "click-target", "forwarding", "store"]);
+    expect(found.find((f) => f.rule === "base-ui")!.detail).toContain("Menu, Popover");
+    expect(found.find((f) => f.rule === "store")!.detail).toContain("useMenuStore()");
+  });
+  it("stays quiet on a faithful edit, tests and stories, and a role-carrying click target", () => {
+    const after = before.replace('aria-label="Row menu"', 'aria-label="Item menu"').replace('<div role="menu" />', '<div role="menu" onClick={close} />');
+    expect(reviewFile("src/client/design/list/RowMenu.tsx", before, after)).toEqual([]);
+    expect(reviewFile("src/client/design/list/RowMenu.test.tsx", before, "")).toEqual([]);
+    expect(reviewFile("src/client/design/list/RowMenu.stories.tsx", before, "")).toEqual([]);
+    expect(baseUiParts('import { Dialog as D, type DialogProps } from "@base-ui/react/dialog";')).toEqual(new Set(["Dialog", "DialogProps"]));
+  });
+  it("reads a branch: changed components, and stories left behind", () => {
+    const fx = makeFixture();
+    const base = git(fx.repo, ["rev-parse", "HEAD"]).trim();
+    writeFileSync(join(fx.repo, "src/client/design/core/Badge.stories.tsx"), "export default {};\n");
+    git(fx.repo, ["add", "-A"]);
+    git(fx.repo, ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "stories"]);
+    const from = git(fx.repo, ["rev-parse", "HEAD"]).trim();
+    writeFileSync(join(fx.repo, "src/client/design/core/Badge.tsx"), "export function Badge({ n }: { n: number }) { const s = useBadgeStore(); return n; }\n");
+    git(fx.repo, ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "port"]);
+    const found = reviewDraft(fx.repo, from, "HEAD");
+    expect(found.map((f) => [f.rule, f.file])).toEqual([["store", "src/client/design/core/Badge.tsx"], ["story", "src/client/design/core/Badge.tsx"]]);
+    expect(reviewDraft(fx.repo, base, base)).toEqual([]);
   });
 });
 

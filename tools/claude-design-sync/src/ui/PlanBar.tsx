@@ -4,7 +4,7 @@
 import { ChevronRight, Flag, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { directionsFor, effective, plural, selectedUnitIds, type AppState, type Direction, type Feature, type Step, type Unit } from "./api";
+import { directionsFor, effective, isReference, plural, selectedUnitIds, type AppState, type Direction, type Feature, type Step, type Unit } from "./api";
 import { stepsForSelection } from "../engine/selection";
 import { RunConfirmation } from "./RunConfirmation";
 import { StepLine } from "./FeatureRow";
@@ -36,10 +36,11 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
 
   const t = useMemo(() => {
-    const c = { toDesign: 0, toApp: 0, both: 0, skip: 0 };
+    const c = { toDesign: 0, toApp: 0, both: 0, skip: 0, reference: 0 };
     for (const f of features) {
       const d = effective(f, global, overrides[f.id]);
-      if (d === "skip") c.skip++;
+      if (f.units.every(isReference)) c.reference++;
+      else if (d === "skip") c.skip++;
       else if (d === "both") c.both++;
       else if (d === "app-to-design") c.toDesign++;
       else c.toApp++;
@@ -68,7 +69,7 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
     setSaveError(null);
     onMarkUnits(runScope ?? features.flatMap((f) => selectedUnitIds(f.units, unitChoices)));
   };
-  const summary = !moving ? "Nothing planned" : `${plural(moving, "feature")}${kinds.length === 1 ? ` · ${kinds[0]![1]}` : `: ${kinds.map(([n, l]) => `${n} ${l}`).join(" · ")}`}${t.skip ? ` · ${t.skip} skipped` : ""}`;
+  const summary = !moving ? "Nothing planned" : `${plural(moving, "feature")}${kinds.length === 1 ? ` · ${kinds[0]![1]}` : `: ${kinds.map(([n, l]) => `${n} ${l}`).join(" · ")}`}${t.skip ? ` · ${t.skip} skipped` : ""}${t.reference ? ` · ${t.reference} reference` : ""}`;
 
   return (
     <div className={`cds-plan ${open ? "is-open" : ""}`} role="region" aria-label="Sync plan">

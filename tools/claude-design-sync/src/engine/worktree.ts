@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 import type { Ctx } from "./config";
+import type { FidelityFinding } from "./approvals";
 import { git } from "./git";
 import { terminateOnAbort } from "./process";
 
@@ -21,6 +22,12 @@ export interface AppRun {
   into: string;
   commits: Array<{ hash: string; subject: string }>;
   check?: { command: string; ok: boolean; output: string };
+  /**
+   * AI ports from the kit are drafts: what the architecture scan found on the branch, and whether the
+   * developer confirmed their review. Merge refuses a draft until then. (Token-only runs are deterministic
+   * and carry no review.)
+   */
+  review?: { findings: FidelityFinding[]; reviewedAt?: string };
   /** working → ready (verified, waiting for Merge) → merged; failed runs are kept for a look until discarded */
   state: "working" | "ready" | "failed" | "merged" | "discarded";
   reason?: string;

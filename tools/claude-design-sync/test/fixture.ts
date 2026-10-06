@@ -34,6 +34,9 @@ export const DESIGN_BASE: Record<string, string> = {
   "components/core/Badge.jsx": 'import React from "react";\nexport function Badge({n}){return React.createElement("b",null,n);}\n',
   "tokens/themes/minimal-components.css": 'html[data-theme="minimal"] .td-a{color:red}\nhtml[data-theme="minimal"] .td-b{color:blue}\n',
   "readme.md": "# Kit\n\n## Board\n\nBoards show lists.\n\n## Toasts\n\nToasts confirm.\n",
+  "ui_kits/todoi/BoardScreen.jsx": "function BoardScreen(){return <div>Board</div>;}\n",
+  "ui_kits/todoi/ListScreen.jsx": "function ListScreen(){return <div>List</div>;}\n",
+  "ui_kits/todoi/index.html": '<!doctype html><html><body><div id="root">Kit app</div></body></html>\n',
 };
 
 export const DESIGN_NOW: Record<string, string> = {
@@ -44,6 +47,7 @@ export const DESIGN_NOW: Record<string, string> = {
   "components/board/board-minimal.card.html": CARD("Board · Minimal", "BoardView"),
   "tokens/themes/minimal-components.css": 'html[data-theme="minimal"] .td-a{color:red}\nhtml[data-theme="minimal"] .td-b{color:blue}\nhtml[data-theme="minimal"] .td-chip{border:0}\n',
   "readme.md": "# Kit\n\n## Board\n\nBoards show lists and dense mode.\n\n## Toasts\n\nToasts confirm.\n",
+  "ui_kits/todoi/BoardScreen.jsx": "function BoardScreen(){return <div>Board, with a dense toggle</div>;}\n",
 };
 
 const APP_BASE: Record<string, string> = {
@@ -53,6 +57,7 @@ const APP_BASE: Record<string, string> = {
   "src/client/design/core/Badge.tsx": "export function Badge({ n }: { n: number }) { return n; }\n",
   "src/client/design/tokens/themes/minimal-components.css": 'html[data-theme="minimal"] .td-a{color:red}\nhtml[data-theme="minimal"] .td-b{color:blue}\n',
   "DESIGN.md": "# Spec\n\n## Board\n\nBoards show lists.\n\n## Toasts\n\nToasts confirm.\n",
+  "src/client/app/ProjectScreen.tsx": "export function ProjectScreen() { return null; }\n",
 };
 
 export interface Fixture {
@@ -77,6 +82,8 @@ export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))):
   const rev = git(repo, "rev-parse", "--short", "HEAD").trim();
   write(repo, {
     "src/client/design/board/HiddenListsMenu.tsx": "export function HiddenListsMenu() { return null; }\n",
+    // the App's screen moves too: still no work for the kit screens that stand for it
+    "src/client/app/ProjectScreen.tsx": "export function ProjectScreen() { return 'hidden lists'; }\n",
     "src/client/design/board/BoardView.tsx": "export interface BoardViewProps {\n  children?: unknown;\n  onAddList?: () => void;\n  after?: unknown;\n}\nexport function BoardView(p: BoardViewProps) { return p.children; }\n",
   });
   git(repo, "add", ".");
@@ -89,7 +96,12 @@ export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))):
   git(repo, "commit", "-qm", "feat: retryable toast");
   write(designBaseDir, DESIGN_BASE);
   write(designNowDir, DESIGN_NOW);
-  const config = { ...loadConfig(join(TOOL_DIR, "config.json")), renames: [], screens: [] };
+  // Board and List both stand for ProjectScreen.tsx, as in the real config
+  const screens = [
+    { design: "ui_kits/todoi/BoardScreen.jsx", app: "src/client/app/ProjectScreen.tsx", name: "Project screen (Board)" },
+    { design: "ui_kits/todoi/ListScreen.jsx", app: "src/client/app/ProjectScreen.tsx", name: "Project screen (List)" },
+  ];
+  const config = { ...loadConfig(join(TOOL_DIR, "config.json")), renames: [], screens };
   config.design = { ...config.design, projectId: "fake" };
   // the fixture repo has no package.json: its "check" just confirms the branch has a commit to merge
   config.app = { ...config.app, check: "git log -1 --format=%s" };

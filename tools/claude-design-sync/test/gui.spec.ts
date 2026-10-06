@@ -122,18 +122,19 @@ test.describe.serial("Claude Design Sync", () => {
     // App work waits on its own verified branch; the fixture's checkout hasn't moved
     const repo = join(tmpdir(), "cds-e2e", "repo");
     const headBefore = execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-    const merge = panel.getByRole("region", { name: "Merge into the App" });
+    // the run ported kit code into the App, so its branch is a draft that merges after review
+    const merge = panel.getByRole("region", { name: "Review the draft, then merge" });
     await expect(merge).toContainText("design-sync/run-");
     await expect(merge.getByRole("list", { name: "Commits to merge" })).toContainText("(fake)");
     await expect(panel.locator(".cds-jobsteps")).toContainText("passed");
-    // Merge is offered wherever the eye lands while the branch waits: the navbar, a banner, the plan bar
-    const mergeName = /^Merge \d+ commits? into main$/;
-    const barMerge = page.locator(".cds-bar").getByRole("button", { name: mergeName });
-    const banner = page.getByRole("region", { name: /waits for your merge/ });
+    // the draft is offered wherever the eye lands while it waits (the navbar, a banner, the plan bar), each
+    // opening its review instead of merging blind
+    const barMerge = page.locator(".cds-bar").getByRole("button", { name: /^Review the draft/ });
+    const banner = page.getByRole("region", { name: /is a draft waiting for your review/ });
     await expect(barMerge).toBeEnabled();
-    await expect(banner.getByRole("button", { name: mergeName })).toBeEnabled();
+    await expect(banner.getByRole("button", { name: "Review the draft" })).toBeEnabled();
     await expect(banner.getByRole("list", { name: "Commits to merge" })).toContainText("(fake)");
-    await expect(page.getByRole("region", { name: "Sync plan" }).getByRole("button", { name: mergeName })).toBeEnabled();
+    await expect(page.getByRole("region", { name: "Sync plan" }).getByRole("button", { name: "Review the draft" })).toBeEnabled();
     // the panel already shows this run's own merge block, so it pins no reminder strip
     await expect(panel.getByRole("group", { name: "Waiting for your merge" })).toHaveCount(0);
     const files = panel.locator(".cds-files li");
@@ -175,7 +176,14 @@ test.describe.serial("Claude Design Sync", () => {
     await expect(panel.locator(".cds-jobview")).toContainText("Merge the App branch to finish");
     await expect(panel.locator(".cds-jobview-head")).toContainText("waiting for your approval");
     expect(execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()).toBe(headBefore);
-    await merge.getByRole("button", { name: /Merge \d+ commits? into main/ }).click();
+    const mergeButton = merge.getByRole("button", { name: /Merge \d+ commits? into main/ });
+    await expect(mergeButton).toBeDisabled();
+    // each finding is ticked once looked at; only then does the review itself unlock
+    const confirm = merge.getByRole("checkbox", { name: "I reviewed this draft against these points" });
+    await expect(confirm).toBeDisabled();
+    for (const f of await merge.getByRole("list", { name: "Findings" }).getByRole("checkbox").all()) await f.check();
+    await confirm.check();
+    await mergeButton.click();
     await expect(panel.locator(".cds-jobview-head")).toContainText("done");
     // upload read back and branch merged: the run recorded its own sync point
     await expect(panel.locator(".cds-jobview")).toContainText("Marked synced");
@@ -270,7 +278,7 @@ test.describe.serial("Claude Design Sync", () => {
     await lane("Components").locator(".cds-map-tech").click();
     const comp = lane("Components");
     await expect(comp.locator(".cds-map-detail")).toContainText("Paired by");
-    await expect(comp.locator(".cds-map-detail")).toContainText("AI port into a worktree");
+    await expect(comp.locator(".cds-map-detail")).toContainText("AI draft into a worktree");
     await comp.getByRole("button", { name: /^All/ }).click();
     await expect(comp.locator(".cds-map-units")).toContainText("BoardView");
 

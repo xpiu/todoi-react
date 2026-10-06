@@ -81,7 +81,14 @@ export function App() {
     void load(fresh);
   };
   // a finished job only needs the job list again; a merge moves the App, so it recompares
-  const merge = useMerge(state, () => void api.state().then(setState, () => {}), () => refresh(true));
+  const openJob = (id: string) => {
+    setActivity(id);
+    setPanel(true);
+    // the new job joins the list at once: the bar shows it live and Merge greys in while App work ports
+    return api.state().then(setState, () => {});
+  };
+  // a draft's Review opens its run in Activity, where its review and Merge live
+  const merge = useMerge(state, () => void api.state().then(setState, () => {}), () => refresh(true), (id) => void openJob(id));
   useEffect(() => store.set("cds-base", baseId), [baseId]);
   useEffect(() => store.set("cds-global", global), [global]);
   useEffect(() => store.set("cds-overrides", overrides), [overrides]);
@@ -122,12 +129,6 @@ export function App() {
     "app-to-design": features.filter((f) => f.directions.includes("app-to-design")).length,
   }), [features]);
 
-  const openJob = (id: string) => {
-    setActivity(id);
-    setPanel(true);
-    // the new job joins the list at once: the bar shows it live and Merge greys in while App work ports
-    return api.state().then(setState, () => {});
-  };
   const run = async (only?: string[]) => {
     if (runPending.current) return;
     runPending.current = true;

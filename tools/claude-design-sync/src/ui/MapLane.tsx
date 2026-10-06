@@ -37,13 +37,15 @@ export interface LaneStats {
   toDesign: number;
   toApp: number;
   both: number;
+  /** App files the lane's references are read beside (screens) */
+  related: number;
 }
 
 const FILTERS: Array<{ id: string; label: string; tip: string; test: (u: Unit) => boolean }> = [
   { id: "moving", label: "Changed", tip: "Units that changed on either side since the sync point", test: (u) => u.status !== "in-sync" },
   { id: "all", label: "All", tip: "Every unit in this lane", test: () => true },
   { id: "sync", label: "In sync", tip: "Units that match on both sides", test: (u) => u.status === "in-sync" },
-  { id: "one", label: "One side only", tip: "Units that exist only in the App or only in Design", test: (u) => !u.app.exists || !u.design.exists },
+  { id: "one", label: "One side only", tip: "Units that exist only in the App or only in Design", test: (u) => (!u.app.exists && !u.related?.length) || !u.design.exists },
 ];
 const SHOWN = 40;
 
@@ -71,7 +73,7 @@ function Side({ rule, side, stats }: { rule: LaneRule; side: "app" | "design"; s
       {where ? <span className="cds-path cds-break">{where}</span> : <span>Nothing in the {side === "app" ? "App" : "Design project"}</span>}
       {stats && where ? (
         <span className="cds-map-tally">
-          {plural(n, "unit")}
+          {side === "app" && !n && stats.related ? `Compared with ${plural(stats.related, "App screen")}, never written` : plural(n, "unit")}
           {changed ? ` · ${changed} changed since the sync point` : ""}
         </span>
       ) : null}
@@ -178,7 +180,8 @@ export function MapLane({ rule, stats, flow, flowKey, open, onToggle, events, on
                     <li key={u.id} className="cds-twin">
                       <span className="cds-map-unit-side">
                         <span className="cds-sub">{displayName(u)}</span>
-                        <span className="cds-path cds-break">{u.app.paths.join(", ") || "—"}</span>
+                        <span className="cds-path cds-break">{u.app.paths.join(", ") || u.related?.join(", ") || "—"}</span>
+                        {!u.app.paths.length && u.related?.length ? <span className="cds-quiet">compare with, never written</span> : null}
                       </span>
                       <span className="cds-rail-cell">
                         <span className="cds-status" data-status={u.status}>

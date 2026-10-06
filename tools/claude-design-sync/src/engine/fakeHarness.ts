@@ -37,7 +37,10 @@ export function fakeRunner(designDir: string, repo: string): Runner {
       if (target) {
         const app = target[2] === "none" ? `ported-${target[1]!.replace(/\W+/g, "-")}.txt` : target[2]!;
         const file = stage ? join(stage, target[3]!) : join(repo, app);
-        writeFileSync(file, (existsSync(file) ? readFileSync(file, "utf8") : "") + `\n/* ported by the fake harness */\n`);
+        // an App component port also reads a whole store, as a careless translation might: the draft's
+        // architecture scan has something to flag
+        const careless = !stage && file.endsWith(".tsx") ? "export const useFakePort = () => useKitStore();\n" : "";
+        writeFileSync(file, (existsSync(file) ? readFileSync(file, "utf8") : "") + `\n/* ported by the fake harness */\n${careless}`);
         emit({ type: "text", text: `Edited ${file}` });
         if (!stage) {
           execFileSync("git", ["-C", repo, "add", "-A"], { stdio: "ignore" });

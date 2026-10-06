@@ -9,8 +9,8 @@ import { mergeCss } from "./css";
 import { listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
 import { isStoryFile, sections } from "./inventory";
-import { getSnapshot, saveSyncPoint, snapshotFilesDir } from "./snapshots";
-import { appMoved, designMoved, featureDirection, unitDirection } from "./directions";
+import { saveSyncPoint, snapshotFilesDir } from "./snapshots";
+import { appMoved, designMoved, featureDirection, REFERENCE_KINDS, unitDirection } from "./directions";
 import { unitBaseline } from "./compare";
 import type { Baseline, Comparison, Direction, Feature, SyncPoint, Unit } from "./types";
 
@@ -31,6 +31,8 @@ export interface Step {
 
 const flows = (u: Unit, d: Direction): Array<"app" | "design"> => {
   const out: Array<"app" | "design"> = [];
+  // references (previews, screens, guidelines) never move, whatever a request asks for
+  if (REFERENCE_KINDS.includes(u.kind)) return out;
   // "to design" carries App work; "to app" carries Design work
   if (appMoved(u.status) && (d === "both" || d === "app-to-design")) out.push("design");
   if (designMoved(u.status) && (d === "both" || d === "design-to-app")) out.push("app");
@@ -64,7 +66,7 @@ export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Dir
       for (const u of css) steps.push({ id: `${f.id}:css:${target}:${u.id}`, featureId: f.id, featureTitle: f.title, kind: "merge-css", target, title: `Merge ${u.name} rules into ${target === "app" ? "the App" : "Design"}`, units: [u.id] });
       if (ai.length) {
         const kind = target === "app" ? "ai-pull" : "ai-push";
-        steps.push({ id: `${f.id}:${kind}`, featureId: f.id, featureTitle: f.title, kind, target, title: target === "app" ? `Port “${f.title}” from the kit into the App` : `Port “${f.title}” into the kit`, units: ai.map((u) => u.id), brief: briefFor(ctx, cmp, f, target, ai) });
+        steps.push({ id: `${f.id}:${kind}`, featureId: f.id, featureTitle: f.title, kind, target, title: target === "app" ? `Draft “${f.title}” from the kit for your review` : `Port “${f.title}” into the kit`, units: ai.map((u) => u.id), brief: briefFor(ctx, cmp, f, target, ai) });
       }
     }
   }
@@ -148,27 +150,59 @@ export function recordSyncPoint(ctx: Ctx, o: { label: string; snapshotId: string
 }
 
 // ── AI briefs ────────────────────────────────────────────────────────────────────────────────
+//
+// A brief says what changed and where to read it, never the changes themselves: the agent has Read and
+// Bash, so it reads every diff and file whole with the exact commands listed here. Nothing is cut off, and
+// the brief stays the same size however large the feature is. (A spec section is the exception: it lives
+// inside one long file no command can slice, so its diff, one section long, is quoted in full.)
 
-const CAP = 40_000;
-const capped = (s: string, n = CAP) => (s.length > n ? `${s.slice(0, n)}\n… (truncated — read the files for the rest)\n` : s);
-
-function designDiff(ctx: Ctx, cmp: Comparison, u: Unit): string {
-  const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
-  const b = unitBaseline(cmp, u);
-  const baseSnap = b?.designSnapshot ? getSnapshot(ctx, b.designSnapshot) : null;
-  if (!snap) return "";
-  if (u.kind === "spec") {
-    const now = sections(readText(join(snap, u.design.paths[0] ?? ""))).get(u.name) ?? "";
-    const was = baseSnap ? sections(readText(join(snapshotFilesDir(ctx, baseSnap.id), u.design.paths[0] ?? ""))).get(u.name) ?? "" : "";
-    return textDiff(was, now, `readme.md § ${u.name}`);
+/** Lines added and removed in a unified diff */
+function diffStat(diff: string): string {
+  let add = 0;
+  let del = 0;
+  for (const l of diff.split("\n")) {
+    if (l.startsWith("+++") || l.startsWith("---")) continue;
+    if (l.startsWith("+")) add++;
+    else if (l.startsWith("-")) del++;
   }
-  return u.design.paths
-    .map((p) => {
-      const now = join(snap, p);
-      const was = baseSnap ? join(snapshotFilesDir(ctx, baseSnap.id), p) : null;
-      return was && existsSync(was) ? diffNoIndex(was, now) : `New file ${p}:\n${readText(now) ?? ""}`;
-    })
-    .join("\n");
+  return `+${add} −${del}`;
+}
+
+const lineCount = (text: string | null) => (text ?? "").split("\n").length;
+const q = (p: string) => (/^[\w./@+-]+$/.test(p) ? p : `'${p.replaceAll("'", "'\\''")}'`);
+
+/** How to read one side's change of a unit: one line per file, a command or a file to read, with its size */
+function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design"): string[] {
+  const b = unitBaseline(cmp, u);
+  if (side === "app") {
+    if (u.kind === "spec") return specLines(b ? showAt(ctx.repo, b.rev, u.app.paths[0] ?? "") : null, readText(join(ctx.repo, u.app.paths[0] ?? "")), u.name, `${ctx.config.app.spec} § ${u.name}`);
+    return u.app.paths.map((p) => {
+      const now = readText(join(ctx.repo, p));
+      const was = b ? showAt(ctx.repo, b.rev, p) : null;
+      if (was == null) return `- New file, read it whole: \`${q(join(ctx.repo, p))}\` (${lineCount(now)} lines)`;
+      const d = diffSince(ctx.repo, b!.rev, [p]);
+      return d.trim() ? `- \`git -C ${q(ctx.repo)} diff ${b!.rev} -- ${q(p)}\` (${diffStat(d)}), then read \`${q(join(ctx.repo, p))}\`` : `- Unchanged, for context: \`${q(join(ctx.repo, p))}\``;
+    });
+  }
+  const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
+  const baseSnap = b?.designSnapshot ? snapshotFilesDir(ctx, b.designSnapshot) : null;
+  if (!snap) return ["- (no Design snapshot to read)"];
+  if (u.kind === "spec") return specLines(baseSnap ? readText(join(baseSnap, u.design.paths[0] ?? "")) : null, readText(join(snap, u.design.paths[0] ?? "")), u.name, `${ctx.config.design.spec} § ${u.name}`);
+  return u.design.paths.map((p) => {
+    const now = join(snap, p);
+    const was = baseSnap ? join(baseSnap, p) : null;
+    if (!was || !existsSync(was)) return `- New file, read it whole: \`${q(now)}\` (${lineCount(readText(now))} lines)`;
+    const d = diffNoIndex(was, now);
+    return d.trim() ? `- \`git diff --no-index ${q(was)} ${q(now)}\` (${diffStat(d)}), then read \`${q(now)}\`` : `- Unchanged, for context: \`${q(now)}\``;
+  });
+}
+
+/** A spec section's change, quoted whole: no command can cut one "## " section out of a long file */
+function specLines(was: string | null, now: string | null, name: string, label: string): string[] {
+  const before = sections(was).get(name) ?? "";
+  const after = sections(now).get(name) ?? "";
+  if (before === after) return [`- ${label}: unchanged`];
+  return [`- ${label} (one section, quoted in full):`, "```diff", textDiff(before, after, label).trimEnd(), "```"];
 }
 
 function textDiff(a: string, b: string, label: string): string {
@@ -178,7 +212,7 @@ function textDiff(a: string, b: string, label: string): string {
     const fb = join(dir, "after");
     writeFileSync(fa, a + "\n");
     writeFileSync(fb, b + "\n");
-    return `${label}\n${diffNoIndex(fa, fb)}`;
+    return `${label}\n${diffNoIndex(fa, fb).replaceAll(fa, "before").replaceAll(fb, "after")}`;
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -209,11 +243,13 @@ const APP_RULES = `App conventions (this repo, React 19 + TypeScript; read CLAUD
 export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | "design", units: Unit[]): string {
   const base = cmp.base;
   const stage = "<STAGE>";
+  // a pull carries Design's work into the App; a push carries the App's work into the kit
+  const from = target === "app" ? "design" : "app";
   const lines: string[] = [];
-  lines.push(`# ${target === "app" ? "Pull into the App" : "Push to Claude Design"}: ${f.title}`);
+  lines.push(`# ${target === "app" ? "Draft into the App" : "Push to Claude Design"}: ${f.title}`);
   lines.push("");
   lines.push(target === "app"
-    ? `Bring the Claude Design kit's changes for this feature into the React 19 app in this repository (${ctx.repo}). The kit is a different framework: translate, don't copy.`
+    ? `Bring the Claude Design kit's changes for this feature into the React 19 app in this repository (${ctx.repo}). The kit is a different framework: translate, don't copy. Your work is a draft: the developer reviews it against the App's architecture before it merges.`
     : `Bring the App's changes for this feature into the Claude Design kit. Work ONLY inside the staging folder ${stage} — a full copy of the current Design project. Do not upload anything: the developer reviews the staged files and uploads them from the Claude Design Sync tool.`);
   lines.push("");
   lines.push(`Sync point: ${base ? `${base.label} (App rev ${base.rev})` : "none recorded"} · App now: ${cmp.appHead} · Design snapshot: ${cmp.designSnapshot?.label ?? "none"}`);
@@ -226,45 +262,28 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
     for (const e of [...u.app.evidence.map((x) => `App: ${x}`), ...u.design.evidence.map((x) => `Design: ${x}`)]) lines.push(`  - ${e}`);
   }
   lines.push("");
+  lines.push(`## Read the changes first`);
+  lines.push(`The ${from === "design" ? "kit's" : "App's"} changes are not pasted here. Before you edit anything, run each command and read each file below in full, with your own tools. Paths are absolute, so the commands work from any folder.`);
+  for (const u of units) {
+    lines.push("", `### ${u.name}`, ...changeLines(ctx, cmp, u, from));
+    // the receiving side as it is now, to change on top of: App files relative to the checkout the port
+    // runs in (a worktree), kit files in the stage
+    const into = target === "app" ? u.app.paths : u.design.paths.map((p) => join(stage, p));
+    if (into.length && u.kind !== "spec") lines.push(`- ${target === "app" ? "The App's current version (relative to the repository root), to change on top of" : "The kit's current version, to change on top of"}: ${into.map((p) => `\`${q(p)}\``).join(", ")}`);
+  }
+  const examples = units.filter((u) => u.kind === "component").flatMap((u) => u.app.paths.filter((p) => isStoryFile(p) || /\.mdx?$/.test(p)));
+  if (examples.length) {
+    lines.push("", "## Component examples (reference)", "Usage guidance: read these whole and translate the relevant examples into the receiving environment.");
+    for (const p of examples) lines.push(`- \`${q(join(ctx.repo, p))}\` (${lineCount(readText(join(ctx.repo, p)))} lines)`);
+  }
+  lines.push("");
   lines.push(target === "app" ? KIT_RULES.replace("files under the staging folder", "the snapshot under " + (cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : "(no snapshot)")) : APP_RULES);
   lines.push("");
   lines.push(target === "app" ? APP_RULES : KIT_RULES);
   lines.push("");
-  let budget = CAP;
-  const examples = units.filter((u) => u.kind === "component").flatMap((u) => u.app.paths.filter((p) => isStoryFile(p) || /\.mdx?$/.test(p)));
-  if (examples.length) {
-    lines.push("## Component examples (reference)");
-    lines.push("Read these as usage guidance; translate relevant examples into the receiving environment.");
-    for (const p of examples) {
-      const content = readText(join(ctx.repo, p));
-      if (content == null) continue;
-      const chunk = capped(content, Math.min(8000, budget));
-      lines.push(`### ${p}`, "```", chunk, "```");
-      budget -= chunk.length;
-      if (budget <= 0) break;
-    }
-    lines.push("");
-  }
-  lines.push("## What changed");
-  for (const u of units) {
-    const ub = unitBaseline(cmp, u);
-    const src = target === "app" ? designDiff(ctx, cmp, u) : ub ? diffSince(ctx.repo, ub.rev, u.app.paths) : u.app.paths.map((p) => `File ${p}:\n${readText(join(ctx.repo, p)) ?? ""}`).join("\n");
-    if (!src.trim()) continue;
-    const chunk = capped(src, Math.max(4000, budget));
-    budget -= chunk.length;
-    lines.push(`### ${u.name}`);
-    lines.push("```diff");
-    lines.push(chunk.trimEnd());
-    lines.push("```");
-    if (budget <= 0) {
-      lines.push("(More diffs omitted for length — read the files listed above.)");
-      break;
-    }
-  }
-  lines.push("");
   lines.push("## Done means");
-  if (target === "app") lines.push("- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- `npm run check` passes; one commit per feature.", "- Nothing outside this feature changed.");
-  else lines.push(`- The kit files for every subfeature are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card + Minimal twin, readme.md, Minimal rules).`, "- The local bundle builds and every touched card renders without errors.", "- Reply with the list of files you changed.");
+  if (target === "app") lines.push("- You read every change listed above, whole.", "- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- Base UI primitives, ref and render-prop forwarding, focused Zustand selectors and ARIA/keyboard behaviour are kept: the tool scans the draft for their loss, and the developer reviews it.", "- `npm run check` passes; one commit per feature.", "- Nothing outside this feature changed.");
+  else lines.push("- You read every change listed above, whole.", `- The kit files for every subfeature are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card + Minimal twin, readme.md, Minimal rules).`, "- The local bundle builds and every touched card renders without errors.", "- Reply with the list of files you changed.");
   return lines.join("\n");
 }
 

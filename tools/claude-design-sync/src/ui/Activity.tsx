@@ -6,7 +6,7 @@
 import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, appPending, fmtTime, plural, subscribeJob, uploadPending, type AppState, type Job } from "./api";
+import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type AppState, type FidelityFinding, type Job } from "./api";
 import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
@@ -84,6 +84,95 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
   );
 }
 
+const RULE_WORD: Record<FidelityFinding["rule"], string> = { "base-ui": "Base UI", forwarding: "Refs", aria: "ARIA", store: "Store", "click-target": "Click target", story: "Stories" };
+
+const SHOWN_FINDINGS = 6;
+
+/**
+ * A port from the kit is a draft: the check proved it builds, not that it kept the App's architecture. The
+ * scan's findings come first, grouped by file, each ticked once looked at; then the points every review
+ * covers; then one confirmation. Merge unlocks only when all of it is ticked, so the effort grows with what
+ * the scan found. Opening the run lands here.
+ */
+function DraftReview({ job, merge }: { job: Job & { app: NonNullable<Job["app"]> }; merge: MergeOffer }) {
+  const { app } = job;
+  const findings = app.review?.findings ?? [];
+  const [checked, setChecked] = useState<Set<number>>(() => new Set());
+  const [reviewed, setReviewed] = useState(false);
+  const [all, setAll] = useState(false);
+  const head = useRef<HTMLHeadingElement>(null);
+  const { landing, landed } = merge;
+  useEffect(() => {
+    // "Review the draft" anywhere brings the developer here, once
+    if (landing !== job.id) return;
+    head.current?.focus({ preventScroll: true });
+    head.current?.scrollIntoView({ block: "start" });
+    landed();
+  }, [landing, landed, job.id]);
+  const range = `${app.base.slice(0, 7)}...${app.branch}`;
+  const files = [...new Set(findings.map((f) => f.file))];
+  const shown = all ? files : files.slice(0, SHOWN_FINDINGS);
+  const open = findings.length - checked.size;
+  const toggle = (i: number, on: boolean) => setChecked((s) => {
+    const next = new Set(s);
+    if (on) next.add(i);
+    else next.delete(i);
+    return next;
+  });
+  return (
+    <div className="cds-review" role="group" aria-labelledby="review-h">
+      <h5 id="review-h" ref={head} tabIndex={-1}>{findings.length ? `The architecture scan flagged ${plural(findings.length, "thing")} in ${plural(files.length, "file")}` : "The architecture scan flagged nothing"}</h5>
+      {findings.length ? (
+        <>
+          <p className="cds-quiet">Tick each one once you've looked at it in the diff.</p>
+          <ul className="cds-review-files" aria-label="Findings">
+            {shown.map((file) => (
+              <li key={file}>
+                <span className="cds-review-file">
+                  <span className="cds-mono cds-break">{file}</span>
+                  <CopyLink text={`git diff ${range} -- ${file}`} label="Copy its diff" tip={`Copy “git diff ${range} -- ${file}” to read this file's draft`} />
+                </span>
+                <ul className="cds-review-findings">
+                  {findings.map((f, i) => (f.file === file ? (
+                    <li key={i}>
+                      <label className="cds-check">
+                        <input type="checkbox" checked={checked.has(i)} onChange={(e) => toggle(i, e.target.checked)} />
+                        <span>
+                          <span className="cds-review-rule">{RULE_WORD[f.rule]}</span> {f.detail}
+                        </span>
+                      </label>
+                    </li>
+                  ) : null))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          {!all && files.length > SHOWN_FINDINGS ? (
+            <button type="button" className="cds-link" onClick={() => setAll(true)} data-tip="List every flagged file">
+              Show {plural(files.length - SHOWN_FINDINGS, "more file")}
+            </button>
+          ) : null}
+        </>
+      ) : (
+        <p className="cds-quiet">The scan reads the diff for known regressions, not intent, so a clean scan still needs your eye.</p>
+      )}
+      <p className="cds-review-lead">Then check the whole draft for:</p>
+      <ul className="cds-review-points">
+        {REVIEW_POINTS.map((p) => (
+          <li key={p.rule}>{p.label}</li>
+        ))}
+      </ul>
+      <p className="cds-review-diff">
+        <CopyLink text={`git diff ${range}`} label="Copy the whole diff" tip={`Copy “git diff ${range}” to read the whole draft in your terminal or editor`} />
+      </p>
+      <label className="cds-check" data-tip={open ? `Tick the ${plural(open, "finding")} above first` : undefined}>
+        <input type="checkbox" checked={reviewed} disabled={open > 0} onChange={(e) => setReviewed(e.target.checked)} /> I reviewed this draft against these points
+      </label>
+      <MergeButton offer={merge} place="panel" job={job} reviewed={reviewed && !open} />
+    </div>
+  );
+}
+
 function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; onLogScroll: () => void; onChanged: () => void }) {
   const staged = job.staged ?? [];
   // a request already handed to Claude Code keeps its files ticked
@@ -146,10 +235,16 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
       ) : null}
       {app?.state === "ready" ? (
         <section className="cds-approve" aria-labelledby="merge-h">
-          <h4 id="merge-h">Merge into the App</h4>
-          <p className="cds-quiet">
-            The ports ran on <span className="cds-mono">{app.branch}</span>, a separate worktree from <span className="cds-mono">{app.base.slice(0, 7)}</span> on {app.into}. Every port committed, and <span className="cds-mono">{app.check?.command}</span> passed there. Nothing in your checkout changes until you merge.
-          </p>
+          <h4 id="merge-h">{app.review ? "Review the draft, then merge" : "Merge into the App"}</h4>
+          {app.review ? (
+            <p className="cds-quiet">
+              Claude Code drafted kit code into the App on <span className="cds-mono">{app.branch}</span>. <span className="cds-mono">{app.check?.command}</span> passed, so it builds and its tests pass; that doesn't show the App's architecture survived the translation. Nothing in your checkout changes until you merge.
+            </p>
+          ) : (
+            <p className="cds-quiet">
+              The ports ran on <span className="cds-mono">{app.branch}</span>, a separate worktree from <span className="cds-mono">{app.base.slice(0, 7)}</span> on {app.into}. Every port committed, and <span className="cds-mono">{app.check?.command}</span> passed there. Nothing in your checkout changes until you merge.
+            </p>
+          )}
           <ul className="cds-commits" aria-label="Commits to merge">
             {app.commits.map((c) => (
               <li key={c.hash}>
@@ -157,7 +252,7 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
               </li>
             ))}
           </ul>
-          <MergeButton offer={merge} place="panel" job={{ ...job, app }} />
+          {app.review ? <DraftReview key={job.id} job={{ ...job, app }} merge={merge} /> : <MergeButton offer={merge} place="panel" job={{ ...job, app }} />}
           {merge.error ? <p className="cds-error-inline">{merge.error}</p> : null}
         </section>
       ) : null}
@@ -241,7 +336,7 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
               </button>
             </>
           ) : (
-            <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} data-tip={picked.size ? "Check Claude Design for newer edits to the ticked files, then get the request to paste into Claude Code, where you approve the upload - Costs tokens" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
+            <button type="button" className={`cds-btn ${isDraft(job) ? "" : "cds-btn-primary"}`} disabled={!picked.size || busy} data-tip={picked.size ? "Check Claude Design for newer edits to the ticked files, then get the request to paste into Claude Code, where you approve the upload - Costs tokens" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
               <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")} from Claude Code
             </button>
           )}
@@ -266,7 +361,7 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
         )
       ) : null}
       {job.result && job.state !== "running" && !(app?.state === "failed" && app.reason === job.result) ? <p className={job.state === "failed" ? "cds-error-inline" : "cds-quiet"}>{job.result}</p> : null}
-      <ol ref={logRef} onScroll={onLogScroll} className="cds-log" aria-label="Log" aria-live="polite">
+      <ol ref={logRef} onScroll={onLogScroll} className="cds-log" aria-label="Log" aria-live="polite" tabIndex={0}>
         {job.events.map((e, i) => (
           <li key={i} data-level={e.level}>
             <time>{new Date(e.at).toLocaleTimeString("en-GB")}</time>

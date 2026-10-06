@@ -9,7 +9,7 @@ import type { Ctx } from "./config";
 import { isIgnored, listFiles } from "./fsutil";
 import type { SnapshotMeta, SyncPoint } from "./types";
 
-const snapRoot = (ctx: Ctx) => join(ctx.state, "snapshots");
+export const snapRoot = (ctx: Ctx) => join(ctx.state, "snapshots");
 export const snapshotFilesDir = (ctx: Ctx, id: string) => join(snapRoot(ctx), id, "files");
 
 let lastMs = 0;

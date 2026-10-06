@@ -294,7 +294,7 @@ export function compare(ctx: Ctx, opts: { base: SyncPoint | null; snapshotId?: s
     const ur = readersOf(def.id);
     const app = sideState(def, "app", ur);
     const design = snapshot ? sideState(def, "design", ur) : { paths: def.designPaths, exists: false, changed: null, added: false, evidence: [] };
-    const u: Unit = { id: def.id, kind: def.kind, area: def.area, name: def.name, app, design, status: "in-sync", mergeable: def.kind === "tokens", ...(held[def.id] ? { heldFrom: held[def.id] } : {}) };
+    const u: Unit = { id: def.id, kind: def.kind, area: def.area, name: def.name, app, design, status: "in-sync", mergeable: def.kind === "tokens", ...(held[def.id] ? { heldFrom: held[def.id] } : {}), ...(def.related ? { related: def.related } : {}), ...(def.preview ? { preview: def.preview } : {}) };
     u.status = statusOf(u);
     evidence(def, u, ur, baseOf(def.id), logOf(def.id));
     if (u.heldFrom) for (const s of [u.app, u.design]) if (s.changed) s.evidence.unshift(`Kept open since ${u.heldFrom.label}`);

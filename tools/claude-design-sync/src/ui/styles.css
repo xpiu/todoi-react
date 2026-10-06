@@ -521,6 +521,9 @@ em {
   color: var(--ink-400);
   text-align: center;
 }
+.cds-row[data-direction="reference"] .cds-status {
+  color: var(--ink-400);
+}
 .cds-row[data-direction="skip"] .cds-cell {
   color: var(--ink-400);
 }
@@ -632,6 +635,12 @@ em {
 .cds-ghost {
   visibility: hidden;
 }
+@media (max-width: 820px) {
+  /* the columns stack, so the spacer that aligns the Design column only adds a blank line */
+  .cds-ghost {
+    display: none;
+  }
+}
 .cds-path {
   margin: 0;
   font: 400 11px/1.5 var(--font-mono);
@@ -640,6 +649,11 @@ em {
 }
 .cds-path-line {
   display: block;
+}
+.cds-related {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-400);
 }
 .cds-files .cds-path {
   overflow-wrap: normal;
@@ -1345,6 +1359,71 @@ em {
   margin-right: 6px;
   color: var(--ink-400);
 }
+/* A draft's review: what the scan flagged, the points every review covers, one confirmation */
+.cds-review {
+  margin: 4px 0 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ink-900);
+  font-size: 12px;
+}
+.cds-review h5 {
+  margin: 0 0 4px;
+  font: 500 13px/1.45 var(--font-ui);
+  scroll-margin-top: 12px;
+}
+.cds-review h5:focus {
+  outline: none;
+}
+.cds-review h5:focus-visible {
+  outline: 1px solid var(--ink-900);
+  outline-offset: 2px;
+}
+.cds-review-files {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.cds-review-files > li {
+  padding: 6px 0 2px;
+  border-top: var(--cds-hair);
+}
+.cds-review-files > li:last-child {
+  border-bottom: var(--cds-hair);
+}
+.cds-review-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+.cds-review p {
+  margin: 0 0 8px;
+}
+.cds-review-findings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cds-review-findings .cds-check {
+  align-items: baseline;
+  margin: 4px 0;
+}
+.cds-review-rule {
+  color: var(--ink-900);
+  font-weight: 500;
+}
+.cds-review-lead {
+  color: var(--ink-400);
+}
+.cds-review-points {
+  margin: 0 0 8px;
+  padding-left: 16px;
+  color: var(--ink-600);
+}
+.cds-review-points li {
+  padding: 1px 0;
+}
 .cds-check-output summary {
   font-size: 12px;
   cursor: pointer;
@@ -1427,7 +1506,11 @@ em {
   word-break: break-word;
 }
 .cds-log time {
-  color: var(--ink-300);
+  color: var(--ink-400);
+}
+.cds-log:focus-visible {
+  outline: 1px solid var(--ink-900);
+  outline-offset: -1px;
 }
 .cds-log [data-level="step"] {
   color: var(--ink-900);
@@ -1436,9 +1519,13 @@ em {
 .cds-log [data-level="ai"] {
   color: var(--ink-900);
 }
+/* warnings keep ink text for contrast; the tool's one colour marks them in the margin */
 .cds-log [data-level="error"],
 .cds-log [data-level="warn"] {
-  color: var(--danger);
+  margin-left: -8px;
+  padding-left: 6px;
+  border-left: 2px solid var(--danger);
+  color: var(--ink-900);
 }
 .cds-log [data-level="done"] {
   color: var(--ink-900);

@@ -18,6 +18,10 @@ export interface UnitDef {
   section?: string;
   /** Preview cards: the kit components a card destructures from the bundle */
   uses?: string[];
+  /** Reference units: the App files to read beside them (never compared, never written) */
+  related?: string[];
+  /** A kit page that renders the unit (screens: the kit's interactive app) */
+  preview?: string;
 }
 
 const base = (p: string) => p.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
@@ -138,13 +142,15 @@ export function buildInventory(ctx: Ctx, designFiles: string[], readDesign: (pat
     units.push({ id: `spec:${h}`, kind: "spec", area: "spec", name: h, section: h, appPaths: appSpec.has(h) ? [A.spec] : [], designPaths: designSpec.has(h) ? [D.spec] : [] });
   }
 
-  // Screens
+  // Screens: Design references. A pair names the App screen to read beside the mockup; it is never a sync
+  // target, because several kit screens may stand for one App screen.
+  const kitApp = dFiles.includes(`${D.screensRoot}/index.html`) ? { preview: `${D.screensRoot}/index.html` } : {};
   for (const s of config.screens) {
     const inDesign = dFiles.includes(s.design);
     const inApp = existsSync(join(repo, s.app));
-    units.push({ id: `screen:${base(s.design)}`, kind: "screen", area: "screens", name: s.name ?? base(s.design), designPaths: inDesign ? [s.design] : [], appPaths: inApp ? [s.app] : [] });
+    units.push({ id: `screen:${base(s.design)}`, kind: "screen", area: "screens", name: s.name ?? base(s.design), designPaths: inDesign ? [s.design] : [], appPaths: [], ...(inApp ? { related: [s.app] } : {}), ...kitApp });
   }
-  for (const p of dFiles) if (p.startsWith(D.screensRoot + "/") && p.endsWith(".jsx") && !config.screens.some((s) => s.design === p)) units.push({ id: `screen:${base(p)}`, kind: "screen", area: "screens", name: base(p), designPaths: [p], appPaths: [] });
+  for (const p of dFiles) if (p.startsWith(D.screensRoot + "/") && p.endsWith(".jsx") && !config.screens.some((s) => s.design === p)) units.push({ id: `screen:${base(p)}`, kind: "screen", area: "screens", name: base(p), designPaths: [p], appPaths: [], ...kitApp });
 
   // Preview cards (Design only): a card and its Minimal twin are one unit
   const cards = new Map<string, string[]>();

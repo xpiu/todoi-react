@@ -39,7 +39,7 @@ export function laneRules(config: Config): LaneRule[] {
   const A = config.app;
   const D = config.design;
   const merge: Technique = { id: "merge-css", label: "CSS merge", detail: "Deterministic, no AI: the other side's rule changes since the sync point are replayed onto this side's file. A rule both sides changed keeps this side's value and is reported." };
-  const portApp: Technique = { id: "ai-port", label: "AI port into a worktree", detail: `Claude Code translates the kit's React 18 JSX into typed React 19 and plain CSS on a branch in its own worktree. Every port must commit and ${A.check} must pass; nothing reaches your checkout until you merge.` };
+  const portApp: Technique = { id: "ai-port", label: "AI draft into a worktree", detail: `Claude Code drafts the kit's React 18 JSX as typed React 19 and plain CSS on a branch in its own worktree. Every draft must commit and ${A.check} must pass; then the tool scans it for lost Base UI primitives, ref forwarding, ARIA and whole-store reads, and it merges only after you review it.` };
   const portDesign: Technique = { id: "ai-port", label: "AI port into staging", detail: "Claude Code ports the App's work into a staging copy of the kit. Changed preview cards are rendered; you approve the exact upload list; the upload is checked against newer Design edits and read back." };
   const fallbacks = Object.entries(D.assetFallbacks ?? {});
   return [
@@ -61,10 +61,15 @@ export function laneRules(config: Config): LaneRule[] {
       title: "Screens",
       app: `${A.screensRoot}/*.tsx`,
       design: `${D.screensRoot}/*.jsx`,
-      match: `${config.screens.length === 1 ? "One pair is" : `${config.screens.length} pairs are`} listed in config.json. Other kit screens stay Design-only.`,
-      toApp: portApp,
-      toDesign: portDesign,
+      match: `${config.screens.length === 1 ? "One pair is" : `${config.screens.length} pairs are`} listed in config.json: compare each kit screen with its App screen. Other kit screens stay Design-only.`,
+      toApp: null,
+      toDesign: null,
+      reference: true,
       pairs: config.screens,
+      notes: [
+        "Kit screens are flat mockups with fixture data; App screens own routing, server data, offline sync and state. A screen is visual reference in both directions: port the components it shows instead.",
+        ...sharedScreens(config).map(([app, n]) => `${n} kit screens stand for ${app}: a port from one of them would rewrite the code behind the others.`),
+      ],
     },
     { id: "card", title: "Preview cards", app: null, design: `${D.componentRoot}/**/*.card.html (+ Minimal twin)`, match: "Design only: a card and its Minimal twin are one unit.", toApp: null, toDesign: null, reference: true, notes: ["Never ported. Ports into Design update a component's cards with it; ports into the App read them as examples."] },
     { id: "guideline", title: "Guidelines", app: null, design: "guidelines/**/*.html, explorations/**/*.html", match: "Design only.", toApp: null, toDesign: null, reference: true, notes: ["Shown as Design work, never ported."] },
@@ -80,6 +85,13 @@ export function laneRules(config: Config): LaneRule[] {
       notes: fallbacks.length ? [`Binary kit assets aren't pulled; previews borrow the App's copies: ${fallbacks.map(([d, a]) => `${d} → ${a}`).join(", ")}.`] : undefined,
     },
   ];
+}
+
+/** App screens that more than one kit screen points at, with how many */
+function sharedScreens(config: Config): Array<[string, number]> {
+  const n = new Map<string, number>();
+  for (const s of config.screens) n.set(s.app, (n.get(s.app) ?? 0) + 1);
+  return [...n].filter(([, k]) => k > 1);
 }
 
 /** Which lane a file belongs to on one side, by the same path rules the inventory uses */
