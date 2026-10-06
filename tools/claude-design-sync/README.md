@@ -2,9 +2,25 @@
 
 A local tool that compares **this repo's React 19 app** (todoi-react) with the **Claude Design project "Todoi Design System"** (a hand-written JSX kit). It shows which features moved on which side, and moves the work across with buttons: one feature at a time, or the whole plan.
 
+## Contents
+
+- [Architecture and design-tool priorities](#architecture-and-design-tool-priorities)
+  - [Storybook examples in sync](#storybook-examples-in-sync)
+- [Start the tool](#start-the-tool)
+- [A typical loop](#a-typical-loop)
+- [Plan page (`/`)](#plan-page-)
+- [Mapping page (`/mapping`)](#mapping-page-mapping)
+- [How it works](#how-it-works)
+- [Safety](#safety)
+- [Limits](#limits)
+- [CLI](#cli)
+- [Configuration](#configuration)
+- [State on disk](#state-on-disk)
+- [Code and tests](#code-and-tests)
+
 ## Architecture and design-tool priorities
 
-**Production architecture comes first, Claude Design readability second. Storybook and this sync tool must adapt to both.** See the application's [architecture policy](../../README.md#architecture-and-design-tool-priorities).
+**Production architecture comes first, Claude Design readability second. Storybook and this sync tool must adapt to both.** See the application's [architecture policy](../../README.md#limitations-for-design-tools-like-claude-design-sync-and-storybook).
 
 - **React:** typed component APIs, composition, immutable state, and side effects outside render. Keep local interaction state local. [React guidance](https://react.dev/reference/rules/components-and-hooks-must-be-pure).
 - **Base UI:** retain its interaction primitives and pass refs and behavioral props through composition correctly. [Composition guidance](https://base-ui.com/react/handbook/composition).
