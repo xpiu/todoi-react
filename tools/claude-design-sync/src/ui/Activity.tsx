@@ -241,7 +241,7 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
               </button>
             </>
           ) : (
-            <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} data-tip={picked.size ? "Check Claude Design for newer edits to the ticked files, then get the request to paste into Claude Code, where you approve the upload" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
+            <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} data-tip={picked.size ? "Check Claude Design for newer edits to the ticked files, then get the request to paste into Claude Code, where you approve the upload - Costs tokens" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
               <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")} from Claude Code
             </button>
           )}

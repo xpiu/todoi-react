@@ -187,13 +187,13 @@ export function Mapping() {
   const design: Freshness = !snap
     ? { ok: false, text: "No snapshot yet, so the Design side has nothing to compare.", fix: { label: "Pull now", tip: TIP.pull, run: () => void pullNow().catch(() => {}) } }
     : otherProject
-      ? { ok: false, text: "The newest snapshot came from another project.", fix: { label: "Pull now", tip: "Pull a snapshot of the project the tool targets now", run: () => void pullNow().catch(() => {}) } }
+      ? { ok: false, text: "The newest snapshot came from another project.", fix: { label: "Pull now", tip: "Pull a snapshot of the project the tool targets now - Costs tokens", run: () => void pullNow().catch(() => {}) } }
       : unpulled
         ? { ok: false, text: `${plural(unpulled, "file")} couldn't be pulled.`, fix: { label: "Pull again", tip: TIP.pullAgain, run: () => void pullNow().catch(() => {}) } }
         : !last
           ? { ok: null, text: "Not asked whether it changed since the tool started.", fix: { label: "Check for changes", tip: TIP.check, run: () => void check().catch(() => {}) } }
           : last.stale
-            ? { ok: false, text: `Changed since the snapshot (asked ${fmtTime(last.at)}).`, fix: { label: "Pull now", tip: "Pull the changes into a fresh snapshot with Claude Code. Takes a few minutes", run: () => void pullNow().catch(() => {}) } }
+            ? { ok: false, text: `Changed since the snapshot (asked ${fmtTime(last.at)}).`, fix: { label: "Pull now", tip: "Pull the changes into a fresh snapshot with Claude Code. Takes a few minutes - Costs tokens", run: () => void pullNow().catch(() => {}) } }
             : { ok: true, text: `Up to date when asked, ${fmtTime(last.at)}.`, fix: { label: "Check again", tip: TIP.check, run: () => void check().catch(() => {}) } };
   const app: Freshness = !cmp
     ? { ok: null, text: "Not compared yet." }
@@ -236,7 +236,7 @@ export function Mapping() {
           </p>
           <h2 className="cds-verdict-line">{verdict ?? <span className="cds-skel cds-skel-line" />}</h2>
           <div className="cds-map-refresh">
-            <button type="button" className={`cds-btn ${behind ? "cds-btn-primary" : ""}`} onClick={() => void bringUpToDate()} disabled={!!busy || running} data-tip={running ? "A job is running. Refresh when it finishes" : "Ask Claude Design what changed, pull when the snapshot is behind or incomplete, then recompare the App"}>
+            <button type="button" className={`cds-btn ${behind ? "cds-btn-primary" : ""}`} onClick={() => void bringUpToDate()} disabled={!!busy || running} data-tip={running ? "A job is running. Refresh when it finishes" : "Ask Claude Design what changed, pull when the snapshot is behind or incomplete, then recompare the App - Costs tokens"}>
               {busy ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} Bring the mapping up to date
             </button>
             <span className="cds-quiet" role="status">

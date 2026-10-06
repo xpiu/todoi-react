@@ -14,8 +14,8 @@ const ID = "cds-tip";
 export const TIP = {
   recompare: "Re-read the App and compare it with the newest Design snapshot",
   check: "Ask Claude Design whether the project changed since the newest snapshot. Nothing is pulled yet",
-  pull: "Pull every text file of the Design project into a fresh snapshot with Claude Code. Takes a few minutes",
-  pullAgain: "Pull again to fetch the files the last pull couldn't read",
+  pull: "Pull every text file of the Design project into a fresh snapshot with Claude Code. Takes a few minutes - Costs tokens",
+  pullAgain: "Pull again to fetch the files the last pull couldn't read - Costs tokens",
   project: "Open the project in Claude Design, in a new tab",
   showOnDiagram: "Play this move through the lanes of the diagram",
   closePreview: "Close the preview",

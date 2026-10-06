@@ -35,7 +35,7 @@ export function RunConfirmation({ steps, state, busy, featureTitle, onRun, onBac
         {upload ? <li>Uploads nothing yet: staged kit files wait in Activity for you to approve the exact list.</li> : null}
       </ul>
       <div className="cds-confirm-actions">
-        <button type="button" className="cds-btn cds-btn-primary" disabled={!!missing || busy || !work} data-tip={missing ?? (busy ? "Another job is running. Wait for it to finish" : !work ? "Nothing to run" : "Start these steps now and follow them in Activity. Nothing is merged or uploaded until you approve it")} onClick={onRun}>
+        <button type="button" className="cds-btn cds-btn-primary" disabled={!!missing || busy || !work} data-tip={missing ?? (busy ? "Another job is running. Wait for it to finish" : !work ? "Nothing to run" : "Start these steps now and follow them in Activity. Nothing is merged or uploaded until you approve it - Costs tokens")} onClick={onRun}>
           <Play size={14} strokeWidth={1.75} aria-hidden /> Run {plural(work, "step")}
         </button>
         <button type="button" className="cds-btn" onClick={onBack} data-tip="Return to the list of steps without running anything">

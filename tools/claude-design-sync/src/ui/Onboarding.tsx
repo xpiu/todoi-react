@@ -16,7 +16,7 @@ export function Onboarding({ state, onPull, onImported }: { state: AppState; onP
         <div className="cds-cell">
           <h3>Pull with Claude Code</h3>
           <p className="cds-quiet">Runs Claude Code headless with its DesignSync tool and reads every text file of the project. Takes a few minutes; needs Claude Code signed in to claude.ai.</p>
-          <button type="button" className="cds-btn cds-btn-primary" onClick={onPull} disabled={!state.harnesses.claude.ok && !state.fake} data-tip="Run Claude Code headless to read every text file of the project into a local snapshot. Follow it in Activity">
+          <button type="button" className="cds-btn cds-btn-primary" onClick={onPull} disabled={!state.harnesses.claude.ok && !state.fake} data-tip="Run Claude Code headless to read every text file of the project into a local snapshot. Follow it in Activity - Costs tokens">
             <Download size={14} strokeWidth={1.75} aria-hidden /> Pull the project
           </button>
           {!state.harnesses.claude.ok && !state.fake ? <p className="cds-error-inline">{state.harnesses.claude.error}</p> : null}
