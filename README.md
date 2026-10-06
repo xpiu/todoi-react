@@ -2,7 +2,7 @@
 
 Todoi is a lightweight task manager focused on usability, legibility, speed and support for AI agents.
 
-## About
+## 📝 About
 
 | Resource | Details |
 |---|---|
@@ -17,19 +17,20 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 | Business development | `git@github.com:xpiu/todoi-business.git`; [planning](https://github.com/xpiu/todoi-business/blob/main/todo/todo-business.md), [milestones](https://github.com/xpiu/todoi-business/blob/main/todo/milestones-business.md). |
 | Native apps | Android prototype in external repo `todoi-app`; iOS, macOS and Windows apps not initiated. |
 
-## Contents
+## 📖 Contents
 
-- [Features and limits](#features-and-limits)
-- [Visitors and accounts](#visitors-and-accounts)
-- [Tech stack](#tech-stack)
-- [Architecture and design-tool priorities](#architecture-and-design-tool-priorities)
-- [Local development](#local-development)
-- [Production](#production)
-- [Quality gates](#quality-gates)
-- [Storybook](#storybook)
-- [Claude Design sync](#claude-design-sync)
+- [📝 About](#-about)
+- [✨ Features and limits](#-features-and-limits)
+- [👥 Visitors and accounts](#-visitors-and-accounts)
+- [🧰 Tech stack](#-tech-stack)
+- [🎨 Limitations for design tools like claude-design-sync and Storybook](#-limitations-for-design-tools-like-claude-design-sync-and-storybook)
+- [💻 Local development](#-local-development)
+- [🚀 Production](#-production)
+- [✅ Quality gates](#-quality-gates)
+- [📚 Storybook](#-storybook)
+- [🔄 Claude Design sync](#-claude-design-sync)
 
-## Features and limits
+## ✨ Features and limits
 
 - **Workspace:** groups, projects, lists, items/subitems, labels, assignees, watchers, relations, recurrence, covers and attachments. List/Board/Calendar views with filters, sorting and saved views; item overlay with Tiptap descriptions, comments and activity.
 - **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export account JSON.
@@ -44,13 +45,13 @@ Current limits:
 - **Exports:** incomplete round-trips. Account JSON contains user details, groups, projects, lists, labels and items, excluding comments, attachments and association tables; it cannot be reimported. Back up PostgreSQL and uploads separately.
 - **Deferred:** OpenAPI, a dedicated job runner, full export/import round-trips, large-project virtualization and Linux screenshot baselines. A sequence-based delta/SSE sync engine, Yjs collaboration and Redis remain possible later options.
 
-## Visitors and accounts
+## 👥 Visitors and accounts
 
 Visitors get an empty private workspace: **Projects → New project → To do**, the same editing tools as account holders, and no onboarding/reminder banner. The avatar offers **Log in** / **Create account**; `/account` opens login. Signing up or logging in transfers the guest workspace and Inbox, preserving content IDs and existing account work.
 
 Better Auth guest cookies last seven days, renewed during use. Refreshing/reopening retains access while valid; clearing cookies or expiry loses guest access. Signing in gives content a durable owner. Passwords require at least 10 characters.
 
-## Tech stack
+## 🧰 Tech stack
 
 | Area | Implementation |
 |---|---|
@@ -61,7 +62,7 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 | Authentication | Better Auth sessions/accounts in PostgreSQL; API tokens use `Authorization: Bearer tdi_…`. |
 | Jobs and logging | API drains a transactional attachment-cleanup outbox. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation. |
 
-## Architecture and design-tool priorities
+## 🎨 Limitations for design tools like claude-design-sync and Storybook
 
 **Production architecture comes first, Claude Design readability second. Storybook and `claude-design-sync` must adapt to both.**
 
@@ -78,7 +79,7 @@ Storybook renders the actual application components; its decorators supply props
 
 Design-originated changes pass through application checks before acceptance. Adapt visual proposals where needed to preserve accessibility, server boundaries, and state ownership. The sync tool's file discovery and export rules are implementation details we can change to support these priorities.
 
-## Local development
+## 💻 Local development
 
 Requirements: **Node 22.12+**, npm and running PostgreSQL (CI uses PostgreSQL 16).
 
@@ -104,7 +105,7 @@ Seeded accounts: `flo@todoi.com` and `sam@helicopterseurope.com`, verified, pass
 
 Integration/browser/tool checks below run separately.
 
-## Production
+## 🚀 Production
 
 One Node process serves API/client behind a TLS proxy (Dokploy, Caddy or nginx). Configure production first: **replace `.env.example` auth values and set `SEED_ON_START=false`**.
 
@@ -139,7 +140,7 @@ npm run build
 APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED_ON_START=false MIGRATE_ON_START=true npm start
 ```
 
-## Quality gates
+## ✅ Quality gates
 
 - **Unit:** `npm run check` covers parsers, dates, recurrence/completion, Markdown, views, filters, export, shortcuts, item rows, mutations and server configuration/errors. The [theme-parity audit](src/client/design/tokens/parity.test.ts) checks matching token sets across four scopes, valid token references and no raw hex, bare z-index or `@media` in design component CSS.
 - **Integration:** `npm run test:integration` reads `.env` and checks PostgreSQL services/routes, including lifecycle cascades, rollback, attachment cleanup/security, completion, moves, duplication, search and notifications. Each test file gets a migrated disposable database and upload directory, removed afterward. The configured database role needs `CREATEDB`; fixtures do not use the application database.
@@ -149,7 +150,7 @@ Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional change
 
 Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Migration `0006_lifecycle_cleanup.sql` adds the parent foreign key (promoting legacy orphans to top-level) and cleanup outbox. The API removes bytes after commit, draining up to 100 due jobs at startup, after deletion and each minute; retries back off to one hour. Migrate before starting an updated API.
 
-## Storybook
+## 📚 Storybook
 
 Storybook is a separate React/Vite component workshop and browser test suite. It renders the actual components in `src/client/design` with the application's layered CSS, fonts, Zustand appearance store, and viewport hooks. Production code never imports stories, mocks, or Storybook addons. Run it independently of the API and PostgreSQL:
 
@@ -171,7 +172,7 @@ Story metadata and component manifests provide readable examples for coding agen
 
 Add stories alongside components as they change, followed by composed views and API mocks when needed. The `/dev/ds` gallery remains available until its useful specimens/checks have migrated. Optional Storybook MCP integration and component screenshot baselines can follow after this foundation; [Storybook AI features](https://storybook.js.org/docs/ai) are currently in preview.
 
-## Claude Design sync
+## 🔄 Claude Design sync
 
 The customizable [sync tool](tools/claude-design-sync/README.md) compares/transfers app and Claude Design changes by feature; the design kit is a creative reference, with limited app parity.
 
