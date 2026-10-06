@@ -1,14 +1,24 @@
 // Pictures instead of a text diff between React 18 mockups and React 19 code: the App's component as its
-// Storybook stories render it, in the App column, beside the kit's cards that show it, in the Design column,
-// one theme at a time.
+// Storybook stories render it, in the App column, beside the kit's cards that render it, in the Design
+// column, one theme at a time. Both sides are shot at 2× and shown 1:1, so sizes, padding and type compare.
 import { useState } from "react";
 
-import { api, plural, type Unit, type VisualComparison, type VisualTheme } from "./api";
+import { api, isStoryPath, plural, store, type Unit, type VisualComparison, type VisualTheme } from "./api";
 
 const THEMES: Array<{ id: VisualTheme; label: string; mode: string }> = [
   { id: "rounded", label: "Rounded", mode: "dark" },
   { id: "minimal", label: "Minimal", mode: "light" },
 ];
+const THEME_KEY = "cds-visual-theme";
+
+/** The theme switch stays in view while scrolling the pictures: it sticks under the ledger's sticky column heads */
+const stickUnderHeads = (el: HTMLElement | null) => {
+  const heads = document.querySelector(".cds-heads");
+  if (el && heads) el.style.top = `calc(var(--cds-bar) + ${Math.round(heads.getBoundingClientRect().height)}px)`;
+};
+
+/** Only a component with stories has an App side to picture */
+export const canPicture = (unit: Unit) => unit.kind === "component" && unit.app.paths.some(isStoryPath);
 
 /** The link that opens a component's visual comparison, and the comparison itself under the unit */
 export function useVisual(unit: Unit, baseId: string | null) {
@@ -26,8 +36,13 @@ export function useVisual(unit: Unit, baseId: string | null) {
 }
 
 function VisualCompare({ data, error, name }: { data: VisualComparison | null; error: string | null; name: string }) {
-  const [theme, setTheme] = useState<VisualTheme>("minimal");
-  const t = THEMES.find((x) => x.id === theme)!;
+  // one theme for every comparison, remembered per browser
+  const [theme, setThemeState] = useState<VisualTheme>(() => store.get<VisualTheme>(THEME_KEY, "minimal"));
+  const setTheme = (t: VisualTheme) => {
+    setThemeState(t);
+    store.set(THEME_KEY, t);
+  };
+  const t = THEMES.find((x) => x.id === theme) ?? THEMES[1]!;
   if (error) return <p className="cds-error-inline cds-visual-msg" role="alert">Couldn't picture {name}: {error}</p>;
   if (!data)
     return (
@@ -36,29 +51,36 @@ function VisualCompare({ data, error, name }: { data: VisualComparison | null; e
         <div className="cds-twin"><span className="cds-skel cds-visual-skel" /><span /><span className="cds-skel cds-visual-skel" /></div>
       </div>
     );
-  const side = (shots: VisualComparison["app"], note: string | undefined, what: string) => {
-    const mine = shots.filter((s) => s.theme === theme);
-    return (
-      <div className="cds-cell cds-visual-side">
-        {mine.length ? (
-          mine.map((s) => (
-            <figure key={s.file}>
-              <figcaption>
-                {s.label}
-                {s.errors?.length ? <span className="cds-error-inline">{plural(s.errors.length, "error")} while rendering</span> : null}
-              </figcaption>
-              <img src={`/visual/${data.key}/${s.file}`} alt={`${what}: ${s.label}, ${t.label} theme`} loading="lazy" />
-            </figure>
-          ))
-        ) : (
-          <p className="cds-quiet">{note ?? `Nothing to show in ${t.label}.`}</p>
-        )}
-      </div>
-    );
-  };
+  const app = data.app.filter((s) => s.theme === theme);
+  const design = data.design.filter((s) => s.theme === theme);
+  const side = (shots: VisualComparison["app"], note: string | undefined, what: string) => (
+    <div className="cds-cell cds-visual-side">
+      {shots.length ? (
+        shots.map((s) => (
+          <figure key={s.file}>
+            <figcaption>
+              <span>{s.label}</span>
+              {s.shows ? <span className="cds-quiet">{name} × {s.shows}</span> : null}
+              {s.errors?.length ? (
+                <details className="cds-visual-errors">
+                  <summary className="cds-error-inline">{plural(s.errors.length, "error")} while rendering</summary>
+                  <ul>{s.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                </details>
+              ) : null}
+            </figcaption>
+            <div className="cds-visual-frame">
+              <img src={`/visual/${data.key}/${s.file}`} width={s.width} height={s.height} alt={`${what}: ${s.label}, ${t.label} theme`} loading="lazy" />
+            </div>
+          </figure>
+        ))
+      ) : (
+        <p className="cds-quiet">{note ?? `Nothing to show in ${t.label}.`}</p>
+      )}
+    </div>
+  );
   return (
     <section className="cds-visual" aria-label={`${name} on both sides`}>
-      <div className="cds-visual-bar">
+      <div className="cds-visual-bar" ref={stickUnderHeads}>
         <div className="cds-map-filters" role="group" aria-label="Theme">
           {THEMES.map((x) => (
             <button key={x.id} type="button" className="cds-map-filter" aria-pressed={theme === x.id} data-tip={`Show both sides in the ${x.label} theme (${x.mode} mode, as the kit's cards are)`} onClick={() => setTheme(x.id)}>
@@ -66,17 +88,17 @@ function VisualCompare({ data, error, name }: { data: VisualComparison | null; e
             </button>
           ))}
         </div>
-        <span className="cds-quiet">{t.label} theme, {t.mode} mode on both sides</span>
+        <span className="cds-quiet">{t.mode} mode · both sides at actual size</span>
       </div>
       <div className="cds-twin cds-visual-head">
-        <p className="cds-cell cds-quiet">The App's Storybook stories</p>
+        <p className="cds-cell cds-quiet">The App's stories ({app.length})</p>
         <span className="cds-rail-cell" />
-        <p className="cds-cell cds-quiet">The kit's preview cards that show it</p>
+        <p className="cds-cell cds-quiet">Kit cards that render {name} ({design.length})</p>
       </div>
       <div className="cds-twin">
-        {side(data.app, data.notes.app, "App story")}
+        {side(app, data.notes.app, "App story")}
         <span className="cds-rail-cell" />
-        {side(data.design, data.notes.design, "Kit card")}
+        {side(design, data.notes.design, "Kit card")}
       </div>
     </section>
   );

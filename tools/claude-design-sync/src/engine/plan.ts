@@ -172,37 +172,45 @@ function diffStat(diff: string): string {
 const lineCount = (text: string | null) => (text ? text.replace(/\n$/, "").split("\n").length : 0);
 const q = (p: string) => (/^[\w./@+-]+$/.test(p) ? p : `'${p.replaceAll("'", "'\\''")}'`);
 
-/** How to read one side's change of a unit: one line per file, a command or a file to read, with its size */
-function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design"): string[] {
+/** How to read one side's change of a unit: commands to run (with their size), files to read whole, files for context */
+interface Reading {
+  run: string[];
+  read: string[];
+  context: string[];
+}
+
+function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design"): Reading {
+  const r: Reading = { run: [], read: [], context: [] };
   const b = unitBaseline(cmp, u);
+  // one file of the unit, before and now; `diff` is how a command shows the change
+  const add = (now: string, was: string | null, diff: () => { cmd: string; text: string }) => {
+    if (was == null) return r.read.push(`\`${now}\` (new, ${lineCount(readText(now))} lines)`);
+    const d = diff();
+    if (!d.text.trim()) return r.context.push(`\`${now}\``);
+    r.run.push(`${d.cmd}   # ${diffStat(d.text)}`);
+    r.read.push(`\`${now}\``);
+  };
   if (side === "app") {
-    if (u.kind === "spec") return specLines(ctx, b ? showAt(ctx.repo, b.rev, u.app.paths[0] ?? "") : null, readText(join(ctx.repo, u.app.paths[0] ?? "")), u.name, `${ctx.config.app.spec} § ${u.name}`);
-    return u.app.paths.map((p) => {
-      const now = readText(join(ctx.repo, p));
-      const was = b ? showAt(ctx.repo, b.rev, p) : null;
-      if (was == null) return `- New file, read it whole: \`${q(join(ctx.repo, p))}\` (${lineCount(now)} lines)`;
-      const d = diffSince(ctx.repo, b!.rev, [p]);
-      return d.trim() ? `- \`git -C ${q(ctx.repo)} diff ${b!.rev} -- ${q(p)}\` (${diffStat(d)}), then read \`${q(join(ctx.repo, p))}\`` : `- Unchanged, for context: \`${q(join(ctx.repo, p))}\``;
-    });
+    if (u.kind === "spec") return specReading(ctx, b ? showAt(ctx.repo, b.rev, u.app.paths[0] ?? "") : null, readText(join(ctx.repo, u.app.paths[0] ?? "")), u.name);
+    for (const p of u.app.paths) add(join(ctx.repo, p), b ? showAt(ctx.repo, b.rev, p) : null, () => ({ cmd: `git -C ${q(ctx.repo)} diff ${b!.rev} -- ${q(p)}`, text: diffSince(ctx.repo, b!.rev, [p]) }));
+    return r;
   }
   const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
   const baseSnap = b?.designSnapshot ? snapshotFilesDir(ctx, b.designSnapshot) : null;
-  if (!snap) return ["- (no Design snapshot to read)"];
-  if (u.kind === "spec") return specLines(ctx, baseSnap ? readText(join(baseSnap, u.design.paths[0] ?? "")) : null, readText(join(snap, u.design.paths[0] ?? "")), u.name, `${ctx.config.design.spec} § ${u.name}`);
-  return u.design.paths.map((p) => {
-    const now = join(snap, p);
-    const was = baseSnap ? join(baseSnap, p) : null;
-    if (!was || !existsSync(was)) return `- New file, read it whole: \`${q(now)}\` (${lineCount(readText(now))} lines)`;
-    const d = diffNoIndex(was, now);
-    return d.trim() ? `- \`git diff --no-index ${q(was)} ${q(now)}\` (${diffStat(d)}), then read \`${q(now)}\`` : `- Unchanged, for context: \`${q(now)}\``;
-  });
+  if (!snap) return r;
+  if (u.kind === "spec") return specReading(ctx, baseSnap ? readText(join(baseSnap, u.design.paths[0] ?? "")) : null, readText(join(snap, u.design.paths[0] ?? "")), u.name);
+  for (const p of u.design.paths) {
+    const was = baseSnap && existsSync(join(baseSnap, p)) ? join(baseSnap, p) : null;
+    add(join(snap, p), was, () => ({ cmd: `git diff --no-index ${q(was!)} ${q(join(snap, p))}`, text: diffNoIndex(was!, join(snap, p)) }));
+  }
+  return r;
 }
 
 /** A spec section's two versions as files (named by their content), and the word diff that reads them */
-function specLines(ctx: Ctx, was: string | null, now: string | null, name: string, label: string): string[] {
+function specReading(ctx: Ctx, was: string | null, now: string | null, name: string): Reading {
   const before = sections(was).get(name) ?? "";
   const after = sections(now).get(name) ?? "";
-  if (before === after) return [`- ${label}: unchanged`];
+  if (before === after) return { run: [], read: [], context: [] };
   const dir = join(ctx.state, "sections");
   mkdirSync(dir, { recursive: true });
   const [a, b] = [before, after].map((text) => {
@@ -210,7 +218,8 @@ function specLines(ctx: Ctx, was: string | null, now: string | null, name: strin
     if (!existsSync(f)) writeFileSync(f, `${text}\n`);
     return f;
   });
-  return [`- ${label}: \`git diff --no-index --word-diff ${q(a!)} ${q(b!)}\` (${diffStat(diffNoIndex(a!, b!))} lines; the section before and after, word by word), then read the whole section in \`${q(b!)}\``];
+  // the spec writes a paragraph per line, so a word diff stays short
+  return { run: [`git diff --no-index --word-diff ${q(a!)} ${q(b!)}   # § ${name}, ${diffStat(diffNoIndex(a!, b!))} lines`], read: [`\`${b}\` (§ ${name} as it is now)`], context: [] };
 }
 
 const KIT_RULES = `Kit conventions (Claude Design project, files under the staging folder):
@@ -224,7 +233,7 @@ const KIT_RULES = `Kit conventions (Claude Design project, files under the stagi
 - A new component ships its Minimal rules in tokens/themes/minimal-components.css (html[data-theme="minimal"] .td-…): grey words that go ink on hover, square corners, hairline rings, no fills.
 - Update readme.md (the long spec) where the behaviour is specified, and add new components to its components/<area>/ file map.
 - Change files on top of what is there; never rewrite a file wholesale or drop content Design added.
-- Check your work: \`npm run design-sync -- bundle <stage>\` then \`npm run design-sync -- check-cards <stage> <cards…>\` must show no errors.`;
+- Check your work: \`npm run design-sync -- bundle STAGE\` then \`npm run design-sync -- check-cards STAGE <cards…>\` must show no errors.`;
 
 const APP_RULES = `App conventions (this repo, React 19 + TypeScript; read CLAUDE.md and DESIGN.md first):
 - Production architecture comes first, Claude Design readability second. Storybook and this sync tool adapt to the application. Follow React purity and state ownership, Base UI composition with refs/behavioral props, server-side Hono validation/authorization, and focused Zustand selectors.
@@ -238,7 +247,7 @@ const APP_RULES = `App conventions (this repo, React 19 + TypeScript; read CLAUD
 
 export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | "design", units: Unit[]): string {
   const base = cmp.base;
-  const stage = "<STAGE>";
+  const stage = "STAGE";
   // a pull carries Design's work into the App; a push carries the App's work into the kit
   const from = target === "app" ? "design" : "app";
   const lines: string[] = [];
@@ -259,24 +268,29 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   }
   lines.push("");
   lines.push(`## Read the changes first`);
-  lines.push(`The ${from === "design" ? "kit's" : "App's"} changes are not pasted here. Before you edit anything, run each command and read each file below in full, with your own tools. Paths are absolute, so the commands work from any folder.`);
+  lines.push(`The ${from === "design" ? "kit's" : "App's"} changes are not pasted here. Before you edit anything, run each command (each line ends with the lines it adds and removes) and read each file in full, with your own tools. Paths are absolute, so the commands work from any folder.`);
+  if (target === "design") lines.push(`STAGE is the staging folder: the run creates it as a copy of the newest Design snapshot${cmp.designSnapshot ? ` (${snapshotFilesDir(ctx, cmp.designSnapshot.id)})` : ""}. To run this brief yourself, copy that folder and use the copy as STAGE.`);
   for (const u of units) {
-    lines.push("", `### ${u.name}`, ...changeLines(ctx, cmp, u, from));
+    const r = changeLines(ctx, cmp, u, from);
+    lines.push("", `### ${u.name}`);
+    if (r.run.length) lines.push("```sh", ...r.run, "```");
+    if (r.read.length) lines.push(`- Read in full: ${r.read.join(", ")}`);
+    if (r.context.length) lines.push(`- Unchanged, for context: ${r.context.join(", ")}`);
     // the receiving side as it is now, to change on top of: App files relative to the checkout the port
     // runs in (a worktree), kit files in the stage
     const into = target === "app" ? u.app.paths : u.design.paths.map((p) => join(stage, p));
-    if (into.length && u.kind !== "spec") lines.push(`- ${target === "app" ? "The App's current version (relative to the repository root), to change on top of" : "The kit's current version, to change on top of"}: ${into.map((p) => `\`${q(p)}\``).join(", ")}`);
+    if (into.length && u.kind !== "spec") lines.push(`- ${target === "app" ? "Change on top of the App's current files (relative to the repository root)" : "Change on top of the kit's current files"}: ${into.map((p) => `\`${p}\``).join(", ")}`);
   }
   if (target === "design") {
     // what the tool writes from Storybook before this step: the agent refines these instead of authoring them
     const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
     const drafted = units.flatMap((u) => plannedDrafts(ctx, u, (p) => !!snap && existsSync(join(snap, p))));
-    if (drafted.length) lines.push("", "## Drafted for you from Storybook", "Before you start, the tool writes these from the App's Storybook manifest (react-docgen props, one card figure per story). They are already in the stage: refine them and write the component's .jsx to match, don't start them over.", ...drafted.map((p) => `- \`${q(join(stage, p))}\``));
+    if (drafted.length) lines.push("", "## Drafted for you from Storybook", "Before you start, the tool writes these from the App's Storybook manifest (react-docgen props, one card figure per story). They are already in the stage: refine them and write the component's .jsx to match, don't start them over.", ...drafted.map((p) => `- \`${join(stage, p)}\``));
   }
   const examples = units.filter((u) => u.kind === "component").flatMap((u) => u.app.paths.filter((p) => isStoryFile(p) || /\.mdx?$/.test(p)));
   if (examples.length) {
     lines.push("", "## Component examples (reference)", "Usage guidance: read these whole and translate the relevant examples into the receiving environment.");
-    for (const p of examples) lines.push(`- \`${q(join(ctx.repo, p))}\` (${lineCount(readText(join(ctx.repo, p)))} lines)`);
+    for (const p of examples) lines.push(`- \`${join(ctx.repo, p)}\` (${lineCount(readText(join(ctx.repo, p)))} lines)`);
   }
   lines.push("");
   lines.push(target === "app" ? KIT_RULES.replace("files under the staging folder", "the snapshot under " + (cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : "(no snapshot)")) : APP_RULES);
@@ -289,4 +303,4 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   return lines.join("\n");
 }
 
-export const fillStage = (brief: string, stage: string) => brief.replaceAll("<STAGE>", stage);
+export const fillStage = (brief: string, stage: string) => brief.replace(/\bSTAGE\b/g, stage);

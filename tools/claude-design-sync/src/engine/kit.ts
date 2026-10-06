@@ -95,7 +95,7 @@ export interface CardCheck {
 }
 
 /** Render cards in Chromium (CDN scripts cached locally — unpkg times out) and report page/console errors */
-export async function checkCards(projectDir: string, cards: string[], shotsDir?: string, assets?: { fallbacks?: Record<string, string>; repo?: string }): Promise<CardCheck[]> {
+export async function checkCards(projectDir: string, cards: string[], shotsDir?: string, assets?: { fallbacks?: Record<string, string>; repo?: string }, scale = 1): Promise<CardCheck[]> {
   const { chromium } = await import("@playwright/test");
   mkdirSync(CDN_DIR(), { recursive: true });
   const { url, server } = await serveDir(projectDir, assets?.fallbacks, assets?.repo);
@@ -106,7 +106,7 @@ export async function checkCards(projectDir: string, cards: string[], shotsDir?:
       for (const card of cards) {
         const html = readFileSync(join(projectDir, card), "utf8");
         const [, w = "1000", h = "600"] = /viewport="(\d+)x(\d+)"/.exec(html) ?? [];
-        const page = await browser.newPage({ viewport: { width: Number(w), height: Number(h) } });
+        const page = await browser.newPage({ viewport: { width: Number(w), height: Number(h) }, deviceScaleFactor: scale });
         const errors: string[] = [];
         page.on("pageerror", (e) => errors.push(e.message.split("\n")[0]!));
         page.on("console", (m) => {

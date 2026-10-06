@@ -140,8 +140,8 @@ test("a brief names what to read instead of pasting truncated diffs (3.6, 5.4)",
   const brief = step.locator(".cds-brief");
   await expect(brief).toContainText("## Read the changes first");
   await expect(brief).toContainText("The kit's changes are not pasted here.");
-  await expect(brief).toContainText(/`git diff --no-index \S+BoardView\.d\.ts \S+BoardView\.d\.ts` \(\+1 −0\), then read/);
-  await expect(brief).toContainText("The App's current version (relative to the repository root), to change on top of: `src/client/design/board/BoardView.tsx`");
+  await expect(brief).toContainText(/git diff --no-index \S+BoardView\.d\.ts \S+BoardView\.d\.ts {3}# \+1 −0/);
+  await expect(brief).toContainText("Change on top of the App's current files (relative to the repository root): `src/client/design/board/BoardView.tsx`, `src/client/design/board/BoardView.css`");
   await expect(brief).not.toContainText("truncated");
   await expect(brief).not.toContainText("omitted for length");
   mkdirSync(shots, { recursive: true });

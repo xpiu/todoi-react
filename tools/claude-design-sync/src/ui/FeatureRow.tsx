@@ -8,7 +8,7 @@ import { CopyLink } from "./CopyLink";
 import { Diff } from "./Diff";
 import { RailKeys } from "./Rail";
 import { TIP } from "./Tooltip";
-import { useVisual } from "./Visual";
+import { canPicture, useVisual } from "./Visual";
 
 function SideCell({ units, side, known }: { units: Unit[]; side: "app" | "design"; known: string[] }) {
   const moved = units.filter((u) => (side === "app" ? appMoved : designMoved)(u.status));
@@ -217,7 +217,7 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
                 {diff?.side === "app" ? "Hide App diff" : "App diff"}
               </button>
             ) : null}
-            {unit.kind === "component" && (unit.app.exists || unit.design.exists) && snapshotId ? (
+            {canPicture(unit) && snapshotId ? (
               <button type="button" className="cds-link" aria-expanded={visual.open} data-tip={visual.open ? "Hide the pictures" : "Picture this component on both sides: the App's Storybook stories beside the kit's cards, per theme"} onClick={() => void visual.toggle()}>
                 {visual.open ? "Hide pictures" : "Compare visually"}
               </button>

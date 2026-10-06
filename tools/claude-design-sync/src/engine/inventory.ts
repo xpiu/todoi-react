@@ -28,8 +28,9 @@ const base = (p: string) => p.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
 const dirOf = (p: string) => p.replace(/\/[^/]*$/, "");
 const areaOf = (p: string, root: string) => p.slice(root.length + 1).split("/")[0] ?? "";
 
-/** Storybook examples belong to their component, never to a separate component unit. */
-export const isStoryFile = (path: string) => /\.stories\.tsx?$/.test(path);
+import { isStoryFile } from "./paths";
+
+export { isStoryFile };
 
 export function sections(markdown: string | null): Map<string, string> {
   const out = new Map<string, string>();

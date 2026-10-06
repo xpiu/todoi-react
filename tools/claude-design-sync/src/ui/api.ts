@@ -185,6 +185,7 @@ export const KIND_WORD: Record<string, string> = { component: "component", token
 
 export const fmtTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
 export { plural } from "../engine/words";
+export { isStoryFile as isStoryPath } from "../engine/paths";
 
 /** Default acknowledgement scope: selected work, or an entirely reference-only feature. */
 export function selectedUnitIds(units: Unit[], choices: Record<string, Direction>) {

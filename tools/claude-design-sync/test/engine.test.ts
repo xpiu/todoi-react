@@ -108,7 +108,7 @@ describe("compare (three-way)", () => {
     const brief = all.find((s) => s.kind === "ai-pull")!.brief!;
     expect(brief).toMatch(/React 19/);
     expect(brief).toContain("## Read the changes first");
-    expect(brief).toMatch(/`git diff --no-index \S+BoardView\.d\.ts \S+BoardView\.d\.ts` \(\+1 −0\)/);
+    expect(brief).toMatch(/^git diff --no-index \S+BoardView\.d\.ts \S+BoardView\.d\.ts {3}# \+1 −0$/m);
   });
   it("lets a subfeature override its feature, even when the feature is skipped", () => {
     const hidden = cmp.features.find((f) => f.title === "Recover hidden lists")!;
@@ -497,7 +497,7 @@ describe("the target project", () => {
 
 describe("briefs (read the changes, don't paste them)", () => {
   /** Every `git …` command a brief lists */
-  const commands = (brief: string) => [...brief.matchAll(/`(git [^`]+)`/g)].map((m) => m[1]!);
+  const commands = (brief: string) => [...brief.matchAll(/^(git .+?)(?:\s+#.*)?$/gm)].map((m) => m[1]!);
   const sh = (cmd: string) => {
     try {
       return execFileSync("/bin/sh", ["-c", cmd], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
@@ -519,11 +519,11 @@ describe("briefs (read the changes, don't paste them)", () => {
     const pull = steps.find((s) => s.kind === "ai-pull" && s.units.includes("component:board/BoardView"))!.brief!;
     expect(pull.length).toBeLessThan(12_000);
     expect(pull).not.toMatch(/truncated|omitted/);
-    expect(pull).toContain("(+12001 −2)");
+    expect(pull).toContain("# +12001 −2");
     const designCmd = commands(pull).find((c) => c.includes("BoardView.d.ts"))!;
     expect(sh(designCmd)).toContain('+  last?: "the very end";');
     // the receiving App files are named relative to the repo root, so they point into the port's worktree
-    expect(pull).toContain("`src/client/design/board/BoardView.tsx`");
+    expect(pull).toContain("Change on top of the App's current files (relative to the repository root): `src/client/design/board/BoardView.tsx`");
     expect(pull).not.toContain(`\`${join(fx.repo, "src/client/design/board/BoardView.tsx")}\``);
     // the push side reads the App's change, uncommitted edits included
     const push = steps.find((s) => s.kind === "ai-push" && s.units.includes("component:core/Toast"))!.brief!;
@@ -532,11 +532,11 @@ describe("briefs (read the changes, don't paste them)", () => {
     expect(sh(appCmd)).toContain("+export function Toast({ message }: { message: string }) { return `!!${message}`; }");
     // a new file is read whole
     const hidden = steps.find((s) => s.kind === "ai-push" && s.units.includes("component:board/HiddenListsMenu"))!.brief!;
-    expect(hidden).toMatch(/New file, read it whole: `\S+HiddenListsMenu\.tsx` \(5 lines\)/);
+    expect(hidden).toMatch(/Read in full: `\S+HiddenListsMenu\.tsx` \(new, 5 lines\)/);
     const spec = steps.find((s) => s.kind === "ai-pull" && s.units.includes("spec:Board"))!.brief!;
     // a spec section can't be cut out of its file by a command, so its versions become files to word-diff
     const sectionCmd = commands(spec).find((c) => c.includes("--word-diff"))!;
-    expect(spec).toMatch(/readme\.md § Board: `git diff --no-index --word-diff \S+\.md \S+\.md` \(\+1 −1 lines/);
+    expect(spec).toMatch(/^git diff --no-index --word-diff \S+\.md \S+\.md {3}# § Board, \+1 −1 lines$/m);
     expect(sh(sectionCmd)).toContain("{+lists and dense mode.+}");
     expect(spec).not.toContain("Boards show lists and dense mode.");
   });
@@ -556,7 +556,8 @@ describe("kit drafts from Storybook (the mechanical kit files are the tool's)", 
     const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, "app-to-design" as const])));
     const brief = steps.find((s) => s.kind === "ai-push" && s.units.includes(menu.id))!.brief!;
     expect(brief).toContain("## Drafted for you from Storybook");
-    expect(brief).toContain("<STAGE>/components/board/hiddenlistsmenu.card.html");
+    expect(brief).toContain("`STAGE/components/board/hiddenlistsmenu.card.html`");
+    expect(brief).toContain("STAGE is the staging folder: the run creates it as a copy of the newest Design snapshot");
     expect(brief).toContain("Don't write or edit Minimal twins");
 
     const sb = (await storybook(fx.ctx))!;

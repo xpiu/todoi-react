@@ -34,7 +34,7 @@ writeFileSync(join(out, "manifests", "components.json"), JSON.stringify({ v: 0, 
 writeFileSync(join(out, "index.json"), JSON.stringify({ v: 5, entries }, null, 1));
 writeFileSync(
   join(out, "iframe.html"),
-  `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;font:13px/1.4 system-ui}html[data-theme=minimal] .story{border-radius:0}.story{display:inline-block;margin:16px;padding:10px 14px;border:1px solid #888;border-radius:7px}</style></head><body><div id="storybook-root"></div><script>
+  `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;font:13px/1.4 system-ui}html[data-theme=minimal] .story{border-radius:0}.story{display:inline-block;margin:16px;padding:10px 14px;border:1px solid #888;border-radius:7px}html[data-mode=dark] body{background:#161616;color:#eee}</style></head><body><div id="storybook-root"></div><script>
 const q=new URLSearchParams(location.search);const g=Object.fromEntries((q.get("globals")||"").split(";").filter(Boolean).map(p=>p.split(":")));
 document.documentElement.dataset.theme=g.theme||"rounded";document.documentElement.dataset.mode=g.mode||"light";
 document.getElementById("storybook-root").innerHTML='<span class="story">App story '+q.get("id")+' · '+(g.theme||"rounded")+'</span>';
