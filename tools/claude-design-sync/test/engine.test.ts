@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -492,6 +492,16 @@ describe("kit tooling", () => {
     expect(resolveKitFile(kit, "assets/fonts/Inter.ttf")).toBeNull();
     expect(resolveKitFile(kit, "assets/fonts/Inter.ttf", { "assets/fonts/": "src/client/design/fonts/" }, fx.repo)).toBe(join(fx.repo, "src/client/design/fonts/Inter.ttf"));
     expect(resolveKitFile(kit, "../../etc/passwd")).toBeNull();
+    const sibling = `${kit}-private`;
+    mkdirSync(sibling);
+    writeFileSync(join(sibling, "secret.txt"), "private");
+    expect(resolveKitFile(kit, "../files-private/secret.txt")).toBeNull();
+    expect(resolveKitFile(kit, "components")).toBeNull();
+    symlinkSync(join(sibling, "secret.txt"), join(kit, "linked.txt"));
+    expect(resolveKitFile(kit, "linked.txt")).toBeNull();
+    mkdirSync(join(fx.repo, "src/client/design/fonts-private"));
+    writeFileSync(join(fx.repo, "src/client/design/fonts-private/secret.txt"), "private");
+    expect(resolveKitFile(kit, "assets/fonts/../fonts-private/secret.txt", { "assets/fonts/": "src/client/design/fonts/" }, fx.repo)).toBeNull();
   });
   it("writes Minimal twins the way the Design project does", () => {
     const card = '<!-- @dsCard group="Components" viewport="1x1" name="Board" subtitle="Lists" -->\n<!doctype html><html><head><style>.r{border-radius:var(--radius-lg,7px);box-shadow:var(--shadow-card)}</style></head></html>';

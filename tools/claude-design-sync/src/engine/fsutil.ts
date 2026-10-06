@@ -1,9 +1,23 @@
 // Small file helpers: recursive listing, glob ignores, content hashes.
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const toPosix = (p: string) => p.split(sep).join("/");
+
+const inside = (root: string, file: string) => {
+  const rel = relative(root, file);
+  return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+};
+
+/** An existing file inside root, including its real path: symlinks cannot escape the folder. */
+export function fileWithin(root: string, path: string): string | null {
+  const dir = resolve(root);
+  const file = resolve(dir, path);
+  if (!inside(dir, file) || !existsSync(file)) return null;
+  if (!inside(realpathSync(dir), realpathSync(file)) || !statSync(file).isFile()) return null;
+  return file;
+}
 
 /** Every file under `root` as root-relative posix paths, sorted. Skips node_modules and dot-folders. */
 export function listFiles(root: string): string[] {

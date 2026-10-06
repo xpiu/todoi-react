@@ -5,4 +5,7 @@ import type { AppRun } from "./worktree";
 export const appPending = (j: { app?: Pick<AppRun, "state"> }) => j.app?.state === "ready" || j.app?.state === "failed";
 
 /** Staged kit files still waiting for the upload decision */
-export const uploadPending = (j: { staged?: unknown[]; steps: Array<{ id: string; state: string }> }) => !!j.staged?.length && j.steps.find((s) => s.id === "upload")?.state === "pending";
+export const uploadPending = (j: { staged?: unknown[]; steps: Array<{ id: string; state: string }> }) => {
+  const state = j.steps.find((s) => s.id === "upload")?.state;
+  return !!j.staged?.length && (state === "pending" || state === "failed");
+};

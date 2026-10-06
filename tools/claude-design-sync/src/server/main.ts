@@ -12,7 +12,7 @@ import { compare, unitBaseline } from "../engine/compare";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
-import { readText } from "../engine/fsutil";
+import { fileWithin, readText } from "../engine/fsutil";
 import { commitsAfter, diffNoIndex, diffSince, git, head, isDirty, showAt } from "../engine/git";
 import { runHarness, type HarnessEvent, type HarnessKind } from "../engine/harness";
 import { sections } from "../engine/inventory";
@@ -526,8 +526,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
 const MIME: Record<string, string> = { ".html": "text/html; charset=utf-8", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".json": "application/json", ".woff2": "font/woff2", ".ttf": "font/ttf", ".png": "image/png", ".map": "application/json" };
 
 function fileFrom(root: string, rel: string): Response {
-  const file = resolve(root, decodeURIComponent(rel));
-  if (!file.startsWith(resolve(root)) || !existsSync(file)) return new Response("Not found", { status: 404 });
+  const file = fileWithin(root, decodeURIComponent(rel));
+  if (!file) return new Response("Not found", { status: 404 });
   return new Response(readFileSync(file), { headers: { "content-type": MIME[extname(file)] ?? "application/octet-stream", "cache-control": "no-cache" } });
 }
 

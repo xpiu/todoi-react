@@ -5,7 +5,7 @@ import { createServer, type Server } from "node:http";
 import { extname, join, resolve } from "node:path";
 
 import { TOOL_DIR } from "./config";
-import { listFiles } from "./fsutil";
+import { fileWithin, listFiles } from "./fsutil";
 
 /** Minimal twin = html theme/mode attrs, " · Minimal" group and name, square corners and hairline rings in the card's style */
 export function twinOf(card: string): string {
@@ -61,13 +61,12 @@ const TYPES: Record<string, string> = { ".html": "text/html", ".js": "applicatio
 
 /** A kit file, or — for binary assets a pull skips — the App's identical copy (config design.assetFallbacks) */
 export function resolveKitFile(root: string, rel: string, fallbacks: Record<string, string> = {}, repo?: string): string | null {
-  const p = resolve(root, rel);
-  if (!p.startsWith(resolve(root))) return null;
-  if (existsSync(p)) return p;
+  const p = fileWithin(root, rel);
+  if (p) return p;
   for (const [prefix, to] of Object.entries(fallbacks)) {
     if (!repo || !rel.startsWith(prefix)) continue;
-    const alt = resolve(repo, to + rel.slice(prefix.length));
-    if (existsSync(alt)) return alt;
+    const alt = fileWithin(resolve(repo, to), rel.slice(prefix.length));
+    if (alt) return alt;
   }
   return null;
 }
