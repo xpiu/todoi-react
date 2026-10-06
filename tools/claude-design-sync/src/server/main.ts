@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 
 import { uploadPending } from "../engine/approvals";
@@ -22,10 +23,11 @@ import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../engine/worktree";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapshotFilesDir } from "../engine/snapshots";
-import type { Comparison, Direction } from "../engine/types";
+import type { Comparison } from "../engine/types";
 import { Jobs, type Job } from "./jobs";
 import { mappingHistory } from "./mapping";
 import { buildUi } from "./ui-build";
+import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, type PlanRequest } from "./requests";
 
 export interface HarnessInfo {
   ok: boolean;
@@ -36,6 +38,7 @@ export interface HarnessInfo {
 
 export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {}) {
   const app = new Hono();
+  app.onError((e, c) => c.json({ error: e.message }, e instanceof HTTPException ? e.status : 500));
   const jobs = new Jobs(ctx);
   const cache = new Map<string, Comparison>();
   /** The last time Claude Design was asked whether it changed (this server's lifetime) */
@@ -97,10 +100,19 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     return c;
   };
 
+  const requestedPlan = (body: PlanRequest) => {
+    const cmp = getComparison(body.base, body.snapshot);
+    const choices = Object.fromEntries(cmp.features.map((f) => [f.id, effectiveDirection(f, body.global, body.overrides[f.id])]));
+    const units = unitChoicesFor(cmp, body.global, body.overrides, body.unitOverrides);
+    return { cmp, choices, units, steps: planSteps(ctx, cmp, choices, units) };
+  };
+
   app.use("/api/*", async (c, next) => {
     if (c.req.method !== "GET" && c.req.header("x-cds") !== "1") return c.json({ error: "Missing x-cds header" }, 403);
     await next();
   });
+
+  app.use("/api/jobs/:id/*", validate("param", jobParam));
 
   app.get("/api/state", (c) =>
     c.json({
@@ -119,9 +131,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   );
 
   // The Mapping page: the lane rules from config.json, recent traffic, and how fresh each side's data is
-  app.get("/api/mapping", (c) => {
+  app.get("/api/mapping", validate("query", mappingQuery), (c) => {
     try {
-      const base = baseFor(c.req.query("base"));
+      const base = baseFor(c.req.valid("query").base);
       let branch: string | null = null;
       try {
         branch = git(ctx.repo, ["symbolic-ref", "--short", "HEAD"]).trim();
@@ -139,19 +151,21 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     }
   });
 
-  app.get("/api/compare", (c) => {
+  app.get("/api/compare", validate("query", comparisonQuery), (c) => {
     try {
-      return c.json(getComparison(c.req.query("base"), c.req.query("snapshot"), c.req.query("fresh") === "1"));
+      const { base, snapshot, fresh } = c.req.valid("query");
+      return c.json(getComparison(base, snapshot, fresh === "1"));
     } catch (e) {
       return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
     }
   });
 
-  app.get("/api/diff", (c) => {
-    const cmp = getComparison(c.req.query("base"), c.req.query("snapshot"));
-    const unit = cmp.units.find((u) => u.id === c.req.query("unit"));
+  app.get("/api/diff", validate("query", diffQuery), (c) => {
+    const query = c.req.valid("query");
+    const cmp = getComparison(query.base, query.snapshot);
+    const unit = cmp.units.find((u) => u.id === query.unit);
     if (!unit) return c.json({ error: "Unknown unit" }, 404);
-    const side = c.req.query("side") === "design" ? "design" : "app";
+    const side = query.side;
     const base = unitBaseline(cmp, unit);
     if (side === "app") {
       if (unit.kind === "spec") {
@@ -173,18 +187,15 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     return c.json({ text: text.replaceAll(snap, "now").replaceAll(baseSnap ?? "\u0000", "base") });
   });
 
-  app.post("/api/plan", async (c) => {
-    const body = await c.req.json<{ base?: string; snapshot?: string; global: Direction; overrides: Record<string, Direction>; unitOverrides?: Record<string, Direction> }>();
-    const cmp = getComparison(body.base, body.snapshot);
-    const choices = Object.fromEntries(cmp.features.map((f) => [f.id, effectiveDirection(f, body.global, body.overrides[f.id])]));
-    const units = unitChoicesFor(cmp, body.global, body.overrides, body.unitOverrides);
-    return c.json({ steps: planSteps(ctx, cmp, choices, units), choices, units });
+  app.post("/api/plan", validate("json", planRequest), (c) => {
+    const { steps, choices, units } = requestedPlan(c.req.valid("json"));
+    return c.json({ steps, choices, units });
   });
 
   // Switch the Claude Design project the tool targets (checked against the account's projects first)
-  app.post("/api/project", async (c) => {
-    const { project } = await c.req.json<{ project: string }>();
-    const id = parseProjectRef(project ?? "");
+  app.post("/api/project", validate("json", projectRequest), async (c) => {
+    const { project } = c.req.valid("json");
+    const id = parseProjectRef(project);
     if (!id) return c.json({ error: "Paste a Claude Design project link (https://claude.ai/design/p/…) or its id." }, 400);
     if (id === ctx.config.design.projectId) return c.json({ project: { id, name: ctx.config.design.projectName } });
     if (jobs.running()) return c.json({ error: "A job is running. Switch projects when it has finished." }, 409);
@@ -215,9 +226,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     }
   });
 
-  app.post("/api/pull", async (c) => {
+  app.post("/api/pull", validate("json", pullRequest), async (c) => {
     if (jobs.running()) return c.json({ error: "Another job is running" }, 409);
-    const { force } = await c.req.json<{ force?: boolean }>().catch(() => ({ force: false }));
+    const { force } = c.req.valid("json");
     const job = jobs.create("pull", "Pull from Claude Design");
     void (async () => {
       try {
@@ -242,8 +253,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     return c.json({ job: job.id });
   });
 
-  app.post("/api/import", async (c) => {
-    const { path, label } = await c.req.json<{ path: string; label?: string }>();
+  app.post("/api/import", validate("json", importRequest), async (c) => {
+    const { path, label } = c.req.valid("json");
     try {
       const snap = importExport(ctx, resolve(path.replace(/^~(?=\/)/, process.env.HOME ?? "~")), label);
       cache.clear();
@@ -253,8 +264,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     }
   });
 
-  app.post("/api/sync-point", async (c) => {
-    const { label, tag, snapshot, base, hold } = await c.req.json<{ label: string; tag?: boolean; snapshot?: string; base?: string | null; hold?: string[] }>();
+  app.post("/api/sync-point", validate("json", syncPointRequest), async (c) => {
+    const { label, tag, snapshot, base, hold } = c.req.valid("json");
     try {
       const p = recordSyncPoint(ctx, { label, tag, snapshotId: snapshot ?? latestSnapshot(ctx)?.id ?? null, from: baseFor(base), hold });
       cache.clear();
@@ -264,12 +275,12 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     }
   });
 
-  app.post("/api/run", async (c) => {
+  app.post("/api/run", validate("json", runRequest), (c) => {
     if (jobs.running()) return c.json({ error: "Another job is running" }, 409);
-    const body = await c.req.json<{ base?: string; snapshot?: string; global: Direction; overrides: Record<string, Direction>; unitOverrides?: Record<string, Direction>; only?: string[] }>();
-    const cmp = getComparison(body.base, body.snapshot);
-    const choices = Object.fromEntries(cmp.features.map((f) => [f.id, effectiveDirection(f, body.global, body.overrides[f.id])]));
-    let steps = planSteps(ctx, cmp, choices, unitChoicesFor(cmp, body.global, body.overrides, body.unitOverrides));
+    const body = c.req.valid("json");
+    const prepared = requestedPlan(body);
+    const cmp = prepared.cmp;
+    let steps = prepared.steps;
     if (body.only?.length) steps = steps.filter((s) => body.only!.includes(s.id) || (s.kind === "upload" && steps.some((x) => body.only!.includes(x.id) && x.target === "design")));
     if (!steps.length) return c.json({ error: "Nothing to do: every feature is skipped or already in sync" }, 400);
     const jobSteps: Job["steps"] = steps.map((s) => ({ id: s.id, title: s.title, kind: s.kind, target: s.target, state: "pending" as const }));
@@ -392,10 +403,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     }
   }
 
-  app.post("/api/jobs/:id/upload", async (c) => {
+  app.post("/api/jobs/:id/upload", validate("json", uploadRequest), (c) => {
     const job = jobs.get(c.req.param("id"));
     if (!job || job.state !== "awaiting-approval" || !job.stage || !uploadPending(job)) return c.json({ error: "This run has nothing waiting for upload" }, 400);
-    const { paths } = await c.req.json<{ paths: string[] }>();
+    const { paths } = c.req.valid("json");
     const allowed = new Set((job.staged ?? []).map((s) => s.path));
     const files = paths.filter((p) => allowed.has(p));
     if (!files.length) return c.json({ error: "Pick at least one staged file" }, 400);
@@ -500,8 +511,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   );
 
   // Kit previews: snapshot and staging folders, with a local bundle built on first request
-  app.get("/kit/:where/:id/*", async (c) => {
-    const { where, id } = c.req.param();
+  app.get("/kit/:where/:id/*", validate("param", kitParam), async (c) => {
+    const { where, id } = c.req.valid("param");
     const root = where === "stage" ? join(ctx.state, "stage", id) : snapshotFilesDir(ctx, id);
     const rel = decodeURIComponent(c.req.path.split(`/kit/${where}/${id}/`)[1] ?? "");
     if (rel === "_ds_bundle.js" && !existsSync(join(root, rel))) await buildBundle(root);

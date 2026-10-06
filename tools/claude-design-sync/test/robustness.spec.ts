@@ -83,3 +83,36 @@ test("discards staged files after an upload failure", async ({ page }) => {
   await expect(panel.locator(".cds-jobview")).toContainText("nothing uploaded");
   await expect(panel.getByRole("heading", { name: "Upload to Claude Design" })).toHaveCount(0);
 });
+
+test("rejects invalid API input with useful JSON errors before doing work", async ({ request }) => {
+  const headers = { "x-cds": "1", "content-type": "application/json" };
+  const cases = [
+    ["/api/plan", {}],
+    ["/api/run", { global: "invalid", overrides: {} }],
+    ["/api/pull", { force: "yes" }],
+    ["/api/import", { path: 42 }],
+    ["/api/project", { project: false }],
+    ["/api/sync-point", { label: "Synced", hold: "all" }],
+    [`/api/jobs/${jobId}/upload`, { paths: "all" }],
+  ] as const;
+  for (const [path, data] of cases) {
+    const response = await request.post(url + path, { headers, data });
+    expect(response.status(), path).toBe(400);
+    expect(await response.json()).toHaveProperty("error", expect.any(String));
+  }
+  const malformed = await request.post(`${url}/api/plan`, { headers, data: "{" });
+  expect(malformed.status()).toBe(400);
+  expect(await malformed.json()).toHaveProperty("error");
+  for (const path of ["/api/compare?snapshot=..%2Fprivate", "/api/diff?unit=x&side=invalid", "/kit/invalid/id/styles.css", "/api/jobs/..%2Fprivate"]) {
+    const response = await request.get(url + path);
+    expect(response.status(), path).toBe(400);
+    expect(await response.json()).toHaveProperty("error");
+  }
+  const denied = await request.post(`${url}/api/plan`, { data: {} });
+  expect(denied.status()).toBe(403);
+  const preview = await request.post(`${url}/api/plan`, { headers, data: { base: null, global: "both", overrides: {} } });
+  expect(preview.status()).toBe(200);
+  expect((await preview.json()).steps.length).toBeGreaterThan(0);
+  const job = await (await request.get(`${url}/api/jobs/${jobId}`)).json();
+  expect(job.state).toBe("awaiting-approval");
+});
