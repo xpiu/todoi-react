@@ -1,11 +1,13 @@
 // Activity: jobs with live logs. A run stops here for approval: its verified App branch waits for Merge
-// (commits listed), its staged kit files for Upload (every file listed, cards checked, previews), and
-// Discard gives up whatever is still waiting. A run waiting for Merge is pinned above the log even while
+// (commits listed), its staged kit files for Upload (every file listed, cards checked, previews; the
+// upload itself runs in Claude Code, where DesignSync's prompt can be approved, and is read back here),
+// and Discard gives up whatever is still waiting. A run waiting for Merge is pinned above the log even while
 // another job is shown.
 import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, plural, subscribeJob, uploadPending, type AppState, type Job } from "./api";
+import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
 
@@ -67,15 +69,19 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
 
 function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; onChanged: () => void }) {
   const staged = job.staged ?? [];
-  const [picked, setPicked] = useState<Set<string>>(() => new Set(staged.filter((s) => !s.conflict).map((s) => s.path)));
+  // a request already handed to Claude Code keeps its files ticked
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(job.handoff?.paths ?? staged.filter((s) => !s.conflict).map((s) => s.path)));
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [discarding, setDiscarding] = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
   const cardErr = useMemo(() => new Map((job.cards ?? []).map((c) => [c.card, c.errors])), [job.cards]);
   const stageId = job.stage?.split("/").pop();
   const app = job.app;
   const uploadWaiting = job.state === "awaiting-approval" && uploadPending(job);
+  // the request handed to Claude Code still names exactly the ticked files
+  const handoff = job.handoff && job.handoff.paths.length === picked.size && job.handoff.paths.every((p) => picked.has(p)) ? job.handoff : null;
   // what Discard would give up, in words
   const held = [
     ...(uploadWaiting ? [`${plural(staged.length, "staged kit file")} (nothing goes to Claude Design)`] : []),
@@ -156,7 +162,7 @@ function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffe
       {uploadWaiting ? (
         <section className="cds-approve" aria-labelledby="approve-h">
           <h4 id="approve-h">Upload to Claude Design</h4>
-          <p className="cds-quiet">Exactly these files go up, through DesignSync with a locked plan. Nothing is deleted. Untick anything you want to leave out. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't uploaded.</p>
+          <p className="cds-quiet">Exactly the ticked files go up, under one locked DesignSync plan. Nothing is deleted. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't offered. DesignSync asks you to approve every upload, so the upload itself runs in Claude Code.</p>
           <ul className="cds-files">
             {staged.map((s) => {
               const errors = cardErr.get(s.path);
@@ -179,9 +185,32 @@ function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffe
             })}
           </ul>
           {preview && stageId ? <div className="cds-preview"><iframe title={`Staged ${preview}`} src={`/kit/stage/${stageId}/${preview}`} sandbox="allow-scripts allow-same-origin" /></div> : null}
-          <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} data-tip={picked.size ? "Upload exactly the ticked files to Claude Design through DesignSync, then read them back" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
-            <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")}
-          </button>
+          {handoff ? (
+            <>
+              <ol className="cds-handoff" aria-label="Upload from Claude Code">
+                <li>
+                  <span>Paste the request into Claude Code: a session that's open, or a terminal.</span>
+                  <span className="cds-step-actions">
+                    <CopyLink text={handoff.prompt} label="Copy request" tip="Copy the request, to paste into a Claude Code session that's already open" />
+                    <CopyLink text={handoff.command} label="Copy terminal command" tip="Copy a shell command that starts Claude Code in this repo with the request" />
+                    <button type="button" className="cds-link" aria-expanded={showRequest} data-tip={showRequest ? "Hide the request" : "Read the request Claude Code gets: two DesignSync calls and nothing else"} onClick={() => setShowRequest((s) => !s)}>
+                      {showRequest ? "Hide request" : "Read request"}
+                    </button>
+                  </span>
+                  {showRequest ? <pre className="cds-brief">{handoff.prompt}</pre> : null}
+                </li>
+                <li>Approve DesignSync's prompt there. It names this run's staging folder and exactly these {plural(handoff.paths.length, "file")}.</li>
+                <li>Check the upload: the files are read back from Claude Design and compared with the staged copies.</li>
+              </ol>
+              <button type="button" className="cds-btn cds-btn-primary" disabled={busy} data-tip="Read the files back from Claude Design. The step closes once every one matches its staged copy" onClick={() => act(() => api.uploadCheck(job.id))}>
+                <Check size={14} strokeWidth={1.75} aria-hidden /> Check the upload
+              </button>
+            </>
+          ) : (
+            <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} data-tip={picked.size ? "Check Claude Design for newer edits to the ticked files, then get the request to paste into Claude Code, where you approve the upload" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
+              <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")} from Claude Code
+            </button>
+          )}
         </section>
       ) : null}
       {err ? <p className="cds-error-inline">{err}</p> : null}

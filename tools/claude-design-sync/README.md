@@ -56,7 +56,7 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
 1. **Check for changes** in the Design column header, then **Pull now** if Design moved.
 2. Read the verdict and the ledger. Pick a plan-wide direction, and override single features or subfeatures on the rail.
 3. **Run plan** (or **Run this feature only**).
-4. **Merge** the App branch: the button appears in the navbar, above the verdict, in the plan bar and in Activity as soon as the run's check passes. Approve the **Upload** of the staged kit files in **Activity**.
+4. **Merge** the App branch: the button appears in the navbar, above the verdict, in the plan bar and in Activity as soon as the run's check passes. Upload the staged kit files from **Activity**: **Upload n files from Claude Code** gives you a request to paste into Claude Code, where you approve DesignSync's prompt; then **Check the upload**.
 5. **Mark synced** when both sides look right.
 
 ## Plan page (`/`)
@@ -96,7 +96,7 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
   - **Mark synced** records a new sync point and lists every feature. Features the plan moves start ticked. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old baseline and reappear as "Kept open since …".
 - **Activity** (right panel): jobs with a live log, step states, cost, and **Stop**.
   - **Merge into the App:** a run with App work stops here, listing the verified commits.
-  - **Upload to Claude Design:** a run that changed kit files stops here. Every staged file has a checkbox, a render check for cards, and a preview. Nothing goes up until you press Upload.
+  - **Upload to Claude Design:** a run that changed kit files stops here. Every staged file has a checkbox, a render check for cards, and a preview. **Upload n files from Claude Code** checks Design for newer edits, then shows three steps: copy the request (or a terminal command that starts `claude` in this repo with it), approve DesignSync's prompt in Claude Code, and **Check the upload**, which reads the files back and closes the step once all match. Nothing goes up until you approve it in Claude Code.
   - **Discard run…** gives up whatever still waits: the staged files and the App branch.
 - **Footer:** the Claude Design project every pull and upload targets, with its `claude.ai/design/p/<id>` link.
   - **Edit** takes a link or an id, checks it against your projects, and saves it to `config.json`.
@@ -151,16 +151,17 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
   - After a merge, the branch and worktree are removed.
 - **Design ports** edit only `.state/stage/<run>/`.
   - The stage is deleted once the run is uploaded, discarded, stopped or failed.
-  - A failed upload keeps it for a retry.
+  - An upload that's waiting for Claude Code, or didn't check out, keeps it.
 - **Uploads go through DesignSync with a locked plan:** only the ticked files are written, nothing is deleted, and the kit is changed file by file on top of the live version, never regenerated.
+- **Uploads run in an interactive Claude Code session, not headless.** DesignSync asks the developer to approve every plan (`finalize_plan`), and a background `claude -p` run can't answer that prompt: it gets the prompt's text back as an error. So the tool hands the upload over as a request, and only reads in the background. A headless DesignSync call that ever meets that prompt fails with "DesignSync asked for your approval…" instead of an obscure error.
 - **An upload never overwrites newer Design work.**
   - If the project's `updatedAt` moved since the run's snapshot, the live copy of each file is three-way merged into the staged copy first.
   - A file that won't merge (same lines edited, or deleted in Design) stops the upload. It is unticked with the reason, and stays out until you pull and rerun the feature.
-- **Every upload is read back** and compared with the staged copy, ignoring line endings and trailing whitespace. A file that doesn't match, or can't be read, fails the step by name.
-- **The post-upload snapshot is marked current** (it takes Design's `updatedAt`) only when Design changed nothing else. Otherwise "Check for changes" asks for a pull.
+- **Every upload is read back** (Check the upload) and compared with the staged copy, ignoring line endings and trailing whitespace. Files that don't match yet, or can't be read, are named, and the upload keeps waiting.
+- **The post-upload snapshot is marked current** (it takes Design's `updatedAt`) only when Design had changed nothing else when the files were checked. Otherwise "Check for changes" asks for a pull.
 - **POST endpoints require an `x-cds: 1` header**, so other sites in your browser can't trigger runs.
 - **API input is validated at the server boundary.** Invalid requests return a JSON error before starting work.
-- **Failed uploads keep their staged files available for retry or discard.** Each retry checks live Design edits again before writing.
+- **A waiting upload keeps its staged files until it checks out or you discard it.** Preparing the request again checks live Design edits again.
 - **Stop terminates the run's subprocess group**, including App-check descendants, and prevents subsequent harness calls from starting.
 - **Codex** (`codex exec`, via `harness.implement`) is untested, with a best-guess output parser, so the GUI never offers it. It could only do App ports anyway.
 
@@ -252,11 +253,11 @@ The GUI tests run the full loop against that fixture with the fake harness:
 - comparison and the three directions (globally, per feature and per subfeature, by keyboard);
 - diffs and briefs;
 - axe and phone width;
-- a run that stops for merge and upload, the upload conflict guard, discard, merge, upload and mark synced;
+- a run that stops for merge and upload, the upload conflict guard, discard, merge, the Claude Code handoff and its read-back, and mark synced;
 - switching the target project in the footer;
 - check, pull, and up to date;
 - the Mapping page: lanes, replaying a move, bringing the data up to date.
-- failed-upload retry and discard, invalid API input, staging startup failure, and plan-dialog transitions;
+- a missing staged copy, an upload checked before it ran (then closed once Design holds the files), discard while waiting, invalid API input, staging startup failure, and plan-dialog transitions;
 - tooltips: every visible control on both pages has one; hover, keyboard focus, placement, dismissal and disabled reasons.
 
 The regression flows save desktop and phone screenshots to the repo's gitignored `.tmp/design-sync-improvements/` folder. Screenshot capture disables animations so the images show the settled interface.

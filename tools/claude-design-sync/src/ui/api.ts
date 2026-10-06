@@ -64,7 +64,10 @@ export const api = {
   setProject: (project: string) => call<{ project: { id: string; name: string } }>("/api/project", { body: { project } }),
   syncPoint: (label: string, tag: boolean, base: string | null, hold: string[]) => call<{ syncPoint: SyncPoint }>("/api/sync-point", { body: { label, tag, base, hold } }),
   job: (id: string) => call<Job>(`/api/jobs/${id}`),
+  /** Check the ticked files against Claude Design, then hand their upload to Claude Code */
   upload: (id: string, paths: string[]) => call<{ ok: true }>(`/api/jobs/${id}/upload`, { body: { paths } }),
+  /** Read the handed-off files back from Claude Design; the upload step closes once all match */
+  uploadCheck: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/upload-check`, { method: "POST" }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
   merge: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { method: "POST" }),
   discard: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/discard`, { method: "POST" }),

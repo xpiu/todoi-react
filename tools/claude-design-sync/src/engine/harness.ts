@@ -33,7 +33,8 @@ export interface RunOptions {
 export type HarnessEvent =
   | { type: "text"; text: string }
   | { type: "tool"; name: string; input: unknown }
-  | { type: "tool-result"; content: string }
+  /** `isError`: the tool refused or failed (Claude Code's is_error) */
+  | { type: "tool-result"; content: string; isError?: boolean }
   | { type: "done"; ok: boolean; result: string; costUsd?: number; turns?: number }
   | { type: "stderr"; text: string };
 
@@ -84,7 +85,7 @@ export function parseClaudeLine(line: string): HarnessEvent[] {
     if (c.type === "text" && typeof c.text === "string" && c.text.trim()) out.push({ type: "text", text: c.text });
     if (c.type === "tool_use") out.push({ type: "tool", name: String(c.name), input: c.input });
   }
-  if (e.type === "user") for (const c of msg?.content ?? []) if (c.type === "tool_result") out.push({ type: "tool-result", content: toolResultText(c.content) });
+  if (e.type === "user") for (const c of msg?.content ?? []) if (c.type === "tool_result") out.push({ type: "tool-result", content: toolResultText(c.content), ...(c.is_error === true ? { isError: true } : {}) });
   if (e.type === "result") out.push({ type: "done", ok: e.subtype === "success" && !e.is_error, result: String(e.result ?? ""), costUsd: e.total_cost_usd as number | undefined, turns: e.num_turns as number | undefined });
   return out;
 }

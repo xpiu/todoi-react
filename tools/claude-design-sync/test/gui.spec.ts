@@ -1,6 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -143,7 +143,22 @@ test.describe.serial("Claude Design Sync", () => {
     await expect(panel.getByRole("group", { name: "Discard this run" })).toContainText("nothing goes to Claude Design");
     await expect(panel.getByRole("group", { name: "Discard this run" })).toContainText("nothing reaches main");
     await panel.getByRole("button", { name: "Keep" }).click();
-    await panel.getByRole("button", { name: /Upload \d+ files?/ }).click();
+    await panel.getByRole("button", { name: /Upload \d+ files? from Claude Code/ }).click();
+    // the upload runs in Claude Code, where DesignSync's prompt can be approved: the request names the plan
+    const handoff = panel.getByRole("list", { name: "Upload from Claude Code" });
+    await expect(handoff).toBeVisible();
+    await handoff.getByRole("button", { name: "Read request" }).click();
+    await expect(handoff.locator(".cds-brief")).toContainText('"finalize_plan"');
+    await expect(handoff.locator(".cds-brief")).toContainText("deletes []");
+    await expect(handoff.getByRole("button", { name: "Copy terminal command" })).toBeVisible();
+    // checking before the upload ran changes nothing and says so
+    await panel.getByRole("button", { name: "Check the upload" }).click();
+    await expect(panel.locator(".cds-jobview")).toContainText("in Claude Design yet");
+    await expect(panel.getByRole("button", { name: "Check the upload" })).toBeEnabled();
+    // the developer runs it in Claude Code: the planned files land in the fake Design project
+    const job = (await (await page.request.get("/api/state")).json()).jobs[0] as { stage: string; handoff: { paths: string[] } };
+    for (const p of job.handoff.paths) cpSync(join(job.stage, p), join(tmpdir(), "cds-e2e", "design-now", p));
+    await panel.getByRole("button", { name: "Check the upload" }).click();
     // uploaded, but the App branch still waits for its merge
     await expect(panel.locator(".cds-jobview")).toContainText("all read back intact", { timeout: 30_000 });
     await expect(panel.locator(".cds-jobview-head")).toContainText("waiting for your approval");

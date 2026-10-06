@@ -1,10 +1,11 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
-import { checkUpload, findProject, projectStatus, pullable, pullIfChanged, pullSnapshot, pushFiles, verifyUpload, type Runner } from "../src/engine/designsync";
+import { checkUpload, findProject, NEEDS_APPROVAL, projectStatus, pullable, pullIfChanged, pullSnapshot, uploadRequest, verifyUpload, type Runner } from "../src/engine/designsync";
 import { fakeRunner } from "../src/engine/fakeHarness";
 import { parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
@@ -216,18 +217,35 @@ describe("sync points that keep skipped work open", () => {
 });
 
 describe("DesignSync through the harness", () => {
-  it("pulls a project into a snapshot and pushes staged files", async () => {
+  it("pulls a project into a snapshot", async () => {
     const fx = makeFixture();
     const runner = fakeRunner(fx.designNowDir, fx.repo);
     const snap = await pullSnapshot(fx.ctx, runner, { batch: 3, parallel: 2 });
     expect(snap.fileCount).toBe(pullable(Object.keys((await import("./fixture")).DESIGN_NOW)).length);
     expect(readFileSync(join(snapshotFilesDir(fx.ctx, snap.id), "components/core/Chip.jsx"), "utf8")).toContain("Chip");
-    const stage = join(fx.ctx.state, "stage-push");
-    mkdirSync(join(stage, "components/core"), { recursive: true });
-    writeFileSync(join(stage, "components/core/Pushed.jsx"), "export const Pushed = 1;\n");
-    const res = await pushFiles(fx.ctx, runner, stage, ["components/core/Pushed.jsx"]);
-    expect(res.written).toBe(1);
-    expect(existsSync(join(fx.designNowDir, "components/core/Pushed.jsx"))).toBe(true);
+  });
+  it("hands an upload to Claude Code as one locked plan, quoted for a shell", () => {
+    const fx = makeFixture();
+    const stage = join(fx.ctx.state, "stage", "it's-a-run");
+    const { prompt, command } = uploadRequest(fx.ctx, stage, ["readme.md", "components/core/Toast.jsx"]);
+    expect(prompt).toContain(`"finalize_plan" with projectId "${fx.ctx.config.design.projectId}", localDir ${JSON.stringify(stage)}, writes ["readme.md","components/core/Toast.jsx"] and deletes []`);
+    expect(prompt).toContain(`files [{"path":"readme.md","localPath":"readme.md"},{"path":"components/core/Toast.jsx","localPath":"components/core/Toast.jsx"}]`);
+    expect(prompt).toContain("I will approve its prompt");
+    // the shell hands Claude Code the prompt unchanged, quotes and all
+    const echoed = execFileSync("sh", ["-c", command.replace(/^cd .*? && \S+ /, "printf %s ")], { encoding: "utf8" });
+    expect(echoed).toBe(prompt);
+    expect(command.startsWith(`cd '${fx.ctx.repo}' && `)).toBe(true);
+  });
+  it("says a DesignSync approval prompt needs Claude Code instead of failing obscurely", async () => {
+    const fx = makeFixture();
+    // what a headless run gets back when DesignSync wants the developer's approval
+    const refused: Runner = async (_p, _o, on) => {
+      on({ type: "tool-result", content: "To project: fake…\nFrom folder: /tmp/x\nUpload 1 file: a.jsx", isError: true });
+      const done = { type: "done" as const, ok: true, result: "It needs approval" };
+      on(done);
+      return done;
+    };
+    await expect(findProject(fx.ctx, refused, "fake")).rejects.toThrow(NEEDS_APPROVAL);
   });
   it("never lets an upload overwrite Design work newer than the run's snapshot", async () => {
     const fx = makeFixture();
@@ -284,7 +302,8 @@ describe("DesignSync through the harness", () => {
     mkdirSync(join(stage, "components/core"), { recursive: true });
     const paths = ["components/core/A.jsx", "components/core/B.jsx", "components/core/C.jsx"];
     for (const p of paths) writeFileSync(join(stage, p), `export const ${p.slice(-5, -4)} = 1;\n`);
-    await pushFiles(fx.ctx, fake, stage, paths);
+    // the developer's upload in Claude Code
+    for (const p of paths) writeFileSync(join(fx.designNowDir, p), readFileSync(join(stage, p)));
     expect((await verifyUpload(fx.ctx, fake, stage, paths)).differ).toEqual([]);
     // Claude Design keeps B with Windows line endings (still intact), mangles C, and loses A
     writeFileSync(join(fx.designNowDir, "components/core/B.jsx"), "export const B = 1;\r\n");

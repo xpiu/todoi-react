@@ -1,9 +1,10 @@
 // One ledger line: the feature title across, its App work left and Design work right, the direction
 // on the rail between. Opening it shows each subfeature's evidence, diffs and preview cards.
-import { ChevronRight, Copy, Check, Play } from "lucide-react";
+import { ChevronRight, Play } from "lucide-react";
 import { Fragment, useState } from "react";
 
 import { api, appMoved, designMoved, directionsFor, displayName, DIRECTION_LABEL, KIND_WORD, plural, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
+import { CopyLink } from "./CopyLink";
 import { Diff } from "./Diff";
 import { RailKeys } from "./Rail";
 import { TIP } from "./Tooltip";
@@ -118,7 +119,6 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, onRunOne, globa
 }
 
 export function StepLine({ step }: { step: Step }) {
-  const [copied, setCopied] = useState(false);
   const [show, setShow] = useState(false);
   const kind = { "merge-css": "deterministic merge", "ai-pull": "AI port → App", "ai-push": "AI port → Design", upload: "upload, after your approval" }[step.kind];
   return (
@@ -130,18 +130,7 @@ export function StepLine({ step }: { step: Step }) {
           <button type="button" className="cds-link" aria-expanded={show} data-tip={show ? "Hide the brief" : "Read the brief the AI gets for this step"} onClick={() => setShow((s) => !s)}>
             {show ? "Hide brief" : "Read brief"}
           </button>
-          <button
-            type="button"
-            className="cds-link"
-            data-tip={copied ? "Copied to the clipboard" : "Copy the brief, to run this step yourself in Claude Code or Codex"}
-            onClick={async () => {
-              await navigator.clipboard.writeText(step.brief!);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1400);
-            }}
-          >
-            {copied ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />} {copied ? "Copied" : "Copy brief"}
-          </button>
+          <CopyLink text={step.brief} label="Copy brief" tip="Copy the brief, to run this step yourself in Claude Code or Codex" />
         </span>
       ) : null}
       {show && step.brief ? <pre className="cds-brief">{step.brief}</pre> : null}

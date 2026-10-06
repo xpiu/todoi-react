@@ -11,7 +11,7 @@ import { streamSSE } from "hono/streaming";
 import { uploadPending } from "../engine/approvals";
 import { compare, unitBaseline } from "../engine/compare";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
-import { checkUpload, createDesignRunner, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, verifyUpload, type Runner } from "../engine/designsync";
+import { checkUpload, createDesignRunner, findProject, isCurrent, projectStatus, pullIfChanged, uploadRequest as uploadHandoff, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { fileWithin, readText } from "../engine/fsutil";
 import { commitsAfter, diffNoIndex, diffSince, git, head, isDirty, showAt } from "../engine/git";
@@ -405,7 +405,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     const allowed = new Set((job.staged ?? []).map((s) => s.path));
     const files = paths.filter((p) => allowed.has(p));
     if (!files.length) return c.json({ error: "Pick at least one staged file" }, 400);
+    const gone = files.filter((p) => !existsSync(join(job.stage!, p)));
+    if (gone.length) return c.json({ error: `The staged copy of ${gone.join(", ")} is missing, so it can't be uploaded. Discard the run and run the feature again` }, 409);
     job.state = "running";
+    jobs.update(job, { handoff: undefined });
     jobs.step(job, "upload", { state: "running" });
     void (async () => {
       try {
@@ -414,7 +417,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         jobs.log(job, "step", "Checking Claude Design for edits made since this run's snapshot…", "upload");
         const check = await checkUpload(ctx, runner, { stageDir: job.stage!, baseDir: from ? snapshotFilesDir(ctx, from.id) : null, baseUpdatedAt: from?.projectUpdatedAt, paths: files, onLog: logHarness(job, "upload") });
         const conflict = new Map(check.conflicts.map((x) => [x.path, x.reason]));
-        jobs.update(job, { staged: job.staged!.map(({ conflict: _c, ...s }) => (conflict.has(s.path) ? { ...s, conflict: conflict.get(s.path) } : s)) });
+        // files left out of this check keep what an earlier check said about them
+        jobs.update(job, { staged: job.staged!.map((s) => (conflict.has(s.path) ? { ...s, conflict: conflict.get(s.path) } : files.includes(s.path) ? { path: s.path, status: s.status } : s)) });
         if (check.fresh) jobs.log(job, "info", "Claude Design hasn't changed since the snapshot", "upload");
         for (const p of check.merged) jobs.log(job, "info", `${p}: merged Claude Design's newer edits into the staged copy`, "upload");
         if (conflict.size) {
@@ -423,29 +427,51 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
           jobs.finish(job, "awaiting-approval", `Nothing uploaded: Claude Design changed ${conflict.size === 1 ? "a file" : `${conflict.size} files`} since this run's snapshot. Untick ${conflict.size === 1 ? "it" : "them"} to upload the rest, or pull and run the feature again.`);
           return;
         }
-        jobs.log(job, "step", `Uploading ${files.length} file(s) to ${ctx.config.design.projectName}…`, "upload");
-        const res = await pushFiles(ctx, runner, job.stage!, files, logHarness(job, "upload"));
-        jobs.log(job, "step", `Reading the ${files.length} file(s) back from Claude Design…`, "upload");
-        const { contents, differ } = await verifyUpload(ctx, runner, job.stage!, files, logHarness(job, "upload"));
-        for (const p of differ) jobs.log(job, "warn", `${p}: ${contents.has(p) ? "Claude Design holds different content than was uploaded" : "couldn't be read back"}`, "upload");
-        // The snapshot keeps what Design holds now. It is Design's exact state only when nothing else moved
-        // before the upload and everything read back intact; then it takes the post-upload updatedAt, so
-        // "Check for changes" doesn't ask for a pull it doesn't need.
-        const changes = Object.fromEntries(files.map((p) => [p, contents.get(p) ?? readFileSync(join(job.stage!, p), "utf8")]));
-        const after = check.fresh && !differ.length ? await projectStatus(ctx, runner, logHarness(job, "upload")).catch(() => null) : null;
-        if (from) deriveSnapshot(ctx, from.id, changes, `After upload (${res.written} files)`, "upload", after?.updatedAt ?? undefined);
-        cache.clear();
+        // DesignSync's plan prompt needs the developer, so the upload itself runs in Claude Code
+        const { prompt, command } = uploadHandoff(ctx, job.stage!, files);
+        jobs.update(job, { handoff: { paths: files, prompt, command, fresh: check.fresh, at: new Date().toISOString() } });
+        jobs.step(job, "upload", { state: "pending", summary: `${files.length} file(s) ready for Claude Code` });
+        jobs.finish(job, "awaiting-approval", `Ready: paste the request into Claude Code and approve DesignSync's prompt for these ${files.length} file(s), then Check the upload.`);
+      } catch (e) {
+        jobs.step(job, "upload", { state: "failed", summary: "Couldn't check Claude Design; the staged files are kept" });
+        jobs.finish(job, "awaiting-approval", `Couldn't prepare the upload: ${e instanceof Error ? e.message : String(e)}. Try again, or discard the run.`);
+      }
+    })();
+    return c.json({ ok: true });
+  });
+
+  // After the developer ran the upload in Claude Code: read every file back; the step closes once all match
+  app.post("/api/jobs/:id/upload-check", (c) => {
+    const job = jobs.get(c.req.param("id"));
+    const h = job?.handoff;
+    if (!job || !h || job.state !== "awaiting-approval" || !job.stage || !uploadPending(job)) return c.json({ error: "This run has no upload waiting to be checked" }, 400);
+    job.state = "running";
+    jobs.step(job, "upload", { state: "running" });
+    void (async () => {
+      try {
+        const runner = designRunner(job);
+        jobs.log(job, "step", `Reading the ${h.paths.length} file(s) back from Claude Design…`, "upload");
+        const { contents, differ } = await verifyUpload(ctx, runner, job.stage!, h.paths, logHarness(job, "upload"));
         if (differ.length) {
-          jobs.step(job, "upload", { state: "failed", summary: `${res.written} file(s) written · ${differ.length} didn't read back intact` });
-          settle(job, `Uploaded ${res.written} file(s), but ${differ.length === 1 ? "1 doesn't" : `${differ.length} don't`} read back as uploaded: ${differ.join(", ")}. Pull to see what Claude Design holds.`, true);
+          for (const p of differ) jobs.log(job, "warn", `${p}: ${contents.has(p) ? "Claude Design doesn't hold the staged content (yet)" : "not in Claude Design (yet)"}`, "upload");
+          const none = differ.length === h.paths.length;
+          jobs.step(job, "upload", { state: "pending", summary: none ? "Not in Claude Design yet" : `${differ.length} of ${h.paths.length} file(s) don't match yet` });
+          jobs.finish(job, "awaiting-approval", none ? `None of the ${h.paths.length} file(s) are in Claude Design yet. Paste the request into Claude Code and approve DesignSync's prompt, then check again.` : `${differ.length} of ${h.paths.length} file(s) don't match the staged copy: ${differ.join(", ")}. Finish the upload in Claude Code, or pull to see what Claude Design holds.`);
           return;
         }
-        jobs.step(job, "upload", { state: "done", summary: `${res.written} file(s) written and read back intact${res.planId ? ` · plan ${res.planId}` : ""}` });
-        settle(job, `Uploaded ${res.written} file(s) to Claude Design, all read back intact${check.fresh ? "" : ". Design had other changes too: pull to see them."}${job.app?.state === "ready" ? " The App branch still waits for your merge." : " Mark synced when both sides look right."}`);
+        // The snapshot keeps what Design holds now. It is Design's exact state only when nothing else moved
+        // before the files were checked and everything read back intact; then it takes Design's updatedAt
+        // now, so "Check for changes" doesn't ask for a pull it doesn't need.
+        const from = job.snapshotId ? getSnapshot(ctx, job.snapshotId) : latestSnapshot(ctx);
+        const changes = Object.fromEntries(h.paths.map((p) => [p, contents.get(p)!]));
+        const after = h.fresh ? await projectStatus(ctx, runner, logHarness(job, "upload")).catch(() => null) : null;
+        if (from) deriveSnapshot(ctx, from.id, changes, `After upload (${h.paths.length} files)`, "upload", after?.updatedAt ?? undefined);
+        cache.clear();
+        jobs.step(job, "upload", { state: "done", summary: `${h.paths.length} file(s) in Claude Design, read back intact` });
+        settle(job, `Uploaded ${h.paths.length} file(s) to Claude Design, all read back intact${h.fresh ? "" : ". Design had other changes too: pull to see them."}${job.app?.state === "ready" ? " The App branch still waits for your merge." : " Mark synced when both sides look right."}`);
       } catch (e) {
-        // nothing (or not everything) went up: keep the staged files so the upload can be tried again
-        jobs.step(job, "upload", { state: "failed", summary: "Upload failed; the staged files are kept" });
-        jobs.finish(job, "awaiting-approval", `Upload failed: ${e instanceof Error ? e.message : String(e)}. Try again, or discard the run.`);
+        jobs.step(job, "upload", { state: "pending", summary: "Couldn't read Claude Design; check again" });
+        jobs.finish(job, "awaiting-approval", `Couldn't check the upload: ${e instanceof Error ? e.message : String(e)}. Check again.`);
       }
     })();
     return c.json({ ok: true });

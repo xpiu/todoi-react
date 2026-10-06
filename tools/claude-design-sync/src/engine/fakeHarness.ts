@@ -1,8 +1,9 @@
-// A stand-in harness for tests and demos (CDS_FAKE_HARNESS=1): answers DesignSync calls from a
+// A stand-in harness for tests and demos (CDS_FAKE_HARNESS=1): answers DesignSync's read calls from a
 // local folder that plays the Claude Design project, and "ports" by appending a marker comment.
+// Uploads never run headless (they go through Claude Code), so tests write to that folder themselves.
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import type { Runner } from "./designsync";
 import { listFiles } from "./fsutil";
@@ -28,15 +29,6 @@ export function fakeRunner(designDir: string, repo: string): Runner {
         const f = join(designDir, p);
         if (existsSync(f)) emit(result({ method: "get_file", path: p, content: readFileSync(f, "utf8"), isBase64: false, truncated: false }));
       }
-    } else if (prompt.includes('"finalize_plan"')) {
-      const local = JSON.parse(/localDir ("[^"]+")/.exec(prompt)![1]!) as string;
-      const writes = JSON.parse(/writes (\[[^\]]*\])/.exec(prompt)![1]!) as string[];
-      emit(result({ method: "finalize_plan", planId: "plan_fake", writes, deletes: [] }));
-      for (const w of writes) {
-        mkdirSync(dirname(join(designDir, w)), { recursive: true });
-        cpSync(join(local, w), join(designDir, w));
-      }
-      emit(result({ method: "write_files", written: writes.length }));
     } else {
       // an implement brief: touch the first listed target file so the run has a visible result; an App
       // port works in its worktree (`repo` here) and ends with a commit, as the brief asks

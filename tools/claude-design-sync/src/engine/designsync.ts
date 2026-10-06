@@ -1,6 +1,8 @@
 // Talking to Claude Design through Claude Code's DesignSync tool, run headless. File contents come
 // back as tool results in the event stream (or a file Claude Code saved them to), never through
-// the model's own reply, so a pull costs little more than the calls themselves.
+// the model's own reply, so a pull costs little more than the calls themselves. Headless runs only
+// read: an upload's plan (finalize_plan) asks the developer for approval, which only an interactive
+// Claude Code session can give, so uploads are handed off as a request to paste there.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -48,12 +50,21 @@ function jsonResults(contents: string[]): ToolJson[] {
   return out;
 }
 
+/** DesignSync answers a call it needs approval for, in a run nobody can approve, with the prompt's own text */
+export const APPROVAL_PROMPT = /^(To project:|From folder:)/m;
+export const NEEDS_APPROVAL = "DesignSync asked for your approval, which a background run can't give. Uploads go through Claude Code: use “Upload from Claude Code” in Activity";
+
 async function run(runner: Runner, prompt: string, model: string | undefined, onLog?: (e: HarnessEvent) => void, maxTurns = 8) {
   const contents: string[] = [];
+  let refused = false;
   const done = await runner(prompt, { model, maxTurns }, (e) => {
-    if (e.type === "tool-result") contents.push(e.content);
+    if (e.type === "tool-result") {
+      contents.push(e.content);
+      if (e.isError && APPROVAL_PROMPT.test(e.content)) refused = true;
+    }
     onLog?.(e);
   });
+  if (refused) throw new Error(NEEDS_APPROVAL);
   return { done, results: jsonResults(contents) };
 }
 
@@ -211,16 +222,17 @@ export async function verifyUpload(ctx: Ctx, runner: Runner, stageDir: string, p
   return { contents, differ };
 }
 
-/** Upload staged files (project paths under stageDir) with one locked plan. No deletes. */
-export async function pushFiles(ctx: Ctx, runner: Runner, stageDir: string, paths: string[], onLog?: (e: HarnessEvent) => void): Promise<{ written: number; planId: string | null }> {
+/**
+ * The upload, as a request for an interactive Claude Code session: staged files (project paths under
+ * stageDir) under one locked plan, no deletes. There the developer approves DesignSync's plan prompt;
+ * the tool then reads the files back itself (verifyUpload).
+ */
+export function uploadRequest(ctx: Ctx, stageDir: string, paths: string[]): { prompt: string; command: string } {
   const files = paths.map((p) => `{"path":${JSON.stringify(p)},"localPath":${JSON.stringify(p)}}`).join(",");
-  const prompt = `${LOAD} The developer already approved this exact upload in the Claude Design Sync tool. Do exactly two steps and nothing else:
-1. Call DesignSync method "finalize_plan" with projectId "${ctx.config.design.projectId}", localDir ${JSON.stringify(stageDir)}, writes ${JSON.stringify(paths)} and deletes [].
+  const prompt = `Upload ${paths.length === 1 ? "1 staged file" : `${paths.length} staged files`} from the Claude Design Sync tool to the Claude Design project "${ctx.config.design.projectName}" (${ctx.config.design.projectId}). ${LOAD} Do exactly two steps and nothing else:
+1. Call DesignSync method "finalize_plan" with projectId "${ctx.config.design.projectId}", localDir ${JSON.stringify(stageDir)}, writes ${JSON.stringify(paths)} and deletes []. I will approve its prompt.
 2. Call DesignSync method "write_files" with that projectId, the planId from step 1, and files [${files}].
-Do not read, edit or create any other file. Reply only with the write_files result JSON.`;
-  const { done, results } = await run(runner, prompt, ctx.config.harness.pullModel, onLog, 8);
-  const planId = results.find((r) => r.planId)?.planId ?? null;
-  const written = results.find((r) => typeof r.written === "number")?.written ?? 0;
-  if (!written) throw new Error(done.result || "The upload did not report any written files");
-  return { written, planId };
+Do not read, edit or create any other file. Then say how many files were written; the sync tool reads them back itself.`;
+  const q = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
+  return { prompt, command: `cd ${q(ctx.repo)} && ${ctx.config.harness.claudeBin} ${q(prompt)}` };
 }

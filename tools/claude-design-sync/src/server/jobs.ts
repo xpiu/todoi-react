@@ -40,6 +40,12 @@ export interface Job {
   /** `conflict`: why uploading this file would overwrite newer Design work (set by the pre-upload check) */
   staged?: Array<{ path: string; status: "new" | "changed"; conflict?: string }>;
   cards?: Array<{ card: string; errors: string[] }>;
+  /**
+   * The upload handed to an interactive Claude Code session, where DesignSync's plan prompt can be
+   * approved: the files, the request to paste, and whether Design was untouched since the run's snapshot
+   * when the files were checked (then a clean read-back may date the next snapshot)
+   */
+  handoff?: { paths: string[]; prompt: string; command: string; fresh: boolean; at: string };
   costUsd?: number;
   result?: string;
   baseId?: string | null;

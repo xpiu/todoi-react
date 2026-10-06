@@ -54,30 +54,40 @@ test.afterEach(async () => {
   rmSync(dirname(fx.repo), { recursive: true, force: true });
 });
 
-async function failUpload(page: Page) {
+/** Hand the upload to Claude Code, then check it before it ran there */
+async function uncheckedUpload(page: Page) {
   await page.goto(`${url}/?job=${jobId}`);
   const panel = page.getByRole("complementary", { name: "Activity" });
   await expect(panel.getByRole("heading", { name: "Upload to Claude Design" })).toBeVisible();
-  rmSync(join(stage, path));
-  await panel.getByRole("button", { name: /Upload 1 file/ }).click();
-  await expect(panel.locator(".cds-jobview")).toContainText("Upload failed:");
-  await expect(panel.getByRole("button", { name: /Upload 1 file/ })).toBeEnabled();
+  await panel.getByRole("button", { name: /Upload 1 file from Claude Code/ }).click();
+  await panel.getByRole("button", { name: "Check the upload" }).click();
+  await expect(panel.locator(".cds-jobview")).toContainText("None of the 1 file(s) are in Claude Design yet");
+  await expect(panel.getByRole("button", { name: "Check the upload" })).toBeEnabled();
   return panel;
 }
 
-test("keeps a failed upload visible and successfully retries it", async ({ page }) => {
-  const panel = await failUpload(page);
-  await capture(page, "upload-failed-retry-available");
-  writeFileSync(join(stage, path), stagedText);
-  await panel.getByRole("button", { name: /Upload 1 file/ }).click();
-  await expect(panel.locator(".cds-jobview")).toContainText("all read back intact");
-  await expect(panel.locator(".cds-jobview-head")).toContainText("done");
-  expect(readFileSync(join(fx.designNowDir, path), "utf8")).toBe(stagedText);
-  await capture(page, "upload-retry-succeeded");
+test("refuses to hand off an upload whose staged copy is missing", async ({ page }) => {
+  await page.goto(`${url}/?job=${jobId}`);
+  const panel = page.getByRole("complementary", { name: "Activity" });
+  rmSync(join(stage, path));
+  await panel.getByRole("button", { name: /Upload 1 file from Claude Code/ }).click();
+  await expect(panel.locator(".cds-error-inline")).toContainText("staged copy");
+  await expect(panel.getByRole("list", { name: "Upload from Claude Code" })).toHaveCount(0);
 });
 
-test("discards staged files after an upload failure", async ({ page }) => {
-  const panel = await failUpload(page);
+test("keeps an unchecked upload waiting, and closes it once Claude Design holds the files", async ({ page }) => {
+  const panel = await uncheckedUpload(page);
+  await capture(page, "upload-waiting-for-claude-code");
+  // the developer's upload in Claude Code
+  writeFileSync(join(fx.designNowDir, path), stagedText);
+  await panel.getByRole("button", { name: "Check the upload" }).click();
+  await expect(panel.locator(".cds-jobview")).toContainText("all read back intact");
+  await expect(panel.locator(".cds-jobview-head")).toContainText("done");
+  await capture(page, "upload-checked");
+});
+
+test("discards staged files while an upload waits for Claude Code", async ({ page }) => {
+  const panel = await uncheckedUpload(page);
   await panel.getByRole("button", { name: "Discard run…" }).click();
   await expect(panel.getByRole("group", { name: "Discard this run" })).toContainText("staged kit file");
   await panel.getByRole("button", { name: "Discard", exact: true }).click();

@@ -1274,6 +1274,36 @@ em {
   border-bottom: var(--cds-hair);
   font-size: 12px;
 }
+/* the upload's three steps in Claude Code, numbered like the plan's steps */
+.cds-handoff {
+  margin: 0 0 12px;
+  padding: 10px 0 0;
+  list-style: none;
+  counter-reset: step;
+  border-top: var(--cds-hair);
+  font-size: 12px;
+}
+.cds-handoff li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 3px 0 3px 22px;
+  position: relative;
+  counter-increment: step;
+}
+.cds-handoff li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  color: var(--ink-300);
+  font: 400 11px/1.6 var(--font-mono);
+}
+.cds-handoff .cds-step-actions {
+  margin-left: 0;
+}
+.cds-handoff .cds-brief {
+  overflow-wrap: anywhere;
+}
 .cds-approve h4 {
   margin: 0 0 4px;
   font: 500 13px/1.45 var(--font-ui);
