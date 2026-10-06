@@ -3,14 +3,12 @@
 import { LoaderCircle, RefreshCw, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { api, followJob, fmtTime, plural, projectUrl, REFERENCE_KINDS, store, type AppState, type Comparison, type LaneId, type MappingData, type MappingEvent, type Unit } from "./api";
+import { api, appMoved, designMoved, followJob, fmtTime, plural, projectUrl, REFERENCE_KINDS, store, type AppState, type Comparison, type LaneId, type MappingData, type MappingEvent, type Unit } from "./api";
 import { MapLane, type LaneFlow, type LaneStats } from "./MapLane";
 import { ProjectFooter } from "./ProjectFooter";
 import { TopBar } from "./TopBar";
 
 const WAITING = "waiting";
-const TO_DESIGN = new Set(["app-ahead", "app-only", "both"]);
-const TO_APP = new Set(["design-ahead", "design-only", "both"]);
 
 const STEPS: Array<{ name: string; text: string }> = [
   { name: "Snapshot", text: "A pull reads every text file of the Design project through DesignSync into a local snapshot, and stops early when Claude Design hasn't changed." },
@@ -31,8 +29,8 @@ function stats(units: Unit[]): LaneStats {
     if (u.app.changed) s.appChanged++;
     if (u.design.changed) s.designChanged++;
     if (REFERENCE_KINDS.includes(u.kind)) continue; // reference material never moves
-    if (TO_DESIGN.has(u.status)) s.toDesign++;
-    if (TO_APP.has(u.status)) s.toApp++;
+    if (appMoved(u.status)) s.toDesign++;
+    if (designMoved(u.status)) s.toApp++;
     if (u.status === "both") s.both++;
   }
   return s;
@@ -156,7 +154,11 @@ export function Mapping() {
     const out = new Map<LaneId, LaneStats>();
     if (!cmp) return out;
     const groups = new Map<LaneId, Unit[]>();
-    for (const u of cmp.units) groups.set(u.kind, [...(groups.get(u.kind) ?? []), u]);
+    for (const u of cmp.units) {
+      const units = groups.get(u.kind) ?? [];
+      units.push(u);
+      groups.set(u.kind, units);
+    }
     for (const [k, units] of groups) out.set(k, stats(units));
     return out;
   }, [cmp]);
@@ -174,7 +176,7 @@ export function Mapping() {
   const unpulled = snap?.unpulled ? snap.unpulled.carried.length + snap.unpulled.missing.length : 0;
   const otherProject = !!snap?.projectId && !!state && snap.projectId !== state.project.id;
   const last = map?.lastCheck ?? null;
-  const appMoved = !!cmp && !!state && cmp.appHead !== state.appHead;
+  const headMoved = !!cmp && !!state && cmp.appHead !== state.appHead;
   const running = !!state?.jobs.some((j) => j.state === "running");
   const all = [...byLane.values()].reduce((a, s) => ({ units: a.units + s.units.length, waiting: a.waiting + s.toApp + s.toDesign - s.both, both: a.both + s.both }), { units: 0, waiting: 0, both: 0 });
 
@@ -192,7 +194,7 @@ export function Mapping() {
             : { ok: true, text: `Up to date when asked, ${fmtTime(last.at)}.`, fix: { label: "Check again", run: () => void check().catch(() => {}) } };
   const app: { ok: boolean | null; text: string; fix?: { label: string; run: () => void } } = !cmp
     ? { ok: null, text: "Not compared yet." }
-    : appMoved
+    : headMoved
       ? { ok: false, text: `HEAD moved to @${state?.appHead} since the comparison.`, fix: { label: "Recompare", run: () => void recompare().catch(() => {}) } }
       : { ok: true, text: `Compared ${fmtTime(cmp.generatedAt)}${state?.dirty ? ", uncommitted changes included" : ""}.`, fix: { label: "Recompare", run: () => void recompare().catch(() => {}) } };
   const behind = design.ok === false || app.ok === false || design.ok === null;

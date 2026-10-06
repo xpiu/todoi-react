@@ -11,9 +11,9 @@ import { createApp } from "../src/server/main";
 import { makeFixture, type Fixture } from "./fixture";
 
 const screenshots = join(TOOL_DIR, "../../.tmp/design-sync-improvements");
-const capture = async (page: Page, name: string) => {
+const capture = async (page: Page, name: string, fullPage = true) => {
   mkdirSync(screenshots, { recursive: true });
-  await page.screenshot({ path: join(screenshots, `${name}.png`), fullPage: true });
+  await page.screenshot({ path: join(screenshots, `${name}.png`), fullPage, animations: "disabled" });
 };
 
 let fx: Fixture;
@@ -126,4 +126,47 @@ test("reports staging startup failures as failed jobs", async ({ request }) => {
   expect(response.status()).toBe(200);
   const { job: id } = await response.json();
   await expect.poll(async () => (await (await request.get(`${url}/api/jobs/${id}`)).json()).state).toBe("failed");
+});
+
+test("preserves plan dialog transitions and layouts at desktop and phone widths", async ({ page, request }) => {
+  await request.post(`${url}/api/jobs/${jobId}/discard`, { headers: { "x-cds": "1" } });
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(url);
+  await expect(page.locator(".cds-plan-sum strong")).toContainText("features");
+  await capture(page, "after-plan-desktop");
+  await page.getByRole("button", { name: "Run plan" }).click();
+  await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toBeVisible();
+  await capture(page, "after-plan-confirmation");
+  await page.getByRole("button", { name: "Back to the steps" }).click();
+  await expect(page.getByRole("heading", { name: "Steps, in order" })).toBeVisible();
+  await page.getByRole("button", { name: "Mark synced" }).click();
+  await expect(page.getByRole("heading", { name: "Mark both sides as synced" })).toBeVisible();
+  await capture(page, "after-mark-synced");
+  await page.getByLabel("Label", { exact: true }).fill("Keep this label");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Steps, in order" })).toBeVisible();
+  await page.locator(".cds-plan-toggle").click();
+  await expect(page.locator(".cds-plan-toggle")).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("button", { name: "Mark synced" }).click();
+  await expect(page.getByLabel("Label", { exact: true })).toHaveValue("Keep this label");
+  await page.locator(".cds-plan-toggle").click();
+  await page.getByRole("button", { name: "Run plan" }).click();
+  await page.locator(".cds-plan-toggle").click();
+  await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await capture(page, "after-plan-phone", false);
+  await page.getByRole("button", { name: "Mark synced" }).click();
+  await expect(page.getByRole("heading", { name: "Mark both sides as synced" })).toBeVisible();
+  await capture(page, "after-mark-synced-phone", false);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${url}/mapping`);
+  await page.getByRole("button", { name: "Components", exact: true }).click();
+  await expect(page.locator(".cds-map-detail")).toContainText("Paired by");
+  await capture(page, "after-mapping-desktop");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await capture(page, "after-mapping-phone", false);
+  expect(errors).toEqual([]);
 });

@@ -8,7 +8,7 @@ import { hashAll, listFiles, readText } from "./fsutil";
 import { commitsAfter, head, showAt, type Commit } from "./git";
 import { buildInventory, cardInfo, normaliseSpec, propsOf, sections, type UnitDef } from "./inventory";
 import { getSnapshot, latestSnapshot, snapshotFilesDir } from "./snapshots";
-import { directionsFor } from "./directions";
+import { appMoved, designMoved, directionsFor } from "./directions";
 import type { Baseline, Comparison, Direction, Feature, SideState, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "./types";
 
 export interface Readers {
@@ -66,7 +66,7 @@ function statusOf(u: Pick<Unit, "app" | "design">): UnitStatus {
   // One-sided units drift only when they are new or changed since the sync point; a long-standing
   // one-sided unit (an App helper the kit never had, a kit-only card) is a steady state, not work.
   if (app.exists && !design.exists) {
-    if (app.added || (app.changed && app.changed === null)) return "app-only";
+    if (app.added) return "app-only";
     if (app.changed) return "app-ahead";
     if (design.changed) return "design-ahead"; // removed from Design since the sync point
     return app.changed === null ? "app-only" : "in-sync";
@@ -141,8 +141,8 @@ function evidence(def: UnitDef, unit: Unit, r: Readers, base: Pick<Baseline, "re
 }
 
 export function featureStatus(units: Unit[]): UnitStatus {
-  const app = units.some((u) => u.status === "app-ahead" || u.status === "app-only" || u.status === "both");
-  const design = units.some((u) => u.status === "design-ahead" || u.status === "design-only" || u.status === "both");
+  const app = units.some((u) => appMoved(u.status));
+  const design = units.some((u) => designMoved(u.status));
   if (app && design) return "both";
   if (app) return units.every((u) => u.status === "app-only") ? "app-only" : "app-ahead";
   if (design) return units.every((u) => u.status === "design-only") ? "design-only" : "design-ahead";
@@ -223,8 +223,8 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
   }
   for (const u of drifting) {
     if (assigned.has(u.id)) continue;
-    const area = u.kind === "component" || u.kind === "card" ? u.area : u.kind === "guideline" ? u.area.split("/")[0]! : u.area;
-    const title = `${AREA_TITLE[area] ?? area}${u.kind === "component" || u.kind === "card" ? "" : ""}`;
+    const area = u.kind === "guideline" ? u.area.split("/")[0]! : u.area;
+    const title = `${AREA_TITLE[area] ?? area}`;
     let g = finals.find((x) => x.source === "area" && x.title === title);
     if (!g) {
       g = { title, source: "area", units: new Set(), appWork: new Set(), designWork: new Set() };

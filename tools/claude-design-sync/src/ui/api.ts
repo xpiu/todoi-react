@@ -141,7 +141,7 @@ export const DIRECTION_HINT: Record<Direction, string> = {
   skip: "Leave this as it is",
 };
 
-export { directionsFor, featureDirection, REFERENCE_KINDS, unitDirection } from "../engine/directions";
+export { appMoved, designMoved, directionsFor, featureDirection, REFERENCE_KINDS, unitDirection } from "../engine/directions";
 export { parseProjectRef, projectUrl } from "../engine/project";
 export { appPending, uploadPending } from "../engine/approvals";
 import { featureDirection } from "../engine/directions";

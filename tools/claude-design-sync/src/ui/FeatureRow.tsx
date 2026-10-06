@@ -3,15 +3,12 @@
 import { ChevronRight, Copy, Check, Play } from "lucide-react";
 import { Fragment, useState } from "react";
 
-import { api, directionsFor, displayName, DIRECTION_LABEL, KIND_WORD, plural, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
+import { api, appMoved, designMoved, directionsFor, displayName, DIRECTION_LABEL, KIND_WORD, plural, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
 import { Diff } from "./Diff";
 import { RailKeys } from "./Rail";
 
-const appMoved = (u: Unit) => u.status === "app-ahead" || u.status === "app-only" || u.status === "both";
-const designMoved = (u: Unit) => u.status === "design-ahead" || u.status === "design-only" || u.status === "both";
-
 function SideCell({ units, side, known }: { units: Unit[]; side: "app" | "design"; known: string[] }) {
-  const moved = units.filter(side === "app" ? appMoved : designMoved);
+  const moved = units.filter((u) => (side === "app" ? appMoved : designMoved)(u.status));
   const telling = (u: Unit) => (side === "app" ? u.app.evidence : u.design.evidence).find((e) => !known.includes(e));
   if (!moved.length) return <div className={`cds-cell cds-cell-${side} is-quiet`}>No change</div>;
   return (
@@ -53,7 +50,7 @@ export function FeatureRow({ feature, direction, overridden, onDirection, baseId
         <span className="cds-count">{plural(feature.units.length, "part")}</span>
       </header>
       <div className={`cds-twin ${open ? "is-head" : ""}`}>
-        {open ? <div className="cds-cell cds-cell-app is-quiet">{plural(feature.units.filter(appMoved).length, "part")} moved in the App</div> : <SideCell units={feature.units} side="app" known={[feature.title, ...feature.appWork, "New since the sync point"]} />}
+        {open ? <div className="cds-cell cds-cell-app is-quiet">{plural(feature.units.filter((u) => appMoved(u.status)).length, "part")} moved in the App</div> : <SideCell units={feature.units} side="app" known={[feature.title, ...feature.appWork, "New since the sync point"]} />}
         <div className="cds-rail-cell">
           <RailKeys value={direction} allowed={feature.directions} onChange={(d) => onDirection(d)} label={`Direction for ${feature.title}`} why={why} />
           {/* quiet at rest: a note only where this feature does something other than the plan */}
@@ -68,7 +65,7 @@ export function FeatureRow({ feature, direction, overridden, onDirection, baseId
             </span>
           ) : null}
         </div>
-        {open ? <div className="cds-cell cds-cell-design is-quiet">{plural(feature.units.filter(designMoved).length, "part")} moved in Design</div> : <SideCell units={feature.units} side="design" known={[feature.title, ...feature.designWork, "New since the sync point"]} />}
+        {open ? <div className="cds-cell cds-cell-design is-quiet">{plural(feature.units.filter((u) => designMoved(u.status)).length, "part")} moved in Design</div> : <SideCell units={feature.units} side="design" known={[feature.title, ...feature.designWork, "New since the sync point"]} />}
       </div>
       {open ? <FeatureDetail id={`${feature.id}-d`} feature={feature} baseId={baseId} snapshotId={snapshotId} steps={steps} onRunOne={onRunOne} {...dirs} /> : null}
     </section>

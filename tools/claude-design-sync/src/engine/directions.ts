@@ -5,6 +5,9 @@ import type { Direction, UnitKind, UnitStatus } from "./types";
 /** Kinds that exist only in Design (previews, guidelines): shown as Design work, never ported */
 export const REFERENCE_KINDS: UnitKind[] = ["card", "guideline"];
 
+export const appMoved = (status: UnitStatus) => status === "app-ahead" || status === "app-only" || status === "both";
+export const designMoved = (status: UnitStatus) => status === "design-ahead" || status === "design-only" || status === "both";
+
 export function directionsFor(status: UnitStatus, kind?: UnitKind): { directions: Direction[]; suggested: Direction } {
   if (kind && REFERENCE_KINDS.includes(kind)) return { directions: ["skip"], suggested: "skip" };
   switch (status) {

@@ -38,7 +38,7 @@ export function App() {
   const [panel, setPanel] = useState(() => !!new URLSearchParams(location.search).get("job"));
   const [loading, setLoading] = useState(true);
   const [showSynced, setShowSynced] = useState(false);
-  const [check, setCheck] = useState<{ busy: boolean; stale?: boolean; updatedAt?: string | null; error?: string } | null>(null);
+  const [check, setCheck] = useState<{ busy: boolean; stale?: boolean; error?: string } | null>(null);
 
   // State + comparison for a sync point; applied in one place so effects never set state synchronously
   const load = useCallback(
@@ -124,7 +124,7 @@ export function App() {
     setCheck({ busy: true });
     try {
       const r = await api.statusCheck();
-      setCheck({ busy: false, stale: r.stale, updatedAt: r.updatedAt });
+      setCheck({ busy: false, stale: r.stale });
     } catch (e) {
       setCheck({ busy: false, error: (e as Error).message });
     }

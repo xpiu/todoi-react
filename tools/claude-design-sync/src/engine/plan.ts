@@ -10,7 +10,7 @@ import { listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
 import { isStoryFile, sections } from "./inventory";
 import { getSnapshot, saveSyncPoint, snapshotFilesDir } from "./snapshots";
-import { featureDirection, unitDirection } from "./directions";
+import { appMoved, designMoved, featureDirection, unitDirection } from "./directions";
 import { unitBaseline } from "./compare";
 import type { Baseline, Comparison, Direction, Feature, SyncPoint, Unit } from "./types";
 
@@ -30,12 +30,10 @@ export interface Step {
 }
 
 const flows = (u: Unit, d: Direction): Array<"app" | "design"> => {
-  const app = u.status === "app-ahead" || u.status === "app-only" || u.status === "both";
-  const design = u.status === "design-ahead" || u.status === "design-only" || u.status === "both";
   const out: Array<"app" | "design"> = [];
   // "to design" carries App work; "to app" carries Design work
-  if (app && (d === "both" || d === "app-to-design")) out.push("design");
-  if (design && (d === "both" || d === "design-to-app")) out.push("app");
+  if (appMoved(u.status) && (d === "both" || d === "app-to-design")) out.push("design");
+  if (designMoved(u.status) && (d === "both" || d === "design-to-app")) out.push("app");
   return out;
 };
 

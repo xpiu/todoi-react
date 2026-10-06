@@ -12,9 +12,8 @@ const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsF
 const allSkipped = (f: Feature, unitChoices: Record<string, Direction>) => f.units.some((u) => skipped(u, unitChoices)) && f.units.every((u) => skipped(u, unitChoices) || directionsFor(u.status, u.kind).directions.length === 1);
 
 export function PlanBar({ steps, features, global, overrides, unitChoices, state, onRun, busy, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: () => void; busy: boolean; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
-  const [open, setOpen] = useState(false);
-  const [confirm, setConfirm] = useState(false);
-  const [mark, setMark] = useState(false);
+  const [view, setView] = useState<"closed" | "steps" | "confirm" | "mark">("closed");
+  const open = view !== "closed";
   const [label, setLabel] = useState("");
   const [tag, setTag] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,9 +51,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
   const hold = features.flatMap((f) => (keepOpen(f) ? f.units : f.units.filter((u) => skipped(u, unitChoices))).map((u) => u.id));
   const startMark = () => {
     setTicked({});
-    setOpen(true);
-    setMark(true);
-    setConfirm(false);
+    setView("mark");
   };
   const summary = !moving ? "Nothing planned" : `${plural(moving, "feature")}${kinds.length === 1 ? ` · ${kinds[0]![1]}` : `: ${kinds.map(([n, l]) => `${n} ${l}`).join(" · ")}`}${t.skip ? ` · ${t.skip} skipped` : ""}`;
 
@@ -62,7 +59,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
     <div className={`cds-plan ${open ? "is-open" : ""}`} role="region" aria-label="Sync plan">
       {open ? (
         <div className="cds-plan-sheet">
-          {confirm ? (
+          {view === "confirm" ? (
             <div className="cds-confirm" role="group" aria-labelledby="confirm-h">
               <h3 id="confirm-h">Run {plural(work, "step")}?</h3>
               <ul>
@@ -81,16 +78,16 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                 {upload ? <li>Uploads nothing yet: staged kit files wait in Activity for you to approve the exact list.</li> : null}
               </ul>
               <div className="cds-confirm-actions">
-                <button type="button" className="cds-btn cds-btn-primary" disabled={!!missing || busy || !work} onClick={() => { setConfirm(false); setOpen(false); onRun(); }}>
+                <button type="button" className="cds-btn cds-btn-primary" disabled={!!missing || busy || !work} onClick={() => { setView("closed"); onRun(); }}>
                   <Play size={14} strokeWidth={1.75} aria-hidden /> Run {plural(work, "step")}
                 </button>
-                <button type="button" className="cds-btn" onClick={() => setConfirm(false)}>
+                <button type="button" className="cds-btn" onClick={() => setView("steps")}>
                   Back to the steps
                 </button>
                 {missing ? <span className="cds-error-inline">{missing}</span> : busy ? <span className="cds-quiet">Another job is running — see Activity.</span> : null}
               </div>
             </div>
-          ) : mark ? (
+          ) : view === "mark" ? (
             <form
               className="cds-mark"
               onSubmit={async (e) => {
@@ -98,8 +95,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                 setSaving(true);
                 await onSyncPoint(label.trim() || "Synced", tag, hold);
                 setSaving(false);
-                setMark(false);
-                setOpen(false);
+                setView("closed");
               }}
             >
               <h3>Mark both sides as synced</h3>
@@ -139,7 +135,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                   {saving ? "Saving…" : "Record sync point"}
                 </button>
                 {kept ? <span className="cds-quiet">{plural(kept, "feature")} stay{kept === 1 ? "s" : ""} open</span> : null}
-                <button type="button" className="cds-btn" onClick={() => setMark(false)}>
+                <button type="button" className="cds-btn" onClick={() => setView("steps")}>
                   Cancel
                 </button>
               </div>
@@ -153,7 +149,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
         </div>
       ) : null}
       <div className="cds-plan-bar">
-        <button type="button" className="cds-plan-toggle" aria-expanded={open} onClick={() => { setOpen((o) => !o); setConfirm(false); setMark(false); }}>
+        <button type="button" className="cds-plan-toggle" aria-expanded={open} onClick={() => setView((v) => v === "closed" ? "steps" : "closed")}>
           <ChevronRight size={14} strokeWidth={1.75} className="cds-chev" aria-hidden />
           <span className="cds-plan-sum">
             <strong>{summary}</strong>
@@ -169,8 +165,8 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
           <button type="button" className="cds-btn" onClick={startMark}>
             <Flag size={14} strokeWidth={1.75} aria-hidden /> Mark synced
           </button>
-          {confirm ? null : (
-            <button type="button" className="cds-btn cds-btn-primary" disabled={!work || busy} onClick={() => { setOpen(true); setConfirm(true); setMark(false); }}>
+          {view === "confirm" ? null : (
+            <button type="button" className="cds-btn cds-btn-primary" disabled={!work || busy} onClick={() => setView("confirm")}>
               <Play size={14} strokeWidth={1.75} aria-hidden /> Run plan
             </button>
           )}
