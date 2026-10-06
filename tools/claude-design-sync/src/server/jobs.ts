@@ -46,6 +46,11 @@ export interface Job {
    * when the files were checked (then a clean read-back may date the next snapshot)
    */
   handoff?: { paths: string[]; prompt: string; command: string; fresh: boolean; at: string };
+  /** Run jobs: the parts the plan moves, and the label of the sync point recorded once all of it is verified */
+  covers?: string[];
+  label?: string;
+  /** The sync point this run recorded on its own */
+  syncPointId?: string;
   costUsd?: number;
   result?: string;
   baseId?: string | null;

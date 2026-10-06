@@ -5,7 +5,8 @@ import { dirname, join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 import { TOOL_DIR } from "../src/engine/config";
-import { snapshotFilesDir } from "../src/engine/snapshots";
+import { compare } from "../src/engine/compare";
+import { listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import { Jobs } from "../src/server/jobs";
 import { createApp } from "../src/server/main";
 import { makeFixture, type Fixture } from "./fixture";
@@ -84,6 +85,51 @@ test("keeps an unchecked upload waiting, and closes it once Claude Design holds 
   await expect(panel.locator(".cds-jobview")).toContainText("all read back intact");
   await expect(panel.locator(".cds-jobview-head")).toContainText("done");
   await capture(page, "upload-checked");
+});
+
+test("checks the upload by itself when Claude Code pings back, and marks the run synced", async ({ page, request }) => {
+  // a run that covers Toast, compared from the fixture's sync point
+  const jobs = new Jobs(fx.ctx);
+  const base = listSyncPoints(fx.ctx)[0]!;
+  const cmp = compare(fx.ctx, { base, snapshotId: fx.nowSnapshot });
+  const toast = cmp.units.find((u) => u.design.paths.includes(path))!;
+  const job = jobs.create("run", "Sync 1 feature(s)", {
+    stage, baseId: base.id, snapshotId: fx.nowSnapshot, staged: [{ path, status: "changed" }], covers: [toast.id], label: "Toast port",
+    steps: [{ id: "upload", title: "Upload staged files", kind: "upload", target: "design", state: "pending" }],
+  });
+  jobs.finish(job, "awaiting-approval");
+  // the server reads jobs from disk when it starts
+  const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir } });
+  const own = await new Promise<{ server: ReturnType<typeof serve>; url: string }>((resolve) => {
+    const s = serve({ fetch: app.fetch, port: 0, hostname: "127.0.0.1" }, (info) => resolve({ server: s, url: `http://127.0.0.1:${info.port}` }));
+  });
+  try {
+    await page.goto(`${own.url}/?job=${job.id}`);
+    const panel = page.getByRole("complementary", { name: "Activity" });
+    await panel.getByRole("button", { name: /Upload 1 file from Claude Code/ }).click();
+    const handoff = panel.getByRole("list", { name: "Upload from Claude Code" });
+    await expect(handoff).toContainText("Copy the request");
+    await expect(handoff).toContainText("Allow the upload");
+    await handoff.getByRole("button", { name: "Read request" }).click();
+    const prompt = await handoff.locator(".cds-brief").textContent();
+    const ping = /`curl -sS -X POST -H 'x-cds: 1' (\S+)`/.exec(prompt ?? "")?.[1];
+    expect(ping).toBe(`${own.url}/api/jobs/${job.id}/upload-check`);
+    expect(prompt).toContain("Upload to Claude Design: SUCCEEDED");
+    // Claude Code wrote the file, then ran the ping
+    writeFileSync(join(fx.designNowDir, path), stagedText);
+    expect((await request.post(ping!, { headers: { "x-cds": "1" } })).ok()).toBe(true);
+    await expect(panel.locator(".cds-jobview")).toContainText("all read back intact");
+    await expect(panel.locator(".cds-jobview")).toContainText("Marked synced");
+    await expect(panel.locator(".cds-jobview-head")).toContainText("done");
+    const points = listSyncPoints(fx.ctx);
+    expect(points[0]!.label).toBe("Toast port");
+    // parts the run didn't touch stay open on the old baseline
+    const others = cmp.units.filter((u) => u.id !== toast.id && u.status !== "in-sync" && u.kind !== "card" && u.kind !== "guideline");
+    expect(Object.keys(points[0]!.held ?? {}).sort()).toEqual(others.map((u) => u.id).sort());
+  } finally {
+    if ("closeAllConnections" in own.server) own.server.closeAllConnections();
+    await new Promise<void>((resolve) => own.server.close(() => resolve()));
+  }
 });
 
 test("discards staged files while an upload waits for Claude Code", async ({ page }) => {

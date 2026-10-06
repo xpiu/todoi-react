@@ -224,15 +224,25 @@ export async function verifyUpload(ctx: Ctx, runner: Runner, stageDir: string, p
 
 /**
  * The upload, as a request for an interactive Claude Code session: staged files (project paths under
- * stageDir) under one locked plan, no deletes. There the developer approves DesignSync's plan prompt;
- * the tool then reads the files back itself (verifyUpload).
+ * stageDir) under one locked plan, no deletes. There the developer approves DesignSync's plan prompt.
+ * With `notify` (the sync tool's upload-check URL), Claude Code tells the tool once the files are written,
+ * and the tool reads them back itself (verifyUpload); without it, the developer clicks Check the upload.
+ * Either way the session ends with a fixed success/failure report.
  */
-export function uploadRequest(ctx: Ctx, stageDir: string, paths: string[]): { prompt: string; command: string } {
+export function uploadRequest(ctx: Ctx, stageDir: string, paths: string[], notify?: string): { prompt: string; command: string } {
   const files = paths.map((p) => `{"path":${JSON.stringify(p)},"localPath":${JSON.stringify(p)}}`).join(",");
-  const prompt = `Upload ${paths.length === 1 ? "1 staged file" : `${paths.length} staged files`} from the Claude Design Sync tool to the Claude Design project "${ctx.config.design.projectName}" (${ctx.config.design.projectId}). ${LOAD} Do exactly two steps and nothing else:
+  const n = paths.length;
+  const ping = notify ? `curl -sS -X POST -H 'x-cds: 1' ${notify}` : null;
+  const prompt = `Upload ${n === 1 ? "1 staged file" : `${n} staged files`} from the Claude Design Sync tool to the Claude Design project "${ctx.config.design.projectName}" (${ctx.config.design.projectId}). ${LOAD} Do exactly ${ping ? "three" : "two"} steps and nothing else:
 1. Call DesignSync method "finalize_plan" with projectId "${ctx.config.design.projectId}", localDir ${JSON.stringify(stageDir)}, writes ${JSON.stringify(paths)} and deletes []. I will approve its prompt.
-2. Call DesignSync method "write_files" with that projectId, the planId from step 1, and files [${files}].
-Do not read, edit or create any other file. Then say how many files were written; the sync tool reads them back itself.`;
+2. Call DesignSync method "write_files" with that projectId, the planId from step 1, and files [${files}].${ping ? `
+3. Only if step 2 wrote all ${n} file(s): run the shell command \`${ping}\` once. It tells the sync tool to read the files back from Claude Design, compare them with the staged copies and, when they match, mark the run synced.` : ""}
+Do not read, edit or create any other file, and do not retry a failed call. Finish with this report and nothing else, filled in from the results:
+Upload to Claude Design: SUCCEEDED (all ${n} file(s) written) or FAILED
+- Plan (finalize_plan): approved, planId <id>; or failed: <the error>
+- Files (write_files): <written> of ${n} written; or not run${ping ? `
+- Sync tool (step 3): notified, it is checking the upload now; or not reached: <the error>; or not run` : ""}
+- Next: SUCCEEDED → ${ping ? "watch Activity in the sync tool: the run is marked synced once the files read back intact. If the tool wasn't reached, click \"Check the upload\" there." : "go back to the Claude Design Sync tool and click \"Check the upload\"; it reads the files back and marks the run synced."} FAILED → what to fix, then paste this request again.`;
   const q = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
   return { prompt, command: `cd ${q(ctx.repo)} && ${ctx.config.harness.claudeBin} ${q(prompt)}` };
 }

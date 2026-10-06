@@ -231,6 +231,14 @@ describe("DesignSync through the harness", () => {
     expect(prompt).toContain(`"finalize_plan" with projectId "${fx.ctx.config.design.projectId}", localDir ${JSON.stringify(stage)}, writes ["readme.md","components/core/Toast.jsx"] and deletes []`);
     expect(prompt).toContain(`files [{"path":"readme.md","localPath":"readme.md"},{"path":"components/core/Toast.jsx","localPath":"components/core/Toast.jsx"}]`);
     expect(prompt).toContain("I will approve its prompt");
+    // the session ends with a report the developer can act on
+    expect(prompt).toContain("Upload to Claude Design: SUCCEEDED (all 2 file(s) written) or FAILED");
+    expect(prompt).toContain('click "Check the upload"');
+    expect(prompt).not.toContain("curl");
+    // with a callback, Claude Code tells the tool to check the upload itself
+    const pinged = uploadRequest(fx.ctx, stage, ["readme.md"], "http://localhost:4477/api/jobs/run-x/upload-check").prompt;
+    expect(pinged).toContain("3. Only if step 2 wrote all 1 file(s): run the shell command `curl -sS -X POST -H 'x-cds: 1' http://localhost:4477/api/jobs/run-x/upload-check` once.");
+    expect(pinged).toContain("- Sync tool (step 3): notified");
     // the shell hands Claude Code the prompt unchanged, quotes and all
     const echoed = execFileSync("sh", ["-c", command.replace(/^cd .*? && \S+ /, "printf %s ")], { encoding: "utf8" });
     expect(echoed).toBe(prompt);

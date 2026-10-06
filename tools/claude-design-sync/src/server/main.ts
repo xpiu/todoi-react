@@ -10,6 +10,7 @@ import { streamSSE } from "hono/streaming";
 
 import { uploadPending } from "../engine/approvals";
 import { compare, unitBaseline } from "../engine/compare";
+import { directionsFor } from "../engine/directions";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, createDesignRunner, findProject, isCurrent, projectStatus, pullIfChanged, uploadRequest as uploadHandoff, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
@@ -284,13 +285,42 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       const at = jobSteps.findIndex((s) => s.id === "upload");
       jobSteps.splice(at < 0 ? jobSteps.length : at, 0, { id: "app-check", title: `Run ${ctx.config.app.check} on the run's branch`, kind: "check", target: "app", state: "pending" }, { id: "app-merge", title: "Merge the run's branch into your branch (after your review)", kind: "merge", target: "app", state: "pending" });
     }
-    const job = jobs.create("run", `Sync ${new Set(steps.map((s) => s.featureId)).size - (steps.some((s) => s.kind === "upload") ? 1 : 0)} feature(s)`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: jobSteps });
+    const titles = [...new Set(steps.filter((s) => s.kind !== "upload").map((s) => s.featureTitle))];
+    const label = titles.join(", ");
+    const job = jobs.create("run", `Sync ${titles.length} feature(s)`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: jobSteps, covers: [...new Set(steps.flatMap((s) => s.units))], label: label.length > 80 ? `${label.slice(0, 79)}…` : label });
     void runPlan(job, cmp, steps, ctx.config.harness.implement);
     return c.json({ job: job.id });
   });
 
   /** A job ends only when nothing waits on the developer: no upload to approve, no verified branch to merge */
   const settle = (job: Job, note: string, failed = false) => jobs.finish(job, uploadPending(job) || job.app?.state === "ready" ? "awaiting-approval" : failed ? "failed" : "done", note);
+
+  /**
+   * A run whose upload read back intact and whose App branch merged has synced what it planned, so it
+   * records the sync point itself. Parts it didn't move (skipped, or changed since) stay open on their
+   * old baseline, as in the Mark synced dialog. Returns the sentence that tells the developer what happened.
+   */
+  const markRunSynced = (job: Job): string => {
+    const latest = baseFor();
+    // runs started before runs recorded what they cover can't say which parts stay open
+    if (!job.covers) return " Use Mark synced when both sides look right.";
+    if (!latest || latest.id !== job.baseId) return latest ? " A newer sync point was recorded meanwhile, so this run didn't record one: use Mark synced if both sides look right." : " Use Mark synced to record the first sync point.";
+    // a staged file left out of the upload never reached Design: the parts it carries stay open too
+    const left = new Set((job.staged ?? []).filter((s) => !job.handoff?.paths.includes(s.path)).map((s) => s.path));
+    const covered = new Set(job.covers ?? []);
+    const cmp = getComparison(job.baseId, null, true);
+    const hold = cmp.units.filter((u) => (!covered.has(u.id) || u.design.paths.some((p) => left.has(p))) && directionsFor(u.status, u.kind).directions.some((d) => d !== "skip")).map((u) => u.id);
+    try {
+      const point = recordSyncPoint(ctx, { label: job.label || job.title, snapshotId: latestSnapshot(ctx)?.id ?? null, from: latest, hold });
+      cache.clear();
+      jobs.update(job, { syncPointId: point.id });
+      const open = cmp.features.filter((f) => f.units.some((u) => hold.includes(u.id))).length;
+      jobs.log(job, "done", `Marked synced: comparisons now start from “${point.label}”${open ? `; ${open} feature(s) stay open` : ""}`);
+      return ` Marked synced: comparisons now start here${open ? `, and ${open} feature(s) this run didn't finish stay open` : ""}.${left.size ? ` ${[...left].join(", ")} stayed out of the upload, so ${left.size === 1 ? "its feature stays" : "their features stay"} open.` : ""}`;
+    } catch (e) {
+      return ` Couldn't mark it synced (${e instanceof Error ? e.message : String(e)}): use Mark synced.`;
+    }
+  };
 
   /** The App's branch is kept for a look when its run fails or stops; only Discard removes it */
   const keepAppRun = (job: Job, reason: string) => {
@@ -407,6 +437,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     if (!files.length) return c.json({ error: "Pick at least one staged file" }, 400);
     const gone = files.filter((p) => !existsSync(join(job.stage!, p)));
     if (gone.length) return c.json({ error: `The staged copy of ${gone.join(", ")} is missing, so it can't be uploaded. Discard the run and run the feature again` }, 409);
+    // Claude Code calls this URL once the files are written, so the tool checks the upload by itself
+    const notify = new URL(`/api/jobs/${job.id}/upload-check`, c.req.url).href;
     job.state = "running";
     jobs.update(job, { handoff: undefined });
     jobs.step(job, "upload", { state: "running" });
@@ -428,10 +460,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
           return;
         }
         // DesignSync's plan prompt needs the developer, so the upload itself runs in Claude Code
-        const { prompt, command } = uploadHandoff(ctx, job.stage!, files);
+        const { prompt, command } = uploadHandoff(ctx, job.stage!, files, notify);
         jobs.update(job, { handoff: { paths: files, prompt, command, fresh: check.fresh, at: new Date().toISOString() } });
         jobs.step(job, "upload", { state: "pending", summary: `${files.length} file(s) ready for Claude Code` });
-        jobs.finish(job, "awaiting-approval", `Ready: paste the request into Claude Code and approve DesignSync's prompt for these ${files.length} file(s), then Check the upload.`);
+        jobs.finish(job, "awaiting-approval", `Ready to upload ${files.length} file(s): follow the steps under “Upload to Claude Design”.`);
       } catch (e) {
         jobs.step(job, "upload", { state: "failed", summary: "Couldn't check Claude Design; the staged files are kept" });
         jobs.finish(job, "awaiting-approval", `Couldn't prepare the upload: ${e instanceof Error ? e.message : String(e)}. Try again, or discard the run.`);
@@ -440,7 +472,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     return c.json({ ok: true });
   });
 
-  // After the developer ran the upload in Claude Code: read every file back; the step closes once all match
+  // After the upload ran in Claude Code (its request calls this, or the developer clicks Check the upload):
+  // read every file back; the step closes once all match
   app.post("/api/jobs/:id/upload-check", (c) => {
     const job = jobs.get(c.req.param("id"));
     const h = job?.handoff;
@@ -456,7 +489,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
           for (const p of differ) jobs.log(job, "warn", `${p}: ${contents.has(p) ? "Claude Design doesn't hold the staged content (yet)" : "not in Claude Design (yet)"}`, "upload");
           const none = differ.length === h.paths.length;
           jobs.step(job, "upload", { state: "pending", summary: none ? "Not in Claude Design yet" : `${differ.length} of ${h.paths.length} file(s) don't match yet` });
-          jobs.finish(job, "awaiting-approval", none ? `None of the ${h.paths.length} file(s) are in Claude Design yet. Paste the request into Claude Code and approve DesignSync's prompt, then check again.` : `${differ.length} of ${h.paths.length} file(s) don't match the staged copy: ${differ.join(", ")}. Finish the upload in Claude Code, or pull to see what Claude Design holds.`);
+          jobs.finish(job, "awaiting-approval", none ? `None of the ${h.paths.length} file(s) are in Claude Design yet. Run the request in Claude Code (steps 1–3), then check again.` : `${differ.length} of ${h.paths.length} file(s) don't match the staged copy: ${differ.join(", ")}. Finish the upload in Claude Code, or pull to see what Claude Design holds.`);
           return;
         }
         // The snapshot keeps what Design holds now. It is Design's exact state only when nothing else moved
@@ -468,7 +501,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         if (from) deriveSnapshot(ctx, from.id, changes, `After upload (${h.paths.length} files)`, "upload", after?.updatedAt ?? undefined);
         cache.clear();
         jobs.step(job, "upload", { state: "done", summary: `${h.paths.length} file(s) in Claude Design, read back intact` });
-        settle(job, `Uploaded ${h.paths.length} file(s) to Claude Design, all read back intact${h.fresh ? "" : ". Design had other changes too: pull to see them."}${job.app?.state === "ready" ? " The App branch still waits for your merge." : " Mark synced when both sides look right."}`);
+        const uploaded = `Uploaded ${h.paths.length} file(s) to Claude Design, all read back intact.${h.fresh ? "" : " Claude Design also changed elsewhere since this run's snapshot: Pull now to compare those changes."}`;
+        settle(job, `${uploaded}${job.app?.state === "ready" ? " Merge the App branch to finish; the run is marked synced then." : markRunSynced(job)}`);
       } catch (e) {
         jobs.step(job, "upload", { state: "pending", summary: "Couldn't read Claude Design; check again" });
         jobs.finish(job, "awaiting-approval", `Couldn't check the upload: ${e instanceof Error ? e.message : String(e)}. Check again.`);
@@ -490,7 +524,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       const summary = `${run.commits.length} commit(s) merged into ${run.into} (${how === "fast-forward" ? "fast-forward" : "merge commit"})`;
       jobs.step(job, "app-merge", { state: "done", summary });
       jobs.log(job, "info", `${summary}; ${run.branch} and its worktree removed`, "app-merge");
-      settle(job, `${summary}.${uploadPending(job) ? " The kit upload still waits for your approval." : " Mark synced when both sides look right."}`);
+      settle(job, `${summary}.${uploadPending(job) ? " Upload the kit files to finish; the run is marked synced then." : markRunSynced(job)}`);
       return c.json({ ok: true });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

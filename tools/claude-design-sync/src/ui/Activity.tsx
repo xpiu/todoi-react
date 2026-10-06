@@ -162,7 +162,7 @@ function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffe
       {uploadWaiting ? (
         <section className="cds-approve" aria-labelledby="approve-h">
           <h4 id="approve-h">Upload to Claude Design</h4>
-          <p className="cds-quiet">Exactly the ticked files go up, under one locked DesignSync plan. Nothing is deleted. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't offered. DesignSync asks you to approve every upload, so the upload itself runs in Claude Code.</p>
+          <p className="cds-quiet">Only the ticked files go up, and nothing in Claude Design is deleted. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't offered. The upload runs in Claude Code, where DesignSync asks you to approve it.</p>
           <ul className="cds-files">
             {staged.map((s) => {
               const errors = cardErr.get(s.path);
@@ -189,20 +189,37 @@ function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffe
             <>
               <ol className="cds-handoff" aria-label="Upload from Claude Code">
                 <li>
-                  <span>Paste the request into Claude Code: a session that's open, or a terminal.</span>
+                  <span>
+                    <strong>Copy the request</strong> and paste it into a Claude Code session in this repo, then press Enter.
+                  </span>
                   <span className="cds-step-actions">
                     <CopyLink text={handoff.prompt} label="Copy request" tip="Copy the request, to paste into a Claude Code session that's already open" />
-                    <CopyLink text={handoff.command} label="Copy terminal command" tip="Copy a shell command that starts Claude Code in this repo with the request" />
-                    <button type="button" className="cds-link" aria-expanded={showRequest} data-tip={showRequest ? "Hide the request" : "Read the request Claude Code gets: two DesignSync calls and nothing else"} onClick={() => setShowRequest((s) => !s)}>
+                    <button type="button" className="cds-link" aria-expanded={showRequest} data-tip={showRequest ? "Hide the request" : "Read the request Claude Code gets: two DesignSync calls, a ping back to this tool, and a report"} onClick={() => setShowRequest((s) => !s)}>
                       {showRequest ? "Hide request" : "Read request"}
                     </button>
                   </span>
+                  <span className="cds-quiet">
+                    No session open? <CopyLink text={handoff.command} label="Copy terminal command" tip="Copy a shell command that starts Claude Code in this repo with the request" /> and run it in a terminal instead.
+                  </span>
                   {showRequest ? <pre className="cds-brief">{handoff.prompt}</pre> : null}
                 </li>
-                <li>Approve DesignSync's prompt there. It names this run's staging folder and exactly these {plural(handoff.paths.length, "file")}.</li>
-                <li>Check the upload: the files are read back from Claude Design and compared with the staged copies.</li>
+                <li>
+                  <span>
+                    <strong>Allow the upload</strong> when Claude Code asks. Its DesignSync prompt names the staging folder <span className="cds-mono">{stageId}</span> and {handoff.paths.length === 1 ? "the file" : `the ${handoff.paths.length} files`} ticked above. In bypass-permissions mode it doesn't ask.
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    <strong>Read Claude Code's report.</strong> It starts with “Upload to Claude Design: SUCCEEDED” or “FAILED”, and says what to do next.
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    <strong>That's it when it succeeded.</strong> Claude Code tells this tool, which reads the files back from Claude Design and marks the run synced when they match. If nothing happens here, check the upload yourself:
+                  </span>
+                </li>
               </ol>
-              <button type="button" className="cds-btn cds-btn-primary" disabled={busy} data-tip="Read the files back from Claude Design. The step closes once every one matches its staged copy" onClick={() => act(() => api.uploadCheck(job.id))}>
+              <button type="button" className="cds-btn cds-btn-primary" disabled={busy} data-tip="Read the files back from Claude Design now. When every one matches its staged copy, the run is marked synced" onClick={() => act(() => api.uploadCheck(job.id))}>
                 <Check size={14} strokeWidth={1.75} aria-hidden /> Check the upload
               </button>
             </>

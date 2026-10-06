@@ -161,10 +161,13 @@ test.describe.serial("Claude Design Sync", () => {
     await panel.getByRole("button", { name: "Check the upload" }).click();
     // uploaded, but the App branch still waits for its merge
     await expect(panel.locator(".cds-jobview")).toContainText("all read back intact", { timeout: 30_000 });
+    await expect(panel.locator(".cds-jobview")).toContainText("Merge the App branch to finish");
     await expect(panel.locator(".cds-jobview-head")).toContainText("waiting for your approval");
     expect(execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()).toBe(headBefore);
     await merge.getByRole("button", { name: /Merge \d+ commits? into main/ }).click();
     await expect(panel.locator(".cds-jobview-head")).toContainText("done");
+    // upload read back and branch merged: the run recorded its own sync point
+    await expect(panel.locator(".cds-jobview")).toContainText("Marked synced");
     // merged: every offer is gone
     await expect(barMerge).toHaveCount(0);
     await expect(banner).toHaveCount(0);
