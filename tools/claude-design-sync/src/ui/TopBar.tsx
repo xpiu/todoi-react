@@ -1,9 +1,10 @@
-// The bar every page shares: the wordmark, the page's own tools, the pages (Plan, Mapping), and the
-// Claude Design project the tool targets.
+// The bar every page shares: the wordmark, Merge while a run waits for it, the page's own tools, the pages
+// (Plan, Mapping), and the Claude Design project the tool targets.
 import { ArrowLeftRight, ArrowUpRight, ListChecks, Moon, Sun, Waypoints } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { projectUrl, store, type AppState } from "./api";
+import { MergeButton, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
 
 const PAGES = [
@@ -11,7 +12,7 @@ const PAGES = [
   { id: "mapping", href: "/mapping", label: "Mapping", Icon: Waypoints, tip: "How App files pair with Design files, lane by lane, and what moved lately" },
 ] as const;
 
-export function TopBar({ state, page, children }: { state: AppState | null; page: (typeof PAGES)[number]["id"]; children?: ReactNode }) {
+export function TopBar({ state, page, merge, children }: { state: AppState | null; page: (typeof PAGES)[number]["id"]; merge: MergeOffer; children?: ReactNode }) {
   const [mode, setMode] = useState(() => document.documentElement.dataset.mode === "dark" ? "dark" : "light");
   const manual = useRef(false);
 
@@ -45,6 +46,7 @@ export function TopBar({ state, page, children }: { state: AppState | null; page
         <span className="cds-wordmark-name">Claude Design sync tool</span>
       </h1>
       <div className="cds-bar-tools">
+        <MergeButton offer={merge} place="bar" />
         {children}
         <nav className="cds-pages" aria-label="Pages">
           {PAGES.map(({ id, href, label, Icon, tip }) => (

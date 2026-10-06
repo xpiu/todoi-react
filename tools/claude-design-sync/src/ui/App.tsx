@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity } from "./Activity";
 import { api, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
 import { FeatureRow } from "./FeatureRow";
+import { MergeBanner, useMerge } from "./Merge";
 import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
 import { ProjectFooter } from "./ProjectFooter";
@@ -75,6 +76,8 @@ export function App() {
     setCheck(null);
     void load(fresh);
   };
+  // a finished job only needs the job list again; a merge moves the App, so it recompares
+  const merge = useMerge(state, () => void api.state().then(setState, () => {}), () => refresh(true));
   useEffect(() => store.set("cds-base", baseId), [baseId]);
   useEffect(() => store.set("cds-global", global), [global]);
   useEffect(() => store.set("cds-overrides", overrides), [overrides]);
@@ -112,6 +115,8 @@ export function App() {
   const openJob = (id: string) => {
     setActivity(id);
     setPanel(true);
+    // the new job joins the list at once: the bar shows it live and Merge greys in while App work ports
+    void api.state().then(setState, () => {});
   };
   const run = async (only?: string[]) => {
     try {
@@ -150,7 +155,7 @@ export function App() {
   return (
     <div className={`cds ${panel ? "has-panel" : ""}`}>
       <a className="cds-skip" href="#ledger" data-tip="Jump past the toolbar to the list of features">Skip to the features</a>
-      <TopBar state={state} page="plan">
+      <TopBar state={state} page="plan" merge={merge}>
         {state?.syncPoints.length ? (
           <label className="cds-since">
             <History size={14} strokeWidth={1.75} aria-hidden />
@@ -178,6 +183,7 @@ export function App() {
             {error}
           </p>
         ) : null}
+        <MergeBanner offer={merge} onReview={openJob} />
 
         {state && !state.snapshots.length ? (
           <Onboarding state={state} onPull={pull} onImported={() => refresh(true)} />
@@ -352,14 +358,14 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} onRun={() => void run()} busy={!!running} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} onRun={() => void run()} busy={!!running} merge={merge} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);
         else refresh(true);
       }} /> : null}
 
-      {panel ? <Activity state={state} focus={activity} onFocus={setActivity} onClose={() => setPanel(false)} onChanged={() => refresh(true)} /> : null}
+      {panel ? <Activity state={state} merge={merge} focus={activity} onFocus={setActivity} onClose={() => setPanel(false)} onChanged={() => refresh(true)} /> : null}
     </div>
   );
 }

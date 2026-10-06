@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appMoved, designMoved, followJob, fmtTime, plural, projectUrl, REFERENCE_KINDS, store, type AppState, type Comparison, type LaneId, type MappingData, type MappingEvent, type Unit } from "./api";
 import { MapLane, type LaneFlow, type LaneStats } from "./MapLane";
+import { MergeBanner, useMerge } from "./Merge";
 import { ProjectFooter } from "./ProjectFooter";
 import { TIP } from "./Tooltip";
 import { TopBar } from "./TopBar";
@@ -100,6 +101,7 @@ export function Mapping() {
   useEffect(() => {
     load().catch((e: Error) => setError(e.message));
   }, [load]);
+  const merge = useMerge(state, () => void api.state().then(setState, () => {}), () => void load(true).catch((e: Error) => setError(e.message)));
 
   /** Run one refresh step at a time, reporting what it's doing; errors land in the banner */
   const step = async (text: string, fn: () => Promise<unknown>) => {
@@ -219,13 +221,14 @@ export function Mapping() {
       <a className="cds-skip" href="#diagram" data-tip="Jump past the summary to the lane diagram">
         Skip to the diagram
       </a>
-      <TopBar state={state} page="mapping" />
+      <TopBar state={state} page="mapping" merge={merge} />
       <main className="cds-main">
         {error ? (
           <p className="cds-error" role="alert">
             {error}
           </p>
         ) : null}
+        <MergeBanner offer={merge} />
 
         <section className="cds-verdict cds-map-top" aria-labelledby="map-h">
           <p className="cds-map-kicker" id="map-h">

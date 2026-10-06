@@ -115,6 +115,16 @@ test.describe.serial("Claude Design Sync", () => {
     await expect(merge).toContainText("design-sync/run-");
     await expect(merge.getByRole("list", { name: "Commits to merge" })).toContainText("(fake)");
     await expect(panel.locator(".cds-jobsteps")).toContainText("passed");
+    // Merge is offered wherever the eye lands while the branch waits: the navbar, a banner, the plan bar
+    const mergeName = /^Merge \d+ commits? into main$/;
+    const barMerge = page.locator(".cds-bar").getByRole("button", { name: mergeName });
+    const banner = page.getByRole("region", { name: /waits for your merge/ });
+    await expect(barMerge).toBeEnabled();
+    await expect(banner.getByRole("button", { name: mergeName })).toBeEnabled();
+    await expect(banner.getByRole("list", { name: "Commits to merge" })).toContainText("(fake)");
+    await expect(page.getByRole("region", { name: "Sync plan" }).getByRole("button", { name: mergeName })).toBeEnabled();
+    // the panel already shows this run's own merge block, so it pins no reminder strip
+    await expect(panel.getByRole("group", { name: "Waiting for your merge" })).toHaveCount(0);
     const files = panel.locator(".cds-files li");
     expect(await files.count()).toBeGreaterThan(0);
     await expect(panel.locator(".cds-files")).toContainText("tokens/themes/minimal-components.css");
@@ -140,6 +150,10 @@ test.describe.serial("Claude Design Sync", () => {
     expect(execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()).toBe(headBefore);
     await merge.getByRole("button", { name: /Merge \d+ commits? into main/ }).click();
     await expect(panel.locator(".cds-jobview-head")).toContainText("done");
+    // merged: every offer is gone
+    await expect(barMerge).toHaveCount(0);
+    await expect(banner).toHaveCount(0);
+    await expect(page.locator(".cds-bar").getByRole("button", { name: /Merge/ })).toHaveCount(0);
     expect(execFileSync("git", ["-C", repo, "log", "--format=%s", `${headBefore}..HEAD`], { encoding: "utf8" })).toContain("(fake)");
     expect(execFileSync("git", ["-C", repo, "branch", "--list", "design-sync/run-*"], { encoding: "utf8" }).trim()).toBe("");
     // the uploaded run's staging copy is gone

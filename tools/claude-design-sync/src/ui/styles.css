@@ -188,6 +188,32 @@ em {
   background: var(--ink-900);
   animation: cds-pulse 1.2s var(--ease-standard) infinite alternate;
 }
+/* Merge in the bar: absent when nothing waits, greyed while a run still ports, filled ink when it can merge */
+.cds-merge-bar:disabled {
+  color: var(--ink-300);
+  cursor: not-allowed;
+}
+.cds-merge-bar.is-ready {
+  padding: 0 10px;
+  background: var(--ink-900);
+  color: var(--chrome-canvas);
+  font-weight: 500;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.cds-merge-bar.is-ready:hover:not(:disabled) {
+  background: var(--ink-600);
+  color: var(--chrome-canvas);
+}
+.cds-merge-bar.is-ready:disabled {
+  background: var(--ink-600);
+  cursor: progress;
+}
+.cds-merge-count {
+  padding-left: 6px;
+  border-left: 1px solid currentColor;
+  font: 400 11px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
 @keyframes cds-pulse {
   from {
     opacity: 0.25;
@@ -1212,6 +1238,42 @@ em {
   border-top: 1px solid var(--ink-900);
   border-bottom: var(--cds-hair);
 }
+/* The page's own Merge announcement, above the verdict; ink rule on top like every approval block */
+.cds-merge-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 24px;
+  align-items: start;
+  margin-top: 24px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--ink-900);
+  border-bottom: var(--cds-hair);
+  animation: cds-in var(--duration-base) var(--ease-standard);
+}
+.cds-merge-banner h2 {
+  margin: 0 0 4px;
+  font: 500 15px/1.4 var(--font-ui);
+}
+.cds-merge-banner p {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.cds-merge-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* the panel's reminder while another job is shown */
+.cds-merge-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--ink-900);
+  border-bottom: var(--cds-hair);
+  font-size: 12px;
+}
 .cds-approve h4 {
   margin: 0 0 4px;
   font: 500 13px/1.45 var(--font-ui);
@@ -1867,6 +1929,16 @@ em {
   .cds-tool-label {
     display: none;
   }
+  .cds-merge-bar.is-ready {
+    padding: 0 7px;
+  }
+  .cds-merge-banner {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 16px;
+  }
+  .cds-merge-banner-actions {
+    padding-bottom: 10px;
+  }
   .cds-bar-tools,
   .cds-pages {
     gap: 12px;
@@ -1958,11 +2030,12 @@ em {
     gap: 8px;
   }
   .cds-plan-actions {
+    flex-wrap: wrap;
     margin-left: 0;
     width: 100%;
   }
   .cds-plan-actions .cds-btn {
-    flex: 1;
+    flex: 1 1 auto;
     justify-content: center;
   }
   .cds.has-panel .cds-plan {

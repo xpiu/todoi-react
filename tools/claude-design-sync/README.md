@@ -56,7 +56,7 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
 1. **Check for changes** in the Design column header, then **Pull now** if Design moved.
 2. Read the verdict and the ledger. Pick a plan-wide direction, and override single features or subfeatures on the rail.
 3. **Run plan** (or **Run this feature only**).
-4. In **Activity**, **Merge** the App branch and approve the **Upload** of the staged kit files.
+4. **Merge** the App branch: the button appears in the navbar, above the verdict, in the plan bar and in Activity as soon as the run's check passes. Approve the **Upload** of the staged kit files in **Activity**.
 5. **Mark synced** when both sides look right.
 
 ## Plan page (`/`)
@@ -90,6 +90,7 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
   - each subfeature's file mapping, with App and Design diffs since the sync point;
   - live card previews, rendered with a locally built bundle;
   - the exact steps that will run, each AI step with its brief (*Read brief*, *Copy brief*), and **Run this feature only**.
+- **Merge, wherever you look:** while a run's verified App branch waits, Merge is offered in the navbar (on both pages), as a banner above the verdict (with its commits and *Review in Activity*), in the plan bar (where it takes the primary slot from Run plan), and pinned at the top of Activity when another job is shown. All of them merge the same run. While a run is still porting into the App, the navbar and plan-bar buttons show greyed out; otherwise there is no Merge button.
 - **Plan bar** (bottom): what the decisions add up to (merges, AI ports, upload).
   - **Run plan** confirms first, saying what will be written where.
   - **Mark synced** records a new sync point and lists every feature. Features the plan moves start ticked. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old baseline and reappear as "Kept open since …".

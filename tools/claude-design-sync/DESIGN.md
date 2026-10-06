@@ -168,7 +168,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 ## Layout
 
 - **Page:** max 1180px (`--cds-page`), centred, 24px gutters; bottom padding clears the plan bar.
-- **Bar:** sticky, 48px (`--cds-bar`): wordmark left; sync-point select, Recompare, Activity, page links, the sun/moon mode toggle and Claude Design link right, 18px apart. The mode toggle is a 28×28 icon button whose accessible name and tooltip name the mode it switches to.
+- **Bar:** sticky, 48px (`--cds-bar`): wordmark left; Merge (only while a run waits for it or is still porting into the App), sync-point select, Recompare, Activity, page links, the sun/moon mode toggle and Claude Design link right, 18px apart. The mode toggle is a 28×28 icon button whose accessible name and tooltip name the mode it switches to.
 - **Ledger grid:** `minmax(0,1fr) 132px minmax(0,1fr)` for the column heads, every row twin, the work twin and each subfeature unit, so the rail lines up down the whole page. Column heads are sticky under the bar. Cells inset 20px from the left (16px on the Design side's outer edge).
 - **Row:** feature head (chevron, title, status, count) across the full width at 14px top padding; then the twin. Closed rows show at most four moved parts per side plus "+n more".
 - **Plan bar:** fixed bottom, min 56px (`--cds-plan`), aligned to the page width; summary left, actions right. Its sheet opens above it, capped at min(56vh, 520px).
@@ -208,10 +208,17 @@ The global three-way segmented control (Into the App / Full sync / Into Design):
 ### Buttons
 - **Shape:** square, 30px tall, 12px side padding, 14px lucide glyph + label.
 - **Default:** transparent with an input-rule outline; hover darkens the outline to ink; active adds Wash.
-- **Primary:** filled ink, Paper text, no outline; hover softens to Quiet Ink. One per surface (Run plan, Upload n files, Pull the project).
+- **Primary:** filled ink, Paper text, no outline; hover softens to Quiet Ink. One per surface (Run plan, Upload n files, Pull the project). While a run waits for Merge, Merge takes the plan bar's primary slot and Run plan drops to Default (it is disabled until the run is merged or discarded).
 - **Disabled:** Quiet Ink text, hairline outline.
 - **Tool** (bar): borderless, Quiet Ink to Ledger Ink on hover or when pressed.
 - **Icon** (28×28): borderless glyph, Quiet Ink to Ledger Ink.
+
+### Merge offer
+One action in four places, all driven by one hook (`Merge.tsx`), so they agree and one press disables them all:
+- **Navbar:** a tool button that is filled ink (500, 10px side padding, "Merge into main") while a verified App branch waits, the only filled control in the bar; greyed (Faint Ink, `not-allowed`) while a run still ports into the App; absent otherwise. Under 820px it is the filled glyph alone. With more than one run waiting it adds a mono count after a 1px rule.
+- **Banner:** above the verdict on both pages, under an ink rule like every approval block: a 15px title naming the run, the branch and check in mono, the commit list, then the primary Merge and *Review in Activity*. Absent unless a run waits.
+- **Plan bar:** a Merge button before Run plan: primary while a run waits, Default and disabled while one ports, absent otherwise.
+- **Activity:** the run's own "Merge into the App" block; while another job is shown, a strip under the job list (ink rule on top) names the waiting run (a link that shows it) beside a primary Merge.
 
 ### Links
 12px ink text with an input-rule underline offset 3px; the underline turns ink on hover. Used for every secondary action in a line (App diff, Design diff, Preview, Read brief, Copy brief, Check for changes).

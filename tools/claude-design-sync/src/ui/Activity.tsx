@@ -1,15 +1,17 @@
 // Activity: jobs with live logs. A run stops here for approval: its verified App branch waits for Merge
 // (commits listed), its staged kit files for Upload (every file listed, cards checked, previews), and
-// Discard gives up whatever is still waiting.
+// Discard gives up whatever is still waiting. A run waiting for Merge is pinned above the log even while
+// another job is shown.
 import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, plural, subscribeJob, uploadPending, type AppState, type Job } from "./api";
+import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
 
 const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", done: "done", failed: "failed", cancelled: "stopped" };
 
-export function Activity({ state, focus, onFocus, onClose, onChanged }: { state: AppState | null; focus: string | null; onFocus: (id: string) => void; onClose: () => void; onChanged: () => void }) {
+export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: { state: AppState | null; merge: MergeOffer; focus: string | null; onFocus: (id: string) => void; onClose: () => void; onChanged: () => void }) {
   const jobs = state?.jobs ?? [];
   const id = focus ?? jobs[0]?.id ?? null;
   const [job, setJob] = useState<Job | null>(null);
@@ -57,12 +59,13 @@ export function Activity({ state, focus, onFocus, onClose, onChanged }: { state:
       ) : (
         <p className="cds-quiet cds-pad">No jobs yet. Pulls, runs and uploads appear here with their full log.</p>
       )}
-      {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}:${shown.staged?.filter((s) => s.conflict).length ?? 0}`} job={shown} logRef={logRef} onChanged={onChanged} /> : null}
+      <MergeStrip offer={merge} shownId={id} onShow={onFocus} />
+      {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}:${shown.staged?.filter((s) => s.conflict).length ?? 0}`} job={shown} merge={merge} logRef={logRef} onChanged={onChanged} /> : null}
     </aside>
   );
 }
 
-function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject<HTMLOListElement | null>; onChanged: () => void }) {
+function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; onChanged: () => void }) {
   const staged = job.staged ?? [];
   const [picked, setPicked] = useState<Set<string>>(() => new Set(staged.filter((s) => !s.conflict).map((s) => s.path)));
   const [preview, setPreview] = useState<string | null>(null);
@@ -131,9 +134,8 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
               </li>
             ))}
           </ul>
-          <button type="button" className="cds-btn cds-btn-primary" disabled={busy} data-tip={`Merge ${app.branch} into ${app.into} in your checkout`} onClick={() => act(() => api.merge(job.id))}>
-            <GitMerge size={14} strokeWidth={1.75} aria-hidden /> Merge {plural(app.commits.length, "commit")} into {app.into}
-          </button>
+          <MergeButton offer={merge} place="panel" job={{ ...job, app }} />
+          {merge.error ? <p className="cds-error-inline">{merge.error}</p> : null}
         </section>
       ) : null}
       {app?.state === "failed" ? (

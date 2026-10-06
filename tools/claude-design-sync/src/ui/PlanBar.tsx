@@ -6,12 +6,13 @@ import { useMemo, useState } from "react";
 
 import { directionsFor, effective, plural, type AppState, type Direction, type Feature, type Step, type Unit } from "./api";
 import { StepLine } from "./FeatureRow";
+import { MergeButton, type MergeOffer } from "./Merge";
 
 /** A part the plan could move but skips: it stays open at a sync point. Reference-only parts never move, so they never hold a feature open. */
 const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (unitChoices[u.id] ?? "skip") === "skip";
 const allSkipped = (f: Feature, unitChoices: Record<string, Direction>) => f.units.some((u) => skipped(u, unitChoices)) && f.units.every((u) => skipped(u, unitChoices) || directionsFor(u.status, u.kind).directions.length === 1);
 
-export function PlanBar({ steps, features, global, overrides, unitChoices, state, onRun, busy, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: () => void; busy: boolean; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
+export function PlanBar({ steps, features, global, overrides, unitChoices, state, onRun, busy, merge, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: () => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
   const [view, setView] = useState<"closed" | "steps" | "confirm" | "mark">("closed");
   const open = view !== "closed";
   const [label, setLabel] = useState("");
@@ -165,8 +166,10 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
           <button type="button" className="cds-btn" onClick={startMark} data-tip="Record that both sides match now, so future comparisons start from here">
             <Flag size={14} strokeWidth={1.75} aria-hidden /> Mark synced
           </button>
+          {/* a waiting merge takes the primary slot: it is what the plan waits on */}
+          <MergeButton offer={merge} place="plan" />
           {view === "confirm" ? null : (
-            <button type="button" className="cds-btn cds-btn-primary" disabled={!work || busy} data-tip={!work ? "Nothing to run: every feature is skipped" : busy ? "Another job is running. Wait for it to finish" : "Review exactly what the run will write and where, then start it"} onClick={() => setView("confirm")}>
+            <button type="button" className={`cds-btn ${merge.ready ? "" : "cds-btn-primary"}`} disabled={!work || busy} data-tip={!work ? "Nothing to run: every feature is skipped" : merge.ready ? "A run waits for your merge (or Discard in Activity) before the next one can start" : busy ? "Another job is running. Wait for it to finish" : "Review exactly what the run will write and where, then start it"} onClick={() => setView("confirm")}>
               <Play size={14} strokeWidth={1.75} aria-hidden /> Run plan
             </button>
           )}

@@ -6,7 +6,7 @@ const tip = (page: Page) => page.locator("#cds-tip");
 const untipped = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("button, a[href], select, input, summary")]
-      .filter((el) => el.checkVisibility() && !el.closest("[data-tip]")?.dataset.tip)
+      .filter((el) => el.checkVisibility() && !el.closest<HTMLElement>("[data-tip]")?.dataset.tip)
       .map((el) => el.outerHTML.slice(0, 120)),
   );
 
