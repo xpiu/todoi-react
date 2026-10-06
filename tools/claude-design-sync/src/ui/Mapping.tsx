@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, appMoved, designMoved, followJob, fmtTime, plural, projectUrl, REFERENCE_KINDS, store, type AppState, type Comparison, type LaneId, type MappingData, type MappingEvent, type Unit } from "./api";
 import { MapLane, type LaneFlow, type LaneStats } from "./MapLane";
 import { ProjectFooter } from "./ProjectFooter";
+import { TIP } from "./Tooltip";
 import { TopBar } from "./TopBar";
 
 const WAITING = "waiting";
@@ -181,22 +182,22 @@ export function Mapping() {
   const all = [...byLane.values()].reduce((a, s) => ({ units: a.units + s.units.length, waiting: a.waiting + s.toApp + s.toDesign - s.both, both: a.both + s.both }), { units: 0, waiting: 0, both: 0 });
 
   // Each side's data, with what is missing or behind, and the one action that fixes it
-  const design: { ok: boolean | null; text: string; fix?: { label: string; run: () => void } } = !snap
-    ? { ok: false, text: "No snapshot yet, so the Design side has nothing to compare.", fix: { label: "Pull now", run: () => void pullNow().catch(() => {}) } }
+  const design: Freshness = !snap
+    ? { ok: false, text: "No snapshot yet, so the Design side has nothing to compare.", fix: { label: "Pull now", tip: TIP.pull, run: () => void pullNow().catch(() => {}) } }
     : otherProject
-      ? { ok: false, text: "The newest snapshot came from another project.", fix: { label: "Pull now", run: () => void pullNow().catch(() => {}) } }
+      ? { ok: false, text: "The newest snapshot came from another project.", fix: { label: "Pull now", tip: "Pull a snapshot of the project the tool targets now", run: () => void pullNow().catch(() => {}) } }
       : unpulled
-        ? { ok: false, text: `${plural(unpulled, "file")} couldn't be pulled.`, fix: { label: "Pull again", run: () => void pullNow().catch(() => {}) } }
+        ? { ok: false, text: `${plural(unpulled, "file")} couldn't be pulled.`, fix: { label: "Pull again", tip: TIP.pullAgain, run: () => void pullNow().catch(() => {}) } }
         : !last
-          ? { ok: null, text: "Not asked whether it changed since the tool started.", fix: { label: "Check for changes", run: () => void check().catch(() => {}) } }
+          ? { ok: null, text: "Not asked whether it changed since the tool started.", fix: { label: "Check for changes", tip: TIP.check, run: () => void check().catch(() => {}) } }
           : last.stale
-            ? { ok: false, text: `Changed since the snapshot (asked ${fmtTime(last.at)}).`, fix: { label: "Pull now", run: () => void pullNow().catch(() => {}) } }
-            : { ok: true, text: `Up to date when asked, ${fmtTime(last.at)}.`, fix: { label: "Check again", run: () => void check().catch(() => {}) } };
-  const app: { ok: boolean | null; text: string; fix?: { label: string; run: () => void } } = !cmp
+            ? { ok: false, text: `Changed since the snapshot (asked ${fmtTime(last.at)}).`, fix: { label: "Pull now", tip: "Pull the changes into a fresh snapshot with Claude Code. Takes a few minutes", run: () => void pullNow().catch(() => {}) } }
+            : { ok: true, text: `Up to date when asked, ${fmtTime(last.at)}.`, fix: { label: "Check again", tip: TIP.check, run: () => void check().catch(() => {}) } };
+  const app: Freshness = !cmp
     ? { ok: null, text: "Not compared yet." }
     : headMoved
-      ? { ok: false, text: `HEAD moved to @${state?.appHead} since the comparison.`, fix: { label: "Recompare", run: () => void recompare().catch(() => {}) } }
-      : { ok: true, text: `Compared ${fmtTime(cmp.generatedAt)}${state?.dirty ? ", uncommitted changes included" : ""}.`, fix: { label: "Recompare", run: () => void recompare().catch(() => {}) } };
+      ? { ok: false, text: `HEAD moved to @${state?.appHead} since the comparison.`, fix: { label: "Recompare", tip: TIP.recompare, run: () => void recompare().catch(() => {}) } }
+      : { ok: true, text: `Compared ${fmtTime(cmp.generatedAt)}${state?.dirty ? ", uncommitted changes included" : ""}.`, fix: { label: "Recompare", tip: TIP.recompare, run: () => void recompare().catch(() => {}) } };
   const behind = design.ok === false || app.ok === false || design.ok === null;
 
   const verdict = !map ? null : !cmp ? (
@@ -215,7 +216,7 @@ export function Mapping() {
 
   return (
     <div className="cds cds-map">
-      <a className="cds-skip" href="#diagram">
+      <a className="cds-skip" href="#diagram" data-tip="Jump past the summary to the lane diagram">
         Skip to the diagram
       </a>
       <TopBar state={state} page="mapping" />
@@ -232,7 +233,7 @@ export function Mapping() {
           </p>
           <h2 className="cds-verdict-line">{verdict ?? <span className="cds-skel cds-skel-line" />}</h2>
           <div className="cds-map-refresh">
-            <button type="button" className={`cds-btn ${behind ? "cds-btn-primary" : ""}`} onClick={() => void bringUpToDate()} disabled={!!busy || running}>
+            <button type="button" className={`cds-btn ${behind ? "cds-btn-primary" : ""}`} onClick={() => void bringUpToDate()} disabled={!!busy || running} data-tip={running ? "A job is running. Refresh when it finishes" : "Ask Claude Design what changed, pull when the snapshot is behind or incomplete, then recompare the App"}>
               {busy ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} Bring the mapping up to date
             </button>
             <span className="cds-quiet" role="status">
@@ -251,7 +252,7 @@ export function Mapping() {
               <dd>
                 <span className="cds-map-meta-main">{state?.project.name ?? "…"}</span>
                 {state ? (
-                  <a className="cds-path cds-break" href={projectUrl(state.project.id)} target="_blank" rel="noreferrer">
+                  <a className="cds-path cds-break" href={projectUrl(state.project.id)} target="_blank" rel="noreferrer" data-tip={TIP.project}>
                     {projectUrl(state.project.id).replace(/^https:\/\//, "")}
                   </a>
                 ) : null}
@@ -314,7 +315,7 @@ export function Mapping() {
             <h3 id="diagram-h">How each lane maps</h3>
             <label className="cds-since">
               <span>Show</span>
-              <select value={shown} onChange={(e) => showEvent(e.target.value)} aria-label="What the diagram shows">
+              <select value={shown} onChange={(e) => showEvent(e.target.value)} aria-label="What the diagram shows" data-tip="Play the work waiting now, or replay a past pull, upload or merge">
                 <option value={WAITING}>Work waiting now{base ? ` (since ${base.label})` : ""}</option>
                 {map?.history
                   .filter((e) => e.moves.length)
@@ -326,7 +327,7 @@ export function Mapping() {
               </select>
             </label>
             {event ? (
-              <button type="button" className="cds-link" onClick={() => setReplay((r) => r + 1)}>
+              <button type="button" className="cds-link" data-tip="Play this move through the lanes again" onClick={() => setReplay((r) => r + 1)}>
                 <RotateCcw size={12} strokeWidth={1.75} aria-hidden /> Replay
               </button>
             ) : null}
@@ -383,12 +384,12 @@ export function Mapping() {
                       <span className="cds-quiet">{e.detail}</span>
                       <span className="cds-map-event-actions">
                         {e.moves.length ? (
-                          <button type="button" className="cds-link" aria-pressed={shown === e.id} onClick={() => showEvent(e.id)}>
+                          <button type="button" className="cds-link" aria-pressed={shown === e.id} data-tip={TIP.showOnDiagram} onClick={() => showEvent(e.id)}>
                             Show on the diagram
                           </button>
                         ) : null}
                         {e.jobId ? (
-                          <a className="cds-link" href={`/?job=${encodeURIComponent(e.jobId)}`}>
+                          <a className="cds-link" href={`/?job=${encodeURIComponent(e.jobId)}`} data-tip={e.open ? "Open this run in Activity to merge, upload or discard what it left waiting" : "Open this job's full log in Activity"}>
                             {e.open ? "Review in Activity" : "Log"}
                           </a>
                         ) : null}
@@ -418,13 +419,16 @@ export function Mapping() {
   );
 }
 
-function Fresh({ ok, text, fix }: { ok: boolean | null; text: string; fix?: { label: string; run: () => void } }) {
+/** One side's data: current, behind or unknown, and the one action that fixes it */
+type Freshness = { ok: boolean | null; text: string; fix?: { label: string; tip: string; run: () => void } };
+
+function Fresh({ ok, text, fix }: Freshness) {
   return (
     <span className="cds-map-fresh" data-ok={ok === null ? "unknown" : String(ok)}>
       <span className="cds-map-fresh-mark" aria-hidden />
       <span>{text}</span>
       {fix ? (
-        <button type="button" className="cds-link" onClick={fix.run}>
+        <button type="button" className="cds-link" onClick={fix.run} data-tip={fix.tip}>
           {fix.label}
         </button>
       ) : null}
@@ -442,7 +446,7 @@ function Files({ moves, titles }: { moves: MappingEvent["moves"]; titles: Map<La
             <span>
               {plural(total, "file")}: {Object.entries(m.lanes).map(([lane, n]) => `${titles.get(lane as LaneId) ?? lane} ${n}`).join(" · ")}
             </span>
-            <span className="cds-path cds-map-files-list" title={m.files.join("\n")}>
+            <span className="cds-path cds-map-files-list" data-tip={m.files.join("\n")}>
               {m.files.slice(0, 3).join(", ")}
               {total > 3 ? ` +${total - 3} more` : ""}
             </span>

@@ -4,10 +4,11 @@ import { ArrowLeftRight, ArrowUpRight, ListChecks, Moon, Sun, Waypoints } from "
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { projectUrl, store, type AppState } from "./api";
+import { TIP } from "./Tooltip";
 
 const PAGES = [
-  { id: "plan", href: "/", label: "Plan", Icon: ListChecks },
-  { id: "mapping", href: "/mapping", label: "Mapping", Icon: Waypoints },
+  { id: "plan", href: "/", label: "Plan", Icon: ListChecks, tip: "The sync plan: what changed on each side, and which way to move it" },
+  { id: "mapping", href: "/mapping", label: "Mapping", Icon: Waypoints, tip: "How App files pair with Design files, lane by lane, and what moved lately" },
 ] as const;
 
 export function TopBar({ state, page, children }: { state: AppState | null; page: (typeof PAGES)[number]["id"]; children?: ReactNode }) {
@@ -46,16 +47,16 @@ export function TopBar({ state, page, children }: { state: AppState | null; page
       <div className="cds-bar-tools">
         {children}
         <nav className="cds-pages" aria-label="Pages">
-          {PAGES.map(({ id, href, label, Icon }) => (
-            <a key={id} className="cds-tool" href={href} aria-current={page === id ? "page" : undefined} aria-label={label}>
+          {PAGES.map(({ id, href, label, Icon, tip }) => (
+            <a key={id} className="cds-tool" href={href} aria-current={page === id ? "page" : undefined} aria-label={label} data-tip={tip}>
               <Icon size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">{label}</span>
             </a>
           ))}
         </nav>
-        <button type="button" className="cds-tool cds-mode-toggle" onClick={toggleMode} aria-label={modeLabel} title={modeLabel}>
+        <button type="button" className="cds-tool cds-mode-toggle" onClick={toggleMode} aria-label={modeLabel} data-tip={modeLabel}>
           {mode === "dark" ? <Sun size={14} strokeWidth={1.75} aria-hidden /> : <Moon size={14} strokeWidth={1.75} aria-hidden />}
         </button>
-        <a className="cds-tool" href={state ? projectUrl(state.project.id) : "https://claude.ai/design"} target="_blank" rel="noreferrer" aria-label={`${state?.project.name ?? "Claude Design"} in Claude Design (opens in a new tab)`}>
+        <a className="cds-tool" href={state ? projectUrl(state.project.id) : "https://claude.ai/design"} target="_blank" rel="noreferrer" aria-label={`${state?.project.name ?? "Claude Design"} in Claude Design (opens in a new tab)`} data-tip={TIP.project}>
           <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Claude Design</span>
         </a>
       </div>

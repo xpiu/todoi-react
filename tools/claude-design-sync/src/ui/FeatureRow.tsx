@@ -6,6 +6,7 @@ import { Fragment, useState } from "react";
 import { api, appMoved, designMoved, directionsFor, displayName, DIRECTION_LABEL, KIND_WORD, plural, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
 import { Diff } from "./Diff";
 import { RailKeys } from "./Rail";
+import { TIP } from "./Tooltip";
 
 function SideCell({ units, side, known }: { units: Unit[]; side: "app" | "design"; known: string[] }) {
   const moved = units.filter((u) => (side === "app" ? appMoved : designMoved)(u.status));
@@ -42,7 +43,7 @@ export function FeatureRow({ feature, direction, overridden, onDirection, baseId
   return (
     <section className={`cds-row ${open ? "is-open" : ""}`} data-status={status} data-direction={direction} aria-labelledby={`${feature.id}-t`}>
       <header className="cds-row-head">
-        <button type="button" className="cds-row-toggle" aria-expanded={open} aria-controls={`${feature.id}-d`} onClick={() => setOpen((o) => !o)}>
+        <button type="button" className="cds-row-toggle" aria-expanded={open} aria-controls={`${feature.id}-d`} data-tip={open ? "Fold this feature away" : "Show each part's files, diffs and previews, and what runs for this feature"} onClick={() => setOpen((o) => !o)}>
           <ChevronRight size={14} strokeWidth={1.75} className="cds-chev" aria-hidden />
           <span id={`${feature.id}-t`} className="cds-row-title">{feature.title}</span>
         </button>
@@ -58,7 +59,7 @@ export function FeatureRow({ feature, direction, overridden, onDirection, baseId
             <span className="cds-rail-note">
               {DIRECTION_LABEL[direction]}
               {overridden ? (
-                <button type="button" className="cds-reset" onClick={() => onDirection(null)} title="Use the plan's direction again">
+                <button type="button" className="cds-reset" onClick={() => onDirection(null)} data-tip="Drop this feature's own direction and follow the plan again">
                   · reset
                 </button>
               ) : null}
@@ -107,7 +108,7 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, onRunOne, globa
           <p className="cds-quiet">Nothing — this feature is skipped.</p>
         )}
         {mine.length ? (
-          <button type="button" className="cds-btn" onClick={() => onRunOne(mine.map((s) => s.id))}>
+          <button type="button" className="cds-btn" onClick={() => onRunOne(mine.map((s) => s.id))} data-tip="Run only this feature's steps now, without the rest of the plan. Follow it in Activity">
             <Play size={14} strokeWidth={1.75} aria-hidden /> Run this feature only
           </button>
         ) : null}
@@ -126,12 +127,13 @@ export function StepLine({ step }: { step: Step }) {
       <span className="cds-kind">{kind}</span>
       {step.brief ? (
         <span className="cds-step-actions">
-          <button type="button" className="cds-link" aria-expanded={show} onClick={() => setShow((s) => !s)}>
+          <button type="button" className="cds-link" aria-expanded={show} data-tip={show ? "Hide the brief" : "Read the brief the AI gets for this step"} onClick={() => setShow((s) => !s)}>
             {show ? "Hide brief" : "Read brief"}
           </button>
           <button
             type="button"
             className="cds-link"
+            data-tip={copied ? "Copied to the clipboard" : "Copy the brief, to run this step yourself in Claude Code or Codex"}
             onClick={async () => {
               await navigator.clipboard.writeText(step.brief!);
               setCopied(true);
@@ -196,7 +198,7 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
           {unit.app.paths.length ? <Paths paths={unit.app.paths} /> : <p className="cds-quiet">Not in the App</p>}
           <ul className="cds-evlist">{fresh(unit.app.evidence).map((e) => <li key={e}>{e}</li>)}</ul>
           {unit.app.changed ? (
-            <button type="button" className="cds-link" aria-expanded={diff?.side === "app"} onClick={() => load("app")}>
+            <button type="button" className="cds-link" aria-expanded={diff?.side === "app"} data-tip={diff?.side === "app" ? "Hide the App diff" : "Show what changed in these App files since the sync point"} onClick={() => load("app")}>
               {diff?.side === "app" ? "Hide App diff" : "App diff"}
             </button>
           ) : null}
@@ -206,7 +208,7 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
           <span className="cds-rail-note">
             {STATUS_WORD[unit.status]}
             {overridden ? (
-              <button type="button" className="cds-reset" onClick={() => onDirection(null)} title="Follow the feature's direction again">
+              <button type="button" className="cds-reset" onClick={() => onDirection(null)} data-tip="Drop this part's own direction and follow its feature again">
                 · reset
               </button>
             ) : null}
@@ -220,13 +222,13 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
           <ul className="cds-evlist">{fresh(unit.design.evidence).map((e) => <li key={e}>{e}</li>)}</ul>
           <span className="cds-unit-actions">
             {unit.design.changed ? (
-              <button type="button" className="cds-link" aria-expanded={diff?.side === "design"} onClick={() => load("design")}>
+              <button type="button" className="cds-link" aria-expanded={diff?.side === "design"} data-tip={diff?.side === "design" ? "Hide the Design diff" : "Show what changed in these kit files since the sync point's snapshot"} onClick={() => load("design")}>
                 {diff?.side === "design" ? "Hide Design diff" : "Design diff"}
               </button>
             ) : null}
             {snapshotId
               ? cards.map((c) => (
-                  <button key={c} type="button" className="cds-link" aria-expanded={preview === c} onClick={() => setPreview((p) => (p === c ? null : c))}>
+                  <button key={c} type="button" className="cds-link" aria-expanded={preview === c} data-tip={preview === c ? TIP.closePreview : `Render ${/-minimal/.test(c) ? "the Minimal theme's" : "this"} preview card from the newest snapshot`} onClick={() => setPreview((p) => (p === c ? null : c))}>
                     {preview === c ? "Close preview" : /-minimal/.test(c) ? "Preview · Minimal" : "Preview"}
                   </button>
                 ))

@@ -255,6 +255,7 @@ The GUI tests run the full loop against that fixture with the fake harness:
 - switching the target project in the footer;
 - check, pull, and up to date;
 - the Mapping page: lanes, replaying a move, bringing the data up to date.
-- failed-upload retry and discard, invalid API input, staging startup failure, and plan-dialog transitions.
+- failed-upload retry and discard, invalid API input, staging startup failure, and plan-dialog transitions;
+- tooltips: every visible control on both pages has one; hover, keyboard focus, placement, dismissal and disabled reasons.
 
 The regression flows save desktop and phone screenshots to the repo's gitignored `.tmp/design-sync-improvements/` folder. Screenshot capture disables animations so the images show the settled interface.

@@ -5,6 +5,7 @@ import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-re
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, plural, subscribeJob, uploadPending, type AppState, type Job } from "./api";
+import { TIP } from "./Tooltip";
 
 const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", done: "done", failed: "failed", cancelled: "stopped" };
 
@@ -37,14 +38,14 @@ export function Activity({ state, focus, onFocus, onClose, onChanged }: { state:
     <aside className="cds-panel" aria-label="Activity">
       <header className="cds-panel-head">
         <h2>Activity</h2>
-        <button type="button" className="cds-icon" onClick={onClose} aria-label="Close activity">
+        <button type="button" className="cds-icon" onClick={onClose} aria-label="Close activity" data-tip="Close the activity panel. Jobs keep running">
           <X size={16} strokeWidth={1.75} aria-hidden />
         </button>
       </header>
       {jobs.length ? (
         <nav className="cds-jobs" aria-label="Jobs">
           {jobs.slice(0, 8).map((j) => (
-            <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} onClick={() => onFocus(j.id)}>
+            <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} data-tip={`${j.id === id ? "Shown below" : "Show its steps and log"}: ${STATE_WORD[j.state]}`} onClick={() => onFocus(j.id)}>
               <span className="cds-job-mark" data-state={j.state} aria-hidden>
                 {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : j.app?.state === "ready" ? <GitMerge size={12} /> : <Upload size={12} />}
               </span>
@@ -100,7 +101,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
           {typeof job.costUsd === "number" && job.costUsd > 0 ? ` · $${job.costUsd.toFixed(2)}` : ""}
         </p>
         {job.state === "running" ? (
-          <button type="button" className="cds-link" onClick={() => void api.cancel(job.id)}>
+          <button type="button" className="cds-link" onClick={() => void api.cancel(job.id)} data-tip="Stop this job and the process it runs">
             Stop
           </button>
         ) : null}
@@ -130,7 +131,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
               </li>
             ))}
           </ul>
-          <button type="button" className="cds-btn cds-btn-primary" disabled={busy} onClick={() => act(() => api.merge(job.id))}>
+          <button type="button" className="cds-btn cds-btn-primary" disabled={busy} data-tip={`Merge ${app.branch} into ${app.into} in your checkout`} onClick={() => act(() => api.merge(job.id))}>
             <GitMerge size={14} strokeWidth={1.75} aria-hidden /> Merge {plural(app.commits.length, "commit")} into {app.into}
           </button>
         </section>
@@ -144,7 +145,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
           </p>
           {app.check && !app.check.ok ? (
             <details className="cds-check-output">
-              <summary>Output of {app.check.command}</summary>
+              <summary data-tip="Show the last 40 lines the failed check printed">Output of {app.check.command}</summary>
               <pre>{app.check.output.trim().split("\n").slice(-40).join("\n")}</pre>
             </details>
           ) : null}
@@ -159,7 +160,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
               const errors = cardErr.get(s.path);
               return (
                 <li key={s.path}>
-                  <label>
+                  <label data-tip={picked.has(s.path) ? "Goes up with the upload. Untick to leave it out" : "Left out of the upload. Tick to include it"}>
                     <input type="checkbox" checked={picked.has(s.path)} onChange={(e) => setPicked((p) => { const n = new Set(p); if (e.target.checked) n.add(s.path); else n.delete(s.path); return n; })} />
                     <span className="cds-path">{s.path}</span>
                     <span className="cds-kind">{s.status}</span>
@@ -167,7 +168,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
                   </label>
                   {s.conflict ? <p className="cds-error-inline cds-file-note">{s.conflict}</p> : null}
                   {/\.html$/.test(s.path) && stageId ? (
-                    <button type="button" className="cds-link" onClick={() => setPreview((p) => (p === s.path ? null : s.path))}>
+                    <button type="button" className="cds-link" data-tip={preview === s.path ? TIP.closePreview : "Render this staged file as it would look in Claude Design"} onClick={() => setPreview((p) => (p === s.path ? null : s.path))}>
                       {preview === s.path ? "Close" : "Preview"}
                     </button>
                   ) : null}
@@ -176,7 +177,7 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
             })}
           </ul>
           {preview && stageId ? <div className="cds-preview"><iframe title={`Staged ${preview}`} src={`/kit/stage/${stageId}/${preview}`} sandbox="allow-scripts allow-same-origin" /></div> : null}
-          <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} onClick={() => act(() => api.upload(job.id, [...picked]))}>
+          <button type="button" className="cds-btn cds-btn-primary" disabled={!picked.size || busy} data-tip={picked.size ? "Upload exactly the ticked files to Claude Design through DesignSync, then read them back" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
             <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")}
           </button>
         </section>
@@ -186,15 +187,15 @@ function JobView({ job, logRef, onChanged }: { job: Job; logRef: React.RefObject
         discarding ? (
           <div className="cds-discard" role="group" aria-label="Discard this run">
             <span>Discard {held.join(" and ")}?</span>
-            <button type="button" className="cds-btn" disabled={busy} onClick={() => act(() => api.discard(job.id)).then(() => setDiscarding(false))}>
+            <button type="button" className="cds-btn" disabled={busy} data-tip="Give these up for good. Nothing reaches the App or Claude Design" onClick={() => act(() => api.discard(job.id)).then(() => setDiscarding(false))}>
               Discard
             </button>
-            <button type="button" className="cds-link" onClick={() => setDiscarding(false)}>
+            <button type="button" className="cds-link" data-tip="Keep everything waiting for your approval" onClick={() => setDiscarding(false)}>
               Keep
             </button>
           </div>
         ) : (
-          <button type="button" className="cds-link cds-discard-open" onClick={() => setDiscarding(true)} disabled={busy}>
+          <button type="button" className="cds-link cds-discard-open" onClick={() => setDiscarding(true)} disabled={busy} data-tip="Give up what this run left waiting for approval. Asks first">
             Discard run…
           </button>
         )

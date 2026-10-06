@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 import { displayName, plural, STATUS_WORD, type LaneRule, type MappingEvent, type Technique, type Unit, type UnitStatus } from "./api";
+import { TIP } from "./Tooltip";
 
 /** Which halves of a track are lit: App ↔ the tool, the tool ↔ Design */
 export interface Seg {
@@ -38,11 +39,11 @@ export interface LaneStats {
   both: number;
 }
 
-const FILTERS: Array<{ id: string; label: string; test: (u: Unit) => boolean }> = [
-  { id: "moving", label: "Changed", test: (u) => u.status !== "in-sync" },
-  { id: "all", label: "All", test: () => true },
-  { id: "sync", label: "In sync", test: (u) => u.status === "in-sync" },
-  { id: "one", label: "One side only", test: (u) => !u.app.exists || !u.design.exists },
+const FILTERS: Array<{ id: string; label: string; tip: string; test: (u: Unit) => boolean }> = [
+  { id: "moving", label: "Changed", tip: "Units that changed on either side since the sync point", test: (u) => u.status !== "in-sync" },
+  { id: "all", label: "All", tip: "Every unit in this lane", test: () => true },
+  { id: "sync", label: "In sync", tip: "Units that match on both sides", test: (u) => u.status === "in-sync" },
+  { id: "one", label: "One side only", tip: "Units that exist only in the App or only in Design", test: (u) => !u.app.exists || !u.design.exists },
 ];
 const SHOWN = 40;
 
@@ -107,7 +108,7 @@ export function MapLane({ rule, stats, flow, flowKey, open, onToggle, events, on
   return (
     <section className="cds-row cds-map-lane" data-dim={flow.dim || undefined} data-open={open || undefined} aria-labelledby={`${panelId}-h`}>
       <div className="cds-row-head">
-        <button type="button" id={`${panelId}-h`} className="cds-row-toggle" aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
+        <button type="button" id={`${panelId}-h`} className="cds-row-toggle" aria-expanded={open} aria-controls={panelId} data-tip={open ? "Fold this lane away" : "Show how this lane pairs files, its units and its recent moves"} onClick={onToggle}>
           <ChevronRight size={14} strokeWidth={1.75} className="cds-chev" aria-hidden />
           <span className="cds-row-title">{rule.title}</span>
         </button>
@@ -120,7 +121,7 @@ export function MapLane({ rule, stats, flow, flowKey, open, onToggle, events, on
         <Side rule={rule} side="app" stats={stats} />
         <div className="cds-rail-cell cds-map-rail" key={flowKey}>
           <Track seg={flow.out} dir="out" label={flow.outLabel} motion={flow.motion} />
-          <button type="button" className="cds-map-tech" data-kind={rule.reference ? "reference" : rule.toApp?.id} aria-expanded={open} aria-controls={panelId} onClick={onToggle} title={rule.match}>
+          <button type="button" className="cds-map-tech" data-kind={rule.reference ? "reference" : rule.toApp?.id} aria-expanded={open} aria-controls={panelId} onClick={onToggle} data-tip={`Paired by: ${rule.match}\n${open ? "Fold this lane away" : "Show its rules, units and recent moves"}`}>
             {flow.conflicts ? <span className="cds-map-conflict" aria-label={`${flow.conflicts} changed on both sides`} /> : null}
             {technique}
           </button>
@@ -165,7 +166,7 @@ export function MapLane({ rule, stats, flow, flowKey, open, onToggle, events, on
                 <h4>Units</h4>
                 <div className="cds-map-filters" role="group" aria-label={`Filter ${rule.title.toLowerCase()} units`}>
                   {FILTERS.map((x) => (
-                    <button key={x.id} type="button" className="cds-map-filter" aria-pressed={filter === x.id} onClick={() => setFilter(x.id)}>
+                    <button key={x.id} type="button" className="cds-map-filter" aria-pressed={filter === x.id} data-tip={x.tip} onClick={() => setFilter(x.id)}>
                       {x.label} <span className="cds-mono">{units.filter(x.test).length}</span>
                     </button>
                   ))}
@@ -195,7 +196,7 @@ export function MapLane({ rule, stats, flow, flowKey, open, onToggle, events, on
                 <p className="cds-quiet cds-map-none">No {f.label.toLowerCase()} units in this lane.</p>
               )}
               {!all && list.length > SHOWN ? (
-                <button type="button" className="cds-link" onClick={() => setAll(true)}>
+                <button type="button" className="cds-link" data-tip={`List all ${list.length} units, not just the first ${SHOWN}`} onClick={() => setAll(true)}>
                   Show all {list.length}
                 </button>
               ) : null}
@@ -210,7 +211,7 @@ export function MapLane({ rule, stats, flow, flowKey, open, onToggle, events, on
                     <span className="cds-mono">{new Date(e.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                     <span>{e.title}</span>
                     <span className="cds-quiet">{plural(e.moves.reduce((n, m) => n + (m.lanes[rule.id] ?? 0), 0), "file")}</span>
-                    <button type="button" className="cds-link" onClick={() => onShowEvent(e.id)}>
+                    <button type="button" className="cds-link" data-tip={TIP.showOnDiagram} onClick={() => onShowEvent(e.id)}>
                       Show on the diagram
                     </button>
                   </li>

@@ -219,6 +219,9 @@ The global three-way segmented control (Into the App / Full sync / Into Design):
 ### Inputs / Fields
 Underline only: no box, radius 0, 6px vertical padding, `--border-input` rule that turns ink on focus. Checkboxes use ink as the accent colour. The sync-point select uses the same underline treatment.
 
+### Tooltips
+Every control explains what it does in one sentence (or why it's unavailable, when disabled). One slip of ink with Paper text, 12px Secondary type, 5×8px padding, square, no shadow, max 280px wide; multi-line text keeps its line breaks. It opens above the control, centred, 6px away; below it when there's no room (the top bar); never past the viewport's 8px margin. A tip opens after a 450ms rest under the pointer or on keyboard focus; within 500ms of one closing the next opens at once, so the pointer can read along a row. A press, Escape, typing, scrolling or resizing closes it, and a pressed control stays quiet until the pointer leaves. Controls carry only the text (`data-tip`); one delegated layer (`Tooltip.tsx`) shows it and links it with `aria-describedby` unless it repeats the control's name. Native `title` stays only on iframes (their accessible names) and sync-point options.
+
 ### Ledger row
 Feature head (chevron rotates 90° when open; title underlines on hover), status word (red only for "changed on both"; ink for one-sided; quiet for others), part count in mono. Opening reveals the work twin ("—" bulleted), one unit per subfeature (name, kind, mono paths, evidence, link actions) separated by dashed hairlines, inline diffs and preview iframes in hairline frames, and "What runs for this feature" with numbered steps.
 
@@ -258,7 +261,7 @@ A second page on the same ledger. The rail is 232px wide here, and it stands for
 - **Awaiting upload approval:** an approval block in the panel under an ink rule: heading, the exact file list as checkboxes with mono paths and status, per-card render check ("renders" in mono, or "n errors" red), preview links, then the primary Upload n files button.
 
 ### Motion
-Short and functional only, all on `--ease-standard`: colour and outline changes at `--duration-fast` (100ms); `cds-in` (fade plus 2px drop) for opening a row's detail and the plan sheet at `--duration-base` (150ms); `cds-panel-in` (16px slide plus fade) for the panel at `--duration-overlay` (200ms); progress fill at 150ms. Loops exist only as status: the live square and running step pulse, the job spinner, the skeleton shimmer, and the Mapping rail's flowing tracks while work waits (a replayed move runs a few passes and stops). The App's global reduced-motion rule collapses all of it.
+Short and functional only, all on `--ease-standard`: colour and outline changes at `--duration-fast` (100ms); `cds-in` (fade plus 2px drop) for opening a row's detail and the plan sheet at `--duration-base` (150ms); `cds-panel-in` (16px slide plus fade) for the panel at `--duration-overlay` (200ms); `cds-tip-in` (fade plus a 2px rise toward the control) for a tooltip at `--duration-fast`; progress fill at 150ms. Loops exist only as status: the live square and running step pulse, the job spinner, the skeleton shimmer, and the Mapping rail's flowing tracks while work waits (a replayed move runs a few passes and stops). The App's global reduced-motion rule collapses all of it.
 
 ## Do's and Don'ts
 

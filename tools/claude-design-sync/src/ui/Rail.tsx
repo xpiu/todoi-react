@@ -40,7 +40,7 @@ export function RailKeys({ value, allowed, onChange, label, size = "md", why }: 
             aria-checked={on}
             aria-disabled={!ok || undefined}
             aria-label={DIRECTION_LABEL[d]}
-            title={tip}
+            data-tip={tip}
             tabIndex={on ? 0 : -1}
             className="cds-key"
             onClick={() => ok && onChange(d)}

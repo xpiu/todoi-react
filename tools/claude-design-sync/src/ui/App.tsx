@@ -8,6 +8,7 @@ import { FeatureRow } from "./FeatureRow";
 import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
 import { ProjectFooter } from "./ProjectFooter";
+import { TIP } from "./Tooltip";
 import { TopBar } from "./TopBar";
 
 // Each option draws its route: App box, arrow, Design box, with the receiving side filled
@@ -148,13 +149,13 @@ export function App() {
 
   return (
     <div className={`cds ${panel ? "has-panel" : ""}`}>
-      <a className="cds-skip" href="#ledger">Skip to the features</a>
+      <a className="cds-skip" href="#ledger" data-tip="Jump past the toolbar to the list of features">Skip to the features</a>
       <TopBar state={state} page="plan">
         {state?.syncPoints.length ? (
           <label className="cds-since">
             <History size={14} strokeWidth={1.75} aria-hidden />
             <span>Since</span>
-            <select value={baseId ?? ""} onChange={(e) => setBaseId(e.target.value || null)} aria-label="Compare since sync point">
+            <select value={baseId ?? ""} onChange={(e) => setBaseId(e.target.value || null)} aria-label="Compare since sync point" data-tip="The sync point to compare from: only changes made after it count">
               {state.syncPoints.map((p) => (
                 <option key={p.id} value={p.id} title={`${p.label} — App @${p.rev}, ${fmtTime(p.createdAt)}`}>
                   {p.label}
@@ -163,10 +164,10 @@ export function App() {
             </select>
           </label>
         ) : null}
-        <button type="button" className="cds-tool" onClick={() => refresh(true)} disabled={loading} title="Re-read the App and the latest snapshot" aria-label="Recompare">
+        <button type="button" className="cds-tool" onClick={() => refresh(true)} disabled={loading} data-tip={TIP.recompare} aria-label="Recompare">
           {loading ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} <span className="cds-tool-label">Recompare</span>
         </button>
-        <button type="button" className={`cds-tool ${running ? "is-live" : ""}`} aria-pressed={panel} aria-label="Activity" onClick={() => setPanel((p) => !p)}>
+        <button type="button" className={`cds-tool ${running ? "is-live" : ""}`} aria-pressed={panel} aria-label="Activity" data-tip={panel ? "Hide the activity panel" : running ? "A job is running: show its live log" : "Show pulls, runs and uploads with their logs, and anything waiting for your approval"} onClick={() => setPanel((p) => !p)}>
           <PanelRight size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">Activity</span>{running ? <span className="cds-live" aria-label="A job is running" /> : null}
         </button>
       </TopBar>
@@ -208,7 +209,7 @@ export function App() {
                 </span>
                 <div className="cds-global" role="radiogroup" aria-labelledby="dir-l">
                   {GLOBALS.map(({ d, Icon, into }) => (
-                    <button key={d} type="button" role="radio" aria-checked={global === d} className="cds-global-opt" onClick={() => setGlobal(d)} title={DIRECTION_HINT[d]}>
+                    <button key={d} type="button" role="radio" aria-checked={global === d} className="cds-global-opt" onClick={() => setGlobal(d)} data-tip={`${DIRECTION_HINT[d]}. Features and parts you set by hand keep their own direction`}>
                       <span className="cds-route" aria-hidden>
                         <span className={`cds-route-end ${into.app ? "is-into" : ""}`}>App</span>
                         <Icon size={14} strokeWidth={2} className="cds-route-arrow" />
@@ -223,6 +224,7 @@ export function App() {
                   <button
                     type="button"
                     className="cds-link"
+                    data-tip="Drop every direction set by hand, so all features follow the plan again"
                     onClick={() => {
                       setOverrides({});
                       setUnitOverrides({});
@@ -248,22 +250,22 @@ export function App() {
                 <span className="cds-head-meta">
                   {state?.project.name} · {snap ? `${snap.label}, ${fmtTime(snap.createdAt)}` : "no snapshot"}
                   {otherProject ? (
-                    <span className="cds-head-warn" title={`This snapshot was pulled from project ${snap?.projectId}, not ${state?.project.id}`}>
+                    <span className="cds-head-warn" data-tip={`This snapshot was pulled from project ${snap?.projectId}, not ${state?.project.id}`}>
                       {" "}· from another project
                     </span>
                   ) : null}
                   {unpulled.length ? (
-                    <span className="cds-head-warn" title={`Not pulled:\n${unpulled.join("\n")}${snap?.unpulled?.from ? `\nKept as in ${snap.unpulled.from}` : ""}`}>
+                    <span className="cds-head-warn" data-tip={`Not pulled:\n${unpulled.join("\n")}${snap?.unpulled?.from ? `\nKept as in ${snap.unpulled.from}` : ""}`}>
                       {" "}· {plural(unpulled.length, "file")} not pulled
                     </span>
                   ) : null}
                 </span>
                 <span className="cds-head-actions">
-                  <button type="button" className="cds-link" onClick={checkDesign} disabled={check?.busy}>
+                  <button type="button" className="cds-link" onClick={checkDesign} disabled={check?.busy} data-tip={check?.stale ? "Claude Design changed since the snapshot. Ask again, or pull to bring the changes in" : check && !check.busy && !check.error ? "Nothing changed when last asked. Ask Claude Design again" : TIP.check}>
                     {check?.busy ? "Checking…" : check?.stale ? "Design changed — pull" : check && !check.error ? "Up to date" : "Check for changes"}
                   </button>
                   {check?.stale || check?.error || unpulled.length || otherProject ? (
-                    <button type="button" className="cds-link" onClick={pull}>
+                    <button type="button" className="cds-link" onClick={pull} data-tip={unpulled.length && !check?.stale ? TIP.pullAgain : TIP.pull}>
                       {unpulled.length && !check?.stale ? "Pull again" : "Pull now"}
                     </button>
                   ) : null}
@@ -314,11 +316,11 @@ export function App() {
                   <p>{(EMPTY[global] ?? EMPTY.both!).line}</p>
                   <div className="cds-empty-actions">
                     {(EMPTY[global] ?? EMPTY.both!).action === "recompare" ? (
-                      <button type="button" className="cds-btn" onClick={() => refresh(true)} disabled={loading}>
+                      <button type="button" className="cds-btn" onClick={() => refresh(true)} disabled={loading} data-tip={TIP.recompare}>
                         Recompare the App
                       </button>
                     ) : (
-                      <button type="button" className="cds-btn" onClick={checkDesign} disabled={check?.busy}>
+                      <button type="button" className="cds-btn" onClick={checkDesign} disabled={check?.busy} data-tip={TIP.check}>
                         {check?.busy ? "Checking…" : "Check Claude Design for changes"}
                       </button>
                     )}
@@ -329,7 +331,7 @@ export function App() {
 
             {cmp ? (
               <section className="cds-synced">
-                <button type="button" className="cds-link" aria-expanded={showSynced} onClick={() => setShowSynced((s) => !s)}>
+                <button type="button" className="cds-link" aria-expanded={showSynced} data-tip={showSynced ? "Hide the parts that match on both sides" : "List the parts that already match on both sides"} onClick={() => setShowSynced((s) => !s)}>
                   {plural(synced, "unit")} in sync{showSynced ? " — hide" : ""}
                 </button>
                 {showSynced ? (

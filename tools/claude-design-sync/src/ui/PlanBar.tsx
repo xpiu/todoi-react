@@ -78,10 +78,10 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                 {upload ? <li>Uploads nothing yet: staged kit files wait in Activity for you to approve the exact list.</li> : null}
               </ul>
               <div className="cds-confirm-actions">
-                <button type="button" className="cds-btn cds-btn-primary" disabled={!!missing || busy || !work} onClick={() => { setView("closed"); onRun(); }}>
+                <button type="button" className="cds-btn cds-btn-primary" disabled={!!missing || busy || !work} data-tip={missing ?? (busy ? "Another job is running. Wait for it to finish" : !work ? "Nothing to run" : "Start these steps now and follow them in Activity. Nothing is merged or uploaded until you approve it")} onClick={() => { setView("closed"); onRun(); }}>
                   <Play size={14} strokeWidth={1.75} aria-hidden /> Run {plural(work, "step")}
                 </button>
-                <button type="button" className="cds-btn" onClick={() => setView("steps")}>
+                <button type="button" className="cds-btn" onClick={() => setView("steps")} data-tip="Return to the list of steps without running anything">
                   Back to the steps
                 </button>
                 {missing ? <span className="cds-error-inline">{missing}</span> : busy ? <span className="cds-quiet">Another job is running — see Activity.</span> : null}
@@ -102,7 +102,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
               <p className="cds-quiet">Future comparisons start here: the App at {state?.appHead} and the newest Design snapshot. Do this after a run finished and you're happy with both sides.</p>
               <label className="cds-field">
                 <span>Label</span>
-                <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Hidden lists + offline copy" autoFocus />
+                <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Hidden lists + offline copy" autoFocus data-tip="A name for this sync point, shown in the Since menu. Left empty, it's called Synced" />
               </label>
               {features.length ? (
                 <fieldset className="cds-mark-features">
@@ -114,7 +114,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                       const parts = open ? 0 : f.units.filter((u) => skipped(u, unitChoices)).length;
                       return (
                         <li key={f.id}>
-                          <label className="cds-check">
+                          <label className="cds-check" data-tip={open ? "Stays open: keeps its starting point and shows up in the next comparison. Tick it if it's synced" : "Synced: starts over from this sync point. Untick it to keep it open"}>
                             <input type="checkbox" checked={!open} onChange={(e) => setTicked((t) => ({ ...t, [f.id]: e.target.checked }))} />
                             <span>
                               {f.title}
@@ -127,15 +127,15 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                   </ul>
                 </fieldset>
               ) : null}
-              <label className="cds-check">
+              <label className="cds-check" data-tip="Tag the App's current commit in git, so this sync point is easy to find later">
                 <input type="checkbox" checked={tag} onChange={(e) => setTag(e.target.checked)} /> Also create the git tag {`design-sync/${today}`}
               </label>
               <div className="cds-confirm-actions">
-                <button type="submit" className="cds-btn cds-btn-primary" disabled={saving}>
+                <button type="submit" className="cds-btn cds-btn-primary" disabled={saving} data-tip="Save the App's current commit and the newest Design snapshot as the start of every future comparison">
                   {saving ? "Saving…" : "Record sync point"}
                 </button>
                 {kept ? <span className="cds-quiet">{plural(kept, "feature")} stay{kept === 1 ? "s" : ""} open</span> : null}
-                <button type="button" className="cds-btn" onClick={() => setView("steps")}>
+                <button type="button" className="cds-btn" onClick={() => setView("steps")} data-tip="Return to the steps without recording a sync point">
                   Cancel
                 </button>
               </div>
@@ -149,7 +149,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
         </div>
       ) : null}
       <div className="cds-plan-bar">
-        <button type="button" className="cds-plan-toggle" aria-expanded={open} onClick={() => setView((v) => v === "closed" ? "steps" : "closed")}>
+        <button type="button" className="cds-plan-toggle" aria-expanded={open} data-tip={open ? "Fold the plan away" : "Show every step the plan will run, in order, with its AI brief"} onClick={() => setView((v) => v === "closed" ? "steps" : "closed")}>
           <ChevronRight size={14} strokeWidth={1.75} className="cds-chev" aria-hidden />
           <span className="cds-plan-sum">
             <strong>{summary}</strong>
@@ -162,11 +162,11 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
           </span>
         </button>
         <div className="cds-plan-actions">
-          <button type="button" className="cds-btn" onClick={startMark}>
+          <button type="button" className="cds-btn" onClick={startMark} data-tip="Record that both sides match now, so future comparisons start from here">
             <Flag size={14} strokeWidth={1.75} aria-hidden /> Mark synced
           </button>
           {view === "confirm" ? null : (
-            <button type="button" className="cds-btn cds-btn-primary" disabled={!work || busy} onClick={() => setView("confirm")}>
+            <button type="button" className="cds-btn cds-btn-primary" disabled={!work || busy} data-tip={!work ? "Nothing to run: every feature is skipped" : busy ? "Another job is running. Wait for it to finish" : "Review exactly what the run will write and where, then start it"} onClick={() => setView("confirm")}>
               <Play size={14} strokeWidth={1.75} aria-hidden /> Run plan
             </button>
           )}

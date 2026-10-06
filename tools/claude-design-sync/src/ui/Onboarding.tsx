@@ -16,7 +16,7 @@ export function Onboarding({ state, onPull, onImported }: { state: AppState; onP
         <div className="cds-cell">
           <h3>Pull with Claude Code</h3>
           <p className="cds-quiet">Runs Claude Code headless with its DesignSync tool and reads every text file of the project. Takes a few minutes; needs Claude Code signed in to claude.ai.</p>
-          <button type="button" className="cds-btn cds-btn-primary" onClick={onPull} disabled={!state.harnesses.claude.ok && !state.fake}>
+          <button type="button" className="cds-btn cds-btn-primary" onClick={onPull} disabled={!state.harnesses.claude.ok && !state.fake} data-tip="Run Claude Code headless to read every text file of the project into a local snapshot. Follow it in Activity">
             <Download size={14} strokeWidth={1.75} aria-hidden /> Pull the project
           </button>
           {!state.harnesses.claude.ok && !state.fake ? <p className="cds-error-inline">{state.harnesses.claude.error}</p> : null}
@@ -42,9 +42,9 @@ export function Onboarding({ state, onPull, onImported }: { state: AppState; onP
           <p className="cds-quiet">Download the project from Claude Design (a .zip, or the unzipped folder) and give its path.</p>
           <label className="cds-field">
             <span>Path</span>
-            <input value={path} onChange={(e) => setPath(e.target.value)} placeholder="~/Downloads/Todoi Design System.zip" required />
+            <input value={path} onChange={(e) => setPath(e.target.value)} placeholder="~/Downloads/Todoi Design System.zip" required data-tip="The .zip Claude Design exports, or the folder it unzips to" />
           </label>
-          <button type="submit" className="cds-btn" disabled={busy || !path.trim()}>
+          <button type="submit" className="cds-btn" disabled={busy || !path.trim()} data-tip={path.trim() ? "Read the export into a local snapshot to compare against" : "Enter the path of an export first"}>
             <FolderInput size={14} strokeWidth={1.75} aria-hidden /> {busy ? "Importing…" : "Import"}
           </button>
           {err ? <p className="cds-error-inline">{err}</p> : null}
