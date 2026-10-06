@@ -1061,11 +1061,14 @@ em {
 .cds-confirm li {
   padding: 2px 0;
 }
+.cds-proposal-actions,
 .cds-confirm-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+}
+.cds-confirm-actions {
   padding-bottom: 8px;
 }
 .cds-mark {

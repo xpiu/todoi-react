@@ -108,14 +108,16 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, busy, onRunOne,
         ) : (
           <p className="cds-quiet">Nothing — this feature is skipped.</p>
         )}
-        {mine.length ? (
-          <button type="button" className="cds-btn" disabled={busy} onClick={onRunOne} data-tip={busy ? "Another job is running or waiting for approval. Finish it in Activity first" : "Review only this feature’s steps before running them. Other features are left out"}>
-            <Play size={14} strokeWidth={1.75} aria-hidden /> Run this feature only
+        <div className="cds-proposal-actions">
+          {mine.length ? (
+            <button type="button" className="cds-btn" disabled={busy} onClick={onRunOne} data-tip={busy ? "Another job is running or waiting for approval. Finish it in Activity first" : "Review only this feature’s steps before running them. Other features are left out"}>
+              <Play size={14} strokeWidth={1.75} aria-hidden /> Run this feature only
+            </button>
+          ) : null}
+          <button type="button" className="cds-btn" onClick={onMarkSynced} data-tip="Review a sync point for only this feature. Other features stay open. Use after uploading and checking the result">
+            Mark this feature synced
           </button>
-        ) : null}
-        <button type="button" className="cds-btn" onClick={onMarkSynced} data-tip="Review a sync point for only this feature. Other features stay open. Use after uploading and checking the result">
-          Mark this feature synced
-        </button>
+        </div>
       </div>
     </div>
   );
