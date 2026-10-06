@@ -116,6 +116,12 @@ export function App() {
     return t;
   }, [features]);
 
+  // Available features, independent of plan choices; reference-only work has no one-way direction.
+  const available = useMemo(() => ({
+    "design-to-app": features.filter((f) => f.directions.includes("design-to-app")).length,
+    "app-to-design": features.filter((f) => f.directions.includes("app-to-design")).length,
+  }), [features]);
+
   const openJob = (id: string) => {
     setActivity(id);
     setPanel(true);
@@ -224,17 +230,24 @@ export function App() {
                   Plan every feature
                 </span>
                 <div className="cds-global" role="radiogroup" aria-labelledby="dir-l">
-                  {GLOBALS.map(({ d, Icon, into }) => (
-                    <button key={d} type="button" role="radio" aria-checked={global === d} className="cds-global-opt" onClick={() => setGlobal(d)} data-tip={`${DIRECTION_HINT[d]}. Features and parts you set by hand keep their own direction`}>
-                      <span className="cds-route" aria-hidden>
-                        <span className={`cds-route-end ${into.app ? "is-into" : ""}`}>App</span>
-                        <Icon size={14} strokeWidth={2} className="cds-route-arrow" />
-                        <span className={`cds-route-end ${into.design ? "is-into" : ""}`}>Design</span>
-                      </span>
-                      <span className="cds-global-name">{DIRECTION_LABEL[d]}</span>
-                      <span className="cds-global-hint">{DIRECTION_SUB[d]}</span>
-                    </button>
-                  ))}
+                  {GLOBALS.map(({ d, Icon, into }) => {
+                    const count = d === "design-to-app" || d === "app-to-design" ? available[d] : null;
+                    const countLabel = count !== null && cmp ? `${plural(count, "changed feature")} available` : null;
+                    return (
+                      <button key={d} type="button" role="radio" aria-checked={global === d} className="cds-global-opt" onClick={() => setGlobal(d)} data-tip={`${DIRECTION_HINT[d]}.${countLabel ? ` ${countLabel}, including features changed on both sides. Counts are independent of overrides.` : ""} Features and parts you set by hand keep their own direction`}>
+                        <span className="cds-route" aria-hidden>
+                          <span className={`cds-route-end ${into.app ? "is-into" : ""}`}>App</span>
+                          <Icon size={14} strokeWidth={2} className="cds-route-arrow" />
+                          <span className={`cds-route-end ${into.design ? "is-into" : ""}`}>Design</span>
+                        </span>
+                        <span className="cds-global-name">
+                          {DIRECTION_LABEL[d]}
+                          {count !== null ? <span className="cds-global-count" aria-label={countLabel ?? "Comparing changes"}>{cmp ? count : "—"}</span> : null}
+                        </span>
+                        <span className="cds-global-hint">{DIRECTION_SUB[d]}</span>
+                      </button>
+                    );
+                  })}
                 </div>
                 {Object.keys(overrides).length + Object.keys(unitOverrides).length ? (
                   <button

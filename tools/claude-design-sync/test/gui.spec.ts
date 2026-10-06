@@ -31,6 +31,14 @@ test.describe.serial("Claude Design Sync", () => {
 
   test("offers the three directions globally and per feature", async ({ page }) => {
     await fresh(page);
+    const global = page.getByRole("radiogroup", { name: "Plan every feature" });
+    const intoApp = global.getByRole("radio", { name: /Into the App/ });
+    const intoDesign = global.getByRole("radio", { name: /Into Design/ });
+    // Both-sided features count in each direction; the reference-only preview does not.
+    await expect(intoApp.locator(".cds-global-count")).toHaveText("4");
+    await expect(intoApp).toHaveAccessibleName(/4 changed features available/);
+    await expect(intoDesign.locator(".cds-global-count")).toHaveText("2");
+    await expect(global.getByRole("radio", { name: /Full sync/ }).locator(".cds-global-count")).toHaveCount(0);
     const chips = row(page, "Chips");
     const toast = row(page, "Retryable toast");
     await page.locator(".cds-global").getByRole("radio", { name: /Into Design/ }).click();
@@ -49,6 +57,9 @@ test.describe.serial("Claude Design Sync", () => {
     await chips.getByRole("radio", { name: "Full sync" }).click();
     await expect(chips.getByRole("radio", { name: "Full sync" })).toHaveAttribute("aria-checked", "true");
     await expect(chips.getByRole("button", { name: /reset/ })).toBeVisible();
+    // Choices and overrides don't change the available-work counts.
+    await expect(intoApp.locator(".cds-global-count")).toHaveText("4");
+    await expect(intoDesign.locator(".cds-global-count")).toHaveText("2");
     await chips.getByRole("button", { name: /reset/ }).click();
     await expect(chips.getByRole("radio", { name: "Into the App" })).toHaveAttribute("aria-checked", "true");
 
