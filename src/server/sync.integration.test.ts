@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Viewer } from "./auth";
 import { db } from "./db";
-import { activity, attachments, comments, groups, itemRelations, itemWatchers, items, labels, lists, members, operationReceipts, projects, users } from "./db/schema";
+import { activity, attachments, comments, groups, itemAssignees, itemLabels, itemRelations, itemWatchers, items, labels, lists, members, operationReceipts, projects, users } from "./db/schema";
 import { commentsRoute, itemContentRoute, labelsRoute } from "./routes/content";
 import { itemsRoute } from "./routes/items";
 import { attachmentsRoute } from "./routes/attachments";
@@ -259,6 +259,31 @@ describe("workspace operation receipts", () => {
     expect(remoteAffected[`items/${remotePeer}`]!.before).toBeGreaterThan(stale);
     expect((await send(remote.actor, `/archive/items/${remotePeer}`, "DELETE", undefined, nanoid(), stale)).status).toBe(409);
     expect((await db.select().from(items).where(eq(items.id, remotePeer)))[0]?.description).toBe("Preserve another device's text");
+  });
+
+  it("returns canonical item relations on patches and moved families before another snapshot read", async () => {
+    const source = await fixture(), destination = await fixture(), label = nanoid(), child = nanoid();
+    await db.insert(members).values({ projectId: destination.project, userId: source.actor, role: "editor" });
+    await db.insert(labels).values({ id: label, projectId: source.project, name: "Carry label", color: "blue" });
+    await db.insert(items).values({ id: child, projectId: source.project, listId: source.list, title: "Child", parentItemId: source.item });
+    await db.insert(itemLabels).values([{ itemId: source.item, labelId: label }, { itemId: child, labelId: label }]);
+    await db.insert(itemAssignees).values([{ itemId: source.item, userId: source.other }, { itemId: child, userId: source.other }]);
+    const patched = await send(source.actor, `/items/${source.item}`, "PATCH", { description: "Confirmed note" }, nanoid(), await versionOf(source.item));
+    expect(patched.status).toBe(200);
+    expect(await patched.json()).toMatchObject({ labelIds: [label], assigneeIds: [source.other], attachmentCount: 0 });
+    const moved = await send(source.actor, `/items/${source.item}/move`, "POST", { listId: destination.list }, nanoid(), await versionOf(source.item));
+    expect(moved.status).toBe(200);
+    const reply = await moved.json() as { item: { id: string; labelIds: string[]; assigneeIds: string[]; attachmentCount: number }; items: Array<{ id: string; projectId: string; version: number; labelIds: string[]; assigneeIds: string[]; attachmentCount: number }> };
+    expect(reply.items.map((item) => item.id).sort()).toEqual([source.item, child].sort());
+    for (const item of reply.items) {
+      expect(item.projectId).toBe(destination.project);
+      expect(item.assigneeIds).toEqual([]);
+      expect(item.labelIds).toHaveLength(1);
+      expect(item.labelIds).not.toContain(label);
+      expect(item.attachmentCount).toBe(0);
+      expect(item.version).toBe(await versionOf(item.id));
+    }
+    expect(reply.item).toEqual(reply.items.find((item) => item.id === source.item));
   });
 
   it("bumps item detail versions and exposes the new version for relationship writes", async () => {

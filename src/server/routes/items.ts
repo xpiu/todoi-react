@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { createItemSchema, duplicateItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
 import { viewerOf } from "../auth";
-import { db } from "../db";
+import { db, inRequestTransaction } from "../db";
 import { attachments, groups, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { statusChange } from "../../shared/completion";
 import { duplicateItem, moveItem, placeAmongSiblings, updateItem } from "../services/items";
@@ -22,11 +22,13 @@ type ItemRow = typeof items.$inferSelect;
 async function withRelations(rows: ItemRow[]) {
   if (!rows.length) return [] as Array<ItemRow & { labelIds: string[]; assigneeIds: string[]; attachmentCount: number }>;
   const ids = rows.map((r) => r.id);
-  const [labelRows, assigneeRows, attachmentRows] = await Promise.all([
-    db.select().from(itemLabels).where(inArray(itemLabels.itemId, ids)),
-    db.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids)),
-    db.select({ itemId: attachments.itemId, n: sql<number>`count(*)::int` }).from(attachments).where(inArray(attachments.itemId, ids)).groupBy(attachments.itemId),
-  ]);
+  const labelQuery = db.select().from(itemLabels).where(inArray(itemLabels.itemId, ids));
+  const assigneeQuery = db.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids));
+  const attachmentQuery = db.select({ itemId: attachments.itemId, n: sql<number>`count(*)::int` }).from(attachments).where(inArray(attachments.itemId, ids)).groupBy(attachments.itemId);
+  // A queued write uses one transaction connection; ordinary reads can use the pool in parallel.
+  const [labelRows, assigneeRows, attachmentRows] = inRequestTransaction()
+    ? [await labelQuery, await assigneeQuery, await attachmentQuery]
+    : await Promise.all([labelQuery, assigneeQuery, attachmentQuery]);
   return rows.map((r) => ({ ...r, labelIds: labelRows.filter((l) => l.itemId === r.id).map((l) => l.labelId), assigneeIds: assigneeRows.filter((a) => a.itemId === r.id).map((a) => a.userId), attachmentCount: attachmentRows.find((a) => a.itemId === r.id)?.n ?? 0 }));
 }
 
@@ -107,12 +109,17 @@ export const itemsRoute = new Hono()
     const result = await updateItem(id, { done, status, ifDue }, changes, { archived, deleted }, viewerOf(c).userId);
     if (!result) return fail(c, 404, "Not found");
     // `occurrence`: the recurring occurrence this request completed, for the client's toast and Undo.
-    return c.json({ ...result.item, occurrence: result.occurrence });
+    const [item] = await withRelations([result.item]);
+    return c.json({ ...item!, occurrence: result.occurrence });
   })
   // Move within or across lists; a linked list role updates the Status in the same transaction.
   .post("/:id/move", idParam, validate("json", moveItemSchema), async (c) => {
     const result = await moveItem(c.req.valid("param").id, c.req.valid("json"), viewerOf(c).userId);
-    return result ? c.json(result) : fail(c, 404, "Not found");
+    if (!result) return fail(c, 404, "Not found");
+    // Canonical relations travel with the acknowledgment so a reload need not await another read.
+    const family = await db.select().from(items).where(sql`${items.id} = ${result.item.id} or ${items.parentItemId} = ${result.item.id}`);
+    const moved = await withRelations(family);
+    return c.json({ ...result, item: moved.find((item) => item.id === result.item.id)!, items: moved });
   })
   // Copy into a list: the copy and its subitems (root first), and what was not carried over.
   .post("/:id/duplicate", idParam, validate("json", duplicateItemSchema), async (c) => {
