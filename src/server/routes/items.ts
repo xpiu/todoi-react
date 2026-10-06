@@ -54,7 +54,7 @@ export const itemsRoute = new Hono()
     if (!row) return fail(c, 404, "This item doesn't exist");
     const { item } = row;
     const state = item.deletedAt ? "deleted" : item.archivedAt ? "archived" : row.live ? "live" : "container";
-    return c.json({ id: item.id, title: item.title, projectId: item.projectId, listId: item.listId, parentItemId: item.parentItemId, keyNumber: item.keyNumber, projectName: row.projectName, keyPrefix: row.keyPrefix, state } as const);
+    return c.json({ id: item.id, version: item.version, title: item.title, projectId: item.projectId, listId: item.listId, parentItemId: item.parentItemId, keyNumber: item.keyNumber, projectName: row.projectName, keyPrefix: row.keyPrefix, state } as const);
   })
   .post("/", validate("json", createItemSchema), async (c) => {
     const viewer = viewerOf(c);
@@ -87,7 +87,8 @@ export const itemsRoute = new Hono()
       return created!;
     });
     if (assigneeIds.length) await deliver(notifyPeople("assignment", assigneeIds, viewer, row));
-    return c.json({ ...row, labelIds, assigneeIds, attachmentCount: 0 }, 201);
+    const [current] = await db.select().from(items).where(eq(items.id, row.id));
+    return c.json({ ...(current ?? row), labelIds, assigneeIds, attachmentCount: 0 }, 201);
   })
   .patch("/:id", idParam, validate("json", updateItemSchema), async (c) => {
     const { id } = c.req.valid("param");

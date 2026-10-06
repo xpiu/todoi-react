@@ -7,7 +7,7 @@ import { z } from "zod";
 import { idSchema } from "../../shared/items";
 import { MAX_ATTACHMENT_BYTES, MAX_UPLOAD_REQUEST_BYTES, MB } from "../../shared/uploads";
 import { viewerOf } from "../auth";
-import { db } from "../db";
+import { afterCommit, db } from "../db";
 import { attachments, items } from "../db/schema";
 import { attachmentHeaders } from "../services/attachmentResponse";
 import { safeName, storeAttachments, UploadRejected } from "../services/attachments";
@@ -67,7 +67,7 @@ export const attachmentsRoute = new Hono()
       return removed;
     });
     if (!row) return fail(c, 404, "Not found");
-    await drainUploadCleanup();
+    await afterCommit(drainUploadCleanup);
     return c.body(null, 204);
   });
 

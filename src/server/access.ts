@@ -6,7 +6,7 @@ import { HTTPException } from "hono/http-exception";
 
 import { maybeViewer, viewerOf } from "./auth";
 import { db } from "./db";
-import { attachments, comments, groups, invites, items, labels, lists, members, projects, savedViews, users } from "./db/schema";
+import { attachments, comments, groups, invites, items, labels, lists, members, projects, savedViews, users, type OperationScope } from "./db/schema";
 
 type Permission = "read" | "edit" | "owner";
 type ItemScope = Pick<typeof items.$inferSelect, "projectId" | "listId">;
@@ -34,6 +34,8 @@ const invalid = () => new HTTPException(400, { message: "Content must belong to 
 /** Centralized here so the public project and attachment reads use the same policy as CRUD. */
 export const workspaceAccess: MiddlewareHandler = async (c, next) => {
   const viewer = maybeViewer(c);
+  const scopes: OperationScope[] = [];
+  c.set("operationScopes", scopes);
   const read = c.req.method === "GET";
   const permission: Permission = read ? "read" : "edit";
   const [resource, id, action] = c.req.path.replace(/^\/api\//, "").split("/");
@@ -44,24 +46,23 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
   const ids = (name: string): string[] => Array.isArray(body?.[name]) ? body[name].filter((v): v is string => typeof v === "string") : [];
 
   const projectAccess = async (projectId: string, required: Permission = permission) => {
-    const [project] = await db.select({ visibility: projects.visibility }).from(projects).where(eq(projects.id, projectId));
-    if (!project) throw missing();
-    const [member] = viewer ? await db.select({ role: members.role }).from(members).where(and(eq(members.projectId, projectId), eq(members.userId, viewer.userId))) : [];
-    if (required === "read" && canReadProject(project.visibility, !!member, !!viewer)) return;
-    if (required === "edit" && member && member.role !== "viewer") return;
-    if (required === "owner" && member?.role === "owner") return;
-    throw forbidden();
+    await authorizeProject(viewer, projectId, required);
+    scopes.push({ kind: "project", id: projectId, permission: required });
   };
   const groupAccess = async (groupId: string) => {
     const [group] = await db.select({ ownerId: groups.ownerId }).from(groups).where(eq(groups.id, groupId));
     if (!group) throw missing();
     if (group.ownerId !== viewer?.userId) throw forbidden();
+    scopes.push({ kind: "group", id: groupId });
   };
   const listAccess = async (listId: string, required: Permission = permission) => {
     const [list] = await db.select({ id: lists.id, projectId: lists.projectId, userId: lists.userId }).from(lists).where(eq(lists.id, listId));
     if (!list) throw missing();
     if (list.projectId) await projectAccess(list.projectId, required);
-    else if (!viewer || list.userId !== viewer.userId) throw forbidden();
+    else {
+      if (!viewer || list.userId !== viewer.userId) throw forbidden();
+      scopes.push({ kind: "personal", id: viewer.userId });
+    }
     return list;
   };
   const itemAccess = async (itemId: string, required: Permission = permission) => {
@@ -72,6 +73,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
   };
   const registered = () => {
     if (!viewer || viewer.isAnonymous) throw new HTTPException(401, { message: "Log in or create an account to continue" });
+    scopes.push({ kind: "registered", id: viewer.userId });
   };
 
   switch (resource) {
@@ -197,3 +199,29 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
   }
   await next();
 };
+
+/** Receipts retain the permissions originally required, so hard deletion can still be acknowledged safely. */
+export async function authorizeOperationScopes(viewer: NonNullable<ReturnType<typeof maybeViewer>>, scopes: OperationScope[], allowMissingProject = false) {
+  for (const scope of scopes) {
+    if (scope.kind === "project") {
+      await authorizeProject(viewer, scope.id, scope.permission ?? "edit", allowMissingProject);
+    }
+    if (scope.kind === "group") {
+      const [group] = await db.select({ ownerId: groups.ownerId }).from(groups).where(eq(groups.id, scope.id));
+      if (!group || group.ownerId !== viewer.userId) throw forbidden();
+    }
+    if (scope.kind === "personal" && scope.id !== viewer.userId) throw forbidden();
+    if (scope.kind === "registered" && (scope.id !== viewer.userId || viewer.isAnonymous)) throw forbidden();
+  }
+}
+
+/** Shared by live route checks and receipt replays: membership changes take effect immediately. */
+async function authorizeProject(viewer: ReturnType<typeof maybeViewer>, projectId: string, permission: Permission, allowMissing = false) {
+  const [project] = await db.select({ visibility: projects.visibility }).from(projects).where(eq(projects.id, projectId));
+  if (!project) { if (allowMissing) return; throw missing(); }
+  const [member] = viewer ? await db.select({ role: members.role }).from(members).where(and(eq(members.projectId, projectId), eq(members.userId, viewer.userId))) : [];
+  if (permission === "read" && canReadProject(project.visibility, !!member, !!viewer)) return;
+  if (permission === "edit" && member && member.role !== "viewer") return;
+  if (permission === "owner" && member?.role === "owner") return;
+  throw forbidden();
+}

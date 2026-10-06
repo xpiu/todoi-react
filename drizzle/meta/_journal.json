@@ -64,6 +64,27 @@
       "when": 1790939979980,
       "tag": "0008_user_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791296420253,
+      "tag": "0009_famous_maelstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791296899773,
+      "tag": "0010_light_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791297744605,
+      "tag": "0011_operation_affected_versions",
+      "breakpoints": true
     }
   ]
 }

@@ -154,6 +154,7 @@ export const groups = pgTable("groups", {
     .notNull()
     .references(() => users.id),
   ...lifecycle,
+  version: integer("version").notNull().default(1),
   ...timestamps,
 });
 
@@ -176,6 +177,7 @@ export const projects = pgTable(
     linkStatuses: boolean("link_statuses").notNull().default(true),
     position: integer("position").notNull().default(0),
     ...lifecycle,
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [index("projects_group_idx").on(t.groupId)],
@@ -197,6 +199,7 @@ export const lists = pgTable(
     statusRole: itemStatusEnum("status_role"),
     position: integer("position").notNull().default(0),
     hidden: boolean("hidden").notNull().default(false),
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [index("lists_project_idx").on(t.projectId), uniqueIndex("lists_inbox_per_user_idx").on(t.userId).where(sql`${t.kind} = 'inbox'`)],
@@ -252,6 +255,7 @@ export const items = pgTable(
     position: integer("position").notNull().default(0),
     createdBy: text("created_by").references(() => users.id),
     ...lifecycle,
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [
@@ -297,6 +301,7 @@ export const labels = pgTable(
     /** One of the eight palette names */
     color: text("color").notNull(),
     position: integer("position").notNull().default(0),
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [uniqueIndex("labels_name_per_project_idx").on(t.projectId, t.name)],
@@ -356,6 +361,7 @@ export const comments = pgTable(
     body: text("body").notNull(),
     editedAt: timestamp("edited_at", { withTimezone: true }),
     replyToId: text("reply_to_id"),
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [index("comments_item_idx").on(t.itemId, t.createdAt)],
@@ -388,6 +394,7 @@ export const attachments = pgTable(
     /** Where the bytes live (object key or URL); the storage backend is a later decision */
     storageKey: text("storage_key").notNull(),
     uploadedBy: text("uploaded_by").references(() => users.id),
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [index("attachments_item_idx").on(t.itemId)],
@@ -455,6 +462,7 @@ export const savedViews = pgTable(
     shared: boolean("shared").notNull().default(false),
     definition: jsonb("definition").$type<ViewDefinition>().notNull(),
     position: integer("position").notNull().default(0),
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [index("saved_views_project_idx").on(t.projectId)],
@@ -474,3 +482,20 @@ export const uploadCleanup = pgTable("upload_cleanup", {
   nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("upload_cleanup_due_idx").on(t.nextAttemptAt)]);
+
+/** A successful workspace mutation and its original response, committed together. Never stores auth secrets. */
+export interface OperationScope {
+  kind: "project" | "group" | "personal" | "registered";
+  id: string;
+  permission?: "read" | "edit" | "owner";
+}
+export const operationReceipts = pgTable("operation_receipts", {
+  actorId: text("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  operationId: text("operation_id").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  status: integer("status").notNull(),
+  body: text("body").notNull(),
+  headers: jsonb("headers").$type<Record<string, string>>().notNull(),
+  scopes: jsonb("scopes").$type<OperationScope[]>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("operation_receipts_actor_operation_idx").on(t.actorId, t.operationId)]);

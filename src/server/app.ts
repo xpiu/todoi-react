@@ -9,7 +9,7 @@ import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
 import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } from "./routes/projects";
-import { workspaceAccess } from "./access";
+import { workspaceMutations } from "./sync";
 import { notFound, onError } from "./errors";
 
 // Chained so Hono can infer the full route type for the RPC client (`hc<AppType>`).
@@ -21,7 +21,7 @@ export const app = new Hono()
   // Better Auth owns /api/auth/*; everything after resolves the session first.
   .on(["GET", "POST"], "/auth/*", (c) => auth.handler(c.req.raw))
   .use("*", authMiddleware)
-  .use("*", workspaceAccess)
+  .use("*", workspaceMutations)
   .route("/me", meRoute)
   .route("/me/tokens", tokensRoute)
   .route("/me/export", exportRoute)

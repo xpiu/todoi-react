@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 
-import { db } from "../db";
+import { afterCommit, db } from "../db";
 import { items, projects, type Item } from "../db/schema";
 import { logActivity, quote } from "./activity";
 import { drainUploadCleanup } from "./uploadCleanup";
@@ -55,12 +55,12 @@ export async function setProjectLifecycle(id: string, change: LifecycleChange) {
 /** Foreign keys remove dependents; the attachment trigger queues file cleanup in the same commit. */
 export async function destroyItem(id: string) {
   const [item] = await db.delete(items).where(eq(items.id, id)).returning({ id: items.id });
-  await drainUploadCleanup();
+  await afterCommit(drainUploadCleanup);
   return item;
 }
 
 export async function destroyProject(id: string) {
   const [project] = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
-  await drainUploadCleanup();
+  await afterCommit(drainUploadCleanup);
   return project;
 }

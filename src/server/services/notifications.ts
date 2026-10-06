@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 import { prefsOf, type Prefs } from "../../shared/prefs";
 import { inboxFor } from "../auth";
 import { readableItemIds } from "../access";
-import { db } from "../db";
+import { db, inRequestTransaction } from "../db";
 import { groups, items, itemWatchers, members, projects, users } from "../db/schema";
 
 type Kind = "assignment" | "mention" | "watch";
@@ -56,8 +56,11 @@ export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { 
   return sent;
 }
 
-/** Notifications never fail the change that caused them; a delivery problem is logged. */
-export const deliver = (work: Promise<unknown>) => work.then(() => undefined, (err: unknown) => console.error("Notification delivery failed", err));
+/** Queued operations must commit all side effects together; legacy delivery remains best effort. */
+export const deliver = (work: Promise<unknown>) => work.then(() => undefined, (err: unknown) => {
+  if (inRequestTransaction()) throw err;
+  console.error("Notification delivery failed", err);
+});
 
 /** A new comment: @mentioned project members get "mentioned you", other watchers "commented on". */
 export async function notifyComment(actor: { userId: string; name: string }, about: About, body: string) {
