@@ -208,7 +208,7 @@ The global three-way segmented control (Into the App / Full sync / Into Design):
 ### Buttons
 - **Shape:** square, 30px tall, 12px side padding, 14px lucide glyph + label.
 - **Default:** transparent with an input-rule outline; hover darkens the outline to ink; active adds Wash.
-- **Primary:** filled ink, Paper text, no outline; hover softens to Quiet Ink. One per surface (Run plan, Upload n files, Pull the project). While a run waits for Merge, Merge takes the plan bar's primary slot and Run plan drops to Default (it is disabled until the run is merged or discarded).
+- **Primary:** filled ink, Paper text, no outline; hover softens to Quiet Ink. One per surface (Review selected sync steps, Upload n files, Pull the project). While a run waits for Merge, Merge takes the plan bar's primary slot and Review selected sync steps drops to Default (it is disabled until the run is merged or discarded).
 - **Disabled:** Quiet Ink text, hairline outline.
 - **Tool** (bar): borderless, Quiet Ink to Ledger Ink on hover or when pressed.
 - **Icon** (28×28): borderless glyph, Quiet Ink to Ledger Ink.
@@ -217,7 +217,7 @@ The global three-way segmented control (Into the App / Full sync / Into Design):
 One action in four places, all driven by one hook (`Merge.tsx`), so they agree and one press disables them all:
 - **Navbar:** a tool button that is filled ink (500, 10px side padding, "Merge into main") while a verified App branch waits, the only filled control in the bar; greyed (Faint Ink, `not-allowed`) while a run still ports into the App; absent otherwise. Under 820px it is the filled glyph alone. With more than one run waiting it adds a mono count after a 1px rule.
 - **Banner:** above the verdict on both pages, under an ink rule like every approval block: a 15px title naming the run, the branch and check in mono, the commit list, then the primary Merge and *Review in Activity*. Absent unless a run waits.
-- **Plan bar:** a Merge button before Run plan: primary while a run waits, Default and disabled while one ports, absent otherwise.
+- **Plan bar:** a Merge button before Review selected sync steps: primary while a run waits, Default and disabled while one ports, absent otherwise.
 - **Activity:** the run's own "Merge into the App" block; while another job is shown, a strip under the job list (ink rule on top) names the waiting run (a link that shows it) beside a primary Merge.
 
 ### Links
@@ -233,10 +233,10 @@ Every control explains what it does in one sentence (or why it's unavailable, wh
 Feature head (chevron rotates 90° when open; title underlines on hover), status word (red only for "changed on both"; ink for one-sided; quiet for others), part count in mono. Opening reveals the work twin ("—" bulleted), one unit per subfeature (name, kind, mono paths, evidence, link actions) separated by dashed hairlines, inline diffs and preview iframes in hairline frames, and "What runs for this feature" with numbered steps.
 
 ### Plan bar
-Pinned summary ("n features · direction · n skipped" in 500, tallies in mono) with Mark synced (Mark run features synced when the latest run supplies the scope) and Run plan. Open features also offer Mark this feature synced; its dialog selects only that feature. The sheet above holds the run confirmation (harness choice as a joined segmented pair, model field) and the mark-synced form.
+Pinned summary ("n features · direction · n skipped" in 500, tallies in mono) with Mark selected features synced (the latest run supplies the selection when available) and Review selected sync steps. Open features also offer Mark this feature synced; its dialog selects only that feature. The sheet above holds the shared run confirmation and the mark-synced form. A feature-only confirmation names the feature and reviews its writes, harness, App worktree and upload approval.
 
 ### Activity panel
-Job list (square state mark, title, mono time; current job gets a 2px inset ink bar on the left), job view (title, mono state and cost, 2px progress line, step list with square marks: outline pending, pulsing running, ink done, red failed, run-through skipped), and the log on Wash in mono with step lines in 500 and warn/error lines red.
+Job list (unfinished jobs first, eight completed jobs initially with Show older jobs to reveal more; square state mark, title, mono time; current job gets a 2px inset ink bar on the left), job view (title, mono state and cost, 2px progress line, step list with square marks: outline pending, pulsing running, ink done, red failed, run-through skipped), and the log on Wash in mono with step lines in 500 and warn/error lines red.
 
 ### Mapping page (`/mapping`)
 A second page on the same ledger. The rail is 232px wide here, and it stands for the tool.

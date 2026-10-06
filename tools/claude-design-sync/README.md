@@ -55,9 +55,9 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
 
 1. **Check for changes** in the Design column header, then **Pull now** if Design moved.
 2. Read the verdict and the ledger. Pick a plan-wide direction, and override single features or subfeatures on the rail.
-3. **Run plan** (or **Run this feature only**).
+3. **Review selected sync steps** (or **Run this feature only**).
 4. **Merge** the App branch: the button appears in the navbar, above the verdict, in the plan bar and in Activity as soon as the run's check passes. Upload the staged kit files from **Activity**: **Upload n files from Claude Code** gives you a request to paste into Claude Code, where you approve DesignSync's prompt; then **Check the upload**.
-5. **Mark synced** when both sides look right.
+5. **Mark selected features synced** when both sides look right.
 
 ## Plan page (`/`)
 
@@ -87,15 +87,15 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
   - **Subfeatures** get their own rail once a feature is open. They follow their feature as far as they can (a component new in the App has nothing to pull), unless set. A set subfeature runs even when its feature is skipped.
   - **Preview cards, guidelines and explorations** exist only in Design. They are listed as Design work but are reference-only and never ported, so their keys stay on Skip.
 - **An open feature** (click its title) shows:
-  - each subfeature's file mapping, with App and Design diffs since the sync point;
-  - live card previews, rendered with a locally built bundle;
-  - the exact steps that will run, each AI step with its brief (*Read brief*, *Copy brief*), and **Run this feature only**;
+  - each subfeature's file mapping, with App and Design diffs since the sync point; diffs longer than 1,500 lines show their total and **Show more lines** reveals the rest;
+  - live card previews, rendered with a locally built bundle; copy actions expose selectable text when clipboard access fails;
+  - the exact steps that will run, each AI step with its brief (*Read brief*, *Copy brief*), and **Run this feature only**, which reviews this feature’s steps before starting and stays disabled while another job is running or waiting for approval;
   - **Mark this feature synced** opens the sync-point dialog with only this feature selected. Other features keep their old baseline.
-- **Merge, wherever you look:** while a run's verified App branch waits, Merge is offered in the navbar (on both pages), as a banner above the verdict (with its commits and *Review in Activity*), in the plan bar (where it takes the primary slot from Run plan), and pinned at the top of Activity when another job is shown. All of them merge the same run. While a run is still porting into the App, the navbar and plan-bar buttons show greyed out; otherwise there is no Merge button.
+- **Merge, wherever you look:** while a run's verified App branch waits, Merge is offered in the navbar (on both pages), as a banner above the verdict (with its commits and *Review in Activity*), in the plan bar (where it takes the primary slot from Review selected sync steps), and pinned at the top of Activity when another job is shown. All of them merge the same run. While a run is still porting into the App, the navbar and plan-bar buttons show greyed out; otherwise there is no Merge button.
 - **Plan bar** (bottom): what the decisions add up to (merges, AI ports, upload).
-  - **Run plan** confirms first, saying what will be written where.
-  - **Mark synced** records a new sync point and lists every feature. After a run, the button reads **Mark run features synced** and only that run’s covered features start ticked, even after a page reload. Otherwise, features the plan moves start ticked. Preparing kit files is not a completed sync: upload and check them first. Verified runs automatically record their own sync point. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old baseline and reappear as "Kept open since …".
-- **Activity** (right panel): jobs with a live log, step states, cost, and **Stop**.
+  - **Review selected sync steps** confirms first, saying what will be written where.
+  - **Mark selected features synced** records a new sync point and lists every feature. After a run, only that run’s covered features start ticked, even after a page reload. Otherwise, features the plan moves start ticked. Preparing kit files is not a completed sync: upload and check them first. Verified runs automatically record their own sync point. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old baseline and reappear as "Kept open since …".
+- **Activity** (right panel): jobs with a live log, step states, cost, and **Stop**. Unfinished jobs always remain in the list; **Show older jobs** reveals more completed history. The log follows new entries while you’re near its bottom and preserves your position while you read older entries.
   - **Merge into the App:** a run with App work stops here, listing the verified commits.
   - **Upload to Claude Design:** a run that changed kit files stops here. Every staged file has a checkbox, a render check for cards, and a preview. **Upload n files from Claude Code** checks Design for newer edits, then shows three steps: copy the request (or a terminal command that starts `claude` in this repo with it), approve DesignSync's prompt in Claude Code, and **Check the upload**, which reads the files back and closes the step once all match. Nothing goes up until you approve it in Claude Code.
   - **Discard run…** gives up whatever still waits: the staged files and the App branch.

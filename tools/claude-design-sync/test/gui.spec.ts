@@ -102,7 +102,7 @@ test.describe.serial("Claude Design Sync", () => {
 
   test("runs the plan, stops for merge and upload approval, does both, and marks a sync point", async ({ page }) => {
     await fresh(page);
-    await page.getByRole("button", { name: /Run plan/ }).click();
+    await page.getByRole("button", { name: /Review selected sync steps/ }).click();
     await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toBeVisible();
     await page.getByRole("button", { name: /^Run \d+ steps$/ }).click();
     const panel = page.getByRole("complementary", { name: "Activity" });
@@ -182,7 +182,7 @@ test.describe.serial("Claude Design Sync", () => {
     expect(existsSync(fakeDesign) && readFileSync(fakeDesign, "utf8")).toContain(".td-hidden");
 
     await page.getByRole("button", { name: "Close activity" }).click();
-    await page.getByRole("button", { name: /Mark synced/ }).click();
+    await page.getByRole("button", { name: /Mark selected features synced/ }).click();
     await page.getByLabel("Label").fill("After the e2e run");
     await page.getByRole("checkbox", { name: /git tag/ }).uncheck();
     // everything ran, so every feature starts ticked; Chips is left open on purpose

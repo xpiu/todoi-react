@@ -192,12 +192,12 @@ test("preserves plan dialog transitions and layouts at desktop and phone widths"
   await page.goto(url);
   await expect(page.locator(".cds-plan-sum strong")).toContainText("features");
   await capture(page, "after-plan-desktop");
-  await page.getByRole("button", { name: "Run plan" }).click();
+  await page.getByRole("button", { name: "Review selected sync steps" }).click();
   await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toBeVisible();
   await capture(page, "after-plan-confirmation");
   await page.getByRole("button", { name: "Back to the steps" }).click();
   await expect(page.getByRole("heading", { name: "Steps, in order" })).toBeVisible();
-  await page.getByRole("button", { name: "Mark synced" }).click();
+  await page.getByRole("button", { name: "Mark selected features synced" }).click();
   await expect(page.getByRole("heading", { name: /Mark \d+ features? synced/ })).toBeVisible();
   await capture(page, "after-mark-synced");
   await page.getByLabel("Label", { exact: true }).fill("Keep this label");
@@ -205,16 +205,16 @@ test("preserves plan dialog transitions and layouts at desktop and phone widths"
   await expect(page.getByRole("heading", { name: "Steps, in order" })).toBeVisible();
   await page.locator(".cds-plan-toggle").click();
   await expect(page.locator(".cds-plan-toggle")).toHaveAttribute("aria-expanded", "false");
-  await page.getByRole("button", { name: "Mark synced" }).click();
+  await page.getByRole("button", { name: "Mark selected features synced" }).click();
   await expect(page.getByLabel("Label", { exact: true })).toHaveValue("Keep this label");
   await page.locator(".cds-plan-toggle").click();
-  await page.getByRole("button", { name: "Run plan" }).click();
+  await page.getByRole("button", { name: "Review selected sync steps" }).click();
   await page.locator(".cds-plan-toggle").click();
   await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await capture(page, "after-plan-phone", false);
-  await page.getByRole("button", { name: "Mark synced" }).click();
+  await page.getByRole("button", { name: "Mark selected features synced" }).click();
   await expect(page.getByRole("heading", { name: /Mark \d+ features? synced/ })).toBeVisible();
   await capture(page, "after-mark-synced-phone", false);
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -226,4 +226,91 @@ test("preserves plan dialog transitions and layouts at desktop and phone widths"
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await capture(page, "after-mapping-phone", false);
   expect(errors).toEqual([]);
+});
+
+test("keeps older approvals visible and lets the reader reveal completed history", async ({ page, request }) => {
+  const state = await (await request.get(`${url}/api/state`)).json();
+  const waiting = state.jobs[0];
+  const completed = Array.from({ length: 12 }, (_, i) => ({ ...waiting, id: `completed-${i}`, title: `Completed job ${i}`, state: "done", staged: [], steps: [] }));
+  await page.route("**/api/state", (route) => route.fulfill({ json: { ...state, jobs: [...completed, waiting] } }));
+  await page.goto(`${url}/?job=${jobId}`);
+  const jobs = page.getByRole("navigation", { name: "Jobs" });
+  await expect(jobs.getByRole("button", { name: /Retryable upload/ })).toBeVisible();
+  await expect(jobs.getByRole("button").first()).toContainText("Retryable upload");
+  await expect(jobs.getByRole("button", { name: "Completed job 11", exact: false })).toHaveCount(0);
+  await jobs.getByRole("button", { name: /Show older jobs/ }).click();
+  await expect(jobs.getByRole("button", { name: /Completed job 11/ })).toHaveCount(1);
+  await expect(jobs.getByRole("button", { name: /Show older jobs/ })).toHaveCount(0);
+});
+
+test("preserves a reader's log position as new entries arrive and resumes at the bottom", async ({ page, request }) => {
+  const job = await (await request.get(`${url}/api/jobs/${jobId}`)).json();
+  await page.addInitScript(() => {
+    class TestEventSource extends EventTarget {
+      constructor() {
+        super();
+        (window as unknown as { emitJob: (job: unknown) => void }).emitJob = (snapshot) => this.dispatchEvent(new MessageEvent("job", { data: JSON.stringify(snapshot) }));
+      }
+      close() {}
+    }
+    window.EventSource = TestEventSource as unknown as typeof EventSource;
+  });
+  await page.goto(`${url}/?job=${jobId}`);
+  await expect(page.getByRole("navigation", { name: "Jobs" })).toBeVisible();
+  job.events = Array.from({ length: 120 }, (_, i) => ({ at: new Date().toISOString(), level: "info", text: `Log entry ${i}` }));
+  await page.evaluate((snapshot) => (window as unknown as { emitJob: (job: unknown) => void }).emitJob(snapshot), job);
+  const log = page.getByRole("list", { name: "Log", exact: true });
+  await expect(log.locator("li")).toHaveCount(120);
+  await expect.poll(() => log.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop)).toBeLessThan(2);
+  await log.evaluate((el) => { el.scrollTop = 60; el.dispatchEvent(new Event("scroll", { bubbles: true })); });
+  job.events.push({ at: new Date().toISOString(), level: "info", text: "New while reading" });
+  await page.evaluate((snapshot) => (window as unknown as { emitJob: (job: unknown) => void }).emitJob(snapshot), job);
+  await expect(log.locator("li")).toHaveCount(121);
+  expect(await log.evaluate((el) => el.scrollTop)).toBe(60);
+  await log.evaluate((el) => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event("scroll", { bubbles: true })); });
+  job.events.push({ at: new Date().toISOString(), level: "info", text: "New at bottom" });
+  await page.evaluate((snapshot) => (window as unknown as { emitJob: (job: unknown) => void }).emitJob(snapshot), job);
+  await expect(log.locator("li")).toHaveCount(122);
+  await expect.poll(() => log.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop)).toBeLessThan(2);
+});
+
+test("offers selectable text when copying fails, then allows retry", async ({ page }) => {
+  await page.addInitScript(() => {
+    let denied = true;
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async () => {
+      if (denied) { denied = false; throw new Error("Clipboard denied"); }
+    } } });
+  });
+  await page.goto(url);
+  await page.getByRole("button", { name: "Recover hidden lists", exact: true }).click();
+  const copy = page.getByRole("button", { name: "Copy brief", exact: true }).first();
+  await copy.click();
+  await expect(page.getByRole("alert")).toContainText("Couldn’t copy");
+  const fallback = page.getByRole("textbox", { name: "Copy brief text" });
+  await expect(fallback).toHaveValue(/Recover hidden lists/);
+  await fallback.focus();
+  expect(await fallback.evaluate((el) => (el as HTMLTextAreaElement).selectionEnd - (el as HTMLTextAreaElement).selectionStart)).toBe((await fallback.inputValue()).length);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator(".cds-copy").filter({ has: fallback }).screenshot({ path: join(screenshots, "clipboard-fallback-detail.png"), animations: "disabled" });
+  await copy.click();
+  await expect(page.getByRole("button", { name: "Copied", exact: true })).toBeVisible();
+  await expect(fallback).toHaveCount(0);
+});
+
+test("shows a long diff's size and reveals every remaining line", async ({ page }) => {
+  const text = Array.from({ length: 3200 }, (_, i) => `+diff line ${i + 1}`).join("\n");
+  await page.route("**/api/diff?**", (route) => route.fulfill({ json: { text } }));
+  await page.goto(url);
+  await page.getByRole("button", { name: "Recover hidden lists", exact: true }).click();
+  await page.getByRole("button", { name: "App diff", exact: true }).first().click();
+  const diff = page.getByRole("region", { name: "Diff", exact: true });
+  await expect(diff.getByRole("status")).toHaveText("Showing 1,500 of 3,200 lines.");
+  await expect(diff.locator(".cds-dl")).toHaveCount(1500);
+  await diff.getByRole("button", { name: "Show more lines" }).click();
+  await expect(diff.locator(".cds-dl")).toHaveCount(3000);
+  await diff.getByRole("button", { name: "Show more lines" }).click();
+  await expect(diff.locator(".cds-dl")).toHaveCount(3200);
+  await expect(diff.getByRole("status")).toHaveText("Showing 3,200 of 3,200 lines.");
+  await expect(diff.getByRole("button", { name: "Show more lines" })).toHaveCount(0);
 });

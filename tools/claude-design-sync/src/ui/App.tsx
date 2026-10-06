@@ -1,6 +1,6 @@
 // The sync plan: verdict + direction, the ledger of features, the plan bar, and the activity panel.
 import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRight, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Activity } from "./Activity";
 import { api, selectedUnitIds, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
@@ -39,6 +39,9 @@ export function App() {
   const [activity, setActivity] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
   const [panel, setPanel] = useState(() => !!new URLSearchParams(location.search).get("job"));
   const [loading, setLoading] = useState(true);
+  const [runFeatureId, setRunFeatureId] = useState<string | null>(null);
+  const [startingRun, setStartingRun] = useState(false);
+  const runPending = useRef(false);
   const [markUnits, setMarkUnits] = useState<string[] | null>(null);
   const [showSynced, setShowSynced] = useState(false);
   const [check, setCheck] = useState<{ busy: boolean; stale?: boolean; error?: string } | null>(null);
@@ -117,14 +120,20 @@ export function App() {
     setActivity(id);
     setPanel(true);
     // the new job joins the list at once: the bar shows it live and Merge greys in while App work ports
-    void api.state().then(setState, () => {});
+    return api.state().then(setState, () => {});
   };
   const run = async (only?: string[]) => {
+    if (runPending.current) return;
+    runPending.current = true;
+    setStartingRun(true);
     try {
       const r = await api.run(cmp?.base?.id ?? null, global, overrides, unitOverrides, only);
-      openJob(r.job);
+      await openJob(r.job);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      runPending.current = false;
+      setStartingRun(false);
     }
   };
   const checkDesign = async () => {
@@ -314,7 +323,8 @@ export function App() {
                         baseId={base?.id ?? null}
                         snapshotId={snap?.id ?? null}
                         steps={visibleSteps}
-                        onRunOne={(ids) => void run(ids)}
+                        busy={!!running || startingRun}
+                        onRunOne={() => { setMarkUnits(null); setRunFeatureId(f.id); }}
                         onMarkSynced={() => setMarkUnits(selectedUnitIds(f.units, unitChoices))}
                       />
                     );
@@ -360,7 +370,7 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} onRun={() => void run()} busy={!!running} merge={merge} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} onRun={(only) => void run(only)} busy={!!running || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);

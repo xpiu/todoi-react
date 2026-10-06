@@ -1035,6 +1035,7 @@ em {
 }
 .cds-plan-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-left: auto;
 }
@@ -2133,4 +2134,40 @@ em {
     clip-path: inset(50%);
     white-space: nowrap;
   }
+}
+
+/* Recovery and progressive disclosure follow the tool's existing fields and links. */
+.cds-copy {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
+}
+.cds-copy-fallback {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+.cds-copy textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  color: var(--ink-900);
+  background: var(--chrome-canvas);
+  border: 1px solid var(--border-input);
+  border-radius: 0;
+  font: 400 11px/1.55 var(--font-mono);
+  resize: vertical;
+}
+.cds-diff-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 12px;
+  border-top: var(--cds-hair);
+}
+.cds-job-history {
+  align-self: flex-start;
+  margin: 8px 20px;
 }

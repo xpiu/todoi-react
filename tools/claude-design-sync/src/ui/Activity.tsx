@@ -18,6 +18,14 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
   const id = focus ?? jobs[0]?.id ?? null;
   const [job, setJob] = useState<Job | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
+  const followLog = useRef(true);
+  const logJob = useRef<string | null>(null);
+  const [historyLimit, setHistoryLimit] = useState(8);
+  const unfinished = (j: AppState["jobs"][number]) => j.state === "running" || j.state === "awaiting-approval" || appPending(j);
+  const history = jobs.filter((j) => !unfinished(j));
+  const visibleIds = new Set(history.slice(0, historyLimit).map((j) => j.id));
+  const visibleJobs = [...jobs.filter(unfinished), ...history.filter((j) => visibleIds.has(j.id) || j.id === id)];
+  const hiddenJobs = jobs.length - visibleJobs.length;
   const changed = useRef(onChanged);
   useEffect(() => {
     changed.current = onChanged;
@@ -32,11 +40,19 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
   }, [id]);
   const shown = job && job.id === id ? job : null;
 
-  // keep the newest log line in view
+  // Keep following new entries until the reader scrolls away. A different job starts at its latest entry.
   useEffect(() => {
+    if (shown?.id !== logJob.current) {
+      logJob.current = shown?.id ?? null;
+      followLog.current = true;
+    }
     const el = logRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  });
+    if (el && followLog.current) el.scrollTop = el.scrollHeight;
+  }, [shown]);
+  const onLogScroll = () => {
+    const el = logRef.current;
+    if (el) followLog.current = el.scrollHeight - el.clientHeight - el.scrollTop < 32;
+  };
 
   return (
     <aside className="cds-panel" aria-label="Activity">
@@ -48,7 +64,7 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
       </header>
       {jobs.length ? (
         <nav className="cds-jobs" aria-label="Jobs">
-          {jobs.slice(0, 8).map((j) => (
+          {visibleJobs.map((j) => (
             <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} data-tip={`${j.id === id ? "Shown below" : "Show its steps and log"}: ${STATE_WORD[j.state]}`} onClick={() => onFocus(j.id)}>
               <span className="cds-job-mark" data-state={j.state} aria-hidden>
                 {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : j.app?.state === "ready" ? <GitMerge size={12} /> : <Upload size={12} />}
@@ -57,17 +73,18 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
               <span className="cds-job-time">{fmtTime(j.startedAt)}</span>
             </button>
           ))}
+          {hiddenJobs ? <button type="button" className="cds-link cds-job-history" data-tip="Show eight more completed or stopped jobs. Unfinished jobs always stay visible" onClick={() => setHistoryLimit((limit) => limit + 8)}>Show older jobs ({hiddenJobs})</button> : null}
         </nav>
       ) : (
         <p className="cds-quiet cds-pad">No jobs yet. Pulls, runs and uploads appear here with their full log.</p>
       )}
       <MergeStrip offer={merge} shownId={id} onShow={onFocus} />
-      {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}:${shown.staged?.filter((s) => s.conflict).length ?? 0}`} job={shown} merge={merge} logRef={logRef} onChanged={onChanged} /> : null}
+      {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}:${shown.staged?.filter((s) => s.conflict).length ?? 0}`} job={shown} merge={merge} logRef={logRef} onLogScroll={onLogScroll} onChanged={onChanged} /> : null}
     </aside>
   );
 }
 
-function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; onChanged: () => void }) {
+function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; onLogScroll: () => void; onChanged: () => void }) {
   const staged = job.staged ?? [];
   // a request already handed to Claude Code keeps its files ticked
   const [picked, setPicked] = useState<Set<string>>(() => new Set(job.handoff?.paths ?? staged.filter((s) => !s.conflict).map((s) => s.path)));
@@ -249,7 +266,7 @@ function JobView({ job, merge, logRef, onChanged }: { job: Job; merge: MergeOffe
         )
       ) : null}
       {job.result && job.state !== "running" && !(app?.state === "failed" && app.reason === job.result) ? <p className={job.state === "failed" ? "cds-error-inline" : "cds-quiet"}>{job.result}</p> : null}
-      <ol ref={logRef} className="cds-log" aria-label="Log" aria-live="polite">
+      <ol ref={logRef} onScroll={onLogScroll} className="cds-log" aria-label="Log" aria-live="polite">
         {job.events.map((e, i) => (
           <li key={i} data-level={e.level}>
             <time>{new Date(e.at).toLocaleTimeString("en-GB")}</time>

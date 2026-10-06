@@ -25,6 +25,7 @@ import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktr
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapshotFilesDir } from "../engine/snapshots";
 import type { Comparison } from "../engine/types";
+import { stepsForSelection } from "../engine/selection";
 import { Jobs, type Job } from "./jobs";
 import { mappingHistory } from "./mapping";
 import { buildUi } from "./ui-build";
@@ -276,8 +277,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     const body = c.req.valid("json");
     const prepared = requestedPlan(body);
     const cmp = prepared.cmp;
-    let steps = prepared.steps;
-    if (body.only?.length) steps = steps.filter((s) => body.only!.includes(s.id) || (s.kind === "upload" && steps.some((x) => body.only!.includes(x.id) && x.target === "design")));
+    const steps = stepsForSelection(prepared.steps, body.only);
     if (!steps.length) return c.json({ error: "Nothing to do: every feature is skipped or already in sync" }, 400);
     const jobSteps: Job["steps"] = steps.map((s) => ({ id: s.id, title: s.title, kind: s.kind, target: s.target, state: "pending" as const }));
     // App work ends with the repo's check on the run's branch, then waits for the developer's merge
@@ -303,8 +303,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   const markRunSynced = (job: Job): string => {
     const latest = baseFor();
     // runs started before runs recorded what they cover can't say which parts stay open
-    if (!job.covers) return " Use Mark synced when both sides look right.";
-    if (!latest || latest.id !== job.baseId) return latest ? " A newer sync point was recorded meanwhile, so this run didn't record one: use Mark synced if both sides look right." : " Use Mark synced to record the first sync point.";
+    if (!job.covers) return " Use “Mark selected features synced” when both sides look right.";
+    if (!latest || latest.id !== job.baseId) return latest ? " A newer sync point was recorded meanwhile, so this run didn't record one: use “Mark selected features synced” if both sides look right." : " Use “Mark selected features synced” to record the first sync point.";
     // a staged file left out of the upload never reached Design: the parts it carries stay open too
     const left = new Set((job.staged ?? []).filter((s) => !job.handoff?.paths.includes(s.path)).map((s) => s.path));
     const covered = new Set(job.covers ?? []);
@@ -318,7 +318,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       jobs.log(job, "done", `Marked synced: comparisons now start from “${point.label}”${open ? `; ${open} feature(s) stay open` : ""}`);
       return ` Marked synced: comparisons now start here${open ? `, and ${open} feature(s) this run didn't finish stay open` : ""}.${left.size ? ` ${[...left].join(", ")} stayed out of the upload, so ${left.size === 1 ? "its feature stays" : "their features stay"} open.` : ""}`;
     } catch (e) {
-      return ` Couldn't mark it synced (${e instanceof Error ? e.message : String(e)}): use Mark synced.`;
+      return ` Couldn't mark it synced (${e instanceof Error ? e.message : String(e)}): use “Mark selected features synced”.`;
     }
   };
 

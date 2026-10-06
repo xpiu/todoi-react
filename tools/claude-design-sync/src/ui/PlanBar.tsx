@@ -5,17 +5,23 @@ import { ChevronRight, Flag, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { directionsFor, effective, plural, selectedUnitIds, type AppState, type Direction, type Feature, type Step, type Unit } from "./api";
+import { stepsForSelection } from "../engine/selection";
+import { RunConfirmation } from "./RunConfirmation";
 import { StepLine } from "./FeatureRow";
 import { MergeButton, type MergeOffer } from "./Merge";
 
 /** A part the plan could move but skips: it stays open at a sync point. Reference-only parts never move, so they never hold a feature open. */
 const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (unitChoices[u.id] ?? "skip") === "skip";
 
-export function PlanBar({ baseId, markUnits, onMarkUnits, steps, features, global, overrides, unitChoices, state, onRun, busy, merge, onSyncPoint }: { baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: () => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
+export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkUnits, steps, features, global, overrides, unitChoices, state, onRun, busy, merge, onSyncPoint }: { runFeatureId: string | null; onRunFeature: (id: string | null) => void; baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: (only?: string[]) => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
   const [planView, setPlanView] = useState<"closed" | "steps" | "confirm">("closed");
-  const view = markUnits !== null ? "mark" : planView;
+  const view = markUnits !== null ? "mark" : runFeatureId !== null ? "confirm" : planView;
+  const runFeature = features.find((f) => f.id === runFeatureId);
+  const featureSteps = steps.filter((s) => s.featureId === runFeatureId);
+  const runSteps = runFeatureId === null ? steps : featureSteps.length ? stepsForSelection(steps, featureSteps.map((s) => s.id)) : [];
   const setView = (next: typeof planView) => {
     onMarkUnits(null);
+    onRunFeature(null);
     setTicked({});
     setSaveError(null);
     setPlanView(next);
@@ -45,12 +51,6 @@ export function PlanBar({ baseId, markUnits, onMarkUnits, steps, features, globa
   const pushes = steps.filter((s) => s.kind === "ai-push");
   const upload = steps.some((s) => s.kind === "upload");
   const work = steps.filter((s) => s.kind !== "upload").length;
-  const appWork = steps.some((s) => s.target === "app" && s.kind !== "upload");
-  const h = state?.harnesses;
-  // App ports run the harness config.json picks: Claude Code, or Codex (untested, so never offered here)
-  const harness = state?.implement ?? "claude";
-  const app = harness === "codex" ? h?.codex : h?.claude;
-  const missing = state?.fake ? null : (pushes.length || upload) && h && !h.claude.ok ? `${h.claude.error} — Claude Code is needed for DesignSync.` : pulls.length && app && !app.ok ? app.error : null;
 
   const kinds = ([[t.toDesign, "into Design"], [t.toApp, "into the App"], [t.both, "both ways"]] as const).filter(([n]) => n > 0);
   const moving = t.toDesign + t.toApp + t.both;
@@ -63,6 +63,7 @@ export function PlanBar({ baseId, markUnits, onMarkUnits, steps, features, globa
   const partOpen = (f: Feature, u: Unit) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (ticked[f.id] === true ? skipped(u, unitChoices) : !covered.has(u.id));
   const hold = features.flatMap((f) => (keepOpen(f) ? f.units : f.units.filter((u) => partOpen(f, u))).map((u) => u.id));
   const startMark = () => {
+    onRunFeature(null);
     setTicked({});
     setSaveError(null);
     onMarkUnits(runScope ?? features.flatMap((f) => selectedUnitIds(f.units, unitChoices)));
@@ -74,33 +75,11 @@ export function PlanBar({ baseId, markUnits, onMarkUnits, steps, features, globa
       {open ? (
         <div className="cds-plan-sheet">
           {view === "confirm" ? (
-            <div className="cds-confirm" role="group" aria-labelledby="confirm-h">
-              <h3 id="confirm-h">Run {plural(work, "step")}?</h3>
-              <ul>
-                {merges.length ? <li>Writes {plural(merges.length, "token file")} by deterministic rule merge ({merges.filter((s) => s.target === "app").length} on the App branch, {merges.filter((s) => s.target === "design").length} staged for Design).</li> : null}
-                {appWork ? (
-                  <li>
-                    App work happens on a new branch in a separate git worktree, from {state?.appHead}. Your checkout{state?.dirty ? ", uncommitted changes included," : ""} isn't touched. Afterwards <span className="cds-mono">{state?.check}</span> runs there, and the branch waits in Activity for you to merge it.
-                  </li>
-                ) : null}
-                {pulls.length ? (
-                  <li>
-                    Runs {harness === "codex" ? "Codex (untested, set in config.json)" : "Claude Code"} {plural(pulls.length, "time")} with permission to edit and run commands in that worktree. Each port must end with its own commit; one that doesn't stops the run.
-                  </li>
-                ) : null}
-                {pushes.length ? <li>Runs Claude Code {plural(pushes.length, "time")} to port App work into a staging copy of the kit.</li> : null}
-                {upload ? <li>Uploads nothing yet: staged kit files wait in Activity for you to approve the exact list.</li> : null}
-              </ul>
-              <div className="cds-confirm-actions">
-                <button type="button" className="cds-btn cds-btn-primary" disabled={!!missing || busy || !work} data-tip={missing ?? (busy ? "Another job is running. Wait for it to finish" : !work ? "Nothing to run" : "Start these steps now and follow them in Activity. Nothing is merged or uploaded until you approve it")} onClick={() => { setView("closed"); onRun(); }}>
-                  <Play size={14} strokeWidth={1.75} aria-hidden /> Run {plural(work, "step")}
-                </button>
-                <button type="button" className="cds-btn" onClick={() => setView("steps")} data-tip="Return to the list of steps without running anything">
-                  Back to the steps
-                </button>
-                {missing ? <span className="cds-error-inline">{missing}</span> : busy ? <span className="cds-quiet">Another job is running — see Activity.</span> : null}
-              </div>
-            </div>
+            <RunConfirmation steps={runSteps} state={state} busy={busy} featureTitle={runFeature?.title} onBack={() => setView("steps")} onRun={() => {
+              const only = runFeatureId !== null ? featureSteps.map((s) => s.id) : undefined;
+              setView("closed");
+              onRun(only);
+            }} />
           ) : view === "mark" ? (
             <form
               className="cds-mark"
@@ -184,13 +163,13 @@ export function PlanBar({ baseId, markUnits, onMarkUnits, steps, features, globa
         </button>
         <div className="cds-plan-actions">
           <button type="button" className="cds-btn" onClick={startMark} data-tip={runScope ? "Review only the latest run’s features as synced. Other features stay open" : "Choose which features are synced. Unticked features stay open"}>
-            <Flag size={14} strokeWidth={1.75} aria-hidden /> {runScope ? "Mark run features synced" : "Mark synced"}
+            <Flag size={14} strokeWidth={1.75} aria-hidden /> Mark selected features synced
           </button>
           {/* a waiting merge takes the primary slot: it is what the plan waits on */}
           <MergeButton offer={merge} place="plan" />
           {view === "confirm" ? null : (
             <button type="button" className={`cds-btn ${merge.ready ? "" : "cds-btn-primary"}`} disabled={!work || busy} data-tip={!work ? "Nothing to run: every feature is skipped" : merge.ready ? "A run waits for your merge (or Discard in Activity) before the next one can start" : busy ? "Another job is running. Wait for it to finish" : "Review exactly what the run will write and where, then start it"} onClick={() => setView("confirm")}>
-              <Play size={14} strokeWidth={1.75} aria-hidden /> Run plan
+              <Play size={14} strokeWidth={1.75} aria-hidden /> Review selected sync steps
             </button>
           )}
         </div>

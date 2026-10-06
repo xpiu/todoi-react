@@ -17,7 +17,7 @@ test("every control on the plan explains itself", async ({ page }) => {
   await page.getByRole("button", { name: "Activity", exact: true }).click();
   await page.locator(".cds-plan-toggle").click();
   expect(await untipped(page)).toEqual([]);
-  await page.getByRole("button", { name: "Mark synced" }).click();
+  await page.getByRole("button", { name: "Mark selected features synced" }).click();
   expect(await untipped(page)).toEqual([]);
 });
 
@@ -30,7 +30,7 @@ test("every control on the mapping explains itself", async ({ page }) => {
 
 test("shows a tip on hover after a rest, places it in view, and hides it on leave and press", async ({ page }) => {
   await page.goto("/");
-  const run = page.getByRole("button", { name: "Run plan" });
+  const run = page.getByRole("button", { name: "Review selected sync steps" });
   await run.hover();
   await expect(tip(page)).toBeVisible();
   await expect(tip(page)).toHaveText("Review exactly what the run will write and where, then start it");
@@ -83,7 +83,7 @@ test("a disabled control still says why", async ({ page }) => {
   await expect(page.locator(".cds-row-title").first()).toBeVisible();
   // skipping every feature leaves nothing to run
   for (const key of await page.locator(".cds-row .cds-key[data-d=skip]").all()) await key.click();
-  const run = page.getByRole("button", { name: "Run plan" });
+  const run = page.getByRole("button", { name: "Review selected sync steps" });
   await expect(run).toBeDisabled();
   await run.hover({ force: true });
   await expect(tip(page)).toHaveText("Nothing to run: every feature is skipped");

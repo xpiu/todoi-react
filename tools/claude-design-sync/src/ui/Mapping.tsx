@@ -18,7 +18,7 @@ const STEPS: Array<{ name: string; text: string }> = [
   { name: "Date", text: "Each unit is compared three ways: the App at the sync point's git rev and now, Design in the sync point's snapshot and now." },
   { name: "Move", text: "Token CSS merges deterministically. Everything else is ported by AI from a brief, App work into a worktree, kit work into staging." },
   { name: "Approve", text: "You merge the App branch after its check passes, and tick the exact kit files to upload; uploads are read back." },
-  { name: "Mark synced", text: "App HEAD and the newest snapshot become the next sync point. Parts you skip stay open on their old baseline." },
+  { name: "Mark selected features synced", text: "App HEAD and the newest snapshot become the next sync point. Parts you skip stay open on their old baseline." },
 ];
 
 const ARROW: Record<string, string> = { "to-design": "→", "from-design": "←", "to-app": "←" };
