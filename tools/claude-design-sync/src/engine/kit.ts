@@ -99,46 +99,49 @@ export async function checkCards(projectDir: string, cards: string[], shotsDir?:
   const { chromium } = await import("@playwright/test");
   mkdirSync(CDN_DIR(), { recursive: true });
   const { url, server } = await serveDir(projectDir, assets?.fallbacks, assets?.repo);
-  const browser = await chromium.launch();
   const out: CardCheck[] = [];
   try {
-    for (const card of cards) {
-      const html = readFileSync(join(projectDir, card), "utf8");
-      const [, w = "1000", h = "600"] = /viewport="(\d+)x(\d+)"/.exec(html) ?? [];
-      const page = await browser.newPage({ viewport: { width: Number(w), height: Number(h) } });
-      const errors: string[] = [];
-      page.on("pageerror", (e) => errors.push(e.message.split("\n")[0]!));
-      page.on("console", (m) => {
-        // missing files are reported once, with their URL, by the response listener below
-        if (m.type() === "error" && !/favicon|DevTools|Failed to load resource/.test(m.text())) errors.push(m.text().split("\n")[0]!.slice(0, 200));
-      });
-      page.on("response", (r) => {
-        if (r.status() >= 400 && !/favicon/.test(r.url())) errors.push(`${r.status()} ${r.url().replace(url + "/", "")}`);
-      });
-      await page.route("https://unpkg.com/**", async (route) => {
-        const f = cdnFile(route.request().url());
-        if (!existsSync(f)) {
-          const res = await fetch(route.request().url()).catch(() => null);
-          if (res?.ok) writeFileSync(f, Buffer.from(await res.arrayBuffer()));
+    const browser = await chromium.launch();
+    try {
+      for (const card of cards) {
+        const html = readFileSync(join(projectDir, card), "utf8");
+        const [, w = "1000", h = "600"] = /viewport="(\d+)x(\d+)"/.exec(html) ?? [];
+        const page = await browser.newPage({ viewport: { width: Number(w), height: Number(h) } });
+        const errors: string[] = [];
+        page.on("pageerror", (e) => errors.push(e.message.split("\n")[0]!));
+        page.on("console", (m) => {
+          // missing files are reported once, with their URL, by the response listener below
+          if (m.type() === "error" && !/favicon|DevTools|Failed to load resource/.test(m.text())) errors.push(m.text().split("\n")[0]!.slice(0, 200));
+        });
+        page.on("response", (r) => {
+          if (r.status() >= 400 && !/favicon/.test(r.url())) errors.push(`${r.status()} ${r.url().replace(url + "/", "")}`);
+        });
+        await page.route("https://unpkg.com/**", async (route) => {
+          const f = cdnFile(route.request().url());
+          if (!existsSync(f)) {
+            const res = await fetch(route.request().url()).catch(() => null);
+            if (res?.ok) writeFileSync(f, Buffer.from(await res.arrayBuffer()));
+          }
+          if (existsSync(f)) await route.fulfill({ path: f, contentType: "application/javascript" });
+          else await route.continue();
+        });
+        await page.goto(`${url}/${card}`, { waitUntil: "networkidle" });
+        await page.waitForTimeout(700);
+        if (await page.evaluate(() => (document.getElementById("root")?.children.length ?? 1) === 0)) errors.push("The card rendered nothing");
+        let screenshot: string | undefined;
+        if (shotsDir) {
+          mkdirSync(shotsDir, { recursive: true });
+          screenshot = join(shotsDir, card.replace(/\//g, "__") + ".png");
+          await page.screenshot({ path: screenshot });
         }
-        if (existsSync(f)) await route.fulfill({ path: f, contentType: "application/javascript" });
-        else await route.continue();
-      });
-      await page.goto(`${url}/${card}`, { waitUntil: "networkidle" });
-      await page.waitForTimeout(700);
-      if (await page.evaluate(() => (document.getElementById("root")?.children.length ?? 1) === 0)) errors.push("The card rendered nothing");
-      let screenshot: string | undefined;
-      if (shotsDir) {
-        mkdirSync(shotsDir, { recursive: true });
-        screenshot = join(shotsDir, card.replace(/\//g, "__") + ".png");
-        await page.screenshot({ path: screenshot });
+        out.push({ card, errors, screenshot });
+        await page.close();
       }
-      out.push({ card, errors, screenshot });
-      await page.close();
+    } finally {
+      await browser.close();
     }
   } finally {
-    await browser.close();
-    server.close();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
   }
   return out;
 }

@@ -312,10 +312,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   };
 
   async function runPlan(job: Job, cmp: Comparison, steps: Step[], harness: HarnessKind) {
-    const stage = steps.some((s) => s.target === "design") ? createStage(ctx, cmp, job.id) : undefined;
-    if (stage) jobs.update(job, { stage });
-    const snapshotDir = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
     try {
+      const stage = steps.some((s) => s.target === "design") ? createStage(ctx, cmp, job.id) : undefined;
+      if (stage) jobs.update(job, { stage });
+      const snapshotDir = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
       // App work never touches the developer's checkout: a worktree on its own branch, merged on approval
       const run = steps.some((s) => s.target === "app") ? createWorktree(ctx, job.id) : undefined;
       if (run) {

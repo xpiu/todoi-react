@@ -116,3 +116,14 @@ test("rejects invalid API input with useful JSON errors before doing work", asyn
   const job = await (await request.get(`${url}/api/jobs/${jobId}`)).json();
   expect(job.state).toBe("awaiting-approval");
 });
+
+test("reports staging startup failures as failed jobs", async ({ request }) => {
+  rmSync(join(fx.ctx.state, "stage"), { recursive: true });
+  writeFileSync(join(fx.ctx.state, "stage"), "not a directory");
+  const response = await request.post(`${url}/api/run`, {
+    headers: { "x-cds": "1" }, data: { global: "app-to-design", overrides: {} },
+  });
+  expect(response.status()).toBe(200);
+  const { job: id } = await response.json();
+  await expect.poll(async () => (await (await request.get(`${url}/api/jobs/${id}`)).json()).state).toBe("failed");
+});

@@ -9,6 +9,7 @@ import { basename, dirname, join } from "node:path";
 
 import type { Ctx } from "./config";
 import { git } from "./git";
+import { terminateOnAbort } from "./process";
 
 export interface AppRun {
   /** The worktree folder (outside the repo, so the repo's own tools never pick it up) */
@@ -80,17 +81,18 @@ export function commitAll(run: AppRun, message: string): boolean {
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
 
 export function runCheck(run: AppRun, command: string, signal?: AbortSignal): Promise<{ command: string; ok: boolean; output: string }> {
+  if (signal?.aborted) return Promise.resolve({ command, ok: false, output: "Stopped by you" });
   return new Promise((resolve) => {
-    const child = spawn("/bin/sh", ["-c", command], { cwd: run.worktree, env: { ...process.env, CI: "1", FORCE_COLOR: "0", NO_COLOR: "1" }, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn("/bin/sh", ["-c", command], { cwd: run.worktree, env: { ...process.env, CI: "1", FORCE_COLOR: "0", NO_COLOR: "1" }, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     const keep = (d: Buffer) => {
       output = (output + d.toString().replace(ANSI, "")).slice(-6000);
     };
     child.stdout.on("data", keep);
     child.stderr.on("data", keep);
-    signal?.addEventListener("abort", () => child.kill("SIGTERM"));
+    terminateOnAbort(child, signal);
     child.on("error", (e) => resolve({ command, ok: false, output: `Couldn't start: ${e.message}` }));
-    child.on("close", (code) => resolve({ command, ok: code === 0, output }));
+    child.on("close", (code) => resolve({ command, ok: code === 0 && !signal?.aborted, output }));
   });
 }
 

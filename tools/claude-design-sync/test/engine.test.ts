@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { compare } from "../src/engine/compare";
@@ -133,6 +133,18 @@ describe("compare (three-way)", () => {
       { path: "components/core/New.jsx", status: "new" },
       { path: "components/core/Toast.jsx", status: "changed" },
     ]);
+  });
+
+  it("removes a partially created stage when its snapshot cannot be copied", () => {
+    const isolated = makeFixture();
+    try {
+      const comparison = compare(isolated.ctx, { base: null });
+      rmSync(snapshotFilesDir(isolated.ctx, comparison.designSnapshot!.id), { recursive: true });
+      expect(() => createStage(isolated.ctx, comparison, "broken")).toThrow();
+      expect(existsSync(join(isolated.ctx.state, "stage/broken"))).toBe(false);
+    } finally {
+      rmSync(dirname(isolated.repo), { recursive: true, force: true });
+    }
   });
 });
 

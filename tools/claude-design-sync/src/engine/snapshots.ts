@@ -65,12 +65,12 @@ export function findProjectRoot(dir: string): string | null {
 export function importExport(ctx: Ctx, source: string, label?: string): SnapshotMeta {
   let dir = source;
   let tmp: string | null = null;
-  if (/\.zip$/i.test(source)) {
-    tmp = mkdtempSync(join(tmpdir(), "cds-import-"));
-    execFileSync("unzip", ["-q", "-o", source, "-d", tmp]);
-    dir = tmp;
-  }
   try {
+    if (/\.zip$/i.test(source)) {
+      tmp = mkdtempSync(join(tmpdir(), "cds-import-"));
+      execFileSync("unzip", ["-q", "-o", source, "-d", tmp]);
+      dir = tmp;
+    }
     if (!existsSync(dir)) throw new Error(`Not found: ${source}`);
     const root = findProjectRoot(dir);
     if (!root) throw new Error("This doesn't look like a Claude Design project export (no components/ next to styles.css or _ds_manifest.json).");

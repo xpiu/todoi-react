@@ -1,6 +1,6 @@
 // From decisions to work: each feature's direction becomes steps — deterministic CSS merges where both
 // sides speak the same language, AI port briefs where they don't, and an upload that waits for approval.
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -100,7 +100,12 @@ export function createStage(ctx: Ctx, cmp: Comparison, runId: string): string {
   const dir = join(ctx.state, "stage", runId);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
-    if (cmp.designSnapshot) cpSync(snapshotFilesDir(ctx, cmp.designSnapshot.id), dir, { recursive: true });
+    try {
+      if (cmp.designSnapshot) cpSync(snapshotFilesDir(ctx, cmp.designSnapshot.id), dir, { recursive: true });
+    } catch (e) {
+      rmSync(dir, { recursive: true, force: true });
+      throw e;
+    }
   }
   return dir;
 }
@@ -170,11 +175,15 @@ function designDiff(ctx: Ctx, cmp: Comparison, u: Unit): string {
 
 function textDiff(a: string, b: string, label: string): string {
   const dir = mkdtempSync(join(tmpdir(), "cds-diff-"));
-  const fa = join(dir, "before");
-  const fb = join(dir, "after");
-  writeFileSync(fa, a + "\n");
-  writeFileSync(fb, b + "\n");
-  return `${label}\n${diffNoIndex(fa, fb)}`;
+  try {
+    const fa = join(dir, "before");
+    const fb = join(dir, "after");
+    writeFileSync(fa, a + "\n");
+    writeFileSync(fb, b + "\n");
+    return `${label}\n${diffNoIndex(fa, fb)}`;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 const KIT_RULES = `Kit conventions (Claude Design project, files under the staging folder):

@@ -3,6 +3,8 @@
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 
+import { terminateOnAbort } from "./process";
+
 export type HarnessKind = "claude" | "codex";
 
 export interface RunOptions {
@@ -99,9 +101,10 @@ export function parseCodexLine(line: string): HarnessEvent[] {
 
 /** Run the harness, calling onEvent for every event; resolves with the final "done" event */
 export function runHarness(o: RunOptions, onEvent: (e: HarnessEvent) => void): Promise<Extract<HarnessEvent, { type: "done" }>> {
+  if (o.signal?.aborted) return Promise.resolve({ type: "done", ok: false, result: "Stopped by you" });
   const { cmd, args } = commandFor(o);
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: o.cwd, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(cmd, args, { cwd: o.cwd, env: process.env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
     let done: Extract<HarnessEvent, { type: "done" }> | null = null;
     let buf = "";
     const parse = o.kind === "codex" ? parseCodexLine : parseClaudeLine;
@@ -118,14 +121,14 @@ export function runHarness(o: RunOptions, onEvent: (e: HarnessEvent) => void): P
       }
     });
     child.stderr.on("data", (d: Buffer) => onEvent({ type: "stderr", text: d.toString() }));
-    o.signal?.addEventListener("abort", () => child.kill("SIGTERM"));
+    terminateOnAbort(child, o.signal);
     child.on("error", (err) => resolve({ type: "done", ok: false, result: `Couldn't start ${cmd}: ${err.message}` }));
     child.on("close", (code) => {
       if (buf.trim()) for (const ev of parse(buf)) {
         if (ev.type === "done") done = ev;
         onEvent(ev);
       }
-      resolve(done ?? { type: "done", ok: code === 0, result: code === 0 ? "" : `${cmd} exited with code ${code}` });
+      resolve(o.signal?.aborted ? { type: "done", ok: false, result: "Stopped by you" } : done ?? { type: "done", ok: code === 0, result: code === 0 ? "" : `${cmd} exited with code ${code}` });
     });
   });
 }
