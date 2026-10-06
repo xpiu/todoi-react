@@ -3,8 +3,7 @@
 //   npm run design-sync -- twin <card.html> [out] | bundle <projectDir> | check-cards <projectDir> <card…>
 import { defaultCtx } from "./engine/config";
 import { compare } from "./engine/compare";
-import { projectStatus, pullIfChanged } from "./engine/designsync";
-import { runHarness } from "./engine/harness";
+import { createDesignRunner, projectStatus, pullIfChanged } from "./engine/designsync";
 import { recordSyncPoint } from "./engine/plan";
 import { importExport, latestSnapshot, listSyncPoints } from "./engine/snapshots";
 import { buildBundle, checkCards, writeTwin } from "./engine/kit";
@@ -16,8 +15,7 @@ const flag = (n: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 
-const claude = (prompt: string, o: { model?: string; maxTurns?: number }, on: Parameters<typeof runHarness>[1]) =>
-  runHarness({ kind: "claude", bin: ctx.config.harness.claudeBin, cwd: ctx.repo, prompt, model: o.model, maxTurns: o.maxTurns, allowedTools: ["DesignSync", "ToolSearch"] }, on);
+const claude = createDesignRunner(ctx);
 
 async function main() {
   switch (cmd) {

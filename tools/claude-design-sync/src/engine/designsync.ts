@@ -7,11 +7,19 @@ import { join } from "node:path";
 import type { Ctx } from "./config";
 import { readText } from "./fsutil";
 import { mergeText } from "./git";
-import type { HarnessEvent } from "./harness";
+import { runHarness, type HarnessEvent } from "./harness";
 import { latestSnapshot, newSnapshotId, snapshotFilesDir, writeSnapshotFile, writeSnapshotMeta } from "./snapshots";
 import type { SnapshotMeta } from "./types";
 
 export type Runner = (prompt: string, opts: { model?: string; maxTurns?: number }, onEvent: (e: HarnessEvent) => void) => Promise<Extract<HarnessEvent, { type: "done" }>>;
+
+/** DesignSync is available through Claude Code; CLI and server use the same configuration. */
+export function createDesignRunner(ctx: Ctx, signal?: AbortSignal): Runner {
+  return (prompt, opts, onEvent) => runHarness({
+    kind: "claude", bin: ctx.config.harness.claudeBin, cwd: ctx.repo, prompt,
+    model: opts.model, maxTurns: opts.maxTurns, allowedTools: ["DesignSync", "ToolSearch"], signal,
+  }, onEvent);
+}
 
 const LOAD = "Load the DesignSync tool via ToolSearch first if it is deferred.";
 

@@ -4,7 +4,7 @@
 import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, appPending, fmtTime, plural, uploadPending, type AppState, type Job, type JobEvent } from "./api";
+import { api, appPending, fmtTime, plural, subscribeJob, uploadPending, type AppState, type Job } from "./api";
 
 const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", done: "done", failed: "failed", cancelled: "stopped" };
 
@@ -20,19 +20,10 @@ export function Activity({ state, focus, onFocus, onClose, onChanged }: { state:
 
   useEffect(() => {
     if (!id) return;
-    let alive = true;
-    const es = new EventSource(`/api/jobs/${id}/events`);
-    es.addEventListener("job", (e) => alive && setJob(JSON.parse((e as MessageEvent).data) as Job));
-    es.addEventListener("event", (e) => {
-      if (!alive) return;
-      const { job: j, event } = JSON.parse((e as MessageEvent).data) as { job: Job; event: JobEvent };
-      setJob((prev) => ({ ...j, events: [...(prev?.id === j.id ? prev.events : []), event] }));
-      if (event.level === "done" || event.level === "error") changed.current();
+    return subscribeJob(id, (nextJob, event) => {
+      setJob((prev) => event ? { ...nextJob, events: [...(prev?.id === nextJob.id ? prev.events : []), event] } : nextJob);
+      if (event?.level === "done" || event?.level === "error") changed.current();
     });
-    return () => {
-      alive = false;
-      es.close();
-    };
   }, [id]);
   const shown = job && job.id === id ? job : null;
 

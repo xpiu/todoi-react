@@ -141,7 +141,7 @@ export async function checkCards(projectDir: string, cards: string[], shotsDir?:
       await browser.close();
     }
   } finally {
-    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await new Promise<void>((done) => server.close(() => done()));
   }
   return out;
 }

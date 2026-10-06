@@ -1,6 +1,8 @@
 // Typed calls to the local server, and the words the GUI uses for statuses and directions.
 import type { Comparison, Direction, SnapshotMeta, SyncPoint, UnitStatus } from "../engine/types";
-import type { Job } from "../server/jobs";
+import type { Job, JobEvent } from "../server/jobs";
+import type { PlanRequest, RunRequest } from "../server/requests";
+import type { HarnessInfo } from "../engine/harness";
 import type { Step } from "../engine/plan";
 import type { LaneRule } from "../engine/lanes";
 import type { MappingEvent } from "../server/mapping";
@@ -11,12 +13,7 @@ export type { Step } from "../engine/plan";
 export type { LaneId, LaneRule, Technique } from "../engine/lanes";
 export type { Flow, MappingEvent, Move } from "../server/mapping";
 
-export interface HarnessInfo {
-  ok: boolean;
-  path?: string;
-  version?: string;
-  error?: string;
-}
+export type { HarnessInfo } from "../engine/harness";
 
 export interface AppState {
   project: { id: string; name: string };
@@ -58,8 +55,8 @@ export const api = {
   state: () => call<AppState>("/api/state"),
   compare: (base?: string | null, fresh = false) => call<Comparison>(`/api/compare?${new URLSearchParams({ ...(base ? { base } : {}), ...(fresh ? { fresh: "1" } : {}) })}`),
   diff: (unit: string, side: "app" | "design", base?: string | null) => call<{ text: string }>(`/api/diff?${new URLSearchParams({ unit, side, ...(base ? { base } : {}) })}`),
-  plan: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>) => call<{ steps: Step[]; choices: Record<string, Direction>; units: Record<string, Direction> }>("/api/plan", { body: { base, global, overrides, unitOverrides } }),
-  run: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>, only?: string[]) => call<{ job: string }>("/api/run", { body: { base, global, overrides, unitOverrides, only } }),
+  plan: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>) => call<{ steps: Step[]; choices: Record<string, Direction>; units: Record<string, Direction> }>("/api/plan", { body: { base, global, overrides, unitOverrides } satisfies PlanRequest }),
+  run: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>, only?: string[]) => call<{ job: string }>("/api/run", { body: { base, global, overrides, unitOverrides, only } satisfies RunRequest }),
   pull: (force = false) => call<{ job: string }>("/api/pull", { body: { force } }),
   statusCheck: () => call<{ updatedAt: string | null; snapshotUpdatedAt: string | null; stale: boolean }>("/api/status-check", { method: "POST" }),
   importExport: (path: string) => call<{ snapshot: SnapshotMeta }>("/api/import", { body: { path } }),
@@ -74,18 +71,33 @@ export const api = {
   mapping: (base?: string | null) => call<MappingData>(`/api/mapping?${new URLSearchParams(base ? { base } : {})}`),
 };
 
-/** Follow a job's event stream until it stops running; `onJob` sees every update (progress, steps) */
+/** Decode the job/event protocol once; closing a subscription also ignores queued callbacks. */
+export function subscribeJob(id: string, onJob: (job: Job, event?: JobEvent) => void): () => void {
+  const es = new EventSource(`/api/jobs/${id}/events`);
+  let live = true;
+  es.addEventListener("job", (e) => {
+    if (live) onJob(JSON.parse((e as MessageEvent).data) as Job);
+  });
+  es.addEventListener("event", (e) => {
+    if (!live) return;
+    const { job, event } = JSON.parse((e as MessageEvent).data) as { job: Job; event: JobEvent };
+    onJob(job, event);
+  });
+  return () => {
+    live = false;
+    es.close();
+  };
+}
+
+/** Follow a job until it stops running; `onJob` sees every update (progress, steps). */
 export function followJob(id: string, onJob: (j: Job) => void = () => {}): Promise<Job> {
   return new Promise((resolve) => {
-    const es = new EventSource(`/api/jobs/${id}/events`);
-    const seen = (j: Job) => {
-      onJob(j);
-      if (j.state === "running") return;
-      es.close();
-      resolve(j);
-    };
-    es.addEventListener("job", (e) => seen(JSON.parse((e as MessageEvent).data) as Job));
-    es.addEventListener("event", (e) => seen((JSON.parse((e as MessageEvent).data) as { job: Job }).job));
+    const off = subscribeJob(id, (job) => {
+      onJob(job);
+      if (job.state === "running") return;
+      off();
+      resolve(job);
+    });
   });
 }
 

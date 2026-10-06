@@ -142,12 +142,16 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
 - **Every upload is read back** and compared with the staged copy, ignoring line endings and trailing whitespace. A file that doesn't match, or can't be read, fails the step by name.
 - **The post-upload snapshot is marked current** (it takes Design's `updatedAt`) only when Design changed nothing else. Otherwise "Check for changes" asks for a pull.
 - **POST endpoints require an `x-cds: 1` header**, so other sites in your browser can't trigger runs.
+- **API input is validated at the server boundary.** Invalid requests return a JSON error before starting work.
+- **Failed uploads keep their staged files available for retry or discard.** Each retry checks live Design edits again before writing.
+- **Stop terminates the run's subprocess group**, including App-check descendants, and prevents subsequent harness calls from starting.
 - **Codex** (`codex exec`, via `harness.implement`) is untested, with a best-guess output parser, so the GUI never offers it. It could only do App ports anyway.
 
 ## Limits
 
 - **Pulls are content pulls.**
   - DesignSync has no per-file timestamps, so "Check for changes" compares the project's `updatedAt` with the snapshot's.
+  - Each "Check for changes" starts a Claude Code model request through DesignSync and uses tokens even when nothing changed. It checks metadata without downloading file contents. Recompare reads local files and snapshots without a model request.
   - A pull first makes the same check, and stops with "Already up to date" when the newest complete snapshot from the same project matches. Otherwise it reads every text file (~3 min, ~$2 with Sonnet).
   - Binaries, uploads and the generated `_ds_bundle.js` are skipped. Previews use a locally built bundle, and borrow the App's fonts and covers (`assetFallbacks`).
 - **A pull that misses files says so.**
@@ -224,6 +228,7 @@ npm run design-sync:demo    # the same fixture world to click through, at http:/
 ```
 
 The engine tests build a throwaway git repo and two Design folders.
+They also cover cancellation, subprocess cleanup, startup failures, path containment, and immutable baseline reads.
 
 The GUI tests run the full loop against that fixture with the fake harness:
 
@@ -234,3 +239,6 @@ The GUI tests run the full loop against that fixture with the fake harness:
 - switching the target project in the footer;
 - check, pull, and up to date;
 - the Mapping page: lanes, replaying a move, bringing the data up to date.
+- failed-upload retry and discard, invalid API input, staging startup failure, and plan-dialog transitions.
+
+The regression flows save desktop and phone screenshots to the repo's gitignored `.tmp/design-sync-improvements/` folder. Screenshot capture disables animations so the images show the settled interface.

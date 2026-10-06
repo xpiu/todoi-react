@@ -7,6 +7,13 @@ import { terminateOnAbort } from "./process";
 
 export type HarnessKind = "claude" | "codex";
 
+export interface HarnessInfo {
+  ok: boolean;
+  path?: string;
+  version?: string;
+  error?: string;
+}
+
 export interface RunOptions {
   kind: HarnessKind;
   bin: string;

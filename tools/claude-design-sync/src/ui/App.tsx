@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRigh
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
+import { api, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
 import { FeatureRow } from "./FeatureRow";
 import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
@@ -102,8 +102,8 @@ export function App() {
     const t = { app: 0, design: 0, both: 0 };
     for (const f of features) {
       if (f.status === "both") t.both++;
-      else if (f.status === "app-ahead" || f.status === "app-only") t.app++;
-      else if (f.status === "design-ahead" || f.status === "design-only") t.design++;
+      else if (appMoved(f.status)) t.app++;
+      else if (designMoved(f.status)) t.design++;
     }
     return t;
   }, [features]);

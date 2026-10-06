@@ -17,6 +17,7 @@ export const planRequest = z.object({
 });
 export const runRequest = planRequest.extend({ only: z.array(z.string().min(1)).optional() });
 export type PlanRequest = z.infer<typeof planRequest>;
+export type RunRequest = z.infer<typeof runRequest>;
 
 export const projectRequest = z.object({ project: z.string() });
 export const pullRequest = z.object({ force: z.boolean().optional() });

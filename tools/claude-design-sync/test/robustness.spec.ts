@@ -13,6 +13,7 @@ import { makeFixture, type Fixture } from "./fixture";
 const screenshots = join(TOOL_DIR, "../../.tmp/design-sync-improvements");
 const capture = async (page: Page, name: string, fullPage = true) => {
   mkdirSync(screenshots, { recursive: true });
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.screenshot({ path: join(screenshots, `${name}.png`), fullPage, animations: "disabled" });
 };
 
@@ -95,17 +96,17 @@ test("rejects invalid API input with useful JSON errors before doing work", asyn
     ["/api/sync-point", { label: "Synced", hold: "all" }],
     [`/api/jobs/${jobId}/upload`, { paths: "all" }],
   ] as const;
-  for (const [path, data] of cases) {
-    const response = await request.post(url + path, { headers, data });
-    expect(response.status(), path).toBe(400);
+  for (const [endpoint, data] of cases) {
+    const response = await request.post(url + endpoint, { headers, data });
+    expect(response.status(), endpoint).toBe(400);
     expect(await response.json()).toHaveProperty("error", expect.any(String));
   }
   const malformed = await request.post(`${url}/api/plan`, { headers, data: "{" });
   expect(malformed.status()).toBe(400);
   expect(await malformed.json()).toHaveProperty("error");
-  for (const path of ["/api/compare?snapshot=..%2Fprivate", "/api/diff?unit=x&side=invalid", "/kit/invalid/id/styles.css", "/api/jobs/..%2Fprivate"]) {
-    const response = await request.get(url + path);
-    expect(response.status(), path).toBe(400);
+  for (const endpoint of ["/api/compare?snapshot=..%2Fprivate", "/api/diff?unit=x&side=invalid", "/kit/invalid/id/styles.css", "/api/jobs/..%2Fprivate"]) {
+    const response = await request.get(url + endpoint);
+    expect(response.status(), endpoint).toBe(400);
     expect(await response.json()).toHaveProperty("error");
   }
   const denied = await request.post(`${url}/api/plan`, { data: {} });

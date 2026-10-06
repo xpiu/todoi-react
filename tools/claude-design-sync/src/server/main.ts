@@ -11,11 +11,11 @@ import { streamSSE } from "hono/streaming";
 import { uploadPending } from "../engine/approvals";
 import { compare, unitBaseline } from "../engine/compare";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
-import { checkUpload, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, verifyUpload, type Runner } from "../engine/designsync";
+import { checkUpload, createDesignRunner, findProject, isCurrent, projectStatus, pullIfChanged, pushFiles, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { fileWithin, readText } from "../engine/fsutil";
 import { commitsAfter, diffNoIndex, diffSince, git, head, isDirty, showAt } from "../engine/git";
-import { runHarness, type HarnessEvent, type HarnessKind } from "../engine/harness";
+import { runHarness, type HarnessEvent, type HarnessInfo, type HarnessKind } from "../engine/harness";
 import { sections } from "../engine/inventory";
 import { laneRules } from "../engine/lanes";
 import { parseProjectRef } from "../engine/project";
@@ -29,12 +29,7 @@ import { mappingHistory } from "./mapping";
 import { buildUi } from "./ui-build";
 import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, type PlanRequest } from "./requests";
 
-export interface HarnessInfo {
-  ok: boolean;
-  path?: string;
-  version?: string;
-  error?: string;
-}
+export type { HarnessInfo } from "../engine/harness";
 
 export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {}) {
   const app = new Hono();
@@ -70,7 +65,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   const designRunner = (job?: Job): Runner =>
     opts.fake
       ? fakeRunner(opts.fake.designDir, ctx.repo)
-      : (prompt, o, on) => runHarness({ kind: "claude", bin: ctx.config.harness.claudeBin, cwd: ctx.repo, prompt, model: o.model, maxTurns: o.maxTurns, allowedTools: ["DesignSync", "ToolSearch"], signal: job ? jobs.signal(job.id) : undefined }, on);
+      : createDesignRunner(ctx, job ? jobs.signal(job.id) : undefined);
 
   /** App ports run in their worktree (`cwd`, reading the Design snapshot via addDirs); kit ports in the repo, writing the stage */
   const implementRunner = (kind: HarnessKind, job: Job, where: { cwd?: string; addDirs?: string[]; stage?: string }): Runner =>
