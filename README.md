@@ -158,6 +158,7 @@ npm run storybook           # http://localhost:6006
 npm run build-storybook     # separate output: storybook-static/
 npx playwright install chromium  # once, for browser tests
 npm run test:storybook
+npm run test:storybook -- --coverage  # browser tests + accessibility + V8 coverage
 ```
 
 The Storybook Testing panel loads the browser project through `vitest.config.ts` and runs it with preview globals. `npm run test:storybook` runs the full four-way theme/mode matrix; `npm test` remains Node-only. Restart Storybook after changing its Vitest configuration.

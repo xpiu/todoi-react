@@ -94,3 +94,4 @@ prisma/*.db-journal
 .htaccess*
 /src/generated/prisma
 test-results/
+coverage/
