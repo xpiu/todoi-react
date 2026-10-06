@@ -12,6 +12,7 @@ import { ViewSkeleton } from "../design/core/Skeleton";
 import { quote, useFeedback } from "./feedback";
 import { useLifecycle } from "./lifecycle";
 import { LoadFailed } from "./LoadFailed";
+import "../design/core/text.css";
 import "./tables.css";
 
 export function GroupsScreen() {

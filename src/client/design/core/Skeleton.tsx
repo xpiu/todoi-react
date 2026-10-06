@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 
 import "./Skeleton.css";
+import "./text.css";
 
 export interface SkeletonProps {
   /** @default "100%" */

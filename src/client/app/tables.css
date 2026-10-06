@@ -180,13 +180,6 @@
     text-transform: uppercase;
     outline: none;
   }
-  .td-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
   @container (max-width: 720px) {
     .td-tbl-leadname {
       position: absolute;

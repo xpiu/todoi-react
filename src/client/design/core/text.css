@@ -1,5 +1,6 @@
-/* The search-match highlight: no fill, a link-coloured underline (settings search, the top-nav search). */
+/* Shared text classes. Import this file from every component that uses one, so it renders on its own (Storybook). */
 @layer components {
+  /* The search-match highlight: no fill, a link-coloured underline (settings search, the top-nav search). */
   .td-mark {
     background: transparent;
     color: inherit;
@@ -7,5 +8,14 @@
     text-decoration: underline;
     text-decoration-color: var(--text-link);
     text-underline-offset: 2px;
+  }
+  /* Read by screen readers, not shown. */
+  .td-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

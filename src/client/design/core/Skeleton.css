@@ -102,12 +102,4 @@
   .td-sk-row > .td-sk-end {
     margin-left: auto;
   }
-  .td-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
 }

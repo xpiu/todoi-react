@@ -13,6 +13,7 @@ import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
 import { StatusChip } from "../core/StatusChip";
 import type { StatusLike } from "../core/statuses";
+import "../core/text.css";
 import "./ListRow.css";
 
 export type RowLabel = string | { color: string; text?: string };

@@ -12,6 +12,7 @@ import type { StatusLike } from "../core/statuses";
 import { DueDatePill, type DueState } from "./DueDatePill";
 import { LabelChip } from "./LabelChip";
 import type { RowLabel, RowPerson, RowPriority } from "../list/ListRow";
+import "../core/text.css";
 import "./ItemCard.css";
 
 const PRIO_COLORS: Record<RowPriority, string> = { Urgent: "var(--label-red)", High: "var(--label-orange)", Medium: "var(--label-yellow)", Low: "var(--label-blue)" };

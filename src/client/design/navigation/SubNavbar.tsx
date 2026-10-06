@@ -16,6 +16,7 @@ import { Segmented } from "../core/Segmented";
 import { SwatchGroup } from "../core/SwatchGroup";
 import { MODES, THEMES } from "../core/themes";
 import { LabelChip } from "../board/LabelChip";
+import "../core/text.css";
 import "./SubNavbar.css";
 
 export interface SubNavbarView {

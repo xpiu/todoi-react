@@ -146,8 +146,12 @@
     right: 0;
     z-index: var(--z-hover-control);
   }
+  /* Positioned itself, as in the kit, so a theme can offset it (Minimal sets top: 10px). */
   .td-card-more {
     display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
     width: 26px;
     height: 24px;
     align-items: center;
@@ -158,7 +162,10 @@
     border-radius: 0 var(--radius-md) 0 var(--radius-xs);
     color: var(--ink-400);
     cursor: pointer;
-    box-shadow: -1px 1px 0 color-mix(in srgb, var(--surface-card) 60%, transparent);
+    box-shadow:
+      -1px 0 0 color-mix(in srgb, var(--surface-card) 60%, transparent),
+      0 1px 0 color-mix(in srgb, var(--surface-card) 60%, transparent),
+      -1px 1px 0 color-mix(in srgb, var(--surface-card) 40%, transparent);
   }
   .td-card:hover .td-card-more,
   .td-card:focus-within .td-card-more,

@@ -17,6 +17,7 @@ import { ProjectIconPicker, projectColorVar } from "../design/project/ProjectIco
 import { quote, useFeedback } from "./feedback";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LoadFailed } from "./LoadFailed";
+import "../design/core/text.css";
 import "./tables.css";
 
 export function ProjectsScreen() {
