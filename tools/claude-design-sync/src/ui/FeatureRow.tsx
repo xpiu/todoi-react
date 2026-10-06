@@ -34,7 +34,7 @@ interface UnitDirections {
   onUnitDirection: (unitId: string, d: Direction | null) => void;
 }
 
-export function FeatureRow({ feature, direction, overridden, onDirection, baseId, snapshotId, steps, onRunOne, ...dirs }: { feature: Feature; direction: Direction; overridden: boolean; onDirection: (d: Direction | null) => void; baseId: string | null; snapshotId: string | null; steps: Step[]; onRunOne: (stepIds: string[]) => void } & UnitDirections) {
+export function FeatureRow({ feature, direction, overridden, onDirection, baseId, snapshotId, steps, onRunOne, onMarkSynced, ...dirs }: { feature: Feature; direction: Direction; overridden: boolean; onDirection: (d: Direction | null) => void; baseId: string | null; snapshotId: string | null; steps: Step[]; onRunOne: (stepIds: string[]) => void; onMarkSynced: () => void } & UnitDirections) {
   const [open, setOpen] = useState(false);
   const status = feature.status;
   const why: Partial<Record<Direction, string>> = {
@@ -69,12 +69,12 @@ export function FeatureRow({ feature, direction, overridden, onDirection, baseId
         </div>
         {open ? <div className="cds-cell cds-cell-design is-quiet">{plural(feature.units.filter((u) => designMoved(u.status)).length, "part")} moved in Design</div> : <SideCell units={feature.units} side="design" known={[feature.title, ...feature.designWork, "New since the sync point"]} />}
       </div>
-      {open ? <FeatureDetail id={`${feature.id}-d`} feature={feature} baseId={baseId} snapshotId={snapshotId} steps={steps} onRunOne={onRunOne} {...dirs} /> : null}
+      {open ? <FeatureDetail id={`${feature.id}-d`} feature={feature} baseId={baseId} snapshotId={snapshotId} steps={steps} onRunOne={onRunOne} onMarkSynced={onMarkSynced} {...dirs} /> : null}
     </section>
   );
 }
 
-function FeatureDetail({ id, feature, baseId, snapshotId, steps, onRunOne, global, featureOverride, unitOverrides, onUnitDirection }: { id: string; feature: Feature; baseId: string | null; snapshotId: string | null; steps: Step[]; onRunOne: (stepIds: string[]) => void } & UnitDirections) {
+function FeatureDetail({ id, feature, baseId, snapshotId, steps, onRunOne, onMarkSynced, global, featureOverride, unitOverrides, onUnitDirection }: { id: string; feature: Feature; baseId: string | null; snapshotId: string | null; steps: Step[]; onRunOne: (stepIds: string[]) => void; onMarkSynced: () => void } & UnitDirections) {
   const mine = steps.filter((s) => s.featureId === feature.id);
   return (
     <div id={id} className="cds-detail">
@@ -113,6 +113,9 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, onRunOne, globa
             <Play size={14} strokeWidth={1.75} aria-hidden /> Run this feature only
           </button>
         ) : null}
+        <button type="button" className="cds-btn" onClick={onMarkSynced} data-tip="Review a sync point for only this feature. Other features stay open. Use after uploading and checking the result">
+          Mark this feature synced
+        </button>
       </div>
     </div>
   );

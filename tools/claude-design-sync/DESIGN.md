@@ -233,7 +233,7 @@ Every control explains what it does in one sentence (or why it's unavailable, wh
 Feature head (chevron rotates 90° when open; title underlines on hover), status word (red only for "changed on both"; ink for one-sided; quiet for others), part count in mono. Opening reveals the work twin ("—" bulleted), one unit per subfeature (name, kind, mono paths, evidence, link actions) separated by dashed hairlines, inline diffs and preview iframes in hairline frames, and "What runs for this feature" with numbered steps.
 
 ### Plan bar
-Pinned summary ("n features · direction · n skipped" in 500, tallies in mono) with Mark synced and Run plan. The sheet above holds the run confirmation (harness choice as a joined segmented pair, model field) and the mark-synced form.
+Pinned summary ("n features · direction · n skipped" in 500, tallies in mono) with Mark synced (Mark run features synced when the latest run supplies the scope) and Run plan. Open features also offer Mark this feature synced; its dialog selects only that feature. The sheet above holds the run confirmation (harness choice as a joined segmented pair, model field) and the mark-synced form.
 
 ### Activity panel
 Job list (square state mark, title, mono time; current job gets a 2px inset ink bar on the left), job view (title, mono state and cost, 2px progress line, step list with square marks: outline pending, pulsing running, ink done, red failed, run-through skipped), and the log on Wash in mono with step lines in 500 and warn/error lines red.

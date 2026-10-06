@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRigh
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
+import { api, selectedUnitIds, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
 import { FeatureRow } from "./FeatureRow";
 import { MergeBanner, useMerge } from "./Merge";
 import { Onboarding } from "./Onboarding";
@@ -39,6 +39,7 @@ export function App() {
   const [activity, setActivity] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
   const [panel, setPanel] = useState(() => !!new URLSearchParams(location.search).get("job"));
   const [loading, setLoading] = useState(true);
+  const [markUnits, setMarkUnits] = useState<string[] | null>(null);
   const [showSynced, setShowSynced] = useState(false);
   const [check, setCheck] = useState<{ busy: boolean; stale?: boolean; error?: string } | null>(null);
 
@@ -314,6 +315,7 @@ export function App() {
                         snapshotId={snap?.id ?? null}
                         steps={visibleSteps}
                         onRunOne={(ids) => void run(ids)}
+                        onMarkSynced={() => setMarkUnits(selectedUnitIds(f.units, unitChoices))}
                       />
                     );
                   })}
@@ -358,7 +360,7 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} onRun={() => void run()} busy={!!running} merge={merge} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} onRun={() => void run()} busy={!!running} merge={merge} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);

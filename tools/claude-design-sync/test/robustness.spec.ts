@@ -198,7 +198,7 @@ test("preserves plan dialog transitions and layouts at desktop and phone widths"
   await page.getByRole("button", { name: "Back to the steps" }).click();
   await expect(page.getByRole("heading", { name: "Steps, in order" })).toBeVisible();
   await page.getByRole("button", { name: "Mark synced" }).click();
-  await expect(page.getByRole("heading", { name: "Mark both sides as synced" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Mark \d+ features? synced/ })).toBeVisible();
   await capture(page, "after-mark-synced");
   await page.getByLabel("Label", { exact: true }).fill("Keep this label");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -215,7 +215,7 @@ test("preserves plan dialog transitions and layouts at desktop and phone widths"
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await capture(page, "after-plan-phone", false);
   await page.getByRole("button", { name: "Mark synced" }).click();
-  await expect(page.getByRole("heading", { name: "Mark both sides as synced" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Mark \d+ features? synced/ })).toBeVisible();
   await capture(page, "after-mark-synced-phone", false);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${url}/mapping`);

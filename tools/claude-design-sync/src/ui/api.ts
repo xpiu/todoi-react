@@ -1,5 +1,6 @@
 // Typed calls to the local server, and the words the GUI uses for statuses and directions.
-import type { Comparison, Direction, SnapshotMeta, SyncPoint, UnitStatus } from "../engine/types";
+import { directionsFor } from "../engine/directions";
+import type { Comparison, Direction, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "../engine/types";
 import type { Job, JobEvent } from "../server/jobs";
 import type { PlanRequest, RunRequest } from "../server/requests";
 import type { HarnessInfo } from "../engine/harness";
@@ -174,3 +175,9 @@ export const KIND_WORD: Record<string, string> = { component: "component", token
 
 export const fmtTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
 export const plural = (n: number, w: string, p = `${w}s`) => `${n} ${n === 1 ? w : p}`;
+
+/** Default acknowledgement scope: selected work, or an entirely reference-only feature. */
+export function selectedUnitIds(units: Unit[], choices: Record<string, Direction>) {
+  const selected = units.filter((u) => choices[u.id] && choices[u.id] !== "skip");
+  return (units.every((u) => directionsFor(u.status, u.kind).directions.length === 1) ? units : selected).map((u) => u.id);
+}

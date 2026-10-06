@@ -89,11 +89,12 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
 - **An open feature** (click its title) shows:
   - each subfeature's file mapping, with App and Design diffs since the sync point;
   - live card previews, rendered with a locally built bundle;
-  - the exact steps that will run, each AI step with its brief (*Read brief*, *Copy brief*), and **Run this feature only**.
+  - the exact steps that will run, each AI step with its brief (*Read brief*, *Copy brief*), and **Run this feature only**;
+  - **Mark this feature synced** opens the sync-point dialog with only this feature selected. Other features keep their old baseline.
 - **Merge, wherever you look:** while a run's verified App branch waits, Merge is offered in the navbar (on both pages), as a banner above the verdict (with its commits and *Review in Activity*), in the plan bar (where it takes the primary slot from Run plan), and pinned at the top of Activity when another job is shown. All of them merge the same run. While a run is still porting into the App, the navbar and plan-bar buttons show greyed out; otherwise there is no Merge button.
 - **Plan bar** (bottom): what the decisions add up to (merges, AI ports, upload).
   - **Run plan** confirms first, saying what will be written where.
-  - **Mark synced** records a new sync point and lists every feature. Features the plan moves start ticked. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old baseline and reappear as "Kept open since …".
+  - **Mark synced** records a new sync point and lists every feature. After a run, the button reads **Mark run features synced** and only that run’s covered features start ticked, even after a page reload. Otherwise, features the plan moves start ticked. Preparing kit files is not a completed sync: upload and check them first. Verified runs automatically record their own sync point. Unticked features, and the skipped parts of ticked ones, **stay open**: they keep their old baseline and reappear as "Kept open since …".
 - **Activity** (right panel): jobs with a live log, step states, cost, and **Stop**.
   - **Merge into the App:** a run with App work stops here, listing the verified commits.
   - **Upload to Claude Design:** a run that changed kit files stops here. Every staged file has a checkbox, a render check for cards, and a preview. **Upload n files from Claude Code** checks Design for newer edits, then shows three steps: copy the request (or a terminal command that starts `claude` in this repo with it), approve DesignSync's prompt in Claude Code, and **Check the upload**, which reads the files back and closes the step once all match. Nothing goes up until you approve it in Claude Code.

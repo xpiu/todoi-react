@@ -4,21 +4,28 @@
 import { ChevronRight, Flag, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { directionsFor, effective, plural, type AppState, type Direction, type Feature, type Step, type Unit } from "./api";
+import { directionsFor, effective, plural, selectedUnitIds, type AppState, type Direction, type Feature, type Step, type Unit } from "./api";
 import { StepLine } from "./FeatureRow";
 import { MergeButton, type MergeOffer } from "./Merge";
 
 /** A part the plan could move but skips: it stays open at a sync point. Reference-only parts never move, so they never hold a feature open. */
 const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (unitChoices[u.id] ?? "skip") === "skip";
-const allSkipped = (f: Feature, unitChoices: Record<string, Direction>) => f.units.some((u) => skipped(u, unitChoices)) && f.units.every((u) => skipped(u, unitChoices) || directionsFor(u.status, u.kind).directions.length === 1);
 
-export function PlanBar({ steps, features, global, overrides, unitChoices, state, onRun, busy, merge, onSyncPoint }: { steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: () => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
-  const [view, setView] = useState<"closed" | "steps" | "confirm" | "mark">("closed");
+export function PlanBar({ baseId, markUnits, onMarkUnits, steps, features, global, overrides, unitChoices, state, onRun, busy, merge, onSyncPoint }: { baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; onRun: () => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
+  const [planView, setPlanView] = useState<"closed" | "steps" | "confirm">("closed");
+  const view = markUnits !== null ? "mark" : planView;
+  const setView = (next: typeof planView) => {
+    onMarkUnits(null);
+    setTicked({});
+    setSaveError(null);
+    setPlanView(next);
+  };
   const open = view !== "closed";
   const [label, setLabel] = useState("");
   const [tag, setTag] = useState(true);
   const [saving, setSaving] = useState(false);
-  /** Your ticks in the sync-point dialog; untouched features follow the plan (open when it skips them) */
+  const [saveError, setSaveError] = useState<string | null>(null);
+  /** Explicit selections override the units chosen when the dialog opened. */
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
 
@@ -47,12 +54,18 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
 
   const kinds = ([[t.toDesign, "into Design"], [t.toApp, "into the App"], [t.both, "both ways"]] as const).filter(([n]) => n > 0);
   const moving = t.toDesign + t.toApp + t.both;
-  const keepOpen = (f: Feature) => !(ticked[f.id] ?? !allSkipped(f, unitChoices));
+  // Persisted job coverage survives reloads and doesn't change when the plan's directions change.
+  const lastRun = state?.jobs.find((j) => j.kind === "run");
+  const runScope = lastRun?.baseId === baseId && lastRun.covers && !lastRun.syncPointId && lastRun.state !== "cancelled" ? lastRun.covers : null;
+  const covered = new Set(markUnits ?? []);
+  const keepOpen = (f: Feature) => !(ticked[f.id] ?? f.units.some((u) => covered.has(u.id)));
   const kept = features.filter(keepOpen).length;
-  const hold = features.flatMap((f) => (keepOpen(f) ? f.units : f.units.filter((u) => skipped(u, unitChoices))).map((u) => u.id));
+  const partOpen = (f: Feature, u: Unit) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (ticked[f.id] === true ? skipped(u, unitChoices) : !covered.has(u.id));
+  const hold = features.flatMap((f) => (keepOpen(f) ? f.units : f.units.filter((u) => partOpen(f, u))).map((u) => u.id));
   const startMark = () => {
     setTicked({});
-    setView("mark");
+    setSaveError(null);
+    onMarkUnits(runScope ?? features.flatMap((f) => selectedUnitIds(f.units, unitChoices)));
   };
   const summary = !moving ? "Nothing planned" : `${plural(moving, "feature")}${kinds.length === 1 ? ` · ${kinds[0]![1]}` : `: ${kinds.map(([n, l]) => `${n} ${l}`).join(" · ")}`}${t.skip ? ` · ${t.skip} skipped` : ""}`;
 
@@ -94,13 +107,19 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
               onSubmit={async (e) => {
                 e.preventDefault();
                 setSaving(true);
-                await onSyncPoint(label.trim() || "Synced", tag, hold);
-                setSaving(false);
-                setView("closed");
+                setSaveError(null);
+                try {
+                  await onSyncPoint(label.trim() || "Synced", tag, hold);
+                  setView("closed");
+                } catch (error) {
+                  setSaveError(error instanceof Error ? error.message : String(error));
+                } finally {
+                  setSaving(false);
+                }
               }}
             >
-              <h3>Mark both sides as synced</h3>
-              <p className="cds-quiet">Future comparisons start here: the App at {state?.appHead} and the newest Design snapshot. Do this after a run finished and you're happy with both sides.</p>
+              <h3>Mark {plural(features.length - kept, "feature")} synced</h3>
+              <p className="cds-quiet">Future comparisons start here: the App at {state?.appHead} and the newest Design snapshot. Preparing kit files doesn't upload them. Mark a feature only after its upload or App merge is complete and you've checked the result. Verified runs record their own sync point.</p>
               <label className="cds-field">
                 <span>Label</span>
                 <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Hidden lists + offline copy" autoFocus data-tip="A name for this sync point, shown in the Since menu. Left empty, it's called Synced" />
@@ -112,7 +131,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
                   <ul>
                     {features.map((f) => {
                       const open = keepOpen(f);
-                      const parts = open ? 0 : f.units.filter((u) => skipped(u, unitChoices)).length;
+                      const parts = open ? 0 : f.units.filter((u) => partOpen(f, u)).length;
                       return (
                         <li key={f.id}>
                           <label className="cds-check" data-tip={open ? "Stays open: keeps its starting point and shows up in the next comparison. Tick it if it's synced" : "Synced: starts over from this sync point. Untick it to keep it open"}>
@@ -131,8 +150,9 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
               <label className="cds-check" data-tip="Tag the App's current commit in git, so this sync point is easy to find later">
                 <input type="checkbox" checked={tag} onChange={(e) => setTag(e.target.checked)} /> Also create the git tag {`design-sync/${today}`}
               </label>
+              {saveError ? <p className="cds-error-inline" role="alert">{saveError}</p> : null}
               <div className="cds-confirm-actions">
-                <button type="submit" className="cds-btn cds-btn-primary" disabled={saving} data-tip="Save the App's current commit and the newest Design snapshot as the start of every future comparison">
+                <button type="submit" className="cds-btn cds-btn-primary" disabled={saving || kept === features.length} data-tip="Record the selected features as synced. All other features and skipped parts keep their old starting point">
                   {saving ? "Saving…" : "Record sync point"}
                 </button>
                 {kept ? <span className="cds-quiet">{plural(kept, "feature")} stay{kept === 1 ? "s" : ""} open</span> : null}
@@ -150,7 +170,7 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
         </div>
       ) : null}
       <div className="cds-plan-bar">
-        <button type="button" className="cds-plan-toggle" aria-expanded={open} data-tip={open ? "Fold the plan away" : "Show every step the plan will run, in order, with its AI brief"} onClick={() => setView((v) => v === "closed" ? "steps" : "closed")}>
+        <button type="button" className="cds-plan-toggle" aria-expanded={open} data-tip={open ? "Fold the plan away" : "Show every step the plan will run, in order, with its AI brief"} onClick={() => setView(open ? "closed" : "steps")}>
           <ChevronRight size={14} strokeWidth={1.75} className="cds-chev" aria-hidden />
           <span className="cds-plan-sum">
             <strong>{summary}</strong>
@@ -163,8 +183,8 @@ export function PlanBar({ steps, features, global, overrides, unitChoices, state
           </span>
         </button>
         <div className="cds-plan-actions">
-          <button type="button" className="cds-btn" onClick={startMark} data-tip="Record that both sides match now, so future comparisons start from here">
-            <Flag size={14} strokeWidth={1.75} aria-hidden /> Mark synced
+          <button type="button" className="cds-btn" onClick={startMark} data-tip={runScope ? "Review only the latest run’s features as synced. Other features stay open" : "Choose which features are synced. Unticked features stay open"}>
+            <Flag size={14} strokeWidth={1.75} aria-hidden /> {runScope ? "Mark run features synced" : "Mark synced"}
           </button>
           {/* a waiting merge takes the primary slot: it is what the plan waits on */}
           <MergeButton offer={merge} place="plan" />
