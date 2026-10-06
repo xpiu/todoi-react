@@ -6,11 +6,12 @@
 // remembered PER theme (Rounded ships Colorize + Suggest on, Minimal off; sidebar-left off in both).
 // Persisted under one localStorage key, `td-appearance`; the design-system kit's td-* keys migrate
 // on first read. DOM effects (<html data-theme data-mode data-colorize-columns data-sidebar-side>,
-// --chrome-canvas and the surface overrides) are applied from here, before React mounts.
+// --chrome-canvas, the surface overrides and the tab favicon) are applied from here, before React mounts.
 import { useMemo } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { applyFavicon } from "./favicon";
 import {
   DEFAULT_MODE,
   DEFAULT_THEME,
@@ -282,6 +283,7 @@ export function applyAppearance(a: AppearanceState) {
   }
   el.setAttribute("data-colorize-columns", a.colorizeColumns ? "true" : "false");
   el.setAttribute("data-sidebar-side", a.sidebarLeft ? "left" : "right");
+  applyFavicon(a.theme, a.mode);
 }
 
 if (typeof window !== "undefined") {

@@ -4,8 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Todoi</title>
+    <link rel="icon" type="image/png" href="/favicon/minimal-light.png" data-td-favicon />
     <script>
-      // Pre-paint: apply the stored theme and mode before any CSS resolves, so there is no flash.
+      // Pre-paint: apply the stored theme, mode and favicon before any CSS resolves, so there is no flash.
       // The appearance store (src/client/design/core/appearance.ts) owns these attributes once it loads.
       (function () {
         try {
@@ -15,6 +16,8 @@
           if (s && s.theme === "standard") s.theme = "rounded";
           if (s && (s.theme === "rounded" || s.theme === "minimal")) root.setAttribute("data-theme", s.theme);
           if (s && (s.mode === "dark" || s.mode === "light")) root.setAttribute("data-mode", s.mode);
+          var icon = document.querySelector("link[data-td-favicon]");
+          if (icon) icon.setAttribute("href", "/favicon/" + root.getAttribute("data-theme") + "-" + root.getAttribute("data-mode") + ".png");
         } catch (e) {}
       })();
     </script>
