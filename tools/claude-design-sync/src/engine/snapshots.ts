@@ -1,7 +1,7 @@
 // Design snapshots (full copies of the Claude Design project's text files, taken by a pull or an
 // export import) and sync points (an App git rev + the Design snapshot taken at the same moment).
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -22,9 +22,12 @@ export function newSnapshotId(now = new Date()): string {
 export function listSnapshots(ctx: Ctx): SnapshotMeta[] {
   const root = snapRoot(ctx);
   if (!existsSync(root)) return [];
-  return listFiles(root)
-    .filter((p) => /^[^/]+\/meta\.json$/.test(p))
-    .map((p) => JSON.parse(readFileSync(join(root, p), "utf8")) as SnapshotMeta)
+  return readdirSync(root)
+    .filter((name) => name !== "node_modules" && name !== ".git")
+    .flatMap((name) => {
+      const file = join(root, name, "meta.json");
+      return existsSync(file) && statSync(file).isFile() ? [JSON.parse(readFileSync(file, "utf8")) as SnapshotMeta] : [];
+    })
     .sort((a, b) => b.id.localeCompare(a.id));
 }
 

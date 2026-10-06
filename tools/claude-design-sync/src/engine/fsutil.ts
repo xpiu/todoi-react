@@ -19,15 +19,16 @@ export function fileWithin(root: string, path: string): string | null {
   return file;
 }
 
-/** Every file under `root` as root-relative posix paths, sorted. Skips node_modules and dot-folders. */
+/** Every file under `root` as root-relative posix paths, sorted. Skips node_modules and .git. */
 export function listFiles(root: string): string[] {
   if (!existsSync(root)) return [];
   const out: string[] = [];
   const walk = (dir: string) => {
-    for (const name of readdirSync(dir)) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const { name } = entry;
       if (name === "node_modules" || name === ".git") continue;
       const abs = join(dir, name);
-      const st = statSync(abs);
+      const st = entry.isSymbolicLink() ? statSync(abs) : entry;
       if (st.isDirectory()) walk(abs);
       else out.push(toPosix(relative(root, abs)));
     }
@@ -51,8 +52,18 @@ export function globToRegExp(glob: string): RegExp {
   return new RegExp(`^${re}$`);
 }
 
+const globPatterns = new Map<string, RegExp>();
 export function isIgnored(path: string, globs: string[]): boolean {
-  return globs.some((g) => globToRegExp(g).test(path));
+  return globs.some((g) => {
+    let pattern = globPatterns.get(g);
+    if (!pattern) {
+      pattern = globToRegExp(g);
+      // Configured globs are usually few; bound memory for callers supplying arbitrary patterns.
+      if (globPatterns.size >= 128) globPatterns.clear();
+      globPatterns.set(g, pattern);
+    }
+    return pattern.test(path);
+  });
 }
 
 export function readText(path: string): string | null {

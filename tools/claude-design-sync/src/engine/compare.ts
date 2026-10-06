@@ -18,15 +18,24 @@ export interface Readers {
   designBase: ((p: string) => string | null) | null;
 }
 
+/** Baselines are immutable; memoize reads only within this comparison, including missing files. */
+function cachedReader(read: Readers["appNow"]): Readers["appNow"] {
+  const contents = new Map<string, string | null>();
+  return (path) => {
+    if (!contents.has(path)) contents.set(path, read(path));
+    return contents.get(path) ?? null;
+  };
+}
+
 export function readersFor(ctx: Ctx, base: Pick<Baseline, "rev" | "designSnapshot"> | null, snapshot: SnapshotMeta | null): Readers {
   const snapDir = snapshot ? snapshotFilesDir(ctx, snapshot.id) : null;
   const baseSnap = base?.designSnapshot ? getSnapshot(ctx, base.designSnapshot) : null;
   const baseDir = baseSnap ? snapshotFilesDir(ctx, baseSnap.id) : null;
   return {
     appNow: (p) => readText(join(ctx.repo, p)),
-    appBase: base ? (p) => showAt(ctx.repo, base.rev, p) : null,
+    appBase: base ? cachedReader((p) => showAt(ctx.repo, base.rev, p)) : null,
     designNow: (p) => (snapDir ? readText(join(snapDir, p)) : null),
-    designBase: baseDir ? (p) => readText(join(baseDir, p)) : null,
+    designBase: baseDir ? cachedReader((p) => readText(join(baseDir, p))) : null,
   };
 }
 

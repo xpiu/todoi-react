@@ -28,12 +28,11 @@ interface ToolJson {
   error?: string;
 }
 
-function jsonResults(events: HarnessEvent[]): ToolJson[] {
+function jsonResults(contents: string[]): ToolJson[] {
   const out: ToolJson[] = [];
-  for (const e of events) {
-    if (e.type !== "tool-result") continue;
+  for (const content of contents) {
     try {
-      out.push(JSON.parse(e.content) as ToolJson);
+      out.push(JSON.parse(content) as ToolJson);
     } catch {
       /* not a DesignSync result */
     }
@@ -42,12 +41,12 @@ function jsonResults(events: HarnessEvent[]): ToolJson[] {
 }
 
 async function run(runner: Runner, prompt: string, model: string | undefined, onLog?: (e: HarnessEvent) => void, maxTurns = 8) {
-  const events: HarnessEvent[] = [];
+  const contents: string[] = [];
   const done = await runner(prompt, { model, maxTurns }, (e) => {
-    events.push(e);
+    if (e.type === "tool-result") contents.push(e.content);
     onLog?.(e);
   });
-  return { done, results: jsonResults(events) };
+  return { done, results: jsonResults(contents) };
 }
 
 /** One Claude Design project as list_projects reports it, or null when the account has no such project */
@@ -96,7 +95,7 @@ export function isCurrent(ctx: Ctx, snap: SnapshotMeta | null, updatedAt: string
   return !!snap && !!updatedAt && snap.projectUpdatedAt === updatedAt && !snap.unpulled && (snap.projectId ?? ctx.config.design.projectId) === ctx.config.design.projectId;
 }
 
-/** A pull that costs nothing when Design hasn't moved: asks for updatedAt first, and reads files only if needed (or `force`) */
+/** Checks updatedAt through Claude first, then fetches file contents only if needed (or `force`). */
 export async function pullIfChanged(ctx: Ctx, runner: Runner, opts: Parameters<typeof pullSnapshot>[2] & { force?: boolean }): Promise<{ snapshot: SnapshotMeta | null; current: SnapshotMeta | null; updatedAt: string | null }> {
   const { updatedAt } = await projectStatus(ctx, runner, opts.onLog);
   const latest = latestSnapshot(ctx);
