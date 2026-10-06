@@ -160,6 +160,8 @@ npx playwright install chromium  # once, for browser tests
 npm run test:storybook
 ```
 
+The Storybook Testing panel loads the browser project through `vitest.config.ts` and runs it with preview globals. `npm run test:storybook` runs the full four-way theme/mode matrix; `npm test` remains Node-only. Restart Storybook after changing its Vitest configuration.
+
 The first integration covers Button, TextField, Select, Dialog, and ItemCard with colocated typed `.stories.tsx` examples, Autodocs, and browser interaction tests. Theme/mode toolbars follow the existing registry. The viewport toolbar resizes the preview; the actual media queries drive `data-device`, `data-touch`, and `useViewport()`. Viewport width alone does not emulate touch hardware.
 
 The separate Vitest configuration runs stories in all four Rounded/Minimal × Dark/Light scopes using Playwright Chromium, with accessibility failures blocking tests. Like the existing application axe gate, color contrast is excluded: current tokens produce failures on primary buttons and overdue badges and need separate remediation. Accessibility scans include body portals after interactions settle; interaction examples cover selection/search, disabled actions, keyboard activation, and nested dialog Escape behavior. A separate axe scan also confirmed that Select's open listbox needs an accessible name; fixing that and adding stable open-popup accessibility coverage are follow-up work. Node unit tests, PostgreSQL integration tests, and full application Playwright tests remain separate. CI builds/tests Storybook without starting the API or database.
