@@ -66,6 +66,9 @@ test("shows a tip on keyboard focus, describes the control with it, and closes o
   // the tip repeats the toggle's name, so it isn't announced twice
   await expect(toggle).not.toHaveAttribute("aria-describedby", /cds-tip/);
 
+  // the page links sit before the toggle: Guide, then Mapping
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByRole("link", { name: "Guide" })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   const pages = page.getByRole("link", { name: "Mapping" });
   await expect(pages).toBeFocused();

@@ -28,7 +28,7 @@ import type { Comparison } from "../engine/types";
 import { stepsForSelection } from "../engine/selection";
 import { Jobs, type Job } from "./jobs";
 import { mappingHistory } from "./mapping";
-import { buildUi } from "./ui-build";
+import { buildUi, distDir } from "./ui-build";
 import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, type PlanRequest } from "./requests";
 
 export type { HarnessInfo } from "../engine/harness";
@@ -581,7 +581,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   const home = resolve(TOOL_DIR, "../..");
   app.get("/tokens/*", (c) => fileFrom(join(home, "src/client/design/tokens"), c.req.path.slice("/tokens/".length)));
   app.get("/fonts/*", (c) => fileFrom(join(home, "src/client/design/fonts"), c.req.path.slice("/fonts/".length)));
-  app.get("/ui/*", (c) => fileFrom(join(TOOL_DIR, "dist"), c.req.path.slice("/ui/".length)));
+  app.get("/ui/*", (c) => fileFrom(distDir(), c.req.path.slice("/ui/".length)));
   app.get("/favicon.svg", () => fileFrom(join(TOOL_DIR, "src/ui"), "favicon.svg"));
   // One page app: the plan at /, the mapping at /mapping, the guide at /guide
   for (const path of ["/", "/mapping", "/guide"]) app.get(path, (c) => c.html(readFileSync(join(TOOL_DIR, "src/ui/index.html"), "utf8")));
