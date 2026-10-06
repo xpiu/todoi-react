@@ -23,6 +23,9 @@ import { sections } from "../engine/inventory";
 import { laneRules } from "../engine/lanes";
 import { parseProjectRef } from "../engine/project";
 import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
+import { kitHome, syncTwins, twinPath, writeDrafts } from "../engine/kitDraft";
+import { storybook, type Storybook } from "../engine/storybook";
+import { visualCompare } from "../engine/visual";
 import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../engine/worktree";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
@@ -31,7 +34,7 @@ import { stepsForSelection } from "../engine/selection";
 import { Jobs, type Job } from "./jobs";
 import { mappingHistory } from "./mapping";
 import { buildUi, distDir } from "./ui-build";
-import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, type PlanRequest } from "./requests";
+import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
 
 export type { HarnessInfo } from "../engine/harness";
 
@@ -185,6 +188,21 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     const text = unit.design.paths.map((p) => (baseSnap && existsSync(join(baseSnap, p)) ? diffNoIndex(join(baseSnap, p), join(snap, p)) : `new file ${p}\n` + (readText(join(snap, p)) ?? "").split("\n").map((l) => `+${l}`).join("\n"))).join("\n");
     return c.json({ text: text.replaceAll(snap, "now").replaceAll(baseSnap ?? "\u0000", "base") });
   });
+
+  // Pictures of a component on both sides: its Storybook stories and the kit cards that show it, per theme
+  app.post("/api/visual", validate("json", visualRequest), async (c) => {
+    const body = c.req.valid("json");
+    const cmp = getComparison(body.base, body.snapshot);
+    const unit = cmp.units.find((u) => u.id === body.unit);
+    if (!unit || unit.kind !== "component") return c.json({ error: "Only components can be compared visually" }, 400);
+    if (!cmp.designSnapshot) return c.json({ error: "There is no Design snapshot to picture yet: pull first" }, 400);
+    try {
+      return c.json(await visualCompare(ctx, cmp.designSnapshot.id, unit));
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+  });
+  app.get("/visual/:key/:file", validate("param", visualParam), (c) => fileFrom(join(ctx.state, "visual", c.req.valid("param").key), c.req.param("file")));
 
   app.post("/api/plan", validate("json", planRequest), (c) => {
     const { steps, choices, units } = requestedPlan(c.req.valid("json"));
@@ -351,6 +369,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         jobs.update(job, { app: run });
         jobs.log(job, "info", `App work runs on ${run.branch}, a separate worktree from ${run.base.slice(0, 7)} on ${run.into}. Your checkout isn't touched until you merge. (${run.worktree})`);
       }
+      let sb: Storybook | null | undefined;
+      /** What the tool drafted per component (the .jsx it is for, and each file's drafted text) */
+      const drafts: Array<{ jsx: string; files: Record<string, string> }> = [];
       for (const s of steps) {
         if (jobs.signal(job.id)?.aborted) {
           keepAppRun(job, "Stopped by you");
@@ -386,6 +407,22 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
           jobs.step(job, s.id, { state: "done", summary: v.commits.map((c) => `${c.hash} ${c.subject}`).join(" · ") });
           continue;
         }
+        // the mechanical kit files come from the App's Storybook, written before the AI refines them
+        const pushed = cmp.units.filter((u) => s.units.includes(u.id));
+        if (stage && pushed.some((u) => u.kind === "component")) {
+          sb ??= await storybook(ctx, jobs.signal(job.id)).catch((e: Error) => {
+            jobs.log(job, "warn", `${e.message}. Nothing was drafted from Storybook; the AI writes those files.`, s.id);
+            return null;
+          });
+          if (sb) for (const u of pushed) {
+            const files = writeDrafts(ctx, sb, u, stage);
+            if (files.length) drafts.push({ jsx: `${kitHome(ctx, u).dir}/${kitHome(ctx, u).name}.jsx`, files: Object.fromEntries(files.map((p) => [p, readText(join(stage, p)) ?? ""])) });
+            for (const p of files) {
+              jobs.update(job, { origin: { ...job.origin, [p]: "storybook" } });
+              jobs.log(job, "info", `Drafted ${p} from Storybook`, s.id);
+            }
+          }
+        }
         const done = await implementRunner("claude", job, { stage, addDirs: [snapshotsDir, ...(stage ? [stage] : [])] })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
         jobs.step(job, s.id, { state: done.ok ? "done" : "failed", summary: done.result.slice(0, 600) });
         if (!done.ok) throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
@@ -416,6 +453,29 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
       }
       cache.clear();
       if (stage) {
+        // Minimal twins are the tool's: each changed card's edit is replayed onto its twin
+        const snapDir = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
+        const twins = syncTwins(stage, stagedChanges(ctx, cmp, stage).map((x) => x.path), (p) => (snapDir ? readText(join(snapDir, p)) : null));
+        for (const t of twins.written) {
+          jobs.update(job, { origin: { ...job.origin, [t]: job.origin?.[t] ?? "twin" } });
+          jobs.log(job, "info", `Minimal twin ${t} follows its card`);
+        }
+        const fileNotes: Record<string, string> = {};
+        const holdBack = new Set<string>();
+        for (const t of twins.conflicts) {
+          const card = t.replace(/-minimal\.card\.html$/, ".card.html");
+          fileNotes[card] = "Its Minimal twin couldn't follow: your edit overlaps the twin's own Minimal changes. Update the twin by hand, or upload the card alone.";
+          jobs.log(job, "warn", `${t}: the card's edit overlaps the twin's own Minimal changes, so the twin was left as it was. Update it by hand before uploading.`);
+        }
+        // drafts the AI changed are its refinements now; drafts for a component it never wrote stay back
+        for (const d of drafts) {
+          for (const [p, text] of Object.entries(d.files)) if (readText(join(stage, p)) !== text) jobs.update(job, { origin: { ...job.origin, [p]: "storybook-refined" } });
+          if (existsSync(join(stage, d.jsx))) continue;
+          for (const p of [...Object.keys(d.files), ...Object.keys(d.files).filter((f) => f.endsWith(".card.html")).map(twinPath)]) {
+            holdBack.add(p);
+            fileNotes[p] = `${d.jsx.split("/").pop()} wasn't written, so this would describe a component Design doesn't have. Left out.`;
+          }
+        }
         const staged = stagedChanges(ctx, cmp, stage);
         const cards = staged.map((x) => x.path).filter((p) => /\.html$/.test(p) && p.startsWith("components/"));
         let checked: Array<{ card: string; errors: string[] }> = [];
@@ -425,7 +485,16 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
           checked = (await checkCards(stage, cards, undefined, { fallbacks: ctx.config.design.assetFallbacks, repo: ctx.repo })).map(({ card, errors }) => ({ card, errors }));
           for (const r of checked) jobs.log(job, r.errors.length ? "warn" : "info", r.errors.length ? `${r.card}: ${r.errors.join(" · ")}` : `${r.card} renders cleanly`);
         }
-        jobs.update(job, { staged, cards: checked });
+        // a card that renders with errors (and its twin) waits unticked: Claude Design would show the errors
+        for (const r of checked) {
+          if (!r.errors.length || holdBack.has(r.card)) continue;
+          for (const p of [r.card, /-minimal\.card\.html$/.test(r.card) ? r.card.replace(/-minimal\.card\.html$/, ".card.html") : twinPath(r.card)]) {
+            if (!staged.some((x) => x.path === p)) continue;
+            holdBack.add(p);
+            fileNotes[p] ??= p === r.card ? `Renders with ${plural(r.errors.length, "error")}, so it's left out: Claude Design would show them. Tick it to upload anyway.` : "Left out with its card, which renders with errors.";
+          }
+        }
+        jobs.update(job, { staged, cards: checked, fileNotes, holdBack: [...holdBack] });
         if (staged.length) {
           jobs.step(job, "upload", { state: "pending", summary: `${staged.length} file(s) waiting for your approval` });
           notes.push(`${staged.length} kit file(s) staged: review and approve the upload`);

@@ -13,7 +13,11 @@ export interface MapEntry {
 export interface Config {
   design: { projectId: string; projectName: string; componentRoot: string; tokensRoot: string; spec: string; screensRoot: string; ignore: string[]; assetFallbacks?: Record<string, string> };
   /** `check`: the command that must pass in a run's worktree before its branch can be merged (e.g. npm run check) */
-  app: { componentRoot: string; tokensRoot: string; spec: string; screensRoot: string; ignore: string[]; check: string };
+  app: {
+    componentRoot: string; tokensRoot: string; spec: string; screensRoot: string; ignore: string[]; check: string;
+    /** `build`: the command that writes a static Storybook build (with its components manifest) to `{out}` */
+    storybook?: { build: string };
+  };
   syncTagPrefix: string;
   renames: MapEntry[];
   screens: MapEntry[];

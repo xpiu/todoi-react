@@ -30,4 +30,6 @@ export const syncPointRequest = z.object({
 export const mergeRequest = z.object({ reviewed: z.boolean().optional() });
 export const uploadRequest = z.object({ paths: z.array(z.string().min(1)).min(1, "Pick at least one staged file") });
 export const jobParam = z.object({ id });
+export const visualRequest = z.object({ unit: z.string().min(1), base, snapshot: id.optional() });
+export const visualParam = z.object({ key: z.string().regex(/^[a-f0-9]{6,40}$/, "Invalid comparison") });
 export const kitParam = z.object({ where: z.enum(["stage", "snapshot"]), id });

@@ -40,6 +40,12 @@ export interface Job {
   /** `conflict`: why uploading this file would overwrite newer Design work (set by the pre-upload check) */
   staged?: Array<{ path: string; status: "new" | "changed"; conflict?: string }>;
   cards?: Array<{ card: string; errors: string[] }>;
+  /** Staged files the tool wrote itself, not the AI: drafts from the App's Storybook (then maybe refined by the AI), and Minimal twins */
+  origin?: Record<string, "storybook" | "storybook-refined" | "twin">;
+  /** Why a staged file deserves a look before it goes up (a twin that couldn't follow its card, render errors, a draft without its component) */
+  fileNotes?: Record<string, string>;
+  /** Staged files left unticked at first, for the reason in `fileNotes` */
+  holdBack?: string[];
   /**
    * The upload handed to an interactive Claude Code session, where DesignSync's plan prompt can be
    * approved: the files, the request to paste, and whether Design was untouched since the run's snapshot

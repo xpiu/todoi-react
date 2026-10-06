@@ -146,7 +146,7 @@ test.describe.serial("Claude Design Sync", () => {
     const otherLive = join(tmpdir(), "cds-e2e", "design-now", other);
     writeFileSync(otherLive, "// rewritten in Claude Design\n");
     await panel.getByRole("button", { name: /Upload \d+ files?/ }).click();
-    await expect(panel.locator(".cds-file-note")).toContainText("Claude Design");
+    await expect(panel.locator(".cds-file-note", { hasText: "Claude Design" })).toBeVisible();
     await expect(panel.locator(".cds-jobview-head")).toContainText("waiting for your approval");
     await expect(panel.getByRole("checkbox", { name: other })).not.toBeChecked();
     expect(readFileSync(otherLive, "utf8")).toBe("// rewritten in Claude Design\n");

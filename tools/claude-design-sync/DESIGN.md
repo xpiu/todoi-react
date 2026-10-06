@@ -141,7 +141,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 - **Both-Sides Red** (`--danger`): see the rule below.
 
 ### Named Rules
-**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, inline errors, failed jobs and steps, warn/error log lines). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink.
+**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, failed jobs and steps; inline errors and warn/error log lines keep ink words and carry the red as a 6px square or a 2px margin bar, for the same contrast reason). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink.
 
 **The Borrowed Tokens Rule.** The tool loads the App's token files and consumes them by name. It never adds a raw hex, never forks a value, and adds only layout aliases prefixed `--cds-`.
 

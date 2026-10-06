@@ -16,11 +16,17 @@ const write = (root: string, files: Record<string, string>) => {
 };
 const git = (repo: string, ...args: string[]) => execFileSync("git", ["-C", repo, ...args], { encoding: "utf8", env: { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" } });
 
+// the kit's real card head: React 18 UMD, Babel and lucide (cached under .state/cdn for card checks), the local bundle
 const CARD = (name: string, uses: string) => `<!-- @dsCard group="Components" viewport="400x200" name="${name}" subtitle="A test card" -->
 <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
 <style>.row{border-radius:var(--radius-lg,7px);box-shadow:var(--shadow-card)}</style></head>
 <body><div id="root"></div><script type="text/babel">
 const {${uses}}=window.FlowboardDesignSystem_13419b;
+ReactDOM.createRoot(document.getElementById("root")).render(<${uses}>${name}</${uses}>);
 </script></body></html>
 `;
 
@@ -81,7 +87,8 @@ export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))):
   git(repo, "tag", "-a", "design-sync/2026-01-01", "-m", "sync");
   const rev = git(repo, "rev-parse", "--short", "HEAD").trim();
   write(repo, {
-    "src/client/design/board/HiddenListsMenu.tsx": "export function HiddenListsMenu() { return null; }\n",
+    "src/client/design/board/HiddenListsMenu.tsx": "export interface HiddenListsMenuProps {\n  count: number;\n  onShow?: () => void;\n}\nexport function HiddenListsMenu() { return null; }\n",
+    "src/client/design/board/HiddenListsMenu.stories.tsx": "export const Closed = {};\nexport const WithHiddenLists = {};\n",
     // the App's screen moves too: still no work for the kit screens that stand for it
     "src/client/app/ProjectScreen.tsx": "export function ProjectScreen() { return 'hidden lists'; }\n",
     "src/client/design/board/BoardView.tsx": "export interface BoardViewProps {\n  children?: unknown;\n  onAddList?: () => void;\n  after?: unknown;\n}\nexport function BoardView(p: BoardViewProps) { return p.children; }\n",
@@ -104,7 +111,7 @@ export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))):
   const config = { ...loadConfig(join(TOOL_DIR, "config.json")), renames: [], screens };
   config.design = { ...config.design, projectId: "fake" };
   // the fixture repo has no package.json: its "check" just confirms the branch has a commit to merge
-  config.app = { ...config.app, check: "git log -1 --format=%s" };
+  config.app = { ...config.app, check: "git log -1 --format=%s", storybook: { build: `node ${JSON.stringify(join(TOOL_DIR, "test/fake-storybook.mjs"))} {out}` } };
   const ctx: Ctx = { repo, state, config };
   const base = importExport(ctx, designBaseDir, "Design at the sync point");
   // ids are second-resolution timestamps: make sure the "now" snapshot sorts after the base

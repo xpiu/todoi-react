@@ -33,7 +33,11 @@
       "**/*.test.ts",
       "**/*.test.tsx"
     ],
-    "check": "npm run check"
+    "check": "npm run check",
+    "storybook": {
+      "build": "npx storybook build --quiet --output-dir {out}"
+    },
+    "$storybook": "Kit drafts and visual comparisons read this static build (manifests/components.json, iframe.html); {out} is a folder under .state/storybook"
   },
   "syncTagPrefix": "design-sync/",
   "renames": [

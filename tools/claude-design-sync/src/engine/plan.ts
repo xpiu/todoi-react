@@ -9,6 +9,7 @@ import { mergeCss } from "./css";
 import { listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
 import { isStoryFile, sections } from "./inventory";
+import { plannedDrafts } from "./kitDraft";
 import { saveSyncPoint, snapshotFilesDir } from "./snapshots";
 import { appMoved, designMoved, featureDirection, REFERENCE_KINDS, unitDirection } from "./directions";
 import { unitBaseline } from "./compare";
@@ -168,7 +169,7 @@ function diffStat(diff: string): string {
   return `+${add} −${del}`;
 }
 
-const lineCount = (text: string | null) => (text ?? "").split("\n").length;
+const lineCount = (text: string | null) => (text ? text.replace(/\n$/, "").split("\n").length : 0);
 const q = (p: string) => (/^[\w./@+-]+$/.test(p) ? p : `'${p.replaceAll("'", "'\\''")}'`);
 
 /** How to read one side's change of a unit: one line per file, a command or a file to read, with its size */
@@ -224,7 +225,8 @@ const KIT_RULES = `Kit conventions (Claude Design project, files under the stagi
 - Each component is components/<area>/<Name>.jsx (React 18 UMD at runtime, imported as "react"), with a <Name>.d.ts prop contract (a doc comment that explains behaviour, one interface, \`export declare function\`) and a <Name>.prompt.md usage note with a JSX example.
 - Styles live in the .jsx as a css string injected once: \`const css=\\\`…\\\`; if(typeof document!=="undefined"&&!document.getElementById("td-css-<name>")){…}\`. Tokens only, written var(--token,fallback). No hex outside var() fallbacks, no new fonts.
 - Hooks that must reach card scripts also export a capitalised alias (\`export const UseThing=useThing\`).
-- Preview cards: components/<area>/<name>.card.html, first line \`<!-- @dsCard group="Components" viewport="WxH" name="…" subtitle="…" -->\`, the same <head> scripts as existing cards (React 18 UMD, Babel standalone, lucide, ../../_ds_bundle.js), and a text/babel script that destructures components from window.FlowboardDesignSystem_13419b. Every card ships a Minimal twin: run \`npm run design-sync -- twin <card>\`.
+- Preview cards: components/<area>/<name>.card.html, first line \`<!-- @dsCard group="Components" viewport="WxH" name="…" subtitle="…" -->\`, the same <head> scripts as existing cards (React 18 UMD, Babel standalone, lucide, ../../_ds_bundle.js), and a text/babel script that destructures components from window.FlowboardDesignSystem_13419b.
+- Don't write or edit Minimal twins (*-minimal.card.html): when you finish, the tool replays your card edits onto each twin (keeping its Minimal tweaks) and writes the twin of a new card.
 - A new component ships its Minimal rules in tokens/themes/minimal-components.css (html[data-theme="minimal"] .td-…): grey words that go ink on hover, square corners, hairline rings, no fills.
 - Update readme.md (the long spec) where the behaviour is specified, and add new components to its components/<area>/ file map.
 - Change files on top of what is there; never rewrite a file wholesale or drop content Design added.
@@ -271,6 +273,12 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
     const into = target === "app" ? u.app.paths : u.design.paths.map((p) => join(stage, p));
     if (into.length && u.kind !== "spec") lines.push(`- ${target === "app" ? "The App's current version (relative to the repository root), to change on top of" : "The kit's current version, to change on top of"}: ${into.map((p) => `\`${q(p)}\``).join(", ")}`);
   }
+  if (target === "design") {
+    // what the tool writes from Storybook before this step: the agent refines these instead of authoring them
+    const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
+    const drafted = units.flatMap((u) => plannedDrafts(ctx, u, (p) => !!snap && existsSync(join(snap, p))));
+    if (drafted.length) lines.push("", "## Drafted for you from Storybook", "Before you start, the tool writes these from the App's Storybook manifest (react-docgen props, one card figure per story). They are already in the stage: refine them and write the component's .jsx to match, don't start them over.", ...drafted.map((p) => `- \`${q(join(stage, p))}\``));
+  }
   const examples = units.filter((u) => u.kind === "component").flatMap((u) => u.app.paths.filter((p) => isStoryFile(p) || /\.mdx?$/.test(p)));
   if (examples.length) {
     lines.push("", "## Component examples (reference)", "Usage guidance: read these whole and translate the relevant examples into the receiving environment.");
@@ -283,7 +291,7 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   lines.push("");
   lines.push("## Done means");
   if (target === "app") lines.push("- You read every change listed above, whole.", "- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- Base UI primitives, ref and render-prop forwarding, focused Zustand selectors and ARIA/keyboard behaviour are kept: the tool scans the draft for their loss, and the developer reviews it.", "- `npm run check` passes; one commit per feature.", "- Nothing outside this feature changed.");
-  else lines.push("- You read every change listed above, whole.", `- The kit files for every subfeature are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card + Minimal twin, readme.md, Minimal rules).`, "- The local bundle builds and every touched card renders without errors.", "- Reply with the list of files you changed.");
+  else lines.push("- You read every change listed above, whole.", `- The kit files for every subfeature are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card, readme.md, Minimal rules); Minimal twins are the tool's.`, "- The local bundle builds and every touched card renders without errors.", "- Reply with the list of files you changed.");
   return lines.join("\n");
 }
 

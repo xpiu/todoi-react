@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -17,6 +17,12 @@ import { Jobs } from "../src/server/jobs";
 import { laneOf, laneRules, LANE_ORDER } from "../src/engine/lanes";
 import { pairingProblems } from "../src/engine/config";
 import { baseUiParts, reviewDraft, reviewFile } from "../src/engine/fidelity";
+import { draftUsage, plannedDrafts, syncTwins, writeDrafts } from "../src/engine/kitDraft";
+import { componentFor, storybook } from "../src/engine/storybook";
+
+const CARD_FOR_TEST = `<!-- @dsCard group="Components" viewport="400x200" name="New" subtitle="A new card" -->
+<!doctype html><html><head><meta charset="utf-8"></head><body><div id="root"></div></body></html>
+`;
 import { mappingHistory } from "../src/server/mapping";
 import { commitAll, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../src/engine/worktree";
 import { git } from "../src/engine/git";
@@ -170,8 +176,8 @@ describe("component stories and documentation", () => {
     const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, "app-to-design" as const])));
     const brief = steps.find((s) => s.units.includes(badge.id) && s.kind === "ai-push")!.brief!;
     // examples are listed for the agent to read whole, with their size, never pasted (or cut short)
-    expect(brief).toContain(`\`${join(fx.repo, story)}\` (3 lines)`);
-    expect(brief).toContain(`\`${join(fx.repo, docs)}\` (3 lines)`);
+    expect(brief).toContain(`\`${join(fx.repo, story)}\` (2 lines)`);
+    expect(brief).toContain(`\`${join(fx.repo, docs)}\` (2 lines)`);
     expect(brief).toContain("Do not copy Storybook imports");
     expect(brief).toContain("Production architecture comes first");
   });
@@ -526,10 +532,82 @@ describe("briefs (read the changes, don't paste them)", () => {
     expect(sh(appCmd)).toContain("+export function Toast({ message }: { message: string }) { return `!!${message}`; }");
     // a new file is read whole; a spec section's diff is quoted, since no command can slice it out
     const hidden = steps.find((s) => s.kind === "ai-push" && s.units.includes("component:board/HiddenListsMenu"))!.brief!;
-    expect(hidden).toMatch(/New file, read it whole: `\S+HiddenListsMenu\.tsx` \(2 lines\)/);
+    expect(hidden).toMatch(/New file, read it whole: `\S+HiddenListsMenu\.tsx` \(5 lines\)/);
     const spec = steps.find((s) => s.kind === "ai-pull" && s.units.includes("spec:Board"))!.brief!;
     expect(spec).toContain("readme.md § Board (one section, quoted in full):");
     expect(spec).toContain("+Boards show lists and dense mode.");
+  });
+});
+
+describe("kit drafts from Storybook (the mechanical kit files are the tool's)", () => {
+  it("drafts the contract, usage note and card of a component the kit lacks, from the App's Storybook build", async () => {
+    const fx = makeFixture();
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const menu = cmp.units.find((u) => u.id === "component:board/HiddenListsMenu")!;
+    const board = cmp.units.find((u) => u.id === "component:board/BoardView")!;
+    const planned = plannedDrafts(fx.ctx, menu, () => false);
+    expect(planned).toEqual(["components/board/HiddenListsMenu.d.ts", "components/board/HiddenListsMenu.prompt.md", "components/board/hiddenlistsmenu.card.html"]);
+    // a component the kit already has keeps its hand-written files
+    expect(plannedDrafts(fx.ctx, board, () => false)).toEqual([]);
+    // the brief tells the agent to refine them, not author them
+    const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, "app-to-design" as const])));
+    const brief = steps.find((s) => s.kind === "ai-push" && s.units.includes(menu.id))!.brief!;
+    expect(brief).toContain("## Drafted for you from Storybook");
+    expect(brief).toContain("<STAGE>/components/board/hiddenlistsmenu.card.html");
+    expect(brief).toContain("Don't write or edit Minimal twins");
+
+    const sb = (await storybook(fx.ctx))!;
+    const built = statSync(join(sb.dir, "manifests/components.json")).mtimeMs;
+    // unchanged inputs reuse the build
+    expect((await storybook(fx.ctx))!.dir).toBe(sb.dir);
+    expect(statSync(join(sb.dir, "manifests/components.json")).mtimeMs).toBe(built);
+    expect(componentFor(sb, menu.app.paths)!.name).toBe("HiddenListsMenu");
+
+    const stage = createStage(fx.ctx, cmp, "drafts");
+    writeFileSync(join(stage, "components/board/HiddenListsMenu.prompt.md"), "Hand-written already.\n");
+    expect(writeDrafts(fx.ctx, sb, menu, stage)).toEqual(["components/board/HiddenListsMenu.d.ts", "components/board/hiddenlistsmenu.card.html"]);
+    expect(readFileSync(join(stage, "components/board/HiddenListsMenu.prompt.md"), "utf8")).toBe("Hand-written already.\n");
+    const contract = readFileSync(join(stage, "components/board/HiddenListsMenu.d.ts"), "utf8");
+    expect(contract).toContain("export interface HiddenListsMenuProps {\n  count: number;\n  onShow?: () => void;\n}");
+    expect(contract).toContain("export declare function HiddenListsMenu(props: HiddenListsMenuProps): JSX.Element;");
+    const card = readFileSync(join(stage, "components/board/hiddenlistsmenu.card.html"), "utf8");
+    expect(card).toMatch(/^<!-- @dsCard group="Components" viewport="760x\d+" name="HiddenListsMenu" subtitle="Closed, With Hidden Lists" -->/);
+    expect(card).toContain('<link rel="stylesheet" href="../../styles.css">');
+    expect(card).toContain("const {HiddenListsMenu}=window.FlowboardDesignSystem_13419b;");
+    expect(card).toContain('<Story name="With Hidden Lists" story={()=>(<HiddenListsMenu onClick={fn()} />)}/>');
+    // a second pass writes nothing over the drafts
+    expect(writeDrafts(fx.ctx, sb, menu, stage)).toEqual([]);
+    expect(draftUsage(componentFor(sb, menu.app.paths)!)).toContain("<HiddenListsMenu onClick={fn()} />");
+  });
+
+  it("carries each card edit into its Minimal twin, writes twins of new cards, and leaves edited twins alone", () => {
+    const fx = makeFixture();
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const snap = snapshotFilesDir(fx.ctx, cmp.designSnapshot!.id);
+    const before = (p: string) => (existsSync(join(snap, p)) ? readFileSync(join(snap, p), "utf8") : null);
+    const stage = createStage(fx.ctx, cmp, "twins");
+    const card = "components/board/board.card.html";
+    // the twin has a Minimal tweak of its own on its last line
+    const twinWithTweak = `${readFileSync(join(stage, "components/board/board-minimal.card.html"), "utf8")}<!-- square corners -->\n`;
+    writeFileSync(join(snap, "components/board/board-minimal.card.html"), twinWithTweak);
+    writeFileSync(join(stage, "components/board/board-minimal.card.html"), twinWithTweak);
+    writeFileSync(join(stage, card), readFileSync(join(stage, card), "utf8").replace('<div id="root"></div>', '<div id="root" data-dense="true"></div>'));
+    writeFileSync(join(stage, "components/core/new.card.html"), CARD_FOR_TEST);
+    const r = syncTwins(stage, [card, "components/core/new.card.html"], before);
+    expect(r).toEqual({ written: ["components/board/board-minimal.card.html", "components/core/new-minimal.card.html"], conflicts: [] });
+    const twin = readFileSync(join(stage, "components/board/board-minimal.card.html"), "utf8");
+    expect(twin).toContain('data-dense="true"');
+    expect(twin).toContain("<!-- square corners -->");
+    expect(twin).toContain('name="Board · Minimal"');
+    expect(readFileSync(join(stage, "components/core/new-minimal.card.html"), "utf8")).toContain('<html data-mode="light" data-theme="minimal">');
+    // a twin edited in this run is the editor's
+    writeFileSync(join(stage, "components/board/board-minimal.card.html"), "edited by hand\n");
+    writeFileSync(join(stage, card), readFileSync(join(stage, card), "utf8").replace("data-dense", "data-wide"));
+    expect(syncTwins(stage, [card], before).written).toEqual([]);
+    // an edit on the line the twin itself changed can't be replayed: reported, twin untouched
+    writeFileSync(join(stage, "components/board/board-minimal.card.html"), twinWithTweak);
+    writeFileSync(join(stage, card), readFileSync(join(snap, card), "utf8").replace('name="Board"', 'name="Board view"'));
+    expect(syncTwins(stage, [card], before)).toEqual({ written: [], conflicts: ["components/board/board-minimal.card.html"] });
   });
 });
 

@@ -1,7 +1,6 @@
 // App-side ports never touch the developer's checkout: they run in a git worktree on a branch of their
 // own, every port must end in a commit, the repo's check runs there, and nothing reaches the developer's
 // branch until they press Merge.
-import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,7 +9,7 @@ import { basename, dirname, join } from "node:path";
 import type { Ctx } from "./config";
 import type { FidelityFinding } from "./approvals";
 import { git } from "./git";
-import { terminateOnAbort } from "./process";
+import { runCommand } from "./process";
 
 export interface AppRun {
   /** The worktree folder (outside the repo, so the repo's own tools never pick it up) */
@@ -84,24 +83,7 @@ export function commitAll(run: AppRun, message: string): boolean {
 }
 
 /** Run the repo's check (e.g. `npm run check`) in the worktree; keeps the last part of its output */
-/** Colour codes some tools print even with NO_COLOR (ESC [ … m) */
-const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
-
-export function runCheck(run: AppRun, command: string, signal?: AbortSignal): Promise<{ command: string; ok: boolean; output: string }> {
-  if (signal?.aborted) return Promise.resolve({ command, ok: false, output: "Stopped by you" });
-  return new Promise((resolve) => {
-    const child = spawn("/bin/sh", ["-c", command], { cwd: run.worktree, env: { ...process.env, CI: "1", FORCE_COLOR: "0", NO_COLOR: "1" }, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
-    let output = "";
-    const keep = (d: Buffer) => {
-      output = (output + d.toString().replace(ANSI, "")).slice(-6000);
-    };
-    child.stdout.on("data", keep);
-    child.stderr.on("data", keep);
-    terminateOnAbort(child, signal);
-    child.on("error", (e) => resolve({ command, ok: false, output: `Couldn't start: ${e.message}` }));
-    child.on("close", (code) => resolve({ command, ok: code === 0 && !signal?.aborted, output }));
-  });
-}
+export const runCheck = (run: AppRun, command: string, signal?: AbortSignal) => runCommand(run.worktree, command, signal);
 
 /**
  * Merge the run's branch into the developer's branch: fast-forward when possible, else a merge commit.

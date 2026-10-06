@@ -7,6 +7,7 @@ import type { HarnessInfo } from "../engine/harness";
 import type { Step } from "../engine/plan";
 import type { LaneRule } from "../engine/lanes";
 import type { MappingEvent } from "../server/mapping";
+import type { Theme as VisualTheme, VisualComparison } from "../engine/visual";
 
 export type { Comparison, Direction, Feature, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "../engine/types";
 export type { Job, JobEvent, StepState } from "../server/jobs";
@@ -15,6 +16,7 @@ export type { LaneId, LaneRule, Technique } from "../engine/lanes";
 export type { Flow, MappingEvent, Move } from "../server/mapping";
 
 export type { HarnessInfo } from "../engine/harness";
+export type { VisualComparison, VisualTheme };
 
 export interface AppState {
   project: { id: string; name: string };
@@ -73,6 +75,8 @@ export const api = {
   /** `reviewed`: the developer confirmed their review of a draft (required for runs that ported kit code) */
   merge: (id: string, reviewed = false) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { body: { reviewed } }),
   discard: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/discard`, { method: "POST" }),
+  /** Pictures of a component: its Storybook stories and the kit cards that show it (slow the first time: builds Storybook) */
+  visual: (unit: string, base?: string | null) => call<VisualComparison>("/api/visual", { body: { unit, base } }),
   mapping: (base?: string | null) => call<MappingData>(`/api/mapping?${new URLSearchParams(base ? { base } : {})}`),
 };
 

@@ -84,6 +84,20 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
   );
 }
 
+/** Who wrote a staged file, when it wasn't the AI */
+const ORIGIN_WORD = { storybook: "drafted from Storybook", "storybook-refined": "drafted from Storybook, refined by Claude Code", twin: "Minimal twin, written by the tool" } as const;
+
+/** A card's Minimal twin sorts right under its card */
+const fileOrder = (p: string) => p.replace(/-minimal\.card\.html$/, ".card.html~");
+
+/** "5 files · 1 by Claude Code · 3 drafted from Storybook · 1 Minimal twin" */
+function stagedSummary(job: Job): string {
+  const staged = job.staged ?? [];
+  const by = (o?: string) => staged.filter((s) => job.origin?.[s.path] === o).length;
+  const drafted = by("storybook") + by("storybook-refined");
+  return [plural(staged.length, "file"), `${by(undefined)} by Claude Code`, drafted ? `${drafted} drafted from Storybook` : "", by("twin") ? plural(by("twin"), "Minimal twin") : ""].filter(Boolean).join(" · ");
+}
+
 const RULE_WORD: Record<FidelityFinding["rule"], string> = { "base-ui": "Base UI", forwarding: "Refs", aria: "ARIA", store: "Store", "click-target": "Click target", story: "Stories" };
 
 const SHOWN_FINDINGS = 6;
@@ -176,7 +190,8 @@ function DraftReview({ job, merge }: { job: Job & { app: NonNullable<Job["app"]>
 function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; onLogScroll: () => void; onChanged: () => void }) {
   const staged = job.staged ?? [];
   // a request already handed to Claude Code keeps its files ticked
-  const [picked, setPicked] = useState<Set<string>>(() => new Set(job.handoff?.paths ?? staged.filter((s) => !s.conflict).map((s) => s.path)));
+  // files that need a look (render errors, a draft without its component) start unticked
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(job.handoff?.paths ?? staged.filter((s) => !s.conflict && !job.holdBack?.includes(s.path)).map((s) => s.path)));
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -275,23 +290,30 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
         <section className="cds-approve" aria-labelledby="approve-h">
           <h4 id="approve-h">Upload to Claude Design</h4>
           <p className="cds-quiet">Only the ticked files go up, and nothing in Claude Design is deleted. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't offered. The upload runs in Claude Code, where DesignSync asks you to approve it.</p>
+          <p className="cds-files-sum">{stagedSummary(job)}</p>
           <ul className="cds-files">
-            {staged.map((s) => {
+            {[...staged].sort((a, b) => (fileOrder(a.path) < fileOrder(b.path) ? -1 : 1)).map((s) => {
               const errors = cardErr.get(s.path);
               return (
-                <li key={s.path}>
+                <li key={s.path} className={/-minimal\.card\.html$/.test(s.path) && staged.some((x) => x.path === s.path.replace(/-minimal\.card\.html$/, ".card.html")) ? "is-twin" : undefined}>
                   <label data-tip={picked.has(s.path) ? "Goes up with the upload. Untick to leave it out" : "Left out of the upload. Tick to include it"}>
                     <input type="checkbox" checked={picked.has(s.path)} onChange={(e) => setPicked((p) => { const n = new Set(p); if (e.target.checked) n.add(s.path); else n.delete(s.path); return n; })} />
-                    <span className="cds-path">{s.path}</span>
-                    <span className="cds-kind">{s.status}</span>
-                    {errors ? <span className={errors.length ? "cds-error-inline" : "cds-ok"}>{errors.length ? `${plural(errors.length, "error")}` : "renders"}</span> : null}
+                    <span className="cds-file-text">
+                      <span className="cds-path cds-break">{s.path}</span>
+                      <span className="cds-file-meta">
+                        <span className="cds-kind">{s.status}</span>
+                        {job.origin?.[s.path] ? <span className="cds-file-origin">· {ORIGIN_WORD[job.origin[s.path]!]}</span> : null}
+                        {errors ? <span className={errors.length ? "cds-error-inline" : "cds-ok"}>{errors.length ? `${plural(errors.length, "error")}` : "renders"}</span> : null}
+                      </span>
+                    </span>
                   </label>
-                  {s.conflict ? <p className="cds-error-inline cds-file-note">{s.conflict}</p> : null}
                   {/\.html$/.test(s.path) && stageId ? (
                     <button type="button" className="cds-link" data-tip={preview === s.path ? TIP.closePreview : "Render this staged file as it would look in Claude Design"} onClick={() => setPreview((p) => (p === s.path ? null : s.path))}>
                       {preview === s.path ? "Close" : "Preview"}
                     </button>
                   ) : null}
+                  {s.conflict ? <p className="cds-error-inline cds-file-note">{s.conflict}</p> : null}
+                  {!s.conflict && job.fileNotes?.[s.path] ? <p className="cds-error-inline cds-file-note">{job.fileNotes[s.path]}</p> : null}
                 </li>
               );
             })}

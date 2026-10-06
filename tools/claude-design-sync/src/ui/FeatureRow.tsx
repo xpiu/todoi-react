@@ -8,6 +8,7 @@ import { CopyLink } from "./CopyLink";
 import { Diff } from "./Diff";
 import { RailKeys } from "./Rail";
 import { TIP } from "./Tooltip";
+import { useVisual } from "./Visual";
 
 function SideCell({ units, side, known }: { units: Unit[]; side: "app" | "design"; known: string[] }) {
   const moved = units.filter((u) => (side === "app" ? appMoved : designMoved)(u.status));
@@ -188,6 +189,7 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
     }
   };
   const cards = unit.kind === "card" ? unit.design.paths : [];
+  const visual = useVisual(unit, baseId);
   return (
     <div className="cds-unit">
       <div className="cds-twin">
@@ -209,11 +211,18 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
           )}
           {isReference(unit) ? <p className="cds-related">{REFERENCE_NOTE}</p> : null}
           <ul className="cds-evlist">{fresh(unit.app.evidence).map((e) => <li key={e}>{e}</li>)}</ul>
-          {unit.app.changed ? (
-            <button type="button" className="cds-link" aria-expanded={diff?.side === "app"} data-tip={diff?.side === "app" ? "Hide the App diff" : "Show what changed in these App files since the sync point"} onClick={() => load("app")}>
-              {diff?.side === "app" ? "Hide App diff" : "App diff"}
-            </button>
-          ) : null}
+          <span className="cds-unit-actions">
+            {unit.app.changed ? (
+              <button type="button" className="cds-link" aria-expanded={diff?.side === "app"} data-tip={diff?.side === "app" ? "Hide the App diff" : "Show what changed in these App files since the sync point"} onClick={() => load("app")}>
+                {diff?.side === "app" ? "Hide App diff" : "App diff"}
+              </button>
+            ) : null}
+            {unit.kind === "component" && (unit.app.exists || unit.design.exists) && snapshotId ? (
+              <button type="button" className="cds-link" aria-expanded={visual.open} data-tip={visual.open ? "Hide the pictures" : "Picture this component on both sides: the App's Storybook stories beside the kit's cards, per theme"} onClick={() => void visual.toggle()}>
+                {visual.open ? "Hide pictures" : "Compare visually"}
+              </button>
+            ) : null}
+          </span>
         </div>
         <div className="cds-rail-cell">
           <RailKeys value={direction} allowed={directionsFor(unit.status, unit.kind).directions} onChange={(d) => onDirection(d)} label={`Direction for ${displayName(unit)}`} why={REFERENCE_WHY} />
@@ -253,6 +262,7 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
           </span>
         </div>
       </div>
+      {visual.panel}
       {diff ? <Diff text={diff.text} /> : null}
       {preview && snapshotId ? (
         <div className="cds-preview">
