@@ -108,18 +108,19 @@ test("a description stays in edit until saved, and save-and-close stays open whe
 test("closing keeps unsent drafts for that item until they are saved or discarded", async ({ page, fixture: f }) => {
   await page.goto(`/p/${f.projectId}?v=list&item=${f.itemId}`);
   const dialog = page.getByRole("dialog");
+  const editor = dialog.getByRole("textbox", { name: "Description" });
   await dialog.getByRole("textbox", { name: "Comment", exact: true }).fill("A comment I have not sent");
   await dialog.getByTitle("Click to edit description").click();
-  await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveText("The saved description");
+  await expect(editor).toHaveText("The saved description");
   // The editor focuses itself once open; fill() before that can land after the existing text.
-  await expect(dialog.getByRole("textbox", { name: "Description" })).toBeFocused();
-  await dialog.getByRole("textbox", { name: "Description" }).fill("The saved description — and an unsaved addition");
+  await expect(editor).toBeFocused();
+  await editor.fill("The saved description — and an unsaved addition");
   await page.keyboard.press("Escape");
   // Esc inside the editor discards that edit; the comment draft is kept.
   await dialog.getByTitle("Click to edit description").click();
-  await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveText("The saved description");
-  await expect(dialog.getByRole("textbox", { name: "Description" })).toBeFocused();
-  await dialog.getByRole("textbox", { name: "Description" }).fill("The saved description — kept this time");
+  await expect(editor).toHaveText("The saved description");
+  await expect(editor).toBeFocused();
+  await editor.fill("The saved description — kept this time");
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -127,7 +128,7 @@ test("closing keeps unsent drafts for that item until they are saved or discarde
   await page.reload();
   await page.goto(`/p/${f.projectId}?v=list&item=${f.itemId}`);
   await expect(dialog.getByRole("textbox", { name: "Comment", exact: true })).toHaveValue("A comment I have not sent");
-  await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveText("The saved description — kept this time");
+  await expect(editor).toHaveText("The saved description — kept this time");
   await expect(dialog.getByText("Unsaved", { exact: true })).toBeVisible();
   await shot(page, "restored");
   expect(await description(page, f)).toBe("The saved description");
@@ -156,27 +157,28 @@ test("a delayed comment acknowledgement preserves newer comment and description 
     await page.goto(`/p/${f.projectId}?v=list&item=${f.itemId}`);
     const dialog = page.getByRole("dialog");
     const composer = dialog.getByRole("textbox", { name: "Comment", exact: true });
+    const editor = dialog.getByRole("textbox", { name: "Description", exact: true });
     await composer.fill("The first submitted comment");
     await composer.press("Enter");
     await started;
     await composer.fill("A newer comment draft");
     await dialog.getByTitle("Click to edit description").click();
-    await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toHaveText("The saved description");
-    await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toBeFocused();
-    await dialog.getByRole("textbox", { name: "Description", exact: true }).fill("A newer unsaved description");
-    await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toHaveText("A newer unsaved description");
+    await expect(editor).toHaveText("The saved description");
+    await expect(editor).toBeFocused();
+    await editor.fill("A newer unsaved description");
+    await expect(editor).toHaveText("A newer unsaved description");
     release();
     await expect.poll(async () => (await details(page, f.itemId)).comments.map((comment) => comment.body)).toEqual(["The first submitted comment"]);
     await expect(composer).toHaveValue("A newer comment draft");
-    await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toHaveText("A newer unsaved description");
+    await expect(editor).toHaveText("A newer unsaved description");
     await dialog.getByRole("button", { name: "Close", exact: true }).click();
     await page.goto(`/p/${f.projectId}?v=list&item=${f.itemId}`);
     await expect(composer).toHaveValue("A newer comment draft");
-    await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toHaveText("A newer unsaved description");
+    await expect(editor).toHaveText("A newer unsaved description");
     await composer.press("Enter");
     await expect(composer).toHaveValue("");
     await expect.poll(async () => (await details(page, f.itemId)).comments.map((comment) => comment.body)).toEqual(["The first submitted comment", "A newer comment draft"]);
-    await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toHaveText("A newer unsaved description");
+    await expect(editor).toHaveText("A newer unsaved description");
     expect(await description(page, f)).toBe("The saved description");
   } finally { release(); }
 });
