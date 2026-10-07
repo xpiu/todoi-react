@@ -24,7 +24,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Initials: Story = {
   async play({ canvas }) {
-    const avatar = canvas.getByTitle("Flo Zuallaert");
+    // Screen readers hear the name, not the initials.
+    const avatar = canvas.getByRole("img", { name: "Flo Zuallaert" });
     await expect(avatar).toHaveTextContent("FZ");
   },
 };
@@ -42,6 +43,20 @@ export const Sizes: Story = {
     </div>
   ),
 };
+export const BesideName: Story = {
+  args: { decorative: true },
+  render: (args) => (
+    <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+      <Avatar {...args} />
+      {args.name}
+    </span>
+  ),
+  async play({ canvas }) {
+    // The visible name already says who it is; the avatar stays out of the accessibility tree.
+    await expect(canvas.queryByRole("img")).not.toBeInTheDocument();
+    await expect(canvas.getByTitle("Flo Zuallaert")).toHaveAttribute("aria-hidden", "true");
+  },
+};
 export const UnknownPerson: Story = { args: { name: undefined } };
 export const Stack: Story = {
   render: () => (
@@ -52,7 +67,9 @@ export const Stack: Story = {
     </div>
   ),
   async play({ canvas }) {
-    // Five people, three faces, then the overflow disc.
+    // Five people, three faces, then the overflow disc; each stack is one image named by everyone in it.
+    await expect(canvas.getAllByRole("img", { name: "Flo Zuallaert, Sam Verhoeven, Marit Olsen, Jonas Berg, Ana Lopes" })).toHaveLength(2);
+    await expect(canvas.getByRole("img", { name: "Flo Zuallaert, Sam Verhoeven" })).toBeVisible();
     await expect(canvas.getByText("+2")).toBeVisible();
     await expect(canvas.getByText("+3")).toBeVisible();
   },

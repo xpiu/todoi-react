@@ -27,7 +27,8 @@ test("create, edit and comment replay in dependency order after reopening", asyn
   const composer = page.getByRole("textbox", { name: "Comment", exact: true });
   await composer.fill("Comment depends on the new item");
   await composer.press("Enter");
-  await expect(page.getByRole("banner").getByRole("button", { name: /3 edits/ })).toBeVisible();
+  // The open overlay is modal, so the header pill is hidden from the tree; its live status line is not.
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText(/3 edits/);
   await page.reload();
   await expect(page.getByRole("dialog")).toContainText("Edited offline before creation reaches server");
   const writes: string[] = [];
@@ -73,7 +74,7 @@ test("acknowledged create, edit and comment survive offline reload without a fol
     await expect(page.getByRole("dialog")).toContainText("Acknowledged title without a fresh snapshot");
     await expect(page.getByRole("dialog").getByText("Acknowledged comment without a fresh snapshot", { exact: true })).toBeVisible();
     await expect(composer).toHaveValue("");
-    await expect(page.getByRole("banner").getByRole("button", { name: /saved on this device|couldn't sync/ })).toHaveCount(0);
+    await expect(page.getByRole("banner").getByText(/saved on this device|couldn't sync/)).toHaveCount(0);
   } finally {
     await reconnect();
   }
@@ -146,7 +147,7 @@ test("a lost successful response reuses its operation id and does not repeat com
   await expect.poll(() => operationIds.length, { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
   expect(operationIds[0]).not.toBe("");
   expect(new Set(operationIds).size).toBe(1);
-  await expect(page.getByRole("banner").getByRole("button", { name: /saved on this device|couldn't sync/ })).toHaveCount(0);
+  await expect(page.getByRole("banner").getByText(/saved on this device|couldn't sync/)).toHaveCount(0);
   const activity = await (await page.request.get(`/api/activity?projectId=${fixture.projectId}`)).json() as Array<{ itemId: string; text: string }>;
   expect(activity.filter((entry) => entry.itemId === fixture.id && /completed/.test(entry.text))).toHaveLength(1);
 });
@@ -204,7 +205,7 @@ test("a stale in-flight snapshot cannot replace an acknowledged change or its of
     try {
       await page.reload();
       await expect(itemCheckbox(page, fixture.id, true)).toBeChecked();
-      await expect(page.getByRole("banner").getByRole("button", { name: /saved on this device|couldn't sync/ })).toHaveCount(0);
+      await expect(page.getByRole("banner").getByText(/saved on this device|couldn't sync/)).toHaveCount(0);
     } finally {
       await reconnect();
     }

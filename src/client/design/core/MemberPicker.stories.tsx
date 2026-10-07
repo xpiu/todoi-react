@@ -78,9 +78,13 @@ export const MaxOne: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Owner" }));
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(await page.findByRole("checkbox", { name: "Jonas Berg" }));
-    // At the cap a new pick leaves the selection unchanged.
-    await expect(args.onChange).toHaveBeenLastCalledWith(["u1"]);
+    const jonas = await page.findByRole("checkbox", { name: "Jonas Berg" });
+    // At the cap the other rows are disabled, say why, and a pick leaves the selection unchanged.
+    await expect(jonas).toHaveAttribute("aria-disabled", "true");
+    await expect(jonas).toHaveAccessibleDescription("One person at most. Remove them to pick someone else.");
+    await expect(page.getByRole("checkbox", { name: "Flo Zuallaert" })).not.toHaveAttribute("aria-disabled");
+    await userEvent.click(jonas);
+    await expect(args.onChange).not.toHaveBeenCalled();
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
   },

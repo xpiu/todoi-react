@@ -77,7 +77,7 @@ export function ActivityRow({ entry, now, onOpenKey, showKind = true }: { entry:
   const kind = ACTIVITY_KINDS.find((k) => k.value === entry.type);
   return (
     <div className="td-al-row" role="listitem">
-      <Avatar name={entry.actor} color={entry.actorColor} size={20} />
+      <Avatar name={entry.actor} color={entry.actorColor} size={20} decorative />
       <span className="td-al-text">
         <b>{entry.actor}</b> {entry.text}
         {entry.key ? (

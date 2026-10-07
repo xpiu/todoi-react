@@ -95,7 +95,7 @@ export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline,
       {signedIn && user ? (
         <>
           <div className="td-auth-who">
-            <Avatar name={user.name} color={user.color} size={28} />
+            <Avatar name={user.name} color={user.color} size={28} decorative />
             <span className="td-auth-who-text">
               <b>Joining as {user.name}</b>
               {user.email ? <span>{user.email}</span> : null}

@@ -1,7 +1,8 @@
 // Toast — bottom-left status toast for confirmed outcomes ("Moved … to Done", with Undo) and the fallback
 // explanation of a failed request that has no form to show it in. Spec: DESIGN.md › Toasts.
-// role="status" so screen readers announce it; auto-dismisses after ~5s, hover pauses. One at a time.
-import { useEffect, useRef, type CSSProperties } from "react";
+// role="status" so screen readers announce it; auto-dismisses after ~5s, hover pauses. One at a time, keyed by
+// outcome so a replacement restarts the countdown.
+import { useCallback, useEffect, useRef, type CSSProperties } from "react";
 
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
@@ -31,22 +32,28 @@ export const TOAST_DURATION_MS = 5000;
 
 export function Toast({ message, icon, actionLabel, onAction, shortcutHint, meta, onDismiss, duration = TOAST_DURATION_MS, live = true, style }: ToastProps) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const clear = () => {
+  // The timer calls the latest onDismiss, so a new callback identity doesn't restart the countdown.
+  const latestDismiss = useRef(onDismiss);
+  useEffect(() => {
+    latestDismiss.current = onDismiss;
+  });
+  const dismissible = onDismiss !== undefined;
+  const clear = useCallback(() => {
     if (timer.current) {
       clearTimeout(timer.current);
       timer.current = null;
     }
-  };
-  const arm = () => {
+  }, []);
+  const arm = useCallback(() => {
     clear();
-    if (duration && onDismiss) timer.current = setTimeout(onDismiss, duration);
-  };
+    if (duration && dismissible) timer.current = setTimeout(() => latestDismiss.current?.(), duration);
+  }, [clear, duration, dismissible]);
+  // Arms on mount and when duration or dismissal changes. Key the toast by outcome so a new one restarts the
+  // countdown (AppShell does).
   useEffect(() => {
     arm();
     return clear;
-    // Re-arm when the message changes (a new outcome replaces the toast in place).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [message, duration]);
+  }, [arm, clear]);
   return (
     <div className="td-toast" role={live ? "status" : undefined} onMouseEnter={clear} onMouseLeave={arm} style={style}>
       {icon ? <Icon name={icon} size={16} className="td-toast-icon" /> : null}

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { Button } from "./Button";
@@ -19,6 +19,17 @@ function ToastInsideDialog(args: ToastProps) {
       </Dialog>
     </ToastPortalProvider>
   );
+}
+
+// The caller wires onDismiss after mount and re-renders with a fresh callback every 50ms: the timer must arm
+// once dismissal turns on and keep counting down across those renders.
+function LateDismiss(args: ToastProps) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 50);
+    return () => clearInterval(id);
+  }, []);
+  return <Toast {...args} onDismiss={tick > 0 ? () => args.onDismiss?.() : undefined} />;
 }
 
 const meta = {
@@ -46,6 +57,13 @@ export const AutoDismiss: Story = {
   args: { duration: 300 },
   async play({ args }) {
     await waitFor(() => expect(args.onDismiss).toHaveBeenCalledOnce(), { timeout: 2000 });
+  },
+};
+export const AutoDismissWiredLate: Story = {
+  args: { duration: 300 },
+  render: (args) => <LateDismiss {...args} />,
+  async play({ args }) {
+    await waitFor(() => expect(args.onDismiss).toHaveBeenCalled(), { timeout: 2000 });
   },
 };
 export const InsideDialog: Story = {

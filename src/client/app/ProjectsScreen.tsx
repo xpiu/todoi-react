@@ -104,7 +104,7 @@ export function ProjectsScreen() {
                     <td>
                       {p.lead ? (
                         <span className="td-tbl-lead" title={p.lead}>
-                          <Avatar name={p.lead} size={22} />
+                          <Avatar name={p.lead} size={22} decorative />
                           <span className="td-tbl-leadname">{p.lead}</span>
                         </span>
                       ) : (

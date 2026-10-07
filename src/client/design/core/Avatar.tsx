@@ -38,17 +38,20 @@ export interface AvatarProps {
   size?: number;
   /** Background behind the initials, e.g. "var(--label-teal)"; overrides the name-derived pick */
   color?: string;
+  /** The name is already visible text beside the avatar: hide it from assistive tech so it isn't read twice
+   * @default false — the avatar is an image named by `name` */
+  decorative?: boolean;
   style?: CSSProperties;
   className?: string;
 }
 
-export function Avatar({ name = "?", src, size = 32, color, style, className }: AvatarProps) {
+export function Avatar({ name = "?", src, size = 32, color, decorative, style, className }: AvatarProps) {
   const cls = ["td-avatar", className ?? ""].join(" ").trim();
-  if (src) return <img className={cls} src={src} alt={name} style={{ width: size, height: size, ...style }} />;
+  if (src) return <img className={cls} src={src} alt={decorative ? "" : name} style={{ width: size, height: size, ...style }} />;
   const bg = color ?? avatarColorFor(name);
   const ink = LIGHT_INK.test(bg) || isDark(bg) ? "light" : "dark";
   return (
-    <span className={cls} data-initials={initialsOf(name)} data-ink={ink} title={name} style={{ width: size, height: size, background: bg, fontSize: Math.round(size * 0.38), ...style }}>
+    <span className={cls} data-initials={initialsOf(name)} data-ink={ink} title={name} {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })} style={{ width: size, height: size, background: bg, fontSize: Math.round(size * 0.38), ...style }}>
       {initialsOf(name)}
     </span>
   );
@@ -78,17 +81,20 @@ export function AvatarStack({ people = [], size = 24, max = 3, overlap, style, c
   const list = people.map((p) => (typeof p === "string" ? { name: p } : p));
   const shown = list.slice(0, max);
   const rest = list.length - shown.length;
+  // One image named by everyone in it; the faces and "+n" inside are presentational.
+  const names = list.map((p) => p.name).join(", ");
   return (
     <span
       className={["td-avstack", className ?? ""].join(" ").trim()}
       style={{ "--td-av-overlap": `${overlap ?? Math.round(size / 4)}px`, ...style } as CSSProperties}
-      title={list.map((p) => p.name).join(", ")}
+      title={names}
+      {...(names ? { role: "img", "aria-label": names } : null)}
     >
       {shown.map((p, i) => (
-        <Avatar key={p.id ?? p.name ?? i} name={p.name} src={p.src} color={p.color} size={size} />
+        <Avatar key={p.id ?? p.name ?? i} name={p.name} src={p.src} color={p.color} size={size} decorative />
       ))}
       {rest > 0 ? (
-        <span className="td-avstack-more" style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.4)) }}>
+        <span className="td-avstack-more" aria-hidden style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.4)) }}>
           +{rest}
         </span>
       ) : null}

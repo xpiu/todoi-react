@@ -59,12 +59,19 @@ export const CustomRule: Story = {
     const panel = await page.findByRole("dialog", { name: "Repeat" });
     await userEvent.click(within(panel).getByRole("radio", { name: "Custom…" }));
     const interval = await within(panel).findByRole("spinbutton", { name: "Interval" });
-    // Select the current value and type over it (an emptied field snaps back to 1).
-    await userEvent.tripleClick(interval);
+    // The field may be empty while typing: Backspace then "2" gives 2, not 12.
+    await userEvent.click(interval);
+    await userEvent.keyboard("{End}{Backspace}");
+    await expect(interval).toHaveValue(null);
     await userEvent.keyboard("2");
     await expect(interval).toHaveValue(2);
     await userEvent.click(within(panel).getByRole("button", { name: "Mon" }));
     await userEvent.click(within(panel).getByRole("radio", { name: /After/ }));
+    // Leaving an emptied field restores the last valid count.
+    const times = within(panel).getByRole("spinbutton", { name: "Number of times" });
+    await userEvent.clear(times);
+    await userEvent.tab();
+    await expect(times).toHaveValue(5);
     await expect(panel).toHaveTextContent("Every 2 weeks on Mon, Fri · 5 times");
     await userEvent.click(within(panel).getByRole("button", { name: "Done" }));
     await expect(args.onChange).toHaveBeenCalledWith({ freq: "weekly", interval: 2, byWeekday: [5, 1], ends: { type: "after", count: 5 } });

@@ -228,7 +228,7 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
           <div role="list" aria-label="Members">
             {members.map((m) => (
               <div className="td-pp-member" role="listitem" key={m.id}>
-                <Avatar name={m.name} color={m.color} size={28} />
+                <Avatar name={m.name} color={m.color} size={28} decorative />
                 <span className="td-pp-mname">
                   <b>
                     {m.name}

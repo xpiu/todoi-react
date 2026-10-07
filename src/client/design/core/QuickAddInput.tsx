@@ -65,7 +65,7 @@ function TokenPreview({ t }: { t: QuickAddToken }) {
   if (t.kind === "assignee")
     return (
       <>
-        {t.isNew ? <Icon name="user-x" size={14} /> : <Avatar name={t.value} size={16} />}
+        {t.isNew ? <Icon name="user-x" size={14} /> : <Avatar name={t.value} size={16} decorative />}
         {t.isNew ? `No member ${t.value}` : t.value}
       </>
     );

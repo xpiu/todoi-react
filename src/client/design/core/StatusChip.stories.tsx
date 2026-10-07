@@ -24,8 +24,9 @@ export const AllStatuses: Story = {
 export const Small: Story = { args: { status: "DONE", size: "sm" } };
 export const IconOnly: Story = {
   args: { status: "DONE", iconOnly: true },
-  async play({ canvasElement }) {
+  async play({ canvas, canvasElement }) {
     await expect(canvasElement.querySelector(".td-status")).toHaveAttribute("title", "Done");
+    await expect(canvas.getByRole("img", { name: "Done" })).toBeVisible();
   },
 };
 export const ByName: Story = { args: { status: "Backlog" } };

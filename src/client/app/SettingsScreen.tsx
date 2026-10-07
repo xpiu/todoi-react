@@ -476,7 +476,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             title: "Profile",
             lead: (
               <div className="td-set-id">
-                <Avatar name={name || "?"} color={avatarColorVar(m?.avatarColor)} size={40} />
+                <Avatar name={name || "?"} color={avatarColorVar(m?.avatarColor)} size={40} decorative />
                 <div className="td-set-idtext">
                   <div className="td-set-idname">{name}</div>
                   <div className="td-set-idmail">{m?.email ?? user?.email}</div>

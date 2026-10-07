@@ -10,12 +10,13 @@ export interface ProgressBarProps {
   color?: string;
   /** @default 8 */
   height?: number;
-  "aria-label"?: string;
+  /** Required accessible name stating what is progressing, e.g. "Checklist 2 of 6" */
+  "aria-label": string;
   style?: CSSProperties;
   className?: string;
 }
 
-export function ProgressBar({ value = 0, color, height = 8, style, className, ...rest }: ProgressBarProps) {
+export function ProgressBar({ value = 0, color, height = 8, style, className, "aria-label": label }: ProgressBarProps) {
   const pct = Math.max(0, Math.min(100, value));
   return (
     <div
@@ -23,7 +24,7 @@ export function ProgressBar({ value = 0, color, height = 8, style, className, ..
       aria-valuenow={Math.round(pct)}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-label={rest["aria-label"]}
+      aria-label={label}
       className={["td-progress", className ?? ""].join(" ").trim()}
       style={{ height, ...style }}
     >

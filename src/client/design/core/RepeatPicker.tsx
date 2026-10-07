@@ -10,6 +10,7 @@ import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
 import { Segmented } from "./Segmented";
 import { describeRepeat, UNITS, type RepeatEnds, type RepeatFreq, type RepeatRule } from "./repeat";
+import "./DatePicker.css";
 import "./Menu.css";
 import "./RepeatPicker.css";
 
@@ -22,6 +23,29 @@ interface CustomRule {
   interval: number;
   byWeekday: number[];
   ends: RepeatEnds;
+}
+
+/** Whole-number field that may be empty while typing: valid entries report at once, blur restores the last one. */
+function CountInput({ value, max, onChange, className, "aria-label": label, onKeyDown }: { value: number; max: number; onChange: (n: number) => void; className: string; "aria-label": string; onKeyDown: (e: KeyboardEvent) => void }) {
+  const [text, setText] = useState(String(value));
+  return (
+    <input
+      className={className}
+      type="number"
+      min={1}
+      max={max}
+      value={text}
+      aria-label={label}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => {
+        setText(e.target.value);
+        const n = Math.trunc(Number(e.target.value));
+        if (e.target.value.trim() && n >= 1) onChange(Math.min(max, n));
+      }}
+      onBlur={() => setText(String(value))}
+      onKeyDown={onKeyDown}
+    />
+  );
 }
 
 function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule | null; anchor?: DateInput; today?: DateInput; onDone: (r: RepeatRule) => void; onBack: () => void }) {
@@ -71,7 +95,7 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
       </div>
       <div className="td-rp-row">
         Every
-        <input className="td-rp-num" type="number" min={1} max={99} value={r.interval} aria-label="Interval" onChange={(e) => set({ interval: Math.max(1, Math.min(99, +e.target.value || 1)) })} onKeyDown={stopTyping} />
+        <CountInput className="td-rp-num" max={99} value={r.interval} aria-label="Interval" onChange={(interval) => set({ interval })} onKeyDown={stopTyping} />
         <span className="td-rp-unit">{UNITS[r.freq][r.interval === 1 ? 0 : 1]}</span>
       </div>
       <Segmented size="sm" stretch aria-label="Unit" options={UNIT_OPTIONS} value={r.freq} onChange={(f) => set({ freq: f })} />
@@ -126,17 +150,7 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
           <>
             After
             {endsAfter ? (
-              <input
-                className="td-rp-num td-rp-num-sm"
-                type="number"
-                min={1}
-                max={999}
-                value={endsAfter.count}
-                aria-label="Number of times"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => set({ ends: { type: "after", count: Math.max(1, +e.target.value || 1) } })}
-                onKeyDown={stopTyping}
-              />
+              <CountInput className="td-rp-num td-rp-num-sm" max={999} value={endsAfter.count} aria-label="Number of times" onChange={(count) => set({ ends: { type: "after", count } })} onKeyDown={stopTyping} />
             ) : null}
             {endsAfter ? "times" : " a number of times"}
           </>,

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 
 import { Icon, type IconName } from "./Icon";
 import { MenuDivider, MenuItem, MenuNote, MenuPopover } from "./Menu";
+import "./text.css";
 import "./ConnectionStatus.css";
 
 function subscribeOnline(onChange: () => void) {
@@ -123,39 +124,63 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
   if (idle && !settled && !showWhenIdle) return null;
   const c = connectionCopy({ online: live, pending, syncing, lastSynced, failed, transientPending, storageError });
   const cls = ["td-conn", variant === "card" ? "td-conn-card" : "", className ?? ""].filter(Boolean).join(" ");
-  const pill = (
-    <button type="button" className={cls} title={c.message} aria-label={c.message} aria-live="polite" style={style}>
+  const content = (
+    <>
       <span className={"td-conn-ico" + (syncing && live ? " is-spinning" : "")} aria-hidden>
         <Icon name={c.icon} size={15} />
       </span>
       <span>{c.label}</span>
       {c.count ? <span className="td-conn-n">· {c.count}</span> : null}
+    </>
+  );
+  // The full condition is announced through one polite status region beside the pill, never on the button. The
+  // explicit aria-live keeps it announcing while a modal dialog hides the rest of the page (Base UI spares live regions).
+  const status = (
+    <span role="status" aria-live="polite" className="td-sr-only">
+      {c.message}
+    </span>
+  );
+  // Nothing to open: a plain pill (its short label is covered by the status region).
+  if (!onSyncNow && !onOpenSettings && !onClearFailed)
+    return (
+      <>
+        <span className={cls + " td-conn-static"} title={c.message} aria-hidden style={style}>
+          {content}
+        </span>
+        {status}
+      </>
+    );
+  const pill = (
+    <button type="button" className={cls} title={c.message} aria-label={c.message} style={style}>
+      {content}
     </button>
   );
-  if (!onSyncNow && !onOpenSettings && !onClearFailed) return pill;
   return (
-    <MenuPopover label="Connection" tier="nav" placement="bottom-end" width={264} trigger={pill}>
-      <div className="td-conn-menu-head">
-        <Icon name={c.icon} size={15} className={c.tone === "warn" ? "td-conn-menu-head-warn" : "td-conn-menu-head-info"} />
-        {c.message}
-      </div>
-      <MenuNote>{c.detail}</MenuNote>
-      <MenuDivider />
-      {failed && onClearFailed ? (
-        <MenuItem icon="circle-alert" onSelect={onClearFailed}>
-          Review changes
-        </MenuItem>
-      ) : null}
-      {onSyncNow ? (
-        <MenuItem icon="refresh-cw" disabled={!live || syncing} onSelect={onSyncNow}>
-          {syncing ? "Syncing…" : "Sync now"}
-        </MenuItem>
-      ) : null}
-      {onOpenSettings ? (
-        <MenuItem icon="settings" onSelect={onOpenSettings}>
-          Storage & sync settings
-        </MenuItem>
-      ) : null}
-    </MenuPopover>
+    <>
+      <MenuPopover label="Connection" tier="nav" placement="bottom-end" width={264} trigger={pill}>
+        <div className="td-conn-menu-head">
+          <Icon name={c.icon} size={15} className={c.tone === "warn" ? "td-conn-menu-head-warn" : "td-conn-menu-head-info"} />
+          {c.message}
+        </div>
+        <MenuNote>{c.detail}</MenuNote>
+        <MenuDivider />
+        {failed && onClearFailed ? (
+          <MenuItem icon="circle-alert" onSelect={onClearFailed}>
+            Review changes
+          </MenuItem>
+        ) : null}
+        {onSyncNow ? (
+          <MenuItem icon="refresh-cw" disabled={!live || syncing} onSelect={onSyncNow}>
+            {syncing ? "Syncing…" : "Sync now"}
+          </MenuItem>
+        ) : null}
+        {onOpenSettings ? (
+          <MenuItem icon="settings" onSelect={onOpenSettings}>
+            Storage & sync settings
+          </MenuItem>
+        ) : null}
+      </MenuPopover>
+      {status}
+    </>
   );
 }

@@ -102,7 +102,7 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
   );
   return (
     <div className="td-comment">
-      <Avatar name={author} src={src} color={color} size={32} />
+      <Avatar name={author} src={src} color={color} size={32} decorative />
       <div className="td-comment-main">
         {variant === "comment" ? (
           <>

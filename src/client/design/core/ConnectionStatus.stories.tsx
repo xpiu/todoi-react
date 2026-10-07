@@ -17,6 +17,11 @@ export const OfflineWithQueue: Story = {
   async play({ canvas, canvasElement, userEvent }) {
     const pill = canvas.getByRole("button", { name: "You're offline — 3 edits saved on this device" });
     await expect(pill).toHaveTextContent("Offline· 3");
+    // The live region sits beside the menu button, not on it.
+    await expect(pill).not.toHaveAttribute("aria-live");
+    await expect(canvas.getByRole("status")).toHaveTextContent("You're offline — 3 edits saved on this device");
+    // Explicit aria-live: Base UI modal dialogs leave live regions exposed, so it still announces behind the item overlay.
+    await expect(canvas.getByRole("status")).toHaveAttribute("aria-live", "polite");
     await userEvent.click(pill);
     const page = within(canvasElement.ownerDocument.body);
     const menu = await page.findByRole("menu", { name: "Connection" });
@@ -37,7 +42,15 @@ export const QueuedOnline: Story = {
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },
 };
-export const Syncing: Story = { args: { online: true, syncing: true, pending: 3, onSyncNow: undefined, onOpenSettings: undefined } };
+export const Syncing: Story = {
+  args: { online: true, syncing: true, pending: 3, onSyncNow: undefined, onOpenSettings: undefined },
+  async play({ canvas }) {
+    // Nothing to open: no dead button, and the condition is announced by a status region.
+    await expect(canvas.queryByRole("button")).not.toBeInTheDocument();
+    await expect(canvas.getByRole("status")).toHaveTextContent("Syncing 3 edits");
+    await waitFor(() => expect(canvas.getByText("Syncing 3…")).toBeVisible());
+  },
+};
 export const NeedsReview: Story = {
   args: { online: true, pending: 0, failed: 2, onClearFailed: fn() },
   async play({ args, canvas, canvasElement, userEvent }) {
@@ -52,7 +65,9 @@ export const DeviceSaveFailed: Story = { args: { online: true, pending: 0, stora
 export const SyncedCard: Story = {
   args: { online: true, pending: 0, showWhenIdle: true, variant: "card", onSyncNow: undefined, onOpenSettings: undefined },
   async play({ canvas }) {
-    await expect(canvas.getByRole("button", { name: "Everything is up to date" })).toHaveTextContent("Synced");
+    await expect(canvas.queryByRole("button")).not.toBeInTheDocument();
+    await expect(canvas.getByRole("status")).toHaveTextContent("Everything is up to date");
+    await waitFor(() => expect(canvas.getByText("Synced")).toBeVisible());
   },
 };
 export const HiddenWhenIdle: Story = {

@@ -283,7 +283,7 @@ export function TopNavbar({
                 {signedIn ? (
                   <MenuItem className="td-usermenu-id" onSelect={() => (onOpenAccount ?? onOpenSettings ?? onLogout)?.()}>
                     <span className="td-usermenu-idrow">
-                      <Avatar name={user.name} src={user.src} color={user.avatarColor} size={36} />
+                      <Avatar name={user.name} src={user.src} color={user.avatarColor} size={36} decorative />
                       <span className="td-usermenu-idtext">
                         <span className="td-usermenu-name">{user.nickname ?? user.name}</span>
                         {user.email ? <span className="td-usermenu-email">{user.email}</span> : null}

@@ -52,6 +52,26 @@ export const Selection: Story = {
     await expect(args.onClear).toHaveBeenCalledOnce();
   },
 };
+export const KeyboardRoving: Story = {
+  async play({ args, canvas, userEvent }) {
+    const bar = canvas.getByRole("toolbar", { name: "Actions for 3 selected items" });
+    // One Tab stop; ←/→ rove between the buttons (WAI-ARIA toolbar), wrapping at the ends.
+    await userEvent.tab();
+    await expect(within(bar).getByRole("button", { name: "Move to" })).toHaveFocus();
+    await expect(within(bar).getByRole("button", { name: "Label" })).toHaveAttribute("tabindex", "-1");
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(within(bar).getByRole("button", { name: "Label" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
+    const clear = within(bar).getByRole("button", { name: "Clear selection" });
+    await expect(clear).toHaveFocus();
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(within(bar).getByRole("button", { name: "Close" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(within(bar).getByRole("button", { name: "Move to" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowLeft}{Enter}");
+    await expect(args.onClear).toHaveBeenCalledOnce();
+  },
+};
 export const LabelMenu: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Label" }));

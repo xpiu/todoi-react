@@ -1,6 +1,8 @@
 // BulkBar — fixed bottom-centre on navy (the Toast owns bottom-left, ShortcutHint bottom-right) while
 // one or more items are selected. Every action applies to the whole selection and raises ONE undo
 // toast. Option menus are the shared Menu on the detached tier. Spec: DESIGN.md › Selection.
+// Base UI Toolbar gives it the WAI-ARIA toolbar keyboard model: one Tab stop, ←/→ (Home/End) between buttons.
+import { Toolbar } from "@base-ui/react/toolbar";
 import type { CSSProperties } from "react";
 
 import { Icon, type IconName } from "./Icon";
@@ -42,17 +44,17 @@ export interface BulkBarProps {
 export function BulkBar({ count, noun = "item", actions, onAction, onClear, clearHint = "esc", style }: BulkBarProps) {
   if (!count) return null;
   return (
-    <div className="td-bulk" role="toolbar" aria-label={`Actions for ${count} selected ${noun}${count === 1 ? "" : "s"}`} style={style}>
+    <Toolbar.Root className="td-bulk" aria-label={`Actions for ${count} selected ${noun}${count === 1 ? "" : "s"}`} style={style}>
       <span className="td-bulk-count" aria-live="polite">
         {count} selected
       </span>
       {actions.map((a) => {
         const btn = (
-          <button type="button" className={"td-bulk-btn" + (a.danger ? " is-danger" : "")} onClick={a.options ? undefined : () => onAction(a.id)}>
+          <Toolbar.Button className={"td-bulk-btn" + (a.danger ? " is-danger" : "")} onClick={a.options ? undefined : () => onAction(a.id)}>
             {a.icon ? <Icon name={a.icon} size={15} /> : null}
             {a.label}
             {a.options ? <Icon name="chevron-up" size={13} className="td-bulk-chev" /> : null}
-          </button>
+          </Toolbar.Button>
         );
         if (!a.options) return <span key={a.id}>{btn}</span>;
         return (
@@ -72,13 +74,13 @@ export function BulkBar({ count, noun = "item", actions, onAction, onClear, clea
       })}
       {onClear ? (
         <>
-          <button type="button" className="td-bulk-btn td-bulk-clear" onClick={onClear}>
+          <Toolbar.Button className="td-bulk-btn td-bulk-clear" aria-label="Clear selection" onClick={onClear}>
             Clear
             {clearHint ? <kbd className="td-bulk-kbd">{clearHint}</kbd> : null}
-          </button>
-          <IconButton name="x" label="Clear selection" variant="chrome" size={28} onClick={onClear} />
+          </Toolbar.Button>
+          <Toolbar.Button render={<IconButton name="x" label="Close" variant="chrome" size={28} />} onClick={onClear} />
         </>
       ) : null}
-    </div>
+    </Toolbar.Root>
   );
 }

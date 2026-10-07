@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { createRef, useState } from "react";
 import { expect, fn, waitFor } from "storybook/test";
 
 import { Checkbox, type CheckboxProps } from "./Checkbox";
@@ -51,6 +51,27 @@ export const Recurring: Story = {
 export const LongLabel: Story = {
   decorators: [(Story) => <div style={{ maxWidth: 280 }}><Story /></div>],
   args: { label: "Confirm the delivery date, optional equipment, maintenance plan and training schedule with the customer" },
+};
+// Native props and the ref reach the <button>, so Base UI `render` composition (Popover/Menu triggers, Field) works.
+const forwardedRef = createRef<HTMLButtonElement>();
+export const ForwardsRefAndProps: Story = {
+  render: (args) => (
+    <>
+      <Checkbox {...args} ref={forwardedRef} id="hangar-check" aria-describedby="hangar-hint" data-testid="hangar" />
+      <p id="hangar-hint">Confirm with the airfield first.</p>
+    </>
+  ),
+  args: { onFocus: fn(), onClick: fn() },
+  async play({ args, canvas, userEvent }) {
+    const box = canvas.getByRole("checkbox", { name: "Book the hangar slot", description: "Confirm with the airfield first." });
+    await expect(forwardedRef.current).toBe(box);
+    await expect(box).toHaveAttribute("id", "hangar-check");
+    await expect(box).toHaveAttribute("data-testid", "hangar");
+    await userEvent.click(box);
+    await expect(args.onFocus).toHaveBeenCalled();
+    await expect(args.onClick).toHaveBeenCalledOnce();
+    await expect(args.onChange).toHaveBeenCalledWith(true);
+  },
 };
 export const Disabled: Story = {
   args: { disabled: true, checked: true },

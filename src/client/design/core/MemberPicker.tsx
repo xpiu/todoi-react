@@ -1,12 +1,13 @@
 // MemberPicker — multi-select people picker: trigger shows an AvatarStack + first names (or the
 // placeholder) over a searchable check-row list; assigned people sort first. Value = member ids.
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { Avatar, AvatarStack } from "./Avatar";
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
 import "./ItemPicker.css";
+import "./Menu.css";
 import "./MemberPicker.css";
 
 export interface PickableMember {
@@ -30,6 +31,7 @@ export interface MemberPickerProps {
   width?: number;
   block?: boolean;
   disabled?: boolean;
+  /** Selection cap: at the cap, unpicked rows are aria-disabled and a note says how to pick someone else */
   max?: number;
   "aria-label"?: string;
   clearLabel?: string;
@@ -44,7 +46,13 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
   const ql = q.trim().toLowerCase();
   const match = (m: PickableMember) => !ql || [m.name, m.nickname, m.email].filter(Boolean).some((s) => String(s).toLowerCase().includes(ql));
   const ordered = [...members.filter((m) => sel.has(m.id)), ...members.filter((m) => !sel.has(m.id))].filter(match);
-  const toggle = (m: PickableMember) => onChange(sel.has(m.id) ? value.filter((v) => v !== m.id) : max && value.length >= max ? value : [...value, m.id]);
+  const full = !!max && value.length >= max;
+  const fullNoteId = useId();
+  const blocked = (m: PickableMember) => full && !sel.has(m.id);
+  const toggle = (m: PickableMember) => {
+    if (blocked(m)) return;
+    onChange(sel.has(m.id) ? value.filter((v) => v !== m.id) : [...value, m.id]);
+  };
   return (
     <Popover
       open={pop.open}
@@ -88,6 +96,11 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
         />
       </div>
       <div className="td-picker-list">
+        {full ? (
+          <div className="td-menu-note" id={fullNoteId}>
+            {max === 1 ? "One person at most. Remove them to pick someone else." : `Up to ${max} people. Remove one to pick someone else.`}
+          </div>
+        ) : null}
         {ordered.map((m) => (
           <div
             key={m.id}
@@ -96,6 +109,8 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
             tabIndex={0}
             aria-checked={sel.has(m.id)}
             aria-label={m.name}
+            aria-disabled={blocked(m) || undefined}
+            aria-describedby={blocked(m) ? fullNoteId : undefined}
             onClick={() => toggle(m)}
             onKeyDown={(e) => {
               if (e.key === " " || e.key === "Enter") {
@@ -104,7 +119,7 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
               }
             }}
           >
-            <Avatar name={m.name} src={m.src} color={m.color} size={22} />
+            <Avatar name={m.name} src={m.src} color={m.color} size={22} decorative />
             <span className="td-mp-name">{m.name}</span>
             {m.nickname || m.email ? <span className="td-mp-sub">{m.nickname ? `@${m.nickname}` : m.email}</span> : null}
             {sel.has(m.id) ? <Icon name="check" size={14} className="td-mp-check" /> : null}
