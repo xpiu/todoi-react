@@ -41,7 +41,9 @@ test("parent archive and trash inherit visibility without restoring independentl
   await page.goto(`/archive?project=${f.project}`);
   const archive = page.getByRole("list", { name: "Archive", exact: true });
   await expect(archive.getByRole("listitem")).toHaveCount(1);
-  await archive.getByRole("button", { name: "Restore", exact: true }).click();
+  const archivedParent = archive.getByRole("listitem").filter({ hasText: `Lifecycle ${f.parent}` });
+  await expect(archivedParent).toBeVisible();
+  await archivedParent.getByRole("button", { name: "Restore", exact: true }).click();
   await expect.poll(liveIds).toEqual([f.parent, f.child].sort());
   await page.goto(`/p/${f.project}?v=list`);
   await page.locator(`[data-drag-id="${f.parent}"]`).focus();
@@ -51,7 +53,9 @@ test("parent archive and trash inherit visibility without restoring independentl
   await page.getByRole("button", { name: /^Trash/ }).click();
   const trash = page.getByRole("list", { name: "Trash", exact: true });
   await expect(trash.getByRole("listitem")).toHaveCount(1);
-  await trash.getByRole("button", { name: "Restore", exact: true }).click();
+  const trashedParent = trash.getByRole("listitem").filter({ hasText: `Lifecycle ${f.parent}` });
+  await expect(trashedParent).toBeVisible();
+  await trashedParent.getByRole("button", { name: "Restore", exact: true }).click();
   await expect.poll(liveIds).toEqual([f.parent, f.child].sort());
   await expect(trash.getByText(`Lifecycle ${f.deleted}`, { exact: true })).toBeVisible();
   await page.getByRole("button", { name: /^Archive/ }).click();
@@ -78,7 +82,7 @@ test("project restore preserves item state and failed permanent deletion remains
   expect((await page.request.delete(`/api/projects/${f.project}`)).status()).toBe(204);
   await page.reload();
   await page.getByRole("button", { name: /^Trash/ }).click();
-  await page.route(`**/api/archive/projects/${f.project}`, (route) => route.fulfill({ status: 500, json: { error: "Simulated deletion failure" } }));
+  await page.route(`**/api/archive/projects/${f.project}`, (route) => route.fulfill({ status: 422, json: { error: "Simulated deletion failure" } }));
   const confirmDelete = async () => {
     await row.getByRole("button", { name: `More for Lifecycle ${f.project}` }).click();
     await page.getByRole("menuitem", { name: "Delete forever", exact: true }).click();

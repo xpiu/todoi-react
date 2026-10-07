@@ -35,7 +35,7 @@ usePrefs.subscribe(applyConventions);
 
 /** Adopt the account's preferences once they load (another device may have changed them). */
 export function usePrefsSync(enabled: boolean) {
-  const account = useQuery({ queryKey: ["me", "prefs"], queryFn: () => api.api.me.$get().then((r) => unwrap<{ prefs: Prefs }>(r)).then((me) => me.prefs), enabled });
+  const account = useQuery({ queryKey: ["me", "prefs"], queryFn: ({ signal }) => api.api.me.$get(undefined, { init: { signal } }).then((r) => unwrap<{ prefs: Prefs }>(r)).then((me) => me.prefs), enabled });
   useEffect(() => {
     if (account.data) usePrefs.setState(account.data);
   }, [account.data]);

@@ -3,6 +3,7 @@ import { MutationCache, QueryClient } from "@tanstack/react-query";
 import { notifyFailure } from "./app/feedback";
 import { announceChange } from "./app/freshness";
 import { markSaved } from "./app/saveState";
+import { ApiError } from "./data/api";
 
 export const queryClient = new QueryClient({
   // Every edit that reaches the server moves "Last saved" (ConnectionStatus, Settings › Storage & sync)
@@ -19,6 +20,8 @@ export const queryClient = new QueryClient({
     },
   }),
   defaultOptions: {
-    queries: { staleTime: 10_000, retry: 1 },
+    queries: { staleTime: 10_000, retry: (failures, error) => failures < 1 && !(error instanceof ApiError && [401, 403, 404].includes(error.status)), networkMode: "offlineFirst" },
+    // The transport persists workspace writes before attempting the network, including offline.
+    mutations: { networkMode: "always" },
   },
 });

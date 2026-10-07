@@ -2,22 +2,24 @@ import { expect, test as base } from "@playwright/test";
 import { nanoid } from "nanoid";
 
 import type { Item, ItemDetails, ProjectDetail } from "../../src/client/data/api";
-import { seedProjectId, signIn } from "./helpers";
+import { freshProject, signIn } from "./helpers";
 
 type Fixture = { projectId: string; parent: string; child: string; sibling: string; other: string };
 const test = base.extend<{ fixture: Fixture }>({
   fixture: async ({ page }, use) => {
     await signIn(page);
-    const projectId = await seedProjectId(page);
-    const project = await (await page.request.get(`/api/projects/${projectId}`)).json() as ProjectDetail;
-    const listId = project.lists.find((l) => !l.hidden && l.statusRole !== "DONE")!.id;
-    const labelRows = await (await page.request.get(`/api/labels?projectId=${projectId}`)).json() as Array<{ id: string }>;
+    const ownProject = await freshProject(page, "Deletion undo");
+    const projectId = ownProject.projectId;
     const parent = nanoid(), child = nanoid(), sibling = nanoid(), other = nanoid();
     const created: string[] = [];
     const files: string[] = [];
     try {
+      const project = await (await page.request.get(`/api/projects/${projectId}`)).json() as ProjectDetail;
+      const listId = project.lists.find((l) => !l.hidden && l.statusRole !== "DONE")!.id;
+      const labelId = nanoid();
+      expect((await page.request.post("/api/labels", { data: { id: labelId, projectId, name: "Undo metadata", color: "blue" } })).status()).toBe(201);
       for (const [id, parentItemId] of [[parent, undefined], [child, parent], [sibling, parent], [other, undefined]] as const) {
-        const response = await page.request.post("/api/items", { data: { id, title: `Undo fixture ${id}`, listId, parentItemId, description: "Keep **this description**", priority: "HIGH", startDate: "2026-10-02", dueDate: "2026-10-09", dueTime: "14:30", labelIds: labelRows.slice(0, 1).map((l) => l.id), assigneeIds: [project.members[0]!.userId] } });
+        const response = await page.request.post("/api/items", { data: { id, title: `Undo fixture ${id}`, listId, parentItemId, description: "Keep **this description**", priority: "HIGH", startDate: "2026-10-02", dueDate: "2026-10-09", dueTime: "14:30", labelIds: [labelId], assigneeIds: [project.members[0]!.userId] } });
         expect(response.status()).toBe(201);
         created.push(id);
         expect((await page.request.patch(`/api/items/${id}`, { data: { repeatRule: { freq: "weekly" }, repeatCount: 2 } })).ok()).toBeTruthy();
@@ -35,6 +37,7 @@ const test = base.extend<{ fixture: Fixture }>({
       // Fixture teardown has its own timeout, including when the browser test times out.
       for (const id of files) expect((await page.request.delete(`/api/attachments/${id}`)).status()).toBe(204);
       for (const id of created.reverse()) expect((await page.request.delete(`/api/archive/items/${id}`)).status()).toBe(204);
+      await ownProject.cleanup();
     }
   },
 });
@@ -66,7 +69,8 @@ for (const via of ["keyboard", "overlay"] as const) {
     await expect(page.getByRole("status").filter({ hasText: /Deleted|Undid:|could not be deleted/ })).toContainText("Undid:");
     await page.reload();
     const after = await ranked();
-    expect({ ...after, updatedAt: before.updatedAt }).toEqual(before);
+    expect(after.version).toBeGreaterThan(before.version);
+    expect({ ...after, updatedAt: before.updatedAt, version: before.version }).toEqual(before);
     expect(await (await page.request.get(`/api/items/${f.parent}/details`)).json()).toEqual(details);
   });
 }
@@ -79,7 +83,7 @@ test("a failed subitem restore keeps Undo available for retry", async ({ page, f
   await page.getByRole("button", { name: "Item options", exact: true }).click();
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: /Deleted|Undid:|could not be deleted/ })).toContainText("Deleted");
-  await page.route(`**/api/items/${f.child}`, (route) => route.request().method() === "PATCH" ? route.fulfill({ status: 403, json: { error: "Simulated permission failure" } }) : route.continue());
+  await page.route(`**/api/items/${f.child}`, (route) => route.request().method() === "PATCH" ? route.fulfill({ status: 422, json: { error: "Simulated validation failure" } }) : route.continue());
   await page.getByRole("button", { name: /^Undo/ }).click();
   await expect(page.getByRole("button", { name: /^Retry Undo/ })).toBeVisible();
   await page.unroute(`**/api/items/${f.child}`);
@@ -87,7 +91,9 @@ test("a failed subitem restore keeps Undo available for retry", async ({ page, f
   await expect(page.getByRole("status").filter({ hasText: /Deleted|Undid:|could not be deleted/ })).toContainText("Undid:");
   await page.reload();
   const rows = await (await page.request.get(`/api/items?projectId=${f.projectId}`)).json() as Item[];
-  expect({ ...rows.find((it) => it.id === f.child), updatedAt: beforeItem.updatedAt }).toEqual(beforeItem);
+  const afterItem = rows.find((it) => it.id === f.child)!;
+  expect(afterItem.version).toBeGreaterThan(beforeItem.version);
+  expect({ ...afterItem, updatedAt: beforeItem.updatedAt, version: beforeItem.version }).toEqual(beforeItem);
   expect(await (await page.request.get(`/api/items/${f.child}/details`)).json()).toEqual(before);
 });
 
@@ -108,7 +114,7 @@ test("checklist bulk Undo retries only the restores that failed", async ({ page,
     const request = route.request();
     if (request.method() !== "PATCH" || request.postDataJSON().deleted !== false) return route.continue();
     const id = new URL(request.url()).pathname.split("/").at(-1)!;
-    if (id === f.sibling && failSecond) return route.fulfill({ status: 500, json: { error: "Simulated failure" } });
+    if (id === f.sibling && failSecond) return route.fulfill({ status: 422, json: { error: "Simulated validation failure" } });
     restored.push(id);
     await route.continue();
   });
@@ -156,7 +162,7 @@ test("Undo is registered only after deletion succeeds", async ({ page, fixture: 
 
 test("bulk deletion reports partial failure and only undoes confirmed deletions", async ({ page, fixture: f }) => {
   await page.goto(`/p/${f.projectId}?v=list`);
-  await page.route(`**/api/items/${f.other}`, (route) => route.request().method() === "DELETE" ? route.fulfill({ status: 500, json: { error: "Simulated deletion failure" } }) : route.continue());
+  await page.route(`**/api/items/${f.other}`, (route) => route.request().method() === "DELETE" ? route.fulfill({ status: 422, json: { error: "Simulated deletion validation failure" } }) : route.continue());
   for (const id of [f.parent, f.other]) {
     await page.locator(`[data-drag-id="${id}"]`).focus();
     await page.keyboard.press("s");
@@ -167,8 +173,16 @@ test("bulk deletion reports partial failure and only undoes confirmed deletions"
   page.on("request", (request) => {
     if (request.method() === "PATCH" && request.postDataJSON()?.deleted === false) restored.push(new URL(request.url()).pathname.split("/").at(-1)!);
   });
+  // Undo is durably queued behind the refused deletion; reviewing that refusal allows it to replay.
   await page.getByRole("button", { name: /^Undo/ }).click();
-  await expect(page.getByRole("status").filter({ hasText: /Deleted|Undid:|could not be deleted/ })).toContainText("Undid:");
+  await expect(page.getByRole("status").filter({ hasText: "Undoing…" })).toBeVisible();
+  await page.getByRole("banner").getByRole("button", { name: /couldn't sync/ }).click();
+  await page.getByRole("menuitem", { name: "Storage & sync settings" }).click();
+  await page.getByRole("button", { name: "Discard change", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Discard change", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Saved change", exact: true })).toHaveCount(0);
+  await expect.poll(async () => (await (await page.request.get(`/api/items?projectId=${f.projectId}`)).json() as Item[]).some((item) => item.id === f.parent)).toBe(true);
+  await page.goBack();
   expect(restored).toEqual([f.parent]);
   await page.reload();
   await expect(page.locator(`[data-drag-id="${f.parent}"]`)).toBeVisible();

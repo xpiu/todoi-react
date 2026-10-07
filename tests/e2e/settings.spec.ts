@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
 import { trackAccounts } from "./helpers";
+import { apiOffline } from "./sync-helpers";
 
 // Settings › General and › Notifications change what they describe. Each test runs in a fresh guest
 // workspace (its own account, prefs and Inbox), removed afterwards.
@@ -85,6 +86,7 @@ test("smart dates off keeps the words; default priority applies; hidden complete
   await page.request.patch(`/api/items/${inboxDone}`, { data: { done: true } });
   await page.goto("/settings");
   await toggle(page, "Show completed items", false);
+  await expect.poll(async () => (await prefs(page)).showCompleted).toBe(false);
   for (const view of ["list", "board", "calendar"]) {
     await page.goto(`/p/${projectId}?v=${view}`);
     await expect(page.getByText("Still open").first()).toBeVisible();
@@ -94,6 +96,7 @@ test("smart dates off keeps the words; default priority applies; hidden complete
   await expect(page.getByText("Your inbox is empty")).toBeVisible();
   await page.goto("/settings");
   await toggle(page, "Show completed items", true);
+  await expect.poll(async () => (await prefs(page)).showCompleted).toBe(true);
   await page.goto(`/p/${projectId}?v=list`);
   await expect(page.getByText("Call the broker due fri")).toBeVisible();
 });
@@ -104,12 +107,46 @@ test("the Inbox badge follows its setting, and unavailable controls say so", asy
   expect((await page.request.post("/api/items", { data: { id, title: "Unread thing" } })).status()).toBe(201);
   await page.request.patch(`/api/items/${id}`, { data: { unread: true } });
   await page.goto("/settings?s=notifications");
-  const dot = page.locator(".td-sidebar").getByRole("status", { name: /unread/ });
+  const sidebar = page.locator(".td-sidebar");
+  const dot = sidebar.locator(".td-sidebar-dot");
+  await expect(sidebar.getByRole("button", { name: /Inbox.*1 unread/ })).toBeVisible();
   await expect(dot).toBeVisible();
   await toggle(page, "Unread count on Inbox", false);
   await expect(dot).toHaveCount(0);
+  await expect(sidebar.getByRole("button", { name: /Inbox.*unread/ })).toHaveCount(0);
   await expect(page.getByText("Email sending isn't set up yet")).toBeVisible();
   await shot(page, "notifications");
   await page.goto("/settings");
   await expect(page.getByText("Todoi is in English for now")).toBeVisible();
+});
+
+test("confirmed account preferences survive an API-offline reload", async ({ page, context }) => {
+  await guestProject(page);
+  await page.goto("/settings");
+  await expect(page.getByRole("switch", { name: "Show completed items" })).toHaveAttribute("aria-checked", "true");
+  await toggle(page, "Show completed items", false);
+  await expect.poll(async () => (await prefs(page)).showCompleted).toBe(false);
+
+  const cachedPreferences = () => page.evaluate(async () => {
+    const { readWorkspace } = await import(new URL("/src/client/data/syncStorage.ts", location.origin).href) as typeof import("../../src/client/data/syncStorage");
+    const ownerId = localStorage.getItem("td-sync-owner");
+    const record = ownerId ? await readWorkspace(ownerId) : null;
+    const me = record?.replies["/api/me"];
+    const account = record?.queries.queries.find((query) => query.queryKey[0] === "me" && query.queryKey[1] === "prefs");
+    return {
+      pending: record?.operations.length,
+      reply: me ? (JSON.parse(me.body) as { prefs: { showCompleted: boolean } }).prefs.showCompleted : null,
+      query: (account?.state.data as { showCompleted?: boolean } | undefined)?.showCompleted,
+    };
+  });
+  // Wait for the atomic acknowledgement, then remove the network that could mask a stale cache.
+  await expect.poll(cachedPreferences).toEqual({ pending: 0, reply: false, query: false });
+  const reconnect = await apiOffline(context);
+  try {
+    await page.reload();
+    await expect(page.getByRole("switch", { name: "Show completed items" })).toHaveAttribute("aria-checked", "false");
+    await expect.poll(cachedPreferences).toEqual({ pending: 0, reply: false, query: false });
+  } finally {
+    await reconnect();
+  }
 });

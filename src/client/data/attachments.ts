@@ -12,12 +12,13 @@ export type Attachment = ItemDetails["attachments"][number];
 export const attachmentUrl = (id: string, download = false) => `/api/attachments/${id}/file${download ? "?download" : ""}`;
 
 /** Refetch what shows an item's files; resolves once the details include the change. */
-export const settleAttachments = (qc: QueryClient, itemId: string, projectId: string | null) =>
-  Promise.all([
-    qc.invalidateQueries({ queryKey: keys.itemDetails(itemId) }),
-    qc.invalidateQueries({ queryKey: keys.items(scopeOf(projectId)) }),
-    qc.invalidateQueries({ queryKey: ["activity"] }),
-  ]);
+export async function settleAttachments(qc: QueryClient, itemId: string, projectId: string | null) {
+  const affected = [keys.itemDetails(itemId), keys.items(scopeOf(projectId)), ["activity"]] as const;
+  // An initial read may still be loading when an upload succeeds. Invalidation alone can reuse
+  // that pre-upload request; cancel it before starting the post-upload snapshots.
+  await Promise.all(affected.map((queryKey) => qc.cancelQueries({ queryKey })));
+  return Promise.all(affected.map((queryKey) => qc.invalidateQueries({ queryKey })));
+}
 
 /**
  * Upload one file. XHR rather than fetch, because only XHR reports upload progress. Rejects with an

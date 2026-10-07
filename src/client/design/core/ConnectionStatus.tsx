@@ -24,14 +24,14 @@ export function useOnline(force?: boolean): boolean {
 }
 
 export function relativeSync(iso?: string | null, now: number = Date.now()): string {
-  if (!iso) return "Nothing saved yet in this tab";
+  if (!iso) return "No sync completed yet";
   const m = Math.round((now - new Date(iso).getTime()) / 60000);
-  if (m < 1) return "Last saved just now";
-  if (m < 60) return `Last saved ${m} minute${m === 1 ? "" : "s"} ago`;
+  if (m < 1) return "Last synced just now";
+  if (m < 60) return `Last synced ${m} minute${m === 1 ? "" : "s"} ago`;
   const h = Math.round(m / 60);
-  if (h < 24) return `Last saved ${h} hour${h === 1 ? "" : "s"} ago`;
+  if (h < 24) return `Last synced ${h} hour${h === 1 ? "" : "s"} ago`;
   const d = Math.round(h / 24);
-  return `Last saved ${d} day${d === 1 ? "" : "s"} ago`;
+  return `Last synced ${d} day${d === 1 ? "" : "s"} ago`;
 }
 
 const edits = (n: number) => `${n} edit${n === 1 ? "" : "s"}`;
@@ -54,32 +54,36 @@ export interface ConnectionState {
   pending?: number;
   syncing?: boolean;
   lastSynced?: string | null;
-  /** Edits the server refused (each rolled back on screen, with its reason in a message) */
+  /** Durable edits requiring review; the draft remains on this device. */
   failed?: number;
+  /** Actions outside the durable workspace queue still waiting in memory. */
+  transientPending?: number;
+  storageError?: string | null;
 }
 
 /** The one copy source for the pill, its menu and the SyncNotice offline variant. */
-export function connectionCopy({ online = true, pending = 0, syncing = false, lastSynced, failed = 0 }: ConnectionState = {}): ConnectionCopy {
+export function connectionCopy({ online = true, pending = 0, syncing = false, lastSynced, failed = 0, transientPending = 0, storageError }: ConnectionState = {}): ConnectionCopy {
   const last = relativeSync(lastSynced);
-  // Waiting edits live in this tab's memory until the connection returns — say so, never "saved".
+  if (storageError) return { tone: "warn", icon: "circle-alert", label: "Device save failed", count: 0, message: "Changes couldn't be saved on this device", detail: "Keep this tab open. Check available browser storage, then try your change again. " + last + "." };
+  if (transientPending) return { tone: "warn", icon: "circle-alert", label: `${transientPending} not saved`, count: 0, message: `${edits(transientPending)} waiting in this tab`, detail: "Keep this tab open until these actions finish. Workspace edits queued for sync are saved separately on this device. " + last + "." };
+  if (failed) return { tone: "warn", icon: "circle-alert", label: `${failed} need review`, count: 0, message: `${edits(failed)} couldn't sync`, detail: "Your drafts are saved on this device. Review them in Storage & sync to retry, resolve a conflict or discard a change. " + last + "." };
   if (!online) {
     return {
       tone: "warn",
       icon: "cloud-off",
       label: "Offline",
       count: pending,
-      message: pending ? `You're offline — ${edits(pending)} waiting to save` : "You're offline",
-      detail: (pending ? "They save when the connection returns. Keep this tab open: reloading or closing it discards them. " : "Edits you make now wait in this tab and save when you're back online; reloading the tab discards them. ") + last + ".",
+      message: pending ? `You're offline — ${edits(pending)} saved on this device` : "You're offline",
+      detail: (pending ? "Queued changes survive closing this tab and sync when you reconnect. " : "Workspace edits are saved on this device and sync when you reconnect. ") + last + ".",
     };
   }
-  if (failed) return { tone: "warn", icon: "circle-alert", label: `${failed} not saved`, count: 0, message: `${edits(failed)} didn't save`, detail: "Each was undone on screen, and a message said why — for example, a lost sign-in. Make the change again once that's sorted. " + last + "." };
-  if (syncing) return { tone: "info", icon: "refresh-cw", label: pending ? `Syncing ${pending}…` : "Syncing…", count: 0, message: `Back online — syncing ${pending ? edits(pending) : "your changes"}`, detail: last + "." };
-  if (pending) return { tone: "info", icon: "cloud-upload", label: `${edits(pending)} queued`, count: 0, message: `${edits(pending)} waiting to save`, detail: "They wait in this tab; Sync now sends them. " + last + "." };
+  if (syncing) return { tone: "info", icon: "refresh-cw", label: pending ? `Syncing ${pending}…` : "Syncing…", count: 0, message: `Syncing ${pending ? edits(pending) : "your changes"}`, detail: "Queued workspace changes are saved on this device. " + last + "." };
+  if (pending) return { tone: "info", icon: "cloud-upload", label: `${edits(pending)} queued`, count: 0, message: `${edits(pending)} saved on this device`, detail: "Waiting to sync to the server. Sync now tries again. " + last + "." };
   return { tone: "info", icon: "cloud-check", label: "Synced", count: 0, message: "Everything is up to date", detail: last + "." };
 }
 
 export interface ConnectionStatusProps extends ConnectionState {
-  /** Renders "Dismiss" for the not-saved state */
+  /** Opens recovery for edits needing review. */
   onClearFailed?: () => void;
   /** Renders "Sync now" in the menu (disabled while offline or syncing) */
   onSyncNow?: () => void;
@@ -97,9 +101,9 @@ export interface ConnectionStatusProps extends ConnectionState {
 
 export const SYNCED_SETTLE_MS = 2000;
 
-export function ConnectionStatus({ online, pending = 0, syncing = false, lastSynced, failed = 0, onClearFailed, onSyncNow, onOpenSettings, variant = "chrome", showWhenIdle = false, settledFor = SYNCED_SETTLE_MS, style, className }: ConnectionStatusProps) {
+export function ConnectionStatus({ online, pending = 0, syncing = false, lastSynced, failed = 0, transientPending = 0, storageError, onClearFailed, onSyncNow, onOpenSettings, variant = "chrome", showWhenIdle = false, settledFor = SYNCED_SETTLE_MS, style, className }: ConnectionStatusProps) {
   const live = useOnline(online);
-  const idle = live && !syncing && !pending && !failed;
+  const idle = live && !syncing && !pending && !failed && !transientPending && !storageError;
   const wasBusy = useRef(false);
   const [settled, setSettled] = useState(false);
   useEffect(() => {
@@ -117,7 +121,7 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
     };
   }, [idle, settledFor]);
   if (idle && !settled && !showWhenIdle) return null;
-  const c = connectionCopy({ online: live, pending, syncing, lastSynced, failed });
+  const c = connectionCopy({ online: live, pending, syncing, lastSynced, failed, transientPending, storageError });
   const cls = ["td-conn", variant === "card" ? "td-conn-card" : "", className ?? ""].filter(Boolean).join(" ");
   const pill = (
     <button type="button" className={cls} title={c.message} aria-label={c.message} aria-live="polite" style={style}>
@@ -128,7 +132,7 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
       {c.count ? <span className="td-conn-n">· {c.count}</span> : null}
     </button>
   );
-  if (!onSyncNow && !onOpenSettings) return pill;
+  if (!onSyncNow && !onOpenSettings && !onClearFailed) return pill;
   return (
     <MenuPopover label="Connection" tier="nav" placement="bottom-end" width={264} trigger={pill}>
       <div className="td-conn-menu-head">
@@ -137,9 +141,9 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
       </div>
       <MenuNote>{c.detail}</MenuNote>
       <MenuDivider />
-      {failed && live && onClearFailed ? (
-        <MenuItem icon="check" onSelect={onClearFailed}>
-          Dismiss
+      {failed && onClearFailed ? (
+        <MenuItem icon="circle-alert" onSelect={onClearFailed}>
+          Review changes
         </MenuItem>
       ) : null}
       {onSyncNow ? (

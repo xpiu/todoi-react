@@ -2,6 +2,14 @@
 
 All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-1.0: minor = features, patch = fixes).
 
+## Unreleased — 2026-10-06
+
+- Save workspace edits and their local projection atomically in IndexedDB; replay them in order across reloads and tabs, with automatic retries for temporary failures.
+- Deduplicate server replay with transactional actor-scoped receipts, row versions and acknowledgments for related changes. Reject stale edits while retaining submitted text.
+- Reconcile incoming snapshots with pending edits and purge inaccessible content. Add Storage & sync recovery with copy, retry and confirmed conflict choices.
+- Preserve newer description/comment drafts while an earlier save is pending; keep recovery controls readable across all themes and mobile layouts.
+- Record `https://staging.todoi.com` as the staging target.
+
 ## [0.1.0] — 2026-10-05
 
 The first release of the rebuilt Todoi: a Vite/React client and a Hono + Drizzle/Postgres API built on the Claude Design "Todoi Design System" (spec in `DESIGN.md`).

@@ -11,7 +11,7 @@ import type { InferResponseType } from "hono/client";
 
 export type ArchiveListing = InferResponseType<typeof api.api.archive.$get, 200>;
 export const archiveQueryKey = (projectId?: string) => ["archive", projectId ?? "all"] as const;
-export const useArchive = (projectId?: string, enabled = true) => useQuery({ queryKey: archiveQueryKey(projectId), queryFn: () => api.api.archive.$get({ query: projectId ? { projectId } : {} }).then((r) => unwrap<ArchiveListing>(r)), enabled });
+export const useArchive = (projectId?: string, enabled = true) => useQuery({ queryKey: archiveQueryKey(projectId), queryFn: ({ signal }) => api.api.archive.$get({ query: projectId ? { projectId } : {} }, { init: { signal } }).then((r) => unwrap<ArchiveListing>(r)), enabled });
 
 export function useProjectMutations() {
   const qc = useQueryClient();

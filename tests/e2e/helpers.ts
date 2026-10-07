@@ -82,7 +82,8 @@ export async function firstItemId(page: Page, projectId: string): Promise<string
 
 /** Fail on serious / critical WCAG A + AA violations; everything else is reported in the test output. */
 export async function checkA11y(page: Page, label: string) {
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).disableRules(["color-contrast"]).analyze();
+  // Base UI's hidden focus sentinels redirect focus; actual controls stay in the audit.
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).exclude("[data-base-ui-focus-guard]").disableRules(["color-contrast"]).analyze();
   const blocking = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   const describe = (v: (typeof results.violations)[number]) => `${v.id} (${v.impact}): ${v.help} — ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(", ")}`;
   if (results.violations.length) console.log(`[axe ${label}] ${results.violations.map(describe).join("\n  ")}`);

@@ -1,11 +1,11 @@
-// What is and isn't saved, from TanStack Query's own mutation cache: edits waiting for the connection
-// (paused — kept in this tab's memory only), edits on their way, and edits the server refused (each was
-// rolled back on screen and explained in a message). Feeds ConnectionStatus, Settings › Storage & sync
-// and the leave-page guard. Durable offline replay (surviving a reload) is not built; the copy says so.
+// Durable workspace operations and transient mutations stay separate: only the latter need a
+// leave-page warning. Server failures keep their draft in the sync queue until explicitly resolved.
 import { useMutationState, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 
+import { ApiError } from "../data/api";
+import { retrySync, useSyncState } from "../data/sync";
 import { useOnline } from "../design/core/ConnectionStatus";
 
 /** When an edit last reached the server (set by the query client's mutation cache). */
@@ -17,12 +17,21 @@ const SLOW_SAVE_MS = 700;
 export function useSaveState() {
   const qc = useQueryClient();
   const online = useOnline();
-  const pending = useMutationState({ filters: { status: "pending" }, select: (m) => m.state.isPaused });
-  const failed = useMutationState({ filters: { status: "error" }, select: (m) => m.mutationId }).length;
-  const waiting = pending.filter(Boolean).length;
-  const saving = pending.length - waiting;
+  const mutations = useMutationState({ filters: { status: "pending" }, select: (m) => m.state.isPaused });
+  const transientFailed = useMutationState({ filters: { status: "error", predicate: (m) => !(m.state.error instanceof ApiError && m.state.error.operationId) }, select: (m) => m.mutationId }).length;
+  const operations = useSyncState((s) => s.operations);
+  const syncing = useSyncState((s) => s.saving);
+  const persisting = useSyncState((s) => s.persisting);
+  const transientRequests = useSyncState((s) => s.transientRequests);
+  const storageError = useSyncState((s) => s.storageError);
+  const lastSynced = useSyncState((s) => s.lastSynced);
   const lastSaved = useLastSaved((s) => s.at);
-  // Ordinary edits land in a blink; only a save that takes a while (a slow link, a drained queue) shows.
+  const transientWaiting = mutations.filter(Boolean).length;
+  const transientSaving = transientRequests;
+  const waiting = operations.filter((operation) => operation.state === "pending").length;
+  const failed = operations.length - waiting;
+  const saving = transientSaving + Number(syncing);
+  // Ordinary edits land in a blink; show only saves taking a noticeable amount of time.
   const [slow, setSlow] = useState(false);
   useEffect(() => {
     if (!saving) return;
@@ -32,31 +41,27 @@ export function useSaveState() {
       setSlow(false);
     };
   }, [saving]);
-  const cache = qc.getMutationCache();
   return {
     online,
-    /** Paused until the connection returns; lost if this tab reloads or closes first */
     waiting,
+    transientWaiting,
+    transientFailed,
     saving,
-    /** Saves under way for a noticeable time */
     slowSaving: slow && saving > 0,
     failed,
-    lastSaved,
-    /** Send what is waiting now (after a reconnect the browser has not announced yet) */
-    retry: () => void qc.resumePausedMutations(),
-    /** Forget the edits that never reached the server and show the server's state again */
-    discardWaiting: () => {
-      for (const m of cache.findAll({ status: "pending" })) if (m.state.isPaused) cache.remove(m);
-      void qc.invalidateQueries();
-    },
-    /** The refusals were explained when they happened; this only clears the count */
-    clearFailed: () => {
-      for (const m of cache.findAll({ status: "error" })) cache.remove(m);
+    operations,
+    storageError,
+    lastSaved: lastSynced ?? lastSaved,
+    // A durable operation is safe to leave, including during its network replay.
+    unsafeToLeave: transientWaiting + transientSaving + persisting + Number(!!storageError),
+    retry: () => {
+      void qc.resumePausedMutations();
+      void retrySync();
     },
   };
 }
 
-/** While edits are waiting or on their way, leaving the page asks first (the browser's own prompt). */
+/** Durable queued edits survive closure; only work not yet saved locally asks before leaving. */
 export function useLeaveGuard(unsaved: number) {
   useEffect(() => {
     if (!unsaved) return;

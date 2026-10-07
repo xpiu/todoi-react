@@ -12,6 +12,9 @@ import "./design/core/viewport";
 import "./app/app.css";
 import { queryClient } from "./queryClient";
 import { router } from "./router";
+import { initializeSync } from "./data/sync";
+
+initializeSync(queryClient);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

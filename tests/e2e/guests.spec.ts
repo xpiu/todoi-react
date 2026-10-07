@@ -76,6 +76,13 @@ test("GUI items and subitems survive refresh, registration and logout/login", as
   await page.getByRole("textbox", { name: "New subitem" }).fill("Write the brief");
   await page.getByRole("textbox", { name: "New subitem" }).press("Enter");
   await expect(page.getByRole("group", { name: "Subitems", exact: true }).getByText("Write the brief", { exact: true })).toBeVisible();
+  await expect.poll(async () => (await (await page.request.get(`/api/items?projectId=${project.id}`)).json()) as Array<{ title: string; parentItemId: string | null }>).toContainEqual(expect.objectContaining({ title: "Write the brief", parentItemId: item.id }));
+  // A document navigation follows confirmed persistence, rather than the optimistic checklist row.
+  await expect.poll(() => page.evaluate(async () => {
+    const { readWorkspace } = await import(new URL("/src/client/data/syncStorage.ts", location.origin).href) as typeof import("../../src/client/data/syncStorage");
+    const ownerId = localStorage.getItem("td-sync-owner");
+    return ownerId ? (await readWorkspace(ownerId))?.operations.length : null;
+  })).toBe(0);
   await page.goto(`/p/${project.id}`);
   await page.reload();
   await expect(page.getByText(item.title, { exact: true })).toBeVisible();
@@ -112,6 +119,44 @@ test("GUI items and subitems survive refresh, registration and logout/login", as
   await page.getByLabel(/^Password/).fill(password);
   await page.getByRole("button", { name: "Log in", exact: true }).click();
   await expect(page.getByText(item.title, { exact: true })).toBeVisible();
+});
+
+test("logout does not restore the former account when the next session check is unavailable", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/p\//);
+  const { project } = await workspace(page);
+  await addThroughGui(page, "Private work must stay signed out");
+  const signup = await page.request.post("/api/auth/sign-up/email", { headers: { Origin: new URL(page.url()).origin }, data: { name: "Offline logout test", email: `logout-${nanoid()}@example.test`, password } });
+  expect(signup.ok()).toBe(true);
+  const registered = await session(page);
+  await page.reload();
+  await expect(page.getByText("Private work must stay signed out", { exact: true })).toBeVisible();
+  // Prove a usable offline workspace exists before exercising sign-out recovery.
+  await expect.poll(() => page.evaluate(async (ownerId) => {
+    const { readWorkspace } = await import(new URL("/src/client/data/syncStorage.ts", location.origin).href) as typeof import("../../src/client/data/syncStorage");
+    const record = await readWorkspace(ownerId);
+    return !!record?.replies["/api/groups"] && record.operations.length === 0;
+  }, registered.id)).toBe(true);
+  await page.route("**/api/auth/get-session", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Session service unavailable" }) }));
+  await page.getByRole("button", { name: "Account: Offline logout test" }).click();
+  const signedOut = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/auth/sign-out");
+  await page.getByRole("menuitem", { name: "Log out" }).click();
+  const logoutResponse = await signedOut;
+  expect(logoutResponse.ok()).toBe(true);
+  await expect(page.getByText("Couldn't open your workspace", { exact: true })).toBeVisible();
+  await expect(page.getByText("Private work must stay signed out", { exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("td-sync-owner"))).toBeNull();
+  // Signing out clears the active pointer, not the durable record needed for a later login.
+  expect(await page.evaluate(async (ownerId) => {
+    const { readWorkspace } = await import(new URL("/src/client/data/syncStorage.ts", location.origin).href) as typeof import("../../src/client/data/syncStorage");
+    return (await readWorkspace(ownerId))?.ownerId;
+  }, registered.id)).toBe(registered.id);
+  await page.unroute("**/api/auth/get-session");
+  await page.goto(`/login?next=/p/${project.id}`);
+  await page.getByLabel("Email", { exact: true }).fill(registered.email);
+  await page.getByLabel(/^Password/).fill(password);
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page.getByText("Private work must stay signed out", { exact: true })).toBeVisible();
 });
 
 test("concurrent first visits in two tabs share one guest workspace", async ({ page, context }) => {

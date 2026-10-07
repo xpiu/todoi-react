@@ -29,11 +29,15 @@ test("uploads report per-file outcomes and retry only the failed file", async ({
     await expect(row("huge.bin")).toContainText("huge.bin is larger than 25 MB");
     await expect(row("huge.bin").getByRole("button", { name: "Retry" })).toHaveCount(0);
     await expect(row("flaky.txt")).toContainText("Couldn't reach Todoi");
+    await expect(dialog.locator('.td-att-row[data-uploading="true"]', { hasText: "kept.txt" })).toHaveCount(0);
+    await expect(row("kept.txt")).toHaveCount(1);
     await expect(row("kept.txt")).toContainText("Added");
     expect(await names()).toEqual(["kept.txt"]);
     await expect(page.getByRole("status")).toContainText("Couldn't attach 2 files");
 
     await row("flaky.txt").getByRole("button", { name: "Retry" }).click();
+    await expect(dialog.locator('.td-att-row[data-uploading="true"]', { hasText: "flaky.txt" })).toHaveCount(0);
+    await expect(row("flaky.txt")).toHaveCount(1);
     await expect(row("flaky.txt")).toContainText("Added");
     expect(posts).toBe(3);
     expect(await names()).toEqual(["flaky.txt", "kept.txt"]);

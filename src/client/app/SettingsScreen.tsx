@@ -33,6 +33,7 @@ import { TextField } from "../design/core/TextField";
 import { MODES, THEMES } from "../design/core/themes";
 import { relativeSync } from "../design/core/ConnectionStatus";
 import { useSaveState } from "./saveState";
+import { SyncRecovery, syncOperationLabel } from "./SyncRecovery";
 import { PasswordField } from "../design/auth/PasswordField";
 import { MonoValue, SettingsLink, SettingsShell, StatusDot, type SettingsGroup, type SettingsPage, type SettingsRow } from "../design/settings/SettingsShell";
 import { downloadText } from "./exportData";
@@ -189,11 +190,27 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             id: "offline",
             title: "Offline editing",
             rows: [
-              { id: "online", label: "Connection", hint: "Edits made offline wait in this tab and save when you're back online. They don't survive reloading or closing the tab; Todoi asks before you leave with edits waiting", control: <StatusDot on={online} label={online ? "Online" : "Offline"} /> },
-              { id: "pending", label: "Waiting changes", hint: save.waiting ? `${save.waiting === 1 ? "1 edit is" : `${save.waiting} edits are`} waiting to save. Discard puts back what the server has` : save.failed ? `${save.failed === 1 ? "1 edit" : `${save.failed} edits`} didn't save — each was undone and a message said why` : `Nothing waiting to save · ${relativeSync(save.lastSaved)}`, control: save.waiting ? <Button icon="trash-2" onClick={save.discardWaiting}>Discard</Button> : save.failed ? <Button icon="check" onClick={save.clearFailed}>Dismiss</Button> : <Button icon="trash-2" disabled>Discard</Button> },
+              { id: "online", label: "Connection", hint: "Workspace edits are saved on this device before syncing. Queued changes survive closing the tab and sync when you reconnect; uploads and account actions need a connection", control: <StatusDot on={online} label={online ? "Online" : "Offline"} /> },
+              { id: "pending", label: "Saved on this device", hint: save.waiting ? `${save.waiting === 1 ? "1 edit is" : `${save.waiting} edits are`} waiting to sync to the server` : save.failed ? `${save.failed === 1 ? "1 edit needs" : `${save.failed} edits need`} review below. Saved drafts stay on this device until you resolve them` : `No changes waiting to sync · ${relativeSync(save.lastSaved)}`, control: <Button icon="refresh-cw" disabled={!online || !!save.saving || !save.waiting} onClick={save.retry}>{save.saving ? "Syncing…" : "Sync now"}</Button> },
+              ...(save.storageError ? [{ id: "deviceError", label: "Device save failed", hint: "Keep this tab open. Check available browser storage and try your change again. " + save.storageError }] : []),
+              ...(save.transientWaiting ? [{ id: "transientPending", label: "Waiting in this tab", hint: `${save.transientWaiting} ${save.transientWaiting === 1 ? "action hasn't" : "actions haven't"} been saved on this device. Keep this tab open until they finish` }] : []),
+              ...(save.transientFailed && !save.failed ? [{ id: "transientFailed", label: "An action didn't save", hint: "The action failed before it could be saved. Check the error message and try your change again" }] : []),
               { id: "install", label: "Install app", hint: "Opens Todoi in its own window and keeps working offline — available once the app ships as a PWA", control: <Button icon="monitor-down" disabled>Install</Button> },
             ],
           },
+          ...(save.operations.length ? [{
+            id: "savedChanges",
+            title: "Saved changes",
+            sub: `${save.operations.length} ${save.operations.length === 1 ? "change" : "changes"}`,
+            rows: save.operations.map((operation) => ({
+              id: operation.id,
+              label: <span className="td-sync-label">{syncOperationLabel(operation)}</span>,
+              bodyText: syncOperationLabel(operation),
+              hint: operation.state === "failed" ? operation.error ?? "This change couldn't sync. Review your saved draft below" : "Saved on this device · waiting to sync",
+              control: <StatusDot on={operation.state === "pending"} label={operation.state === "failed" ? "Needs review" : "Queued"} />,
+              body: <SyncRecovery operation={operation} online={online} />,
+            })),
+          }] : []),
         ],
       },
       { id: "labels", label: "Labels", icon: "tag", groups: labelsSection },

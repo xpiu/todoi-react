@@ -224,4 +224,22 @@
     letter-spacing: 0.02em;
     white-space: nowrap;
   }
+  html[data-device="phone"] .td-topnav {
+    gap: var(--sp-2);
+    padding-inline: var(--sp-3);
+  }
+  html[data-device="phone"] .td-topnav-title:empty {
+    display: none;
+  }
+  html[data-device="phone"] .td-topnav-spacer {
+    margin: 0;
+  }
+  html[data-device="phone"] .td-topnav-search {
+    flex-shrink: 1;
+    min-width: 44px;
+  }
+  html[data-device="phone"] .td-topnav-user {
+    flex-shrink: 0;
+  }
+
 }

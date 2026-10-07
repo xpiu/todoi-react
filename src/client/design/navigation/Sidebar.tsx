@@ -215,10 +215,10 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
     const current = it.id === activeId;
     const hasAdd = !!(it.addable && onNavAdd);
     const btn = (
-      <button type="button" className={"td-sidebar-row" + (it.tip ? " td-tip" : "")} tabIndex={collapsed ? -1 : undefined} data-tip={it.tip} aria-label={it.tooltip ? `${it.label} — ${it.tooltip}` : undefined} aria-current={current ? "true" : undefined} onClick={() => onSelect?.(it.id)}>
-        <span className="td-sidebar-iconwrap">
+      <button type="button" className={"td-sidebar-row" + (it.tip ? " td-tip" : "")} tabIndex={collapsed ? -1 : undefined} data-tip={it.tip} aria-label={it.tooltip || it.unread ? [it.label, it.unread ? `${it.unread} unread` : null, it.tooltip].filter(Boolean).join(" — ") : undefined} aria-current={current ? "true" : undefined} onClick={() => onSelect?.(it.id)}>
+        <span className="td-sidebar-iconwrap" data-unread={it.unread ? "true" : undefined}>
           <Icon name={it.icon} size={16} />
-          {it.unread ? <span className="td-sidebar-dot" role="status" aria-label={`${it.unread} unread`} /> : null}
+          {it.unread ? <span className="td-sidebar-dot" aria-hidden="true" /> : null}
         </span>
         <span className="td-sidebar-label">{it.label}</span>
         {it.count != null ? <span className="td-sidebar-count">{it.count}</span> : null}

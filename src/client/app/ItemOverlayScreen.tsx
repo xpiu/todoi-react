@@ -1,7 +1,7 @@
 // ItemOverlayScreen — the item overlay on real data: the item from the project's items, its details
 // (comments, relations, watching), the project's activity filtered to it, and every edit as a mutation.
 // Undoable outcomes (archive, delete, duplicate) raise the one Toast. Spec: DESIGN.md › Item overlay.
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { errorMessage, explain, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
@@ -73,11 +73,18 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
   const { user } = useCurrentUser();
   const people: Person[] = useMemo(() => peopleOf(project), [project]);
   const personOf = (id: string) => people.find((p) => p.id === id);
-  // Drafts kept from an earlier visit (read once; the overlay reports every change back).
-  const [drafts] = useState(() => useDrafts.getState().byItem[itemId]);
+  // Drafts remain reactive so restored queue confirmations update the open composer.
+  const drafts = useDrafts((state) => state.byItem[itemId]);
   const keepDrafts = useDrafts((s) => s.set);
   // One id per comment draft: resending after a failure cannot post it twice.
-  const commentId = useRef(newId());
+  const commentId = useRef(drafts?.commentId ?? newId());
+  useEffect(() => {
+    const submitted = details.data?.comments.find((comment) => comment.id === drafts?.commentId && comment.version > 0);
+    if (!submitted) return;
+    commentId.current = newId();
+    const unchanged = drafts?.comment?.trim() === submitted.body.trim();
+    keepDrafts(itemId, { ...drafts, ...(unchanged ? { comment: "", replyTo: null } : {}), commentId: commentId.current });
+  }, [details.data?.comments, drafts, itemId, keepDrafts]);
 
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name;
   const subitems = items.filter((it) => it.parentItemId === item.id).sort((a, b) => a.position - b.position);
@@ -102,7 +109,7 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
     watching: details.data?.watching ?? false,
     subitems: subitems.map((s) => ({ id: s.id, text: s.title, done: s.done, itemId: keyOf(s, project.keyPrefix) })),
     attachments: (details.data?.attachments ?? []).map((a): AttachmentFile => ({ id: a.id, name: a.name, size: a.size, mime: a.mime, src: attachmentUrl(a.id), url: attachmentUrl(a.id, true), meta: `Added ${formatDate(a.createdAt, { year: "auto", today: now })}`, isCover: item.cover?.attachmentId === a.id })).concat(
-      uploads.map((u) => ({ id: u.key, name: u.file.name, size: u.file.size, mime: u.file.type, progress: u.error ? undefined : u.progress, error: u.error, retriable: u.retriable })),
+      uploads.filter((u) => !details.data?.attachments.some((a) => a.id === u.attachmentId)).map((u) => ({ id: u.key, name: u.file.name, size: u.file.size, mime: u.file.type, progress: u.error ? undefined : u.progress, error: u.error, retriable: u.retriable })),
     ),
   };
   const exportCtx = { prefix: project.keyPrefix, labels, people, listName: (id: string) => listName(id) ?? "" };
@@ -182,10 +189,12 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       onOpenKey={openKey}
       onAddComment={(body, replyToId) => saving(addComment.mutateAsync({ id: commentId.current, body, replyToId, quiet: true }).then(() => {
         commentId.current = newId();
+        const latest = useDrafts.getState().byItem[itemId];
+        if (latest) keepDrafts(itemId, { ...latest, commentId: commentId.current });
       }))}
       onEditComment={(id, body) => saving(editComment.mutateAsync({ id, body, quiet: true }))}
       drafts={drafts}
-      onDraftsChange={(d) => keepDrafts(item.id, d)}
+      onDraftsChange={(d) => keepDrafts(item.id, { ...d, commentId: commentId.current })}
       onDeleteComment={(id) => deleteComment.mutate({ id })}
       onReactComment={(id, emoji) => reactComment.mutate({ id, emoji })}
       onMakeSubitemOf={(parent) => {

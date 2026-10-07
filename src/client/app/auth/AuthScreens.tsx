@@ -3,7 +3,7 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { authClient, forgetBrowserSession } from "../../auth";
+import { authClient, forgetBrowserSession, syncGuestBeforeAuth } from "../../auth";
 import { api, explain, unwrap, type InviteDetail } from "../../data/api";
 import { InvitePage, type InviteState } from "../../design/auth/InvitePage";
 import { ResetPasswordPage, type ResetStage } from "../../design/auth/ResetPasswordPage";
@@ -34,6 +34,8 @@ export function LoginScreen() {
       onSignIn={async ({ email: e, password }) => {
         setBusy(true);
         setError(null);
+        const syncError = await syncGuestBeforeAuth();
+        if (syncError) { setError(syncError); setBusy(false); return; }
         const r = await authClient.signIn.email({ email: e, password });
         setBusy(false);
         if (r.error) setError(r.error.message ?? "That email and password don't match.");
@@ -60,6 +62,8 @@ export function SignupScreen() {
       onSignUp={async ({ name, email: e, password }) => {
         setBusy(true);
         setError(null);
+        const syncError = await syncGuestBeforeAuth();
+        if (syncError) { setError(syncError); setBusy(false); return; }
         const r = await authClient.signUp.email({ name, email: e, password });
         setBusy(false);
         if (r.error) setError(r.error.message ?? "Couldn't create the account.");

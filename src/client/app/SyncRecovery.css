@@ -1,0 +1,36 @@
+@layer components {
+  .td-sync-recovery {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-3);
+    min-width: 0;
+  }
+
+  .td-sync-draft {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 100px;
+    max-height: 400px;
+    overflow-wrap: anywhere;
+  }
+
+  .td-sync-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .td-sync-explanation {
+    margin: 0;
+    font: var(--type-small);
+    color: var(--ink-600);
+    overflow-wrap: anywhere;
+  }
+
+  .td-sync-label {
+    overflow-wrap: anywhere;
+  }
+}

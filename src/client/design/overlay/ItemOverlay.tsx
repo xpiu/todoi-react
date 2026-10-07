@@ -91,6 +91,8 @@ export type OverlayMenuAction = "duplicate" | "archive" | "delete" | "share";
 /** Unsent work the overlay can resume: the comment (and whom it replies to) and the description edit. */
 export interface OverlayDrafts {
   comment?: string;
+  /** Stable submission identity, retained while a queued comment awaits confirmation. */
+  commentId?: string;
   replyTo?: { id: string; author: string } | null;
   /** null or absent = not editing the description */
   description?: string | null;
@@ -174,9 +176,24 @@ const reason = (err: unknown) => (err instanceof Error && err.message ? err.mess
 
 export function ItemOverlay(p: ItemOverlayProps) {
   const { item, open, onClose } = p;
-  const [draft, setDraft] = useState(p.drafts?.comment ?? "");
-  const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(p.drafts?.replyTo ?? null);
-  const [descDraft, setDescDraft] = useState<string | null>(p.drafts?.description ?? null);
+  const [localDrafts, setLocalDrafts] = useState<OverlayDrafts>(p.drafts ?? {});
+  const drafts = p.onDraftsChange ? p.drafts ?? {} : localDrafts;
+  const draft = drafts.comment ?? "";
+  const replyTo = drafts.replyTo ?? null;
+  // Async saves patch the current draft and notify the current consumer; neither may be the
+  // version captured when the request started.
+  const currentDrafts = useRef(drafts);
+  const onDraftsChange = useRef(p.onDraftsChange);
+  useEffect(() => {
+    currentDrafts.current = drafts;
+    onDraftsChange.current = p.onDraftsChange;
+  });
+  const updateDrafts = (patch: Partial<OverlayDrafts>) => {
+    const next = { ...currentDrafts.current, ...patch };
+    currentDrafts.current = next;
+    if (onDraftsChange.current) onDraftsChange.current(next);
+    else setLocalDrafts((previous) => ({ ...previous, ...patch }));
+  };
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const saveDescription = useRef<(() => Promise<boolean>) | null>(null);
@@ -218,8 +235,8 @@ export function ItemOverlay(p: ItemOverlayProps) {
     setSendError(null);
     try {
       await p.onAddComment(text, replyTo?.id);
-      setDraft("");
-      setReplyTo(null);
+      const latest = currentDrafts.current;
+      if ((latest.comment ?? "").trim() === text && latest.replyTo?.id === replyTo?.id) updateDrafts({ comment: "", replyTo: null });
       return true;
     } catch (err) {
       setSendError(`Couldn't send: ${reason(err)}`);
@@ -228,13 +245,6 @@ export function ItemOverlay(p: ItemOverlayProps) {
       setSending(false);
     }
   };
-  const onDraftsChange = useRef(p.onDraftsChange);
-  useEffect(() => {
-    onDraftsChange.current = p.onDraftsChange;
-  });
-  useEffect(() => {
-    onDraftsChange.current?.({ comment: draft, replyTo, description: descDraft });
-  }, [draft, replyTo, descDraft]);
   const copyLink = () => void copy(`${location.origin}${location.pathname}?item=${item.id}`);
   // ctrl+↵: commit whatever is mid-edit (title, description, new subitem, comment), then close once
   // every save has landed; a failure keeps the overlay open with that draft and its reason.
@@ -412,7 +422,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
       <DropOverlay active={dragging} hint="Images can become the cover" />
       <div className="td-overlay-main">
         <div className="td-overlay-desc">
-          <DescriptionEditor value={item.description ?? ""} members={members} onOpenKey={p.onOpenKey} onChange={p.onSetDescription} onDraft={setDescDraft} initialDraft={p.drafts?.description} saveRef={saveDescription} onSuggestShortcut={p.onSuggestShortcut} />
+          <DescriptionEditor value={item.description ?? ""} members={members} onOpenKey={p.onOpenKey} onChange={p.onSetDescription} onDraft={(description) => updateDrafts({ description })} initialDraft={p.drafts?.description} saveRef={saveDescription} onSuggestShortcut={p.onSuggestShortcut} />
         </div>
         {item.subitems.length ? (
           <div className="td-overlay-subitems">
@@ -477,7 +487,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
               </div>
             ) : null}
           </div>
-          <CommentComposer value={draft} onChange={(v) => { setDraft(v); setSendError(null); }} members={members} onSubmit={(t) => void send(t)} pending={sending} error={sendError} replyTo={replyTo?.author ?? null} onCancelReply={() => setReplyTo(null)} />
+          <CommentComposer value={draft} onChange={(v) => { updateDrafts({ comment: v }); setSendError(null); }} members={members} onSubmit={(t) => void send(t)} pending={sending} error={sendError} replyTo={replyTo?.author ?? null} onCancelReply={() => updateDrafts({ replyTo: null })} />
           {p.comments.filter((c) => matches(c.text, c.author)).map((c) => (
             <Comment
               key={c.id}
@@ -497,8 +507,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
               onReply={() => {
                 const m = members.find((x) => x.id === c.authorId);
                 const h = `@${m ? mentionHandle(m) : c.author.split(/\s+/)[0]} `;
-                setReplyTo({ id: c.id, author: c.author });
-                setDraft((d) => (d.startsWith(h) ? d : h + d));
+                updateDrafts({ replyTo: { id: c.id, author: c.author }, comment: draft.startsWith(h) ? draft : h + draft });
               }}
             />
           ))}

@@ -2,13 +2,19 @@
 import { sessionUser, useSession, type SessionUser } from "../auth";
 import type { ProjectDetail } from "../data/api";
 import type { Person } from "./items";
+import { useSyncState } from "../data/sync";
 
 export type { SessionUser };
 
 /** The signed-in person, or null while the session loads / when signed out. */
 export function useCurrentUser(): { user: SessionUser | null; pending: boolean } {
   const s = useSession();
-  return { user: sessionUser(s.data as { user: Record<string, unknown> } | null), pending: s.isPending };
+  const localUser = useSyncState((state) => state.user);
+  // An explicit signed-out response wins over a cached identity. Device identity is only a
+  // fallback while checking the session or when the server cannot answer that check.
+  const unavailable = s.isPending || !!s.error && (!s.error.status || s.error.status >= 500);
+  const user = sessionUser(s.data as { user: Record<string, unknown> } | null) ?? (unavailable ? localUser : null);
+  return { user, pending: s.isPending && !user };
 }
 
 export const avatarColorVar = (c: string | null | undefined) => (c ? `var(--label-${c})` : undefined);

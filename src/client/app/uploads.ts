@@ -17,6 +17,8 @@ export interface PendingUpload {
   file: File;
   /** 0–100 while sending */
   progress: number;
+  /** Set once the server stores the file, while its attachment list refreshes. */
+  attachmentId?: string;
   error?: string;
   /** False when sending the same file again cannot succeed (too large, over quota, no access) */
   retriable?: boolean;
@@ -44,6 +46,7 @@ async function send(key: string): Promise<Attachment | null> {
   try {
     // The bar stops short of 100 until the server has stored the file and the list shows it.
     const made = await uploadAttachment(entry.itemId, entry.file, { signal: controller.signal, onProgress: (p) => update(key, { progress: Math.min(p, 99) }) });
+    update(key, { attachmentId: made.id });
     await settleAttachments(queryClient, entry.itemId, entry.projectId);
     drop(key);
     return made;

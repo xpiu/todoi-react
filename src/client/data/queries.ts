@@ -19,20 +19,20 @@ export const keys = {
 export const groupsQuery = () =>
   queryOptions({
     queryKey: keys.groups,
-    queryFn: () => api.api.groups.$get().then((r) => unwrap<GroupWithProjects[]>(r)),
+    queryFn: ({ signal }) => api.api.groups.$get(undefined, { init: { signal } }).then((r) => unwrap<GroupWithProjects[]>(r)),
   });
 
 export const projectQuery = (id: string) =>
   queryOptions({
     queryKey: keys.project(id),
-    queryFn: () => api.api.projects[":id"].$get({ param: { id } }).then((r) => unwrap<ProjectDetail>(r)),
+    queryFn: ({ signal }) => api.api.projects[":id"].$get({ param: { id } }, { init: { signal } }).then((r) => unwrap<ProjectDetail>(r)),
     enabled: !!id,
   });
 
 export const projectItemsQuery = (projectId: string) =>
   queryOptions({
     queryKey: keys.items({ projectId }),
-    queryFn: () => api.api.items.$get({ query: { projectId } }).then((r) => unwrap<Item[]>(r)),
+    queryFn: ({ signal }) => api.api.items.$get({ query: { projectId } }, { init: { signal } }).then((r) => unwrap<Item[]>(r)),
     enabled: !!projectId,
   });
 
@@ -40,27 +40,27 @@ export const projectItemsQuery = (projectId: string) =>
 export const listItemsQuery = (listId?: string) =>
   queryOptions({
     queryKey: keys.items({ listId: listId ?? "inbox" }),
-    queryFn: () => api.api.items.$get({ query: listId ? { listId } : {} }).then((r) => unwrap<Item[]>(r)),
+    queryFn: ({ signal }) => api.api.items.$get({ query: listId ? { listId } : {} }, { init: { signal } }).then((r) => unwrap<Item[]>(r)),
   });
 
 export const labelsQuery = (projectId: string) =>
   queryOptions({
     queryKey: keys.labels(projectId),
-    queryFn: () => api.api.labels.$get({ query: { projectId } }).then((r) => unwrap<Label[]>(r)),
+    queryFn: ({ signal }) => api.api.labels.$get({ query: { projectId } }, { init: { signal } }).then((r) => unwrap<Label[]>(r)),
     enabled: !!projectId,
   });
 
 export const itemDetailsQuery = (id: string) =>
   queryOptions({
     queryKey: keys.itemDetails(id),
-    queryFn: () => api.api.items[":id"].details.$get({ param: { id } }).then((r) => unwrap<ItemDetails>(r)),
+    queryFn: ({ signal }) => api.api.items[":id"].details.$get({ param: { id } }, { init: { signal } }).then((r) => unwrap<ItemDetails>(r)),
   });
 
 /** Where an item is and whether it is live, archived or in the Trash — for a link to an item not on screen. */
 export const itemLocationQuery = (id: string) =>
   queryOptions({
     queryKey: keys.itemLocation(id),
-    queryFn: () => api.api.items[":id"].$get({ param: { id } }).then((r) => unwrap<ItemLocation>(r)),
+    queryFn: ({ signal }) => api.api.items[":id"].$get({ param: { id } }, { init: { signal } }).then((r) => unwrap<ItemLocation>(r)),
     // "Doesn't exist" and "not yours" are answers, not hiccups.
     retry: (n, err) => !(err instanceof ApiError && err.status < 500) && n < 1,
   });
@@ -68,21 +68,21 @@ export const itemLocationQuery = (id: string) =>
 export const activityQuery = (projectId: string) =>
   queryOptions({
     queryKey: keys.activity(projectId),
-    queryFn: () => api.api.activity.$get({ query: { projectId } }).then((r) => unwrap<ActivityEntry[]>(r)),
+    queryFn: ({ signal }) => api.api.activity.$get({ query: { projectId } }, { init: { signal } }).then((r) => unwrap<ActivityEntry[]>(r)),
     enabled: !!projectId,
   });
 
 export const inboxUnreadQuery = () =>
   queryOptions({
     queryKey: keys.inboxUnread,
-    queryFn: () => api.api.inbox.unread.$get().then((r) => unwrap<{ unread: number }>(r)),
+    queryFn: ({ signal }) => api.api.inbox.unread.$get(undefined, { init: { signal } }).then((r) => unwrap<{ unread: number }>(r)),
   });
 
 /** Items across the viewer's projects and Inbox by title or key (bounded by the server). */
 export const searchQuery = (q: string) =>
   queryOptions({
     queryKey: keys.search(q),
-    queryFn: () => api.api.search.$get({ query: { q } }).then((r) => unwrap<SearchHit[]>(r)),
+    queryFn: ({ signal }) => api.api.search.$get({ query: { q } }, { init: { signal } }).then((r) => unwrap<SearchHit[]>(r)),
     enabled: !!q,
     staleTime: 10_000,
   });

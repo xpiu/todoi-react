@@ -40,7 +40,7 @@ import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LifecycleDialogs } from "./LifecycleDialogs";
 import { useProjectMutations } from "../data/projects";
 import { avatarColorVar, peopleOf, useCurrentUser } from "./session";
-import { authClient } from "../auth";
+import { authClient, forgetBrowserSession } from "../auth";
 import { GuestBar } from "../design/auth/GuestBar";
 import { useAppShortcuts } from "./useAppShortcuts";
 import { hitContext, hitKey, useItemSearch, useOpenResult } from "./search";
@@ -81,7 +81,7 @@ export function AppShell() {
   const inboxBadge = usePrefs((s) => s.inboxBadge);
   const conventions = useDateConventionsKey();
   const save = useSaveState();
-  useLeaveGuard(save.waiting + save.saving);
+  useLeaveGuard(save.unsafeToLeave);
   const myRole = user ? project.data?.members.find((m) => m.userId === user.id)?.role : undefined;
   // Project members can edit unless their role is Viewer; nonmembers read only.
   const readonly = !!projectId && !!project.data && (!myRole || myRole === "viewer");
@@ -187,7 +187,10 @@ export function AppShell() {
   const notify = useFeedback((s) => s.notify);
   const logout = () => void authClient.signOut().then(({ error }) => {
     if (error) notify({ message: `Couldn't log out: ${error.message ?? "the server refused the request"}`, icon: "circle-alert" });
-    else window.location.assign("/");
+    else {
+      forgetBrowserSession();
+      window.location.assign("/");
+    }
   });
   const exportView = (format: "pdf" | "md" | "csv") => {
     const p = project.data;
@@ -320,7 +323,7 @@ export function AppShell() {
     <div className="td-app" data-sidebar-side={ap.sidebarLeft ? "left" : "right"}>
       <TopNavbar
         title={title}
-        status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} onClearFailed={save.clearFailed} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
+        status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
         search
         searchSources={searchSources}
         searchStatus={navHits.status}

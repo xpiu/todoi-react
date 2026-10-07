@@ -10,7 +10,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 | Public site          | [todoi.com](https://todoi.com) currently serves a separate micro-site with a browser-only task app.                                                                                                                       |
 | Infrastructure notes | VPS 2 / Dokploy: `http://72.62.177.91/`; Hetzner hosting, Cloudflare CDN. Infrastructure is not defined in this repo.                                                                                                     |
 | Placeholder history  | v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).                                                                                                           |
-| Staging              | Intended: `https://st.todoi.com` (does not resolve). Legacy: `https://s.todoi.com` (recorded as an outdated Next.js build; returns HTTP 403). Public URL checks: 2026-10-05.                                              |
+| Staging              | [staging.todoi.com](https://staging.todoi.com) is the staging target; deployment configuration is external to this repository.                                     |
 | Email                | Official: `info@todoi.com`; intended sender: `noreply@todoi.com`. The app does not send email yet.                                                                                                                        |
 | Documentation        | [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.      |
 | Planning             | [todo.md](todo.md)                                                                                                                                                                                                        |
@@ -42,11 +42,11 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 Current limits:
 
 - **Email:** no delivery; admins copy/send invite links. Password reset has a request screen, but no email sender or completed reset flow.
-- **Freshness:** no server push. Shared data refreshes every 30 seconds in visible tabs, on focus/navigation and after edits; BroadcastChannel alerts other browser tabs. Refresh waits for pending edits. Offline mutations stay in memory and are lost on reload/close; description/comment drafts use `sessionStorage`.
+- **Sync:** workspace JSON edits and their local projection are saved together in IndexedDB before sending. The queue survives reload/close, retries temporary failures in order and uses actor-scoped server receipts to deduplicate replay. Incoming snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, with pending fields overlaid. Stale edits retain submitted text for review in Storage & sync; access loss purges private snapshots. See [sync behavior](docs/sync.md). Unsubmitted description/comment drafts use `sessionStorage`; app-shell offline caching, binary uploads and account/session actions are outside the queue.
 - **Deployment:** one API process with local attachment storage and in-process cleanup. Multiple processes would need shared persistent storage.
 - **Attachments:** 25 MiB per file; storage quotas per uploader: 100 MiB for guests, 2 GiB for accounts.
 - **Exports:** incomplete round-trips. Account JSON contains user details, groups, projects, lists, labels and items, excluding comments, attachments and association tables; it cannot be reimported. Back up PostgreSQL and uploads separately.
-- **Deferred:** OpenAPI, a dedicated job runner, full export/import round-trips, large-project virtualization and Linux screenshot baselines. A sequence-based delta/SSE sync engine, Yjs collaboration and Redis remain possible later options.
+- **Deferred:** OpenAPI, a dedicated job runner, full export/import round-trips, large-project virtualization and Linux screenshot baselines. Sequence-based deltas/SSE, Yjs collaboration and Redis remain possible later options.
 
 ## 👥 Visitors and accounts
 
@@ -60,9 +60,9 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 | Area             | Implementation                                                                                                                                                             |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Client           | React 19, TypeScript, Vite, Base UI, TanStack Router, Tiptap; local Inter/Geist Mono fonts. Rounded/Minimal themes × Dark/Light modes.                                     |
-| State            | Zustand for client state; TanStack Query for server data and optimistic mutations.                                                                                         |
+| State            | Zustand for client state; TanStack Query for server data and optimistic mutations; IndexedDB for actor-scoped snapshots and outgoing operations.                                                                                         |
 | API              | Node.js + Hono typed routes/RPC client, Zod validation. `/api/health` returns `{ "ok": true }`.                                                                            |
-| Data             | PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items. No global sync ID or versioned conflict-resolution engine.                                    |
+| Data             | PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items, row versions check stale edits, and transactional operation receipts deduplicate replay.                                    |
 | Authentication   | Better Auth sessions/accounts in PostgreSQL; API tokens use `Authorization: Bearer tdi_…`.                                                                                 |
 | Jobs and logging | API drains a transactional attachment-cleanup outbox. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation. |
 
@@ -189,7 +189,7 @@ APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED
 
 - **Unit:** `npm run check` covers parsers, dates, recurrence/completion, Markdown, views, filters, export, shortcuts, item rows, mutations and server configuration/errors. The [theme-parity audit](src/client/design/tokens/parity.test.ts) checks matching token sets across four scopes, valid token references and no raw hex, bare z-index or `@media` in design component CSS.
 - **Integration:** `npm run test:integration` reads `.env` and checks PostgreSQL services/routes, including lifecycle cascades, rollback, attachment cleanup/security, completion, moves, duplication, search and notifications. Each test file gets a migrated disposable database and upload directory, removed afterward. The configured database role needs `CREATEDB`; fixtures do not use the application database.
-- **Browser:** `npx playwright install chromium` once, then `npm run test:e2e`. Playwright starts/reuses `:5173`; PostgreSQL and seeded accounts are required. List/Board/Calendar, overlay, Settings and saved views cover all four scopes with snapshots and axe WCAG 2.1 A/AA (serious/critical violations fail; **color contrast disabled**). Other specs cover reduced motion, keyboard interaction, guest isolation/account transfers, offline edits, drafts, uploads and editing flows. Fixtures use the development database and are cleaned up afterward.
+- **Browser:** `npx playwright install chromium` once, then `npm run test:e2e`. Playwright starts/reuses `:5173`; PostgreSQL and seeded accounts are required. List/Board/Calendar, overlay, Settings and saved views cover all four scopes with snapshots and axe WCAG 2.1 A/AA (serious/critical violations fail; **color contrast disabled; Base UI focus guards excluded**). Other specs cover reduced motion, keyboard interaction, guest isolation/account transfers, offline edits, drafts, uploads and editing flows. Fixtures use the development database and are cleaned up afterward.
 
 Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration and Chromium tests on Linux with `--ignore-snapshots` until Linux baselines exist. Reports: `.tmp/`, uploaded on CI failure.
 

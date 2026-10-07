@@ -9,7 +9,7 @@ import { newId, type Quiet } from "./mutations";
 export type SavedView = InferResponseType<typeof api.api["saved-views"]["$get"], 200>[number];
 export const savedViewsKey = (projectId: string) => ["saved-views", projectId] as const;
 
-export const useSavedViews = (projectId: string) => useQuery({ queryKey: savedViewsKey(projectId), queryFn: () => api.api["saved-views"].$get({ query: { projectId } }).then((r) => unwrap<SavedView[]>(r)), enabled: !!projectId });
+export const useSavedViews = (projectId: string) => useQuery({ queryKey: savedViewsKey(projectId), queryFn: ({ signal }) => api.api["saved-views"].$get({ query: { projectId } }, { init: { signal } }).then((r) => unwrap<SavedView[]>(r)), enabled: !!projectId });
 
 export function useSavedViewMutations(projectId: string) {
   const qc = useQueryClient();

@@ -4,9 +4,10 @@ import { hc, type InferResponseType } from "hono/client";
 
 import type { AppType } from "../../server/app";
 import { codeForStatus, type ErrorBody, type ErrorCode } from "../../shared/errors";
+import { syncFetch } from "./sync";
 
 // Same-origin in dev thanks to the Vite proxy; the built app is served next to the API later.
-export const api = hc<AppType>("/");
+export const api = hc<AppType>("/", { fetch: syncFetch });
 
 /** A refusal or failure from the API, as the shared `ErrorBody` describes it (src/shared/errors.ts). */
 export class ApiError extends Error {
@@ -15,15 +16,17 @@ export class ApiError extends Error {
   readonly fields: Record<string, string>;
   /** Matches the server's log line for this request */
   readonly requestId: string | undefined;
+  readonly operationId: string | undefined;
   constructor(
     public status: number,
     message: string,
-    detail: { code?: ErrorCode; fields?: Record<string, string>; requestId?: string } = {},
+    detail: { code?: ErrorCode; fields?: Record<string, string>; requestId?: string; operationId?: string } = {},
   ) {
     super(message);
     this.code = detail.code ?? codeForStatus(status);
     this.fields = detail.fields ?? {};
     this.requestId = detail.requestId;
+    this.operationId = detail.operationId;
   }
 }
 
@@ -46,13 +49,13 @@ export async function apiError(res: Response): Promise<ApiError> {
   } catch {
     /* not JSON: a proxy error page or an empty body */
   }
-  return fromErrorBody(res.status, body, res.headers.get("x-request-id") ?? undefined);
+  return fromErrorBody(res.status, body, res.headers.get("x-request-id") ?? undefined, res.headers.get("x-todoi-local-operation-id") ?? undefined);
 }
 
 /** Shared with the XHR upload path, which reads its body itself. */
-export function fromErrorBody(status: number, body: Partial<ErrorBody> | null | undefined, requestId?: string): ApiError {
+export function fromErrorBody(status: number, body: Partial<ErrorBody> | null | undefined, requestId?: string, operationId?: string): ApiError {
   const message = typeof body?.error === "string" && body.error ? body.error : statusMessage(status);
-  return new ApiError(status, message, { code: body?.code, fields: body?.fields, requestId: body?.requestId || requestId });
+  return new ApiError(status, message, { code: body?.code, fields: body?.fields, requestId: body?.requestId || requestId, operationId });
 }
 
 /** A failed request in words for the person: the server's reason, or that it never arrived. Server faults carry a short reference to quote. */

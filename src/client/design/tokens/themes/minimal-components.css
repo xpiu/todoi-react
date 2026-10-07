@@ -61,6 +61,10 @@ html[data-theme="minimal"] .td-sidebar-row:hover,html[data-theme="minimal"] .td-
 html[data-theme="minimal"] .td-sidebar-row[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em;box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-sidebar-row:focus-visible{outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-sidebar-iconwrap{display:none!important}
+/* Keep the unread indicator visible when Minimal hides navigation icons. */
+html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"]{display:inline-flex!important;order:1;width:7px;height:7px;margin-left:auto}
+html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"] svg{display:none!important}
+html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"] .td-sidebar-dot{position:static;display:block;flex-shrink:0}
 html[data-theme="minimal"] .td-sidebar-count,html[data-theme="minimal"] .td-sidebar-row[aria-current="true"] .td-sidebar-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more,html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add{right:0;top:11px;transform:none;width:16px!important;height:16px!important;border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more svg,html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add svg{width:14px;height:14px}
@@ -885,3 +889,27 @@ html[data-theme="minimal"] .td-conn-card:hover,html[data-theme="minimal"] .td-co
 html[data-theme="minimal"] .td-conn-menu-head{padding:6px 14px 2px;font:500 13px/1.45 var(--font-ui)}
 /* Password field hint */
 html[data-theme="minimal"] .td-pwf-hint{font:400 11px/1.45 var(--font-ui)}
+
+/* Narrow settings retain the ledger styling while sharing the shell's single-column layout. */
+@container (max-width: 640px) {
+  html[data-theme="minimal"] .td-set-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-6);
+  }
+  html[data-theme="minimal"] .td-set-navhead {
+    margin: 0 var(--sp-1) 0 0;
+    height: 34px;
+  }
+  html[data-theme="minimal"] .td-set-navrow {
+    height: 34px;
+    padding: 0 var(--sp-2);
+    background: none;
+  }
+}
+html[data-theme="minimal"][data-device="phone"] .td-topnav {
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3);
+}
+html[data-theme="minimal"][data-device="phone"] .td-topnav-user {
+  gap: var(--sp-2);
+}

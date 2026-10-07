@@ -80,17 +80,23 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
   };
   /** Leave edit only once the change is saved; a failure keeps the draft and says why. */
   const commit = async (md: string): Promise<boolean> => {
-    if (md === value) {
+    // The cache may already show an optimistic value that the server refused. A kept draft or
+    // previous error must reach onChange again even when it matches that visible value.
+    if (md === value && !error && initialDraft == null) {
       close();
       return true;
     }
+    track(md);
     setPending(true);
     setError(null);
     try {
       await onChange?.(md);
-      close();
+      // Typing can continue while the request is in flight. Confirm this submission without
+      // clearing a newer draft that has not been submitted yet.
+      if (draft.current == null || draft.current === md) close();
       return true;
     } catch (err) {
+      if (draft.current == null || draft.current === md) track(md);
       setError(`Couldn't save: ${err instanceof Error ? err.message : "something went wrong"}`);
       return false;
     } finally {
@@ -133,7 +139,7 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
       error={error}
       onDraft={track}
       onSave={(md) => void commit(md)}
-      onCancel={close}
+      onCancel={() => { if (!pending) close(); }}
       onSuggestShortcut={onSuggestShortcut}
       style={style}
     />
@@ -142,7 +148,7 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
 
 /** Mounts per edit session so the editor's content starts from the saved value every time. */
 function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, pending, error, onDraft, onSave, onCancel, onSuggestShortcut, style }: { value: string; initialDraft?: string | null; placeholder: string; saveLabel: string; pending: boolean; error: string | null; onDraft?: (d: string | null) => void; onSave: (md: string) => void; onCancel: () => void; onSuggestShortcut?: (id: string, delay?: number) => void; style?: CSSProperties }) {
-  const [dirty, setDirty] = useState(initialDraft != null && initialDraft !== value);
+  const [dirty, setDirty] = useState(initialDraft != null);
   const [, bump] = useState(0);
   const editor = useEditor({
     extensions: [StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: { openOnClick: false, autolink: true }, underline: false }), TaskList, TaskItem.configure({ nested: true }), TiptapMarkdown],
@@ -152,7 +158,7 @@ function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, pending,
     editorProps: { attributes: { class: "td-desc-ta", "aria-label": "Description", "data-placeholder": placeholder } },
     onUpdate: ({ editor: e }) => {
       const md = e.getMarkdown().replace(/\s+$/, "");
-      const changed = md !== value;
+      const changed = md !== value || !!error;
       setDirty(changed);
       onDraft?.(changed ? md : null);
     },
