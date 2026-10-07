@@ -30,8 +30,9 @@ const preview: Preview = {
   parameters: {
     layout: "padded",
     backgrounds: { disable: true },
-    // Match the existing application axe gate. Theme contrast remediation remains follow-up work.
-    a11y: { test: "error", context: "body", config: { rules: [{ id: "color-contrast", enabled: false }] } },
+    // Match the existing application axe gate (tests/e2e/helpers.ts › checkA11y): Base UI's hidden focus
+    // guards are excluded, as they redirect focus. Theme contrast remediation remains follow-up work.
+    a11y: { test: "error", context: { include: "body", exclude: "[data-base-ui-focus-guard]" }, config: { rules: [{ id: "color-contrast", enabled: false }] } },
     viewport: {
       options: {
         desktop: { name: "Desktop", styles: { width: "1280px", height: "800px" }, type: "desktop" },
