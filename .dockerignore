@@ -1,0 +1,15 @@
+# Local state and build output never enter the image; the Dockerfile builds from source.
+.git
+node_modules
+dist
+dist-server
+storybook-static
+coverage
+.data
+.dev
+.tmp
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log

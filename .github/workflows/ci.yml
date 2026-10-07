@@ -40,7 +40,7 @@ jobs:
     needs: check
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: todoi
           POSTGRES_PASSWORD: todoi
@@ -73,3 +73,25 @@ jobs:
             .tmp/playwright-report
             .tmp/test-results
           retention-days: 7
+
+  # Staging deploys only commits that passed every gate above. Dokploy's own Autodeploy stays off so a
+  # failing push never reaches staging.todoi.com. Secrets: DOKPLOY_URL (the panel's base URL),
+  # DOKPLOY_API_KEY (Settings › Profile › API) and DOKPLOY_STAGING_APP_ID (the application's id).
+  deploy-staging:
+    name: Deploy staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, storybook, browser]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          APP_ID: ${{ secrets.DOKPLOY_STAGING_APP_ID }}
+        run: |
+          if [ -z "$DOKPLOY_URL" ] || [ -z "$DOKPLOY_API_KEY" ] || [ -z "$APP_ID" ]; then
+            echo "::warning::Dokploy secrets are not set; skipping the staging deploy"
+            exit 0
+          fi
+          curl -fsS -X POST "$DOKPLOY_URL/api/application.deploy" \
+            -H "x-api-key: $DOKPLOY_API_KEY" -H "Content-Type: application/json" \
+            -d "{\"applicationId\":\"$APP_ID\"}"

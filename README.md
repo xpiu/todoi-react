@@ -10,7 +10,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 | Public site          | [todoi.com](https://todoi.com) currently serves a separate micro-site with a browser-only task app.                                                                                                                       |
 | Infrastructure notes | VPS 2 / Dokploy: `http://72.62.177.91/`; Hetzner hosting, Cloudflare CDN. Infrastructure is not defined in this repo.                                                                                                     |
 | Placeholder history  | v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).                                                                                                           |
-| Staging              | [staging.todoi.com](https://staging.todoi.com) is the staging target; deployment configuration is external to this repository.                                     |
+| Staging              | [staging.todoi.com](https://staging.todoi.com): Dokploy builds the repo `Dockerfile` with PostgreSQL 17; CI deploys `main` after every gate passes (see [Production](#-production)). |
 | Email                | Official: `info@todoi.com`; intended sender: `noreply@todoi.com`. The app does not send email yet.                                                                                                                        |
 | Documentation        | [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.      |
 | Planning             | [todo.md](todo.md)                                                                                                                                                                                                        |
@@ -122,7 +122,7 @@ Configure mappings/harness in `tools/claude-design-sync/config.json`. Pull/uploa
 
 ## 💻 Local development
 
-Requirements: **Node 22.12+**, npm and running PostgreSQL (CI uses PostgreSQL 16).
+Requirements: **Node 22.12+**, npm and running PostgreSQL (development, CI and staging use PostgreSQL 17).
 
 ```sh
 cp .env.example .env       # set DATABASE_URL for your machine
@@ -177,6 +177,8 @@ Environment variables override `.env`:
 Production startup rejects invalid/missing configuration, development/example secrets, short secrets, non-HTTPS external URLs or enabled seeding. Development uses convenient defaults.
 
 Non-API GET deep links serve HTML; hashed `/assets/*` cache for a year, HTML revalidates. `SIGTERM`/`SIGINT` stop new connections and close the database pool, with a 10-second shutdown limit. Fault/refused-write logs carry the client's “ref …” `requestId`.
+
+**Docker (staging):** the `Dockerfile` builds with every dependency and ships a non-root `node:22-slim` image with production dependencies, `dist/`, `dist-server/` and `drizzle/`. It defaults `UPLOAD_DIR=/data/uploads` (mount a named volume at `/data`, one replica) and health-checks `/api/health`. On Dokploy set `DATABASE_URL`, `APP_URL`, `BETTER_AUTH_SECRET` and `MIGRATE_ON_START=true`, and keep Autodeploy off: the CI `deploy-staging` job deploys `main` through the Dokploy API once all checks pass (secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_STAGING_APP_ID`).
 
 Local production smoke test (PostgreSQL required):
 
