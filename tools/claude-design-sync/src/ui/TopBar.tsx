@@ -1,9 +1,10 @@
-// The bar every page shares: the wordmark, Merge while a run waits for it, the page's own tools, the pages
-// (Plan, Mapping, Guide), and the Claude Design project the tool targets.
+// The bar every page shares: the wordmark, the token meter (Flame.tsx), Merge while a run waits for it, the
+// page's own tools, the pages (Plan, Mapping, Guide), and the Claude Design project the tool targets.
 import { ArrowLeftRight, ArrowUpRight, BookOpen, ListChecks, Moon, Sun, Waypoints } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { projectUrl, store, type AppState } from "./api";
+import { Flame } from "./Flame";
 import { MergeButton, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
 
@@ -46,6 +47,7 @@ export function TopBar({ state, page, merge, children }: { state: AppState | nul
         <ArrowLeftRight size={14} strokeWidth={1.75} className="cds-wordmark-mark" aria-hidden />
         <span className="cds-wordmark-name">Claude Design sync tool</span>
       </h1>
+      <Flame />
       <div className="cds-bar-tools">
         {merge ? <MergeButton offer={merge} place="bar" /> : null}
         {children}

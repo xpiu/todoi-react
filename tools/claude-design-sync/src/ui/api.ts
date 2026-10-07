@@ -2,6 +2,7 @@
 import { directionsFor } from "../engine/directions";
 import type { Comparison, Direction, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "../engine/types";
 import type { Job, JobEvent } from "../server/jobs";
+import type { MeterState } from "../server/meter";
 import type { PlanRequest, RunRequest } from "../server/requests";
 import type { HarnessInfo } from "../engine/harness";
 import type { Step } from "../engine/plan";
@@ -11,6 +12,7 @@ import type { Theme as VisualTheme, VisualComparison } from "../engine/visual";
 
 export type { Comparison, Direction, Feature, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "../engine/types";
 export type { Job, JobEvent, StepState } from "../server/jobs";
+export type { Burning, MeterState } from "../server/meter";
 export type { Step } from "../engine/plan";
 export type { LaneId, LaneRule, Technique } from "../engine/lanes";
 export type { Flow, MappingEvent, Move } from "../server/mapping";
@@ -78,6 +80,8 @@ export const api = {
   /** Pictures of a component: its Storybook stories and the kit cards that show it (slow the first time: builds Storybook) */
   visual: (unit: string, base?: string | null) => call<VisualComparison>("/api/visual", { body: { unit, base } }),
   mapping: (base?: string | null) => call<MappingData>(`/api/mapping?${new URLSearchParams(base ? { base } : {})}`),
+  /** The Claude Code calls the server has running and what finished ones cost (the bar's flame) */
+  meter: () => call<MeterState>("/api/meter"),
 };
 
 /** Decode the job/event protocol once; closing a subscription also ignores queued callbacks. */

@@ -32,16 +32,18 @@ import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshot
 import type { Comparison } from "../engine/types";
 import { stepsForSelection } from "../engine/selection";
 import { Jobs, type Job } from "./jobs";
+import { Meter } from "./meter";
 import { mappingHistory } from "./mapping";
 import { buildUi, distDir } from "./ui-build";
 import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
 
 export type { HarnessInfo } from "../engine/harness";
 
-export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {}) {
+export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?: number; costUsd?: number } } = {}) {
   const app = new Hono();
   app.onError((e, c) => c.json({ error: e.message }, e instanceof HTTPException ? e.status : 500));
   const jobs = new Jobs(ctx);
+  const meter = new Meter();
   const cache = new Map<string, Comparison>();
   /** The last time Claude Design was asked whether it changed (this server's lifetime) */
   let lastCheck: { at: string; updatedAt: string | null; stale: boolean } | null = null;
@@ -68,17 +70,17 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
   const harnesses = () =>
     opts.fake ? { claude: { ok: true, version: "fake" } } : (probed ??= { claude: probe(ctx.config.harness.claudeBin), ...(ctx.config.harness.implement === "codex" ? { codex: probe(ctx.config.harness.codexBin) } : {}) });
 
-  /** DesignSync always goes through Claude Code (it's the only harness with the tool) */
-  const designRunner = (job?: Job): Runner =>
-    opts.fake
-      ? fakeRunner(opts.fake.designDir, ctx.repo)
-      : createDesignRunner(ctx, job ? jobs.signal(job.id) : undefined);
+  /** DesignSync always goes through Claude Code (it's the only harness with the tool); `what` names the call for the bar's flame */
+  const designRunner = (what: string, job?: Job): Runner =>
+    meter.meter(opts.fake
+      ? fakeRunner(opts.fake.designDir, ctx.repo, opts.fake)
+      : createDesignRunner(ctx, job ? jobs.signal(job.id) : undefined), what, job?.id);
 
   /** App ports run in their worktree (`cwd`, reading Design snapshots via addDirs); kit ports in the repo, writing the stage */
-  const implementRunner = (kind: HarnessKind, job: Job, where: { cwd?: string; addDirs?: string[]; stage?: string }): Runner =>
-    opts.fake
-      ? fakeRunner(opts.fake.designDir, where.cwd ?? ctx.repo)
-      : (prompt, _o, on) => runHarness({ kind, bin: kind === "codex" ? ctx.config.harness.codexBin : ctx.config.harness.claudeBin, cwd: where.cwd ?? ctx.repo, prompt: where.stage ? `${prompt}\n\n(Also allowed: files under ${where.stage}.)` : prompt, model: ctx.config.harness.implementModel || undefined, edits: true, maxTurns: 80, addDirs: where.addDirs, signal: jobs.signal(job.id) }, on);
+  const implementRunner = (kind: HarnessKind, job: Job, what: string, where: { cwd?: string; addDirs?: string[]; stage?: string }): Runner =>
+    meter.meter(opts.fake
+      ? fakeRunner(opts.fake.designDir, where.cwd ?? ctx.repo, opts.fake)
+      : (prompt, _o, on) => runHarness({ kind, bin: kind === "codex" ? ctx.config.harness.codexBin : ctx.config.harness.claudeBin, cwd: where.cwd ?? ctx.repo, prompt: where.stage ? `${prompt}\n\n(Also allowed: files under ${where.stage}.)` : prompt, model: ctx.config.harness.implementModel || undefined, edits: true, maxTurns: 80, addDirs: where.addDirs, signal: jobs.signal(job.id) }, on), what, job.id);
 
   const logHarness = (job: Job, stepId?: string) => (e: HarnessEvent) => {
     if (e.type === "text") jobs.log(job, "ai", e.text, stepId);
@@ -219,7 +221,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     const waiting = jobs.list().find((j) => j.state === "awaiting-approval" && uploadPending(j));
     if (waiting) return c.json({ error: `“${waiting.title}” is waiting to upload to ${ctx.config.design.projectName}. Upload or discard it first.` }, 409);
     try {
-      const found = await findProject(ctx, designRunner(), id);
+      const found = await findProject(ctx, designRunner("Looking up the Claude Design project"), id);
       if (!found) return c.json({ error: `Claude Design has no project ${id} on this account.` }, 404);
       ctx.config.design.projectId = found.projectId;
       ctx.config.design.projectName = found.name;
@@ -233,7 +235,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
 
   app.post("/api/status-check", async (c) => {
     try {
-      const st = await projectStatus(ctx, designRunner());
+      const st = await projectStatus(ctx, designRunner("Asking Claude Design whether the project changed"));
       const snap = latestSnapshot(ctx);
       const stale = !!st.updatedAt && !isCurrent(ctx, snap, st.updatedAt);
       lastCheck = { at: new Date().toISOString(), updatedAt: st.updatedAt, stale };
@@ -250,7 +252,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     void (async () => {
       try {
         jobs.log(job, "info", "Asking Claude Design whether the project changed since the newest snapshot…");
-        const runner = designRunner(job);
+        const runner = designRunner("Pulling the Design project", job);
         const { snapshot: snap, current, updatedAt } = await pullIfChanged(ctx, runner, { force, onLog: logHarness(job), label: `Pulled ${new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, onProgress: (p) => jobs.update(job, { progress: { done: p.done, total: p.total } }) });
         // a complete pull (or none needed) leaves the tool holding Design's current state
         if (!snap?.unpulled) lastCheck = { at: new Date().toISOString(), updatedAt: updatedAt ?? null, stale: false };
@@ -394,7 +396,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
         if (s.target === "app") {
           const before = headOf(run!);
           const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and finish with a commit there; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
-          const done = await implementRunner(harness, job, { cwd: run!.worktree, addDirs: readable })(brief, {}, logHarness(job, s.id));
+          const done = await implementRunner(harness, job, `Drafting “${s.featureTitle}” into the App`, { cwd: run!.worktree, addDirs: readable })(brief, {}, logHarness(job, s.id));
           if (!done.ok) {
             jobs.step(job, s.id, { state: "failed", summary: done.result.slice(0, 600) });
             throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
@@ -424,7 +426,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
             }
           }
         }
-        const done = await implementRunner("claude", job, { stage, addDirs: [...readable, ...(stage ? [stage] : [])] })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
+        const done = await implementRunner("claude", job, `Porting “${s.featureTitle}” into the kit`, { stage, addDirs: [...readable, ...(stage ? [stage] : [])] })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
         jobs.step(job, s.id, { state: done.ok ? "done" : "failed", summary: done.result.slice(0, 600) });
         if (!done.ok) throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
       }
@@ -525,7 +527,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     jobs.step(job, "upload", { state: "running" });
     void (async () => {
       try {
-        const runner = designRunner(job);
+        const runner = designRunner("Checking the upload against Claude Design", job);
         const from = job.snapshotId ? getSnapshot(ctx, job.snapshotId) : latestSnapshot(ctx);
         jobs.log(job, "step", "Checking Claude Design for edits made since this run's snapshot…", "upload");
         const check = await checkUpload(ctx, runner, { stageDir: job.stage!, baseDir: from ? snapshotFilesDir(ctx, from.id) : null, baseUpdatedAt: from?.projectUpdatedAt, paths: files, onLog: logHarness(job, "upload") });
@@ -563,7 +565,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     jobs.step(job, "upload", { state: "running" });
     void (async () => {
       try {
-        const runner = designRunner(job);
+        const runner = designRunner("Reading the upload back from Claude Design", job);
         jobs.log(job, "step", `Reading the ${h.paths.length} file(s) back from Claude Design…`, "upload");
         const { contents, differ } = await verifyUpload(ctx, runner, job.stage!, h.paths, logHarness(job, "upload"));
         if (differ.length) {
@@ -627,6 +629,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string } } = {})
     const j = jobs.get(c.req.param("id"));
     return j ? c.json(j) : c.json({ error: "Unknown job" }, 404);
   });
+
+  // The bar's flame polls this: the Claude Code calls running now and what finished ones cost
+  app.get("/api/meter", (c) => c.json(meter.state()));
 
   app.get("/api/jobs/:id/events", (c) =>
     streamSSE(c, async (stream) => {

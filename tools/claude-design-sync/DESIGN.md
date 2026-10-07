@@ -141,7 +141,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 - **Both-Sides Red** (`--danger`): see the rule below.
 
 ### Named Rules
-**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, failed jobs and steps; inline errors and warn/error log lines keep ink words and carry the red as a 6px square or a 2px margin bar, for the same contrast reason). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink.
+**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, failed jobs and steps; inline errors and warn/error log lines keep ink words and carry the red as a 6px square or a 2px margin bar, for the same contrast reason). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink. One exception, by design: the **token meter's flame** in the bar burns in the App's `--warning`, `--label-orange` and `--danger` while Claude Code runs, the only warm colours in the tool; unlit, it is an ink outline like every bar icon.
 
 **The Borrowed Tokens Rule.** The tool loads the App's token files and consumes them by name. It never adds a raw hex, never forks a value, and adds only layout aliases prefixed `--cds-`.
 
@@ -221,6 +221,13 @@ One action in four places, all driven by one hook (`Merge.tsx`), so they agree a
 - **Plan bar:** a Merge button before Review selected sync steps: primary while a run waits, Default and disabled while one ports, absent otherwise.
 - **Activity:** the run's own "Merge into the App" block; while another job is shown, a strip under the job list (ink rule on top) names the waiting run (a link that shows it) beside a primary Merge.
 - **Drafts** (runs that ported kit code into the App) never merge from the navbar, banner or plan bar: those read **Review the draft** (ScanSearch glyph) and open the run in Activity, landing focus on the review heading. The review block sits under its own ink rule: a 13px heading counting what the architecture scan flagged, findings grouped by file (mono path with *Copy its diff*, one checkbox per finding with its rule in 500 weight), the review points as a quiet list, *Copy the whole diff*, and the confirmation checkbox, which stays disabled until every finding is ticked. Merge stays disabled until it is ticked. While a draft waits, the panel's Upload button drops to Default so the panel keeps one primary.
+
+### Token meter (bar)
+A 16px flame beside the wordmark (`Flame.tsx`), following the server's own count of live Claude Code calls (`/api/meter`, polled every second while lit and every two otherwise, never in a hidden tab), so it burns as long as tokens are being spent.
+- **Unlit:** lucide's flame outline, Quiet Ink, stroke 1.75: one of the bar's icons.
+- **Lit:** the same shape filled with a vertical gradient (thinned `--warning` at the base, `--label-orange`, `--danger` at the tip) and a paler heart, with a soft orange glow. It rises out of the outline with a small overshoot (360ms) and sinks back when the last call ends.
+- **Flicker:** sway (1.7s), heart (1.1s) and the two colour stops (1.3s, 2.3s) run on unrelated periods, so it never visibly loops; the colours stay within the flame's range, the tip always the hottest. Reduced motion keeps it lit and still.
+- **Tip:** what is burning now with its elapsed time, which actions spend tokens and which are free, and the calls and cost since the server started. Focusable (`role="img"`, named "Token meter: …"); a polite live region announces when it lights.
 
 ### Links
 12px ink text with an input-rule underline offset 3px; the underline turns ink on hover. Used for every secondary action in a line (App diff, Design diff, Preview, Read brief, Copy brief, Check for changes).

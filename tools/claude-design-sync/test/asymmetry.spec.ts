@@ -1,13 +1,11 @@
 // The report's challenges 3.1–3.3/5.1–5.3 in the GUI: references stay references, drafts wait for review,
 // and the kit side shows pictures, not only diffs. Screenshots land in .tmp/20261007_report_fixes.
-import { serve } from "@hono/node-server";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 import { TOOL_DIR } from "../src/engine/config";
-import { createApp } from "../src/server/main";
-import { makeFixture } from "./fixture";
+import { ownWorld } from "./world";
 
 const shots = join(TOOL_DIR, "../../.tmp/20261007_report_fixes");
 const row = (page: Page, title: string) => page.locator(".cds-row", { has: page.getByRole("button", { name: title, exact: true }) });
@@ -58,24 +56,6 @@ test("kit screens are references: read beside the App screen, never ported (3.1)
   await expect(lane.locator(".cds-map-tally").first()).toHaveText("Compared with 1 App screen, never written");
   await lane.screenshot({ path: join(shots, "3.1-mapping-screens-lane.png"), animations: "disabled" });
 });
-
-/** A fixture world and server of its own, so a run here never changes what the shared suite sees */
-async function ownWorld() {
-  const fx = makeFixture();
-  const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir } });
-  const { server, url } = await new Promise<{ server: ReturnType<typeof serve>; url: string }>((resolve) => {
-    const s = serve({ fetch: app.fetch, port: 0, hostname: "127.0.0.1" }, (info) => resolve({ server: s, url: `http://127.0.0.1:${info.port}` }));
-  });
-  return {
-    fx,
-    url,
-    close: async () => {
-      if ("closeAllConnections" in server) server.closeAllConnections();
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-      rmSync(dirname(fx.repo), { recursive: true, force: true });
-    },
-  };
-}
 
 test("a port from the kit is a draft: scanned for architecture, merged only after review (3.2)", async ({ page, request }) => {
   const world = await ownWorld();

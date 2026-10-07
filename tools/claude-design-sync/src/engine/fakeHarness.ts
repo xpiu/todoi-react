@@ -14,10 +14,11 @@ const result = (o: unknown): HarnessEvent => ({ type: "tool-result", content: JS
 /** Like Claude Design's: moves whenever a file in the project changes */
 const updatedAt = (dir: string) => new Date(Math.max(0, ...listFiles(dir).map((f) => statSync(join(dir, f)).mtimeMs))).toISOString();
 
-export function fakeRunner(designDir: string, repo: string): Runner {
+/** `delayMs` and `costUsd`: how long each call takes and what it reports spending (tests of the bar's flame) */
+export function fakeRunner(designDir: string, repo: string, { delayMs = 30, costUsd = 0 }: { delayMs?: number; costUsd?: number } = {}): Runner {
   return async (prompt, _opts, on) => {
     const emit = (e: HarnessEvent) => on(e);
-    await new Promise((r) => setTimeout(r, 30));
+    await new Promise((r) => setTimeout(r, delayMs));
     if (prompt.includes('"list_projects"')) {
       // a second project, so switching the target can be tried
       emit(result({ method: "list_projects", projects: [{ projectId: "fake", name: "Fake Design System", updatedAt: updatedAt(designDir) }, { projectId: "fake-2", name: "Other Design System", updatedAt: "2026-01-01T00:00:00.000Z" }] }));
@@ -48,7 +49,7 @@ export function fakeRunner(designDir: string, repo: string): Runner {
         }
       }
     }
-    const done: Extract<HarnessEvent, { type: "done" }> = { type: "done", ok: true, result: "DONE", costUsd: 0, turns: 1 };
+    const done: Extract<HarnessEvent, { type: "done" }> = { type: "done", ok: true, result: "DONE", costUsd, turns: 1 };
     emit(done);
     return done;
   };

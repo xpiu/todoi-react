@@ -62,6 +62,7 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
 ## Plan page (`/`)
 
 - **Top bar:**
+  - **Token meter:** a flame beside the name, lit while the server runs Claude Code (a pull, Check for changes, an AI port, an upload's checks). Hover it for what's burning, what costs nothing, and what the calls cost since the server started.
   - **Since:** the sync point to compare from.
   - **Recompare:** re-reads the App and the newest snapshot.
   - **Activity:** shows a live square while a job runs.
@@ -251,7 +252,7 @@ Run worktrees live outside the repo, under `$TMPDIR/cds-runs/`.
 ## Code and tests
 
 - **`src/engine`:** comparison, plan, merges, snapshots, DesignSync, worktrees, lanes.
-- **`src/server`:** the Hono API, jobs, mapping history.
+- **`src/server`:** the Hono API, jobs, the token meter (`meter.ts`), mapping history.
 - **`src/ui`:** React 19, plain CSS on the App's tokens.
 - **Design docs:** [DESIGN.md](DESIGN.md) (the GUI's design system) and [PRODUCT.md](PRODUCT.md) (who it's for and why).
 
