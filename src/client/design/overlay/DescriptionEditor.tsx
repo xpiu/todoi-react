@@ -1,8 +1,9 @@
 // DescriptionEditor — the item description: Markdown in, Markdown out. View state renders the shared
-// Markdown component (click or Enter to edit); edit state is a Tiptap editor restricted to the DS
-// subset (headings, lists, tasks, quote, code, bold / italic / strike / inline code, links), the
-// quiet toolbar, Save / Cancel; ctrl+↵ saves, Esc cancels. Tiptap serialises back to the same subset
-// through @tiptap/markdown, so GitHub / Embridge round-trips stay exact. Spec: DESIGN.md › Description.
+// Markdown component (click it, or Tab to its Edit button, to edit; its links and keys stay links);
+// edit state is a Tiptap editor restricted to the DS subset (headings, lists, tasks, quote, code,
+// bold / italic / strike / inline code, links), the quiet toolbar, Save / Cancel; ctrl+↵ saves, Esc
+// cancels. Tiptap serialises back to the same subset through @tiptap/markdown, so GitHub / Embridge
+// round-trips stay exact. Spec: DESIGN.md › Description.
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Markdown as TiptapMarkdown } from "@tiptap/markdown";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
@@ -14,6 +15,7 @@ import { IconButton } from "../core/IconButton";
 import { InlineError } from "../core/InlineError";
 import type { IconName } from "../core/Icon";
 import { Markdown, type MarkdownMember } from "../core/Markdown";
+import "../core/text.css";
 import "./DescriptionEditor.css";
 
 export interface DescriptionEditorProps {
@@ -112,21 +114,11 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
   });
   if (!editing)
     return (
-      <div
-        className="td-desc-view"
-        role="button"
-        tabIndex={0}
-        title="Click to edit description"
-        style={style}
-        onClick={() => setEditing(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setEditing(true);
-          }
-        }}
-      >
-        {value.trim() ? <Markdown text={value} members={members} onOpenKey={onOpenKey} /> : <div className="td-desc-empty">{placeholder}</div>}
+      // Pointer: a click anywhere on the view edits, except on its own links and item keys. Keyboard:
+      // the visually hidden Edit button, whose focus ring the view draws; links and keys stay separate stops.
+      <div className="td-desc-view" title="Click to edit description" style={style} onClick={(e) => !(e.target as Element).closest("a, button, [role=link]") && setEditing(true)}>
+        {value.trim() ? <Markdown text={value} members={members} onOpenKey={onOpenKey} /> : <div className="td-desc-empty" aria-hidden>{placeholder}</div>}
+        <button type="button" className="td-desc-editbtn td-sr-only" aria-label={value.trim() ? "Edit description" : placeholder} onClick={() => setEditing(true)} />
       </div>
     );
   return (
@@ -158,14 +150,18 @@ function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, pending,
     editorProps: { attributes: { class: "td-desc-ta", "aria-label": "Description", "data-placeholder": placeholder } },
     onUpdate: ({ editor: e }) => {
       const md = e.getMarkdown().replace(/\s+$/, "");
-      const changed = md !== value || !!error;
+      // Against the saved value as this editor serialises it, so valid Markdown in another spelling
+      // ("## A\nB") isn't an edit the moment it opens (autofocus already dispatches an update).
+      const saved = (e.markdown?.serialize(e.markdown.parse(value)) ?? value).replace(/\s+$/, "");
+      const changed = (md !== saved && md !== value) || !!error;
       setDirty(changed);
       onDraft?.(changed ? md : null);
     },
     onSelectionUpdate: () => bump((n) => n + 1),
     onTransaction: () => bump((n) => n + 1),
   });
-  const save = () => !pending && onSave(editor ? editor.getMarkdown().replace(/\s+$/, "") : value);
+  // Unedited, the save hands back the value untouched rather than its reserialised spelling.
+  const save = () => !pending && onSave(editor && dirty ? editor.getMarkdown().replace(/\s+$/, "") : value);
   const hint = () => onSuggestShortcut?.("description", 200);
   useEffect(() => () => editor?.destroy(), [editor]);
   return (

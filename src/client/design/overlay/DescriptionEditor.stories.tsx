@@ -19,14 +19,15 @@ const meta = {
   component: DescriptionEditor,
   decorators: [(Story) => <div style={{ maxWidth: 560 }}><Story /></div>],
   args: { value: "", onChange: fn(), onDraft: fn(), onSuggestShortcut: fn() },
-  parameters: { docs: { description: { component: "The item description: Markdown in, Markdown out. The view renders the shared Markdown (click or Enter to edit); editing is a Tiptap editor limited to the design-system subset with a quiet toolbar, Save and Cancel (ctrl+↵ / Esc). The overlay owns the value: onChange may return a promise and the editor keeps the draft until it resolves; onDraft mirrors the unsaved draft and initialDraft resumes it." } } },
+  parameters: { docs: { description: { component: "The item description: Markdown in, Markdown out. The view renders the shared Markdown (click it, or Tab to its Edit button, to edit; links and item keys inside stay links); editing is a Tiptap editor limited to the design-system subset with a quiet toolbar, Save and Cancel (ctrl+↵ / Esc). The overlay owns the value: onChange may return a promise and the editor keeps the draft until it resolves; onDraft mirrors the unsaved draft and initialDraft resumes it." } } },
 } satisfies Meta<typeof DescriptionEditor>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Empty: Story = {
   async play({ args, canvas, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: /Add a more detailed description/ }));
+    await expect(canvas.getByRole("button", { name: "Add a more detailed description…" })).toBeInTheDocument();
+    await userEvent.click(canvas.getByText("Add a more detailed description…"));
     const editor = await canvas.findByLabelText("Description");
     await waitFor(() => expect(editor).toHaveFocus());
     await expect(canvas.getByRole("toolbar", { name: "Formatting" })).toBeVisible();
@@ -41,8 +42,8 @@ export const WithMarkdown: Story = { args: { value: DESCRIPTION } };
 export const CancelEditing: Story = {
   args: { value: DESCRIPTION },
   async play({ args, canvas, userEvent }) {
-    const view = canvas.getByTitle("Click to edit description");
-    view.focus();
+    await userEvent.tab();
+    await expect(canvas.getByRole("button", { name: "Edit description" })).toHaveFocus();
     await userEvent.keyboard("{Enter}");
     await waitFor(() => expect(canvas.getByLabelText("Description")).toHaveFocus());
     await userEvent.click(canvas.getByRole("button", { name: "Cancel" }));
@@ -70,8 +71,34 @@ export const ResumedDraft: Story = {
     await expect(canvas.getByRole("button", { name: "Discard" })).toBeVisible();
   },
 };
+/** Valid Markdown in another spelling than the serializer's: opening it is not an edit. */
+export const OpensUnedited: Story = {
+  args: { value: "## Scope\nQuote the H145.\n* Delivery in March", autoFocus: true },
+  async play({ args, canvas, userEvent }) {
+    await waitFor(() => expect(canvas.getByLabelText("Description")).toHaveFocus());
+    await expect(canvas.queryByText("Unsaved")).not.toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "Cancel" })).toBeVisible();
+    await expect(args.onDraft).not.toHaveBeenCalledWith(expect.any(String));
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await expect(args.onChange).not.toHaveBeenCalled();
+    await waitFor(() => expect(canvas.queryByRole("toolbar")).not.toBeInTheDocument());
+  },
+};
 export const MentionsAndKeys: Story = {
-  // The view is role="button" and the Markdown inside renders the item key as role="link" (axe nested-interactive).
-  parameters: { a11y: { test: "todo" } },
   args: { value: "Waiting on HE-120. @sam has the export paperwork.", members: [{ name: "Sam Verhoeven", nickname: "sam" }], onOpenKey: fn() },
+  async play({ args, canvas, userEvent }) {
+    // The key is its own link: clicking or Enter opens it and leaves the view as it is.
+    const key = canvas.getByRole("link", { name: "HE-120" });
+    await userEvent.click(key);
+    await expect(args.onOpenKey).toHaveBeenCalledWith("HE-120");
+    await expect(key).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onOpenKey).toHaveBeenCalledTimes(2);
+    await expect(canvas.queryByRole("toolbar")).not.toBeInTheDocument();
+    // The next stop edits.
+    await userEvent.tab();
+    await expect(canvas.getByRole("button", { name: "Edit description" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(canvas.getByLabelText("Description")).toHaveFocus());
+  },
 };

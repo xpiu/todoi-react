@@ -10,7 +10,8 @@
   .td-desc-view:hover {
     background: var(--n-a06);
   }
-  .td-desc-view:focus-visible {
+  /* The ring of the visually hidden Edit button, drawn around the whole view */
+  .td-desc-view:has(.td-desc-editbtn:focus-visible) {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }

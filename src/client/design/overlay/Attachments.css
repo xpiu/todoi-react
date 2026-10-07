@@ -188,6 +188,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    outline: none;
   }
   .td-lightbox img {
     max-width: calc(100vw - 128px);

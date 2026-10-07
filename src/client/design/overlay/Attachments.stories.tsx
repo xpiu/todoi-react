@@ -65,12 +65,18 @@ export const Lightbox: Story = {
     const thumb = canvas.getByRole("button", { name: "Preview hangar.png" });
     await userEvent.click(thumb);
     const page = within(canvasElement.ownerDocument.body);
-    await expect(await page.findByRole("dialog", { name: "hangar.png" })).toBeVisible();
+    const dialog = await page.findByRole("dialog", { name: "hangar.png" });
+    await expect(dialog).toBeVisible();
+    await waitFor(() => expect(dialog).toContainElement(canvasElement.ownerDocument.activeElement as HTMLElement));
     await expect(page.getByText("1 / 2")).toBeVisible();
     await userEvent.keyboard("{ArrowRight}");
     await expect(await page.findByRole("dialog", { name: "rotor-detail.png" })).toBeVisible();
+    // Focus stays inside while tabbing past the last control.
+    for (let i = 0; i < 4; i++) await userEvent.tab();
+    await expect(page.getByRole("dialog")).toContainElement(canvasElement.ownerDocument.activeElement as HTMLElement);
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(thumb).toHaveFocus());
   },
 };
 export const Uploading: Story = {

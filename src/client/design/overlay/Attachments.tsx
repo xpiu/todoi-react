@@ -3,6 +3,7 @@
 // uploads show a progress bar in place of the meta (with Cancel), failed ones their reason with Retry and
 // Remove. Images open the Lightbox. Files arrive from the
 // aside button, the section's Add, a drop over the panel (DropOverlay) or a drop on a card / row.
+import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useEffect, useRef, useState, type DragEvent, type RefObject } from "react";
 
 import { Button } from "../core/Button";
@@ -252,39 +253,41 @@ export function AttachmentList({ files, onAdd, onOpen, onDownload, onMakeCover, 
   );
 }
 
-/** Full-viewport image preview above the overlay. ←/→ step through the item's images, Esc closes only the preview. */
+/**
+ * Full-viewport image preview above the overlay, on Base UI Dialog (focus moves in, stays in and returns
+ * to the thumbnail). ←/→ step through the item's images; Esc closes only the preview (Base UI nests).
+ */
 export function Lightbox({ files, index, onIndex, onClose }: { files: AttachmentFile[]; index: number; onIndex: (i: number) => void; onClose: () => void }) {
   const f = files[index];
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        e.preventDefault();
-        onClose();
-      } else if (e.key === "ArrowRight" && files.length > 1) {
-        e.stopPropagation();
-        onIndex((index + 1) % files.length);
-      } else if (e.key === "ArrowLeft" && files.length > 1) {
-        e.stopPropagation();
-        onIndex((index - 1 + files.length) % files.length);
-      }
-    };
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, [index, files.length, onClose, onIndex]);
   if (!f) return null;
+  const step = (d: number) => onIndex((index + d + files.length) % files.length);
   return (
-    <div className="td-lightbox" role="dialog" aria-modal aria-label={f.name} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="td-lightbox-bar">
-        <span className="td-lightbox-name">{f.name}</span>
-        {files.length > 1 ? <span className="td-lightbox-count">{index + 1} / {files.length}</span> : null}
-        {f.url ? <IconButton name="external-link" label="Open original" variant="chrome" onClick={() => window.open(f.url, "_blank", "noopener")} /> : null}
-        <IconButton name="x" label="Close preview" variant="chrome" onClick={onClose} />
-      </div>
-      {files.length > 1 ? <IconButton name="chevron-left" label="Previous image" variant="chrome" size={40} iconSize={22} className="td-lightbox-nav is-prev" onClick={() => onIndex((index - 1 + files.length) % files.length)} /> : null}
-      <img src={f.src ?? f.url} alt={f.name} />
-      {files.length > 1 ? <IconButton name="chevron-right" label="Next image" variant="chrome" size={40} iconSize={22} className="td-lightbox-nav is-next" onClick={() => onIndex((index + 1) % files.length)} /> : null}
-    </div>
+    <BaseDialog.Root open onOpenChange={(o) => !o && onClose()}>
+      <BaseDialog.Portal>
+        <BaseDialog.Popup
+          className="td-lightbox"
+          aria-label={f.name}
+          onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+          onKeyDown={(e) => {
+            if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && files.length > 1) {
+              e.preventDefault();
+              e.stopPropagation();
+              step(e.key === "ArrowRight" ? 1 : -1);
+            }
+          }}
+        >
+          <div className="td-lightbox-bar">
+            <span className="td-lightbox-name">{f.name}</span>
+            {files.length > 1 ? <span className="td-lightbox-count">{index + 1} / {files.length}</span> : null}
+            {f.url ? <IconButton name="external-link" label="Open original" variant="chrome" onClick={() => window.open(f.url, "_blank", "noopener")} /> : null}
+            <IconButton name="x" label="Close preview" variant="chrome" onClick={onClose} />
+          </div>
+          {files.length > 1 ? <IconButton name="chevron-left" label="Previous image" variant="chrome" size={40} iconSize={22} className="td-lightbox-nav is-prev" onClick={() => step(-1)} /> : null}
+          <img src={f.src ?? f.url} alt={f.name} />
+          {files.length > 1 ? <IconButton name="chevron-right" label="Next image" variant="chrome" size={40} iconSize={22} className="td-lightbox-nav is-next" onClick={() => step(1)} /> : null}
+        </BaseDialog.Popup>
+      </BaseDialog.Portal>
+    </BaseDialog.Root>
   );
 }
 
