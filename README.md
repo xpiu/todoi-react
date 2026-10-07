@@ -112,7 +112,7 @@ Configure mappings/harness in `tools/claude-design-sync/config.json`. Pull/uploa
 
 ## 💻 Local development
 
-Requirements: **Node 22.12+**, npm and running PostgreSQL (development, CI and staging use PostgreSQL 17).
+Requirements: **Node 22.12+**, npm and running PostgreSQL (development, CI and staging use PostgreSQL 18).
 
 ```sh
 cp .env.example .env       # set DATABASE_URL for your machine

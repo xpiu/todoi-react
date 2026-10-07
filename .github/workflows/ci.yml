@@ -40,7 +40,7 @@ jobs:
     needs: check
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: todoi
           POSTGRES_PASSWORD: todoi
