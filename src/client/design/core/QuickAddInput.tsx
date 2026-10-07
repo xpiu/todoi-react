@@ -8,10 +8,10 @@ import { LabelChip } from "../board/LabelChip";
 import { Avatar } from "./Avatar";
 import { formatDate } from "./dates";
 import { Icon, type IconName } from "./Icon";
+import { PRIORITY_COLORS } from "./priorities";
 import { parseQuickAdd, type QuickAddOptions, type QuickAddPriority, type QuickAddResult, type QuickAddToken } from "./quickAdd";
 import "./QuickAddInput.css";
 
-const PRIO_COLORS: Record<QuickAddPriority, string> = { Urgent: "var(--label-red)", High: "var(--label-orange)", Medium: "var(--label-yellow)", Low: "var(--label-blue)" };
 
 export interface QuickAddInputProps extends QuickAddOptions {
   defaultValue?: string;
@@ -72,7 +72,7 @@ function TokenPreview({ t }: { t: QuickAddToken }) {
   if (t.kind === "priority")
     return (
       <>
-        <Icon name="flag" size={14} color={PRIO_COLORS[t.value as QuickAddPriority]} />
+        <Icon name="flag" size={14} color={PRIORITY_COLORS[t.value as QuickAddPriority]} />
         {t.value}
       </>
     );

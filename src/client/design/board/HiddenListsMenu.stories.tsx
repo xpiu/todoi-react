@@ -23,8 +23,7 @@ export const ShowOne: Story = {
     const trigger = canvas.getByRole("button", { name: "2 hidden lists" });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
-    // Base UI labels the popup by its trigger (aria-labelledby wins over MenuPopover's label).
-    const menu = await page.findByRole("menu", { name: "2 hidden lists" });
+    const menu = await page.findByRole("menu", { name: "Hidden lists" });
     await waitFor(() => expect(within(menu).getByText("Hidden lists and their items are hidden for everyone in this project.")).toBeVisible());
     await userEvent.click(within(menu).getByRole("menuitem", { name: /Show “Backlog”/ }));
     await expect(args.onShow).toHaveBeenCalledWith(["backlog"]);

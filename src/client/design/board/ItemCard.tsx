@@ -7,6 +7,7 @@ import { Avatar } from "../core/Avatar";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
+import { PRIORITY_COLORS } from "../core/priorities";
 import { StatusChip } from "../core/StatusChip";
 import type { StatusLike } from "../core/statuses";
 import { DueDatePill, type DueState } from "./DueDatePill";
@@ -15,7 +16,6 @@ import type { RowLabel, RowPerson, RowPriority } from "../list/ListRow";
 import "../core/text.css";
 import "./ItemCard.css";
 
-const PRIO_COLORS: Record<RowPriority, string> = { Urgent: "var(--label-red)", High: "var(--label-orange)", Medium: "var(--label-yellow)", Low: "var(--label-blue)" };
 export type CardMenuAction = "Rename" | "Move to" | "Duplicate" | "Convert to" | "Archive" | "Delete";
 const MENU_ITEMS: ReadonlyArray<["pencil" | "arrow-right" | "copy" | "repeat" | "archive" | "trash-2", CardMenuAction]> = [
   ["pencil", "Rename"],
@@ -155,7 +155,7 @@ export function ItemCard({ title, itemId, showId = true, labels = [], done, due,
             ) : null}
             {priority ? (
               <span className="td-card-badge" title={`Priority: ${priority}`}>
-                <Icon name="flag" size={14} color={PRIO_COLORS[priority]} style={{ fill: PRIO_COLORS[priority] }} />
+                <Icon name="flag" size={14} color={PRIORITY_COLORS[priority]} style={{ fill: PRIORITY_COLORS[priority] }} />
                 <span className="td-prio-text">{priority}</span>
               </span>
             ) : null}

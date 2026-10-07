@@ -10,7 +10,7 @@ import { LUCIDE_ICONS, type LucideIconName } from "./icons";
 type SvgNode = [tag: "path" | "circle" | "rect", attrs: Record<string, string | number>];
 
 /** Glyphs Lucide does not ship. Drawn on the 24-unit grid like Lucide's. */
-const CUSTOM: Record<string, SvgNode[]> = {
+const CUSTOM = {
   "circle-todo": [
     ["circle", { cx: 12, cy: 12, r: 10 }],
     ["path", { d: "M12 12V6.4" }],
@@ -63,7 +63,7 @@ const CUSTOM: Record<string, SvgNode[]> = {
       },
     ],
   ],
-};
+} satisfies Record<string, SvgNode[]>;
 
 /** Minimal theme: the exact glyphs from the Ledger prototype, vector stroke 1.75. */
 const LEDGER: Record<string, SvgNode[]> = {
@@ -194,7 +194,7 @@ export function Icon({ name, size = 16, strokeWidth = 2, color, style, className
     const w = sw >= 1.9 ? Math.round(sw) : sw > 1.4 ? 1.5 : 1;
     return <RawSvg nodes={snapped(size, w)} size={size} viewBox={`0 0 ${size} ${size}`} stroke={w} color={color} style={style} className={className} />;
   }
-  const custom = CUSTOM[name];
+  const custom: SvgNode[] | undefined = (CUSTOM as Partial<Record<IconName, SvgNode[]>>)[name];
   if (custom) return <RawSvg nodes={custom} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={className} />;
   const Lucide = LUCIDE_ICONS[name as LucideIconName];
   if (!Lucide) {

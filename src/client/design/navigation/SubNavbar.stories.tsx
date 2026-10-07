@@ -140,8 +140,7 @@ export const ShareAndExport: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Share" }));
     const page = within(canvasElement.ownerDocument.body);
-    // Base UI names the menu by its trigger (aria-labelledby wins over the `label` prop).
-    const menu = within(await page.findByRole("menu", { name: "Share" }));
+    const menu = within(await page.findByRole("menu", { name: "Share project" }));
     await waitFor(() => expect(menu.getByText("https://todoi.app/p/helicopter-sales")).toBeVisible());
     await userEvent.click(menu.getByRole("menuitem", { name: /CSV/ }));
     await expect(args.onExport).toHaveBeenCalledWith("csv");

@@ -18,10 +18,16 @@ export const Small: Story = { args: { size: "sm" } };
 export const Expanded: Story = { args: { expanded: true } };
 export const Bar: Story = {
   args: { text: undefined },
-  async play({ canvasElement }) {
-    const bar = canvasElement.querySelector(".td-label");
+  async play({ canvas }) {
+    const bar = canvas.getByRole("img", { name: "Blue label" });
     await expect(bar).toHaveAttribute("data-form", "bar");
     await expect(bar).toHaveAttribute("title", "blue");
+  },
+};
+export const CustomColorBar: Story = {
+  args: { color: "var(--blue-500)", text: undefined },
+  async play({ canvas }) {
+    await expect(canvas.getByRole("img", { name: "Label" })).toHaveAttribute("data-form", "bar");
   },
 };
 export const CustomColor: Story = { args: { color: "var(--blue-500)", text: "Design review" } };

@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { Button } from "./Button";
-import { MenuButton, MenuDivider, MenuHeading, MenuItem, MenuNote, MenuPopover, type MenuButtonProps } from "./Menu";
+import { MenuButton, MenuDivider, MenuGroup, MenuHeading, MenuItem, MenuNote, MenuPopover, type MenuButtonProps } from "./Menu";
 
 function ItemActions(args: MenuButtonProps) {
   return (
@@ -31,12 +31,12 @@ function MoveMenu(args: MenuButtonProps) {
           <MenuItem icon="archive">Archive</MenuItem>
         </>
       ) : (
-        <>
+        <MenuGroup>
           <MenuHeading>Move to list</MenuHeading>
           {["To-do", "Doing", "Done"].map((name) => (
             <MenuItem key={name} checked={name === list} onSelect={() => setList(name)}>{name}</MenuItem>
           ))}
-        </>
+        </MenuGroup>
       )}
     </MenuButton>
   );
@@ -47,11 +47,28 @@ function SortMenu(args: MenuButtonProps) {
   const options = [{ id: "manual", label: "Manual" }, { id: "due", label: "Due date" }, { id: "priority", label: "Priority" }];
   return (
     <MenuPopover {...args} trigger={<Button variant="outline" icon="arrow-down-wide-narrow">Sort</Button>} placement="bottom-start">
-      <MenuHeading>Sort items by</MenuHeading>
-      {options.map((o) => (
-        <MenuItem key={o.id} checked={o.id === sort} onSelect={() => setSort(o.id)}>{o.label}</MenuItem>
-      ))}
+      <MenuGroup>
+        <MenuHeading>Sort items by</MenuHeading>
+        {options.map((o) => (
+          <MenuItem key={o.id} checked={o.id === sort} onSelect={() => setSort(o.id)}>{o.label}</MenuItem>
+        ))}
+      </MenuGroup>
     </MenuPopover>
+  );
+}
+
+// Render-function children get close(): a row that opens a field elsewhere closes the menu itself.
+function RenameMenu(args: MenuButtonProps) {
+  const field = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <MenuButton {...args} finalFocus={() => field.current ?? true}>
+        {(close) => (
+          <MenuItem icon="pencil" closeOnSelect={false} onSelect={() => { field.current?.focus(); close(); }}>Rename</MenuItem>
+        )}
+      </MenuButton>
+      <input ref={field} aria-label="List name" defaultValue="Doing" style={{ marginLeft: 8 }} />
+    </>
   );
 }
 
@@ -60,7 +77,7 @@ const meta = {
   component: MenuButton,
   render: (args) => <ItemActions {...args} />,
   args: { label: "Item actions", tooltip: "More", onOpenChange: fn() },
-  parameters: { docs: { description: { component: "Action and option menus on Base UI Menu (roving focus, typeahead, Escape, outside press, focus return). MenuButton is the ⋯ IconButton trigger; MenuPopover puts the same menu behind any trigger element. Compose MenuItem, MenuDivider, MenuHeading and MenuNote inside; rows with checked become menuitemradio, and drill rows keep the menu open for a caller-owned sub-view. Open state is uncontrolled unless open is passed." } } },
+  parameters: { docs: { description: { component: "Action and option menus on Base UI Menu (roving focus, typeahead, Escape, outside press, focus return). MenuButton is the ⋯ IconButton trigger; MenuPopover puts the same menu behind any trigger element. Compose MenuItem, MenuDivider, MenuNote and MenuGroup inside; a MenuHeading names its MenuGroup, rows with checked become menuitemradio (group a choice's options in a MenuGroup), and drill rows keep the menu open for a caller-owned sub-view. label names the menu; a render-function child receives close(). Open state is uncontrolled unless open is passed." } } },
 } satisfies Meta<typeof MenuButton>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -107,8 +124,9 @@ export const DrillIn: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Move item" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: /Move to/ }));
-    const doing = await page.findByRole("menuitemradio", { name: "Doing" });
-    await expect(page.getByRole("menuitemradio", { name: "To-do" })).toHaveAttribute("aria-checked", "true");
+    const group = await page.findByRole("group", { name: "Move to list" });
+    const doing = within(group).getByRole("menuitemradio", { name: "Doing" });
+    await expect(within(group).getByRole("menuitemradio", { name: "To-do" })).toHaveAttribute("aria-checked", "true");
     await userEvent.click(doing);
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },
@@ -120,13 +138,28 @@ export const OptionsBehindButton: Story = {
     const trigger = canvas.getByRole("button", { name: "Sort" });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(await page.findByRole("menuitemradio", { name: "Due date" }));
+    // The menu takes its own label, not the trigger's name.
+    const menu = await page.findByRole("menu", { name: "Sort items" });
+    const group = within(menu).getByRole("group", { name: "Sort items by" });
+    await userEvent.click(within(group).getByRole("menuitemradio", { name: "Due date" }));
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
     await userEvent.click(trigger);
     await expect(await page.findByRole("menuitemradio", { name: "Due date" })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByRole("menuitemradio", { name: "Manual" })).toHaveAttribute("aria-checked", "false");
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+  },
+};
+export const CloseFromRenderFunction: Story = {
+  args: { label: "List actions" },
+  render: (args) => <RenameMenu {...args} />,
+  async play({ args, canvas, canvasElement, userEvent }) {
+    await userEvent.click(canvas.getByRole("button", { name: "List actions" }));
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await page.findByRole("menuitem", { name: "Rename" }));
+    // close() runs with focus already outside the popup and reports a choice, not an Escape.
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false, "select");
   },
 };
 export const Disabled: Story = {

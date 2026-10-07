@@ -163,7 +163,7 @@ export function IconPicker({ value, autoIcon = "circle", autoLabel, onChange, ex
         {body}
       </div>
       <div className="td-menu-divider" role="separator" />
-      <button type="button" className="td-ipk-auto" role="menuitemradio" aria-checked={!value} onClick={() => onChange?.(null)}>
+      <button type="button" className="td-ipk-auto" aria-pressed={!value} onClick={() => onChange?.(null)}>
         <span>
           <Icon name={autoIcon} size={15} />
         </span>

@@ -21,10 +21,6 @@
   .td-isec-hidden {
     display: none;
   }
-  .td-export-ext {
-    font: var(--weight-regular) 11px / 16px var(--font-mono);
-    color: var(--ink-400);
-  }
   .td-overlay-desc {
     margin-top: var(--sp-3);
   }

@@ -1,0 +1,7 @@
+/* ExportMenu — the file extension trailing each export row, in mono. */
+@layer components {
+  .td-export-ext {
+    font: var(--weight-regular) 11px / 16px var(--font-mono);
+    color: var(--ink-400);
+  }
+}

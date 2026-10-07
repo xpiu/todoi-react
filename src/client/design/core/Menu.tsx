@@ -1,9 +1,9 @@
 // Menu — the ⋯ menu and every option list, on Base UI Menu (arrow / Home / End roving, typeahead,
 // Escape, outside press, focus return). MenuPopover = Root + custom trigger + Popover surface;
 // MenuButton = MenuPopover with an IconButton trigger. Rows: MenuItem / MenuDivider / MenuNote /
-// MenuHeading. Spec: DESIGN.md › Inline editing primitives.
+// MenuGroup + MenuHeading. Spec: DESIGN.md › Inline editing primitives.
 import { Menu as BaseMenu } from "@base-ui/react/menu";
-import { useCallback, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode } from "react";
 
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
@@ -26,7 +26,7 @@ export interface MenuItemProps {
   shortcut?: string;
   danger?: boolean;
   disabled?: boolean;
-  /** Set (true/false) to make the row a menuitemradio with a trailing check when true */
+  /** Set (true/false) to make the row a menuitemradio with a trailing check when true; put the set in a MenuGroup */
   checked?: boolean;
   /** Chevron-right at the trailing edge; keeps the menu open so the parent can swap in a sub-view */
   drill?: boolean;
@@ -90,9 +90,22 @@ export function MenuNote({ children, title }: { children?: ReactNode; title?: st
   );
 }
 
-/** Uppercase 11px group label */
-export function MenuHeading({ children }: { children?: ReactNode }) {
+const InMenuGroup = createContext(false);
+
+/** A set of rows announced as one group (role="group"), named by the MenuHeading inside it — e.g. the options of a choice. */
+export function MenuGroup({ children }: { children?: ReactNode }) {
   return (
+    <InMenuGroup.Provider value>
+      <BaseMenu.Group className="td-menu-group">{children}</BaseMenu.Group>
+    </InMenuGroup.Provider>
+  );
+}
+
+/** Uppercase 11px group label: names its MenuGroup; outside one it is decoration only. */
+export function MenuHeading({ children }: { children?: ReactNode }) {
+  return useContext(InMenuGroup) ? (
+    <BaseMenu.GroupLabel className="td-menu-heading">{children}</BaseMenu.GroupLabel>
+  ) : (
     <div className="td-menu-heading" role="presentation">
       {children}
     </div>
@@ -102,7 +115,7 @@ export function MenuHeading({ children }: { children?: ReactNode }) {
 export interface MenuPopoverProps {
   /** The trigger element; its click toggles the menu */
   trigger: ReactElement;
-  /** aria-label of the menu — required */
+  /** The menu's accessible name — required (it replaces Base UI's default of the trigger's name) */
   label: string;
   open?: boolean;
   disabled?: boolean;
@@ -115,7 +128,7 @@ export interface MenuPopoverProps {
   minWidth?: number | string;
   /** Full-width anchor */
   block?: boolean;
-  /** MenuItem / MenuDivider / MenuNote children, or a render function (close) => children */
+  /** MenuItem / MenuDivider / MenuNote / MenuGroup children, or a render function (close) => children; close() goes through Base UI's state and reports "select" */
   children?: ReactNode | ((close: () => void) => ReactNode);
   /** Where focus goes when the menu closes @default the trigger. Return an element (a field the choice opened) or true for the default. */
   finalFocus?: () => HTMLElement | boolean | null;
@@ -129,12 +142,16 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
   const container = usePortalContainer();
   const isSheet = vp.phone;
   const { side, align } = placementToSide(placement);
+  const actionsRef = useRef<BaseMenu.Root.Actions>(null);
+  // Render-function children get a close() through Base UI's own state. It is the only imperative close and
+  // follows a choice, so it reports "select".
   const handleOpenChange = useCallback(
-    (next: boolean, details: { reason?: string }) => onOpenChange?.(next, next ? undefined : closeReasonOf(details.reason)),
+    (next: boolean, details: { reason?: string }) => onOpenChange?.(next, next ? undefined : details.reason === "imperative-action" ? "select" : closeReasonOf(details.reason)),
     [onOpenChange],
   );
+  const close = useCallback(() => actionsRef.current?.close(), []);
   return (
-    <BaseMenu.Root open={open} onOpenChange={handleOpenChange} modal={isSheet}>
+    <BaseMenu.Root open={open} onOpenChange={handleOpenChange} modal={isSheet} actionsRef={actionsRef}>
       <BaseMenu.Trigger render={trigger} disabled={disabled} data-block={block ? "true" : undefined} />
       <BaseMenu.Portal container={container ?? undefined}>
         {isSheet ? <BaseMenu.Backdrop className="td-sheet-backdrop" /> : null}
@@ -151,12 +168,14 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
           <BaseMenu.Popup
             className={["td-pop", "td-menu", className ?? ""].filter(Boolean).join(" ")}
             data-sheet={isSheet ? "true" : undefined}
+            // Base UI names the popup after its trigger; the caller's label is the menu's own name.
             aria-label={label}
+            aria-labelledby={undefined}
             finalFocus={finalFocus}
             style={{ ...(width != null ? { width } : null), ...(minWidth != null ? { minWidth } : null), ...style }}
           >
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
-            {typeof children === "function" ? <MenuChildren render={children} /> : children}
+            {typeof children === "function" ? <MenuChildren render={children} close={close} /> : children}
           </BaseMenu.Popup>
         </BaseMenu.Positioner>
       </BaseMenu.Portal>
@@ -164,13 +183,8 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
   );
 }
 
-/** Render-function children get a close() that goes through Base UI's own state. */
-function MenuChildren({ render }: { render: (close: () => void) => ReactNode }) {
-  // Base UI closes the menu when an Item with closeOnClick is pressed; for explicit closes we dispatch Escape on the popup.
-  const close = () => {
-    const el = document.activeElement as HTMLElement | null;
-    el?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-  };
+/** Calls the render function only once the popup mounts its content. */
+function MenuChildren({ render, close }: { render: (close: () => void) => ReactNode; close: () => void }) {
   return <>{render(close)}</>;
 }
 

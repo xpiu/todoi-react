@@ -19,8 +19,7 @@ export const OfflineWithQueue: Story = {
     await expect(pill).toHaveTextContent("Offline· 3");
     await userEvent.click(pill);
     const page = within(canvasElement.ownerDocument.body);
-    // Base UI names the menu after its trigger, so it reads the status message.
-    const menu = await page.findByRole("menu", { name: "You're offline — 3 edits saved on this device" });
+    const menu = await page.findByRole("menu", { name: "Connection" });
     // Sync now waits for the connection.
     await expect(within(menu).getByRole("menuitem", { name: "Sync now" })).toHaveAttribute("aria-disabled", "true");
     await userEvent.keyboard("{Escape}");

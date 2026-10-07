@@ -90,7 +90,7 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
           <span className="td-list-name">{name}</span>
         )}
         {!renaming && count != null ? <span className="td-list-count">{count}</span> : null}
-        <MenuPopover label={`Actions for ${name}`} placement="bottom-end" trigger={<IconButton name="ellipsis" label="List actions" tooltip="List actions" tooltipSide="bottom-end" size={28} className="td-list-more" />}>
+        <MenuPopover label={`Actions for ${name}`} placement="bottom-end" trigger={<IconButton name="ellipsis" label={`List actions for ${name}`} tooltip="List actions" tooltipSide="bottom-end" size={28} className="td-list-more" />}>
           {(close) => (
             <ListActionsMenu
               name={name}

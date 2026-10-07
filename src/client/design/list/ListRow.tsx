@@ -11,6 +11,7 @@ import { Avatar } from "../core/Avatar";
 import { Checkbox } from "../core/Checkbox";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
+import { PRIORITY_COLORS } from "../core/priorities";
 import { StatusChip } from "../core/StatusChip";
 import type { StatusLike } from "../core/statuses";
 import "../core/text.css";
@@ -19,7 +20,6 @@ import "./ListRow.css";
 export type RowLabel = string | { color: string; text?: string };
 export type RowPerson = string | { name: string; src?: string; color?: string };
 export type RowPriority = "Urgent" | "High" | "Medium" | "Low";
-const PRIO_COLORS: Record<RowPriority, string> = { Urgent: "var(--label-red)", High: "var(--label-orange)", Medium: "var(--label-yellow)", Low: "var(--label-blue)" };
 
 export interface ListRowProps {
   title: string;
@@ -179,7 +179,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
         ) : null}
         {priority ? (
           <span className="td-lrow-badge" title={`Priority: ${priority}`}>
-            <Icon name="flag" size={14} color={PRIO_COLORS[priority]} style={{ fill: PRIO_COLORS[priority] }} />
+            <Icon name="flag" size={14} color={PRIORITY_COLORS[priority]} style={{ fill: PRIORITY_COLORS[priority] }} />
             <span className="td-prio-text">{priority}</span>
           </span>
         ) : null}

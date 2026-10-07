@@ -44,9 +44,11 @@ export const AddItem: Story = {
 };
 export const Rename: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "List actions" }));
+    // The ⋯ button and its menu both say which list they act on.
+    await userEvent.click(canvas.getByRole("button", { name: "List actions for Doing" }));
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(await page.findByRole("menuitem", { name: "Rename" }));
+    const menu = await page.findByRole("menu", { name: "Actions for Doing" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Rename" }));
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
     const field = await canvas.findByRole("textbox", { name: "List name" });
     await waitFor(() => expect(field).toHaveFocus());
@@ -58,7 +60,7 @@ export const Rename: Story = {
 };
 export const RenameCancel: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "List actions" }));
+    await userEvent.click(canvas.getByRole("button", { name: "List actions for Doing" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: "Rename" }));
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());

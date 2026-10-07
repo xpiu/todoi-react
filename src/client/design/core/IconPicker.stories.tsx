@@ -22,23 +22,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// The Automatic row is role="menuitemradio" but the picker is not a menu outside the list-actions
-// menu (aria-required-parent), so every standalone story carries it.
-const automaticRowTodo = { a11y: { test: "todo" } } as const;
-
 export const PickBasic: Story = {
-  parameters: automaticRowTodo,
   async play({ args, canvas, userEvent }) {
-    await expect(canvas.getByRole("menuitemradio", { name: /Automatic/ })).toHaveAttribute("aria-checked", "true");
+    // A toggle like the tiles, so the picker works in a Popover dialog as well as a menu sub-view.
+    await expect(canvas.getByRole("button", { name: /Automatic/ })).toHaveAttribute("aria-pressed", "true");
+    // Every basic tile draws its own glyph (none falls back to the plain circle).
+    for (const [name, glyph] of [["In review", "circle-ellipsis"], ["On hold", "circle-pause"], ["Cancelled", "circle-x"]]) {
+      await expect(canvas.getByRole("button", { name }).querySelector(`svg.lucide-${glyph}`)).not.toBeNull();
+    }
     await userEvent.click(canvas.getByRole("button", { name: "Done" }));
     await expect(args.onChange).toHaveBeenLastCalledWith("circle-check");
     await expect(canvas.getByRole("button", { name: "Done" })).toHaveAttribute("aria-pressed", "true");
-    await userEvent.click(canvas.getByRole("menuitemradio", { name: /Automatic/ }));
+    await expect(canvas.getByRole("button", { name: /Automatic/ })).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(canvas.getByRole("button", { name: /Automatic/ }));
     await expect(args.onChange).toHaveBeenLastCalledWith(null);
   },
 };
 export const KeyboardAndSearch: Story = {
-  parameters: automaticRowTodo,
   async play({ args, canvas, userEvent }) {
     canvas.getByRole("button", { name: "None" }).focus();
     await userEvent.keyboard("{ArrowRight}");
@@ -57,9 +57,8 @@ export const KeyboardAndSearch: Story = {
     await expect(args.onChange).toHaveBeenCalledWith("rocket");
   },
 };
-export const Expanded: Story = { parameters: automaticRowTodo, args: { expanded: true, value: "rocket" } };
+export const Expanded: Story = { args: { expanded: true, value: "rocket" } };
 export const NoMatches: Story = {
-  parameters: automaticRowTodo,
   args: { expanded: true },
   async play({ canvas, userEvent }) {
     await userEvent.type(canvas.getByRole("textbox", { name: "Search icons" }), "zzz");
@@ -68,4 +67,4 @@ export const NoMatches: Story = {
     await expect(canvas.getByRole("textbox", { name: "Search icons" })).toHaveValue("");
   },
 };
-export const OverrideSet: Story = { parameters: automaticRowTodo, args: { value: "archive", autoIcon: "circle-todo", autoLabel: "To-do" } };
+export const OverrideSet: Story = { args: { value: "archive", autoIcon: "circle-todo", autoLabel: "To-do" } };

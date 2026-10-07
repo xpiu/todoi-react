@@ -42,3 +42,11 @@ export const Colored: Story = { args: { name: "circle-check", color: "var(--succ
 export const ThemedGlyphs: Story = { render: (args) => <Grid names={THEMED} size={args.size} /> };
 export const CustomGlyphs: Story = { render: (args) => <Grid names={CUSTOM} size={args.size} /> };
 export const Catalogue: Story = { render: (args) => <Grid names={Object.keys(LUCIDE_ICONS) as IconName[]} size={args.size} /> };
+export const UnknownName: Story = {
+  // In code an unknown name is a type error; a stale one from data (a list icon) draws the neutral circle.
+  // @ts-expect-error "not-an-icon" is not an IconName
+  args: { name: "not-an-icon" },
+  async play({ canvasElement }) {
+    await expect(canvasElement.querySelector("svg > circle")).toHaveAttribute("r", "10");
+  },
+};

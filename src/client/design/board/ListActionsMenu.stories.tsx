@@ -8,7 +8,7 @@ import { ListActionsMenu, type ListActionsMenuProps } from "./ListActionsMenu";
 // The rows only render inside a menu: model the ⋯ trigger ListColumn and ListSection give them.
 function ListMenu(args: ListActionsMenuProps) {
   return (
-    <MenuPopover label={`Actions for ${args.name}`} placement="bottom-start" trigger={<IconButton name="ellipsis" label="List actions" />}>
+    <MenuPopover label={`Actions for ${args.name}`} placement="bottom-start" trigger={<IconButton name="ellipsis" label={`List actions for ${args.name}`} />}>
       {(close) => (
         <ListActionsMenu
           {...args}
@@ -34,10 +34,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Rename: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "List actions" }));
+    await userEvent.click(canvas.getByRole("button", { name: "List actions for Doing" }));
     const page = within(canvasElement.ownerDocument.body);
-    // Base UI labels the popup by its trigger (aria-labelledby wins over MenuPopover's label).
-    const menu = await page.findByRole("menu", { name: "List actions" });
+    const menu = await page.findByRole("menu", { name: "Actions for Doing" });
     await expect(within(menu).getByRole("menuitem", { name: /Status role/ })).toHaveTextContent("Doing");
     await userEvent.click(within(menu).getByRole("menuitem", { name: "Rename" }));
     await expect(args.onStartRename).toHaveBeenCalledOnce();
@@ -46,7 +45,7 @@ export const Rename: Story = {
 };
 export const SelectAllAndHide: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "List actions" });
+    const trigger = canvas.getByRole("button", { name: "List actions for Doing" });
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(trigger);
     await userEvent.click(await page.findByRole("menuitem", { name: "Select all" }));
@@ -60,7 +59,7 @@ export const SelectAllAndHide: Story = {
 };
 export const StatusRole: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "List actions" }));
+    await userEvent.click(canvas.getByRole("button", { name: "List actions for Doing" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: /Status role/ }));
     const doing = await page.findByRole("menuitemradio", { name: "Doing" });
@@ -73,7 +72,7 @@ export const StatusRole: Story = {
 export const SuggestedRole: Story = {
   args: { name: "In progress", statusRole: null },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "List actions" }));
+    await userEvent.click(canvas.getByRole("button", { name: "List actions for In progress" }));
     const page = within(canvasElement.ownerDocument.body);
     await expect(await page.findByRole("menuitem", { name: /Status role/ })).toHaveTextContent("None");
     await userEvent.click(page.getByRole("menuitem", { name: /Status role/ }));
@@ -86,7 +85,7 @@ export const SuggestedRole: Story = {
 };
 export const ChooseIcon: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "List actions" }));
+    await userEvent.click(canvas.getByRole("button", { name: "List actions for Doing" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: /Icon/ }));
     const picker = await page.findByRole("group", { name: "List icon" });

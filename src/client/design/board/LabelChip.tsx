@@ -26,7 +26,8 @@ export function LabelChip({ color = "teal", text, expanded, size, style, classNa
   const ink = LIGHT_INK.has(color) ? "light" : "dark";
   const cls = ["td-label", className ?? ""].join(" ").trim();
   const base: CSSProperties = { ...(palette ? null : { background: bg }), ...style };
-  if (!expanded && !text) return <span className={cls} data-color={palette ? color : undefined} data-form="bar" title={color} style={base} />;
+  // The bar has no text: name it by its colour so the label is not silent.
+  if (!expanded && !text) return <span className={cls} data-color={palette ? color : undefined} data-form="bar" role="img" aria-label={palette ? `${color.charAt(0).toUpperCase()}${color.slice(1)} label` : "Label"} title={color} style={base} />;
   return (
     <span className={cls} data-color={palette ? color : undefined} data-ink={ink} data-form={size === "sm" ? "sm" : "chip"} style={base}>
       {text}

@@ -87,6 +87,12 @@
     max-width: 220px;
     cursor: default;
   }
+  /* A labelled set of rows: lays them out exactly as the menu does. */
+  .td-menu-group {
+    display: flex;
+    flex-direction: column;
+    gap: inherit;
+  }
   .td-menu-heading {
     padding: 6px var(--sp-2) 2px;
     font: var(--weight-semibold) 11px / 16px var(--font-ui);

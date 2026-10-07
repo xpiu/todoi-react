@@ -1,9 +1,13 @@
 // ExportMenu — export an item or a view: PDF · Markdown · CSV rows with the extension as a mono
 // trail, one summary note, an optional Print row. Menu rows, so it lives inside an existing menu
 // (a ⋯ drill view) or behind ExportButton. Spec: DESIGN.md › Export & print.
+import { Menu as BaseMenu } from "@base-ui/react/menu";
+
 import type { IconName } from "./Icon";
 import { IconButton } from "./IconButton";
-import { MenuButton, MenuDivider, MenuItem, MenuNote } from "./Menu";
+import { MenuButton, MenuDivider, MenuGroup, MenuItem, MenuNote } from "./Menu";
+import "./ProjectPicker.css";
+import "./ExportMenu.css";
 
 export type ExportFormatId = "pdf" | "md" | "csv";
 export interface ExportFormat {
@@ -51,14 +55,8 @@ export interface ExportMenuProps {
 
 export function ExportMenu({ scope = "view", count, filtered, view, subitems, comments, summary, formats = EXPORT_FORMATS, onExport, onPrint, printShortcut, onBack, heading }: ExportMenuProps) {
   const title = heading ?? (scope === "item" ? "Export item" : "Export view");
-  return (
+  const rows = (
     <>
-      {onBack ? (
-        <div className="td-prp-head">
-          <IconButton name="arrow-left" label="Back" size={22} iconSize={13} onClick={onBack} />
-          <span className="td-prp-head-title">{title}</span>
-        </div>
-      ) : null}
       {formats.map((f) => (
         <MenuItem key={f.id} icon={f.icon} title={f.hint} trailing={<span className="td-export-ext">{f.ext}</span>} onSelect={() => onExport(f.id)}>
           {f.label}
@@ -74,6 +72,19 @@ export function ExportMenu({ scope = "view", count, filtered, view, subitems, co
         </>
       ) : null}
     </>
+  );
+  if (!onBack) return rows;
+  // Drill view: Back is a menu row (arrow keys reach it) and the title names the group of export rows.
+  return (
+    <MenuGroup>
+      <div className="td-prp-head">
+        <BaseMenu.Item nativeButton closeOnClick={false} onClick={onBack} render={<IconButton name="arrow-left" label="Back" size={22} iconSize={13} />} />
+        <BaseMenu.GroupLabel render={<span />} className="td-prp-head-title">
+          {title}
+        </BaseMenu.GroupLabel>
+      </div>
+      {rows}
+    </MenuGroup>
   );
 }
 
