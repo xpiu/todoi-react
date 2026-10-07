@@ -37,6 +37,10 @@ export const Lists: Story = {
   // link-in-text-block: .td-md a has no underline and only 2.48:1 contrast against body text in Rounded Light.
   parameters: { a11y: { test: "todo" } },
   args: { text: "## Before launch\n1. Price list\n2. Stock check\n3) Photos\n\n- loose bullet\n* another one\n\nA paragraph with a single\nline break and a bare link https://todoi.com/p/helicopters." },
+  async play({ canvas }) {
+    // The sentence's full stop stays text, outside the link.
+    await expect(canvas.getByRole("link", { name: "todoi.com/p/helicopters" })).toHaveAttribute("href", "https://todoi.com/p/helicopters");
+  },
 };
 export const CodeBlock: Story = {
   args: { text: "### Repro\n```\nnpm run dev\ncurl localhost:3000/api/health\n```\nEscaped \\*stars\\* stay literal." },

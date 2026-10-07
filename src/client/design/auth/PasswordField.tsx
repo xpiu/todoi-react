@@ -2,6 +2,8 @@
 // field, one quiet requirement line that turns into the red error line.
 import { useId, useState, type RefObject } from "react";
 
+import { AuthLink } from "./AuthShell";
+
 export interface PasswordFieldProps {
   id?: string;
   label?: string;
@@ -25,23 +27,13 @@ export function PasswordField({ id, label = "Password", value, onChange, autoCom
   const line = error ?? (minLength && !hint ? `At least ${minLength} characters` : hint);
   return (
     <div className="td-auth-field">
-      <label className="td-auth-label" htmlFor={uid}>
-        {label}
+      {/* The toggle sits beside the <label>, not in it, so the field's name stays just the label. */}
+      <div className="td-auth-label">
+        <label htmlFor={uid}>{label}</label>
         <span className="td-auth-label-extra">
-          <a
-            href="#"
-            role="button"
-            aria-pressed={show}
-            aria-controls={uid}
-            onClick={(e) => {
-              e.preventDefault();
-              setShow((s) => !s);
-            }}
-          >
-            {show ? "Hide" : "Show"}
-          </a>
+          <AuthLink label={show ? "Hide" : "Show"} aria-label={`${show ? "Hide" : "Show"} password`} aria-controls={uid} onClick={() => setShow((s) => !s)} />
         </span>
-      </label>
+      </div>
       <input ref={inputRef} id={uid} className="td-field" type={show ? "text" : "password"} autoComplete={autoComplete} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} autoFocus={autoFocus} aria-invalid={!!error || undefined} aria-describedby={line ? `${uid}-hint` : undefined} />
       {line ? (
         <p id={`${uid}-hint`} className="td-pwf-hint" data-ok={!error && ok ? "true" : undefined} data-error={error ? "true" : undefined} role={error ? "alert" : undefined}>

@@ -29,7 +29,7 @@ export const Empty: Story = {
     await expect(submit).toBeEnabled();
     await userEvent.click(submit);
     await expect(args.onSignUp).toHaveBeenCalledWith({ name: "Flo Zuallaert", email: "flo@todoi.com", password: "short but now long" });
-    await userEvent.click(canvas.getByRole("link", { name: "Log in" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Log in" }));
     await expect(args.onLogin).toHaveBeenCalledOnce();
   },
 };

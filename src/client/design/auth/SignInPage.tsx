@@ -36,10 +36,10 @@ export function SignInPage({ context, defaultEmail = "", onSignIn, onForgotPassw
           <input id="td-signin-email" className="td-field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoFocus={!defaultEmail} />
         </div>
         <div className="td-auth-field">
-          <label className="td-auth-label" htmlFor="td-signin-pw">
-            Password
+          <div className="td-auth-label">
+            <label htmlFor="td-signin-pw">Password</label>
             {onForgotPassword ? <AuthLink label="Forgot?" onClick={() => onForgotPassword(email.trim())} /> : null}
-          </label>
+          </div>
           <input id="td-signin-pw" className="td-field" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus={!!defaultEmail} />
         </div>
         <AuthError error={error} />

@@ -40,7 +40,7 @@ export const SignedIn: Story = {
     await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Flo Zuallaert invited you to join");
     await userEvent.click(canvas.getByRole("button", { name: "Accept invite" }));
     await expect(args.onAccept).toHaveBeenCalledOnce();
-    await userEvent.click(canvas.getByRole("link", { name: "Not you?" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Not you?" }));
     await expect(args.onSwitchAccount).toHaveBeenCalledOnce();
   },
 };

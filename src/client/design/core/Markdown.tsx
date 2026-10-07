@@ -30,6 +30,17 @@ function isKnownMember(name: string, members?: ReadonlyArray<MarkdownMember>): b
 
 const unescape = (t: string) => t.replace(/\\([\\`*_{}[\]()#+\-.!~>])/g, "$1");
 
+const count = (s: string, c: string) => s.split(c).length - 1;
+/** A bare URL's own length: trailing sentence punctuation stays text, and so does a ")" with no "(" in the URL to close. */
+function urlEnd(t: string): number {
+  let end = t.length;
+  for (;;) {
+    const c = t[end - 1]!;
+    if (".,;:!?".includes(c) || (c === ")" && count(t.slice(0, end), "(") < count(t.slice(0, end), ")"))) end--;
+    else return end;
+  }
+}
+
 function inline(text: string, o: MarkdownOptions, keyBase: string): ReactNode[] {
   const out: ReactNode[] = [];
   let last = 0;
@@ -56,11 +67,13 @@ function inline(text: string, o: MarkdownOptions, keyBase: string): ReactNode[] 
         </a>,
       );
     } else if (/^https?:/.test(t)) {
+      const url = t.slice(0, urlEnd(t));
       out.push(
-        <a key={k} href={t} target="_blank" rel="noopener noreferrer">
-          {t.replace(/^https?:\/\//, "")}
+        <a key={k} href={url} target="_blank" rel="noopener noreferrer">
+          {url.replace(/^https?:\/\//, "")}
         </a>,
       );
+      if (url.length < t.length) out.push(t.slice(url.length));
     } else if (t.startsWith("@")) {
       out.push(
         isKnownMember(t.slice(1), o.members) ? (

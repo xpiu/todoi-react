@@ -29,6 +29,12 @@ describe("renderMarkdown", () => {
       '<p><a href="https://todoi.com" target="_blank" rel="noopener noreferrer">Todoi</a> and <a href="https://x.y/z" target="_blank" rel="noopener noreferrer">x.y/z</a></p>',
     );
   });
+  it("leaves trailing punctuation out of bare URLs unless a ) closes one inside", () => {
+    const a = (href: string, text: string) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    expect(html("see https://x.y/z.")).toBe(`<p>see ${a("https://x.y/z", "x.y/z")}.</p>`);
+    expect(html("(see https://x.y/z?q=1)!")).toBe(`<p>(see ${a("https://x.y/z?q=1", "x.y/z?q=1")})!</p>`);
+    expect(html("https://en.wikipedia.org/wiki/Bell_(helicopter), or")).toBe(`<p>${a("https://en.wikipedia.org/wiki/Bell_(helicopter)", "en.wikipedia.org/wiki/Bell_(helicopter)")}, or</p>`);
+  });
   it("highlights only known mentions and marks item keys", () => {
     const members = [{ name: "Flo Zuallaert", nickname: "flo" }];
     expect(html("hi @flo and @nobody", { members })).toBe('<p>hi <span class="td-md-mention">@flo</span> and @nobody</p>');

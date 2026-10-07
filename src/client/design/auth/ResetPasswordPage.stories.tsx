@@ -22,7 +22,7 @@ export const Request: Story = {
     await userEvent.type(canvas.getByLabelText("Email"), "flo@todoi.com");
     await userEvent.click(submit);
     await expect(args.onSend).toHaveBeenCalledWith("flo@todoi.com");
-    await userEvent.click(canvas.getByRole("link", { name: "Back to log in" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Back to log in" }));
     await expect(args.onBackToLogin).toHaveBeenCalledOnce();
   },
 };
@@ -32,7 +32,7 @@ export const Sent: Story = {
   async play({ args, canvas, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Send it again" }));
     await expect(args.onSend).toHaveBeenCalledWith("flo@todoi.com");
-    await userEvent.click(canvas.getByRole("link", { name: "Use a different email" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Use a different email" }));
     await expect(args.onRequestAgain).toHaveBeenCalledOnce();
   },
 };

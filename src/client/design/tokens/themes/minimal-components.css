@@ -475,8 +475,8 @@ html[data-theme="minimal"] .td-auth-stack{margin-top:24px;gap:8px}
 html[data-theme="minimal"] .td-auth-stack .td-btn{height:36px;border-radius:2px;font:400 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-auth-or{margin:20px 0 16px;font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-auth-label{font:400 13px/1.45 var(--font-ui);color:var(--ink-900);margin-bottom:6px}
-html[data-theme="minimal"] .td-auth-label a,html[data-theme="minimal"] .td-auth-links a,html[data-theme="minimal"] .td-auth-who a{font:400 12px/1.45 var(--font-ui);color:var(--ink-400);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
-html[data-theme="minimal"] .td-auth-label a:hover,html[data-theme="minimal"] .td-auth-links a:hover,html[data-theme="minimal"] .td-auth-who a:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
+html[data-theme="minimal"] .td-auth-link{font:400 12px/1.45 var(--font-ui);color:var(--ink-400);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
+html[data-theme="minimal"] .td-auth-link:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
 html[data-theme="minimal"] .td-auth-field{margin-bottom:16px}
 html[data-theme="minimal"] .td-auth-field .td-field{height:32px;padding-left:0;padding-right:0;background:none;border:0;border-bottom:1px solid var(--border-input);border-radius:0;box-shadow:none}
 html[data-theme="minimal"] .td-auth-field .td-field:focus{border-bottom-color:var(--ink-900);box-shadow:none;outline:none}

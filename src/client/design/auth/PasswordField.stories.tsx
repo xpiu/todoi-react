@@ -26,14 +26,25 @@ export const Empty: Story = {};
 export const TypeAndReveal: Story = {
   async play({ args, canvas, userEvent }) {
     const field = canvas.getByLabelText(/^Password/);
+    // The toggle sits beside the label, so it never joins the field's name.
+    await expect(field).toHaveAccessibleName("Password");
     await expect(field).toHaveAttribute("type", "password");
     await userEvent.type(field, "correct horse");
     await expect(args.onChange).toHaveBeenLastCalledWith("correct horse");
     await expect(canvas.getByText("At least 10 characters")).toHaveAttribute("data-ok", "true");
-    const toggle = canvas.getByRole("button", { name: "Show" });
+    const toggle = canvas.getByRole("button", { name: "Show password" });
+    await expect(toggle).toHaveAttribute("aria-controls", field.id);
     await userEvent.click(toggle);
     await expect(field).toHaveAttribute("type", "text");
-    await expect(canvas.getByRole("button", { name: "Hide" })).toHaveAttribute("aria-pressed", "true");
+    // The label says the state, so the toggle carries no aria-pressed.
+    await expect(toggle).toHaveAccessibleName("Hide password");
+    await expect(toggle).not.toHaveAttribute("aria-pressed");
+    // A real button: Space toggles it back.
+    toggle.focus();
+    await userEvent.keyboard(" ");
+    await expect(field).toHaveAttribute("type", "password");
+    await expect(toggle).toHaveAccessibleName("Show password");
+    await expect(field).toHaveAccessibleName("Password");
   },
 };
 export const WithHint: Story = { args: { label: "New password", hint: "Use a phrase you don't use anywhere else", value: "hunter2" } };

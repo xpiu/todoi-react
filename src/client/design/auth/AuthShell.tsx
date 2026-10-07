@@ -1,6 +1,6 @@
 // AuthShell — the canvas behind every page before a person is inside a project: chrome colour edge to
 // edge, the wordmark in plain type, one white card centred, a quiet footer line. Spec: DESIGN.md › Sign-in.
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, CSSProperties, ReactNode } from "react";
 
 import { Icon, type IconName } from "../core/Icon";
 import { InlineError } from "../core/InlineError";
@@ -9,9 +9,7 @@ import "./AuthShell.css";
 export function AuthShell({ brand = "Todoi", footer, children, width, style }: { brand?: string; footer?: ReactNode | null; children: ReactNode; width?: number; style?: CSSProperties }) {
   return (
     <div className="td-auth" style={style}>
-      <div className="td-auth-mark" aria-label={brand}>
-        {brand}
-      </div>
+      <div className="td-auth-mark">{brand}</div>
       <div className="td-auth-card" style={width ? { width } : undefined}>
         {children}
       </div>
@@ -44,16 +42,12 @@ export function AuthState({ icon, tone, title, children }: { icon: IconName; ton
   );
 }
 
-export const AuthLink = ({ label, onClick }: { label: string; onClick?: () => void }) => (
-  <a
-    href="#"
-    onClick={(e) => {
-      e.preventDefault();
-      onClick?.();
-    }}
-  >
+/** A text-sized action under or beside a field. The pages hand it callbacks rather than URLs, so it is a
+ *  real button that reads like a link. */
+export const AuthLink = ({ label, onClick, ...rest }: { label: string; onClick?: () => void } & Pick<ComponentPropsWithRef<"button">, "aria-label" | "aria-controls">) => (
+  <button type="button" className="td-auth-link" onClick={onClick} {...rest}>
     {label}
-  </a>
+  </button>
 );
 
 export function AuthError({ error }: { error?: string | null }) {

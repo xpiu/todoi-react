@@ -24,6 +24,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   async play({ canvas }) {
     await expect(canvas.getByRole("heading", { level: 1, name: "Log in" })).toBeVisible();
+    // The wordmark is plain text: no aria-label on a role-less element.
+    await expect(canvas.getByText("Todoi")).not.toHaveAttribute("aria-label");
     await expect(canvas.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "https://todoi.app/privacy");
   },
 };

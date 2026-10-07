@@ -107,16 +107,19 @@
     display: flex;
     gap: 10px;
   }
-  .td-auth-label a,
-  .td-auth-links a,
+  .td-auth-link {
+    padding: 0;
+    border: none;
+    background: none;
+  }
+  .td-auth-link,
   .td-auth-sub a {
     font: var(--type-small);
     color: var(--text-link);
     cursor: pointer;
     text-decoration: none;
   }
-  .td-auth-label a:hover,
-  .td-auth-links a:hover,
+  .td-auth-link:hover,
   .td-auth-sub a:hover {
     text-decoration: underline;
   }
@@ -178,11 +181,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-auth-who a {
-    font: var(--type-small);
-    color: var(--text-link);
-    cursor: pointer;
+  .td-auth-who .td-auth-link {
     white-space: nowrap;
+    text-decoration: underline;
   }
   .td-auth-project {
     display: flex;
