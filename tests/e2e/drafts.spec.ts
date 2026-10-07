@@ -82,6 +82,7 @@ test("a description stays in edit until saved, and save-and-close stays open whe
   await dialog.getByTitle("Click to edit description").click();
   const editor = dialog.getByRole("textbox", { name: "Description" });
   await expect(editor).toHaveText("The saved description");
+  await expect(editor).toBeFocused();
   await editor.fill("Rewritten while the server says no");
   await expect(editor).toHaveText("Rewritten while the server says no");
 
@@ -110,11 +111,14 @@ test("closing keeps unsent drafts for that item until they are saved or discarde
   await dialog.getByRole("textbox", { name: "Comment", exact: true }).fill("A comment I have not sent");
   await dialog.getByTitle("Click to edit description").click();
   await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveText("The saved description");
+  // The editor focuses itself once open; fill() before that can land after the existing text.
+  await expect(dialog.getByRole("textbox", { name: "Description" })).toBeFocused();
   await dialog.getByRole("textbox", { name: "Description" }).fill("The saved description — and an unsaved addition");
   await page.keyboard.press("Escape");
   // Esc inside the editor discards that edit; the comment draft is kept.
   await dialog.getByTitle("Click to edit description").click();
   await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveText("The saved description");
+  await expect(dialog.getByRole("textbox", { name: "Description" })).toBeFocused();
   await dialog.getByRole("textbox", { name: "Description" }).fill("The saved description — kept this time");
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expect(dialog).toHaveCount(0);
@@ -158,6 +162,7 @@ test("a delayed comment acknowledgement preserves newer comment and description 
     await composer.fill("A newer comment draft");
     await dialog.getByTitle("Click to edit description").click();
     await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toHaveText("The saved description");
+    await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toBeFocused();
     await dialog.getByRole("textbox", { name: "Description", exact: true }).fill("A newer unsaved description");
     await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toHaveText("A newer unsaved description");
     release();
