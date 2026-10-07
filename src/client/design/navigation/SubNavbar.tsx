@@ -104,11 +104,13 @@ export interface SubNavbarProps {
   savedViewsToggle?: boolean;
   savedViewsOpen?: boolean;
   onSavedViewsToggle?: (open: boolean) => void;
+  /** The saved-views row's id (the Views toggle's aria-controls); the host passes the same id to SavedViewTabs */
+  savedViewsId?: string;
   style?: CSSProperties;
   className?: string;
 }
 
-export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, filterActive = false, sortActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, style, className }: SubNavbarProps) {
+export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, filterActive = false, sortActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, savedViewsId, style, className }: SubNavbarProps) {
   const ap = useAppearance();
   const active = activeView ?? views[0]?.id;
   // One open-menu value for all five dropdowns. The ref guards against a late close of the previous
@@ -312,7 +314,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
           {savedViewsToggle ? (
             <>
               <span className="td-subnav-vdiv" aria-hidden />
-              <button type="button" className="td-subnav-seg" aria-expanded={!!savedViewsOpen} aria-controls="td-saved-views" aria-label={savedViewsOpen ? "Hide saved views" : "Show saved views"} onClick={() => onSavedViewsToggle?.(!savedViewsOpen)}>
+              <button type="button" className="td-subnav-seg" aria-expanded={!!savedViewsOpen} aria-controls={savedViewsId} aria-label={savedViewsOpen ? "Hide saved views" : "Show saved views"} onClick={() => onSavedViewsToggle?.(!savedViewsOpen)}>
                 Views
               </button>
             </>

@@ -102,33 +102,24 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
   const asideRef = useRef<HTMLElement>(null);
   const [dragging, setDragging] = useState(false);
   const [dropId, setDropId] = useState<string | null>(null);
-  const dwell = useRef<{ gid: string; t: ReturnType<typeof setTimeout> } | null>(null);
-  const clearDwell = () => {
-    if (dwell.current) {
-      clearTimeout(dwell.current.t);
-      dwell.current = null;
-    }
-  };
-  // Spring-loaded groups: resting over a collapsed group header during a drag opens it.
-  const armOpen = (gid: string) => {
-    if (dwell.current?.gid === gid) return;
-    clearDwell();
-    dwell.current = {
-      gid,
-      t: setTimeout(() => {
-        setClosedGroups((o) => ({ ...o, [gid]: false }));
-        dwell.current = null;
-      }, 550),
-    };
-  };
+  // Spring-loaded groups: resting over a collapsed group header during a drag opens it. Re-arming the
+  // same group keeps its timer; the effect cancels it on disarm, on another group and on unmount.
+  const [dwellGid, setDwellGid] = useState<string | null>(null);
+  useEffect(() => {
+    if (!dwellGid) return;
+    const t = setTimeout(() => {
+      setClosedGroups((o) => ({ ...o, [dwellGid]: false }));
+      setDwellGid(null);
+    }, 550);
+    return () => clearTimeout(t);
+  }, [dwellGid]);
+  const clearDwell = () => setDwellGid(null);
+  const armOpen = (gid: string) => setDwellGid(gid);
   const endDrag = () => {
     setDragging(false);
     setDropId(null);
     clearDwell();
   };
-  useEffect(() => () => {
-    if (dwell.current) clearTimeout(dwell.current.t);
-  }, []);
   const editable = !!(onProjectRename || onProjectIconChange || onProjectAction);
   const commitRename = (p: SidebarProject) => {
     const v = draft.trim();

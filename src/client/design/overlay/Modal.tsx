@@ -39,10 +39,11 @@ export function Modal({ open, onClose, title, cover, corner, aside, children, wi
   const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
   useToastHost(open ? popupEl : null);
   const titleRef = useRef<HTMLDivElement>(null);
-  const asideRef = useRef<HTMLDivElement>(null);
+  // State, not a ref: the measure re-runs when the aside mounts or unmounts.
+  const [asideEl, setAsideEl] = useState<HTMLDivElement | null>(null);
   // The title row sits above the two-column body; cap it to the main column's width so it lines up.
   useLayoutEffect(() => {
-    const t = titleRef.current, root = popupEl, a = asideRef.current;
+    const t = titleRef.current, root = popupEl, a = asideEl;
     if (!t) return;
     const measure = () => {
       if (!root || !a || sheet) {
@@ -60,7 +61,7 @@ export function Modal({ open, onClose, title, cover, corner, aside, children, wi
     ro.observe(root);
     if (a) ro.observe(a);
     return () => ro.disconnect();
-  }, [popupEl, sheet, aside]);
+  }, [popupEl, asideEl, sheet]);
   const flush = (!cover && !!title) || (sheet && !!title);
   const cornerEl = corner ? <div className={"td-modal-corner" + (flush ? " is-flush" : cover ? "" : " is-band")}>{corner}</div> : null;
   return (
@@ -91,7 +92,7 @@ export function Modal({ open, onClose, title, cover, corner, aside, children, wi
                   {children}
                 </div>
                 {aside ? (
-                  <div className="td-modal-aside" ref={asideRef}>
+                  <div className="td-modal-aside" ref={setAsideEl}>
                     {aside}
                   </div>
                 ) : null}

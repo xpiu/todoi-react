@@ -89,7 +89,7 @@ const PAGES: SettingsPage[] = [
             title: "Profile",
             lead: (
               <div style={{ display: "flex", gap: 12, alignItems: "center", padding: 16 }}>
-                <Avatar name="Flo Zuallaert" color="var(--label-teal)" size={40} />
+                <Avatar name="Flo Zuallaert" color="var(--label-teal)" size={40} decorative />
                 <b>Flo Zuallaert</b>
               </div>
             ),
@@ -161,7 +161,10 @@ export const Search: Story = {
     const field = canvas.getByRole("textbox", { name: "Search settings" });
     await userEvent.type(field, "secret");
     await expect(canvas.getByRole("heading", { level: 1, name: "Search" })).toBeVisible();
-    await expect(canvas.getByText(/1 setting match “secret”/)).toBeInTheDocument();
+    // Announced from a status region of its own, which (unlike the crumb) every theme keeps rendered.
+    const status = canvas.getByRole("status");
+    await expect(status).toHaveTextContent("1 setting match “secret”. Enter opens the first result");
+    await expect(status).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "Open Account › Profile" }));
     await expect(args.onNavigate).toHaveBeenCalledWith("account", "profile");
     await expect(field).toHaveValue("");

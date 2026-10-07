@@ -49,7 +49,10 @@ export const AllItems: Story = {
 export const ActiveAndDirty: Story = {
   args: { activeId: "v1", dirty: true, canSave: true, currentDef: { view: "board", filters: [{ type: "label", value: "Bug" }, { type: "priority", value: "High" }] } },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await expect(canvas.getByRole("button", { name: /^Bugs this sprint/ })).toHaveAttribute("aria-current", "true");
+    // The drift dot describes the tab; the name stays the view's own.
+    const tab = canvas.getByRole("button", { name: "Bugs this sprint" });
+    await expect(tab).toHaveAttribute("aria-current", "true");
+    await expect(tab).toHaveAccessibleDescription("Unsaved changes");
     await userEvent.click(canvas.getByRole("button", { name: "Actions for Bugs this sprint" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: "Update with current filters" }));

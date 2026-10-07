@@ -3,7 +3,7 @@
 // dot while the live state drifts from the active view, a per-tab ⋯ menu, Save view and Hide.
 // ARIA: a navigation of buttons with aria-current (not a tablist — there are no tab panels, and the
 // per-tab ⋯ and Save view sit in the same row). Spec: DESIGN.md › Saved views.
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "../core/Button";
 import { Checkbox } from "../core/Checkbox";
@@ -44,6 +44,7 @@ export interface SavedViewTabsProps {
 
 export function SavedViewTabs({ views, activeId = null, dirty = false, canSave = false, currentDef, allLabel = "All items", onSelect, onSave, onAction, onHide, id: rowId }: SavedViewTabsProps) {
   const save = usePopover();
+  const driftId = useId();
   const [name, setName] = useState("");
   const [shared, setShared] = useState(true);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -150,10 +151,17 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
             ) : (
               // The ⋯ menu sits beside the tab (never inside it: a button can't hold a button).
               <>
-                <button type="button" className="td-sv-tab has-menu" aria-current={isA ? "true" : undefined} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
+                <button type="button" className="td-sv-tab has-menu" aria-current={isA ? "true" : undefined} aria-describedby={isA && dirty ? driftId : undefined} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
                   {v.shared ? <Icon name="users" size={13} className="td-sv-shared" /> : null}
                   {v.name}
-                  {isA && dirty ? <span className="td-sv-dot" title="Filters changed since this view was saved" aria-label="unsaved changes" /> : null}
+                  {/* The drift is the tab's description, not part of its name (hidden text still describes). */}
+                  {isA && dirty ? (
+                    <span className="td-sv-dot" title="Filters changed since this view was saved">
+                      <span id={driftId} hidden>
+                        Unsaved changes
+                      </span>
+                    </span>
+                  ) : null}
                 </button>
                 <span className="td-sv-more">
                   <MenuButton label={`Actions for ${v.name}`} tier="toolbar" placement="bottom-start" minWidth={200} size={18} iconSize={12} variant="chrome">

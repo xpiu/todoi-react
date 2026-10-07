@@ -165,6 +165,7 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
     return () => clearTimeout(t);
   }, [hit, query]);
   const total = results?.reduce((n, x) => n + x.group.rows.length, 0) ?? 0;
+  const matched = results ? `${count(total, "setting")} match “${q.trim()}”` : "";
   return (
     <div className="td-set">
       <div className="td-set-inner">
@@ -211,12 +212,17 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
           </div>
         </nav>
         <div className="td-set-main">
+          {/* Always mounted (so a changed count is announced) and its own node (Minimal hides the crumb). */}
+          <p className="td-sr-only" role="status">
+            {results ? `${matched}${results.length ? ". Enter opens the first result" : ""}` : ""}
+          </p>
           {results ? (
             <>
               <div>
                 <h1 className="td-set-title">Search</h1>
-                <p className="td-set-crumb" aria-live="polite">
-                  {count(total, "setting")} match “{q.trim()}”{results.length ? " · Enter opens the first result" : ""}
+                <p className="td-set-crumb">
+                  {matched}
+                  {results.length ? " · Enter opens the first result" : ""}
                 </p>
               </div>
               {results.length ? (

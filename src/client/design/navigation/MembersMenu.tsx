@@ -1,6 +1,8 @@
 // MembersMenu — the Members action's panel: the roster with each member's role (a picker for admins),
 // Invite people, the Visibility radio and the copyable project link. Body of a toolbar-tier Popover;
 // the full roster (remove, invite form) stays in the project settings. Spec: DESIGN.md › Subnavbar.
+import { useId } from "react";
+
 import type { MemberRole, ProjectVisibility } from "../../../shared/enums";
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
@@ -28,6 +30,7 @@ export interface MembersMenuProps {
 export function MembersMenu({ members, currentUserId, canManage, visibility, onVisibilityChange, onChangeRole, onInvite, url }: MembersMenuProps) {
   const [copied, copy] = useCopy();
   const vis = PROJECT_VISIBILITY.find((v) => v.value === visibility) ?? PROJECT_VISIBILITY[0]!;
+  const visLabelId = useId();
   return (
     <div className="td-mm" data-visibility={vis.value}>
       <div className="td-mm-head">
@@ -42,7 +45,7 @@ export function MembersMenu({ members, currentUserId, canManage, visibility, onV
         <div role="list" aria-label="Members">
           {members.map((m) => (
             <div key={m.id} className="td-mm-row" role="listitem">
-              <Avatar name={m.name} color={m.color} size={28} />
+              <Avatar name={m.name} color={m.color} size={28} decorative />
               <span className="td-mm-name">
                 <span className="td-mm-line">
                   {m.name}
@@ -70,10 +73,10 @@ export function MembersMenu({ members, currentUserId, canManage, visibility, onV
             }
           />
         ) : null}
-        <div className="td-mm-sec" id="td-mm-vis-label">
+        <div className="td-mm-sec" id={visLabelId}>
           Visibility
         </div>
-        <div role="radiogroup" aria-labelledby="td-mm-vis-label">
+        <div role="radiogroup" aria-labelledby={visLabelId}>
           {PROJECT_VISIBILITY.map((v) => (
             <button key={v.value} type="button" className="td-mm-row td-mm-act" role="radio" aria-checked={visibility === v.value} disabled={!canManage} onClick={() => visibility !== v.value && onVisibilityChange(v.value)}>
               <Icon name={v.icon} size={15} />

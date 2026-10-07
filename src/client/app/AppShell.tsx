@@ -2,7 +2,7 @@
 // on desktop), Sidebar, the content, the one Toast, the ? dialog and the Ctrl+K palette. The URL is
 // the single source of truth for the current project and view. Spec: DESIGN.md › Responsive.
 import { Outlet, useLocation, useMatch, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { newId, useCreateList } from "../data/mutations";
 import { useQuery } from "@tanstack/react-query";
@@ -141,6 +141,8 @@ export function AppShell() {
   const svm = useSavedViewMutations(projectId ?? "");
   // The saved-views row: remembered per device; opens by itself when a saved-view link loads.
   const [savedViewsOpen, setSavedViewsOpen] = usePersistedFlag(SAVED_VIEWS_KEY, false);
+  // The saved-views row and the SubNavbar's Views toggle (its aria-controls) share this id.
+  const savedViewsId = useId();
   const linkedView = resolved.raw.savedView;
   useEffect(() => {
     if (linkedView) setSavedViewsOpen(true);
@@ -210,7 +212,7 @@ export function AppShell() {
   const savedViewsRow =
     projectId && savedViewsOpen ? (
       <SavedViewTabs
-        id="td-saved-views"
+        id={savedViewsId}
         onHide={() => setSavedViewsOpen(false)}
         views={resolved.savedViews}
         activeId={activeSavedId}
@@ -300,7 +302,7 @@ export function AppShell() {
       url={projectUrl(pd.id)}
     />
   ) : undefined;
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} openMenu={openMenu} onOpenMenuChange={setOpenMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={setOpenMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));

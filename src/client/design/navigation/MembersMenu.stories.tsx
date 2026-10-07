@@ -82,3 +82,18 @@ export const ReadOnly: Story = {
     await expect(dialog.getByText("Only admins can change roles or visibility.")).toBeVisible();
   },
 };
+/** Two panels at once (Storybook docs, a second project): each radio group is labelled by its own heading. */
+export const TwoPanels: Story = {
+  args: { canManage: false, onInvite: undefined },
+  render: (args) => (
+    <div style={{ display: "flex", gap: 16 }}>
+      <MembersMenu {...args} />
+      <MembersMenu {...args} visibility="shared" />
+    </div>
+  ),
+  async play({ canvas }) {
+    const groups = canvas.getAllByRole("radiogroup", { name: "Visibility" });
+    await expect(groups).toHaveLength(2);
+    await expect(groups[0]!.getAttribute("aria-labelledby")).not.toBe(groups[1]!.getAttribute("aria-labelledby"));
+  },
+};

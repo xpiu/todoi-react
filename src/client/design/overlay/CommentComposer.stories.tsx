@@ -39,11 +39,18 @@ export const MentionAndSend: Story = {
     await userEvent.type(field, "@sa");
     const people = canvas.getByRole("listbox", { name: "People" });
     await expect(people).toBeVisible();
+    // The highlight lives on the field (it keeps focus) through aria-activedescendant.
+    await expect(field).toHaveAttribute("aria-autocomplete", "list");
+    await expect(field).toHaveAttribute("aria-controls", people.id);
     await userEvent.keyboard("{ArrowDown}");
-    await expect(canvas.getByRole("option", { name: /Sara Peeters/ })).toHaveAttribute("aria-selected", "true");
+    const sara = canvas.getByRole("option", { name: /Sara Peeters/ });
+    await expect(sara).toHaveAttribute("aria-selected", "true");
+    await expect(field).toHaveAttribute("aria-activedescendant", sara.id);
     await userEvent.keyboard("{ArrowUp}{Enter}");
     await expect(field).toHaveValue("@sam ");
     await expect(canvas.queryByRole("listbox", { name: "People" })).not.toBeInTheDocument();
+    await expect(field).not.toHaveAttribute("aria-activedescendant");
+    await expect(field).not.toHaveAttribute("aria-controls");
     await userEvent.keyboard("can you check the dates?");
     await userEvent.keyboard("{Enter}");
     await expect(args.onSubmit).toHaveBeenCalledWith("@sam can you check the dates?");

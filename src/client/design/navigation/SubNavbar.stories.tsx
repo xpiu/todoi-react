@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { useAppearanceStore } from "../core/appearance";
@@ -39,8 +39,9 @@ const membersMenu = (
 );
 
 // Story state models the host: it owns the active view and the saved-views row the Views toggle
-// controls (aria-controls="td-saved-views", so the host renders that row with the same id).
+// controls, passing one id to both (the toggle's aria-controls and the row's id).
 function ControlledSubNavbar(args: SubNavbarProps) {
+  const savedViewsId = useId();
   const [view, setView] = useState(args.activeView);
   const [svOpen, setSvOpen] = useState(!!args.savedViewsOpen);
   return (
@@ -53,12 +54,13 @@ function ControlledSubNavbar(args: SubNavbarProps) {
           args.onViewChange?.(id);
         }}
         savedViewsOpen={svOpen}
+        savedViewsId={savedViewsId}
         onSavedViewsToggle={(open) => {
           setSvOpen(open);
           args.onSavedViewsToggle?.(open);
         }}
       />
-      {svOpen ? <SavedViewTabs id="td-saved-views" views={[{ id: "v1", name: "Bugs this sprint", shared: true, definition: {} }]} onSelect={() => {}} onSave={() => {}} onAction={() => {}} onHide={() => setSvOpen(false)} /> : null}
+      {svOpen ? <SavedViewTabs id={savedViewsId} views={[{ id: "v1", name: "Bugs this sprint", shared: true, definition: {} }]} onSelect={() => {}} onSave={() => {}} onAction={() => {}} onHide={() => setSvOpen(false)} /> : null}
     </>
   );
 }
@@ -100,8 +102,11 @@ export const Default: Story = {
     const views = canvas.getByRole("button", { name: "Show saved views" });
     await userEvent.click(views);
     await expect(args.onSavedViewsToggle).toHaveBeenCalledWith(true);
-    await expect(canvas.getByRole("button", { name: "Hide saved views" })).toHaveAttribute("aria-expanded", "true");
-    await expect(canvas.getByRole("navigation", { name: "Saved views" })).toHaveAttribute("id", "td-saved-views");
+    const toggle = canvas.getByRole("button", { name: "Hide saved views" });
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const rowId = toggle.getAttribute("aria-controls");
+    await expect(rowId).toBeTruthy();
+    await expect(canvas.getByRole("navigation", { name: "Saved views" })).toHaveAttribute("id", rowId);
   },
 };
 /** One open menu at a time: opening Sort closes Filter. */

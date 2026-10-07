@@ -1,11 +1,12 @@
 // CommentComposer — MentionField (auto-growing textarea with @mention completion) + Send. ↵ sends,
 // ⇧↵ breaks a line; `replyTo` prefills "@handle " and shows a dismissible "Replying to" line.
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
 
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
 import { IconButton } from "../core/IconButton";
 import { InlineError } from "../core/InlineError";
+import { usePickerCursor } from "../core/ItemPicker";
 import "./CommentComposer.css";
 
 export interface MentionMember {
@@ -39,13 +40,14 @@ export function MentionField({ value, onChange, members = [], placeholder, rows 
   const own = useRef<HTMLTextAreaElement>(null);
   const ref = inputRef ?? own;
   const [q, setQ] = useState<{ start: number; text: string } | null>(null);
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
+  // After every render, so the field fits its value however it changed: typing, a mention, or the
+  // caller (cleared on send, prefilled for a reply).
+  useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight + 2}px`;
-  }, [value, ref]);
+  });
   useEffect(() => {
     if (autoFocus && ref.current) {
       ref.current.focus();
@@ -80,23 +82,15 @@ export function MentionField({ value, onChange, members = [], placeholder, rows 
       }
     });
   };
+  // The field stays a (multi-line) textbox, which carries aria-autocomplete/controls/activedescendant
+  // but not the combobox role or aria-expanded; the listbox is rendered only while it has matches.
+  const cursor = usePickerCursor(matches, (m) => m.id, insert);
   return (
     <div className={["td-mf", className ?? ""].join(" ").trim()} style={style}>
-      {q && matches.length ? (
-        <div className="td-mf-list" role="listbox" aria-label="People" data-below={listBelow ? "true" : undefined}>
+      {matches.length ? (
+        <div className="td-mf-list" {...cursor.listboxProps} aria-label="People" data-below={listBelow ? "true" : undefined}>
           {matches.map((m, i) => (
-            <button
-              key={m.id}
-              type="button"
-              role="option"
-              className="td-mf-opt"
-              aria-selected={i === idx}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                insert(m);
-              }}
-              onMouseEnter={() => setIdx(i)}
-            >
+            <button key={m.id} type="button" className="td-mf-opt" {...cursor.optionProps(m, i)} onMouseDown={(e) => e.preventDefault()}>
               <Avatar name={m.name} src={m.src} color={m.color} size={20} />
               {m.name}
               <span className="td-mf-sub">@{mentionHandle(m)}</span>
@@ -111,26 +105,23 @@ export function MentionField({ value, onChange, members = [], placeholder, rows 
         value={value}
         placeholder={placeholder}
         aria-label={rest["aria-label"] ?? "Comment"}
+        aria-autocomplete="list"
+        aria-controls={matches.length ? cursor.listboxProps.id : undefined}
+        aria-activedescendant={cursor.activeId}
         onChange={(e) => {
           onChange(e.target.value);
           setQ(scan(e.target.value, e.target.selectionStart));
-          setIdx(0);
+          cursor.reset();
         }}
         onKeyDown={(e) => {
-          if (q && matches.length) {
-            if (e.key === "ArrowDown") {
+          if (matches.length) {
+            if (e.key === "Tab") {
               e.preventDefault();
-              setIdx((i) => (i + 1) % matches.length);
+              cursor.pick();
               return;
             }
-            if (e.key === "ArrowUp") {
-              e.preventDefault();
-              setIdx((i) => (i - 1 + matches.length) % matches.length);
-              return;
-            }
-            if (e.key === "Enter" || e.key === "Tab") {
-              e.preventDefault();
-              insert(matches[idx]!);
+            if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
+              cursor.onKeyDown(e);
               return;
             }
           }
