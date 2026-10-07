@@ -10,6 +10,7 @@ A local tool that compares **this repo's React 19 app** (todoi-react) with the *
 - [A typical loop](#a-typical-loop)
 - [Plan page (`/`)](#plan-page-)
 - [Mapping page (`/mapping`)](#mapping-page-mapping)
+  - [Kit drafts from Storybook](#kit-drafts-from-storybook)
 - [How it works](#how-it-works)
 - [Safety](#safety)
 - [Limits](#limits)
