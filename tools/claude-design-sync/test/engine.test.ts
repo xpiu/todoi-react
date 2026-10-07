@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
@@ -445,6 +445,22 @@ describe("App runs in a worktree", () => {
     expect(existsSync(run.worktree)).toBe(false);
     expect(git(fx.repo, ["branch", "--list", run.branch]).trim()).toBe("");
     expect(jobs.discard(job.id)).toBe(false);
+  });
+});
+
+describe("jobs", () => {
+  it("get their own id and file when created in the same millisecond", () => {
+    const fx = makeFixture();
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-01-01T00:00:00Z") });
+    try {
+      const jobs = new Jobs(fx.ctx);
+      const a = jobs.create("run", "a");
+      const b = jobs.create("run", "b");
+      expect(b.id).not.toBe(a.id);
+      expect(new Jobs(fx.ctx).list().map((j) => j.title).sort()).toEqual(["a", "b"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

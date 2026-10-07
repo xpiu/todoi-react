@@ -113,7 +113,10 @@ export class Jobs {
     return this.list().find((j) => j.state === "running");
   }
   create(kind: JobKind, title: string, extra: Partial<Job> = {}): Job {
-    const id = `${kind}-${Date.now().toString(36)}`;
+    // Jobs created in the same millisecond would otherwise share an id, and the later one overwrite the other's file.
+    const stamp = `${kind}-${Date.now().toString(36)}`;
+    let id = stamp;
+    for (let n = 2; this.jobs.has(id); n++) id = `${stamp}-${n}`;
     const j: Job = { id, kind, title, state: "running", startedAt: new Date().toISOString(), events: [], steps: [], ...extra };
     this.jobs.set(id, j);
     this.aborts.set(id, new AbortController());
