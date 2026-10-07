@@ -4,20 +4,17 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 
 ## 📝 About
 
-
-| Resource             | Details                                                                                                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public site          | [todoi.com](https://todoi.com) currently serves a separate micro-site with a browser-only task app.                                                                                                                       |
-| Infrastructure notes | VPS 2 / Dokploy: `http://72.62.177.91/`; Hetzner hosting, Cloudflare CDN. Infrastructure is not defined in this repo.                                                                                                     |
-| Placeholder history  | v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).                                                                                                           |
-| Staging              | [staging.todoi.com](https://staging.todoi.com): Dokploy builds the repo `Dockerfile` with PostgreSQL 17; CI deploys `main` after every gate passes (see [Production](#-production)). |
-| Email                | Official: `info@todoi.com`; intended sender: `noreply@todoi.com`. The app does not send email yet.                                                                                                                        |
-| Documentation        | [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.      |
-| Planning             | [todo.md](todo.md)                                                                                                                                                                                                        |
-| Repository           | `git@github.com:xpiu/todoi-react.git`                                                                                                                                                                                     |
-| Business development | `git@github.com:xpiu/todoi-business.git`; [planning](https://github.com/xpiu/todoi-business/blob/main/todo/todo-business.md), [milestones](https://github.com/xpiu/todoi-business/blob/main/todo/milestones-business.md). |
-| Native apps          | Android prototype in external repo `todoi-app`; iOS, macOS and Windows apps not initiated.                                                                                                                                |
-
+- **Public site:** [todoi.com](https://todoi.com) currently serves a separate micro-site with a browser-only task app.
+- **Infrastructure notes:** VPS 2 / Dokploy: `http://72.62.177.91/`; Hetzner hosting, Cloudflare CDN. Infrastructure is not defined in this repo.
+- **Placeholder history:** v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).
+- **Staging:** [staging.todoi.com](https://staging.todoi.com): Dokploy builds the repo `Dockerfile` with PostgreSQL 18; CI deploys `main` after every gate passes (see [Production](#-production)).
+- **Staging database:** `dbstagingtodoireact` (also known as `db-staging-todoi-react` in Dokploy on VPS 2).
+- **Email:** Official: `info@todoi.com`; intended sender: `noreply@todoi.com`. The app does not send email yet.
+- **Documentation:** [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.
+- **Planning:** [todo.md](todo.md)
+- **Repository:** `git@github.com:xpiu/todoi-react.git`
+- **Business development:** `git@github.com:xpiu/todoi-business.git`; [planning](https://github.com/xpiu/todoi-business/blob/main/todo/todo-business.md), [milestones](https://github.com/xpiu/todoi-business/blob/main/todo/milestones-business.md).
+- **Native apps:** Android prototype in external repo `todoi-app`; iOS, macOS and Windows apps not initiated.
 
 ## 📖 Contents
 
@@ -56,15 +53,12 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 
 ## 🧰 Tech stack
 
-
-| Area             | Implementation                                                                                                                                                             |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Client           | React 19, TypeScript, Vite, Base UI, TanStack Router, Tiptap; local Inter/Geist Mono fonts. Rounded/Minimal themes × Dark/Light modes.                                     |
-| State            | Zustand for client state; TanStack Query for server data and optimistic mutations; IndexedDB for actor-scoped snapshots and outgoing operations.                                                                                         |
-| API              | Node.js + Hono typed routes/RPC client, Zod validation. `/api/health` returns `{ "ok": true }`.                                                                            |
-| Data             | PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items, row versions check stale edits, and transactional operation receipts deduplicate replay.                                    |
-| Authentication   | Better Auth sessions/accounts in PostgreSQL; API tokens use `Authorization: Bearer tdi_…`.                                                                                 |
-| Jobs and logging | API drains a transactional attachment-cleanup outbox. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation. |
+- **Client:** React 19, TypeScript, Vite, Base UI, TanStack Router, Tiptap; local Inter/Geist Mono fonts. Rounded/Minimal themes × Dark/Light modes.
+- **State:** Zustand for client state; TanStack Query for server data and optimistic mutations; IndexedDB for actor-scoped snapshots and outgoing operations.
+- **API:** Node.js + Hono typed routes/RPC client, Zod validation. `/api/health` returns `{ "ok": true }`.
+- **Data:** PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items, row versions check stale edits, and transactional operation receipts deduplicate replay.
+- **Authentication:** Better Auth sessions/accounts in PostgreSQL; API tokens use `Authorization: Bearer tdi_…`.
+- **Jobs and logging:** API drains a transactional attachment-cleanup outbox. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation.
 
 ## 🎨 Design
 
@@ -72,14 +66,10 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 
 **Production architecture comes first, Claude Design readability second. Storybook and** `claude-design-sync` **MUST adapt to both.**
 
-
-| Area    | Application conventions                                                                                                                                                                                                                     |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| React   | Typed component APIs, composition, immutable state, and side effects outside render. Keep local interaction state local. [React guidance](https://react.dev/reference/rules/components-and-hooks-must-be-pure).                             |
-| Base UI | Use its primitives for interaction behavior. Custom components pass through refs and behavioral props correctly when composed through `render`. [Composition guidance](https://base-ui.com/react/handbook/composition).                     |
-| Hono    | Keep validation, authorization, and database work on the server. Preserve the typed RPC client and type-only server imports. [RPC guidance](https://hono.dev/docs/guides/rpc).                                                              |
-| Zustand | Use focused selectors for shared client state and compute derived values. Introduce scoped stores when the application needs independent instances. [Zustand guidance](https://zustand.docs.pmnd.rs/learn/guides/beginner-typescript.html). |
-
+- **React:** Typed component APIs, composition, immutable state, and side effects outside render. Keep local interaction state local. [React guidance](https://react.dev/reference/rules/components-and-hooks-must-be-pure).
+- **Base UI:** Use its primitives for interaction behavior. Custom components pass through refs and behavioral props correctly when composed through `render`. [Composition guidance](https://base-ui.com/react/handbook/composition).
+- **Hono:** Keep validation, authorization, and database work on the server. Preserve the typed RPC client and type-only server imports. [RPC guidance](https://hono.dev/docs/guides/rpc).
+- **Zustand:** Use focused selectors for shared client state and compute derived values. Introduce scoped stores when the application needs independent instances. [Zustand guidance](https://zustand.docs.pmnd.rs/learn/guides/beginner-typescript.html).
 
 Preserve the separation between design components, application screens, client data access, and server code. Explicit prop types, named exports, concise behavioral documentation, reusable tokens, and representative stories help Claude Design read the system. Readability does not guarantee faithful reproduction of every interaction. [Claude Design guidance](https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design).
 
@@ -135,16 +125,14 @@ The API runs on `:3000`, migrating/seeding on development boot. Vite serves `htt
 
 Seeded accounts: `flo@todoi.com` and `sam@helicopterseurope.com`, verified, password `todoi-dev-password`. Flo's samples include Helicopters Europe projects, MP-115 photos, Sam's comments and a filled Inbox; seeded starts replenish missing samples. Sign up at `/signup`; copy invites in **Project settings → Members**. Component gallery: `/dev/ds`.
 
+Common commands:
 
-| Command                                    | Purpose                                                                        |
-| ------------------------------------------ | ------------------------------------------------------------------------------ |
-| `npm run check`                            | Typecheck, lint and unit tests.                                                |
-| `npm run typecheck` / `npm run lint`       | TypeScript; oxlint with `tools/lint/` design rules + stylelint for client CSS. |
-| `npm test` / `npm run test:watch`          | Vitest once / watch mode.                                                      |
-| `npm run build`                            | Client → `dist/`; API → `dist-server/index.js`.                                |
-| `npm run db:generate`                      | Generate migrations after changing `src/server/db/schema.ts`; review the SQL.  |
-| `npm run db:migrate` / `npm run db:studio` | Apply migrations / open Drizzle Studio.                                        |
-
+- **`npm run check`:** Typecheck, lint and unit tests.
+- **`npm run typecheck` / `npm run lint`:** TypeScript; oxlint with `tools/lint/` design rules + stylelint for client CSS.
+- **`npm test` / `npm run test:watch`:** Vitest once / watch mode.
+- **`npm run build`:** Client → `dist/`; API → `dist-server/index.js`.
+- **`npm run db:generate`:** Generate migrations after changing `src/server/db/schema.ts`; review the SQL.
+- **`npm run db:migrate` / `npm run db:studio`:** Apply migrations / open Drizzle Studio.
 
 Integration/browser/tool checks below run separately.
 
@@ -161,18 +149,14 @@ npm start                 # NODE_ENV=production node loads .env if present
 
 Environment variables override `.env`:
 
-
-| Variable             | Production setting                                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`       | Required PostgreSQL connection URL.                                                                                |
-| `APP_URL`            | Required public HTTPS URL for cookies, trusted origins and invite links; HTTP allowed on loopback for smoke tests. |
-| `BETTER_AUTH_SECRET` | Required, 32+ random characters: `openssl rand -base64 32`. Rotation invalidates sessions.                         |
-| `UPLOAD_DIR`         | Default `.data/uploads`; use a persistent volume and back it up with the database.                                 |
-| `PORT`               | Default `3000`.                                                                                                    |
-| `MIGRATE_ON_START`   | Default `false`; `true` applies pending migrations with the runtime migrator. Keep `drizzle/` in the deployment.   |
-| `SEED_ON_START`      | Must be `false` (production default); demo accounts have a published password.                                     |
-| `CLIENT_DIR`         | Default `dist`; empty serves only the API.                                                                         |
-
+- **`DATABASE_URL`:** Required PostgreSQL connection URL.
+- **`APP_URL`:** Required public HTTPS URL for cookies, trusted origins and invite links; HTTP allowed on loopback for smoke tests.
+- **`BETTER_AUTH_SECRET`:** Required, 32+ random characters: `openssl rand -base64 32`. Rotation invalidates sessions.
+- **`UPLOAD_DIR`:** Default `.data/uploads`; use a persistent volume and back it up with the database.
+- **`PORT`:** Default `3000`.
+- **`MIGRATE_ON_START`:** Default `false`; `true` applies pending migrations with the runtime migrator. Keep `drizzle/` in the deployment.
+- **`SEED_ON_START`:** Must be `false` (production default); demo accounts have a published password.
+- **`CLIENT_DIR`:** Default `dist`; empty serves only the API.
 
 Production startup rejects invalid/missing configuration, development/example secrets, short secrets, non-HTTPS external URLs or enabled seeding. Development uses convenient defaults.
 
