@@ -153,7 +153,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 **Character:** One neutral grotesque at one size carries all reading; a mono at 11px marks anything that is data rather than prose.
 
 ### Hierarchy
-- **Verdict** (400, 22px, 1.3, -0.012em, balanced, max 36ch): the one-sentence verdict and the onboarding heading. Drops to 19px under 820px. Counts inside it are 500.
+- **Verdict** (400, 22px, 1.3, -0.012em, balanced, max 36ch): the one-sentence verdict and the onboarding heading. Drops to 19px when the page is narrow (see the Narrow Page Rule). Counts inside it are 500.
 - **Title** (500, 15px, 1.4): sheet headings in the plan bar (confirm, mark synced).
 - **Body** (400, 13px, 1.45): all UI and prose: rows, cells, buttons, fields, panel. 500 for feature titles, column heads, unit names, the wordmark, panel headings.
 - **Secondary** (400, 12px, 1.45): status words, rail notes, direction hints, evidence lines, links, inline errors.
@@ -168,14 +168,15 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 ## Layout
 
 - **Page:** max 1180px (`--cds-page`), centred, 24px gutters; bottom padding clears the plan bar.
-- **Bar:** sticky, 48px (`--cds-bar`): wordmark left; Merge (only while a run waits for it or is still porting into the App), sync-point select, Recompare, Activity, page links, the sun/moon mode toggle and Claude Design link right, 18px apart. The mode toggle is a 28×28 icon button whose accessible name and tooltip name the mode it switches to.
+- **Bar:** sticky, 48px (`--cds-bar`): the wordmark left, then three groups on the right, each separated by a 16px hairline rule: the page's own tools (Merge only while a run waits for it or is still porting into the App, the sync-point select, Recompare, Activity), the pages (Plan, Mapping, Guide), and the meta (token meter, sun/moon mode toggle, Claude Design link). Every control is a box with a 6px inset (min 26×28), 6px from the next, so glyphs and labels sit an even 18px apart whatever their kind; the last glyph lands on the gutter. The pages are tabs as tall as the bar: the current one is Ledger Ink with a 2px ink rule along the bar's bottom edge. The mode toggle is an icon button whose accessible name and tooltip name the mode it switches to.
+- **Bar, smaller windows:** under 1100px the page's tools and the Claude Design link drop to their glyphs (tips still name them) and "Since" hides; the pages keep their names. Under 640px the bar becomes two rows (48 + 40px, and `--cds-bar` grows to 88px so everything sticky clears it): the wordmark and the page's tools, then the pages as tabs with the meta on the right. Under 420px, on a page with its own tools, the wordmark keeps only its mark. On touch (`pointer: coarse`) bar controls grow to 36×36.
 - **Ledger grid:** `minmax(0,1fr) 132px minmax(0,1fr)` for the column heads, every row twin, the work twin and each subfeature unit, so the rail lines up down the whole page. Column heads are sticky under the bar. Cells inset 20px from the left (16px on the Design side's outer edge).
 - **Row:** feature head (chevron, title, status, count) across the full width at 14px top padding; then the twin. Closed rows show at most four moved parts per side plus "+n more".
 - **Plan bar:** fixed bottom, min 56px (`--cds-plan`), aligned to the page width; summary left, actions right. Its sheet opens above it, capped at min(56vh, 520px).
 - **Activity panel:** fixed right, 440px (`--cds-panel`), from under the bar to the bottom. With the panel open the page shifts left to make room and the plan bar stops at the panel's edge.
 - **Rhythm:** small steps (4, 6, 8, 10, 12, 14, 16, 20, 24px) set directly in the stylesheet; the tool does not use the App's `--space-*` scale.
 
-**The 820px Rule.** Under 820px the twin stacks to one column: App cell, then the rail as a horizontal strip between dashed hairlines, then the Design cell, each side labelled. Column heads hide, gutters drop to 16px, tool labels hide behind their icons, the direction control goes full width, plan actions split the width, and the panel becomes full-screen.
+**The Narrow Page Rule.** The ledger answers to its own width (a `page` container on `.cds-main`), not the window's, so a phone and a tablet with the Activity panel open behave alike. When the page is under 700px the twin stacks to one column: App cell, then the rail as a horizontal strip between dashed hairlines, then the Design cell, each side labelled (an empty side and the rail's "work" label drop out). Column heads hide and the direction control goes full width; under 520px its three options stack as rows, each with its route beside its name and hint. A tablet on its own (768px and up) keeps the twin. The plan bar is its own container: under 900px its actions take a second row and split the width. Under 820px of window, gutters drop to 16px and the panel becomes full-screen. On touch, rail keys take the large size in the twin and grow to 40×36 in the stacked strip.
 
 ## Elevation & Depth
 
@@ -216,7 +217,7 @@ The global three-way segmented control (Into the App / Full sync / Into Design):
 
 ### Merge offer
 One action in four places, all driven by one hook (`Merge.tsx`), so they agree and one press disables them all:
-- **Navbar:** a tool button that is filled ink (500, 10px side padding, "Merge into main") while a verified App branch waits, the only filled control in the bar; greyed (Faint Ink, `not-allowed`) while a run still ports into the App; absent otherwise. Under 820px it is the filled glyph alone. With more than one run waiting it adds a mono count after a 1px rule.
+- **Navbar:** a tool button that is filled ink (500, 10px side padding, "Merge into main") while a verified App branch waits, the only filled control in the bar; greyed (Faint Ink, `not-allowed`) while a run still ports into the App; absent otherwise. Under 1100px it is the filled glyph alone. With more than one run waiting it adds a mono count after a 1px rule.
 - **Banner:** above the verdict on both pages, under an ink rule like every approval block: a 15px title naming the run, the branch and check in mono, the commit list, then the primary Merge and *Review in Activity*. Absent unless a run waits.
 - **Plan bar:** a Merge button before Review selected sync steps: primary while a run waits, Default and disabled while one ports, absent otherwise.
 - **Activity:** the run's own "Merge into the App" block; while another job is shown, a strip under the job list (ink rule on top) names the waiting run (a link that shows it) beside a primary Merge.
@@ -233,13 +234,13 @@ A 16px flame just left of the light/dark toggle (`Flame.tsx`), following the ser
 12px ink text with an input-rule underline offset 3px; the underline turns ink on hover. Used for every secondary action in a line (App diff, Design diff, Preview, Read brief, Copy brief, Check for changes).
 
 ### Inputs / Fields
-Underline only: no box, radius 0, 6px vertical padding, `--border-input` rule that turns ink on focus. Checkboxes use ink as the accent colour. The sync-point select uses the same underline treatment.
+Underline only: no box, radius 0, 6px vertical padding, `--border-input` rule that turns ink on focus. Checkboxes use ink as the accent colour. Selects (the sync point, the Mapping's Show) share `Select.tsx`: the same underline, which turns ink on hover and focus, with the platform's chevron replaced by a 12px lucide chevron in Quiet Ink.
 
 ### Tooltips
 Every control explains what it does in one sentence (or why it's unavailable, when disabled). One slip of ink with Paper text, 12px Secondary type, 5×8px padding, square, no shadow, max 280px wide; multi-line text keeps its line breaks. It opens above the control, centred, 6px away; below it when there's no room (the top bar); never past the viewport's 8px margin. A tip opens after a 450ms rest under the pointer or on keyboard focus; within 500ms of one closing the next opens at once, so the pointer can read along a row. A press, Escape, typing, scrolling or resizing closes it, and a pressed control stays quiet until the pointer leaves. Controls carry only the text (`data-tip`); one delegated layer (`Tooltip.tsx`) shows it and links it with `aria-describedby` unless it repeats the control's name. Native `title` stays only on iframes (their accessible names) and sync-point options.
 
 ### Visual comparison
-Opened under a component part ("Compare visually"), never by default. A sticky bar (it sits under the column heads) holds the Rounded / Minimal toggle (Mapping filter style) and one quiet line naming the mode; then the twin: App stories in the App column, kit cards in the Design column, the rail empty. Each picture is a figure with a 12px caption (story or card name; cards add "Name × n" quiet; render errors as an inline-error disclosure) over an image at actual size inside a frame that scrolls rather than shrinks, ringed with `--border-input`. Loading is one quiet status line plus two skeleton blocks; a side with nothing says why in a quiet line. Under 820px the column labels hide and captions carry the pairing.
+Opened under a component part ("Compare visually"), never by default. A sticky bar (it sits under the column heads) holds the Rounded / Minimal toggle (Mapping filter style) and one quiet line naming the mode; then the twin: App stories in the App column, kit cards in the Design column, the rail empty. Each picture is a figure with a 12px caption (story or card name; cards add "Name × n" quiet; render errors as an inline-error disclosure) over an image at actual size inside a frame that scrolls rather than shrinks, ringed with `--border-input`. Loading is one quiet status line plus two skeleton blocks; a side with nothing says why in a quiet line. On a narrow page the column labels hide and captions carry the pairing.
 
 ### Ledger row
 Feature head (chevron rotates 90° when open; title underlines on hover), status word (red only for "changed on both"; ink for one-sided; quiet for others), part count in mono. Opening reveals the work twin ("—" bulleted), one unit per subfeature (name, kind, mono paths, evidence, link actions) separated by dashed hairlines, inline diffs and preview iframes in hairline frames, and "What runs for this feature" with numbered steps.
@@ -270,7 +271,7 @@ A second page on the same ledger. The rail is 232px wide here, and it stands for
   - A replayed move runs four passes and rests as static dashes.
   - Lanes a move didn't touch drop to 35% opacity.
   - Reduced motion leaves the static dashes and arrowheads, which carry the same information.
-- **Under 1000px:** the meta goes to two columns and the steps to three. **Under 820px:** both stack. The rail becomes a full-width strip that keeps both tracks, and the event actions wrap.
+- **Page under 952px:** the meta goes to two columns and the steps to three. **Under 700px:** both stack. The rail becomes a full-width strip that keeps both tracks, the event actions wrap, and a recent move leaves out the side it brought nothing to.
 
 ### States
 - **Loading:** skeleton bars (10px lines, a 22px verdict line) in a slow linear shimmer between `--n-a06` and `--n-a03`; four skeleton rows in the ledger.

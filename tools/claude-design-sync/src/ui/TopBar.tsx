@@ -48,16 +48,19 @@ export function TopBar({ state, page, merge, children }: { state: AppState | nul
         <ArrowLeftRight size={14} strokeWidth={1.75} className="cds-wordmark-mark" aria-hidden />
         <span className="cds-wordmark-name">Claude Design sync tool</span>
       </h1>
-      <div className="cds-bar-tools">
+      {/* three groups, ruled apart: this page's own tools, the pages, then the meter, mode and project */}
+      <div className="cds-bar-group cds-bar-tools">
         {merge ? <MergeButton offer={merge} place="bar" /> : null}
         {children}
-        <nav className="cds-pages" aria-label="Pages">
-          {PAGES.map(({ id, href, label, Icon, tip }) => (
-            <a key={id} className="cds-tool" href={href} aria-current={page === id ? "page" : undefined} aria-label={label} data-tip={tip}>
-              <Icon size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-tool-label">{label}</span>
-            </a>
-          ))}
-        </nav>
+      </div>
+      <nav className="cds-bar-group cds-pages" aria-label="Pages">
+        {PAGES.map(({ id, href, label, Icon, tip }) => (
+          <a key={id} className="cds-tool cds-page" href={href} aria-current={page === id ? "page" : undefined} aria-label={label} data-tip={tip}>
+            <Icon size={14} strokeWidth={1.75} aria-hidden /> <span className="cds-page-label">{label}</span>
+          </a>
+        ))}
+      </nav>
+      <div className="cds-bar-group cds-bar-meta">
         <Flame />
         <button type="button" className="cds-tool cds-mode-toggle" onClick={toggleMode} aria-label={modeLabel} data-tip={modeLabel}>
           {mode === "dark" ? <Sun size={14} strokeWidth={1.75} aria-hidden /> : <Moon size={14} strokeWidth={1.75} aria-hidden />}

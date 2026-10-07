@@ -103,38 +103,56 @@ em {
 }
 
 /* ── Bar ─────────────────────────────────────────────────────────────────────── */
+/* The wordmark, then three groups ruled apart: the page's own tools, the pages, the meter/mode/project.
+   Every control is a box with the same 6px inset, so glyphs and labels sit 18px apart whatever their kind */
 .cds-bar {
   position: sticky;
   top: 0;
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 24px;
   height: var(--cds-bar);
   padding: 0 24px;
   background: var(--chrome-canvas);
   border-bottom: var(--cds-hair);
 }
 .cds-wordmark {
-  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto 0 0;
+  padding-right: 24px;
   font: 500 13px/1.45 var(--font-ui);
   letter-spacing: -0.005em;
   white-space: nowrap;
 }
-.cds-wordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 .cds-wordmark-mark {
   color: var(--ink-400);
 }
-.cds-bar-tools {
+.cds-bar-group {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-left: auto;
+  gap: 6px;
   min-width: 0;
+}
+.cds-bar-tools:empty {
+  display: none;
+}
+/* a short hairline between groups; the last group's glyph lands on the gutter */
+.cds-bar-tools + .cds-pages::before,
+.cds-bar-meta::before {
+  content: "";
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px 0 6px;
+  background: var(--border-divider);
+}
+.cds-bar-tools:empty + .cds-pages::before {
+  content: none;
+}
+.cds-bar-meta {
+  margin-right: -6px;
 }
 .cds-since {
   display: flex;
@@ -143,23 +161,49 @@ em {
   color: var(--ink-400);
   min-width: 0;
 }
-.cds-since select {
+.cds-bar .cds-since {
+  padding: 0 6px;
+}
+/* the underline field: a native select without the platform's box or chevron */
+.cds-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.cds-select select {
+  min-width: 0;
   max-width: 280px;
+  appearance: none;
   border: 0;
   border-bottom: 1px solid var(--border-input);
-  background: none;
-  padding: 2px 0;
-  color: var(--ink-900);
   border-radius: 0;
+  background: none;
+  padding: 4px 18px 2px 0;
+  color: var(--ink-900);
   text-overflow: ellipsis;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.cds-select select:hover,
+.cds-select select:focus-visible {
+  border-bottom-color: var(--ink-900);
+}
+.cds-select-chev {
+  position: absolute;
+  right: 2px;
+  color: var(--ink-600);
+  pointer-events: none;
 }
 .cds-tool {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-width: 26px;
   height: 28px;
-  padding: 0;
+  padding: 0 6px;
   border: 0;
   background: none;
   color: var(--ink-400);
@@ -167,13 +211,24 @@ em {
   text-decoration: none;
   transition: color var(--duration-fast) var(--ease-standard);
 }
+/* pages are tabs: as tall as the bar, the current one ruled in ink along the bar's edge */
 .cds-pages {
-  display: flex;
-  gap: 18px;
+  align-self: stretch;
+}
+.cds-page {
+  height: auto;
+  align-self: stretch;
+}
+.cds-page[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--ink-900);
 }
 .cds-mode-toggle {
-  justify-content: center;
-  width: 28px;
   flex-shrink: 0;
 }
 .cds-tool:hover,
@@ -194,7 +249,7 @@ em {
   display: inline-grid;
   place-items: center;
   flex-shrink: 0;
-  width: 28px;
+  width: 26px;
   height: 28px;
   color: var(--ink-400);
 }
@@ -360,6 +415,10 @@ em {
   max-width: var(--cds-page);
   margin: 0 auto;
   padding: 0 24px;
+}
+/* the ledger's layout follows the page's own width (see "Narrow pages") */
+.cds-main {
+  container: page / inline-size;
 }
 /* the open panel takes its width from the page, never covers the Design column */
 .cds.has-panel .cds-main,
@@ -761,7 +820,7 @@ em {
 .cds-ghost {
   visibility: hidden;
 }
-@media (max-width: 820px) {
+@container page (max-width: 699px) {
   /* the columns stack, so the spacer that aligns the Design column only adds a blank line */
   .cds-ghost {
     display: none;
@@ -924,7 +983,7 @@ em {
   font: 400 11px/1.45 var(--font-mono);
   color: var(--ink-600);
 }
-@media (max-width: 820px) {
+@container page (max-width: 699px) {
   /* stacked, the column labels would sit far from their pictures; the captions carry them */
   .cds-visual-head {
     display: none;
@@ -1224,6 +1283,7 @@ em {
 
 /* ── Plan bar ────────────────────────────────────────────────────────────────── */
 .cds-plan {
+  container: plan / inline-size;
   position: fixed;
   left: 0;
   right: 0;
@@ -2245,7 +2305,7 @@ em {
   white-space: nowrap;
 }
 
-@media (max-width: 1000px) {
+@container page (max-width: 951px) {
   .cds-map-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2266,45 +2326,16 @@ em {
   }
 }
 
-/* ── Narrow windows: the twin stacks, the rail becomes a strip between the sides ── */
-@media (max-width: 820px) {
-  .cds-bar {
-    padding: 0 16px;
-    gap: 12px;
-  }
-  .cds-since > span,
-  .cds-since > svg {
-    display: none;
-  }
-  /* the select gives way, so the icon buttons never sit on top of it */
-  .cds-since {
-    flex: 0 1 132px;
-  }
-  .cds-since select {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
-  .cds-tool-label {
-    display: none;
-  }
-  .cds-merge-bar.is-ready {
-    padding: 0 7px;
-  }
+/* ── Narrow pages: the twin stacks, the rail becomes a strip between the sides ──────
+   The ledger answers to its own width, not the window's: a phone, or a tablet with the Activity panel open,
+   stacks; a tablet on its own keeps the twin */
+@container page (max-width: 699px) {
   .cds-merge-banner {
     grid-template-columns: minmax(0, 1fr);
     margin-top: 16px;
   }
   .cds-merge-banner-actions {
     padding-bottom: 10px;
-  }
-  .cds-bar-tools,
-  .cds-pages {
-    gap: 12px;
-  }
-  .cds-bar-tools {
-    flex: 1;
-    justify-content: flex-end;
   }
   .cds-row-head {
     flex-wrap: wrap;
@@ -2321,18 +2352,14 @@ em {
   .cds-row-head .cds-row-toggle {
     flex-basis: 100%;
   }
-  .cds-main,
-  .cds-foot {
-    padding: 0 16px;
-  }
-  .cds-foot {
-    padding-bottom: calc(var(--cds-plan) + 96px);
-  }
   .cds-verdict {
     padding: 28px 0 20px;
   }
   .cds-verdict-line {
     font-size: 19px;
+  }
+  .cds-direction {
+    gap: 8px 20px;
   }
   .cds-global {
     width: 100%;
@@ -2383,35 +2410,18 @@ em {
   .cds-row .cds-twin > .cds-cell:last-child::before {
     content: "Design";
   }
-  .cds-plan-bar {
-    flex-wrap: wrap;
-    padding: 8px 16px;
-    gap: 8px;
-  }
-  .cds-plan-actions {
-    flex-wrap: wrap;
-    margin-left: 0;
-    width: 100%;
-  }
-  .cds-plan-actions .cds-btn {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-  .cds.has-panel .cds-plan {
-    right: 0;
-  }
-  .cds.has-panel .cds-main,
-  .cds.has-panel .cds-foot {
-    margin: 0 auto;
-  }
-  .cds-panel {
-    width: 100vw;
+  /* the open row's work lines: the rail's "work" heads a column that no longer exists, and an empty side
+     would print only its label */
+  .cds-work > .cds-rail-label,
+  .cds-work > .cds-cell:empty {
+    display: none;
   }
   .cds-diff,
   .cds-preview,
   .cds-proposal {
     margin-left: 0;
-  }  /* the mapping's rail keeps its two tracks, now full width between the sides */
+  }
+  /* the mapping's rail keeps its two tracks, now full width between the sides */
   .cds-map-rail {
     flex-direction: column;
     align-items: stretch;
@@ -2450,11 +2460,167 @@ em {
     margin-left: 0;
     flex-basis: 100%;
   }
+  /* a move that brought nothing to one side says nothing there, rather than a lone dash */
+  .cds-map-event .cds-cell:has(> .cds-quiet:only-child) {
+    display: none;
+  }
+  .cds-map-event .cds-twin > .cds-cell {
+    padding-left: 0;
+  }
+  .cds-map-event-mid {
+    gap: 8px;
+    padding: 2px 0 6px;
+    border: 0;
+  }
 }
 
-/* phones: the wordmark keeps its mark, its name goes to screen readers only, so "Since" stays usable */
+/* a phone-width page: the three directions stack as rows, each its route beside its name and hint */
+@container page (max-width: 520px) {
+  .cds-direction-label {
+    flex-basis: 100%;
+  }
+  .cds-global {
+    flex-direction: column;
+  }
+  .cds-global-opt {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+  }
+  .cds-global-opt .cds-route {
+    grid-row: span 2;
+  }
+  .cds-global-opt + .cds-global-opt {
+    box-shadow: inset 0 1px 0 var(--border-input);
+  }
+}
+
+/* touch: controls grow toward a thumb's size; the glyphs stay small. In the twin the keys take the large size,
+   the most the 132px rail holds; stacked, the strip has room for more */
+@media (pointer: coarse) {
+  .cds-key {
+    width: 32px;
+    height: 30px;
+  }
+  @container page (max-width: 699px) {
+    .cds-key {
+      width: 40px;
+      height: 36px;
+    }
+  }
+  .cds-tool:not(.cds-page),
+  .cds-flame {
+    min-width: 36px;
+    height: 36px;
+  }
+}
+
+/* ── Narrow windows: gutters, plan bar and panel follow the window ──────────────── */
+@media (max-width: 820px) {
+  .cds-bar {
+    padding: 0 16px;
+  }
+  .cds-main,
+  .cds-foot {
+    padding: 0 16px;
+  }
+  .cds-foot {
+    padding-bottom: calc(var(--cds-plan) + 96px);
+  }
+  .cds-plan-bar {
+    padding: 0 16px;
+  }
+  .cds.has-panel .cds-plan {
+    right: 0;
+  }
+  .cds.has-panel .cds-main,
+  .cds.has-panel .cds-foot {
+    margin: 0 auto;
+  }
+  .cds-panel {
+    width: 100vw;
+  }
+}
+
+/* the plan bar answers to its own width too (the panel narrows it on a tablet) */
+@container plan (max-width: 900px) {
+  .cds-plan-bar {
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+  .cds-plan-actions {
+    flex-wrap: wrap;
+    margin-left: 0;
+    width: 100%;
+  }
+  .cds-plan-actions .cds-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* ── The bar on smaller windows ─────────────────────────────────────────────────── */
+/* tablets: the page's tools and the project link drop to their glyphs (their tips still name them);
+   the pages keep their names */
+@media (max-width: 1100px) {
+  .cds-tool-label,
+  .cds-bar .cds-since-label {
+    display: none;
+  }
+  .cds-merge-bar.is-ready {
+    padding: 0 7px;
+  }
+  .cds-bar .cds-select select {
+    max-width: 160px;
+  }
+}
+
+/* phones: two rows. The wordmark and this page's tools, then the pages as tabs with the meter, mode and
+   project on the right. --cds-bar grows with it, so everything sticky below still clears it */
+@media (max-width: 640px) {
+  :root {
+    --cds-bar: 88px;
+  }
+  .cds-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: 48px 40px;
+    align-items: center;
+  }
+  .cds-wordmark {
+    padding-right: 12px;
+  }
+  .cds-bar-tools {
+    justify-content: flex-end;
+    margin-right: -6px;
+  }
+  .cds-bar .cds-since {
+    flex: 0 1 auto;
+  }
+  .cds-bar .cds-select,
+  .cds-bar .cds-select select {
+    width: 100%;
+  }
+  .cds-pages {
+    grid-row: 2;
+    margin-left: -6px;
+  }
+  .cds-bar-meta {
+    grid-row: 2;
+    justify-self: end;
+  }
+  .cds-bar-tools + .cds-pages::before,
+  .cds-bar-meta::before {
+    content: none;
+  }
+}
+
+/* small phones with a page's own tools: the wordmark keeps its mark, its name goes to screen readers only */
 @media (max-width: 420px) {
-  .cds-wordmark-name {
+  .cds-bar:has(.cds-bar-tools:not(:empty)) .cds-wordmark-name {
     position: absolute;
     width: 1px;
     height: 1px;

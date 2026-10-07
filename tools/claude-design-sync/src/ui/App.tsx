@@ -10,6 +10,7 @@ import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
 import { ProjectFooter } from "./ProjectFooter";
 import { TIP } from "./Tooltip";
+import { Select } from "./Select";
 import { TopBar } from "./TopBar";
 
 // Each option draws its route: App box, arrow, Design box, with the receiving side filled
@@ -175,15 +176,15 @@ export function App() {
       <TopBar state={state} page="plan" merge={merge}>
         {state?.syncPoints.length ? (
           <label className="cds-since">
-            <History size={14} strokeWidth={1.75} aria-hidden />
-            <span>Since</span>
-            <select value={baseId ?? ""} onChange={(e) => setBaseId(e.target.value || null)} aria-label="Compare since sync point" data-tip="The sync point to compare from: only changes made after it count">
+            <History size={14} strokeWidth={1.75} className="cds-since-label" aria-hidden />
+            <span className="cds-since-label">Since</span>
+            <Select value={baseId ?? ""} onChange={(e) => setBaseId(e.target.value || null)} aria-label="Compare since sync point" data-tip="The sync point to compare from: only changes made after it count">
               {state.syncPoints.map((p) => (
                 <option key={p.id} value={p.id} title={`${p.label} — App @${p.rev}, ${fmtTime(p.createdAt)}`}>
                   {p.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         ) : null}
         <button type="button" className="cds-tool" onClick={() => refresh(true)} disabled={loading} data-tip={TIP.recompare} aria-label="Recompare">

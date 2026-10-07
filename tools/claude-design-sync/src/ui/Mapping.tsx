@@ -8,6 +8,7 @@ import { MapLane, type LaneFlow, type LaneStats } from "./MapLane";
 import { MergeBanner, useMerge } from "./Merge";
 import { ProjectFooter } from "./ProjectFooter";
 import { TIP } from "./Tooltip";
+import { Select } from "./Select";
 import { TopBar } from "./TopBar";
 
 const WAITING = "waiting";
@@ -318,7 +319,7 @@ export function Mapping() {
             <h3 id="diagram-h">How each lane maps</h3>
             <label className="cds-since">
               <span>Show</span>
-              <select value={shown} onChange={(e) => showEvent(e.target.value)} aria-label="What the diagram shows" data-tip="Play the work waiting now, or replay a past pull, upload or merge">
+              <Select value={shown} onChange={(e) => showEvent(e.target.value)} aria-label="What the diagram shows" data-tip="Play the work waiting now, or replay a past pull, upload or merge">
                 <option value={WAITING}>Work waiting now{base ? ` (since ${base.label})` : ""}</option>
                 {map?.history
                   .filter((e) => e.moves.length)
@@ -327,7 +328,7 @@ export function Mapping() {
                       {e.title} · {fmtTime(e.at)}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
             {event ? (
               <button type="button" className="cds-link" data-tip="Play this move through the lanes again" onClick={() => setReplay((r) => r + 1)}>
