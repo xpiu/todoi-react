@@ -8,7 +8,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - **Infrastructure notes:** VPS 2 / Dokploy: `http://72.62.177.91/`; Hetzner hosting, Cloudflare CDN. Infrastructure is not defined in this repo.
 - **Placeholder history:** v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).
 - **Staging:** [staging.todoi.com](https://staging.todoi.com): Dokploy builds the repo `Dockerfile` with PostgreSQL 18; CI deploys `main` after every gate passes (see [Production](#-production)).
-- **Staging database:** `dbstagingtodoireact` (also known as `db-staging-todoi-react` in Dokploy on VPS 2).
+- **Staging database:** `dbstagingtodoireact` in PostgreSQL 18 (also known as `db-staging-todoi-react` in Dokploy on VPS 2).
 - **Email:** Official: `info@todoi.com`; intended sender: `noreply@todoi.com`. The app does not send email yet.
 - **Documentation:** [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.
 - **Planning:** [todo.md](todo.md)
