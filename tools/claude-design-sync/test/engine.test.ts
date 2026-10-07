@@ -187,7 +187,7 @@ describe("component stories and documentation", () => {
     const story = "src/client/design/core/Badge.stories.ts";
     writeFileSync(join(fx.repo, story), "export const Basic = { args: { n: 1 } };\n");
     git(fx.repo, ["add", story]);
-    git(fx.repo, ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "docs: badge examples"]);
+    git(fx.repo, ["commit", "-qm", "docs: badge examples"]);
     const base = recordSyncPoint(fx.ctx, { label: "With stories", snapshotId: fx.nowSnapshot, hold: [] });
     writeFileSync(join(fx.repo, story), "export const Basic = { args: { n: 2 } };\n");
     const cmp = compare(fx.ctx, { base });
@@ -369,7 +369,7 @@ describe("App runs in a worktree", () => {
   const commitIn = (dir: string, file: string, text: string, msg: string) => {
     writeFileSync(join(dir, file), text);
     git(dir, ["add", "-A"]);
-    git(dir, ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", msg]);
+    git(dir, ["commit", "-qm", msg]);
   };
 
   it("works on its own branch, and counts only a committed, clean port", async () => {
@@ -692,10 +692,10 @@ export function RowMenu({ ref, render }: Props) {
     const base = git(fx.repo, ["rev-parse", "HEAD"]).trim();
     writeFileSync(join(fx.repo, "src/client/design/core/Badge.stories.tsx"), "export default {};\n");
     git(fx.repo, ["add", "-A"]);
-    git(fx.repo, ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "stories"]);
+    git(fx.repo, ["commit", "-qm", "stories"]);
     const from = git(fx.repo, ["rev-parse", "HEAD"]).trim();
     writeFileSync(join(fx.repo, "src/client/design/core/Badge.tsx"), "export function Badge({ n }: { n: number }) { const s = useBadgeStore(); return n; }\n");
-    git(fx.repo, ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "port"]);
+    git(fx.repo, ["commit", "-qam", "port"]);
     const found = reviewDraft(fx.repo, from, "HEAD");
     expect(found.map((f) => [f.rule, f.file])).toEqual([["store", "src/client/design/core/Badge.tsx"], ["story", "src/client/design/core/Badge.tsx"]]);
     expect(reviewDraft(fx.repo, base, base)).toEqual([]);

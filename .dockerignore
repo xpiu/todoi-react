@@ -1,15 +1,24 @@
 # Local state and build output never enter the image; the Dockerfile builds from source.
 .git
-node_modules
-dist
-dist-server
+**/node_modules
+**/dist
+**/dist-server
+**/.tmp*
+**/.state
 storybook-static
 coverage
 .data
 .dev
-.tmp
 .DS_Store
 .env
 .env.*
 !.env.example
 *.log
+
+# Not read by `npm run build`, so editing them doesn't rebuild the app
+.github
+.storybook
+docs
+tests
+tools
+*.md

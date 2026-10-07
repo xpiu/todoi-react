@@ -14,7 +14,7 @@ const write = (root: string, files: Record<string, string>) => {
     writeFileSync(join(root, p), c);
   }
 };
-const git = (repo: string, ...args: string[]) => execFileSync("git", ["-C", repo, ...args], { encoding: "utf8", env: { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" } });
+const git = (repo: string, ...args: string[]) => execFileSync("git", ["-C", repo, ...args], { encoding: "utf8" });
 
 // the kit's real card head: React 18 UMD, Babel and lucide (cached under .state/cdn for card checks), the local bundle
 const CARD = (name: string, uses: string) => `<!-- @dsCard group="Components" viewport="400x200" name="${name}" subtitle="A test card" -->
@@ -81,7 +81,7 @@ export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))):
   const designNowDir = join(root, "design-now");
   mkdirSync(repo, { recursive: true });
   git(repo, "init", "-q", "-b", "main");
-  // A developer's repo has an identity; the engine's own merge commits need it where git can't guess one (CI).
+  // The repo's own identity, as a developer's has: commits here, in its worktrees and the engine's merges use it.
   git(repo, "config", "user.name", "t");
   git(repo, "config", "user.email", "t@t");
   write(repo, APP_BASE);
