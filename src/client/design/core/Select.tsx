@@ -105,6 +105,7 @@ export function Select<V extends SelectValue = SelectValue>({
     [onOpenChange],
   );
   const items = useMemo(() => options as SelectOption<V>[], [options]);
+  const listName = rest["aria-label"] ?? placeholder;
   const trigIcon = cur?.icon ? <Icon name={cur.icon} size={16} color={cur.iconColor} /> : icon ? <Icon name={icon} size={16} /> : null;
 
   return (
@@ -123,7 +124,6 @@ export function Select<V extends SelectValue = SelectValue>({
       filter={search ? undefined : null}
     >
       <Combobox.Trigger
-       
         render={
           <Button variant={variant} size={size} iconAfter="chevron-down" disabled={disabled} className="td-select-trigger" data-block={block ? "true" : undefined} aria-label={rest["aria-label"]} title={title} style={style}>
             {trigIcon}
@@ -145,7 +145,7 @@ export function Select<V extends SelectValue = SelectValue>({
           collisionPadding={8}
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >
-          <Combobox.Popup className={["td-pop", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} aria-label={rest["aria-label"] ?? placeholder} style={{ width }}>
+          <Combobox.Popup className={["td-pop", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} aria-label={listName} style={{ width }}>
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
             {search ? (
               <div className="td-select-search">
@@ -153,7 +153,7 @@ export function Select<V extends SelectValue = SelectValue>({
                 <Combobox.Input className="td-select-input" placeholder={searchPlaceholder} aria-label={searchPlaceholder} />
               </div>
             ) : null}
-            <Combobox.List className="td-select-list">
+            <Combobox.List className="td-select-list" aria-label={listName}>
               {(o: SelectOption<V>) => (
                 <Combobox.Item key={String(o.value)} value={o} disabled={o.disabled} className="td-menu-item" title={o.title}>
                   {o.icon ? (

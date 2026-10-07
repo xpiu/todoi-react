@@ -50,3 +50,12 @@ export const Searchable: Story = {
 };
 export const Empty: Story = { args: { value: null, options: [], placeholder: "No lists yet" } };
 export const Disabled: Story = { args: { disabled: true } };
+export const OpenList: Story = {
+  // Ends with the popup open so the accessibility scan covers the portalled listbox.
+  async play({ canvas, canvasElement, userEvent }) {
+    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }));
+    const page = within(canvasElement.ownerDocument.body);
+    const list = await page.findByRole("listbox", { name: "Status" });
+    await waitFor(() => expect(list).toBeVisible());
+  },
+};
