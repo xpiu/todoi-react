@@ -434,7 +434,8 @@ export function ItemOverlay(p: ItemOverlayProps) {
           </div>
         )}
         {p.detailsState === "loading" ? (
-          <div className="td-overlay-details-state" aria-busy="true" aria-label="Loading comments, files and links">
+          <div className="td-overlay-details-state" role="status" aria-busy="true">
+            <span className="td-sr-only">Loading comments, files and links</span>
             <Skeleton width="55%" />
             <Skeleton width="35%" />
           </div>

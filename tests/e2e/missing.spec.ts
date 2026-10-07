@@ -1,10 +1,11 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { freshProject, signIn, trackAccounts } from "./helpers";
+import { checkA11y, freshProject, signIn, trackAccounts } from "./helpers";
 
 // Honest states (DESIGN.md › States): an item link to something not on screen says why and offers a way
-// on; a details failure is never shown as an item without comments; a session that cannot start says so.
+// on; details that are loading or failed are never shown as an item without comments; a session that cannot
+// start says so.
 const { own } = trackAccounts(test);
 
 async function project(page: Page) {
@@ -45,6 +46,23 @@ test("a details failure is said where comments and files would be, and Retry loa
     await page.unroute("**/api/items/*/details");
     await page.getByRole("button", { name: "Retry" }).click();
     await expect(notice).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Watch/ })).toBeVisible();
+  } finally {
+    await p.cleanup();
+  }
+});
+
+test("details still loading are announced as a status, and the overlay stays axe-clean", async ({ page }) => {
+  const p = await project(page);
+  try {
+    const id = await p.item("Details loading");
+    const held: Route[] = [];
+    await page.route("**/api/items/*/details", (route) => void held.push(route));
+    await page.goto(`/p/${p.projectId}?item=${id}`);
+    await expect(page.getByRole("status").filter({ hasText: "Loading comments, files and links" })).toBeAttached();
+    await checkA11y(page, "details loading");
+    await Promise.all(held.map((route) => route.continue()));
+    await page.unroute("**/api/items/*/details");
     await expect(page.getByRole("button", { name: /^Watch/ })).toBeVisible();
   } finally {
     await p.cleanup();
