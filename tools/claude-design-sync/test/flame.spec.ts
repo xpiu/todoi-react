@@ -58,9 +58,11 @@ test("the flame burns while a Claude Code call runs, and says what it is", async
     await bar.screenshot({ path: join(shots, "6-burning-bar-dark.png") });
     await flame.screenshot({ path: join(shots, "7-burning-flame-dark.png"), scale: "device" });
 
-    // a phone keeps the flame beside the wordmark's mark
+    // a phone keeps the flame in the bar, just left of the mode toggle
     await page.setViewportSize({ width: 390, height: 760 });
     await expect(flame).toBeInViewport();
+    const [f, m] = await Promise.all([flame.boundingBox(), page.locator(".cds-mode-toggle").boundingBox()]);
+    expect(f!.x + f!.width).toBeLessThanOrEqual(m!.x);
     await bar.screenshot({ path: join(shots, "8-burning-bar-phone.png") });
     await expect(flame).not.toHaveClass(/is-burning/, { timeout: 10_000 });
   } finally {

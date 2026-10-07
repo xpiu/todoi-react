@@ -62,7 +62,7 @@ npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
 ## Plan page (`/`)
 
 - **Top bar:**
-  - **Token meter:** a flame beside the name, lit while the server runs Claude Code (a pull, Check for changes, an AI port, an upload's checks). Hover it for what's burning, what costs nothing, and what the calls cost since the server started.
+  - **Token meter:** a flame beside the light/dark toggle, lit while the server runs Claude Code (a pull, Check for changes, an AI port, an upload's checks). Hover it for what's burning, what costs nothing, and what the calls cost since the server started.
   - **Since:** the sync point to compare from.
   - **Recompare:** re-reads the App and the newest snapshot.
   - **Activity:** shows a live square while a job runs.
