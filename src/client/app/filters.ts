@@ -3,6 +3,7 @@
 import type { ItemPriority } from "../../shared/enums";
 import type { Item, Label } from "../data/api";
 import type { IconName } from "../design/core/Icon";
+import { PRIORITY_COLORS } from "../design/core/priorities";
 import { STATUSES } from "../design/core/statuses";
 import type { SortSpec, ViewFilter } from "../design/navigation/viewState";
 import { PRIORITY_LABEL, type Person } from "./items";
@@ -24,7 +25,6 @@ export const FILTER_SECTIONS: ReadonlyArray<[label: string, type: string]> = [
   ["Status", "status"],
 ];
 
-const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
 
 /** Every filter the menu offers for this project. */
 export function availableFilters(labels: Label[], people: Person[]): FilterOption[] {
@@ -39,7 +39,7 @@ export function availableFilters(labels: Label[], people: Person[]): FilterOptio
     { type: "start", value: "Last 7 days", icon: "calendar" },
     { type: "start", value: "Last 30 days", icon: "calendar" },
     { type: "start", value: "No start date", icon: "calendar-off" },
-    ...(Object.keys(PRIORITY_LABEL) as ItemPriority[]).map((p) => ({ type: "priority", value: PRIORITY_LABEL[p], icon: "flag" as const, iconColor: PRIO_COLORS[p] })),
+    ...(Object.keys(PRIORITY_LABEL) as ItemPriority[]).map((p) => ({ type: "priority", value: PRIORITY_LABEL[p], icon: "flag" as const, iconColor: PRIORITY_COLORS[PRIORITY_LABEL[p]] })),
     { type: "priority", value: "None", icon: "flag-off" },
     ...STATUSES.map((s) => ({ type: "status", value: s.name, icon: s.icon })),
   ];

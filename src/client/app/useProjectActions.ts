@@ -14,6 +14,7 @@ import { listIconFor } from "../design/board/listIcons";
 import { daysBetweenISO, formatDate, formatDateRange, shiftISO } from "../design/core/dates";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction } from "../design/core/BulkBar";
+import { PRIORITY_COLORS } from "../design/core/priorities";
 import type { QuickAddResult } from "../design/core/quickAdd";
 import type { ItemAction } from "../design/core/shortcuts";
 import { STATUSES } from "../design/core/statuses";
@@ -25,7 +26,6 @@ import { usePrefs } from "./prefs";
 import { peopleOf, type ItemContainer } from "./session";
 
 const PRIORITIES: ItemPriority[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
-const PRIO_COLORS: Record<ItemPriority, string> = { URGENT: "var(--label-red)", HIGH: "var(--label-orange)", MEDIUM: "var(--label-yellow)", LOW: "var(--label-blue)" };
 const statusName = (id: string | null | undefined) => STATUSES.find((s) => s.id === id)?.name ?? "None";
 const emptyRestore = (): MoveRestore => ({ keys: [], labels: [], assignees: [], watchers: [], relations: [], createdLabelIds: [] });
 /** The selected items without a selected parent: a subitem travels with its selected parent. */
@@ -300,7 +300,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
     return [
       { id: "move", label: "Move to", icon: "arrow-right", options: [...lists.map((l) => ({ value: l.id, label: l.name, icon: listIconFor(l.name).icon, iconColor: listIconFor(l.name).color })), { value: null, label: "", divider: true }, { value: "__move", label: "Move to another project…", icon: "folder-input" }, { value: "__copy", label: "Copy to another project…", icon: "folder-output" }] },
-      { id: "priority", label: "Priority", icon: "flag", options: [...PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABEL[p], icon: "flag" as const, iconColor: PRIO_COLORS[p] })), { value: null, label: "None", icon: "flag-off" }] },
+      { id: "priority", label: "Priority", icon: "flag", options: [...PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABEL[p], icon: "flag" as const, iconColor: PRIORITY_COLORS[PRIORITY_LABEL[p]] })), { value: null, label: "None", icon: "flag-off" }] },
       { id: "label", label: "Label", icon: "tag", options: labels.map((l) => ({ value: l.id, label: l.name, swatch: `var(--label-${l.color})`, checked: sel.length > 0 && sel.every((it) => it.labelIds.includes(l.id)) })) },
       { id: "assign", label: "Assign", icon: "user-plus", options: [...people.map((p) => ({ value: p.id, label: p.name, icon: "user" as const })), { value: null, label: "Unassigned", icon: "user-x" }] },
       { id: "done", label: sel.length && sel.every((it) => it.done) ? "Not done" : "Done", icon: "circle-check" },

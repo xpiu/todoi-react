@@ -10,7 +10,7 @@ import { Checkbox } from "../core/Checkbox";
 import { copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
 import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
-import { MenuDivider, MenuHeading, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
+import { MenuDivider, MenuGroup, MenuHeading, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
 import { Popover } from "../core/Popover";
 import { Segmented } from "../core/Segmented";
 import { SwatchGroup } from "../core/SwatchGroup";
@@ -291,8 +291,10 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
               {onExport ? (
                 <>
                   <MenuDivider />
-                  <MenuHeading>Export this view</MenuHeading>
-                  <ExportMenu scope="view" view={views.find((v) => v.id === active)?.label === "Cal." ? "Calendar" : views.find((v) => v.id === active)?.label} count={exportCount} filtered={exportFiltered} onExport={onExport} onPrint={() => window.print()} />
+                  <MenuGroup>
+                    <MenuHeading>Export this view</MenuHeading>
+                    <ExportMenu scope="view" view={views.find((v) => v.id === active)?.label === "Cal." ? "Calendar" : views.find((v) => v.id === active)?.label} count={exportCount} filtered={exportFiltered} onExport={onExport} onPrint={() => window.print()} />
+                  </MenuGroup>
                 </>
               ) : null}
             </MenuPopover>
