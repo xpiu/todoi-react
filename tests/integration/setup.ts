@@ -18,7 +18,16 @@ vi.stubEnv("DATABASE_URL", connection.toString());
 vi.stubEnv("UPLOAD_DIR", uploadDir);
 const { db } = await import("../../src/server/db");
 afterAll(async () => {
-  await db.$client.end();
+  // pool.end() resolves once its clients are told to close, not once their sockets are gone; dropping the
+  // database first terminates them mid-close (57P01) and the pool reports that as an uncaught error.
+  const pool = db.$client;
+  let open = pool.totalCount;
+  const closed = new Promise<void>((resolve) => {
+    if (!open) resolve();
+    pool.on("remove", () => --open || resolve());
+  });
+  await pool.end();
+  await closed;
   await admin.query(`DROP DATABASE "${database}" WITH (FORCE)`);
   await admin.end();
   await rm(uploadDir, { recursive: true, force: true });

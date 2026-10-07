@@ -81,6 +81,9 @@ export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))):
   const designNowDir = join(root, "design-now");
   mkdirSync(repo, { recursive: true });
   git(repo, "init", "-q", "-b", "main");
+  // A developer's repo has an identity; the engine's own merge commits need it where git can't guess one (CI).
+  git(repo, "config", "user.name", "t");
+  git(repo, "config", "user.email", "t@t");
   write(repo, APP_BASE);
   git(repo, "add", ".");
   git(repo, "commit", "-qm", "chore: start");
