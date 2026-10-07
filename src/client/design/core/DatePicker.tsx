@@ -3,7 +3,7 @@
 // DatesPicker (start + due + time) instead; this one serves single-date rows (Until, settings).
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { Button, type ButtonVariant } from "./Button";
+import { Button, type ButtonProps, type ButtonVariant } from "./Button";
 import { DateCalendar, type WeekStart } from "./DateCalendar";
 import { dateConventions, formatDate, parseDateValue, resolveDate, toISO, type DateInput } from "./dates";
 import { Icon, type IconName } from "./Icon";
@@ -15,6 +15,18 @@ export const QUICK_PICKS: ReadonlyArray<[label: string, phrase: string]> = [
   ["Tomorrow", "tomorrow"],
   ["Next week", "next week"],
 ];
+
+/** The default trigger of DatePicker and DatesPicker: a Button reading `text`, or the muted placeholder when
+ *  it is empty. Popover renders it through Base UI's trigger, so the trigger props and ref pass to the Button. */
+export function DateTrigger({ text, placeholder, block, className, ...rest }: ButtonProps & { text: string; placeholder: string; block?: boolean }) {
+  return (
+    <Button {...rest} className={["td-dp-trigger", className ?? ""].join(" ").trim()} data-block={block ? "true" : undefined}>
+      <span className="td-dp-value" data-placeholder={text ? undefined : "true"}>
+        {text || placeholder}
+      </span>
+    </Button>
+  );
+}
 
 export interface DatePickerProps {
   value?: DateInput;
@@ -93,11 +105,7 @@ export function DatePicker({
   const trig = trigger ? (
     <span>{trigger(pop.open, sel)}</span>
   ) : (
-    <Button variant={variant} icon={icon} disabled={disabled} className="td-dp-trigger" data-state={sel ? state : undefined} data-block={block ? "true" : undefined} aria-label={ariaLabel} title={title} style={style}>
-      <span className="td-dp-value" data-placeholder={sel ? undefined : "true"}>
-        {sel ? formatDate(sel) : placeholder}
-      </span>
-    </Button>
+    <DateTrigger variant={variant} icon={icon} disabled={disabled} data-state={sel ? state : undefined} block={block} aria-label={ariaLabel} title={title} style={style} text={sel ? formatDate(sel) : ""} placeholder={placeholder} />
   );
   return (
     <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} width={248} role="dialog" aria-label={ariaLabel} block={block} initialFocus={inputRef} className={className}>

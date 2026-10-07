@@ -65,12 +65,15 @@ export const ClearAndEscape: Story = {
     await expect(trigger).toHaveTextContent("Dates");
   },
 };
-// The panel's month grid has role="grid" with no row/gridcell owners (aria-required-children).
 export const Open: Story = {
-  parameters: { a11y: { test: "todo" } },
   async play({ canvas, canvasElement, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Until" }));
-    await within(canvasElement.ownerDocument.body).findByRole("grid", { name: "September 2026" });
+    const panel = await within(canvasElement.ownerDocument.body).findByRole("dialog", { name: "Until" });
+    // Let the popup finish opening (focus in its field) before the a11y check runs.
+    await waitFor(() => expect(within(panel).getByRole("textbox", { name: "Type a date" })).toHaveFocus());
+    const grid = within(panel).getByRole("grid", { name: "September 2026" });
+    await expect(within(grid).getAllByRole("columnheader")).toHaveLength(7);
+    await expect(within(grid).getAllByRole("gridcell")).toHaveLength(42);
   },
 };
 export const Empty: Story = { args: { value: null, placeholder: "No end date" } };

@@ -8,7 +8,7 @@ import { useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEve
 import { Button, type ButtonVariant } from "./Button";
 import { DateCalendar, type WeekStart } from "./DateCalendar";
 import { dateConventions, formatDate, formatDateRange, formatTime, parseDateValue, parseTime, resolveDate, toISO, type DateInput } from "./dates";
-import { QUICK_PICKS } from "./DatePicker";
+import { DateTrigger, QUICK_PICKS } from "./DatePicker";
 import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
 import "./DatePicker.css";
@@ -177,15 +177,10 @@ export function DatesPicker({
     );
   };
   const timeGuess = parseTime(typed.time);
-  const label = formatDateRange(S, D, time, { today });
   const trig = trigger ? (
     <span>{trigger(pop.open, { start: S, due: D, time: time ?? null })}</span>
   ) : (
-    <Button variant={variant} icon={icon} disabled={disabled} className="td-dp-trigger" data-state={D ? state : undefined} data-block={block ? "true" : undefined} aria-label={ariaLabel} title={title} style={style}>
-      <span className="td-dp-value" data-placeholder={label ? undefined : "true"}>
-        {label || placeholder}
-      </span>
-    </Button>
+    <DateTrigger variant={variant} icon={icon} disabled={disabled} data-state={D ? state : undefined} block={block} aria-label={ariaLabel} title={title} style={style} text={formatDateRange(S, D, time, { today })} placeholder={placeholder} />
   );
 
   return (

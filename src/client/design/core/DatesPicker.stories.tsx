@@ -75,9 +75,14 @@ export const InvalidTyping: Story = {
 export const Range: Story = { args: { start: "2026-09-10", due: "2026-09-12", time: "14:00" } };
 export const Overdue: Story = { args: { due: "2026-08-18", state: "overdue" } };
 export const Complete: Story = { args: { due: "2026-08-18", state: "complete" } };
-// The panel's month grid has role="grid" with no row/gridcell owners (aria-required-children).
 export const OpenRange: Story = {
   args: { start: "2026-09-10", due: "2026-09-12", defaultOpen: true },
-  parameters: { a11y: { test: "todo" } },
+  async play({ canvasElement }) {
+    const grid = await within(canvasElement.ownerDocument.body).findByRole("grid", { name: "September 2026" });
+    await expect(within(grid).getAllByRole("gridcell")).toHaveLength(42);
+    // While the due is active, days before the start are disabled.
+    await expect(within(grid).getByRole("button", { name: "Wed, Sep 9, 2026" })).toHaveAttribute("aria-disabled", "true");
+    await expect(within(grid).getByRole("button", { name: "Sat, Sep 12, 2026" })).toHaveAttribute("aria-pressed", "true");
+  },
 };
 export const Disabled: Story = { args: { due: "2026-09-12", disabled: true } };

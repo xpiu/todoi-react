@@ -1,8 +1,10 @@
 // DateCalendar — the month grid alone (embed in a picker panel). 7×32px days, today ringed, picked day
 // filled action blue, arrow keys move the focused day, PageUp/PageDown change month, Enter picks.
+// ARIA: the WAI-ARIA date-picker grid — weekday column headers, a row per week, a day button per gridcell;
+// one roving Tab stop, and focus never moves onto a day outside min/max.
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
-import { addDays, dateConventions, formatDate, parseDateValue, sameDay, toISO, type DateInput } from "./dates";
+import { addDays, addMonths, dateConventions, formatDate, parseDateValue, sameDay, toISO, type DateInput } from "./dates";
 import { IconButton } from "./IconButton";
 import "./DatePicker.css";
 
@@ -61,8 +63,12 @@ export function DateCalendar({ value, onChange, today, weekStartsOn = dateConven
   const first = new Date(view);
   const shift = (first.getDay() - weekStartsOn + 7) % 7;
   const start = addDays(first, -shift);
-  const cells = Array.from({ length: 42 }, (_, i) => addDays(start, i));
+  const weeks = Array.from({ length: 6 }, (_w, w) => Array.from({ length: 7 }, (_d, i) => addDays(start, w * 7 + i)));
   const disabled = (d: Date) => (!!mn && d < mn) || (!!mx && d > mx);
+  const clamp = (d: Date) => (mn && d < mn ? mn : mx && d > mx ? mx : d);
+  const inView = (d: Date | null): d is Date => !!d && d.getFullYear() === view.getFullYear() && d.getMonth() === view.getMonth();
+  // The one Tab stop: the picked day, else today, else the 1st of the shown month — kept inside min/max.
+  const tabStop = clamp([sel, tod].find(inView) ?? view);
   const go = (d: Date) => {
     setView(new Date(d.getFullYear(), d.getMonth(), 1));
     setPending(toISO(d));
@@ -78,14 +84,12 @@ export function DateCalendar({ value, onChange, today, weekStartsOn = dateConven
     else if (e.key === "ArrowDown") n = addDays(d, 7);
     else if (e.key === "Home") n = addDays(d, -((d.getDay() - weekStartsOn + 7) % 7));
     else if (e.key === "End") n = addDays(d, 6 - ((d.getDay() - weekStartsOn + 7) % 7));
-    else if (e.key === "PageUp" || e.key === "PageDown") {
-      n = new Date(d);
-      n.setMonth(n.getMonth() + (e.key === "PageUp" ? -1 : 1));
-    }
+    else if (e.key === "PageUp") n = addMonths(d, -1);
+    else if (e.key === "PageDown") n = addMonths(d, 1);
     if (n) {
       e.preventDefault();
       e.stopPropagation();
-      go(n);
+      go(clamp(n));
     }
   };
   const title = view.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -98,43 +102,53 @@ export function DateCalendar({ value, onChange, today, weekStartsOn = dateConven
         </span>
         <IconButton name="chevron-right" label="Next month" size={28} iconSize={16} onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1))} />
       </div>
-      <div className="td-cal-week" aria-hidden>
-        {Array.from({ length: 7 }, (_, i) => (
-          <span key={i} className="td-cal-wd">
-            {WD[(weekStartsOn + i) % 7]}
-          </span>
-        ))}
-      </div>
-      <div ref={gridRef} className="td-cal-grid" role="grid" aria-label={title} onKeyDown={onKeyDown}>
-        {cells.map((d) => {
-          const iso = toISO(d)!;
-          const out = d.getMonth() !== view.getMonth();
-          const dis = disabled(d);
-          const isSel = sameDay(d, sel);
-          const inR = !!rs && !!re && d > rs && d < re;
-          const edge = rs && re && !sameDay(rs, re) ? (sameDay(d, rs) ? "start" : sameDay(d, re) ? "end" : undefined) : undefined;
-          return (
-            <button
-              key={iso}
-              type="button"
-              className="td-cal-day"
-              data-date={iso}
-              data-outside={out ? "true" : undefined}
-              data-today={sameDay(d, tod) ? "true" : undefined}
-              data-disabled={dis ? "true" : undefined}
-              data-in-range={inR ? "true" : undefined}
-              data-range-edge={edge}
-              aria-pressed={isSel ? "true" : undefined}
-              aria-label={formatDate(d, { weekday: true })}
-              tabIndex={isSel || (!sel && sameDay(d, tod)) ? 0 : -1}
-              onClick={() => {
-                if (!dis) onChange?.(iso, d);
-              }}
-            >
-              {d.getDate()}
-            </button>
-          );
-        })}
+      <div ref={gridRef} className="td-cal-body" role="grid" aria-label={title} onKeyDown={onKeyDown}>
+        <div className="td-cal-week" role="row">
+          {weeks[0]!.map((d) => (
+            <span key={d.getDay()} className="td-cal-wd" role="columnheader" aria-label={d.toLocaleDateString("en-US", { weekday: "long" })}>
+              {WD[d.getDay()]}
+            </span>
+          ))}
+        </div>
+        <div className="td-cal-grid" role="rowgroup">
+          {weeks.map((week) => (
+            <div key={toISO(week[0]!)} className="td-cal-row" role="row">
+              {week.map((d) => {
+                const iso = toISO(d)!;
+                const out = d.getMonth() !== view.getMonth();
+                const dis = disabled(d);
+                const isSel = sameDay(d, sel);
+                const isToday = sameDay(d, tod);
+                const inR = !!rs && !!re && d > rs && d < re;
+                const edge = rs && re && !sameDay(rs, re) ? (sameDay(d, rs) ? "start" : sameDay(d, re) ? "end" : undefined) : undefined;
+                return (
+                  <div key={iso} className="td-cal-cell" role="gridcell">
+                    <button
+                      type="button"
+                      className="td-cal-day"
+                      data-date={iso}
+                      data-outside={out ? "true" : undefined}
+                      data-today={isToday ? "true" : undefined}
+                      data-disabled={dis ? "true" : undefined}
+                      data-in-range={inR ? "true" : undefined}
+                      data-range-edge={edge}
+                      aria-pressed={isSel ? "true" : undefined}
+                      aria-current={isToday ? "date" : undefined}
+                      aria-disabled={dis ? "true" : undefined}
+                      aria-label={formatDate(d, { weekday: true })}
+                      tabIndex={sameDay(d, tabStop) ? 0 : -1}
+                      onClick={() => {
+                        if (!dis) onChange?.(iso, d);
+                      }}
+                    >
+                      {d.getDate()}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

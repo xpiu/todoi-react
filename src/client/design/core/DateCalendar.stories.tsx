@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, fn, waitFor } from "storybook/test";
+import { expect, fn, waitFor, within } from "storybook/test";
 
 import { DateCalendar, type DateCalendarProps } from "./DateCalendar";
 
@@ -21,13 +21,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// role="grid" holds day buttons directly, with no row/gridcell owners.
-const gridTodo = { a11y: { test: "todo" } } as const;
-
 export const PickADay: Story = {
-  parameters: gridTodo,
   async play({ args, canvas, userEvent }) {
-    await expect(canvas.getByRole("grid", { name: "August 2026" })).toBeVisible();
+    const grid = canvas.getByRole("grid", { name: "August 2026" });
+    await expect(grid).toBeVisible();
+    // The date-picker grid: a weekday header row, then a row of seven day cells per week.
+    await expect(within(grid).getAllByRole("columnheader").map((h) => h.getAttribute("aria-label"))).toEqual(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+    await expect(within(grid).getAllByRole("row")).toHaveLength(7);
+    await expect(within(grid).getAllByRole("gridcell")).toHaveLength(42);
+    await expect(canvas.getByRole("button", { name: "Tue, Aug 25, 2026" })).toHaveAttribute("aria-current", "date");
     await expect(canvas.getByRole("button", { name: "Fri, Aug 28, 2026" })).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(canvas.getByRole("button", { name: "Mon, Aug 31, 2026" }));
     await expect(args.onChange).toHaveBeenCalledWith("2026-08-31", expect.any(Date));
@@ -35,7 +37,6 @@ export const PickADay: Story = {
   },
 };
 export const KeyboardNavigation: Story = {
-  parameters: gridTodo,
   async play({ args, canvas, userEvent }) {
     canvas.getByRole("button", { name: "Fri, Aug 28, 2026" }).focus();
     await userEvent.keyboard("{ArrowRight}");
@@ -56,8 +57,19 @@ export const KeyboardNavigation: Story = {
     await expect(args.onChange).toHaveBeenCalledWith("2026-09-06", expect.any(Date));
   },
 };
+// PageUp/PageDown keep the day of the month, clamped to the shorter month: Aug 31 → Sep 30, not Oct 1.
+export const MonthEndPaging: Story = {
+  args: { value: "2026-08-31" },
+  async play({ canvas, userEvent }) {
+    canvas.getByRole("button", { name: "Mon, Aug 31, 2026" }).focus();
+    await userEvent.keyboard("{PageDown}");
+    await expect(canvas.getByRole("grid", { name: "September 2026" })).toBeVisible();
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Wed, Sep 30, 2026" })).toHaveFocus());
+    await userEvent.keyboard("{PageUp}");
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Sun, Aug 30, 2026" })).toHaveFocus());
+  },
+};
 export const MonthButtons: Story = {
-  parameters: gridTodo,
   async play({ canvas, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Next month" }));
     await expect(canvas.getByRole("grid", { name: "September 2026" })).toBeVisible();
@@ -66,21 +78,41 @@ export const MonthButtons: Story = {
     await expect(canvas.getByRole("grid", { name: "July 2026" })).toBeVisible();
   },
 };
-export const NoSelection: Story = { parameters: gridTodo, args: { value: null } };
-export const SundayFirst: Story = { parameters: gridTodo, args: { weekStartsOn: 0 } };
+export const NoSelection: Story = { args: { value: null } };
+export const SundayFirst: Story = { args: { weekStartsOn: 0 } };
 export const Range: Story = {
-  parameters: gridTodo,
   render: (args) => <DateCalendar {...args} />,
   args: { value: "2026-09-04", range: { start: "2026-08-27", end: "2026-09-04" } },
 };
 export const MinMax: Story = {
-  parameters: gridTodo,
   args: { value: null, min: "2026-08-20", max: "2026-09-10" },
   async play({ args, canvas, userEvent }) {
-    // Days outside min/max ignore clicks.
-    await userEvent.click(canvas.getByRole("button", { name: "Tue, Aug 18, 2026" }));
+    // Days outside min/max are disabled for AT and ignore clicks and Enter.
+    const before = canvas.getByRole("button", { name: "Tue, Aug 18, 2026" });
+    await expect(before).toHaveAttribute("aria-disabled", "true");
+    await expect(canvas.getByRole("button", { name: "Thu, Aug 20, 2026" })).not.toHaveAttribute("aria-disabled");
+    await userEvent.click(before);
+    await userEvent.keyboard("{Enter}");
     await expect(args.onChange).not.toHaveBeenCalled();
+    // Arrow keys and paging stop at min and max instead of focusing a disabled day.
+    await userEvent.keyboard("{ArrowLeft}");
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Thu, Aug 20, 2026" })).toHaveFocus());
+    await userEvent.keyboard("{ArrowUp}");
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Thu, Aug 20, 2026" })).toHaveFocus());
+    await userEvent.keyboard("{PageDown}");
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Thu, Sep 10, 2026" })).toHaveFocus());
+    await userEvent.keyboard("{ArrowRight}");
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Thu, Sep 10, 2026" })).toHaveFocus());
+    await userEvent.click(canvas.getByRole("button", { name: "Previous month" }));
     await userEvent.click(canvas.getByRole("button", { name: "Thu, Aug 20, 2026" }));
     await expect(args.onChange).toHaveBeenCalledWith("2026-08-20", expect.any(Date));
+  },
+};
+// With today before min, the grid's one Tab stop moves to the first day allowed.
+export const TodayBeforeMin: Story = {
+  args: { value: null, min: "2026-08-27" },
+  async play({ canvas }) {
+    await expect(canvas.getByRole("button", { name: "Tue, Aug 25, 2026" })).toHaveAttribute("tabindex", "-1");
+    await expect(canvas.getByRole("button", { name: "Thu, Aug 27, 2026" })).toHaveAttribute("tabindex", "0");
   },
 };

@@ -19,6 +19,12 @@
     font: var(--weight-semibold) 13px / 18px var(--font-ui);
     color: var(--ink-900);
   }
+  /* role="grid": the weekday header row over the rowgroup of weeks */
+  .td-cal-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+  }
   .td-cal-week {
     display: grid;
     grid-template-columns: repeat(7, 32px);
@@ -30,9 +36,16 @@
     text-align: center;
   }
   .td-cal-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  .td-cal-row {
     display: grid;
     grid-template-columns: repeat(7, 32px);
     grid-auto-rows: 32px;
+  }
+  .td-cal-cell {
+    display: flex;
   }
   .td-cal-day {
     width: 32px;
