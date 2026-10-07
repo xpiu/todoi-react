@@ -38,6 +38,9 @@ export interface KeyNavProps extends Omit<HTMLAttributes<HTMLDivElement>, "onKey
   itemSelector?: string;
   /** Selector for column containers; when given, ←/→ move focus across columns and ↑/↓ stay within one */
   columnSelector?: string;
+  /** Selector for section containers without column navigation; Ctrl/Cmd+A selects within the focused one. Without
+   * either selector it selects the whole collection */
+  sectionSelector?: string;
   /** Ctrl/Cmd+arrow on a focused item. Focus follows the item automatically */
   onMoveItem?: (id: string, dir: FocusDir) => void;
   /** Single-key item action */
@@ -52,7 +55,7 @@ export interface KeyNavProps extends Omit<HTMLAttributes<HTMLDivElement>, "onKey
 
 const isSubitemId = (id: string | null) => !id || id.includes("/");
 
-export function KeyNav({ itemSelector = ".td-card", columnSelector, onMoveItem, onItemKey, onItemSelect, onKeyDown, ref, children, ...rest }: KeyNavProps) {
+export function KeyNav({ itemSelector = ".td-card", columnSelector, sectionSelector, onMoveItem, onItemKey, onItemSelect, onKeyDown, ref, children, ...rest }: KeyNavProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => rootRef.current!, []);
   const activeRef = useRef<HTMLElement | null>(null);
@@ -118,7 +121,8 @@ export function KeyNav({ itemSelector = ".td-card", columnSelector, onMoveItem, 
     if (onItemSelect && !isSubitemId(id)) {
       if (SHORTCUTS.is("select-all", e)) {
         e.preventDefault();
-        const scope = columnSelector ? (item.closest(columnSelector) ?? root) : (item.closest(".td-lsec") ?? root);
+        const group = columnSelector ?? sectionSelector;
+        const scope = group ? (item.closest(group) ?? root) : root;
         onItemSelect(
           q(scope)
             .map((el) => el.getAttribute("data-drag-id"))

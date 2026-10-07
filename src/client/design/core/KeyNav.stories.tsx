@@ -99,6 +99,28 @@ export const Columns: Story = {
   },
 };
 
+export const Sections: Story = {
+  args: { sectionSelector: ".demo-sec" },
+  render: (args) => (
+    <KeyNav {...args} style={{ display: "grid", gap: "var(--sp-4)" }}>
+      <section className="demo-sec" aria-label="To-do">
+        <Rows ids={["HE-1", "HE-2"]} label="To-do items" />
+      </section>
+      <section className="demo-sec" aria-label="Doing">
+        <Rows ids={["HE-3", "HE-4", "HE-5"]} label="Doing items" />
+      </section>
+    </KeyNav>
+  ),
+  async play({ args, canvas, userEvent }) {
+    await userEvent.tab();
+    // ↓ crosses sections (no columnSelector); Ctrl/Cmd+A selects only the focused section.
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}");
+    await expect(canvas.getByRole("listitem", { name: "Item HE-3" })).toHaveFocus();
+    await userEvent.keyboard("{Control>}a{/Control}");
+    await expect(args.onItemSelect).toHaveBeenLastCalledWith(["HE-3", "HE-4", "HE-5"], "all");
+  },
+};
+
 export const DeleteKeepsFocus: Story = {
   render: (args) => <RemovableRows {...args} />,
   async play({ args, canvas, userEvent }) {

@@ -44,8 +44,8 @@ export const WithHeaderActions: Story = {
 
 export const AddAtBottom: Story = {
   async play({ args, canvas, userEvent }) {
-    // Two "Add an item" controls: the header + (a toggle, aria-pressed) and the ghost row at the bottom.
-    await userEvent.click(canvas.getAllByRole("button", { name: "Add an item" }).find((b) => !b.hasAttribute("aria-pressed"))!);
+    // The ghost row at the bottom has its own name, distinct from the header + toggle.
+    await userEvent.click(canvas.getByRole("button", { name: "Add an item" }));
     const field = canvas.getByRole("textbox", { name: "New item in Doing" });
     await expect(field).toHaveFocus();
     await userEvent.type(field, "Book the fuel truck{Enter}");
@@ -57,14 +57,18 @@ export const AddAtBottom: Story = {
 export const AddAtTop: Story = {
   args: { defaultCollapsed: true },
   async play({ args, canvas, userEvent }) {
-    // The header + expands a collapsed section and opens the composer above the rows.
-    const plus = canvas.getAllByRole("button", { name: "Add an item" }).find((b) => b.hasAttribute("aria-pressed"))!;
+    // The header + expands a collapsed section and opens the composer above the rows. It is a toggle, so
+    // its name stays the same and only aria-pressed changes.
+    const plus = canvas.getByRole("button", { name: "Add an item at the top of Doing" });
+    await expect(plus).toHaveAttribute("aria-pressed", "false");
     await userEvent.click(plus);
-    await expect(canvas.getByRole("button", { name: "Hide add row" })).toHaveAttribute("aria-pressed", "true");
+    await expect(plus).toHaveAttribute("aria-pressed", "true");
+    await expect(plus).toHaveAccessibleName("Add an item at the top of Doing");
     await expect(canvas.getByRole("button", { name: "Collapse Doing" })).toBeInTheDocument();
     await userEvent.type(canvas.getByRole("textbox", { name: "New item in Doing" }), "Call the insurer{Enter}");
     await expect(args.onAddItem).toHaveBeenCalledWith("Call the insurer", expect.objectContaining({ title: "Call the insurer" }), "top");
-    await userEvent.click(canvas.getByRole("button", { name: "Hide add row" }));
+    await userEvent.click(plus);
+    await expect(plus).toHaveAttribute("aria-pressed", "false");
     await expect(canvas.queryByRole("textbox", { name: "New item in Doing" })).not.toBeInTheDocument();
   },
 };

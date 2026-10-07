@@ -6,14 +6,10 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import type { ItemStatus } from "../../../shared/item-status";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
-import { IconPicker } from "../core/IconPicker";
-import { MenuPopover } from "../core/Menu";
-import { Popover, usePopover } from "../core/Popover";
 import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
 import { QuickAddInput } from "../core/QuickAddInput";
 import { suggestedRoleForTitle } from "../core/statuses";
-import { ListActionsMenu } from "./ListActionsMenu";
-import { listIconFor } from "./listIcons";
+import { ListActionsPopover, ListIconButton, useListRename } from "./listHeader";
 import "./ListColumn.css";
 
 export interface ListColumnProps {
@@ -41,17 +37,8 @@ export interface ListColumnProps {
 }
 
 export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onRename, onIconChange, onSelectAll, onHide, dropTarget, rootProps, listId, style }: ListColumnProps) {
-  const auto = listIconFor(name);
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState("");
+  const rename = useListRename(name, onRename);
   const [adding, setAdding] = useState(false);
-  const ipop = usePopover();
-  const override = icon ?? null;
-  const commitRename = () => {
-    const v = draft.trim();
-    setRenaming(false);
-    if (v && v !== name) onRename?.(v);
-  };
   const commitAdd = (parsed: QuickAddResult, keep: boolean) => {
     if (parsed.title) onAddItem?.(parsed.title, parsed);
     if (!keep) setAdding(false);
@@ -61,54 +48,22 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
   return (
     <div className={"td-list" + (dropTarget ? " is-drop-target" : "")} data-status-role={effRole} data-list-name={name} data-list-id={listId} style={style} {...rootProps}>
       <div className="td-list-head">
-        <Popover open={ipop.open} onOpenChange={ipop.setOpen} placement="bottom-start" offset={2} minWidth={0} role="dialog" aria-label={`Icon for ${name}`} trigger={<button type="button" className="td-list-iconbtn td-tip" data-tip="Change icon" aria-label={`Change icon for ${name}`}><Icon name={override ?? auto.icon} size={16} color={iconColor ?? auto.color} /></button>}>
-          <IconPicker
-            value={override}
-            autoIcon={auto.icon}
-            onChange={(n) => {
-              onIconChange?.(n);
-              ipop.close();
-            }}
-          />
-        </Popover>
-        {renaming ? (
-          <input
-            className="td-list-rename"
-            value={draft}
-            autoFocus
-            aria-label="List name"
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commitRename}
-            onKeyDown={(e) => {
-              e.stopPropagation();
-              if (e.key === "Enter") commitRename();
-              else if (e.key === "Escape") setRenaming(false);
-            }}
-          />
-        ) : (
-          <span className="td-list-name">{name}</span>
-        )}
-        {!renaming && count != null ? <span className="td-list-count">{count}</span> : null}
-        <MenuPopover label={`Actions for ${name}`} placement="bottom-end" trigger={<IconButton name="ellipsis" label={`List actions for ${name}`} tooltip="List actions" tooltipSide="bottom-end" size={28} className="td-list-more" />}>
-          {(close) => (
-            <ListActionsMenu
-              name={name}
-              activeIcon={override}
-              statusRole={statusRole}
-              onStatusRoleChange={onStatusRoleChange}
-              onManageLinks={onManageLinks}
-              onClose={close}
-              onStartRename={() => {
-                setDraft(name);
-                setRenaming(true);
-              }}
-              onIconChange={onIconChange}
-              onSelectAll={onSelectAll}
-              onHide={onHide}
-            />
-          )}
-        </MenuPopover>
+        <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-iconbtn" size={16} />
+        {rename.renaming ? <input className="td-list-rename" {...rename.inputProps} /> : <span className="td-list-name">{name}</span>}
+        {!rename.renaming && count != null ? <span className="td-list-count">{count}</span> : null}
+        <ListActionsPopover
+          label={`Actions for ${name}`}
+          trigger={<IconButton name="ellipsis" label={`List actions for ${name}`} tooltip="List actions" tooltipSide="bottom-end" size={28} className="td-list-more" />}
+          name={name}
+          activeIcon={icon}
+          statusRole={statusRole}
+          onStatusRoleChange={onStatusRoleChange}
+          onManageLinks={onManageLinks}
+          onStartRename={rename.startRename}
+          onIconChange={onIconChange}
+          onSelectAll={onSelectAll}
+          onHide={onHide}
+        />
       </div>
       <div className="td-list-cards" tabIndex={0} role="list" aria-label={`${name} cards`}>
         {children}

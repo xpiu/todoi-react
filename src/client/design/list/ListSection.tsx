@@ -4,12 +4,8 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import type { ItemStatus } from "../../../shared/item-status";
-import { ListActionsMenu } from "../board/ListActionsMenu";
-import { listIconFor } from "../board/listIcons";
+import { ListActionsPopover, ListIconButton, useListRename } from "../board/listHeader";
 import { Icon, type IconName } from "../core/Icon";
-import { IconPicker } from "../core/IconPicker";
-import { MenuPopover } from "../core/Menu";
-import { Popover, usePopover } from "../core/Popover";
 import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
 import { QuickAddInput } from "../core/QuickAddInput";
 import "./ListSection.css";
@@ -50,18 +46,9 @@ export interface ListSectionProps {
 }
 
 export function ListSection({ listId, name, count, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onAddItem, quickAdd, showAddRow = true, showHeader = true, defaultCollapsed = false, onRename, onIconChange, onSelectAll, onHide, actions, menu = true, collapsible = true, children, style }: ListSectionProps) {
-  const auto = listIconFor(name);
+  const rename = useListRename(name, onRename);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState<AddPosition | false>(false);
-  const ipop = usePopover();
-  const override = icon ?? null;
-  const commitRename = () => {
-    const v = draft.trim();
-    setRenaming(false);
-    if (v && v !== name) onRename?.(v);
-  };
   const startAdd = (where: AddPosition) => {
     if (adding === where) {
       setAdding(false);
@@ -86,35 +73,9 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
     <section className={collapsed && showHeader ? "td-lsec td-lsec-collapsed" : "td-lsec"} data-list-name={name} data-list-id={listId} style={style}>
       {showHeader ? (
         <div className="td-lsec-head">
-          <Popover open={ipop.open} onOpenChange={ipop.setOpen} placement="bottom-start" offset={2} minWidth={0} role="dialog" aria-label={`Icon for ${name}`} trigger={<button type="button" className="td-lsec-iconbtn td-tip" data-tip="Change icon" aria-label={`Change icon for ${name}`}><Icon name={override ?? auto.icon} size={18} color={iconColor ?? auto.color} /></button>}>
-            <IconPicker
-              value={override}
-              autoIcon={auto.icon}
-              onChange={(n) => {
-                onIconChange?.(n);
-                ipop.close();
-              }}
-            />
-          </Popover>
-          {renaming ? (
-            <input
-              className="td-lsec-rename"
-              value={draft}
-              autoFocus
-              aria-label="List name"
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={commitRename}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-                if (e.key === "Enter") commitRename();
-                else if (e.key === "Escape") setRenaming(false);
-              }}
-            />
-          ) : (
-            <span className="td-lsec-name">{name}</span>
-          )}
-          {!renaming && count != null ? <span className="td-lsec-count">{count}</span> : null}
+          <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-lsec-iconbtn" size={18} />
+          {rename.renaming ? <input className="td-lsec-rename" {...rename.inputProps} /> : <span className="td-lsec-name">{name}</span>}
+          {!rename.renaming && count != null ? <span className="td-lsec-count">{count}</span> : null}
           {actions ? (
             <div className="td-lsec-extra" onClick={(e) => e.stopPropagation()}>
               {actions}
@@ -126,29 +87,24 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
                 <Icon name="chevron-down" size={16} />
               </button>
             ) : null}
-            <button type="button" className="td-lsec-addbtn td-tip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} aria-label={adding === "top" ? "Hide add row" : "Add an item"} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
+            {/* A toggle with one name: aria-pressed says whether the top add row is open. */}
+            <button type="button" className="td-lsec-addbtn td-tip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
               <Icon name="plus" size={16} />
             </button>
             {menu ? (
-              <MenuPopover label={`List actions for ${name}`} placement="bottom-end" trigger={<button type="button" className="td-lsec-more td-tip" data-tip="List actions" data-tip-side="bottom-end" aria-label={`List actions for ${name}`}><Icon name="ellipsis" size={16} /></button>}>
-                {(close) => (
-                  <ListActionsMenu
-                    name={name}
-                    activeIcon={override}
-                    statusRole={statusRole}
-                    onStatusRoleChange={onStatusRoleChange}
-                    onManageLinks={onManageLinks}
-                    onClose={close}
-                    onStartRename={() => {
-                      setDraft(name);
-                      setRenaming(true);
-                    }}
-                    onIconChange={onIconChange}
-                    onSelectAll={onSelectAll}
-                    onHide={onHide}
-                  />
-                )}
-              </MenuPopover>
+              <ListActionsPopover
+                label={`List actions for ${name}`}
+                trigger={<button type="button" className="td-lsec-more td-tip" data-tip="List actions" data-tip-side="bottom-end" aria-label={`List actions for ${name}`}><Icon name="ellipsis" size={16} /></button>}
+                name={name}
+                activeIcon={icon}
+                statusRole={statusRole}
+                onStatusRoleChange={onStatusRoleChange}
+                onManageLinks={onManageLinks}
+                onStartRename={rename.startRename}
+                onIconChange={onIconChange}
+                onSelectAll={onSelectAll}
+                onHide={onHide}
+              />
             ) : null}
           </div>
         </div>

@@ -1,41 +1,17 @@
 // ListView — the assembled List view: ListSections stacked on the canvas, centred at 900px, ending in
 // "Add another list". One Tab stop through KeyNav. Spec: DESIGN.md › Views › List.
-import type { CSSProperties, ReactNode, Ref } from "react";
-
-import { Icon } from "../core/Icon";
-import { KeyNav, type KeyNavProps } from "../core/KeyNav";
+import { AddListTail, type ListsViewProps } from "../board/listsView";
+import { KeyNav } from "../core/KeyNav";
 import "./ListView.css";
 
-export interface ListViewProps extends Pick<KeyNavProps, "onMoveItem" | "onItemKey" | "onItemSelect"> {
-  children?: ReactNode;
-  onAddList?: () => void;
-  /** @default true */
-  showAddList?: boolean;
-  /** Beside "Add another list" (the hidden-lists menu) */
-  after?: ReactNode;
-  /** Spread onto the root: the drag-and-drop handlers of the view */
-  rootProps?: Record<string, unknown>;
-  ref?: Ref<HTMLDivElement>;
-  style?: CSSProperties;
-  className?: string;
-}
+export type ListViewProps = ListsViewProps;
 
-export function ListView({ children, onAddList, showAddList = true, after, onMoveItem, onItemKey, onItemSelect, rootProps, ref, style, className }: ListViewProps) {
+export function ListView({ children, onAddList, showAddList, after, rootProps, className, ...nav }: ListViewProps) {
   return (
-    <KeyNav ref={ref} className={["td-listview", className ?? ""].join(" ").trim()} style={style} itemSelector=".td-lrow" onMoveItem={onMoveItem} onItemKey={onItemKey} onItemSelect={onItemSelect} {...rootProps}>
+    <KeyNav {...nav} className={["td-listview", className ?? ""].join(" ").trim()} itemSelector=".td-lrow" sectionSelector=".td-lsec" {...rootProps}>
       <div className="td-listview-inner">
         {children}
-        {showAddList || after ? (
-          <div className="td-listview-tail">
-            {showAddList ? (
-              <button type="button" className="td-listview-addlist" onClick={onAddList}>
-                <Icon name="plus" size={16} />
-                Add another list
-              </button>
-            ) : null}
-            {after}
-          </div>
-        ) : null}
+        <AddListTail className="td-listview-tail" buttonClassName="td-listview-addlist" onAddList={onAddList} showAddList={showAddList} after={after} />
       </div>
     </KeyNav>
   );
