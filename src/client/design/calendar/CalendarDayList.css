@@ -18,7 +18,8 @@
     box-shadow: var(--shadow-card);
     overflow: hidden;
   }
-  .td-caldaylist-block > * + * {
+  .td-caldaylist-block > * + *,
+  .td-caldaylist-rows > * + * {
     border-top: 1px solid var(--border-divider);
   }
   .td-caldaylist-add {

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn } from "storybook/test";
+import { expect, fn, within } from "storybook/test";
 
 import { SearchDropdown, type SearchSources } from "./SearchDropdown";
 
@@ -33,11 +33,15 @@ export const NoQuery: Story = {
   args: { recent: [{ type: "item", entity: SOURCES.items![0]! }] },
 };
 export const Matches: Story = {
-  args: { query: "helicopter" },
+  args: { query: "helicopter", id: "search-results", onActiveChange: fn() },
   async play({ args, canvas, userEvent }) {
+    await expect(canvas.getByRole("listbox", { name: "Search results" })).toHaveAttribute("id", "search-results");
     await expect(canvas.getByRole("option", { name: /Helicopter sales/ })).toHaveAttribute("aria-selected", "true");
+    await expect(args.onActiveChange).toHaveBeenLastCalledWith(canvas.getByRole("option", { name: /Helicopter sales/ }).id);
     await userEvent.keyboard("{ArrowDown}");
-    await expect(canvas.getByRole("option", { name: /^Helicopters Europe/ })).toHaveAttribute("aria-selected", "true");
+    const group = canvas.getByRole("option", { name: /^Helicopters Europe/ });
+    await expect(group).toHaveAttribute("aria-selected", "true");
+    await expect(args.onActiveChange).toHaveBeenLastCalledWith(group.id);
     await userEvent.keyboard("{Enter}");
     await expect(args.onSelect).toHaveBeenCalledWith("group", "g1", expect.objectContaining({ name: "Helicopters Europe" }));
     await userEvent.click(canvas.getByRole("option", { name: /HE-115/ }));
@@ -48,22 +52,27 @@ export const Matches: Story = {
 };
 export const ItemsLoading: Story = {
   args: { query: "hel", status: "loading", sources: { ...SOURCES, items: [] } },
-  // Defect (aria-required-children): the status line renders inside role="listbox", which allows only options/groups.
-  parameters: { a11y: { test: "todo" } },
+  async play({ canvas }) {
+    // The status line and the key hints sit beside the listbox, which holds only grouped options.
+    const results = canvas.getByRole("listbox", { name: "Search results" });
+    await expect(canvas.getByRole("status")).toHaveTextContent("Searching items…");
+    await expect(results).not.toContainElement(canvas.getByRole("status"));
+    await expect(results).not.toHaveTextContent("navigate");
+    await expect(within(results).getByRole("group", { name: "Projects" })).toContainElement(canvas.getByRole("option", { name: /Helicopter sales/ }));
+  },
 };
 export const Offline: Story = {
   args: { query: "invoice", status: "offline" },
-  // Defect (aria-required-children): the status line renders inside role="listbox", which allows only options/groups.
-  parameters: { a11y: { test: "todo" } },
   async play({ canvas }) {
     await expect(canvas.getByRole("status")).toHaveTextContent("You’re offline. Item search needs a connection.");
+    await expect(canvas.queryByRole("listbox")).not.toBeInTheDocument();
   },
 };
 export const NoResults: Story = {
-  args: { query: "zeppelin", status: "ready" },
-  // Defect (aria-required-children): the status line renders inside role="listbox", which allows only options/groups.
-  parameters: { a11y: { test: "todo" } },
-  async play({ canvas }) {
+  args: { query: "zeppelin", status: "ready", onActiveChange: fn() },
+  async play({ args, canvas }) {
     await expect(canvas.getByRole("status")).toHaveTextContent("No projects or items match “zeppelin”");
+    await expect(canvas.queryByRole("listbox")).not.toBeInTheDocument();
+    await expect(args.onActiveChange).toHaveBeenLastCalledWith(undefined);
   },
 };

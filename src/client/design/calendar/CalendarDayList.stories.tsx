@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn } from "storybook/test";
+import { expect, fn, within } from "storybook/test";
 
 import type { CalendarItem } from "./calendar";
 import { CalendarDayList } from "./CalendarDayList";
@@ -34,10 +34,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const WithItems: Story = {
-  // a11y todo: CalendarDayList renders role="listitem" rows without a role="list" parent (aria-required-parent).
-  parameters: { a11y: { test: "todo" } },
   async play({ args, canvas, canvasElement, userEvent }) {
     await expect(canvas.getByText("3 items")).toBeVisible();
+    // The rows (each a listitem) sit in a list of their own; the empty note and the add row stay outside.
+    const rows = canvas.getByRole("list", { name: "Items on this day" });
+    await expect(within(rows).getAllByRole("listitem").filter((li) => li.parentElement?.closest('[role="list"]') === rows)).toHaveLength(3);
+    await expect(rows).not.toContainElement(canvas.getByRole("button", { name: "Add an item" }));
     // Done rows sort last.
     const titles = [...canvasElement.querySelectorAll(".td-lgroup > .td-lrow .td-lrow-title")].map((n) => n.textContent);
     await expect(titles.at(-1)).toBe("Hire a second mechanic");
@@ -57,16 +59,21 @@ export const Empty: Story = {
   args: { items: [] },
   async play({ canvas }) {
     await expect(canvas.getByText("No items")).toBeVisible();
+    await expect(canvas.queryByRole("list")).not.toBeInTheDocument();
     await expect(canvas.getByText("Nothing lands on this day.")).toBeVisible();
   },
 };
 export const WithoutKeysOrLabels: Story = {
   args: { showItemIds: false, showLabels: false },
-  // a11y todo: CalendarDayList renders role="listitem" rows without a role="list" parent (aria-required-parent).
-  parameters: { a11y: { test: "todo" } },
+  async play({ canvas }) {
+    await expect(canvas.getByRole("list", { name: "Items on this day" })).toBeVisible();
+    await expect(canvas.queryByText("HE-118")).not.toBeInTheDocument();
+  },
 };
 export const ReadOnly: Story = {
   args: { onAddItem: undefined, onToggleDone: undefined, onToggleSubitem: undefined },
-  // a11y todo: CalendarDayList renders role="listitem" rows without a role="list" parent (aria-required-parent).
-  parameters: { a11y: { test: "todo" } },
+  async play({ canvas }) {
+    await expect(canvas.getByRole("list", { name: "Items on this day" })).toBeVisible();
+    await expect(canvas.queryByRole("button", { name: "Add an item" })).not.toBeInTheDocument();
+  },
 };

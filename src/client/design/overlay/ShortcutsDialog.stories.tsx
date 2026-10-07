@@ -34,14 +34,18 @@ export const AllShortcuts: Story = {
   },
 };
 export const CustomSections: Story = {
-  // Section titles are <h4> directly under the dialog's <h2> title (axe heading-order).
-  parameters: { a11y: { test: "todo" } },
   args: {
     sections: [
       { title: "Item", rows: [[["E"], "Edit the title"], [["ctrl", "+", "↵"], "Save and close"]] },
       { title: "Navigation", rows: [[["ctrl", "+", "K"], "Jump to an item"], [["?"], "Show this list"]] },
     ],
     note: "Shortcuts pause while you’re typing in a field.",
+  },
+  async play({ canvasElement }) {
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole("dialog", { name: "Keyboard shortcuts" });
+    // Section titles are the level below the dialog's own heading.
+    await expect(within(dialog).getByRole("heading", { level: 2, name: "Keyboard shortcuts" })).toBeVisible();
+    await expect(within(dialog).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Item", "Navigation"]);
   },
 };
 export const Closed: Story = { args: { open: false } };

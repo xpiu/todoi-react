@@ -30,7 +30,7 @@ const test = base.extend<{ fixture: Fixture }>({
   },
 });
 
-const field = (page: Page) => page.getByRole("banner").getByRole("textbox", { name: "Search" });
+const field = (page: Page) => page.getByRole("banner").getByRole("combobox", { name: "Search" });
 const results = (page: Page) => page.getByRole("listbox", { name: "Search results" });
 const overlayOpen = (page: Page, title: string) => expect(page.getByRole("dialog", { name: title })).toBeVisible();
 
@@ -74,7 +74,9 @@ test("the top-bar search opens hidden, nested, Inbox and other-project items", a
 test("an unmatched query says what was searched", async ({ page, fixture: f }) => {
   await page.goto(`/p/${f.projectId}`);
   await field(page).fill(`no such thing ${f.tag}`);
-  await expect(results(page)).toContainText(`No projects or items match “no such thing ${f.tag}”`);
+  // Nothing to choose from: the field collapses and the status line says what was searched.
+  await expect(field(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("banner").getByRole("status")).toContainText(`No projects or items match “no such thing ${f.tag}”`);
 });
 
 test("the Ctrl+K palette searches every project and opens by id", async ({ page, fixture: f }) => {

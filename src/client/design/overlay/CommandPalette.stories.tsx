@@ -30,8 +30,12 @@ const meta = {
 } satisfies Meta<typeof CommandPalette>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-// With no hits the input keeps aria-expanded + aria-controls="td-pal-listbox" but the listbox is not rendered (axe aria-valid-attr-value).
-const missingListboxTodo = { a11y: { test: "todo" } } as const;
+// With no hits there is no listbox: the field must collapse and point nowhere.
+async function expectCollapsed(input: HTMLElement) {
+  await expect(input).toHaveAttribute("aria-expanded", "false");
+  await expect(input).not.toHaveAttribute("aria-controls");
+  await expect(input).not.toHaveAttribute("aria-activedescendant");
+}
 
 export const SearchAndOpen: Story = {
   args: { open: false },
@@ -40,13 +44,17 @@ export const SearchAndOpen: Story = {
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Jump to item" });
-    const input = within(dialog).getByRole("combobox");
+    const input = within(dialog).getByRole("combobox", { name: "Jump to an item…" });
     await waitFor(() => expect(input).toHaveFocus());
+    await expect(input).toHaveAttribute("aria-expanded", "true");
+    await expect(input).toHaveAttribute("aria-controls", within(dialog).getByRole("listbox").id);
     await userEvent.type(input, "he-11");
     await expect(args.onQueryChange).toHaveBeenLastCalledWith("he-11");
     await expect(within(dialog).getAllByRole("option")).toHaveLength(2);
     await userEvent.keyboard("{ArrowDown}");
-    await expect(within(dialog).getByRole("option", { name: /Book the maintenance slot/ })).toHaveAttribute("aria-selected", "true");
+    const book = within(dialog).getByRole("option", { name: /Book the maintenance slot/ });
+    await expect(book).toHaveAttribute("aria-selected", "true");
+    await expect(input).toHaveAttribute("aria-activedescendant", book.id);
     await userEvent.keyboard("{Enter}");
     await expect(args.onSelect).toHaveBeenCalledWith("i2", ITEMS[1]);
     await expect(args.onClose).toHaveBeenCalledOnce();
@@ -62,29 +70,39 @@ export const ClickToOpen: Story = {
   },
 };
 export const NoMatches: Story = {
-  parameters: missingListboxTodo,
   async play({ canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.type(await page.findByRole("combobox"), "invoice");
+    const input = await page.findByRole("combobox");
+    await userEvent.type(input, "invoice");
     await expect(page.getByText("No items match “invoice”")).toBeVisible();
+    await expectCollapsed(input);
   },
 };
 export const Searching: Story = {
-  parameters: missingListboxTodo,
   args: { items: [], status: "loading" },
   async play({ canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.type(await page.findByRole("combobox"), "quote");
+    const input = await page.findByRole("combobox");
+    await userEvent.type(input, "quote");
     await expect(page.getByText("Searching…")).toBeVisible();
+    await expectCollapsed(input);
   },
 };
 export const Offline: Story = {
-  parameters: missingListboxTodo,
   args: { items: [], status: "offline" },
   async play({ canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.type(await page.findByRole("combobox"), "quote");
+    const input = await page.findByRole("combobox");
+    await userEvent.type(input, "quote");
     await expect(page.getByText("You’re offline. Item search needs a connection.")).toBeVisible();
+    await expectCollapsed(input);
   },
 };
-export const Empty: Story = { parameters: missingListboxTodo, args: { items: [], emptyHint: "Items you open show up here" } };
+export const Empty: Story = {
+  args: { items: [], emptyHint: "Items you open show up here" },
+  async play({ canvasElement }) {
+    const page = within(canvasElement.ownerDocument.body);
+    await expect(await page.findByText("Items you open show up here")).toBeVisible();
+    await expectCollapsed(page.getByRole("combobox", { name: "Jump to an item…" }));
+  },
+};

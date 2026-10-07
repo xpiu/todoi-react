@@ -1,8 +1,9 @@
 // SearchDropdown — the results panel under the top-bar search field: project groups, projects,
 // items and Inbox in grouped sections; ↑↓ + Enter navigate at document level so the field keeps
-// focus; Esc closes. Anchored inside the field's wrapper (the top bar is never clipped), which is
+// focus, which is the combobox: it takes `id` (the listbox) and onActiveChange (the highlighted
+// option) for aria-controls / aria-activedescendant. Esc closes. Anchored inside the field's wrapper (the top bar is never clipped), which is
 // the one listed exception to the Popover rule until it migrates. Spec: DESIGN.md › Search dropdown.
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 
 import { Icon, type IconName } from "../core/Icon";
 import { Mark } from "../core/text";
@@ -65,11 +66,17 @@ export interface SearchDropdownProps {
   status?: "idle" | "loading" | "offline" | "error" | "ready";
   /** @default 4 */
   maxPerSection?: number;
+  /** The listbox id, for the search field's aria-controls; option ids derive from it */
+  id?: string;
+  /** The highlighted option's id (undefined while no listbox is shown), for the field's aria-activedescendant */
+  onActiveChange?: (optionId: string | undefined) => void;
   style?: CSSProperties;
   className?: string;
 }
 
-export function SearchDropdown({ query = "", sources = {}, status, recent = [], onSelect, onClose, maxPerSection = 4, style, className }: SearchDropdownProps) {
+export function SearchDropdown({ query = "", sources = {}, status, recent = [], onSelect, onClose, maxPerSection = 4, id, onActiveChange, style, className }: SearchDropdownProps) {
+  const ownId = useId();
+  const listId = id ?? ownId;
   const needle = query.trim().toLowerCase();
   const has = (s?: string) => !!s && s.toLowerCase().includes(needle);
   const { groups = [], projects = [], items = [], inbox = [] } = sources;
@@ -106,6 +113,12 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
   const [cur, setCur] = useState(0);
   const sel = Math.min(cur, Math.max(0, flat.length - 1));
   const pick = (r: Row) => onSelect?.(r.type, r.id, r.entity);
+  const optId = (i: number) => `${listId}-opt-${i}`;
+  const activeId = flat.length ? optId(sel) : undefined;
+  useEffect(() => {
+    onActiveChange?.(activeId);
+    return () => onActiveChange?.(undefined);
+  }, [activeId, onActiveChange]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
@@ -128,34 +141,37 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
   });
   let idx = -1;
   const note = !needle ? null : status === "loading" ? "Searching items…" : status === "offline" ? "You’re offline. Item search needs a connection." : status === "error" ? "Couldn’t search items. Try again in a moment." : null;
+  // Only options and their section groups sit in the listbox; the status line and key hints are its siblings.
   return (
-    <div className={["td-sd", className ?? ""].join(" ").trim()} style={style} role="listbox" id="td-sd-listbox" aria-label="Search results" onMouseDown={(e) => e.preventDefault()}>
+    <div className={["td-sd", className ?? ""].join(" ").trim()} style={style} onMouseDown={(e) => e.preventDefault()}>
       {flat.length ? (
         <div className="td-sd-scroll" aria-busy={status === "loading" || undefined}>
-          {sections.map((s) => (
-            <div key={s.label}>
-              <div className="td-sd-head">{s.label}</div>
-              {s.rows.map((r) => {
-                idx++;
-                const i = idx;
-                return (
-                  <button key={r.type + r.id} id={`td-sd-opt-${i}`} type="button" className="td-sd-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(r)}>
-                    {r.itemId ? (
-                      <span className="td-sd-id">{r.itemId}</span>
-                    ) : (
-                      <span className="td-sd-ico">
-                        <Icon name={r.icon ?? "kanban"} size={14} color={r.iconColor} />
+          <div role="listbox" id={listId} aria-label="Search results">
+            {sections.map((s, si) => (
+              <div key={s.label} role="group" aria-labelledby={`${listId}-sec-${si}`}>
+                <div className="td-sd-head" id={`${listId}-sec-${si}`}>{s.label}</div>
+                {s.rows.map((r) => {
+                  idx++;
+                  const i = idx;
+                  return (
+                    <button key={r.type + r.id} id={optId(i)} type="button" className="td-sd-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(r)}>
+                      {r.itemId ? (
+                        <span className="td-sd-id">{r.itemId}</span>
+                      ) : (
+                        <span className="td-sd-ico">
+                          <Icon name={r.icon ?? "kanban"} size={14} color={r.iconColor} />
+                        </span>
+                      )}
+                      <span className="td-sd-title" data-done={r.done ? "true" : undefined}>
+                        <Mark text={r.title} q={needle} />
                       </span>
-                    )}
-                    <span className="td-sd-title" data-done={r.done ? "true" : undefined}>
-                      <Mark text={r.title} q={needle} />
-                    </span>
-                    {r.meta ? <span className="td-sd-meta">{r.meta}</span> : null}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+                      {r.meta ? <span className="td-sd-meta">{r.meta}</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
           {note ? <div className="td-sd-note" role="status" data-tone={status}>{note}</div> : null}
         </div>
       ) : (

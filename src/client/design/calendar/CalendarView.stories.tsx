@@ -58,12 +58,11 @@ export const Week: Story = {
 };
 export const Day: Story = {
   args: { defaultPeriod: "day" },
-  // a11y todo: CalendarDayList renders role="listitem" rows without a role="list" parent (aria-required-parent).
-  parameters: { a11y: { test: "todo" } },
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByRole("heading", { name: "Wednesday, October 7, 2026" })).toBeVisible();
     // The day list shows items due that day and spans covering it.
     await expect(canvas.getByText("3 items")).toBeVisible();
+    await expect(within(canvas.getByRole("list", { name: "Items on this day" })).getByText("Send the pilot roster")).toBeVisible();
     await userEvent.click(canvas.getByText("Send the pilot roster"));
     await expect(args.onOpenItem).toHaveBeenCalledWith("c3");
     await userEvent.click(canvas.getByRole("button", { name: "Previous day" }));
@@ -90,13 +89,12 @@ export const ChangePeriod: Story = {
   },
 };
 export const OpenDayFromGrid: Story = {
-  // a11y todo: CalendarDayList renders role="listitem" rows without a role="list" parent (aria-required-parent).
-  parameters: { a11y: { test: "todo" } },
   async play({ args, canvas, userEvent }) {
     canvas.getByRole("gridcell", { name: /^Wednesday, October 7, 2026/ }).focus();
     await userEvent.keyboard("{Enter}");
     await expect(args.onPeriodChange).toHaveBeenCalledWith("day");
     await expect(canvas.getByRole("heading", { name: "Wednesday, October 7, 2026" })).toBeVisible();
+    await expect(canvas.getByRole("list", { name: "Items on this day" })).toBeVisible();
   },
 };
 export const ControlledPeriod: Story = {

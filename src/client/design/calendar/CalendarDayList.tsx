@@ -27,25 +27,27 @@ export function CalendarDayList({ date, items, onOpenItem, onToggleDone, onToggl
       <div className="td-caldaylist-meta">{items.length ? `${items.length} item${items.length > 1 ? "s" : ""}` : "No items"}</div>
       <div className="td-caldaylist-block">
         {sorted.length ? (
-          sorted.map((it) => (
-            <ListRow
-              key={it.id}
-              dragId={it.id}
-              itemId={it.itemId}
-              showId={showItemIds}
-              title={it.title}
-              labels={showLabels && it.labels?.length ? it.labels : undefined}
-              done={it.done}
-              onDone={onToggleDone ? (v) => onToggleDone(it.id, v) : undefined}
-              due={it.due ?? undefined}
-              dueState={it.done ? "complete" : (it.dueState ?? "default")}
-              attachments={it.attachments}
-              priority={it.priority}
-              assignees={it.assignees}
-              subitems={it.subitems?.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${it.id}/${s.id}`, onDone: onToggleSubitem ? (v: boolean) => onToggleSubitem(it.id, s.id, v) : undefined, onClick: onOpenItem ? () => onOpenItem(it.id) : undefined }))}
-              onClick={onOpenItem ? () => onOpenItem(it.id) : undefined}
-            />
-          ))
+          <div className="td-caldaylist-rows" role="list" aria-label="Items on this day">
+            {sorted.map((it) => (
+              <ListRow
+                key={it.id}
+                dragId={it.id}
+                itemId={it.itemId}
+                showId={showItemIds}
+                title={it.title}
+                labels={showLabels && it.labels?.length ? it.labels : undefined}
+                done={it.done}
+                onDone={onToggleDone ? (v) => onToggleDone(it.id, v) : undefined}
+                due={it.due ?? undefined}
+                dueState={it.done ? "complete" : (it.dueState ?? "default")}
+                attachments={it.attachments}
+                priority={it.priority}
+                assignees={it.assignees}
+                subitems={it.subitems?.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${it.id}/${s.id}`, onDone: onToggleSubitem ? (v: boolean) => onToggleSubitem(it.id, s.id, v) : undefined, onClick: onOpenItem ? () => onOpenItem(it.id) : undefined }))}
+                onClick={onOpenItem ? () => onOpenItem(it.id) : undefined}
+              />
+            ))}
+          </div>
         ) : (
           <div className="td-caldaylist-empty">Nothing lands on this day.</div>
         )}

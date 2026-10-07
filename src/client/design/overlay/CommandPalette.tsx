@@ -1,7 +1,7 @@
 // CommandPalette — Ctrl/Cmd+K: jump to any item by key, title or list. A Base UI Dialog with the
 // palette look (560px, 12vh from the top). Spec: DESIGN.md › Command palette.
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 import { Icon } from "../core/Icon";
 import { useToastHost } from "../core/ToastPortal";
@@ -54,6 +54,7 @@ function PaletteBody({ open, items, onSelect, onClose, onQueryChange, status, em
   const [cur, setCur] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
   const needle = q.trim().toLowerCase();
   const hits = (needle ? items.filter((it) => it.title.toLowerCase().includes(needle) || it.itemId?.toLowerCase().includes(needle) || it.listName?.toLowerCase().includes(needle)) : items).slice(0, 50);
   const sel = Math.min(cur, Math.max(0, hits.length - 1));
@@ -97,17 +98,19 @@ function PaletteBody({ open, items, onSelect, onClose, onQueryChange, status, em
                     if (hits[sel]) pick(hits[sel]);
                   }
                 }}
+                aria-label={placeholder}
                 role="combobox"
-                aria-expanded
-                aria-controls="td-pal-listbox"
-                aria-activedescendant={hits[sel] ? `td-pal-opt-${sel}` : undefined}
+                aria-autocomplete="list"
+                aria-expanded={hits.length > 0}
+                aria-controls={hits.length ? listId : undefined}
+                aria-activedescendant={hits[sel] ? `${listId}-opt-${sel}` : undefined}
                 spellCheck={false}
               />
             </div>
             {hits.length ? (
-              <div className="td-pal-list" ref={listRef} id="td-pal-listbox" role="listbox">
+              <div className="td-pal-list" ref={listRef} id={listId} role="listbox" aria-label="Items">
                 {hits.map((it, i) => (
-                  <button key={it.id} id={`td-pal-opt-${i}`} type="button" className="td-pal-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(it)}>
+                  <button key={it.id} id={`${listId}-opt-${i}`} type="button" className="td-pal-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(it)}>
                     <span className="td-pal-title" data-done={it.done ? "true" : undefined}>
                       {it.title}
                     </span>

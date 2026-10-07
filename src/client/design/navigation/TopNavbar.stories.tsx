@@ -61,13 +61,26 @@ export const RenameTitle: Story = {
 };
 export const Search: Story = {
   async play({ args, canvas, userEvent }) {
-    const field = canvas.getByRole("textbox", { name: "Search" });
+    const field = canvas.getByRole("combobox", { name: "Search" });
+    await expect(field).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(field);
     const results = await canvas.findByRole("listbox", { name: "Search results" });
     await waitFor(() => expect(results).toBeVisible());
-    await expect(within(results).getByRole("option", { name: /Helicopter sales/ })).toBeInTheDocument();
+    // The field drives the dropdown: it controls the listbox and points at the highlighted option.
+    const first = within(results).getByRole("option", { name: /Helicopter sales/ });
+    await expect(field).toHaveAttribute("aria-expanded", "true");
+    await expect(field).toHaveAttribute("aria-controls", results.id);
+    await expect(field).toHaveAttribute("aria-activedescendant", first.id);
+    await userEvent.keyboard("{ArrowDown}");
+    await expect(field).toHaveAttribute("aria-activedescendant", within(results).getByRole("option", { name: /Marketing site/ }).id);
+    await userEvent.type(field, "zeppelin");
+    await expect(canvas.getByRole("status")).toHaveTextContent("No projects or items match “zeppelin”");
+    await expect(field).toHaveAttribute("aria-expanded", "false");
+    await expect(field).not.toHaveAttribute("aria-activedescendant");
+    await userEvent.clear(field);
     await userEvent.type(field, "quote");
     await expect(args.onSearchChange).toHaveBeenLastCalledWith("quote", true);
+    await expect(field).toHaveAttribute("aria-activedescendant", canvas.getByRole("option", { name: /HE-115/ }).id);
     await userEvent.keyboard("{Enter}");
     await expect(args.onSearchSelect).toHaveBeenCalledWith("item", "i1", expect.objectContaining({ itemId: "HE-115" }));
     await waitFor(() => expect(canvas.queryByRole("listbox")).not.toBeInTheDocument());

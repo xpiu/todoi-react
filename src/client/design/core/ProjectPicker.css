@@ -37,4 +37,15 @@
   .td-prp-chev {
     color: var(--ink-400);
   }
+  /* The highlighted option (aria-activedescendant), marked as a hovered row; with the lists listbox
+     focused from the keyboard it also carries the row focus ring. */
+  .td-prp .td-picker-row[aria-selected="true"] {
+    background: var(--action-subtle);
+  }
+  .td-prp .td-picker-list:focus-visible {
+    outline: none;
+  }
+  .td-prp .td-picker-list:focus-visible .td-picker-row[aria-selected="true"] {
+    box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
 }

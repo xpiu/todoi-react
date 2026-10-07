@@ -18,7 +18,7 @@ export function ShortcutsDialog({ open, onClose, sections = SHORTCUTS.sections, 
       <div className="td-scd-grid">
         {sections.map((sec) => (
           <section key={sec.title} className="td-scd-sec">
-            <h4>{sec.title}</h4>
+            <h3>{sec.title}</h3>
             <div className="td-scd-rows">
               {sec.rows.map((r, i) => (
                 <div key={i} className="td-scd-row">

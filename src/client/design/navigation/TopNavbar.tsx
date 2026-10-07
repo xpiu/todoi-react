@@ -2,7 +2,7 @@
 // connection pill, search with the ⌘K hint and its dropdown, the + create menu, the avatar menu and
 // the sidebar toggle right (the toggle leads the bar when the sidebar docks left).
 // Spec: DESIGN.md › Top navbar, Responsive.
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { useAppearance } from "../core/appearance";
 import { Avatar } from "../core/Avatar";
@@ -111,6 +111,9 @@ export function TopNavbar({
   const [sFocus, setSFocus] = useState(false);
   const [sRecent, setSRecent] = useState<SearchRecent[]>([]);
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  // The field is the dropdown's combobox: it controls the results listbox and points at its highlighted option.
+  const sListId = useId();
+  const [sActive, setSActive] = useState<string>();
   useEffect(() => onSearchChange?.(sQ, sOpen), [sQ, sOpen, onSearchChange]);
   useEffect(() => {
     if (!sOpen) return;
@@ -229,6 +232,7 @@ export function TopNavbar({
               }
             }}
             aria-label="Search"
+            {...(searchSources ? { role: "combobox", "aria-autocomplete": "list", "aria-expanded": !!sActive, "aria-controls": sActive ? sListId : undefined, "aria-activedescendant": sActive } as const : null)}
             className="td-topnav-field"
             data-kbd={showKbd ? (IS_MAC ? "short" : "long") : undefined}
           />
@@ -237,7 +241,7 @@ export function TopNavbar({
               {kbdHint}
             </span>
           ) : null}
-          {searchSources && sOpen ? <SearchDropdown query={sQ} sources={searchSources} status={searchStatus} recent={sRecent} onSelect={pickResult} onClose={closeSearch} /> : null}
+          {searchSources && sOpen ? <SearchDropdown id={sListId} onActiveChange={setSActive} query={sQ} sources={searchSources} status={searchStatus} recent={sRecent} onSelect={pickResult} onClose={closeSearch} /> : null}
         </div>
       ) : null}
       {onCreate ? (

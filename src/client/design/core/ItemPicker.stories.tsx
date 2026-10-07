@@ -52,13 +52,28 @@ export const ClickARow: Story = {
   },
 };
 export const NoMatches: Story = {
-  // The empty listbox holds only the note, no option children (aria-required-children).
-  parameters: { a11y: { test: "todo" } },
   args: { emptyText: "No items match — try a key like HE-112" },
   async play({ args, canvas, userEvent }) {
-    await userEvent.type(canvas.getByRole("combobox"), "zeppelin{Enter}");
+    const search = canvas.getByRole("combobox");
+    await userEvent.type(search, "zeppelin{Enter}");
     await expect(canvas.getByText("No items match — try a key like HE-112")).toBeVisible();
     await expect(args.onPick).not.toHaveBeenCalled();
+    // No empty listbox: the field collapses and points nowhere.
+    await expect(canvas.queryByRole("listbox")).not.toBeInTheDocument();
+    await expect(search).toHaveAttribute("aria-expanded", "false");
+    await expect(search).not.toHaveAttribute("aria-controls");
+  },
+};
+export const TwoPickers: Story = {
+  // Relations and Subitems can both be open in one overlay: ids must not collide.
+  render: (args) => <><ItemPicker {...args} /><ItemPicker {...args} autoFocus={false} aria-label="More items" /></>,
+  async play({ canvas }) {
+    const [a, b] = canvas.getAllByRole("combobox");
+    const [listA, listB] = canvas.getAllByRole("listbox");
+    await expect(a).toHaveAttribute("aria-controls", listA!.id);
+    await expect(b).toHaveAttribute("aria-controls", listB!.id);
+    await expect(listA!.id).not.toBe(listB!.id);
+    await expect(a!.getAttribute("aria-activedescendant")).not.toBe(b!.getAttribute("aria-activedescendant"));
   },
 };
 export const Limited: Story = { args: { limit: 2, exclude: [] } };

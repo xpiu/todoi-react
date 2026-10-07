@@ -40,33 +40,53 @@ export const PickProjectAndList: Story = {
 };
 export const LoadsLists: Story = {
   async play({ args, canvas, userEvent }) {
-    const search = canvas.getByRole("textbox", { name: "Search projects…" });
+    const search = canvas.getByRole("combobox", { name: "Search projects…" });
     await expect(search).toHaveFocus();
-    await userEvent.type(search, "operations{Enter}");
+    await userEvent.type(search, "operations");
+    await userEvent.keyboard("{ArrowDown}{ArrowUp}{Enter}");
     await expect(args.loadLists).toHaveBeenCalledWith("p2");
-    const backlog = await canvas.findByRole("option", { name: "Backlog" });
-    backlog.focus();
-    await userEvent.keyboard("{Enter}");
+    await canvas.findByRole("option", { name: "Backlog" });
+    const lists = canvas.getByRole("listbox", { name: "Lists in Hangar renovation" });
+    await expect(lists).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}");
+    const contractors = canvas.getByRole("option", { name: "Contractors" });
+    await expect(contractors).toHaveAttribute("aria-selected", "true");
+    await expect(lists).toHaveAttribute("aria-activedescendant", contractors.id);
+    await userEvent.keyboard("{ArrowUp} ");
     await expect(args.onPick).toHaveBeenCalledWith(PROJECTS[1], LOADED[0]);
     await userEvent.click(canvas.getByRole("button", { name: "Back" }));
     await expect(canvas.getByRole("listbox", { name: "Move to project" })).toBeVisible();
+    await expect(canvas.getByRole("combobox", { name: "Search projects…" })).toHaveFocus();
+  },
+};
+export const KeyboardHighlight: Story = {
+  async play({ canvas, userEvent }) {
+    const search = canvas.getByRole("combobox", { name: "Search projects…" });
+    // One active option driven from the field; the rows are not separate Tab stops.
+    await expect(canvas.getAllByRole("option").filter((o) => o.tabIndex >= 0)).toHaveLength(0);
+    await userEvent.keyboard("{ArrowDown}");
+    const hangar = canvas.getByRole("option", { name: /Hangar renovation/ });
+    await expect(hangar).toHaveAttribute("aria-selected", "true");
+    await expect(search).toHaveAttribute("aria-activedescendant", hangar.id);
+    await userEvent.keyboard("{Enter}");
+    await expect(await canvas.findByRole("listbox", { name: "Lists in Hangar renovation" })).toBeVisible();
   },
 };
 export const ProjectWithoutLists: Story = {
-  // The empty lists listbox holds only a note, no option children (aria-required-children).
-  parameters: { a11y: { test: "todo" } },
   async play({ canvas, userEvent }) {
     await userEvent.click(canvas.getByRole("option", { name: /Empty project/ }));
     await expect(canvas.getByText("This project has no lists yet.")).toBeVisible();
+    await expect(canvas.queryByRole("listbox")).not.toBeInTheDocument();
   },
 };
 export const Copy: Story = { args: { action: "copy", count: 3 } };
 export const NoMatches: Story = {
-  // The empty projects listbox holds only a note, no option children (aria-required-children).
-  parameters: { a11y: { test: "todo" } },
   async play({ canvas, userEvent }) {
-    await userEvent.type(canvas.getByRole("textbox", { name: "Search projects…" }), "zeppelin");
+    const search = canvas.getByRole("combobox", { name: "Search projects…" });
+    await userEvent.type(search, "zeppelin");
     await expect(canvas.getByText("No projects match")).toBeVisible();
+    await expect(canvas.queryByRole("listbox")).not.toBeInTheDocument();
+    await expect(search).toHaveAttribute("aria-expanded", "false");
   },
 };
 export const InTransferDialog: Story = {
@@ -83,7 +103,7 @@ export const InTransferDialog: Story = {
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Copy to project" });
-    await waitFor(() => expect(within(dialog).getByRole("textbox", { name: "Search projects…" })).toHaveFocus());
+    await waitFor(() => expect(within(dialog).getByRole("combobox", { name: "Search projects…" })).toHaveFocus());
     await userEvent.click(within(dialog).getByRole("option", { name: /Helicopters Europe/ }));
     await userEvent.click(within(dialog).getByRole("option", { name: "Done" }));
     await expect(args.onPick).toHaveBeenCalledWith(PROJECTS[0], SALES_LISTS[2]);
