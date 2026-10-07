@@ -1,7 +1,7 @@
 // ItemPicker — search-and-pick one item (by key, title or list). Panel body only: mount it inside a
 // Popover or a Dialog. Rows: status glyph · mono key · title (struck when done) · list name. Enter
 // picks the first match, ↑↓ rove from the field. Spec: DESIGN.md › Relations, Subitems.
-import { useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent, type RefObject } from "react";
 
 import { Icon, type IconName } from "./Icon";
 import { STATUSES } from "./statuses";
@@ -29,11 +29,13 @@ export interface ItemPickerProps {
   placeholder?: string;
   emptyText?: string;
   autoFocus?: boolean;
+  /** The search field, for a host Dialog's initialFocus */
+  inputRef?: RefObject<HTMLInputElement | null>;
   limit?: number;
   "aria-label"?: string;
 }
 
-export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search items…", emptyText = "No items match", autoFocus = true, limit = 30, ...rest }: ItemPickerProps) {
+export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search items…", emptyText = "No items match", autoFocus = true, inputRef, limit = 30, ...rest }: ItemPickerProps) {
   const [q, setQ] = useState("");
   const [cur, setCur] = useState(0);
   const ex = new Set(exclude);
@@ -57,6 +59,7 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
       <div className="td-ip-search">
         <Icon name="search" size={14} />
         <input
+          ref={inputRef}
           className="td-ip-input"
           autoFocus={autoFocus}
           placeholder={placeholder}

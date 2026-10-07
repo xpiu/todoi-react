@@ -3,7 +3,7 @@ import { useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { Button } from "./Button";
-import { Dialog, type DialogProps } from "./Dialog";
+import { ConfirmDialog, Dialog, type DialogProps } from "./Dialog";
 import { Select } from "./Select";
 import { TextField } from "./TextField";
 
@@ -47,5 +47,24 @@ export const NestedPicker: Story = {
     await expect(args.onClose).toHaveBeenCalledWith("escape");
     await waitFor(() => expect(trigger).toHaveFocus());
     await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
+  },
+};
+
+export const ConfirmFocus: Story = {
+  render: function Render() {
+    const [open, setOpen] = useState(false);
+    return <>
+      <Button onClick={() => setOpen(true)}>Delete project</Button>
+      <ConfirmDialog open={open} danger title="Delete “Dealers & stock”?" body="Its items move to the Trash for 90 days." confirmLabel="Delete project" onConfirm={() => setOpen(false)} onClose={() => setOpen(false)} />
+    </>;
+  },
+  // A destructive confirmation starts on Cancel, and Escape returns focus to what opened it.
+  async play({ canvas, canvasElement, userEvent }) {
+    const trigger = canvas.getByRole("button", { name: "Delete project" });
+    await userEvent.click(trigger);
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole("alertdialog", { name: "Delete “Dealers & stock”?" });
+    await waitFor(() => expect(within(dialog).getAllByRole("button", { name: "Cancel" }).at(-1)).toHaveFocus());
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };

@@ -83,11 +83,11 @@ export const InTransferDialog: Story = {
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Copy to project" });
+    await waitFor(() => expect(within(dialog).getByRole("textbox", { name: "Search projects…" })).toHaveFocus());
     await userEvent.click(within(dialog).getByRole("option", { name: /Helicopters Europe/ }));
     await userEvent.click(within(dialog).getByRole("option", { name: "Done" }));
     await expect(args.onPick).toHaveBeenCalledWith(PROJECTS[0], SALES_LISTS[2]);
     await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
-    // Focus return to the opener is not asserted: the picker's autoFocus search field takes focus
-    // before the Dialog records the opener, so focus falls to <body> on close (reported defect).
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };

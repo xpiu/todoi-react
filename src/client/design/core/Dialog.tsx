@@ -3,7 +3,7 @@
 // first (Base UI nests), then the dialog. Never hand-roll another backdrop. Spec: DESIGN.md › Dialog.
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
-import { useCallback, useId, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useCallback, useId, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
@@ -37,6 +37,8 @@ export interface DialogProps {
   role?: "dialog" | "alertdialog";
   closeLabel?: string;
   "aria-label"?: string;
+  /** The element to focus on open. Use this, not autoFocus inside the dialog: autoFocus moves focus
+   *  before Base UI records the opener, so focus would not return to it on close. */
   initialFocus?: RefObject<HTMLElement | null>;
   style?: CSSProperties;
   className?: string;
@@ -124,12 +126,15 @@ export interface ConfirmDialogProps {
 
 /** The one modal confirm step: only for actions a toast cannot undo or that leave the current context. */
 export function ConfirmDialog({ open, title, body, children, confirmLabel = "Confirm", cancelLabel = "Cancel", danger, busy, busyLabel, onConfirm, onClose, width = 440, footerLead, style, className }: ConfirmDialogProps) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
   const confirm = () => {
     if (!busy) onConfirm?.();
   };
   return (
     <Dialog
       open={open}
+      initialFocus={danger ? cancelRef : confirmRef}
       title={title}
       role="alertdialog"
       width={width}
@@ -140,10 +145,10 @@ export function ConfirmDialog({ open, title, body, children, confirmLabel = "Con
       closeLabel={cancelLabel}
       footer={
         <>
-          <Button autoFocus={!!danger} variant="outline" onClick={() => onClose("cancel")} disabled={busy}>
+          <Button ref={cancelRef} variant="outline" onClick={() => onClose("cancel")} disabled={busy}>
             {cancelLabel}
           </Button>
-          <Button autoFocus={!danger} variant={danger ? "danger" : "primary"} onClick={confirm} disabled={busy}>
+          <Button ref={confirmRef} variant={danger ? "danger" : "primary"} onClick={confirm} disabled={busy}>
             {busy && busyLabel ? busyLabel : confirmLabel}
           </Button>
         </>

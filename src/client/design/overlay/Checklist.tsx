@@ -104,6 +104,7 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
   const [from, setFrom] = useState<string | null>(null);
   const [ins, setIns] = useState<number | null>(null);
   const [moving, setMoving] = useState<ChecklistItem | null>(null);
+  const moveSearchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const total = items.length, done = items.filter((it) => it.done).length;
   const pct = total ? (done / total) * 100 : 0;
@@ -242,9 +243,11 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
         })}
         {onAddItem ? <ChecklistAddRow open={addOpen} onCommit={onAddItem} onDraft={onAddDraft} onClose={onAddClose} /> : null}
       </div>
-      <Dialog open={!!moving} onClose={() => setMoving(null)} title="Move to another item" width={360}>
+      <Dialog open={!!moving} onClose={() => setMoving(null)} title="Move to another item" width={360} initialFocus={moveSearchRef}>
         <ItemPicker
           items={moveTargets}
+          autoFocus={false}
+          inputRef={moveSearchRef}
           placeholder="Search items…"
           onPick={(t) => {
             if (moving) onMoveItem?.(moving.id, t);

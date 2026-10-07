@@ -2,7 +2,7 @@
 // colour tile before a 36px name field, Project group, Start from (templates + copy an existing
 // project), Visibility. Enter creates, Esc cancels. kind="group": name + Item ID prefix suggested
 // from the name. Spec: DESIGN.md › Project lifecycle › Create.
-import { useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 
 import type { LabelColor, ProjectVisibility } from "../../../shared/enums";
 import { PROJECT_TEMPLATES, suggestKeyPrefix } from "../../../shared/projects";
@@ -51,14 +51,15 @@ export interface ProjectDialogProps {
 }
 
 export function ProjectDialog({ open, kind = "project", groups = [], defaultGroupId, projects = [], onCreateProject, onCreateGroup, onClose }: ProjectDialogProps) {
+  const nameRef = useRef<HTMLInputElement>(null);
   return (
-    <Dialog open={open} onClose={onClose} title={kind === "group" ? "New project group" : "New project"} width={480}>
-      {open ? <ProjectForm kind={kind} groups={groups} defaultGroupId={defaultGroupId} projects={projects} onCreateProject={onCreateProject} onCreateGroup={onCreateGroup} onClose={onClose} /> : null}
+    <Dialog open={open} onClose={onClose} title={kind === "group" ? "New project group" : "New project"} width={480} initialFocus={nameRef}>
+      {open ? <ProjectForm nameRef={nameRef} kind={kind} groups={groups} defaultGroupId={defaultGroupId} projects={projects} onCreateProject={onCreateProject} onCreateGroup={onCreateGroup} onClose={onClose} /> : null}
     </Dialog>
   );
 }
 
-function ProjectForm({ kind, groups, defaultGroupId, projects, onCreateProject, onCreateGroup, onClose }: Required<Pick<ProjectDialogProps, "kind" | "groups" | "projects">> & Pick<ProjectDialogProps, "defaultGroupId" | "onCreateProject" | "onCreateGroup" | "onClose">) {
+function ProjectForm({ nameRef, kind, groups, defaultGroupId, projects, onCreateProject, onCreateGroup, onClose }: { nameRef: RefObject<HTMLInputElement | null> } & Required<Pick<ProjectDialogProps, "kind" | "groups" | "projects">> & Pick<ProjectDialogProps, "defaultGroupId" | "onCreateProject" | "onCreateGroup" | "onClose">) {
   const isGroup = kind === "group";
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<IconName>("kanban");
@@ -119,7 +120,7 @@ function ProjectForm({ kind, groups, defaultGroupId, projects, onCreateProject, 
             setColor(v.color);
           }} />
         )}
-        <TextField className="td-pd-namefield" autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onKey} placeholder={isGroup ? "Group name" : "Project name"} aria-label={isGroup ? "Group name" : "Project name"} />
+        <TextField ref={nameRef} className="td-pd-namefield" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onKey} placeholder={isGroup ? "Group name" : "Project name"} aria-label={isGroup ? "Group name" : "Project name"} />
       </div>
       {isGroup ? (
         <>

@@ -2,7 +2,7 @@
 // nav, search and layout follow. Rows that need a backend not built yet say so in their hint.
 // Spec: DESIGN.md › Settings, Account.
 import { getRouteApi, useNavigate, type UseNavigateResult } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { LABEL_COLORS, type LabelColor } from "../../shared/enums";
 import { authClient } from "../auth";
@@ -659,6 +659,7 @@ function ChangePasswordDialog({ open, onClose, onDone }: { open: boolean; onClos
   const [others, setOthers] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const currentRef = useRef<HTMLInputElement>(null);
   const can = cur.length > 0 && next.length >= 10 && !busy;
   const save = async () => {
     if (!can) return;
@@ -675,8 +676,8 @@ function ChangePasswordDialog({ open, onClose, onDone }: { open: boolean; onClos
     }
   };
   return (
-    <Dialog open={open} onClose={onClose} title="Change password" width={420} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!can} onClick={() => void save()}>{busy ? "Saving…" : "Save password"}</Button></>}>
-      <PasswordField label="Current password" value={cur} onChange={setCur} autoComplete="current-password" autoFocus />
+    <Dialog open={open} onClose={onClose} title="Change password" width={420} initialFocus={currentRef} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!can} onClick={() => void save()}>{busy ? "Saving…" : "Save password"}</Button></>}>
+      <PasswordField label="Current password" value={cur} onChange={setCur} autoComplete="current-password" inputRef={currentRef} />
       <PasswordField label="New password" value={next} onChange={setNext} minLength={10} error={error} />
       <Checkbox checked={others} onChange={setOthers} label="Log out other devices" />
     </Dialog>

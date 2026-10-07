@@ -87,16 +87,14 @@ export const NewGroup: Story = {
 };
 export const EscapeCancels: Story = {
   args: { open: false },
-  // Defect (focus order, WCAG 2.4.3): the name field's autoFocus defeats Base UI's focus return, so after
-  // Escape focus lands on <body> instead of the trigger. Use Dialog's initialFocus ref instead of autoFocus.
-  parameters: { a11y: { test: "todo" } },
   async play({ args, canvas, canvasElement, userEvent }) {
     const trigger = canvas.getByRole("button", { name: "New project" });
     await userEvent.click(trigger);
-    await dialogOf(canvasElement, "New project");
+    const dialog = await dialogOf(canvasElement, "New project");
+    await waitFor(() => expect(dialog.getByRole("textbox", { name: "Project name" })).toHaveFocus());
     await userEvent.keyboard("{Escape}");
     await expect(args.onClose).toHaveBeenCalledOnce();
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole("dialog")).not.toBeInTheDocument());
-    // Add `await waitFor(() => expect(trigger).toHaveFocus())` once the defect above is fixed.
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };

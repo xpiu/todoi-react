@@ -204,6 +204,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const [query, setQuery] = useState("");
   const [linkCopied, copy] = useCopy(900);
   const [subitemOf, setSubitemOf] = useState(false);
+  const subitemSearchRef = useRef<HTMLInputElement>(null);
   const [transfer, setTransfer] = useState<TransferKind | null>(null);
   const [menuView, setMenuView] = useState<"main" | "export">("main");
   const pickerRef = useRef<(() => void) | null>(null);
@@ -520,9 +521,11 @@ export function ItemOverlay(p: ItemOverlayProps) {
         </div>
       </div>
       <TransferDialog kind={transfer} onClose={() => setTransfer(null)} projects={p.projects ?? []} loadLists={p.loadLists} onPick={(kind, proj, list) => (kind === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list)} />
-      <Dialog open={subitemOf} onClose={() => setSubitemOf(false)} title="Make subitem of" width={360}>
+      <Dialog open={subitemOf} onClose={() => setSubitemOf(false)} title="Make subitem of" width={360} initialFocus={subitemSearchRef}>
         <ItemPicker
           items={others}
+          autoFocus={false}
+          inputRef={subitemSearchRef}
           placeholder="Search items…"
           onPick={(t) => {
             setSubitemOf(false);

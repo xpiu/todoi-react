@@ -2,7 +2,7 @@
 // colour, group at the trailing edge; projects without lists are inert), then the destination list.
 // Panel body only. onPick(project, list) fires once; the consumer moves / copies and raises ONE toast.
 // TransferDialog puts it in the "Move to project" / "Copy to project" dialog.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { listIconFor } from "../board/listIcons";
 import { Dialog } from "./Dialog";
@@ -41,9 +41,11 @@ export interface ProjectPickerProps {
   note?: string | null;
   placeholder?: string;
   autoFocus?: boolean;
+  /** The search field, for a host Dialog's initialFocus */
+  inputRef?: RefObject<HTMLInputElement | null>;
 }
 
-export function ProjectPicker({ projects, current, action = "move", count = 1, onPick, onBack, loadLists, heading, showHeading = true, note, placeholder = "Search projects…", autoFocus = true }: ProjectPickerProps) {
+export function ProjectPicker({ projects, current, action = "move", count = 1, onPick, onBack, loadLists, heading, showHeading = true, note, placeholder = "Search projects…", autoFocus = true, inputRef }: ProjectPickerProps) {
   const [q, setQ] = useState("");
   const [proj, setProj] = useState<PickableProject | null>(null);
   const [loaded, setLoaded] = useState<{ id: string; lists: PickableList[] } | null>(null);
@@ -98,6 +100,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
       <div className="td-picker-search">
         <Icon name="search" size={14} />
         <input
+          ref={inputRef}
           className="td-picker-input"
           autoFocus={autoFocus}
           placeholder={placeholder}
@@ -132,11 +135,14 @@ export type TransferKind = "move" | "copy";
 /** The picker in its dialog: open while `kind` is set, closing first on a pick; it keeps saying Move or Copy while it closes. */
 export function TransferDialog({ kind, onClose, onPick, ...picker }: { kind: TransferKind | null; onClose: () => void; onPick: (kind: TransferKind, project: PickableProject, list: PickableList) => void } & Omit<ProjectPickerProps, "action" | "onPick" | "showHeading">) {
   const [shown, setShown] = useState<TransferKind>("move");
+  const searchRef = useRef<HTMLInputElement>(null);
   if (kind && kind !== shown) setShown(kind);
   return (
-    <Dialog open={!!kind} onClose={onClose} title={shown === "copy" ? "Copy to project" : "Move to project"} width={380}>
+    <Dialog open={!!kind} onClose={onClose} title={shown === "copy" ? "Copy to project" : "Move to project"} width={380} initialFocus={searchRef}>
       <ProjectPicker
         {...picker}
+        autoFocus={false}
+        inputRef={searchRef}
         action={shown}
         showHeading={false}
         onPick={(project, list) => {
