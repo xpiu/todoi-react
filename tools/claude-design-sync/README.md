@@ -57,7 +57,15 @@ npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only,
 
 The tool runs in two environments. Nothing below changes the local default (`127.0.0.1`, no login, no push).
 
-**A Claude Code operator, anywhere.** Run Claude Code (signed in to claude.ai, with Playwright) in a checkout, such as `/srv/todoi-react` on a VPS, and ask it to follow the [design-sync-operator skill](.claude/skills/design-sync-operator/SKILL.md). Start Claude Code in `tools/claude-design-sync/` so it finds the skill, or name the file. Claude drives the GUI on localhost with Playwright and carries out the upload request itself; you approve DesignSync's prompt in that session. Drop Project archives into `uploads/` (gitignored); `npm run design-sync -- import` takes the newest.
+**A Claude Code operator, anywhere.** Run Claude Code (signed in to claude.ai, with Playwright) in a checkout and ask it to sync with Claude Design. Claude drives the GUI on localhost with Playwright and carries out the upload request itself; you approve DesignSync's prompt in that session. On a server, drop Project archives into `uploads/` (gitignored); `npm run design-sync -- import` takes the newest.
+
+The skills live in [`skills/`](skills/):
+
+- [`design-sync-local`](skills/design-sync-local/SKILL.md): with a developer on their own machine.
+- [`design-sync-vps`](skills/design-sync-vps/SKILL.md): for a remote developer, in a server checkout such as `/srv/todoi-react` or the Dokploy container.
+- [`operating-loop.md`](skills/operating-loop.md): the steps both follow.
+
+`.claude/skills` and `.agents/skills` are symlinks to `skills/`, so agents using either convention find them when started in `tools/claude-design-sync/`; elsewhere, name the skill file. Add new skills to `skills/` only. On Windows, clone with `core.symlinks=true` for the links to work.
 
 **Hosted in Dokploy, e.g. at design.todoi.com.** [`deploy/`](deploy/) holds a toolchain image (Node, git, Claude Code, Chromium's libraries). On start it clones the repo onto the `/data` volume, pulls, runs `npm ci` when the lockfile changed, and serves the tool from that clone, so the tool always matches the pushed repo and redeploys keep snapshots, jobs and the Claude login.
 
