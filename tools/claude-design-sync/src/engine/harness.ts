@@ -20,6 +20,8 @@ export interface RunOptions {
   cwd: string;
   prompt: string;
   model?: string;
+  /** Claude Code --effort (low | medium | high | xhigh | max) */
+  effort?: string;
   /** Claude Code tools allowed without a prompt (the GUI's confirm step is the approval) */
   allowedTools?: string[];
   /** Let the run edit files in cwd */
@@ -48,6 +50,7 @@ export function commandFor(o: RunOptions): { cmd: string; args: string[] } {
   }
   const args = ["-p", o.prompt, "--output-format", "stream-json", "--verbose"];
   if (o.model) args.push("--model", o.model);
+  if (o.effort) args.push("--effort", o.effort);
   if (o.maxTurns) args.push("--max-turns", String(o.maxTurns));
   const tools = [...(o.allowedTools ?? [])];
   if (o.edits) tools.push("Read", "Edit", "Write", "Glob", "Grep", "Bash");

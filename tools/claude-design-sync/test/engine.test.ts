@@ -5,9 +5,9 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
-import { checkUpload, findProject, NEEDS_APPROVAL, projectStatus, pullable, pullIfChanged, pullSnapshot, uploadRequest, verifyUpload, type Runner } from "../src/engine/designsync";
+import { checkUpload, findProject, getFiles, NEEDS_APPROVAL, projectStatus, pullable, pullIfChanged, pullSnapshot, uploadRequest, verifyUpload, type Runner } from "../src/engine/designsync";
 import { fakeRunner } from "../src/engine/fakeHarness";
-import { parseClaudeLine, toolResultText } from "../src/engine/harness";
+import { commandFor, parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
 import { parseProjectRef, projectUrl } from "../src/engine/project";
 import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor } from "../src/engine/plan";
@@ -313,6 +313,44 @@ describe("DesignSync through the harness", () => {
     expect(chip.status).toBe("design-only");
     expect(chip.design.evidence).toContain("Not pulled: compared as of Design now");
   });
+  it("asks again for the files a cut-off run didn't reach, while rounds bring files in", async () => {
+    const fx = makeFixture();
+    const fake = fakeRunner(fx.designNowDir, fx.repo);
+    const turns: Array<number | undefined> = [];
+    // a model that spreads its calls over messages: max turns 2 stops each run after its first 3 files
+    const split: Runner = (prompt, o, on) => {
+      if (prompt.includes('"get_file"')) turns.push(o.maxTurns);
+      let n = 0;
+      return fake(prompt, o, (e) => (e.type === "tool-result" && /"method":"get_file"/.test(e.content) && ++n > 3 ? undefined : on(e)));
+    };
+    const want = ["readme.md", "components/core/Chip.jsx", "components/core/Toast.jsx", "components/core/Badge.jsx", "tokens/colors.css", "components/core/Gone.jsx"].filter((p) => p === "components/core/Gone.jsx" || existsSync(join(fx.designNowDir, p)));
+    const got = await getFiles(fx.ctx, split, want);
+    expect([...got.keys()].sort()).toEqual(want.filter((p) => p !== "components/core/Gone.jsx").sort());
+    for (const [p, c] of got) expect(c).toBe(readFileSync(join(fx.designNowDir, p), "utf8"));
+    // every fetch run stops before the model reads the contents back; a round without progress ends the asking
+    expect(turns.every((t) => t === 2)).toBe(true);
+    expect(turns.length).toBe(Math.ceil((want.length - 1) / 3) + 1);
+  });
+  it("keeps truncated and unrequested results out of a pull, so they're carried or flagged, never half-written", async () => {
+    const fx = makeFixture();
+    const fake = fakeRunner(fx.designNowDir, fx.repo);
+    const opts: Array<Parameters<Runner>[1]> = [];
+    // Claude Design cuts Chip off at its size cap, and a stray result names a file nobody asked for
+    const odd: Runner = (prompt, o, on) => {
+      opts.push(o);
+      return fake(prompt, o, (e) => {
+        if (e.type === "tool-result" && /"path":"components\/core\/Chip\.jsx"/.test(e.content)) on({ type: "tool-result", content: JSON.stringify({ method: "get_file", path: "components/core/Chip.jsx", content: "export const Ch", truncated: true }) });
+        else on(e);
+        if (e.type === "tool-result" && /"method":"get_file"/.test(e.content)) on({ type: "tool-result", content: JSON.stringify({ method: "get_file", path: "../escape.jsx", content: "x" }) });
+      });
+    };
+    const snap = await pullSnapshot(fx.ctx, odd, { updatedAt: "2026-10-05T10:00:00.000Z" });
+    expect(snap.unpulled?.carried).toEqual(["components/core/Chip.jsx"]);
+    expect(readFileSync(join(snapshotFilesDir(fx.ctx, snap.id), "components/core/Chip.jsx"), "utf8")).not.toBe("export const Ch");
+    expect(existsSync(join(snapshotFilesDir(fx.ctx, snap.id), "../escape.jsx"))).toBe(false);
+    // every DesignSync read runs on the pull model and effort from config.json
+    expect(opts.every((o) => o.model === fx.ctx.config.harness.pullModel && o.effort === fx.ctx.config.harness.pullEffort)).toBe(true);
+  });
   it("reads an upload back and names every file that didn't arrive intact", async () => {
     const fx = makeFixture();
     const fake = fakeRunner(fx.designNowDir, fx.repo);
@@ -359,6 +397,11 @@ describe("DesignSync through the harness", () => {
     const ignore = ["_ds_manifest.json", "_adherence.oxlintrc.json", "templates/**", "SKILL.md"];
     const paths = ["_ds_manifest.json", "_adherence.oxlintrc.json", "templates/todoi/support.js", "SKILL.md", "guidelines/a.html", "explorations/b.html", "styles.css", "components/core/Chip.jsx"];
     expect(pullable(paths, ignore)).toEqual(["_ds_manifest.json", "guidelines/a.html", "explorations/b.html", "styles.css", "components/core/Chip.jsx"]);
+  });
+  it("passes --effort to Claude Code only when one is set", () => {
+    const base = { kind: "claude" as const, bin: "claude", cwd: "/r", prompt: "p" };
+    expect(commandFor({ ...base, model: "haiku", effort: "low" }).args.join(" ")).toContain("--model haiku --effort low");
+    expect(commandFor(base).args).not.toContain("--effort");
   });
   it("reads Claude Code stream-json, including results saved to a file", () => {
     const ev = parseClaudeLine(JSON.stringify({ type: "user", message: { content: [{ type: "tool_result", content: '{"method":"get_file","path":"a"}' }] } }));

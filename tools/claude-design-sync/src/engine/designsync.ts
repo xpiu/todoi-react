@@ -13,13 +13,13 @@ import { runHarness, type HarnessEvent } from "./harness";
 import { latestSnapshot, newSnapshotId, snapshotFilesDir, writeSnapshotFile, writeSnapshotMeta } from "./snapshots";
 import type { SnapshotMeta } from "./types";
 
-export type Runner = (prompt: string, opts: { model?: string; maxTurns?: number }, onEvent: (e: HarnessEvent) => void) => Promise<Extract<HarnessEvent, { type: "done" }>>;
+export type Runner = (prompt: string, opts: { model?: string; effort?: string; maxTurns?: number }, onEvent: (e: HarnessEvent) => void) => Promise<Extract<HarnessEvent, { type: "done" }>>;
 
 /** DesignSync is available through Claude Code; CLI and server use the same configuration. */
 export function createDesignRunner(ctx: Ctx, signal?: AbortSignal): Runner {
   return (prompt, opts, onEvent) => runHarness({
     kind: "claude", bin: ctx.config.harness.claudeBin, cwd: ctx.repo, prompt,
-    model: opts.model, maxTurns: opts.maxTurns, allowedTools: ["DesignSync", "ToolSearch"], signal,
+    model: opts.model, effort: opts.effort, maxTurns: opts.maxTurns, allowedTools: ["DesignSync", "ToolSearch"], signal,
   }, onEvent);
 }
 
@@ -54,10 +54,11 @@ function jsonResults(contents: string[]): ToolJson[] {
 export const APPROVAL_PROMPT = /^(To project:|From folder:)/m;
 export const NEEDS_APPROVAL = "DesignSync asked for your approval, which a background run can't give. Uploads go through Claude Code: use “Upload from Claude Code” in Activity";
 
-async function run(runner: Runner, prompt: string, model: string | undefined, onLog?: (e: HarnessEvent) => void, maxTurns = 8) {
+async function run(ctx: Ctx, runner: Runner, prompt: string, onLog?: (e: HarnessEvent) => void, maxTurns = 8) {
+  const model = ctx.config.harness.pullModel;
   const contents: string[] = [];
   let refused = false;
-  const done = await runner(prompt, { model, maxTurns }, (e) => {
+  const done = await runner(prompt, { model, effort: ctx.config.harness.pullEffort, maxTurns }, (e) => {
     if (e.type === "tool-result") {
       contents.push(e.content);
       if (e.isError && APPROVAL_PROMPT.test(e.content)) refused = true;
@@ -70,7 +71,7 @@ async function run(runner: Runner, prompt: string, model: string | undefined, on
 
 /** One Claude Design project as list_projects reports it, or null when the account has no such project */
 export async function findProject(ctx: Ctx, runner: Runner, projectId: string, onLog?: (e: HarnessEvent) => void): Promise<{ projectId: string; name: string; updatedAt: string } | null> {
-  const { done, results } = await run(runner, `${LOAD} Call DesignSync with method "list_projects". Reply only: DONE.`, ctx.config.harness.pullModel, onLog, 4);
+  const { done, results } = await run(ctx, runner, `${LOAD} Call DesignSync with method "list_projects". Reply only: DONE.`, onLog, 4);
   const listed = results.some((r) => Array.isArray(r.projects));
   if (!listed) throw new Error(done.ok ? "DesignSync didn't list any projects. Is Claude Code signed in to claude.ai with Claude Design access?" : done.result || "DesignSync list_projects failed");
   return results.flatMap((r) => r.projects ?? []).find((x) => x.projectId === projectId) ?? null;
@@ -82,7 +83,7 @@ export async function projectStatus(ctx: Ctx, runner: Runner, onLog?: (e: Harnes
 }
 
 export async function listProjectFiles(ctx: Ctx, runner: Runner, onLog?: (e: HarnessEvent) => void): Promise<string[]> {
-  const { done, results } = await run(runner, `${LOAD} Call DesignSync with method "list_files" and projectId "${ctx.config.design.projectId}". Reply only: DONE.`, ctx.config.harness.pullModel, onLog, 4);
+  const { done, results } = await run(ctx, runner, `${LOAD} Call DesignSync with method "list_files" and projectId "${ctx.config.design.projectId}". Reply only: DONE.`, onLog, 4);
   const paths = results.find((r) => r.method === "list_files")?.paths;
   if (!paths) throw new Error(done.result || "DesignSync list_files returned nothing");
   // list_files includes folders: keep entries that are not a prefix of another entry
@@ -100,12 +101,28 @@ export function pullable(paths: string[], ignore: string[] = []): string[] {
   return paths.filter((p) => !/^(uploads|assets)\//.test(p) && !/(^|\/)\.thumbnail$|_ds_bundle\.js$|\.(png|jpe?g|gif|webp|woff2?|ttf|otf|ico|pdf|mp4)$/i.test(p) && (KIT_READS.has(p) || !isIgnored(p, ignore)));
 }
 
-/** Live text content of `paths`, read in one headless run. Files Design doesn't have (or couldn't send) are left out. */
+/** Rounds of get_file runs for one set of paths: a second try always, more while a round brings files in */
+const MAX_ROUNDS = 6;
+
+/**
+ * Live text content of `paths`. Each run ends after its fetch turn (max turns 2: loading DesignSync, then
+ * every get_file call in one message): the contents arrive verbatim in the event stream, and the model never
+ * reads them back, which is what a pull's tokens used to go on. A model that spreads its calls over several
+ * messages is cut off, so the paths still missing go into another round, which runs while rounds bring files in.
+ * Files Design doesn't have, couldn't send, or sent truncated are left out (the caller carries or flags them).
+ */
 export async function getFiles(ctx: Ctx, runner: Runner, paths: string[], onLog?: (e: HarnessEvent) => void): Promise<Map<string, string>> {
-  const prompt = `${LOAD} Then call DesignSync method "get_file" with projectId "${ctx.config.design.projectId}" once for EACH of these ${paths.length} paths, as parallel calls (several per message). Never repeat file contents in your replies. When every call has returned, reply only: DONE.\n\n${paths.map((p) => `- ${p}`).join("\n")}`;
-  const { results } = await run(runner, prompt, ctx.config.harness.pullModel, onLog, Math.max(8, Math.ceil(paths.length / 4) + 4));
+  const asked = new Set(paths);
   const out = new Map<string, string>();
-  for (const r of results) if (r.method === "get_file" && r.path && typeof r.content === "string" && !r.isBase64) out.set(r.path, r.content);
+  let want = paths;
+  for (let round = 1; want.length && round <= MAX_ROUNDS; round++) {
+    const before = out.size;
+    const prompt = `${LOAD} Then call DesignSync method "get_file" with projectId "${ctx.config.design.projectId}" once for EACH of these ${want.length} paths. Put all ${want.length} calls in ONE message, as parallel tool calls, not spread over several messages. Do not retry a failed call and never repeat file contents in your replies. When every call has returned, reply only: DONE.\n\n${want.map((p) => `- ${p}`).join("\n")}`;
+    const { results } = await run(ctx, runner, prompt, onLog, 2);
+    for (const r of results) if (r.method === "get_file" && r.path && asked.has(r.path) && typeof r.content === "string" && !r.isBase64 && !r.truncated) out.set(r.path, r.content);
+    want = want.filter((p) => !out.has(p));
+    if (round >= 2 && out.size === before) break;
+  }
   return out;
 }
 
@@ -143,15 +160,14 @@ export async function pullSnapshot(ctx: Ctx, runner: Runner, opts: { paths?: str
   const got = new Set<string>();
   const failed: string[] = [];
   const report = () => opts.onProgress?.({ done: got.size, total: all.length, failed: [...failed] });
-  const pullBatch = async (paths: string[], attempt = 1): Promise<void> => {
+  // getFiles already asks again for what a run didn't bring
+  const pullBatch = async (paths: string[]): Promise<void> => {
     for (const [path, content] of await getFiles(ctx, runner, paths, opts.onLog)) {
       writeSnapshotFile(ctx, id, path, content);
       got.add(path);
     }
     report();
-    const missing = paths.filter((p) => !got.has(p));
-    if (missing.length && attempt < 2) return pullBatch(missing, attempt + 1);
-    failed.push(...missing);
+    failed.push(...paths.filter((p) => !got.has(p)));
   };
   const queue = [...batches];
   const workers = Array.from({ length: Math.min(opts.parallel ?? 3, queue.length) }, async () => {

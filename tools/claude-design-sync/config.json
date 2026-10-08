@@ -105,6 +105,8 @@
     "claudeBin": "claude",
     "codexBin": "codex",
     "pullModel": "sonnet",
-    "implementModel": ""
+    "pullEffort": "low",
+    "implementModel": "",
+    "$pullModel": "pullModel and pullEffort apply only to DesignSync reads (status checks, pulls, upload read-backs): file contents come from the tool results, never from the model's reply. App and kit ports use implementModel"
   }
 }
