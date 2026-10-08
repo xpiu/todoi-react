@@ -4,6 +4,7 @@ import { LoaderCircle, RefreshCw, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appMoved, designMoved, followJob, fmtTime, plural, projectUrl, REFERENCE_KINDS, store, type AppState, type Comparison, type LaneId, type MappingData, type MappingEvent, type Unit } from "./api";
+import { Fresh, RefreshChoice, useRefreshChoice, type Freshness } from "./DesignRefresh";
 import { MapLane, type LaneFlow, type LaneStats } from "./MapLane";
 import { MergeBanner, useMerge } from "./Merge";
 import { ProjectFooter } from "./ProjectFooter";
@@ -14,7 +15,7 @@ import { TopBar } from "./TopBar";
 const WAITING = "waiting";
 
 const STEPS: Array<{ name: string; text: string }> = [
-  { name: "Snapshot", text: "A pull reads every text file of the Design project through DesignSync into a local snapshot, and stops early when Claude Design hasn't changed." },
+  { name: "Snapshot", text: "An export downloaded from Claude Design is read into a local snapshot for free; a pull reads every text file through DesignSync instead, and stops early when Claude Design hasn't changed." },
   { name: "Pair", text: "Path rules from config.json pair App files with Design files into units, one lane per kind." },
   { name: "Date", text: "Each unit is compared three ways: the App at the sync point's git rev and now, Design in the sync point's snapshot and now." },
   { name: "Move", text: "Token CSS merges deterministically. Everything else is ported by AI from a brief, App work into a worktree, kit work into staging." },
@@ -77,6 +78,8 @@ export function Mapping() {
   const [open, setOpen] = useState<LaneId | null>(null);
   const [shown, setShown] = useState(WAITING);
   const [replay, setReplay] = useState(0);
+  // The import-or-pull choice, open while Design is behind and the developer picks a route
+  const choice = useRefreshChoice();
   const diagram = useRef<HTMLElement>(null);
 
   // State, mapping and comparison for the plan's chosen sync point; applied in one place so effects never set state synchronously
@@ -131,22 +134,28 @@ export function Mapping() {
     await pull();
     await load(true);
   });
-  /** Everything at once: ask Design, pull when the snapshot is behind or incomplete, recompare */
+  const openChoice = choice.show;
+  const imported = () => {
+    choice.hide();
+    void recompare().catch(() => {});
+  };
+  const pullChosen = () => {
+    choice.hide();
+    void pullNow().catch(() => {});
+  };
+  /** Everything at once: ask Design, recompare, and when the snapshot is behind or incomplete, offer the two ways in */
   const bringUpToDate = async () => {
     setError(null);
     try {
       const snap = state?.snapshots[0];
-      let needPull = !snap || !!snap.unpulled || (!!snap.projectId && snap.projectId !== state?.project.id);
-      if (!needPull) {
+      let ahead = !snap || !!snap.unpulled || (!!snap.projectId && snap.projectId !== state?.project.id);
+      if (!ahead) {
         setBusy({ text: "Asking Claude Design whether the project changed…" });
-        needPull = (await api.statusCheck()).stale;
-      }
-      if (needPull) {
-        setBusy({ text: "Pulling from Claude Design…" });
-        await pull();
+        ahead = (await api.statusCheck()).stale;
       }
       setBusy({ text: "Recomparing the App with the newest snapshot…" });
       await load(true);
+      if (ahead) openChoice();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -186,15 +195,15 @@ export function Mapping() {
 
   // Each side's data, with what is missing or behind, and the one action that fixes it
   const design: Freshness = !snap
-    ? { ok: false, text: "No snapshot yet, so the Design side has nothing to compare.", fix: { label: "Pull now", tip: TIP.pull, run: () => void pullNow().catch(() => {}) } }
+    ? { ok: false, text: "No snapshot yet, so the Design side has nothing to compare.", fix: { label: "Bring it in", tip: TIP.bringIn, run: openChoice } }
     : otherProject
-      ? { ok: false, text: "The newest snapshot came from another project.", fix: { label: "Pull now", tip: "Pull a snapshot of the project the tool targets now - Costs tokens", run: () => void pullNow().catch(() => {}) } }
+      ? { ok: false, text: "The newest snapshot came from another project.", fix: { label: "Bring it in", tip: TIP.bringIn, run: openChoice } }
       : unpulled
-        ? { ok: false, text: `${plural(unpulled, "file")} couldn't be pulled.`, fix: { label: "Pull again", tip: TIP.pullAgain, run: () => void pullNow().catch(() => {}) } }
+        ? { ok: false, text: `${plural(unpulled, "file")} couldn't be pulled.`, fix: { label: "Bring them in", tip: TIP.bringIn, run: openChoice } }
         : !last
           ? { ok: null, text: "Not asked whether it changed since the tool started.", fix: { label: "Check for changes", tip: TIP.check, run: () => void check().catch(() => {}) } }
           : last.stale
-            ? { ok: false, text: `Changed since the snapshot (asked ${fmtTime(last.at)}).`, fix: { label: "Pull now", tip: "Pull the changes into a fresh snapshot with Claude Code. Takes a few minutes - Costs tokens", run: () => void pullNow().catch(() => {}) } }
+            ? { ok: false, text: `Changed since the snapshot (asked ${fmtTime(last.at)}).`, fix: { label: "Bring the changes in", tip: TIP.bringIn, run: openChoice } }
             : { ok: true, text: `Up to date when asked, ${fmtTime(last.at)}.`, fix: { label: "Check again", tip: TIP.check, run: () => void check().catch(() => {}) } };
   const app: Freshness = !cmp
     ? { ok: null, text: "Not compared yet." }
@@ -204,7 +213,7 @@ export function Mapping() {
   const behind = design.ok === false || app.ok === false || design.ok === null;
 
   const verdict = !map ? null : !cmp ? (
-    <>No Design snapshot yet, so only the rules can be shown. Bring the mapping up to date to pull one.</>
+    <>No Design snapshot yet, so only the rules can be shown. Bring the mapping up to date to bring one in.</>
   ) : (
     <>
       {state?.project.name} and todoi-react pair up as <em>{plural(all.units, "unit")}</em> in {map.lanes.filter((l) => byLane.has(l.id)).length} lanes; <em>{all.waiting}</em> {all.waiting === 1 ? "is" : "are"} waiting to move
@@ -237,11 +246,11 @@ export function Mapping() {
           </p>
           <h2 className="cds-verdict-line">{verdict ?? <span className="cds-skel cds-skel-line" />}</h2>
           <div className="cds-map-refresh">
-            <button type="button" className={`cds-btn ${behind ? "cds-btn-primary" : ""}`} onClick={() => void bringUpToDate()} disabled={!!busy || running} data-tip={running ? "A job is running. Refresh when it finishes" : "Ask Claude Design what changed, pull when the snapshot is behind or incomplete, then recompare the App - Costs tokens"}>
+            <button type="button" className={`cds-btn ${behind && !choice.open ? "cds-btn-primary" : ""}`} onClick={() => void bringUpToDate()} disabled={!state || !!busy || running} data-tip={!state ? "Loading the tool's state" : running ? "A job is running. Refresh when it finishes" : "Ask Claude Design whether it changed and recompare the App. When Design is ahead, choose: import an export (no tokens) or pull - Asking costs a few tokens"}>
               {busy ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} Bring the mapping up to date
             </button>
             <span className="cds-quiet" role="status">
-              {busy ? `${busy.text}${busy.progress ? ` ${busy.progress.done}/${busy.progress.total} files` : ""}` : running ? "A job is running; refresh when it finishes." : behind ? "Some of this is behind or missing." : "Both sides are current."}
+              {busy ? `${busy.text}${busy.progress ? ` ${busy.progress.done}/${busy.progress.total} files` : ""}` : running ? "A job is running; refresh when it finishes." : choice.open ? "Claude Design is ahead of the snapshot: bring its changes in below." : behind ? "Some of this is behind or missing." : "Both sides are current."}
             </span>
           </div>
           {busy?.progress ? (
@@ -249,6 +258,7 @@ export function Mapping() {
               <span style={{ transform: `scaleX(${busy.progress.done / Math.max(1, busy.progress.total)})` }} />
             </div>
           ) : null}
+          {state ? <RefreshChoice choice={choice} state={state} onPull={pullChosen} onImported={imported} pullBusy={running || !!busy} /> : null}
 
           <dl className="cds-map-meta">
             <div>
@@ -420,23 +430,6 @@ export function Mapping() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => void load(true).catch((e: Error) => setError(e.message))} /> : null}
     </div>
-  );
-}
-
-/** One side's data: current, behind or unknown, and the one action that fixes it */
-type Freshness = { ok: boolean | null; text: string; fix?: { label: string; tip: string; run: () => void } };
-
-function Fresh({ ok, text, fix }: Freshness) {
-  return (
-    <span className="cds-map-fresh" data-ok={ok === null ? "unknown" : String(ok)}>
-      <span className="cds-map-fresh-mark" aria-hidden />
-      <span>{text}</span>
-      {fix ? (
-        <button type="button" className="cds-link" onClick={fix.run} data-tip={fix.tip}>
-          {fix.label}
-        </button>
-      ) : null}
-    </span>
   );
 }
 

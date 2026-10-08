@@ -3,7 +3,8 @@ import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRigh
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, selectedUnitIds, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Step } from "./api";
+import { api, selectedUnitIds, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Imported, type Step } from "./api";
+import { RefreshChoice, useRefreshChoice } from "./DesignRefresh";
 import { FeatureRow } from "./FeatureRow";
 import { MergeBanner, useMerge } from "./Merge";
 import { Onboarding } from "./Onboarding";
@@ -21,8 +22,8 @@ const GLOBALS: Array<{ d: Direction; Icon: typeof ArrowLeft; into: { app: boolea
 ];
 // The empty ledger speaks to the planned direction, and offers the action that would surface new work for it
 const EMPTY: Partial<Record<Direction, { line: string; action: "check" | "recompare" }>> = {
-  both: { line: "Nothing to move either way. When either side changes, pull a fresh Design snapshot or recompare.", action: "check" },
-  "design-to-app": { line: "Nothing to bring into the App. When the kit changes in Claude Design, pull a fresh snapshot.", action: "check" },
+  both: { line: "Nothing to move either way. When either side changes, bring in a fresh Design snapshot or recompare.", action: "check" },
+  "design-to-app": { line: "Nothing to bring into the App. When the kit changes in Claude Design, bring in a fresh snapshot.", action: "check" },
   "app-to-design": { line: "Nothing to put into Design. When the App changes, recompare to pick up the new work.", action: "recompare" },
 };
 
@@ -46,6 +47,8 @@ export function App() {
   const [markUnits, setMarkUnits] = useState<string[] | null>(null);
   const [showSynced, setShowSynced] = useState(false);
   const [check, setCheck] = useState<{ busy: boolean; stale?: boolean; error?: string } | null>(null);
+  // The import-or-pull choice above the ledger
+  const choice = useRefreshChoice();
 
   // State + comparison for a sync point; applied in one place so effects never set state synchronously
   const load = useCallback(
@@ -154,12 +157,19 @@ export function App() {
     }
   };
   const pull = async () => {
+    choice.hide();
     try {
       const r = await api.pull();
       openJob(r.job);
     } catch (e) {
       setError((e as Error).message);
     }
+  };
+  const imported = (r: Imported) => {
+    choice.hide();
+    refresh(true);
+    // the server compared the export with Design's last answer: keep that, rather than "not asked"
+    if (r.covers !== null) setCheck({ busy: false, stale: !r.covers });
   };
 
   const base = cmp?.base ?? null;
@@ -204,7 +214,7 @@ export function App() {
         <MergeBanner offer={merge} onReview={openJob} />
 
         {state && !state.snapshots.length ? (
-          <Onboarding state={state} onPull={pull} onImported={() => refresh(true)} />
+          <Onboarding state={state} onPull={pull} onImported={imported} />
         ) : (
           <>
             <section className="cds-verdict" aria-labelledby="verdict">
@@ -267,6 +277,8 @@ export function App() {
               </div>
             </section>
 
+            {state ? <RefreshChoice choice={choice} state={state} onPull={() => void pull()} onImported={imported} pullBusy={!!running} /> : null}
+
             <div className="cds-heads">
               <div className="cds-head">
                 <span className="cds-head-name">App</span>
@@ -292,12 +304,12 @@ export function App() {
                   ) : null}
                 </span>
                 <span className="cds-head-actions">
-                  <button type="button" className="cds-link" onClick={checkDesign} disabled={check?.busy} data-tip={check?.stale ? "Claude Design changed since the snapshot. Ask again, or pull to bring the changes in" : check && !check.busy && !check.error ? "Nothing changed when last asked. Ask Claude Design again" : TIP.check}>
-                    {check?.busy ? "Checking…" : check?.stale ? "Design changed — pull" : check && !check.error ? "Up to date" : "Check for changes"}
+                  <button type="button" className="cds-link" onClick={checkDesign} disabled={check?.busy} data-tip={check?.stale ? "Claude Design changed since the snapshot. Ask again" : check && !check.busy && !check.error ? "Nothing changed when last asked. Ask Claude Design again" : TIP.check}>
+                    {check?.busy ? "Checking…" : check?.stale ? "Design changed" : check && !check.error ? "Up to date" : "Check for changes"}
                   </button>
                   {check?.stale || check?.error || unpulled.length || otherProject ? (
-                    <button type="button" className="cds-link" onClick={pull} data-tip={unpulled.length && !check?.stale ? TIP.pullAgain : TIP.pull}>
-                      {unpulled.length && !check?.stale ? "Pull again" : "Pull now"}
+                    <button type="button" className="cds-link" onClick={choice.show} aria-expanded={choice.open} data-tip={TIP.bringIn}>
+                      {check?.stale ? "Bring the changes in" : unpulled.length ? "Bring the missing files in" : "Bring a snapshot in"}
                     </button>
                   ) : null}
                 </span>

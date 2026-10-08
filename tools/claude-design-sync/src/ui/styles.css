@@ -1263,22 +1263,167 @@ em {
   margin: 0 0 28px;
   color: var(--ink-600);
 }
-.cds-onboard-twin {
+/* ── Bringing Design in: import an export | or | pull ───────────────────────── */
+.cds-routes {
   border-top: 1px solid var(--ink-900);
   border-bottom: var(--cds-hair);
 }
-.cds-onboard-twin .cds-cell {
+.cds-routes > .cds-cell {
   padding: 18px 20px 22px 0;
 }
-.cds-onboard-twin .cds-cell:last-child {
+.cds-routes > .cds-cell:last-child {
   padding: 18px 0 22px 20px;
 }
-.cds-onboard h3 {
+.cds-routes h3 {
   margin: 0 0 6px;
   font: 500 13px/1.45 var(--font-ui);
 }
-.cds-onboard .cds-rail-cell {
+.cds-routes p {
+  margin: 0;
+}
+.cds-routes .cds-rail-cell {
   justify-content: center;
+}
+.cds-routes > .cds-cell > .cds-path {
+  display: block;
+  margin-top: 8px;
+}
+.cds-routes .cds-skel {
+  width: 60%;
+  margin-top: 14px;
+}
+.cds-routes-import {
+  position: relative;
+}
+.cds-routes-list {
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+.cds-routes-file {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  column-gap: 8px;
+  padding: 8px 8px 8px 0;
+  border-top: var(--cds-hair);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.cds-routes-file:last-child {
+  border-bottom: var(--cds-hair);
+}
+.cds-routes-file:hover {
+  background: var(--cds-wash);
+}
+.cds-routes-file input {
+  grid-row: 1 / span 3;
+  margin: 3px 0 0;
+  accent-color: var(--ink-900);
+}
+.cds-routes-file > :not(input) {
+  grid-column: 2;
+  min-width: 0;
+}
+.cds-routes-file-name {
+  overflow-wrap: anywhere;
+}
+.cds-routes-file[data-picked] .cds-routes-file-name {
+  font-weight: 500;
+}
+.cds-routes-file .cds-map-fresh {
+  margin-top: 2px;
+}
+.cds-routes-steps {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cds-routes-steps li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  column-gap: 8px;
+}
+.cds-routes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 14px;
+}
+.cds-routes-path {
+  margin-top: 12px;
+  font-size: 12px;
+}
+.cds-routes-path summary {
+  width: fit-content;
+  color: var(--ink-600);
+  cursor: pointer;
+}
+.cds-routes-path summary:hover {
+  color: var(--ink-900);
+}
+.cds-routes-path form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 12px;
+  max-width: 480px;
+}
+.cds-routes-path .cds-field {
+  flex: 1 1 240px;
+  margin: 6px 0 0;
+}
+.cds-routes-import > .cds-error-inline,
+.cds-routes-import > [role="status"] {
+  margin-top: 10px;
+}
+/* a dragged file turns the import side into one dashed drop target */
+.cds-routes-drop {
+  display: none;
+}
+.cds-routes-import[data-drag] .cds-routes-drop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--chrome-canvas);
+  outline: 1px dashed var(--ink-900);
+  outline-offset: -1px;
+  font: 500 13px/1.45 var(--font-ui);
+  pointer-events: none;
+  animation: cds-in var(--duration-fast) var(--ease-standard);
+}
+
+/* the same choice inline, above the ledger or under the Mapping's refresh */
+.cds-refresh {
+  margin: 20px 0 28px;
+  scroll-margin-top: calc(var(--cds-bar) + 12px);
+  animation: cds-in var(--duration-base) var(--ease-standard);
+}
+.cds-refresh:focus {
+  outline: none;
+}
+.cds-refresh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.cds-refresh-head h3 {
+  margin: 0;
+  font: 500 15px/1.4 var(--font-ui);
+}
+@container page (max-width: 699px) {
+  .cds-routes > .cds-cell,
+  .cds-routes > .cds-cell:last-child {
+    padding: 14px 0 18px;
+  }
 }
 
 /* ── Plan bar ────────────────────────────────────────────────────────────────── */

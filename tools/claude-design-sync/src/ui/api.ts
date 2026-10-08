@@ -5,6 +5,7 @@ import type { Job, JobEvent } from "../server/jobs";
 import type { MeterState } from "../server/meter";
 import type { PlanRequest, RunRequest } from "../server/requests";
 import type { HarnessInfo } from "../engine/harness";
+import type { ExportFile } from "../engine/snapshots";
 import type { Step } from "../engine/plan";
 import type { LaneRule } from "../engine/lanes";
 import type { MappingEvent } from "../server/mapping";
@@ -45,6 +46,21 @@ export interface MappingData {
   app: { branch: string | null; commitsSinceBase: number | null };
 }
 
+/** An import, and whether it holds Design's last change (null: Claude Design hasn't been asked yet) */
+export interface Imported {
+  snapshot: SnapshotMeta;
+  covers: boolean | null;
+}
+
+/** Exports of the project waiting in Downloads, and what a pull cost last time */
+export interface ExportsInfo {
+  exports: Array<ExportFile & { covers: boolean | null }>;
+  designUpdatedAt: string | null;
+  checkedAt: string | null;
+  lastPull: { at: string; costUsd: number | null; seconds: number | null } | null;
+  folders: string[];
+}
+
 async function call<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const res = await fetch(path, {
     method: init?.method ?? (init?.body ? "POST" : "GET"),
@@ -64,7 +80,15 @@ export const api = {
   run: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>, only?: string[]) => call<{ job: string }>("/api/run", { body: { base, global, overrides, unitOverrides, only } satisfies RunRequest }),
   pull: (force = false) => call<{ job: string }>("/api/pull", { body: { force } }),
   statusCheck: () => call<{ updatedAt: string | null; snapshotUpdatedAt: string | null; stale: boolean }>("/api/status-check", { method: "POST" }),
-  importExport: (path: string) => call<{ snapshot: SnapshotMeta }>("/api/import", { body: { path } }),
+  importExport: (path: string) => call<Imported>("/api/import", { body: { path } }),
+  /** A .zip picked or dropped in the browser; its lastModified is the download time */
+  importFile: async (file: File): Promise<Imported> => {
+    const res = await fetch(`/api/import-file?${new URLSearchParams({ name: file.name, modified: String(file.lastModified) })}`, { method: "POST", headers: { "content-type": "application/zip", "x-cds": "1" }, body: file });
+    const data = (await res.json().catch(() => ({}))) as Imported & { error?: string };
+    if (!res.ok) throw new Error(data.error ?? `${res.status} ${res.statusText}`);
+    return data;
+  },
+  exports: () => call<ExportsInfo>("/api/exports"),
   /** `hold`: unit ids kept open, still compared against their baseline under `base` */
   setProject: (project: string) => call<{ project: { id: string; name: string } }>("/api/project", { body: { project } }),
   syncPoint: (label: string, tag: boolean, base: string | null, hold: string[]) => call<{ syncPoint: SyncPoint }>("/api/sync-point", { body: { label, tag, base, hold } }),

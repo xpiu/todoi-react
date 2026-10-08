@@ -43,7 +43,7 @@ const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
 
 export type { HarnessInfo } from "../engine/harness";
 
-export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?: number; costUsd?: number } } = {}) {
+export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?: number; costUsd?: number; projectId?: string } } = {}) {
   const app = new Hono();
   app.onError((e, c) => c.json({ error: e.message }, e instanceof HTTPException ? e.status : 500));
   const jobs = new Jobs(ctx);
@@ -749,7 +749,7 @@ if (process.argv[1]?.endsWith("cli.ts") || process.argv[1]?.endsWith("main.ts"))
   const ctx = defaultCtx();
   mkdirSync(ctx.state, { recursive: true });
   if (process.env.CDS_FAKE_HARNESS && !process.env.CDS_FAKE_DESIGN) throw new Error("CDS_FAKE_HARNESS needs CDS_FAKE_DESIGN=<folder that plays the Design project>. For a demo world, run npm run design-sync:demo.");
-  const fake = process.env.CDS_FAKE_HARNESS ? { designDir: resolve(process.env.CDS_FAKE_DESIGN!) } : undefined;
+  const fake = process.env.CDS_FAKE_HARNESS ? { designDir: resolve(process.env.CDS_FAKE_DESIGN!), ...(process.env.CDS_FAKE_PROJECT ? { projectId: process.env.CDS_FAKE_PROJECT } : {}) } : undefined;
   await buildUi();
   const port = Number(process.env.CDS_PORT ?? 4477);
   serve({ fetch: createApp(ctx, { fake }).fetch, port, hostname: "127.0.0.1" }, (i) => console.log(`Claude Design Sync → http://localhost:${i.port}`));

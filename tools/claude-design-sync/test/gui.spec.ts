@@ -246,12 +246,19 @@ test.describe.serial("Claude Design Sync", () => {
     await expect(foot).toContainText("Fake Design System");
   });
 
-  test("checks Claude Design for changes, pulls, and then reads up to date", async ({ page }) => {
+  test("checks Claude Design for changes, offers import or pull, pulls, and then reads up to date", async ({ page }) => {
     await fresh(page);
     const head = page.locator(".cds-head-actions");
     await head.getByRole("button", { name: "Check for changes" }).click();
-    await expect(head.getByRole("button", { name: "Design changed — pull" })).toBeVisible();
-    await head.getByRole("button", { name: "Pull now" }).click();
+    await expect(head.getByRole("button", { name: "Design changed" })).toBeVisible();
+    await head.getByRole("button", { name: "Bring the changes in" }).click();
+    const choice = page.getByRole("region", { name: "Bring in Design's changes" });
+    // no export of the project waits in the (empty) exports folder, so the import side teaches how to get one
+    await expect(choice.getByRole("heading", { name: "Import an export" })).toBeVisible();
+    await expect(choice.locator(".cds-routes-steps li")).toHaveCount(2);
+    await expect(choice.locator(".cds-btn-primary")).toHaveText(/Pull the project/);
+    await choice.getByRole("button", { name: "Pull the project" }).click();
+    await expect(choice).toHaveCount(0);
     const panel = page.getByRole("complementary", { name: "Activity" });
     await expect(panel.locator(".cds-jobview")).toContainText("Snapshot ready", { timeout: 30_000 });
     await expect(head.getByRole("button", { name: "Check for changes" })).toBeVisible();
@@ -295,9 +302,15 @@ test.describe.serial("Claude Design Sync", () => {
     await page.getByLabel("What the diagram shows").selectOption("waiting");
     await expect(page.locator(".cds-map-lane[data-dim]")).toHaveCount(0);
 
-    // the refresh asks Claude Design, pulls when it's behind, and recompares
+    // the refresh asks Claude Design and recompares; when Design is ahead it offers import or pull
+    const tokens = join(tmpdir(), "cds-e2e", "design-now", "readme.md");
+    writeFileSync(tokens, `${readFileSync(tokens, "utf8")}\n`);
     await page.getByRole("button", { name: "Bring the mapping up to date" }).click();
-    await expect(page.getByRole("status")).toHaveText("Both sides are current.", { timeout: 30_000 });
+    const choice = page.getByRole("region", { name: "Bring in Design's changes" });
+    await expect(choice).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".cds-map-refresh [role=status]")).toHaveText("Claude Design is ahead of the snapshot: bring its changes in below.");
+    await choice.getByRole("button", { name: "Pull the project" }).click();
+    await expect(page.locator(".cds-map-refresh [role=status]")).toHaveText("Both sides are current.", { timeout: 30_000 });
     await expect(meta.locator('.cds-map-fresh[data-ok="true"]')).toHaveCount(2);
 
     const axe = await new AxeBuilder({ page }).analyze();
@@ -308,5 +321,30 @@ test.describe.serial("Claude Design Sync", () => {
     // a move's log opens in the plan's Activity panel
     await events.filter({ hasText: "Merged into main" }).getByRole("link", { name: "Log" }).click();
     await expect(page.getByRole("complementary", { name: "Activity" })).toBeVisible();
+  });
+
+  test("imports a picked export without calling Claude Code", async ({ page }) => {
+    await fresh(page);
+    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Mapping" }).click();
+    // Design moves on, so the refresh offers the two routes
+    const live = join(tmpdir(), "cds-e2e", "design-now");
+    writeFileSync(join(live, "components/core/Chip.jsx"), `${readFileSync(join(live, "components/core/Chip.jsx"), "utf8")}\n// edited in Design\n`);
+    await page.getByRole("button", { name: "Bring the mapping up to date" }).click();
+    const choice = page.getByRole("region", { name: "Bring in Design's changes" });
+    await expect(choice).toBeVisible({ timeout: 30_000 });
+    const axe = await new AxeBuilder({ page }).include(".cds-refresh").analyze();
+    expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+
+    const before = (await (await page.request.get("/api/meter")).json()).calls as number;
+    const zip = join(tmpdir(), "cds-e2e", "Todoi Design System.zip");
+    execFileSync("zip", ["-qr", zip, "."], { cwd: live });
+    await choice.locator('input[type="file"]').setInputFiles(zip);
+    await expect(choice).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.locator(".cds-map-meta")).toContainText("Imported Todoi Design System.zip");
+    expect((await (await page.request.get("/api/meter")).json()).calls).toBe(before);
+    // the import holds Design's edit
+    const snaps = (await (await page.request.get("/api/state")).json()).snapshots as Array<{ id: string; source: string }>;
+    expect(snaps[0]!.source).toBe("import");
+    expect(readFileSync(join(tmpdir(), "cds-e2e", "state", "snapshots", snaps[0]!.id, "files", "components/core/Chip.jsx"), "utf8")).toContain("// edited in Design");
   });
 });

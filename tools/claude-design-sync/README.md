@@ -50,11 +50,22 @@ npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only)
 
 - **Needs** Claude Code (`claude`) on PATH and signed in to claude.ai: it is the only harness with DesignSync.
 - **The GUI is bundled on every `serve`** (into `dist/`), so restart after pulling tool changes.
-- **First run:** with no snapshot yet, the page offers **Pull the project** (through Claude Code) or **Import an export** (a zip or an unzipped folder).
+- **First run:** with no snapshot yet, the page offers the two ways in (below).
+
+## Bringing Design's work in: import or pull
+
+Whenever the Design side is missing or behind (first run, **Bring the changes in** on the plan, **Bring the mapping up to date** on Mapping), the tool offers two routes side by side:
+
+- **Import an export (no tokens).** Download the project from Claude Design as a .zip. The tool lists this project's exports from `~/Downloads` (newest first, last 30 days) and looks again whenever its window regains focus. Each export says whether it was downloaded after Design's last change, as far as the last check knows. You can also drop a .zip on that side, choose one, or import an unzipped folder by its path.
+  - An export's project is read from its manifest: Claude Design names the bundle namespace `<Name>_<first six characters of the project id>`. Exports of other projects never show up, and importing one is refused.
+  - An import downloaded at least 2 minutes after Design's last change reads as current in the GUI. It never claims Design's `updatedAt`, so an upload built on it still reads Design's live copies and merges newer edits first, and a later pull still reads everything.
+- **Pull with Claude Code (costs tokens).** The headless pull below; the card shows what the last complete pull cost and how long it took.
+
+The primary button goes to the import when the chosen export holds Design's last change, and to the pull otherwise.
 
 ## A typical loop
 
-1. **Check for changes** in the Design column header, then **Pull now** if Design moved.
+1. **Check for changes** in the Design column header, then **Bring the changes in** if Design moved: import a fresh export, or pull.
 2. Read the verdict and the ledger. Pick a plan-wide direction, and override single features or subfeatures on the rail.
 3. **Review selected sync steps** (or **Run this feature only**).
 4. **Merge** the App branch: the button appears in the navbar, above the verdict, in the plan bar and in Activity as soon as the run's check passes. Upload the staged kit files from **Activity**: **Upload n files from Claude Code** gives you a request to paste into Claude Code, where you approve DesignSync's prompt; then **Check the upload**.
@@ -116,7 +127,7 @@ How this repo and the Claude Design project pair up, on one page.
 - **Top:**
   - the project, the App (branch, HEAD), the Design snapshot and the sync point (with App commits since);
   - each side's freshness ("Up to date when asked", "HEAD moved", "Not asked yet", "N files not pulled"), with the action that fixes it: Check for changes, Pull now or Recompare;
-  - **Bring the mapping up to date**, which asks Claude Design, pulls if the snapshot is behind or incomplete, and recompares;
+  - **Bring the mapping up to date**, which asks Claude Design and recompares, and when the snapshot is behind or incomplete opens the import-or-pull choice;
   - the six steps of the mapping technique.
 - **Diagram:** one row per lane: tokens, components, spec, screens, preview cards, guidelines, left out. App is on the left, Design on the right, the tool in the middle.
   - **The middle** names each lane's technique: CSS merge, AI port, reference only.
@@ -235,7 +246,8 @@ The last three are how the AI harness checks kit work before you upload it.
 Environment overrides, used by the tests:
 
 - `CDS_REPO`, `CDS_STATE`, `CDS_CONFIG`, `CDS_PORT`.
-- `CDS_FAKE_HARNESS=1` plus `CDS_FAKE_DESIGN=<folder>`: a stand-in harness that serves a local folder as the Design project. Both are required; `design-sync:demo` sets them up.
+- `CDS_FAKE_HARNESS=1` plus `CDS_FAKE_DESIGN=<folder>`: a stand-in harness that serves a local folder as the Design project. Both are required; `design-sync:demo` sets them up. `CDS_FAKE_PROJECT` names the project id the folder plays (default `fake`).
+- `CDS_EXPORTS`: folders (separated by `:`) to look for exports in, instead of `~/Downloads`. With the fake harness, none unless set.
 
 ## State on disk
 

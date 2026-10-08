@@ -119,7 +119,7 @@ export function Guide() {
                 </div></details></li>
                 <li><details><summary>Open the project and review local changes <span>Your input</span></summary><div>
                   <p>Use the returned <code>claude.ai/design/p/&lt;id&gt;</code> link and inspect the cards. Decide which <code>.design-sync/</code> configuration or owned previews to keep in git, and which generated artifacts to ignore or remove. Follow this repository’s requirement to commit completed features.</p>
-                  <p>If the live kit changed outside this app, check for changes and pull before comparing or marking anything synced.</p>
+                  <p>If the live kit changed outside this app, check for changes and bring them in (import a fresh export, or pull) before comparing or marking anything synced.</p>
                 </div></details></li>
               </ol>
             </section>
@@ -160,7 +160,7 @@ export function Guide() {
             <section id="recommendations">
               <h3>What to do</h3>
               <ol className="cds-guide-recommendations">
-                <li><h4>Keep this app for real syncs</h4><p>Run <code>npm run design-sync -- serve</code> → Check for changes → pull if needed → Review selected sync steps → run → Merge App work when ready → prepare Upload from Activity → paste the request into Claude Code and approve → Check the upload → Mark selected features synced. Only perform steps relevant to your chosen direction.</p></li>
+                <li><h4>Keep this app for real syncs</h4><p>Run <code>npm run design-sync -- serve</code> → Check for changes → bring the changes in (import an export or pull) if needed → Review selected sync steps → run → Merge App work when ready → prepare Upload from Activity → paste the request into Claude Code and approve → Check the upload → Mark selected features synced. Only perform steps relevant to your chosen direction.</p></li>
                 <li><h4>Try the slash command in a new project</h4><p>Create “Todoi · Storybook trial” as a design-system project. Compare generated previews with the hand-written kit, including interactions and all four theme/mode combinations. Port useful parts after review.</p></li>
                 <li><h4>Decline an unexpected live-kit plan</h4><p>If the target is Todoi Design System and the plan deletes or unexpectedly overwrites kit files, answer No and ask Claude to retarget. That prevents this plan’s upload; earlier local generation and project creation may already have happened.</p></li>
               </ol>
