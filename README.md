@@ -9,7 +9,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - **Placeholder history:** v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).
 - **Staging:** [staging.todoi.com](https://staging.todoi.com): Dokploy builds the repo `Dockerfile` with PostgreSQL 18; CI deploys `main` after every gate passes (see [Production](#-production)).
 - **Staging database:** `dbstagingtodoireact` in PostgreSQL 18 (also known as `db-staging-todoi-react` in Dokploy on VPS 2).
-- **Email:** Official: `info@todoi.com`; intended sender: `noreply@todoi.com`. The app does not send email yet.
+- **Email:** `info@todoi.com`; intended sender: `noreply@todoi.com`.
 - **Documentation:** [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.
 - **Planning:** [todo.md](todo.md)
 - **Repository:** `git@github.com:xpiu/todoi-react.git`
@@ -39,7 +39,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 Current limits:
 
 - **Email:** no delivery; admins copy/send invite links. Password reset has a request screen, but no email sender or completed reset flow.
-- **Sync:** workspace JSON edits and their local projection are saved together in IndexedDB before sending. The queue survives reload/close, retries temporary failures in order and uses actor-scoped server receipts to deduplicate replay. Incoming snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, with pending fields overlaid. Stale edits retain submitted text for review in Storage & sync; access loss purges private snapshots. See [sync behavior](docs/sync.md). Unsubmitted description/comment drafts use `sessionStorage`; app-shell offline caching, binary uploads and account/session actions are outside the queue.
+- **Sync:** workspace JSON edits persist in IndexedDB before sending, survive reload/close and retry in order with server deduplication. Snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, preserving pending fields. Storage & sync retains submitted text for conflict review; access loss purges cached content. Unsubmitted description/comment drafts use `sessionStorage`. App-shell offline caching, binary uploads and account/session actions are outside the queue. See [sync behavior](docs/sync.md).
 - **Deployment:** one API process with local attachment storage and in-process cleanup. Multiple processes would need shared persistent storage.
 - **Attachments:** 25 MiB per file; storage quotas per uploader: 100 MiB for guests, 2 GiB for accounts.
 - **Exports:** incomplete round-trips. Account JSON contains user details, groups, projects, lists, labels and items, excluding comments, attachments and association tables; it cannot be reimported. Back up PostgreSQL and uploads separately.
@@ -47,7 +47,7 @@ Current limits:
 
 ## 👥 Visitors and accounts
 
-Visitors get an empty private workspace: **Projects → New project → To do**, the same editing tools as account holders, and no onboarding/reminder banner. The avatar offers **Log in** / **Create account**; `/account` opens login. Signing up or logging in transfers the guest workspace and Inbox, preserving content IDs and existing account work.
+Visitors get an empty private workspace: **Projects → New project → To do**, with the same editing tools as account holders. The avatar offers **Log in** / **Create account**; `/account` opens login. Signing up or logging in transfers the guest workspace and Inbox, preserving content IDs and existing account work once pending edits have synced.
 
 Better Auth guest cookies last seven days, renewed during use. Refreshing/reopening retains access while valid; clearing cookies or expiry loses guest access. Signing in gives content a durable owner. Passwords require at least 10 characters.
 
@@ -64,22 +64,22 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 
 ### Limitations for design tools like claude-design-sync and Storybook
 
-**Production architecture comes first, Claude Design readability second. Storybook and** `claude-design-sync` **MUST adapt to both.**
+**Production architecture comes first, Claude Design readability second; Storybook and `claude-design-sync` must adapt to both.**
 
 - **React:** Typed component APIs, composition, immutable state, and side effects outside render. Keep local interaction state local. [React guidance](https://react.dev/reference/rules/components-and-hooks-must-be-pure).
 - **Base UI:** Use its primitives for interaction behavior. Custom components pass through refs and behavioral props correctly when composed through `render`. [Composition guidance](https://base-ui.com/react/handbook/composition).
 - **Hono:** Keep validation, authorization, and database work on the server. Preserve the typed RPC client and type-only server imports. [RPC guidance](https://hono.dev/docs/guides/rpc).
 - **Zustand:** Use focused selectors for shared client state and compute derived values. Introduce scoped stores when the application needs independent instances. [Zustand guidance](https://zustand.docs.pmnd.rs/learn/guides/beginner-typescript.html).
 
-Preserve the separation between design components, application screens, client data access, and server code. Explicit prop types, named exports, concise behavioral documentation, reusable tokens, and representative stories help Claude Design read the system. Readability does not guarantee faithful reproduction of every interaction. [Claude Design guidance](https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design).
+Keep design components, application screens, client data access and server code separate. Explicit prop types, named exports, behavioral documentation, tokens and representative stories help Claude Design read the system; readability does not guarantee interaction fidelity. [Claude Design guidance](https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design).
 
-Storybook renders the actual application components; its decorators supply props, providers, and API mocks as needed. Storybook configuration and examples stay outside the production import graph. The sync tool associates implementation, CSS, stories, and documentation with one component and handles compatibility translation into the Design kit's current React 18 UMD format. That format must not constrain idiomatic React 19 or Base UI code in the application.
+Storybook renders application components with decorators for props, providers and API mocks; stories and configuration stay outside the production import graph. The sync tool groups implementation, CSS, stories and documentation by component and translates them for the kit's React 18 UMD format without constraining the app's React 19 or Base UI code.
 
-Design-originated changes pass through application checks before acceptance. Adapt visual proposals where needed to preserve accessibility, server boundaries, and state ownership. The sync tool's file discovery and export rules are implementation details we can change to support these priorities.
+Design changes must pass application checks and preserve accessibility, server boundaries and state ownership. Adapt the sync tool's discovery/export rules as needed.
 
 ### Storybook
 
-Storybook is a separate React/Vite component workshop and browser test suite. It renders the actual components in `src/client/design` with the application's layered CSS, fonts, Zustand appearance store, and viewport hooks. Production code never imports stories, mocks, or Storybook addons. Run it independently of the API and PostgreSQL:
+Storybook renders `src/client/design` components with the app's CSS, fonts, appearance store and viewport hooks. It runs without the API or PostgreSQL:
 
 ```sh
 npm run storybook           # http://localhost:6006
@@ -91,13 +91,13 @@ npm run test:storybook -- --coverage  # browser tests + accessibility + V8 cover
 
 The Storybook Testing panel loads the browser project through `vitest.config.ts` and runs it with preview globals. `npm run test:storybook` runs the full four-way theme/mode matrix; `npm test` remains Node-only. Restart Storybook after changing its Vitest configuration.
 
-Every component in `src/client/design` has a colocated typed `<Name>.stories.tsx` (Autodocs, realistic variants, and browser interaction tests); pure helpers without UI have none. A story that exposes a real accessibility defect in its component keeps the story and sets `a11y: { test: "todo" }` with a comment naming the axe rule, so the defect stays visible until the component is fixed — `grep -rn 'test: "todo"' src/client/design` lists what is left. Theme/mode toolbars follow the existing registry. The viewport toolbar resizes the preview; the actual media queries drive `data-device`, `data-touch`, and `useViewport()`. Viewport width alone does not emulate touch hardware.
+UI components have colocated typed `<Name>.stories.tsx` files with Autodocs, variants and interaction tests. Keep stories exposing accessibility defects with `a11y: { test: "todo" }` and a comment naming the axe rule; `rg 'test: "todo"' src/client/design` lists outstanding exceptions. Theme/mode toolbars use the app registry; viewport resizing uses the app's media queries and hooks, but does not emulate touch hardware.
 
-The separate Vitest configuration runs stories in all four Rounded/Minimal × Dark/Light scopes using Playwright Chromium, with accessibility failures blocking tests. Like the existing application axe gate, color contrast is excluded: current tokens produce failures on primary buttons and overdue badges and need separate remediation. Accessibility scans include body portals after interactions settle; interaction examples cover selection/search, disabled actions, keyboard activation, and nested dialog Escape behavior. Select's open listbox carries the field's name, and its `OpenList` story ends with the popup open so the scan covers it. Node unit tests, PostgreSQL integration tests, and full application Playwright tests remain separate. CI builds/tests Storybook without starting the API or database.
+Playwright Chromium runs stories across all four Rounded/Minimal × Dark/Light scopes. Accessibility scans include body portals and block failures except documented `todo` cases; color contrast and Base UI focus guards are excluded, matching the app gate. Contrast remediation remains pending. Node unit tests, database integration tests and app browser tests run separately; CI builds/tests Storybook without the API or database.
 
-Story metadata and component manifests provide readable examples for coding agents. Native automatic ingestion by standalone Claude Design is not assumed. The [sync tool](tools/claude-design-sync/README.md) associates stories and colocated documentation with the owning component and translates relevant examples into the Design kit's existing format.
+Story metadata and component manifests provide examples for coding agents. The [sync tool](tools/claude-design-sync/README.md) translates relevant stories and documentation into the kit's format; native Claude Design ingestion is not assumed.
 
-Add stories alongside components as they change, followed by composed views and API mocks when needed. The `/dev/ds` gallery remains available until its useful specimens/checks have migrated. Optional Storybook MCP integration and component screenshot baselines can follow after this foundation; [Storybook AI features](https://storybook.js.org/docs/ai) are currently in preview.
+Update stories with component changes; add composed views and API mocks as needed. The `/dev/ds` gallery remains available. Storybook MCP integration and component screenshot baselines are deferred.
 
 ### Claude Design sync
 
@@ -112,7 +112,13 @@ Configure mappings/harness in `tools/claude-design-sync/config.json`. Pull/uploa
 
 ## 💻 Local development
 
-Requirements: **Node 22.12+**, npm and running PostgreSQL (development, CI and staging use PostgreSQL 18). On macOS: `brew install postgresql@18 && brew services start postgresql@18`; the formula is keg-only, so its `createdb`/`psql` live in `$(brew --prefix postgresql@18)/bin`.
+Requirements: **Node 22.12+**, npm and running PostgreSQL (development, CI and staging use PostgreSQL 18). On macOS, add the keg-only PostgreSQL tools to your shell's PATH:
+
+```sh
+brew install postgresql@18
+brew services start postgresql@18
+export PATH="$(brew --prefix postgresql@18)/bin:$PATH"  # also add to ~/.zshrc
+```
 
 ```sh
 cp .env.example .env       # set DATABASE_URL for your machine
@@ -177,6 +183,6 @@ APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED
 - **Integration:** `npm run test:integration` reads `.env` and checks PostgreSQL services/routes, including lifecycle cascades, rollback, attachment cleanup/security, completion, moves, duplication, search and notifications. Each test file gets a migrated disposable database and upload directory, removed afterward. The configured database role needs `CREATEDB`; fixtures do not use the application database.
 - **Browser:** `npx playwright install chromium` once, then `npm run test:e2e`. Playwright starts/reuses `:5173`; PostgreSQL and seeded accounts are required. List/Board/Calendar, overlay, Settings and saved views cover all four scopes with snapshots and axe WCAG 2.1 A/AA (serious/critical violations fail; **color contrast disabled; Base UI focus guards excluded**). Other specs cover reduced motion, keyboard interaction, guest isolation/account transfers, offline edits, drafts, uploads and editing flows. Fixtures use the development database and are cleaned up afterward.
 
-Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration and Chromium tests on Linux with `--ignore-snapshots` until Linux baselines exist. Reports: `.tmp/`, uploaded on CI failure.
+Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration tests, Storybook build/tests, `design-sync:check` and app Chromium tests. App screenshots use `--ignore-snapshots` until Linux baselines exist. Playwright reports: `.tmp/`, uploaded on CI failure.
 
-Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Migration `0006_lifecycle_cleanup.sql` adds the parent foreign key (promoting legacy orphans to top-level) and cleanup outbox. The API removes bytes after commit, draining up to 100 due jobs at startup, after deletion and each minute; retries back off to one hour. Migrate before starting an updated API.
+Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Attachment cleanup runs after commit, at startup and each minute, with retries backing off to one hour. Migrate before starting an updated API.
