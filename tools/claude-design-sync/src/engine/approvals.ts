@@ -1,4 +1,5 @@
 // What a run still waits on the developer for. No Node imports: the server and the GUI both ask.
+import type { Job } from "../server/jobs";
 import type { AppRun } from "./worktree";
 
 /** What the architecture scan (fidelity.ts) looks for in a draft ported from the kit */
@@ -31,3 +32,8 @@ export const uploadPending = (j: { staged?: unknown[]; steps: Array<{ id: string
   const state = j.steps.find((s) => s.id === "upload")?.state;
   return !!j.staged?.length && (state === "pending" || state === "failed");
 };
+
+/** Recovery currently covers App-only runs; mixed runs also need their kit staging checkpoints. */
+export const canResume = (j: Pick<Job, "kind" | "state" | "app" | "steps">) => j.kind === "run"
+  && (j.state === "failed" || j.state === "cancelled") && j.app?.state === "failed"
+  && j.steps.length > 0 && j.steps.every((s) => s.target === "app");

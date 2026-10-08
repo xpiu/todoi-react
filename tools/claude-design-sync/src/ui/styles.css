@@ -1804,15 +1804,21 @@ em {
   padding: 0;
   list-style: none;
 }
-.cds-jobsteps li {
+.cds-jobsteps > li {
   display: grid;
   grid-template-columns: 14px minmax(0, 1fr);
   column-gap: 8px;
   padding: 3px 0;
 }
-.cds-jobsteps li > .cds-quiet {
+.cds-jobsteps > li > .cds-quiet {
   grid-column: 2;
   font-size: 12px;
+}
+.cds-port-evidence {
+  grid-column: 2;
+}
+.cds-port-evidence ul {
+  padding-inline-start: 16px;
 }
 .cds-jobstep-mark {
   width: 7px;

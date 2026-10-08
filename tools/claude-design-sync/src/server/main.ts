@@ -8,7 +8,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 
-import { uploadPending } from "../engine/approvals";
+import { canResume, uploadPending } from "../engine/approvals";
 import { compare, unitBaseline } from "../engine/compare";
 import { directionsFor } from "../engine/directions";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
@@ -26,7 +26,7 @@ import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { kitHome, syncTwins, twinPath, writeDrafts } from "../engine/kitDraft";
 import { storybook, type Storybook } from "../engine/storybook";
 import { visualCompare } from "../engine/visual";
-import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../engine/worktree";
+import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort, verifyResume } from "../engine/worktree";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, findExports, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
 import type { Comparison } from "../engine/types";
@@ -338,8 +338,44 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     const titles = [...new Set(steps.filter((s) => s.kind !== "upload").map((s) => s.featureTitle))];
     const label = titles.join(", ");
     const job = jobs.create("run", titles.length === 1 ? titles[0]! : `Sync ${plural(titles.length, "feature")}`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: jobSteps, covers: [...new Set(steps.flatMap((s) => s.units))], label: label.length > 80 ? `${label.slice(0, 79)}…` : label });
+    jobs.savePlan(job, { comparison: cmp, steps, harness: ctx.config.harness.implement });
     void runPlan(job, cmp, steps, ctx.config.harness.implement);
     return c.json({ job: job.id });
+  });
+
+  app.post("/api/jobs/:id/resume", (c) => {
+    if (jobs.running()) return c.json({ error: "Another job is running" }, 409);
+    const job = jobs.get(c.req.param("id"));
+    if (!job || !canResume(job)) return c.json({ error: "This run has no failed App-only plan to resume" }, 400);
+    try {
+      verifyResume(job.app!);
+      let plan = jobs.plan(job);
+      if (!plan) {
+        // Older runs stored step ids and coverage but not briefs. Recover only the exact original steps.
+        if (!job.snapshotId || !getSnapshot(ctx, job.snapshotId)) throw new Error("The original Design snapshot is missing. Start a new run.");
+        const base = baseFor(job.baseId);
+        if (!base || base.id !== job.baseId || !job.covers) throw new Error("The original sync point or selected parts are missing. Start a new run.");
+        const comparison = getComparison(job.baseId, job.snapshotId, true);
+        const units = Object.fromEntries(comparison.units.map((u) => [u.id, job.covers!.includes(u.id) ? "design-to-app" as const : "skip" as const]));
+        const choices = Object.fromEntries(comparison.features.map((f) => [f.id, "design-to-app" as const]));
+        const planned = planSteps(ctx, comparison, choices, units);
+        const original = job.steps.filter((s) => s.kind === "ai-pull" || s.kind === "merge-css");
+        const steps = original.map((s) => planned.find((p) => p.id === s.id));
+        if (steps.some((s) => !s) || !steps.length) throw new Error("The original plan can no longer be reconstructed exactly. Start a new run.");
+        const recovered = steps as Step[];
+        const covered = new Set(recovered.flatMap((s) => s.units));
+        if (covered.size !== job.covers.length || job.covers.some((id) => !covered.has(id))) throw new Error("The original selected parts changed. Start a new run.");
+        plan = { comparison, steps: recovered, harness: ctx.config.harness.implement };
+        jobs.savePlan(job, plan);
+      }
+      if (plan.steps.some((s) => s.target !== "app")) throw new Error("Mixed App and Design runs cannot be resumed yet. Start a new run.");
+      jobs.resume(job);
+      jobs.log(job, "info", "Resuming the saved App branch: completed steps are kept; unfinished steps and the final check run again.");
+      void runPlan(job, plan.comparison, plan.steps, plan.harness);
+      return c.json({ ok: true });
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : String(e) }, 409);
+    }
   });
 
   /** A job ends only when nothing waits on the developer: no upload to approve, no verified branch to merge */
@@ -394,7 +430,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       const readable = [snapRoot(ctx), join(ctx.state, "sections")];
       for (const d of readable) mkdirSync(d, { recursive: true });
       // App work never touches the developer's checkout: a worktree on its own branch, merged on approval
-      const run = steps.some((s) => s.target === "app") ? createWorktree(ctx, job.id) : undefined;
+      const run = steps.some((s) => s.target === "app") ? job.app ?? createWorktree(ctx, job.id) : undefined;
       if (run) {
         jobs.update(job, { app: run });
         jobs.log(job, "info", `App work runs on ${run.branch}, a separate worktree from ${run.base.slice(0, 7)} on ${run.into}. Your checkout isn't touched until you merge. (${run.worktree})`);
@@ -407,7 +443,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
           keepAppRun(job, "Stopped by you");
           return;
         }
-        if (s.kind === "upload") continue;
+        if (s.kind === "upload" || job.steps.find((step) => step.id === s.id)?.state === "done") continue;
         jobs.step(job, s.id, { state: "running" });
         jobs.log(job, "step", s.title, s.id);
         if (s.kind === "merge-css") {
@@ -415,26 +451,33 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
           const { text, summary } = cssMergeFor(ctx, cmp, unit, s.target);
           const dest = s.target === "app" ? join(run!.worktree, unit.app.paths[0]!) : join(stage!, unit.design.paths[0]!);
           writeFileSync(dest, text);
-          if (s.target === "app") commitAll(run!, `style(tokens): merge Claude Design's ${unit.name} rules`);
+          if (s.target === "app") {
+            commitAll(run!, `style(tokens): merge Claude Design's ${unit.name} rules`);
+            run!.checkpoint = headOf(run!);
+          }
           jobs.step(job, s.id, { state: "done", summary });
           jobs.log(job, "info", summary, s.id);
           continue;
         }
         if (s.target === "app") {
           const before = headOf(run!);
-          const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and finish with a commit there; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
+          const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and commit actual edits there, or report that all selected parts are already implemented; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
           const done = await implementRunner(harness, job, `Drafting “${s.featureTitle}” into the App`, { cwd: run!.worktree, addDirs: readable })(brief, {}, logHarness(job, s.id));
+          if (jobs.signal(job.id)?.aborted) { keepAppRun(job, "Stopped by you"); return; }
           if (!done.ok) {
             jobs.step(job, s.id, { state: "failed", summary: done.result.slice(0, 600) });
             throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
           }
-          // the harness's own "ok" isn't proof: the port must have committed, and left nothing behind
-          const v = verifyPort(run!, before);
+          // The harness must commit edits or explicitly account for every already-implemented unit.
+          const v = verifyPort(run!, before, { result: done.result, units: s.units });
           if (!v.ok) {
             jobs.step(job, s.id, { state: "failed", summary: v.reason });
             throw new Error(`${s.title}: ${v.reason}`);
           }
-          jobs.step(job, s.id, { state: "done", summary: v.commits.map((c) => `${c.hash} ${c.subject}`).join(" · ") });
+          run!.checkpoint = headOf(run!);
+          const summary = v.alreadyImplemented ? "Already implemented: no App changes needed" : v.commits.map((c) => `${c.hash} ${c.subject}`).join(" · ");
+          jobs.step(job, s.id, { state: "done", summary, alreadyImplemented: v.alreadyImplemented });
+          if (v.alreadyImplemented) jobs.log(job, "info", summary, s.id);
           continue;
         }
         // the mechanical kit files come from the App's Storybook, written before the AI refines them
@@ -463,6 +506,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         jobs.step(job, "app-check", { state: "running" });
         jobs.log(job, "step", `Running ${ctx.config.app.check} on ${run.branch}…`, "app-check");
         const check = await runCheck(run, ctx.config.app.check, jobs.signal(job.id));
+        if (jobs.signal(job.id)?.aborted) { keepAppRun(job, "Stopped by you"); return; }
         run.check = check;
         jobs.log(job, check.ok ? "info" : "error", check.output.trim().split("\n").slice(-12).join("\n") || "(no output)", "app-check");
         if (!check.ok) {

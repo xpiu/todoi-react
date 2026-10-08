@@ -7,6 +7,7 @@ import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-re
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type AppState, type FidelityFinding, type Job } from "./api";
+import { canResume } from "../engine/approvals";
 import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
@@ -244,6 +245,13 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
               <span className="cds-jobstep-mark" aria-hidden />
               <span>{s.title}</span>
               {s.summary ? <span className="cds-quiet">{s.summary}</span> : null}
+              {s.alreadyImplemented ? <details className="cds-check-output cds-port-evidence">
+                <summary>Evidence for already implemented parts</summary>
+                <ul>{s.alreadyImplemented.units.map((u) => <li key={u.id}>
+                  <span className="cds-mono cds-break">{u.id}</span>
+                  <ul>{u.evidence.map((e, i) => <li key={i}><span className="cds-mono cds-break">{e.path}</span>: {e.reason}</li>)}</ul>
+                </li>)}</ul>
+              </details> : null}
             </li>
           ))}
         </ol>
@@ -278,6 +286,12 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
           <p className="cds-quiet">
             Nothing was merged. <span className="cds-mono">{app.branch}</span> ({plural(app.commits.length, "commit")}) is in <span className="cds-mono cds-break">{app.worktree}</span>. Discard removes both.
           </p>
+          {canResume(job) ? <>
+            <p className="cds-quiet">Resume keeps completed steps and commits, retries unfinished steps, and runs the final check again.</p>
+            <button type="button" className="cds-btn" disabled={busy || merge.coming} onClick={() => void act(() => api.resume(job.id))}>
+              {busy ? "Resuming…" : "Resume run"}
+            </button>
+          </> : null}
           {app.check && !app.check.ok ? (
             <details className="cds-check-output">
               <summary data-tip="Show the last 40 lines the failed check printed">Output of {app.check.command}</summary>
@@ -364,7 +378,7 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
           )}
         </section>
       ) : null}
-      {err ? <p className="cds-error-inline">{err}</p> : null}
+      {err ? <p className="cds-error-inline" role="alert">{err}</p> : null}
       {held.length ? (
         discarding ? (
           <div className="cds-discard" role="group" aria-label="Discard this run">

@@ -1,6 +1,9 @@
 // App-side ports never touch the developer's checkout: they run in a git worktree on a branch of their
-// own, every port must end in a commit, the repo's check runs there, and nothing reaches the developer's
+// own, every edit must end in a commit, the repo's check runs there, and nothing reaches the developer's
 // branch until they press Merge.
+import { z } from "zod";
+
+import { fileWithin } from "./fsutil";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -30,6 +33,8 @@ export interface AppRun {
   /** working → ready (verified, waiting for Merge) → merged; failed runs are kept for a look until discarded */
   state: "working" | "ready" | "failed" | "merged" | "discarded";
   reason?: string;
+  /** Last clean HEAD saved after a completed step; resume refuses unexpected branch edits. */
+  checkpoint?: string;
 }
 
 /** A worktree on a new branch from HEAD, with the repo's node_modules linked in so its check can run */
@@ -48,7 +53,7 @@ export function createWorktree(ctx: Ctx, runId: string): AppRun {
   git(ctx.repo, ["worktree", "add", "-q", "-b", branch, worktree, base]);
   const modules = join(ctx.repo, "node_modules");
   if (existsSync(modules)) symlinkSync(modules, join(worktree, "node_modules"), "dir");
-  return { worktree, branch, base, into, commits: [], state: "working" };
+  return { worktree, branch, base, into, commits: [], state: "working", checkpoint: base };
 }
 
 /** Commits on the run's branch since `since` (default: since the run started), oldest first */
@@ -65,13 +70,54 @@ export function leftovers(run: AppRun): string[] {
   return out ? out.split("\n").map((l) => l.slice(3)).filter((p) => p !== "node_modules") : [];
 }
 
-/** Did one port do its job: at least one commit since `before`, and nothing left uncommitted? */
-export function verifyPort(run: AppRun, before: string): { ok: true; commits: Array<{ hash: string; subject: string }> } | { ok: false; reason: string } {
+const alreadyImplementedSchema = z.object({
+  units: z.array(z.object({
+    id: z.string().min(1),
+    evidence: z.array(z.object({ path: z.string().min(1), reason: z.string().trim().min(20) })).min(1),
+  })).min(1),
+});
+export type AlreadyImplemented = z.infer<typeof alreadyImplementedSchema>;
+export const ALREADY_IMPLEMENTED_MARKER = "CDS_ALREADY_IMPLEMENTED=";
+
+/** An explicit, per-unit no-change report. A clean checkout alone cannot prove a port succeeded. */
+export function alreadyImplementedReport(result: string, units: string[], repo: string): AlreadyImplemented | null {
+  const lines = result.split("\n").filter((l) => l.startsWith(ALREADY_IMPLEMENTED_MARKER));
+  if (lines.length !== 1) return null;
+  try {
+    const report = alreadyImplementedSchema.parse(JSON.parse(lines[0]!.slice(ALREADY_IMPLEMENTED_MARKER.length)));
+    const ids = report.units.map((u) => u.id);
+    if (ids.length !== units.length || new Set(ids).size !== ids.length || units.some((id) => !ids.includes(id))) return null;
+    if (report.units.some((u) => u.evidence.some((e) => !fileWithin(repo, e.path)))) return null;
+    return report;
+  } catch {
+    return null;
+  }
+}
+
+/** A port commits its edits, or explicitly accounts for every unit it found already implemented. */
+export function verifyPort(run: AppRun, before: string, outcome?: { result: string; units: string[] }):
+  | { ok: true; commits: Array<{ hash: string; subject: string }>; alreadyImplemented?: AlreadyImplemented }
+  | { ok: false; reason: string } {
   const commits = commitsSince(run, before);
   const dirty = leftovers(run);
-  if (!commits.length) return { ok: false, reason: dirty.length ? `It changed ${dirty.length} file(s) but made no commit` : "It made no commit, so nothing was ported" };
-  if (dirty.length) return { ok: false, reason: `It committed, but left ${dirty.length} file(s) uncommitted: ${dirty.slice(0, 5).join(", ")}${dirty.length > 5 ? "…" : ""}` };
-  return { ok: true, commits };
+  if (dirty.length) return { ok: false, reason: commits.length
+    ? `It committed, but left ${dirty.length} file(s) uncommitted: ${dirty.slice(0, 5).join(", ")}${dirty.length > 5 ? "…" : ""}`
+    : `It changed ${dirty.length} file(s) but made no commit` };
+  if (commits.length) return { ok: true, commits };
+  if (headOf(run) !== before) return { ok: false, reason: "It moved the branch backwards instead of porting the feature" };
+  const report = outcome && alreadyImplementedReport(outcome.result, outcome.units, run.worktree);
+  if (report) return { ok: true, commits: [], alreadyImplemented: report };
+  return { ok: false, reason: "No commit or valid already-implemented report; the feature is still unverified" };
+}
+
+/** Validate the saved worktree before any resumed work starts. */
+export function verifyResume(run: AppRun): void {
+  if (!existsSync(run.worktree)) throw new Error("The saved App worktree is missing. Start a new run.");
+  const branch = git(run.worktree, ["symbolic-ref", "--short", "HEAD"]).trim();
+  if (branch !== run.branch) throw new Error("The saved worktree is on a different branch. Restore its branch before resuming.");
+  git(run.worktree, ["merge-base", "--is-ancestor", run.base, "HEAD"]);
+  if (run.checkpoint && headOf(run) !== run.checkpoint) throw new Error("The App branch changed after its last saved step. Review those edits before starting a new run.");
+  if (leftovers(run).length) throw new Error("The App worktree has uncommitted files. Review and remove those changes before resuming, or start a new run to keep them.");
 }
 
 /** Commit what the tool itself wrote (a deterministic token merge) on the run's branch */

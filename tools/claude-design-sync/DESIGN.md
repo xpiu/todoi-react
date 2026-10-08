@@ -307,3 +307,9 @@ Short and functional only, all on `--ease-standard`: colour and outline changes 
 - **Don't** add shadows to anything inside the ledger.
 - **Don't** add decorative motion; a loop must report live status.
 - **Don't** use weights other than 400 and 500, or italics.
+
+### App run recovery
+
+Activity offers **Resume run** in the existing kept-branch section for a failed or interrupted App-only run. The outlined action explains that completed steps and commits are kept, unfinished steps retry, and the final check runs again. It stays disabled during its request; branch validation errors use the panel's inline alert. Resume uses the saved branch and original plan after a server restart. Mixed App/Design runs retain the existing Discard path.
+
+A verified no-change step says **Already implemented: no App changes needed**. A native disclosure below its summary shows evidence for every selected unit: its identifier, existing App file paths, and the specific behavior that satisfies the kit change. Evidence shares the step's text column, wraps in narrow panels, and remains available during draft review. The existing check, architecture scan, review and merge process also applies when no commits were needed.

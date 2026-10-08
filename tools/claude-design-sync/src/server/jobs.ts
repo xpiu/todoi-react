@@ -1,9 +1,13 @@
 // Long-running work (pulls, plan runs, uploads) as jobs with an event log the GUI streams.
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve, sep } from "node:path";
 
+import type { Comparison } from "../engine/types";
+import type { Step } from "../engine/plan";
+import type { HarnessKind } from "../engine/harness";
+import type { AlreadyImplemented } from "../engine/worktree";
 import type { Ctx } from "../engine/config";
-import { appPending, uploadPending } from "../engine/approvals";
+import { appPending, canResume, uploadPending } from "../engine/approvals";
 import { removeWorktree, type AppRun } from "../engine/worktree";
 
 export type JobKind = "pull" | "status" | "run" | "upload";
@@ -23,6 +27,7 @@ export interface StepState {
   target: "app" | "design";
   state: "pending" | "running" | "done" | "failed" | "skipped";
   summary?: string;
+  alreadyImplemented?: AlreadyImplemented;
 }
 
 export interface Job {
@@ -66,6 +71,8 @@ export interface Job {
 }
 
 
+export interface SavedPlan { comparison: Comparison; steps: Step[]; harness: HarnessKind }
+
 type Listener = (e: { job: Job; event?: JobEvent }) => void;
 
 export class Jobs {
@@ -100,8 +107,33 @@ export class Jobs {
     return join(this.ctx.state, "jobs");
   }
   private persist(j: Job) {
-    mkdirSync(this.dir(), { recursive: true });
-    writeFileSync(join(this.dir(), `${j.id}.json`), JSON.stringify(j));
+    this.writeJson(join(this.dir(), `${j.id}.json`), j);
+  }
+  /** Replace complete files atomically so a stopped process cannot tear a checkpoint. */
+  private writeJson(path: string, data: unknown) {
+    mkdirSync(dirname(path), { recursive: true });
+    const temp = `${path}.tmp`;
+    writeFileSync(temp, JSON.stringify(data));
+    renameSync(temp, path);
+  }
+  savePlan(j: Job, plan: SavedPlan) {
+    this.writeJson(join(this.ctx.state, "plans", `${j.id}.json`), plan);
+  }
+  plan(j: Job): SavedPlan | null {
+    const path = join(this.ctx.state, "plans", `${j.id}.json`);
+    return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) as SavedPlan : null;
+  }
+  resume(j: Job) {
+    if (!canResume(j)) throw new Error("This run cannot be resumed");
+    this.aborts.set(j.id, new AbortController());
+    j.state = "running";
+    j.endedAt = undefined;
+    j.result = undefined;
+    if (j.app) Object.assign(j.app, { state: "working", reason: undefined, check: undefined, review: undefined });
+    for (const step of j.steps) if (step.state !== "done" || step.kind === "check" || step.kind === "merge") {
+      Object.assign(step, { state: "pending", summary: undefined, alreadyImplemented: undefined });
+    }
+    this.update(j, {});
   }
   list(): Job[] {
     return [...this.jobs.values()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));

@@ -463,7 +463,7 @@ describe("App runs in a worktree", () => {
     expect(run.worktree.startsWith(fx.repo)).toBe(false);
 
     let before = headOf(run);
-    expect(verifyPort(run, before)).toEqual({ ok: false, reason: "It made no commit, so nothing was ported" });
+    expect(verifyPort(run, before)).toEqual({ ok: false, reason: "No commit or valid already-implemented report; the feature is still unverified" });
     writeFileSync(join(run.worktree, "DESIGN.md"), "# Spec, edited\n");
     expect(verifyPort(run, before)).toMatchObject({ ok: false, reason: "It changed 1 file(s) but made no commit" });
     commitIn(run.worktree, "DESIGN.md", "# Spec, edited\n", "docs: spec");

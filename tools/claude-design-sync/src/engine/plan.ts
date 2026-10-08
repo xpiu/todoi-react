@@ -243,7 +243,7 @@ const APP_RULES = `App conventions (this repo, React 19 + TypeScript; read CLAUD
 - The kit's .d.ts is the prop contract; translate its React-18 UMD idioms (React.createElement, injected css strings, window globals) into typed React 19 components and plain CSS. Reuse existing helpers (core/text.tsx, ShortcutHint Keys, usePersistedFlag…) instead of duplicating.
 - Minimal theme rules go in src/client/design/tokens/themes/minimal-components.css.
 - DESIGN.md is the spec; update the matching section when behaviour changes.
-- Run \`npm run check\` until it passes, then commit with a conventional message (feat:/fix:/style:) ending with the Co-Authored-By line your harness uses.`;
+- Run \`npm run check\` until it passes; when files changed, commit with a conventional message (feat:/fix:/style:) ending with the Co-Authored-By line your harness uses.`;
 
 export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | "design", units: Unit[]): string {
   const base = cmp.base;
@@ -264,6 +264,7 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   lines.push("## Subfeatures");
   for (const u of units) {
     lines.push(`- **${u.name}** (${u.kind}, ${u.status}) — App: ${u.app.paths.join(", ") || "none"} · Design: ${u.design.paths.join(", ") || "none"}`);
+    lines.push(`  - Subfeature id: ${u.id}`);
     for (const e of [...u.app.evidence.map((x) => `App: ${x}`), ...u.design.evidence.map((x) => `Design: ${x}`)]) lines.push(`  - ${e}`);
   }
   lines.push("");
@@ -298,7 +299,7 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   lines.push(target === "app" ? APP_RULES : KIT_RULES);
   lines.push("");
   lines.push("## Done means");
-  if (target === "app") lines.push("- You read every change listed above, whole.", "- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- Base UI primitives, ref and render-prop forwarding, focused Zustand selectors and ARIA/keyboard behaviour are kept: the tool scans the draft for their loss, and the developer reviews it.", "- `npm run check` passes; one commit per feature.", "- Nothing outside this feature changed.");
+  if (target === "app") lines.push("- You read every change listed above, whole.", "- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- Base UI primitives, ref and render-prop forwarding, focused Zustand selectors and ARIA/keyboard behaviour are kept: the tool scans the draft for their loss, and the developer reviews it.", '- `npm run check` passes; commit actual changes. If every selected subfeature is already implemented, make no empty commit or cosmetic edit: explain the evidence and finish with one line CDS_ALREADY_IMPLEMENTED={"units":[{"id":"<exact subfeature id>","evidence":[{"path":"<existing App file, relative to worktree>","reason":"<specific existing behavior satisfying the kit change>"}]}]}. Include exactly every selected subfeature id, each once, with concrete file evidence. The tool checks the unchanged worktree and runs its final gate; the developer reviews this report.', "- Nothing outside this feature changed.");
   else lines.push("- You read every change listed above, whole.", `- The kit files for every subfeature are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card, readme.md, Minimal rules); Minimal twins are the tool's.`, "- The local bundle builds and every touched card renders without errors.", "- Reply with the list of files you changed.");
   return lines.join("\n");
 }

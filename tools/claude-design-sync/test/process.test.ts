@@ -63,6 +63,18 @@ describe("harness executable resolution", () => {
   });
 });
 
+describe("harness completion reports", () => {
+  it.each([false, true])("keeps the final Codex agent message as its result (trailing newline: %s)", async (newline) => {
+    const evidence = 'CDS_ALREADY_IMPLEMENTED={"units":[{"id":"spec:Board","evidence":[{"path":"DESIGN.md","reason":"Existing behavior matches the requested kit change."}]}]}';
+    script(`
+      console.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:'Inspecting the App'}}));
+      console.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:${JSON.stringify(evidence)}}}));
+      process.stdout.write(JSON.stringify({type:'turn.completed'}) + ${JSON.stringify(newline ? "\n" : "")});
+    `);
+    expect(await runHarness({ kind: "codex", bin, cwd: root, prompt: "test" }, () => {})).toMatchObject({ ok: true, result: evidence });
+  });
+});
+
 describe("subprocess lifecycle", () => {
   it("does not spawn harnesses or checks after cancellation", async () => {
     const marker = join(root, "started");

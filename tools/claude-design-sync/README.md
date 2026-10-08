@@ -158,7 +158,7 @@ The AI still writes the `.jsx`, the readme's prose and the Minimal CSS rules. Th
 | **Design snapshot** | A copy of the project's text files in `.state/snapshots/<id>/files/`, from one of three sources:<br>a **pull** (headless Claude Code + DesignSync);<br>an **import** (a project export);<br>an **upload** (the previous snapshot plus what went up). |
 | **Unit** | One comparable thing:<br>a component (`components/<area>/X.jsx` + `.d.ts` + `.prompt.md` ↔ `src/client/design/<area>/X.tsx` + `.css`);<br>a token file;<br>a spec section (`readme.md` ↔ `DESIGN.md`, by `##` heading);<br>a screen (`ui_kits/todoi/*`, a reference read beside its App screen in `src/client/app/*`, never ported);<br>a preview card with its Minimal twin.<br>Pairing rules and renames live in `config.json`. |
 | **Feature** | Changed units grouped into work: App commits since the sync point, plus Design preview cards (with the components they render).<br>A card joins the commit that shares the most units.<br>Hub components (Button, Menu…) don't glue features together.<br>Cards whose only change is a new Minimal twin become one feature. |
-| **Step** | What a direction turns into:<br>a **CSS merge** for token CSS (rule-level three-way, no AI);<br>an **AI draft → App** (React 19 and the repo's conventions, one commit per port, on the run's branch, scanned and reviewed before it merges);<br>an **AI port → Design** (into a staging copy of the kit, with the twin, readme and Minimal rules);<br>an **Upload** (after approval). |
+| **Step** | What a direction turns into:<br>a **CSS merge** for token CSS (rule-level three-way, no AI);<br>an **AI draft → App** (React 19 and the repo's conventions, committed changes or an evidenced already-implemented report, on the run's branch, scanned and reviewed before it merges);<br>an **AI port → Design** (into a staging copy of the kit, with the twin, readme and Minimal rules);<br>an **Upload** (after approval). |
 
 Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design ahead*, *new in App*, *new in Design*, *in sync*, *not dated* (no baseline yet on one side).
 
@@ -171,9 +171,10 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
   - Claude Code (`claude -p`) may edit and run commands there, and reads the Design snapshot.
   - A detached HEAD is refused.
 - **The tool checks the work itself.**
-  - Each port must commit and leave nothing uncommitted, or the run stops.
+  - Each port must commit its edits and leave nothing uncommitted. An already-implemented feature instead returns an explicit report covering every selected unit with existing App file paths and concrete evidence. The tool verifies the report's coverage and files, checks the worktree stayed clean at the same HEAD, and shows the evidence in Activity for your review. No empty or cosmetic commit is required. A bare success message is still unverified and stops the run.
   - Then `app.check` (`npm run check`) must pass on the branch.
-  - A failed run keeps its branch for a look; **Discard** removes it.
+  - A failed or interrupted App-only run keeps its branch. **Resume run** in Activity reuses it, keeps completed steps and commits, retries unfinished steps, and reruns the final check. It refuses missing, dirty, switched, or unexpectedly edited worktrees. Mixed App/Design runs still need a new run. **Discard** removes the saved branch and worktree.
+  - Job checkpoints and original plans are saved atomically under `.state/jobs/` and `.state/plans/`, so recovery survives a server restart. Older App-only runs can recover their exact step IDs from their stored sync point, snapshot and coverage; if those steps cannot be reconstructed, the tool asks for a new run.
 - **Nothing reaches your branch until you press Merge.**
   - It fast-forwards when it can and makes a merge commit when you committed meanwhile.
   - A conflict changes nothing and says so.

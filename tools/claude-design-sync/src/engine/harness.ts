@@ -151,27 +151,30 @@ export function runHarness(o: RunOptions, onEvent: (e: HarnessEvent) => void): P
     const child = spawn(executable, args, { cwd: o.cwd, env: process.env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
     let done: Extract<HarnessEvent, { type: "done" }> | null = null;
     let buf = "";
+    let lastText = "";
     const parse = o.kind === "codex" ? parseCodexLine : parseClaudeLine;
+    const consumeLine = (line: string) => {
+      for (const ev of parse(line)) {
+        if (ev.type === "text") lastText = ev.text;
+        if (ev.type === "done") done = ev;
+        onEvent(ev);
+      }
+    };
     child.stdout.on("data", (d: Buffer) => {
       buf += d.toString();
       let i;
       while ((i = buf.indexOf("\n")) >= 0) {
         const line = buf.slice(0, i);
         buf = buf.slice(i + 1);
-        for (const ev of parse(line)) {
-          if (ev.type === "done") done = ev;
-          onEvent(ev);
-        }
+        consumeLine(line);
       }
     });
     child.stderr.on("data", (d: Buffer) => onEvent({ type: "stderr", text: d.toString() }));
     terminateOnAbort(child, o.signal);
     child.on("error", (err) => resolve({ type: "done", ok: false, result: `Couldn't start ${cmd}: ${err.message}` }));
     child.on("close", (code) => {
-      if (buf.trim()) for (const ev of parse(buf)) {
-        if (ev.type === "done") done = ev;
-        onEvent(ev);
-      }
+      if (buf.trim()) consumeLine(buf);
+      if (done?.ok && !done.result) done.result = lastText;
       resolve(o.signal?.aborted ? { type: "done", ok: false, result: "Stopped by you" } : done ?? { type: "done", ok: code === 0, result: code === 0 ? "" : `${cmd} exited with code ${code}` });
     });
   });

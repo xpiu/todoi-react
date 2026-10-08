@@ -100,6 +100,7 @@ export const api = {
   upload: (id: string, paths: string[]) => call<{ ok: true }>(`/api/jobs/${id}/upload`, { body: { paths } }),
   /** Read the handed-off files back from Claude Design; the upload step closes once all match */
   uploadCheck: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/upload-check`, { method: "POST" }),
+  resume: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/resume`, { method: "POST" }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
   /** `reviewed`: the developer confirmed their review of a draft (required for runs that ported kit code) */
   merge: (id: string, reviewed = false) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { body: { reviewed } }),
