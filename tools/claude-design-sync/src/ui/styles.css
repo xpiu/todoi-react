@@ -1697,6 +1697,9 @@ em {
 }
 
 /* ── Activity panel ──────────────────────────────────────────────────────────── */
+.cds.has-wide-panel {
+  --cds-panel: min(800px, 65vw);
+}
 .cds-panel {
   position: fixed;
   top: var(--cds-bar);
@@ -1724,6 +1727,24 @@ em {
   justify-content: space-between;
   padding: 10px 12px 10px 20px;
   border-bottom: var(--cds-hair);
+  flex: none;
+  gap: 12px;
+}
+.cds-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cds-panel-actions .cds-icon {
+  width: 32px;
+  height: 32px;
+}
+.cds-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
 }
 .cds-panel-head h2 {
   margin: 0;
@@ -1737,8 +1758,6 @@ em {
   flex-direction: column;
   padding: 6px 0;
   border-bottom: var(--cds-hair);
-  max-height: 200px;
-  overflow: auto;
 }
 .cds-job {
   display: grid;
@@ -1770,14 +1789,79 @@ em {
   font: 400 11px/1.45 var(--font-mono);
   color: var(--ink-400);
 }
-/* scrolls as a whole when approvals and steps outgrow the panel; the log keeps its own scroll */
+/* One sidebar scroll reaches all jobs, steps and approvals; the log has a deliberate reading height. */
 .cds-jobview {
+  padding: 14px 20px 0;
+}
+.cds-log-section {
+  margin: 16px -20px 0;
+  border-top: var(--cds-hair);
+}
+.cds-log-toolbar {
+  padding: 12px 20px;
+  background: var(--chrome-canvas);
+}
+.cds-log-heading,
+.cds-log-actions,
+.cds-log-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.cds-log-heading {
+  justify-content: space-between;
+}
+.cds-log-heading h4 {
+  margin: 0;
+  font: 500 13px/1.45 var(--font-ui);
+}
+.cds-log-job {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+}
+.cds-log-navigation {
+  margin-top: 8px;
+}
+.cds-log-navigation [aria-pressed="true"] {
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.cds-panel-actions .cds-link,
+.cds-log-navigation .cds-link {
+  min-height: 32px;
+}
+/* Expanded log stays in the same panel and preserves the run's approval state. */
+.cds-panel[data-log-expanded] .cds-panel-body,
+.cds-panel[data-log-expanded] .cds-jobview,
+.cds-panel[data-log-expanded] .cds-log-section {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.cds-panel[data-log-expanded] .cds-panel-body {
+  overflow: hidden;
+}
+.cds-panel[data-log-expanded] .cds-jobs,
+.cds-panel[data-log-expanded] .cds-merge-strip {
+  display: none;
+}
+.cds-panel[data-log-expanded] .cds-jobview {
+  padding-top: 0;
+}
+.cds-panel[data-log-expanded] .cds-log-section {
+  margin-top: 0;
+  border-top: 0;
+}
+.cds-panel[data-log-expanded] .cds-log {
+  height: auto;
   min-height: 0;
   flex: 1;
-  overflow-y: auto;
-  padding: 14px 20px 0;
+}
+.cds-log-toolbar {
+  flex: none;
 }
 .cds-jobview-head h3 {
   margin: 0;
@@ -2086,10 +2170,9 @@ em {
   height: 360px;
 }
 .cds-log {
-  flex: 1;
-  min-height: 120px;
+  height: clamp(180px, 35dvh, 360px);
   overflow: auto;
-  margin: 0 -20px;
+  margin: 0;
   padding: 8px 20px 16px;
   list-style: none;
   background: var(--cds-wash);
@@ -2102,7 +2185,13 @@ em {
   gap: 8px;
   padding: 1px 0;
   color: var(--ink-600);
-  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.cds-log li > span {
+  white-space: pre-wrap;
+}
+.cds-log .cds-log-empty {
+  display: block;
 }
 .cds-log time {
   color: var(--ink-400);
@@ -2851,6 +2940,9 @@ em {
   }
   .cds-panel {
     width: 100vw;
+  }
+  .cds-panel-width {
+    display: none;
   }
 }
 

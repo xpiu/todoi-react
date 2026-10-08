@@ -3,7 +3,7 @@
 // upload itself runs in Claude Code, where DesignSync's prompt can be approved, and is read back here),
 // and Discard gives up whatever is still waiting. A run waiting for Merge is pinned above the log even while
 // another job is shown.
-import { CircleAlert, Check, GitMerge, LoaderCircle, Upload, X } from "lucide-react";
+import { CircleAlert, Check, GitMerge, LoaderCircle, Maximize2, Minimize2, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type AppState, type FidelityFinding, type Job } from "./api";
@@ -14,13 +14,12 @@ import { TIP } from "./Tooltip";
 
 const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", done: "done", failed: "failed", cancelled: "stopped" };
 
-export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: { state: AppState | null; merge: MergeOffer; focus: string | null; onFocus: (id: string) => void; onClose: () => void; onChanged: () => void }) {
+export function Activity({ state, merge, focus, onFocus, wide, onToggleWide, expandedLog, onExpandLog, onClose, onChanged }: { state: AppState | null; merge: MergeOffer; focus: string | null; onFocus: (id: string) => void; wide: boolean; onToggleWide: () => void; expandedLog: boolean; onExpandLog: (expanded: boolean) => void; onClose: () => void; onChanged: () => void }) {
   const jobs = state?.jobs ?? [];
   const id = focus ?? jobs[0]?.id ?? null;
   const [job, setJob] = useState<Job | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
-  const followLog = useRef(true);
-  const logJob = useRef<string | null>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const [historyLimit, setHistoryLimit] = useState(8);
   const unfinished = (j: AppState["jobs"][number]) => j.state === "running" || j.state === "awaiting-approval" || appPending(j);
   const history = jobs.filter((j) => !unfinished(j));
@@ -41,46 +40,50 @@ export function Activity({ state, merge, focus, onFocus, onClose, onChanged }: {
   }, [id]);
   const shown = job && job.id === id ? job : null;
 
-  // Keep following new entries until the reader scrolls away. A different job starts at its latest entry.
-  useEffect(() => {
-    if (shown?.id !== logJob.current) {
-      logJob.current = shown?.id ?? null;
-      followLog.current = true;
-    }
-    const el = logRef.current;
-    if (el && followLog.current) el.scrollTop = el.scrollHeight;
-  }, [shown]);
-  const onLogScroll = () => {
-    const el = logRef.current;
-    if (el) followLog.current = el.scrollHeight - el.clientHeight - el.scrollTop < 32;
+  const showJobs = () => {
+    onExpandLog(false);
+    requestAnimationFrame(() => bodyRef.current?.scrollTo({ top: 0 }));
+  };
+  const jumpToLog = () => {
+    logRef.current?.closest(".cds-log-section")?.scrollIntoView({ block: "nearest" });
+    logRef.current?.focus({ preventScroll: true });
   };
 
   return (
-    <aside className="cds-panel" aria-label="Activity">
+    <aside className="cds-panel" aria-label="Activity" data-log-expanded={expandedLog || undefined}>
       <header className="cds-panel-head">
         <h2>Activity</h2>
-        <button type="button" className="cds-icon" onClick={onClose} aria-label="Close activity" data-tip="Close the activity panel. Jobs keep running">
-          <X size={16} strokeWidth={1.75} aria-hidden />
-        </button>
+        <div className="cds-panel-actions">
+          <button type="button" className="cds-link" onClick={showJobs}>Jobs</button>
+          <button type="button" className="cds-link" onClick={jumpToLog} disabled={!shown}>Jump to log</button>
+          <button type="button" className="cds-icon cds-panel-width" onClick={onToggleWide} aria-label={wide ? "Narrow activity" : "Widen activity"} aria-pressed={wide} data-tip={wide ? "Return to the sidebar width" : "Give steps and log more room"}>
+            {wide ? <Minimize2 size={16} strokeWidth={1.75} aria-hidden /> : <Maximize2 size={16} strokeWidth={1.75} aria-hidden />}
+          </button>
+          <button type="button" className="cds-icon" onClick={onClose} aria-label="Close activity" data-tip="Close the activity panel. Jobs keep running">
+            <X size={16} strokeWidth={1.75} aria-hidden />
+          </button>
+        </div>
       </header>
-      {jobs.length ? (
-        <nav className="cds-jobs" aria-label="Jobs">
-          {visibleJobs.map((j) => (
-            <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} data-tip={`${j.id === id ? "Shown below" : "Show its steps and log"}: ${STATE_WORD[j.state]}`} onClick={() => onFocus(j.id)}>
-              <span className="cds-job-mark" data-state={j.state} aria-hidden>
-                {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : j.app?.state === "ready" ? <GitMerge size={12} /> : <Upload size={12} />}
-              </span>
-              <span className="cds-job-title">{j.title}</span>
-              <span className="cds-job-time">{fmtTime(j.startedAt)}</span>
-            </button>
-          ))}
-          {hiddenJobs ? <button type="button" className="cds-link cds-job-history" data-tip="Show eight more completed or stopped jobs. Unfinished jobs always stay visible" onClick={() => setHistoryLimit((limit) => limit + 8)}>Show older jobs ({hiddenJobs})</button> : null}
-        </nav>
-      ) : (
-        <p className="cds-quiet cds-pad">No jobs yet. Pulls, runs and uploads appear here with their full log.</p>
-      )}
-      <MergeStrip offer={merge} shownId={id} onShow={onFocus} />
-      {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}:${shown.staged?.filter((s) => s.conflict).length ?? 0}`} job={shown} merge={merge} logRef={logRef} onLogScroll={onLogScroll} onChanged={onChanged} /> : null}
+      <div ref={bodyRef} className="cds-panel-body" tabIndex={0} role="region" aria-label="Activity details">
+        {jobs.length ? (
+          <nav className="cds-jobs" aria-label="Jobs">
+            {visibleJobs.map((j) => (
+              <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} data-tip={`${j.id === id ? "Shown below" : "Show its steps and log"}: ${STATE_WORD[j.state]}`} onClick={() => onFocus(j.id)}>
+                <span className="cds-job-mark" data-state={j.state} aria-hidden>
+                  {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : j.app?.state === "ready" ? <GitMerge size={12} /> : <Upload size={12} />}
+                </span>
+                <span className="cds-job-title">{j.title}</span>
+                <span className="cds-job-time">{fmtTime(j.startedAt)}</span>
+              </button>
+            ))}
+            {hiddenJobs ? <button type="button" className="cds-link cds-job-history" data-tip="Show eight more completed or stopped jobs. Unfinished jobs always stay visible" onClick={() => setHistoryLimit((limit) => limit + 8)}>Show older jobs ({hiddenJobs})</button> : null}
+          </nav>
+        ) : (
+          <p className="cds-quiet cds-pad">No jobs yet. Pulls, runs and uploads appear here with their full log.</p>
+        )}
+        <MergeStrip offer={merge} shownId={id} onShow={onFocus} />
+        {shown ? <JobView key={`${shown.id}:${shown.staged?.length ?? 0}:${shown.staged?.filter((s) => s.conflict).length ?? 0}`} job={shown} merge={merge} logRef={logRef} expandedLog={expandedLog} onToggleLog={() => onExpandLog(!expandedLog)} onChanged={onChanged} /> : null}
+      </div>
     </aside>
   );
 }
@@ -188,7 +191,15 @@ function DraftReview({ job, merge }: { job: Job & { app: NonNullable<Job["app"]>
   );
 }
 
-function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; onLogScroll: () => void; onChanged: () => void }) {
+function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { job: Job; merge: MergeOffer; logRef: React.RefObject<HTMLOListElement | null>; expandedLog: boolean; onToggleLog: () => void; onChanged: () => void }) {
+  const head = useRef<HTMLHeadingElement>(null);
+  const toggleLog = () => {
+    onToggleLog();
+    if (expandedLog) requestAnimationFrame(() => {
+      head.current?.focus({ preventScroll: true });
+      head.current?.scrollIntoView({ block: "start" });
+    });
+  };
   const staged = job.staged ?? [];
   // a request already handed to Claude Code keeps its files ticked
   // files that need a look (render errors, a draft without its component) start unticked
@@ -224,187 +235,242 @@ function JobView({ job, merge, logRef, onLogScroll, onChanged }: { job: Job; mer
   };
   return (
     <div className="cds-jobview">
-      <div className="cds-jobview-head">
-        <h3>{job.title}</h3>
-        <p className="cds-quiet">
-          {STATE_WORD[job.state]}
-          {job.progress ? ` · ${job.progress.done}/${job.progress.total} files` : ""}
-          {typeof job.costUsd === "number" && job.costUsd > 0 ? ` · $${job.costUsd.toFixed(2)}` : ""}
-        </p>
-        {job.state === "running" ? (
-          <button type="button" className="cds-link" onClick={() => void api.cancel(job.id)} data-tip="Stop this job and the process it runs">
-            Stop
-          </button>
-        ) : null}
-      </div>
-      {job.progress ? <div className="cds-progress" role="progressbar" aria-valuemin={0} aria-valuemax={job.progress.total} aria-valuenow={job.progress.done}><span style={{ transform: `scaleX(${job.progress.done / Math.max(1, job.progress.total)})` }} /></div> : null}
-      {job.steps.length ? (
-        <ol className="cds-jobsteps">
-          {job.steps.map((s) => (
-            <li key={s.id} data-state={s.state}>
-              <span className="cds-jobstep-mark" aria-hidden />
-              <span>{s.title}</span>
-              {s.summary ? <span className="cds-quiet">{s.summary}</span> : null}
-              {s.alreadyImplemented ? <details className="cds-check-output cds-port-evidence">
-                <summary>Evidence for already implemented parts</summary>
-                <ul>{s.alreadyImplemented.units.map((u) => <li key={u.id}>
-                  <span className="cds-mono cds-break">{u.id}</span>
-                  <ul>{u.evidence.map((e, i) => <li key={i}><span className="cds-mono cds-break">{e.path}</span>: {e.reason}</li>)}</ul>
-                </li>)}</ul>
-              </details> : null}
-            </li>
-          ))}
-        </ol>
-      ) : null}
-      {app?.state === "ready" ? (
-        <section className="cds-approve" aria-labelledby="merge-h">
-          <h4 id="merge-h">{app.review ? "Review the draft, then merge" : "Merge into the App"}</h4>
-          {app.review ? (
-            <p className="cds-quiet">
-              Claude Code drafted kit code into the App on <span className="cds-mono">{app.branch}</span>. <span className="cds-mono">{app.check?.command}</span> passed, so it builds and its tests pass; that doesn't show the App's architecture survived the translation. Nothing in your checkout changes until you merge.
-            </p>
-          ) : (
-            <p className="cds-quiet">
-              The ports ran on <span className="cds-mono">{app.branch}</span>, a separate worktree from <span className="cds-mono">{app.base.slice(0, 7)}</span> on {app.into}. Every port committed, and <span className="cds-mono">{app.check?.command}</span> passed there. Nothing in your checkout changes until you merge.
-            </p>
-          )}
-          <ul className="cds-commits" aria-label="Commits to merge">
-            {app.commits.map((c) => (
-              <li key={c.hash}>
-                <span className="cds-mono">{c.hash}</span> {c.subject}
+      <div className="cds-job-details" hidden={expandedLog}>
+        <div className="cds-jobview-head">
+          <h3 ref={head} tabIndex={-1}>{job.title}</h3>
+          <p className="cds-quiet">
+            {STATE_WORD[job.state]}
+            {job.progress ? ` · ${job.progress.done}/${job.progress.total} files` : ""}
+            {typeof job.costUsd === "number" && job.costUsd > 0 ? ` · $${job.costUsd.toFixed(2)}` : ""}
+          </p>
+          {job.state === "running" ? (
+            <button type="button" className="cds-link" onClick={() => void api.cancel(job.id)} data-tip="Stop this job and the process it runs">
+              Stop
+            </button>
+          ) : null}
+        </div>
+        {job.progress ? <div className="cds-progress" role="progressbar" aria-valuemin={0} aria-valuemax={job.progress.total} aria-valuenow={job.progress.done}><span style={{ transform: `scaleX(${job.progress.done / Math.max(1, job.progress.total)})` }} /></div> : null}
+        {job.steps.length ? (
+          <ol className="cds-jobsteps">
+            {job.steps.map((s) => (
+              <li key={s.id} data-state={s.state}>
+                <span className="cds-jobstep-mark" aria-hidden />
+                <span>{s.title}</span>
+                {s.summary ? <span className="cds-quiet">{s.summary}</span> : null}
+                {s.alreadyImplemented ? <details className="cds-check-output cds-port-evidence">
+                  <summary>Evidence for already implemented parts</summary>
+                  <ul>{s.alreadyImplemented.units.map((u) => <li key={u.id}>
+                    <span className="cds-mono cds-break">{u.id}</span>
+                    <ul>{u.evidence.map((e, i) => <li key={i}><span className="cds-mono cds-break">{e.path}</span>: {e.reason}</li>)}</ul>
+                  </li>)}</ul>
+                </details> : null}
               </li>
             ))}
-          </ul>
-          {app.review ? <DraftReview key={job.id} job={{ ...job, app }} merge={merge} /> : <MergeButton offer={merge} place="panel" job={{ ...job, app }} />}
-          {merge.error ? <p className="cds-error-inline">{merge.error}</p> : null}
-        </section>
-      ) : null}
-      {app?.state === "failed" ? (
-        <section className="cds-approve" aria-labelledby="kept-h">
-          <h4 id="kept-h">App branch kept for a look</h4>
-          <p className="cds-error-inline">{app.reason}</p>
-          <p className="cds-quiet">
-            Nothing was merged. <span className="cds-mono">{app.branch}</span> ({plural(app.commits.length, "commit")}) is in <span className="cds-mono cds-break">{app.worktree}</span>. Discard removes both.
-          </p>
-          {canResume(job) ? <>
-            <p className="cds-quiet">Resume keeps completed steps and commits, retries unfinished steps, and runs the final check again.</p>
-            <button type="button" className="cds-btn" disabled={busy || merge.coming} onClick={() => void act(() => api.resume(job.id))}>
-              {busy ? "Resuming…" : "Resume run"}
-            </button>
-          </> : null}
-          {app.check && !app.check.ok ? (
-            <details className="cds-check-output">
-              <summary data-tip="Show the last 40 lines the failed check printed">Output of {app.check.command}</summary>
-              <pre>{app.check.output.trim().split("\n").slice(-40).join("\n")}</pre>
-            </details>
-          ) : null}
-        </section>
-      ) : null}
-      {uploadWaiting ? (
-        <section className="cds-approve" aria-labelledby="approve-h">
-          <h4 id="approve-h">Upload to Claude Design</h4>
-          <p className="cds-quiet">Only the ticked files go up, and nothing in Claude Design is deleted. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't offered. The upload runs in Claude Code, where DesignSync asks you to approve it.</p>
-          <p className="cds-files-sum">{stagedSummary(job)}</p>
-          <ul className="cds-files">
-            {[...staged].sort((a, b) => (fileOrder(a.path) < fileOrder(b.path) ? -1 : 1)).map((s) => {
-              const errors = cardErr.get(s.path);
-              return (
-                <li key={s.path} className={/-minimal\.card\.html$/.test(s.path) && staged.some((x) => x.path === s.path.replace(/-minimal\.card\.html$/, ".card.html")) ? "is-twin" : undefined}>
-                  <label data-tip={picked.has(s.path) ? "Goes up with the upload. Untick to leave it out" : "Left out of the upload. Tick to include it"}>
-                    <input type="checkbox" checked={picked.has(s.path)} onChange={(e) => setPicked((p) => { const n = new Set(p); if (e.target.checked) n.add(s.path); else n.delete(s.path); return n; })} />
-                    <span className="cds-file-text">
-                      <span className="cds-path cds-break">{s.path}</span>
-                      <span className="cds-file-meta">
-                        <span className="cds-kind">{s.status}</span>
-                        {job.origin?.[s.path] ? <span className="cds-file-origin">· {ORIGIN_WORD[job.origin[s.path]!]}</span> : null}
-                        {errors ? <span className={errors.length ? "cds-error-inline" : "cds-ok"}>{errors.length ? `${plural(errors.length, "error")}` : "renders"}</span> : null}
-                      </span>
-                    </span>
-                  </label>
-                  {/\.html$/.test(s.path) && stageId ? (
-                    <button type="button" className="cds-link" data-tip={preview === s.path ? TIP.closePreview : "Render this staged file as it would look in Claude Design"} onClick={() => setPreview((p) => (p === s.path ? null : s.path))}>
-                      {preview === s.path ? "Close" : "Preview"}
-                    </button>
-                  ) : null}
-                  {s.conflict ? <p className="cds-error-inline cds-file-note">{s.conflict}</p> : null}
-                  {!s.conflict && job.fileNotes?.[s.path] ? <p className="cds-error-inline cds-file-note">{job.fileNotes[s.path]}</p> : null}
+          </ol>
+        ) : null}
+        {app?.state === "ready" ? (
+          <section className="cds-approve" aria-labelledby="merge-h">
+            <h4 id="merge-h">{app.review ? "Review the draft, then merge" : "Merge into the App"}</h4>
+            {app.review ? (
+              <p className="cds-quiet">
+                Claude Code drafted kit code into the App on <span className="cds-mono">{app.branch}</span>. <span className="cds-mono">{app.check?.command}</span> passed, so it builds and its tests pass; that doesn't show the App's architecture survived the translation. Nothing in your checkout changes until you merge.
+              </p>
+            ) : (
+              <p className="cds-quiet">
+                The ports ran on <span className="cds-mono">{app.branch}</span>, a separate worktree from <span className="cds-mono">{app.base.slice(0, 7)}</span> on {app.into}. Every port committed, and <span className="cds-mono">{app.check?.command}</span> passed there. Nothing in your checkout changes until you merge.
+              </p>
+            )}
+            <ul className="cds-commits" aria-label="Commits to merge">
+              {app.commits.map((c) => (
+                <li key={c.hash}>
+                  <span className="cds-mono">{c.hash}</span> {c.subject}
                 </li>
-              );
-            })}
-          </ul>
-          {preview && stageId ? <div className="cds-preview"><iframe title={`Staged ${preview}`} src={`/kit/stage/${stageId}/${preview}`} sandbox="allow-scripts allow-same-origin" /></div> : null}
-          {handoff ? (
-            <>
-              <ol className="cds-handoff" aria-label="Upload from Claude Code">
-                <li>
-                  <span>
-                    <strong>Copy the request</strong> and paste it into a Claude Code session in this repo, then press Enter.
-                  </span>
-                  <span className="cds-step-actions">
-                    <CopyLink text={handoff.prompt} label="Copy request" tip="Copy the request, to paste into a Claude Code session that's already open" />
-                    <button type="button" className="cds-link" aria-expanded={showRequest} data-tip={showRequest ? "Hide the request" : "Read the request Claude Code gets: two DesignSync calls, a ping back to this tool, and a report"} onClick={() => setShowRequest((s) => !s)}>
-                      {showRequest ? "Hide request" : "Read request"}
-                    </button>
-                  </span>
-                  <span className="cds-quiet">
-                    No session open? <CopyLink text={handoff.command} label="Copy terminal command" tip="Copy a shell command that starts Claude Code in this repo with the request" /> and run it in a terminal instead.
-                  </span>
-                  {showRequest ? <pre className="cds-brief">{handoff.prompt}</pre> : null}
-                </li>
-                <li>
-                  <span>
-                    <strong>Allow the upload</strong> when Claude Code asks. Its DesignSync prompt names the staging folder <span className="cds-mono">{stageId}</span> and {handoff.paths.length === 1 ? "the file" : `the ${handoff.paths.length} files`} ticked above. In bypass-permissions mode it doesn't ask.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    <strong>Read Claude Code's report.</strong> It starts with “Upload to Claude Design: SUCCEEDED” or “FAILED”, and says what to do next.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    <strong>That's it when it succeeded.</strong> Claude Code tells this tool, which reads the files back from Claude Design and marks the run synced when they match. If nothing happens here, check the upload yourself:
-                  </span>
-                </li>
-              </ol>
-              <button type="button" className="cds-btn cds-btn-primary" disabled={busy} data-tip="Read the files back from Claude Design now. When every one matches its staged copy, the run is marked synced" onClick={() => act(() => api.uploadCheck(job.id))}>
-                <Check size={14} strokeWidth={1.75} aria-hidden /> Check the upload
+              ))}
+            </ul>
+            {app.review ? <DraftReview key={job.id} job={{ ...job, app }} merge={merge} /> : <MergeButton offer={merge} place="panel" job={{ ...job, app }} />}
+            {merge.error ? <p className="cds-error-inline">{merge.error}</p> : null}
+          </section>
+        ) : null}
+        {app?.state === "failed" ? (
+          <section className="cds-approve" aria-labelledby="kept-h">
+            <h4 id="kept-h">App branch kept for a look</h4>
+            <p className="cds-error-inline">{app.reason}</p>
+            <p className="cds-quiet">
+              Nothing was merged. <span className="cds-mono">{app.branch}</span> ({plural(app.commits.length, "commit")}) is in <span className="cds-mono cds-break">{app.worktree}</span>. Discard removes both.
+            </p>
+            {canResume(job) ? <>
+              <p className="cds-quiet">Resume keeps completed steps and commits, retries unfinished steps, and runs the final check again.</p>
+              <button type="button" className="cds-btn" disabled={busy || merge.coming} onClick={() => void act(() => api.resume(job.id))}>
+                {busy ? "Resuming…" : "Resume run"}
               </button>
-            </>
+            </> : null}
+            {app.check && !app.check.ok ? (
+              <details className="cds-check-output">
+                <summary data-tip="Show the last 40 lines the failed check printed">Output of {app.check.command}</summary>
+                <pre>{app.check.output.trim().split("\n").slice(-40).join("\n")}</pre>
+              </details>
+            ) : null}
+          </section>
+        ) : null}
+        {uploadWaiting ? (
+          <section className="cds-approve" aria-labelledby="approve-h">
+            <h4 id="approve-h">Upload to Claude Design</h4>
+            <p className="cds-quiet">Only the ticked files go up, and nothing in Claude Design is deleted. Edits made in Claude Design since this run's snapshot are merged in first; a file that can't be merged isn't offered. The upload runs in Claude Code, where DesignSync asks you to approve it.</p>
+            <p className="cds-files-sum">{stagedSummary(job)}</p>
+            <ul className="cds-files">
+              {[...staged].sort((a, b) => (fileOrder(a.path) < fileOrder(b.path) ? -1 : 1)).map((s) => {
+                const errors = cardErr.get(s.path);
+                return (
+                  <li key={s.path} className={/-minimal\.card\.html$/.test(s.path) && staged.some((x) => x.path === s.path.replace(/-minimal\.card\.html$/, ".card.html")) ? "is-twin" : undefined}>
+                    <label data-tip={picked.has(s.path) ? "Goes up with the upload. Untick to leave it out" : "Left out of the upload. Tick to include it"}>
+                      <input type="checkbox" checked={picked.has(s.path)} onChange={(e) => setPicked((p) => { const n = new Set(p); if (e.target.checked) n.add(s.path); else n.delete(s.path); return n; })} />
+                      <span className="cds-file-text">
+                        <span className="cds-path cds-break">{s.path}</span>
+                        <span className="cds-file-meta">
+                          <span className="cds-kind">{s.status}</span>
+                          {job.origin?.[s.path] ? <span className="cds-file-origin">· {ORIGIN_WORD[job.origin[s.path]!]}</span> : null}
+                          {errors ? <span className={errors.length ? "cds-error-inline" : "cds-ok"}>{errors.length ? `${plural(errors.length, "error")}` : "renders"}</span> : null}
+                        </span>
+                      </span>
+                    </label>
+                    {/\.html$/.test(s.path) && stageId ? (
+                      <button type="button" className="cds-link" data-tip={preview === s.path ? TIP.closePreview : "Render this staged file as it would look in Claude Design"} onClick={() => setPreview((p) => (p === s.path ? null : s.path))}>
+                        {preview === s.path ? "Close" : "Preview"}
+                      </button>
+                    ) : null}
+                    {s.conflict ? <p className="cds-error-inline cds-file-note">{s.conflict}</p> : null}
+                    {!s.conflict && job.fileNotes?.[s.path] ? <p className="cds-error-inline cds-file-note">{job.fileNotes[s.path]}</p> : null}
+                  </li>
+                );
+              })}
+            </ul>
+            {preview && stageId ? <div className="cds-preview"><iframe title={`Staged ${preview}`} src={`/kit/stage/${stageId}/${preview}`} sandbox="allow-scripts allow-same-origin" /></div> : null}
+            {handoff ? (
+              <>
+                <ol className="cds-handoff" aria-label="Upload from Claude Code">
+                  <li>
+                    <span>
+                      <strong>Copy the request</strong> and paste it into a Claude Code session in this repo, then press Enter.
+                    </span>
+                    <span className="cds-step-actions">
+                      <CopyLink text={handoff.prompt} label="Copy request" tip="Copy the request, to paste into a Claude Code session that's already open" />
+                      <button type="button" className="cds-link" aria-expanded={showRequest} data-tip={showRequest ? "Hide the request" : "Read the request Claude Code gets: two DesignSync calls, a ping back to this tool, and a report"} onClick={() => setShowRequest((s) => !s)}>
+                        {showRequest ? "Hide request" : "Read request"}
+                      </button>
+                    </span>
+                    <span className="cds-quiet">
+                      No session open? <CopyLink text={handoff.command} label="Copy terminal command" tip="Copy a shell command that starts Claude Code in this repo with the request" /> and run it in a terminal instead.
+                    </span>
+                    {showRequest ? <pre className="cds-brief">{handoff.prompt}</pre> : null}
+                  </li>
+                  <li>
+                    <span>
+                      <strong>Allow the upload</strong> when Claude Code asks. Its DesignSync prompt names the staging folder <span className="cds-mono">{stageId}</span> and {handoff.paths.length === 1 ? "the file" : `the ${handoff.paths.length} files`} ticked above. In bypass-permissions mode it doesn't ask.
+                    </span>
+                  </li>
+                  <li>
+                    <span>
+                      <strong>Read Claude Code's report.</strong> It starts with “Upload to Claude Design: SUCCEEDED” or “FAILED”, and says what to do next.
+                    </span>
+                  </li>
+                  <li>
+                    <span>
+                      <strong>That's it when it succeeded.</strong> Claude Code tells this tool, which reads the files back from Claude Design and marks the run synced when they match. If nothing happens here, check the upload yourself:
+                    </span>
+                  </li>
+                </ol>
+                <button type="button" className="cds-btn cds-btn-primary" disabled={busy} data-tip="Read the files back from Claude Design now. When every one matches its staged copy, the run is marked synced" onClick={() => act(() => api.uploadCheck(job.id))}>
+                  <Check size={14} strokeWidth={1.75} aria-hidden /> Check the upload
+                </button>
+              </>
+            ) : (
+              <button type="button" className={`cds-btn ${isDraft(job) ? "" : "cds-btn-primary"}`} disabled={!picked.size || busy} data-tip={picked.size ? "Check Claude Design for newer edits to the ticked files, then get the request to paste into Claude Code, where you approve the upload - Costs tokens" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
+                <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")} from Claude Code
+              </button>
+            )}
+          </section>
+        ) : null}
+        {err ? <p className="cds-error-inline" role="alert">{err}</p> : null}
+        {held.length ? (
+          discarding ? (
+            <div className="cds-discard" role="group" aria-label="Discard this run">
+              <span>Discard {held.join(" and ")}?</span>
+              <button type="button" className="cds-btn" disabled={busy} data-tip="Give these up for good. Nothing reaches the App or Claude Design" onClick={() => act(() => api.discard(job.id)).then(() => setDiscarding(false))}>
+                Discard
+              </button>
+              <button type="button" className="cds-link" data-tip="Keep everything waiting for your approval" onClick={() => setDiscarding(false)}>
+                Keep
+              </button>
+            </div>
           ) : (
-            <button type="button" className={`cds-btn ${isDraft(job) ? "" : "cds-btn-primary"}`} disabled={!picked.size || busy} data-tip={picked.size ? "Check Claude Design for newer edits to the ticked files, then get the request to paste into Claude Code, where you approve the upload - Costs tokens" : "Tick at least one file to upload"} onClick={() => act(() => api.upload(job.id, [...picked]))}>
-              <Upload size={14} strokeWidth={1.75} aria-hidden /> Upload {plural(picked.size, "file")} from Claude Code
+            <button type="button" className="cds-link cds-discard-open" onClick={() => setDiscarding(true)} disabled={busy} data-tip="Give up what this run left waiting for approval. Asks first">
+              Discard run…
             </button>
-          )}
-        </section>
-      ) : null}
-      {err ? <p className="cds-error-inline" role="alert">{err}</p> : null}
-      {held.length ? (
-        discarding ? (
-          <div className="cds-discard" role="group" aria-label="Discard this run">
-            <span>Discard {held.join(" and ")}?</span>
-            <button type="button" className="cds-btn" disabled={busy} data-tip="Give these up for good. Nothing reaches the App or Claude Design" onClick={() => act(() => api.discard(job.id)).then(() => setDiscarding(false))}>
-              Discard
-            </button>
-            <button type="button" className="cds-link" data-tip="Keep everything waiting for your approval" onClick={() => setDiscarding(false)}>
-              Keep
-            </button>
+          )
+        ) : null}
+        {job.result && job.state !== "running" && !(app?.state === "failed" && app.reason === job.result) ? <p className={job.state === "failed" ? "cds-error-inline" : "cds-quiet"}>{job.result}</p> : null}
+      </div>
+      <JobLog job={job} logRef={logRef} expanded={expandedLog} onToggleExpanded={toggleLog} />
+    </div>
+  );
+}
+
+function JobLog({ job, logRef, expanded, onToggleExpanded }: { job: Job; logRef: React.RefObject<HTMLOListElement | null>; expanded: boolean; onToggleExpanded: () => void }) {
+  const logText = useMemo(() => job.events.map((e) => `${e.at} [${e.level}] ${e.text}`).join("\n"), [job.events]);
+  const [following, setFollowing] = useState(true);
+  const followRef = useRef(true);
+  const setFollow = (follow: boolean) => {
+    followRef.current = follow;
+    setFollowing(follow);
+  };
+  const latest = () => {
+    setFollow(true);
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  };
+  // Progress updates never move a reader who has paused to inspect an earlier entry.
+  useEffect(() => {
+    const el = logRef.current;
+    if (el && followRef.current && job.events.length) el.scrollTop = el.scrollHeight;
+  }, [job.events, logRef]);
+  useEffect(() => {
+    const el = logRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      if (followRef.current) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [logRef]);
+  return (
+    <section className="cds-log-section" aria-label="Run log">
+      <div className="cds-log-toolbar">
+        <div className="cds-log-heading">
+          <h4>Log <span className="cds-quiet">({job.events.length})</span></h4>
+          <div className="cds-log-actions">
+            <CopyLink text={logText} label="Copy log" tip="Copy every log entry, including timestamps" />
+            <button type="button" className="cds-btn" aria-expanded={expanded} aria-controls="activity-log" onClick={onToggleExpanded}>{expanded ? "Back to run" : "Expand log"}</button>
           </div>
-        ) : (
-          <button type="button" className="cds-link cds-discard-open" onClick={() => setDiscarding(true)} disabled={busy} data-tip="Give up what this run left waiting for approval. Asks first">
-            Discard run…
-          </button>
-        )
-      ) : null}
-      {job.result && job.state !== "running" && !(app?.state === "failed" && app.reason === job.result) ? <p className={job.state === "failed" ? "cds-error-inline" : "cds-quiet"}>{job.result}</p> : null}
-      <ol ref={logRef} onScroll={onLogScroll} className="cds-log" aria-label="Log" aria-live="polite" tabIndex={0}>
+        </div>
+        {expanded ? <p className="cds-log-job">{job.title} · {STATE_WORD[job.state]}</p> : null}
+        <div className="cds-log-navigation" role="group" aria-label="Log navigation">
+          <button type="button" className="cds-link" disabled={!job.events.length} onClick={() => { setFollow(false); if (logRef.current) logRef.current.scrollTop = 0; }}>First entry</button>
+          <button type="button" className="cds-link" disabled={!job.events.length} onClick={latest}>Latest entry</button>
+          <button type="button" className="cds-link" aria-pressed={following} onClick={() => following ? setFollow(false) : latest()}>Follow live log: {following ? "on" : "off"}</button>
+        </div>
+      </div>
+      <ol id="activity-log" ref={logRef} onScroll={() => {
+        const el = logRef.current;
+        if (el) setFollow(el.scrollHeight - el.clientHeight - el.scrollTop < 32);
+      }} className="cds-log" aria-label="Log" aria-live={following ? "polite" : "off"} tabIndex={0}>
         {job.events.map((e, i) => (
           <li key={i} data-level={e.level}>
-            <time>{new Date(e.at).toLocaleTimeString("en-GB")}</time>
+            <time dateTime={e.at}>{new Date(e.at).toLocaleTimeString("en-GB")}</time>
             <span>{e.text}</span>
           </li>
         ))}
+        {!job.events.length ? <li className="cds-log-empty">No log entries yet. New entries will appear here.</li> : null}
       </ol>
-    </div>
+    </section>
   );
 }

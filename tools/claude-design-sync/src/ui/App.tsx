@@ -40,6 +40,8 @@ export function App() {
   // /?job=<id> (linked from the Mapping page) opens that job in the activity panel
   const [activity, setActivity] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
   const [panel, setPanel] = useState(() => !!new URLSearchParams(location.search).get("job"));
+  const [widePanel, setWidePanel] = useState(false);
+  const [expandedLog, setExpandedLog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [runFeatureId, setRunFeatureId] = useState<string | null>(null);
   const [startingRun, setStartingRun] = useState(false);
@@ -87,6 +89,7 @@ export function App() {
   // a finished job only needs the job list again; a merge moves the App, so it recompares
   const openJob = (id: string) => {
     setActivity(id);
+    setExpandedLog(false);
     setPanel(true);
     // the new job joins the list at once: the bar shows it live and Merge greys in while App work ports
     return api.state().then(setState, () => {});
@@ -181,7 +184,7 @@ export function App() {
   const synced = cmp?.units.filter((u) => u.status === "in-sync").length ?? 0;
 
   return (
-    <div className={`cds ${panel ? "has-panel" : ""}`}>
+    <div className={`cds ${panel ? "has-panel" : ""} ${widePanel ? "has-wide-panel" : ""}`}>
       <a className="cds-skip" href="#ledger" data-tip="Jump past the toolbar to the list of features">Skip to the features</a>
       <TopBar state={state} page="plan" merge={merge}>
         {state?.syncPoints.length ? (
@@ -404,7 +407,7 @@ export function App() {
         else refresh(true);
       }} /> : null}
 
-      {panel ? <Activity state={state} merge={merge} focus={activity} onFocus={setActivity} onClose={() => setPanel(false)} onChanged={() => refresh(true)} /> : null}
+      {panel ? <Activity state={state} merge={merge} focus={activity} onFocus={(id) => { setActivity(id); setExpandedLog(false); }} wide={widePanel} onToggleWide={() => setWidePanel((wide) => !wide)} expandedLog={expandedLog} onExpandLog={setExpandedLog} onClose={() => setPanel(false)} onChanged={() => refresh(true)} /> : null}
     </div>
   );
 }
