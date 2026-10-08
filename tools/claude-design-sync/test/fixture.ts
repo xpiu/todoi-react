@@ -1,12 +1,26 @@
 // A throwaway world for tests: an App git repo (sync-point tag + two later commits) and two Design
 // project folders (as at the sync point, and now). Nothing touches the real repo or state.
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { loadConfig, TOOL_DIR, type Ctx } from "../src/engine/config";
 import { importExport, saveSyncPoint } from "../src/engine/snapshots";
+import { runsDir } from "../src/engine/worktree";
+
+// Every temp folder a test makes goes after its test file (Vitest: cleanup.ts) or when its process exits
+// (Playwright workers), with the run worktrees of a fixture repo in it, even when a test forgets or fails first
+const temps: string[] = [];
+export function removeTemps(): void {
+  for (const dir of temps.splice(0)) for (const path of [dir, runsDir(join(dir, "repo"))]) rmSync(path, { recursive: true, force: true });
+}
+process.on("exit", removeTemps);
+export function tempDir(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  temps.push(dir);
+  return dir;
+}
 
 const write = (root: string, files: Record<string, string>) => {
   for (const [p, c] of Object.entries(files)) {
@@ -74,7 +88,7 @@ export interface Fixture {
   nowSnapshot: string;
 }
 
-export function makeFixture(root = mkdtempSync(join(tmpdir(), "cds-fixture-"))): Fixture {
+export function makeFixture(root = tempDir("cds-fixture-")): Fixture {
   const repo = join(root, "repo");
   const state = join(root, "state");
   const designBaseDir = join(root, "design-base");

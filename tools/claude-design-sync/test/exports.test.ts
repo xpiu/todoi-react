@@ -1,19 +1,20 @@
 // Claude Design exports: which project an export belongs to, finding them in Downloads, importing them, and
 // when one counts as fresh (for the GUI only; uploads never trust it)
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { mkdirSync, utimesSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { exportDirs, loadConfig, TOOL_DIR, type Ctx } from "../src/engine/config";
 import { downloadedAfter, exportCovers } from "../src/engine/designsync";
 import { findExports, getSnapshot, importExport, namespaceMatches } from "../src/engine/snapshots";
+import { tempDir } from "./fixture";
 
 const PROJECT = "13419b94-fc55-494b-8a6d-e08632bb71e0";
 
 function setup() {
-  const root = mkdtempSync(join(tmpdir(), "cds-exports-"));
+  const root = tempDir("cds-exports-");
   const config = loadConfig();
   const ctx: Ctx = { repo: root, state: join(root, "state"), config: { ...config, design: { ...config.design, projectId: PROJECT, projectName: "Todoi Design System" } } };
   const downloads = join(root, "Downloads");

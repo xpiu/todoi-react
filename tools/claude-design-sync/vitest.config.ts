@@ -4,6 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tools/claude-design-sync/test/**/*.test.ts"],
+    setupFiles: ["tools/claude-design-sync/test/cleanup.ts"],
     environment: "node",
     testTimeout: 30_000,
   },
