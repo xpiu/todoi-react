@@ -3,7 +3,7 @@
 import { Download, ExternalLink, FileArchive, FolderInput, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type DragEvent } from "react";
 
-import { api, fmtTime, plural, projectUrl, type AppState, type Comparison, type ExportsInfo, type Imported, type SnapshotMeta } from "./api";
+import { api, archiveName, fmtTime, isProjectArchive, plural, projectUrl, type AppState, type Comparison, type ExportsInfo, type Imported } from "./api";
 
 const CHOICE_ID = "cds-refresh";
 const ENTRY_ID = "cds-refresh-open";
@@ -55,14 +55,17 @@ export function RefreshChoice({ choice, comparison, comparisonError, ...props }:
   );
 }
 
-const archiveName = (snapshot: SnapshotMeta) => snapshot.archive?.name ?? snapshot.label.replace(/^Imported /, "");
-
 /** Stored imports are successful events; the comparison confirms which snapshot the app actually uses. */
 function ArchiveStatus({ state, comparison, comparisonError }: { state: AppState; comparison: Comparison | null; comparisonError: string | null }) {
   const current = state.snapshots[0];
-  const imports = state.snapshots.filter((s) => s.source === "import" && (!s.projectId || s.projectId === state.project.id)).slice(0, 3);
+  const imports = state.snapshots.filter((s) => isProjectArchive(s, state.project.id)).slice(0, 3);
   const loaded = !!current && comparison?.designSnapshot?.id === current.id && !comparisonError;
   const storage = current && state.snapshotRoot ? `${state.snapshotRoot}/${current.id}/files` : null;
+  const freshness: Freshness = comparisonError
+    ? { ok: false, text: "Loading could not be confirmed · see the error above" }
+    : loaded
+      ? { ok: true, text: "Loaded successfully · used for comparison" }
+      : { ok: null, text: current ? "Snapshot stored · comparison not loaded yet" : "Import an archive to load its files" };
   return (
     <div className="cds-archive-status">
       <dl className="cds-archive-current">
@@ -75,7 +78,7 @@ function ArchiveStatus({ state, comparison, comparisonError }: { state: AppState
         </div>
         <div>
           <dt>Loaded in this app</dt>
-          <dd><span role="status"><Fresh ok={comparisonError ? false : loaded ? true : null} text={comparisonError ? "Loading could not be confirmed · see the error above" : loaded ? "Loaded successfully · used for comparison" : current ? "Snapshot stored · comparison not loaded yet" : "Import an archive to load its files"} /></span></dd>
+          <dd><span role="status"><Fresh {...freshness} /></span></dd>
           {current?.source === "import" ? <dd className="cds-quiet">The app uses the extracted files stored above.</dd> : null}
         </div>
       </dl>

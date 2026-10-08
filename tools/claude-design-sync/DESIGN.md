@@ -248,6 +248,8 @@ Feature head (chevron rotates 90° when open; title underlines on hover), status
 ### Plan bar
 Pinned summary ("n features · direction · n skipped" in 500, tallies in mono) with Mark selected features synced (the latest run supplies the selection when available) and Review selected sync steps. Open features also offer Mark this feature synced; its dialog selects only that feature. The sheet above holds the shared run confirmation and the mark-synced form. A feature-only confirmation names the feature and reviews its writes, harness, App worktree and upload approval.
 
+When the reviewed steps write into the App, a ruled reminder appears before the write summary. It names the latest imported Project archive and shows the recorded download and import times with year and timezone. It identifies when the comparison instead uses a pull or upload snapshot, and invites a newer archive if Design has changed. Its default button closes the review and focuses the existing inline importer. The user reviews the recalculated steps after importing; the reminder adds no check or model call.
+
 ### Activity panel
 Job list (unfinished jobs first, eight completed jobs initially with Show older jobs to reveal more; square state mark, title, mono time; current job gets a 2px inset ink bar on the left), job view (title, mono state and cost, 2px progress line, step list with square marks: outline pending, pulsing running, ink done, red failed, run-through skipped), and the log on Wash in mono with step lines in 500 and warn/error lines red.
 

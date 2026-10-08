@@ -1636,6 +1636,30 @@ em {
 .cds-confirm li {
   padding: 2px 0;
 }
+.cds-archive-review {
+  margin: 14px 0;
+  padding: 12px 0;
+  border-block: var(--cds-hair);
+  overflow-wrap: anywhere;
+}
+.cds-archive-review h4 {
+  margin: 0 0 8px;
+  font: 500 13px/1.45 var(--font-ui);
+}
+.cds-archive-review p {
+  max-width: 75ch;
+  margin: 4px 0;
+}
+.cds-archive-review strong {
+  font-weight: 500;
+}
+.cds-archive-review .cds-btn {
+  height: auto;
+  min-height: 30px;
+  margin-top: 8px;
+  white-space: normal;
+  text-align: left;
+}
 .cds-proposal-actions,
 .cds-confirm-actions {
   display: flex;

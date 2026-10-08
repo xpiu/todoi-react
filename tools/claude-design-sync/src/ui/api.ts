@@ -215,6 +215,8 @@ export const REFERENCE_NOTE = "Design references are read, never ported.";
 export const KIND_WORD: Record<string, string> = { component: "component", tokens: "tokens", spec: "spec", screen: "screen", card: "preview card", guideline: "guideline" };
 
 export const fmtTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
+export const archiveName = (snapshot: SnapshotMeta) => snapshot.archive?.name ?? snapshot.label.replace(/^Imported /, "");
+export const isProjectArchive = (snapshot: SnapshotMeta, projectId: string) => snapshot.source === "import" && (!snapshot.projectId || snapshot.projectId === projectId);
 export { plural } from "../engine/words";
 export { isStoryFile as isStoryPath } from "../engine/paths";
 

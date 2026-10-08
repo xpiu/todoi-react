@@ -1,8 +1,9 @@
 // Shared review for a whole plan or one feature, before either starts a job.
 import { Play } from "lucide-react";
-import { plural, type AppState, type Step } from "./api";
+import { plural, type AppState, type SnapshotMeta, type Step } from "./api";
+import { ArchiveReview } from "./ArchiveReview";
 
-export function RunConfirmation({ steps, state, busy, featureTitle, onRun, onBack }: { steps: Step[]; state: AppState | null; busy: boolean; featureTitle?: string; onRun: () => void; onBack: () => void }) {
+export function RunConfirmation({ steps, state, snapshot, busy, featureTitle, onRun, onBack, onImportArchive }: { steps: Step[]; state: AppState | null; snapshot: SnapshotMeta | null; busy: boolean; featureTitle?: string; onRun: () => void; onBack: () => void; onImportArchive: () => void }) {
   const merges = steps.filter((s) => s.kind === "merge-css");
   const pulls = steps.filter((s) => s.kind === "ai-pull");
   const pushes = steps.filter((s) => s.kind === "ai-push");
@@ -19,6 +20,7 @@ export function RunConfirmation({ steps, state, busy, featureTitle, onRun, onBac
     <div className="cds-confirm" role="group" aria-labelledby="confirm-h">
       <h3 id="confirm-h">Run {plural(work, "step")}?</h3>
       {featureTitle ? <p>Only “{featureTitle}” will run. Other features are left out.</p> : null}
+      {appWork && state && snapshot ? <ArchiveReview state={state} snapshot={snapshot} onImport={onImportArchive} /> : null}
       <ul>
         {merges.length ? <li>Writes {plural(merges.length, "token file")} by deterministic rule merge ({merges.filter((s) => s.target === "app").length} on the App branch, {merges.filter((s) => s.target === "design").length} staged for Design).</li> : null}
         {appWork ? (
