@@ -67,6 +67,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   /** App ports run in their worktree (`cwd`, reading Design snapshots via addDirs); kit ports in the repo, writing the stage */
   const implement = async (kind: HarnessKind, job: Job, step: Step, prompt: string, where: { cwd?: string; addDirs?: string[] }) => {
     const state = job.steps.find((s) => s.id === step.id)!;
+    const previousError = state.attempts?.at(-1)?.error;
+    if (previousError) prompt += `\n\n## Previous attempt failed\n${JSON.stringify(previousError)}\nInspect the existing destination files and commits before making changes; preserve completed work. Correct the reported failure and supply a complete report for every selected subfeature. Do not repeat implementation that already satisfies the brief.\n`;
     const attempt: NonNullable<typeof state.attempts>[number] = {
       harness: kind, requestedModel: ctx.config.harness.implementModel || undefined,
       requestedEffort: kind === "claude" ? ctx.config.harness.implementEffort : undefined,
@@ -101,6 +103,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       }
       return done;
     } catch (e) {
+      attempt.error = (e as Error).message;
       attempt.stopReason ??= jobs.signal(job.id)?.aborted ? "cancelled" : "error";
       jobs.step(job, step.id, { state: "failed", summary: (e as Error).message.slice(0, 600) });
       throw e;

@@ -55,6 +55,16 @@ it("reads actual models, effective Bash effort, turns and limit errors without g
   expect(parseClaudeLine(JSON.stringify({ type: "result", subtype: "error_max_turns", errors: ["Turn limit reached"], num_turns: 80, modelUsage: { "claude-opus-test": {} }, total_cost_usd: 2 }))).toContainEqual({ type: "done", ok: false, result: "Turn limit reached", stopReason: "error_max_turns", turns: 80, models: ["claude-opus-test"], costUsd: 2 });
 });
 
+it("explains malformed JSON and pinpoints missing verification fields", () => {
+  const first = JSON.stringify({ units: [unit("component:core/Appearance")] });
+  const malformed = `${ADAPTATION_MARKER}${first},${JSON.stringify(unit("component:core/Favicon"))}]}`;
+  expect(() => readAdaptation(malformed, ["component:core/Appearance", "component:core/Favicon"]))
+    .toThrow(/Invalid CDS_ADAPTATION JSON: .*single units array/);
+  const incomplete = { ...unit(), appearance: { status: "passed" } };
+  expect(() => readAdaptation(`${ADAPTATION_MARKER}${JSON.stringify({ units: [incomplete] })}`, [unit().id]))
+    .toThrow(/units\.0\.appearance\.evidence/);
+});
+
 const request = (app: ReturnType<typeof createApp>, url: string, body: unknown) => app.request(url, { method: "POST", headers: { "x-cds": "1", "content-type": "application/json" }, body: JSON.stringify(body) });
 async function settled(app: ReturnType<typeof createApp>, id: string): Promise<Job> {
   let job: Job;
@@ -105,7 +115,7 @@ it("shares verified decisions and updated files across directions, and persists 
   expect(new Jobs(fx.ctx).get(id)!.steps).toEqual(job.steps);
 });
 
-it.each(["missing", "blocked", "turn-limit"])("keeps %s verification from succeeding, preserving the attempt across retry and restart", async (failure) => {
+it.each(["missing", "malformed", "blocked", "turn-limit"])("keeps %s verification from succeeding, preserving the attempt across retry and restart", async (failure) => {
   fx = makeFixture();
   const original = fake.fakeRunner;
   let fail = true;
@@ -114,9 +124,17 @@ it.each(["missing", "blocked", "turn-limit"])("keeps %s verification from succee
     const runner = original(design, repo, options);
     return async (prompt, opts, on) => {
       const done = await runner(prompt, opts, (e) => { if (e.type !== "done") on(e); });
+      if (!fail && prompt.includes(`Subfeature id: ${failingUnit}`)) {
+        expect(prompt).toContain("## Previous attempt failed");
+        expect(prompt).toContain("preserve completed work");
+        if (failure === "malformed") expect(prompt).toContain("Invalid CDS_ADAPTATION JSON");
+      }
       const units = [...prompt.matchAll(/Subfeature id: (.+)/g)].map((m) => unit(m[1]!));
       const failing = fail && units.some((u) => u.id === failingUnit);
-      const reported = { ...done, result: failing && failure === "missing" ? "DONE" : result(units.map((u) => failing && failure === "blocked" ? { ...u, interaction: { status: "blocked" as const, evidence: "Keyboard behavior has not been exercised" } } : u)), ok: !(failing && failure === "turn-limit"), turns: failing && failure === "turn-limit" ? 80 : 4, stopReason: failing && failure === "turn-limit" ? "error_max_turns" : "success" };
+      let reportedResult = result(units.map((u) => failing && failure === "blocked" ? { ...u, interaction: { status: "blocked" as const, evidence: "Keyboard behavior has not been exercised" } } : u));
+      if (failing && failure === "missing") reportedResult = "DONE";
+      if (failing && failure === "malformed") reportedResult = `${ADAPTATION_MARKER}{"units":[]},{"id":"outside-array"}]}`;
+      const reported = { ...done, result: reportedResult, ok: !(failing && failure === "turn-limit"), turns: failing && failure === "turn-limit" ? 80 : 4, stopReason: failing && failure === "turn-limit" ? "error_max_turns" : "success" };
       on(reported);
       return reported;
     };
@@ -132,10 +150,15 @@ it.each(["missing", "blocked", "turn-limit"])("keeps %s verification from succee
   const failedStep = failed.steps.find((s) => s.id === pull!.id)!;
   expect(failedStep.state).toBe("failed");
   expect(failedStep.attempts).toHaveLength(1);
+  expect(failedStep.attempts![0]!.error).toBe(failedStep.summary);
   expect(failedStep.attempts![0]!.turns).toBe(failure === "turn-limit" ? 80 : 4);
   expect(failedStep.attempts![0]!.efforts).toEqual([]);
   if (failure === "blocked") expect(failedStep.adaptation!.units[0]!.interaction.status).toBe("blocked");
   expect((await request(app, `/api/jobs/${id}/merge`, { reviewed: true })).status).toBe(400);
+  const stored = new Jobs(fx.ctx);
+  const legacy = stored.get(id)!;
+  delete legacy.steps.find((s) => s.id === pull!.id)!.attempts![0]!.error;
+  stored.update(legacy, {});
   fail = false;
   app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir } });
   expect((await request(app, `/api/jobs/${id}/resume`, {})).status).toBe(200);

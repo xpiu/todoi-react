@@ -43,6 +43,7 @@ export interface StepState {
     turns?: number;
     costUsd?: number;
     stopReason?: string;
+    error?: string;
   }>;
 }
 
@@ -147,6 +148,9 @@ export class Jobs {
     j.result = undefined;
     if (j.app) Object.assign(j.app, { state: "working", reason: undefined, check: undefined, review: undefined });
     for (const step of j.steps) if (step.state !== "done" || step.kind === "check" || step.kind === "merge") {
+      // Older runs recorded validation failures only in the step summary.
+      const attempt = step.attempts?.at(-1);
+      if (step.state === "failed" && attempt && step.summary) attempt.error ??= step.summary;
       Object.assign(step, { state: "pending", summary: undefined, alreadyImplemented: undefined });
     }
     this.update(j, {});
