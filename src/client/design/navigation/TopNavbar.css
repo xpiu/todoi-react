@@ -135,7 +135,15 @@
     padding: 2px var(--sp-2);
     margin-left: -4px;
     border-radius: var(--radius-md);
-    width: 280px;
+    flex: 1 1 0;
+    width: 0;
+    min-width: 160px;
+  }
+  /* While renaming, the field takes the spacer's share of the row: it grows into all free space up to its
+     25px reserve before the next control, but its 0 basis means it never pushes the controls to its right;
+     they only squeeze it down to its 160px minimum. */
+  input.td-topnav-title + .td-topnav-spacer {
+    flex: 0 0 0;
   }
 
   .td-topnav-create {
