@@ -3,7 +3,7 @@
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import type { Ctx } from "./config";
 import { isIgnored, listFiles, readText } from "./fsutil";
@@ -157,7 +157,7 @@ export function findExports(ctx: Ctx, dirs: string[], { days = 30, limit = 3, sc
  * Import a Claude Design project export: a folder or a .zip. An export whose manifest names another project
  * is refused. `exportedAt` (default: the file's modified time) is kept as freshness for display only.
  */
-export function importExport(ctx: Ctx, source: string, label?: string, exportedAt?: string): SnapshotMeta {
+export function importExport(ctx: Ctx, source: string, label?: string, exportedAt?: string, archive: SnapshotMeta["archive"] = { name: basename(source), path: source }): SnapshotMeta {
   let dir = source;
   let tmp: string | null = null;
   try {
@@ -180,7 +180,7 @@ export function importExport(ctx: Ctx, source: string, label?: string, exportedA
       mkdirSync(dirname(dest), { recursive: true });
       cpSync(join(root, f), dest);
     }
-    return writeSnapshotMeta(ctx, { id, label: label ?? `Imported ${source.split("/").pop()}`, source: "import", createdAt: new Date().toISOString(), exportedAt: at, ...(same ? { projectId: ctx.config.design.projectId } : {}) });
+    return writeSnapshotMeta(ctx, { id, label: label ?? `Imported ${archive.name}`, source: "import", createdAt: new Date().toISOString(), exportedAt: at, archive, ...(same ? { projectId: ctx.config.design.projectId } : {}) });
   } finally {
     if (tmp) rmSync(tmp, { recursive: true, force: true });
   }

@@ -90,6 +90,8 @@ export interface SnapshotMeta {
   projectId?: string;
   /** An imported export's download time: shown as freshness only, never trusted for an upload's safety check */
   exportedAt?: string;
+  /** Original import source; browser-picked archives have a name but no filesystem path. */
+  archive?: { name: string; path?: string };
   /** Design project's updatedAt when the snapshot was taken, when known (never set on an incomplete pull) */
   projectUpdatedAt?: string;
   fileCount: number;

@@ -1244,15 +1244,17 @@ em {
 }
 /* ── Bringing Design in: the archive workflow, with an optional paid pull ──── */
 .cds-archive-entry {
+  margin: 20px 0 28px;
+  padding: 16px 0;
+  border-top: 1px solid var(--ink-900);
+  border-bottom: var(--cds-hair);
+}
+.cds-archive-entry-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px 24px;
-  margin: 20px 0 28px;
-  padding: 16px 0;
-  border-top: 1px solid var(--ink-900);
-  border-bottom: var(--cds-hair);
 }
 .cds-archive-entry strong {
   font-weight: 500;
@@ -1261,6 +1263,52 @@ em {
   margin: 4px 0 0;
   color: var(--ink-600);
   font-size: 12px;
+}
+.cds-archive-status {
+  margin-top: 16px;
+  border-top: var(--cds-hair);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.cds-archive-current {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px 32px;
+  margin: 0;
+  padding: 14px 0;
+}
+.cds-archive-current dt {
+  margin-bottom: 6px;
+  color: var(--ink-600);
+}
+.cds-archive-current dd {
+  margin: 4px 0 0;
+}
+.cds-archive-current .cds-path {
+  font-size: 11px;
+}
+.cds-archive-history {
+  padding-top: 12px;
+  border-top: var(--cds-hair);
+}
+.cds-archive-history h4 {
+  margin: 0 0 8px;
+  font: 500 12px/1.4 var(--font-ui);
+}
+.cds-archive-history ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cds-archive-history li {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  padding: 6px 0;
+}
+.cds-archive-history time {
+  color: var(--ink-600);
+  font-family: var(--font-mono);
 }
 .cds-archive-entry .cds-btn,
 .cds-archive-flow .cds-btn {
@@ -1491,6 +1539,15 @@ em {
   font: 500 15px/1.4 var(--font-ui);
 }
 @container page (max-width: 699px) {
+  .cds-archive-current {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cds-archive-history li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .cds-archive-history time {
+    grid-column: 1 / -1;
+  }
   .cds-archive-flow {
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;

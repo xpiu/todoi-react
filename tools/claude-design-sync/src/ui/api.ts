@@ -28,6 +28,7 @@ export interface AppState {
   dirty: boolean;
   syncPoints: SyncPoint[];
   snapshots: SnapshotMeta[];
+  snapshotRoot: string;
   /** codex only when config.json picks it (untested) */
   harnesses: { claude: HarnessInfo; codex?: HarnessInfo };
   implement: "claude" | "codex";

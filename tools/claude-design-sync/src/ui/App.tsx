@@ -56,12 +56,12 @@ export function App() {
       api
         .state()
         .then(async (s) => {
+          setState(s);
           const b = baseId && s.syncPoints.some((p) => p.id === baseId) ? baseId : (s.syncPoints[0]?.id ?? null);
-          return { s, b, c: s.snapshots.length ? await api.compare(b, fresh) : null };
+          return { b, c: s.snapshots.length ? await api.compare(b, fresh) : null };
         })
         .then(
-          ({ s, b, c }) => {
-            setState(s);
+          ({ b, c }) => {
             if (b !== baseId) setBaseId(b);
             setCmp(c);
             setError(null);
@@ -277,7 +277,7 @@ export function App() {
               </div>
             </section>
 
-            {state ? <RefreshChoice choice={choice} state={state} onPull={() => void pull()} onImported={imported} pullBusy={!!running} /> : null}
+            {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={() => void pull()} onImported={imported} pullBusy={!!running} /> : null}
 
             <div className="cds-heads">
               <div className="cds-head">

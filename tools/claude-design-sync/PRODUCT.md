@@ -16,6 +16,7 @@ Scope: this tool only (`tools/claude-design-sync/`). Todoi's own product truth l
 - **Local AI execution:** each brief can be copied, or run on click (after a confirmation step) with the local coding harness — Claude Code (`claude -p`) — with the log streamed into the tool (confirmed 2026-10-05). Codex (`codex exec`) stays a config-only option until it can be tested (2026-10-05: no working install).
 - **A map of the mapping:** a page that shows, lane by lane, which files pair up, how work crosses each way, what moved recently, and how fresh the tool's picture of both sides is, with one button to refresh it (2026-10-05).
 - **Design data in two ways:** a harness pull through Claude Code's DesignSync tool into a local snapshot, or a project export (zip or folder) dropped in (confirmed 2026-10-05). Since 2026-10-08 **Import project archive** is always visible on Plan and Mapping without a status check. Its guide recommends the free archive, shows the exact download steps, and finds this project's exports in Downloads; an automated pull is a secondary alternative.
+  - The archive entry also keeps the current archive/snapshot, stored files location, confirmed comparison loading status and the last three successful imports visible. Snapshot metadata persists import history and original filenames without another history store or paid check.
 
 ## Constraints
 

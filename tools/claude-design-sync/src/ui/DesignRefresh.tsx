@@ -3,7 +3,7 @@
 import { Download, ExternalLink, FileArchive, FolderInput, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type DragEvent } from "react";
 
-import { api, fmtTime, projectUrl, type AppState, type ExportsInfo, type Imported } from "./api";
+import { api, fmtTime, plural, projectUrl, type AppState, type Comparison, type ExportsInfo, type Imported, type SnapshotMeta } from "./api";
 
 const CHOICE_ID = "cds-refresh";
 const ENTRY_ID = "cds-refresh-open";
@@ -27,28 +27,69 @@ export function useRefreshChoice() {
 }
 
 /** The choice as a closable section above the plan's ledger or under the Mapping's refresh */
-export function RefreshChoice({ choice, ...props }: { choice: ReturnType<typeof useRefreshChoice> } & Parameters<typeof DesignRefresh>[0]) {
-  if (!choice.open) return (
-    <div className="cds-archive-entry">
-      <div>
-        <strong>Update the Design snapshot</strong>
-        <p>Use Claude Design's Project archive. All project files, no tokens.</p>
-      </div>
-      <button id={ENTRY_ID} type="button" className="cds-btn cds-btn-primary" onClick={choice.show} aria-expanded={false}>
-        <FileArchive size={14} strokeWidth={1.75} aria-hidden /> Import project archive
-      </button>
-    </div>
-  );
+export function RefreshChoice({ choice, comparison, comparisonError, ...props }: { choice: ReturnType<typeof useRefreshChoice>; comparison: Comparison | null; comparisonError: string | null } & Parameters<typeof DesignRefresh>[0]) {
   return (
-    <section className="cds-refresh" id={CHOICE_ID} tabIndex={-1} aria-labelledby="refresh-h">
-      <div className="cds-refresh-head">
-        <h3 id="refresh-h">Bring in Design's changes</h3>
-        <button type="button" className="cds-icon" onClick={choice.hide} aria-label="Close" data-tip="Close without bringing anything in">
-          <X size={14} strokeWidth={1.75} aria-hidden />
-        </button>
+    <>
+      <section className="cds-archive-entry" aria-label="Project archive status">
+        <div className="cds-archive-entry-head">
+          <div>
+            <strong>Update the Design snapshot</strong>
+            <p>Use Claude Design's Project archive. All project files, no tokens.</p>
+          </div>
+          {!choice.open ? <button id={ENTRY_ID} type="button" className="cds-btn cds-btn-primary" onClick={choice.show} aria-expanded={false}>
+            <FileArchive size={14} strokeWidth={1.75} aria-hidden /> Import project archive
+          </button> : null}
+        </div>
+        <ArchiveStatus state={props.state} comparison={comparison} comparisonError={comparisonError} />
+      </section>
+      {choice.open ? <section className="cds-refresh" id={CHOICE_ID} tabIndex={-1} aria-labelledby="refresh-h">
+        <div className="cds-refresh-head">
+          <h3 id="refresh-h">Bring in Design's changes</h3>
+          <button type="button" className="cds-icon" onClick={choice.hide} aria-label="Close" data-tip="Close without bringing anything in">
+            <X size={14} strokeWidth={1.75} aria-hidden />
+          </button>
+        </div>
+        <DesignRefresh key={props.state.project.id} {...props} />
+      </section> : null}
+    </>
+  );
+}
+
+const archiveName = (snapshot: SnapshotMeta) => snapshot.archive?.name ?? snapshot.label.replace(/^Imported /, "");
+
+/** Stored imports are successful events; the comparison confirms which snapshot the app actually uses. */
+function ArchiveStatus({ state, comparison, comparisonError }: { state: AppState; comparison: Comparison | null; comparisonError: string | null }) {
+  const current = state.snapshots[0];
+  const imports = state.snapshots.filter((s) => s.source === "import" && (!s.projectId || s.projectId === state.project.id)).slice(0, 3);
+  const loaded = !!current && comparison?.designSnapshot?.id === current.id && !comparisonError;
+  const storage = current && state.snapshotRoot ? `${state.snapshotRoot}/${current.id}/files` : null;
+  return (
+    <div className="cds-archive-status">
+      <dl className="cds-archive-current">
+        <div>
+          <dt>{current?.source === "import" ? "Current archive" : "Current Design snapshot"}</dt>
+          <dd>{current ? <strong>{current.source === "import" ? archiveName(current) : current.label}</strong> : "No snapshot stored yet"}</dd>
+          {current ? <dd className="cds-quiet">{current.source === "import" ? `Imported ${fmtTime(current.createdAt)}` : current.source === "pull" ? "From a Claude Code pull" : "From an upload to Claude Design"} · {plural(current.fileCount, "file")}</dd> : null}
+          {current?.archive?.path ? <dd className="cds-path">Source: {current.archive.path}</dd> : null}
+          {storage ? <dd className="cds-path">Stored files: {storage}</dd> : null}
+        </div>
+        <div>
+          <dt>Loaded in this app</dt>
+          <dd><span role="status"><Fresh ok={comparisonError ? false : loaded ? true : null} text={comparisonError ? "Loading could not be confirmed · see the error above" : loaded ? "Loaded successfully · used for comparison" : current ? "Snapshot stored · comparison not loaded yet" : "Import an archive to load its files"} /></span></dd>
+          {current?.source === "import" ? <dd className="cds-quiet">The app uses the extracted files stored above.</dd> : null}
+        </div>
+      </dl>
+      <div className="cds-archive-history">
+        <h4>Last 3 successful archive imports</h4>
+        {imports.length ? <ol aria-label="Successful archive imports">
+          {imports.map((s) => <li key={s.id}>
+            <time dateTime={s.createdAt} title={s.createdAt}>{fmtTime(s.createdAt)}</time>
+            <span>{archiveName(s)}</span>
+            <span className="cds-quiet">{plural(s.fileCount, "file")} · {loaded && current?.id === s.id ? "In use" : "Stored"}</span>
+          </li>)}
+        </ol> : <p>No Project archive has been imported successfully yet.</p>}
       </div>
-      <DesignRefresh key={props.state.project.id} {...props} />
-    </section>
+    </div>
   );
 }
 

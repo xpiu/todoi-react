@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 import { ownWorld } from "./world";
+import { importExport } from "../src/engine/snapshots";
 
 for (const path of ["/", "/mapping"]) {
   test(`offers project archive directly on ${path} without a Claude Code check`, async ({ page }) => {
@@ -71,8 +72,66 @@ test("imports a project archive from the direct route without model calls", asyn
     await expect(page.getByRole("region", { name: "Bring in Design's changes" })).toHaveCount(0);
     const state = await (await page.request.get(`${world.url}/api/state`)).json();
     expect(state.snapshots[0]).toMatchObject({ source: "import", label: "Imported Project archive.zip" });
+    expect(state.snapshots[0].archive).toEqual({ name: "Project archive.zip" });
+    const status = page.getByRole("region", { name: "Project archive status" });
+    await expect(status.getByText("Loaded successfully · used for comparison", { exact: true })).toBeVisible();
+    await expect(status.getByRole("list", { name: "Successful archive imports" }).getByRole("listitem")).toHaveCount(3);
+    await page.reload();
+    await expect(status.getByText("Project archive.zip", { exact: true })).toHaveCount(2);
     const after = await (await page.request.get(`${world.url}/api/meter`)).json();
     expect(after.calls).toBe(before.calls);
+  } finally {
+    await world.close();
+  }
+});
+
+for (const path of ["/", "/mapping"]) {
+  test(`shows the current archive and three persistent successful imports on ${path}`, async ({ page }, testInfo) => {
+    const world = await ownWorld();
+    try {
+      for (let n = 1; n <= 4; n++) importExport(world.fx.ctx, world.fx.designNowDir, `Imported Archive ${n}.zip`, undefined, { name: `Archive ${n}.zip`, path: `/Downloads/Archive ${n}.zip` });
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto(`${world.url}${path}`);
+      const status = page.getByRole("region", { name: "Project archive status" });
+      const history = status.getByRole("list", { name: "Successful archive imports" });
+      await expect(status.getByText("Loaded successfully · used for comparison", { exact: true })).toBeVisible();
+      await expect(status.getByText("Source: /Downloads/Archive 4.zip", { exact: true })).toBeVisible();
+      await expect(status.getByText(/^Stored files:/)).toContainText(world.fx.ctx.state);
+      await expect(history.getByRole("listitem")).toHaveCount(3);
+      await expect(history.getByRole("listitem").first()).toContainText("Archive 4.zip");
+      await expect(history.getByRole("listitem").last()).toContainText("Archive 2.zip");
+      await expect(status.getByText("Archive 1.zip", { exact: true })).toHaveCount(0);
+      await page.getByRole("button", { name: "Import project archive", exact: true }).click();
+      await expect(history).toBeVisible();
+      await page.getByRole("button", { name: "Close", exact: true }).click();
+      for (const [name, width, height, mode] of [["desktop-light", 1440, 1000, "light"], ["desktop-dark", 1440, 1000, "dark"], ["phone", 390, 844, "light"], ["zoom", 720, 500, "light"]] as const) {
+        await page.setViewportSize({ width, height });
+        await page.emulateMedia({ colorScheme: mode });
+        await expect(page.locator("html")).toHaveAttribute("data-mode", mode);
+        await status.evaluate(async (el) => { await Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)); });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        const axe = await new AxeBuilder({ page }).include(".cds-archive-entry").analyze();
+        expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+        await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true, animations: "disabled" });
+      }
+      await page.reload();
+      await expect(history.getByRole("listitem")).toHaveCount(3);
+    } finally {
+      await world.close();
+    }
+  });
+}
+
+test("keeps stored archive history visible when comparison loading fails", async ({ page }) => {
+  const world = await ownWorld();
+  try {
+    importExport(world.fx.ctx, world.fx.designNowDir, "Imported Previous archive.zip");
+    await page.route("**/api/compare?*", (route) => route.fulfill({ status: 500, json: { error: "Could not read snapshot files" } }));
+    await page.goto(world.url);
+    const status = page.getByRole("region", { name: "Project archive status" });
+    await expect(status.getByText("Loading could not be confirmed · see the error above", { exact: true })).toBeVisible();
+    await expect(status.getByRole("list", { name: "Successful archive imports" })).toContainText("design-now");
+    await expect(status.getByText("Loaded successfully · used for comparison", { exact: true })).toHaveCount(0);
   } finally {
     await world.close();
   }

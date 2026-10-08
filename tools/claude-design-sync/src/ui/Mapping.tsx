@@ -88,13 +88,13 @@ export function Mapping() {
       api
         .state()
         .then(async (s) => {
+          setState(s);
           const saved = store.get<string | null>("cds-base", null);
           const base = saved && s.syncPoints.some((p) => p.id === saved) ? saved : (s.syncPoints[0]?.id ?? null);
           const [m, c] = await Promise.all([api.mapping(base), s.snapshots.length ? api.compare(base, fresh) : Promise.resolve(null)]);
-          return { s, m, c };
+          return { m, c };
         })
-        .then(({ s, m, c }) => {
-          setState(s);
+        .then(({ m, c }) => {
           setMap(m);
           setCmp(c);
           setError(null);
@@ -258,7 +258,7 @@ export function Mapping() {
               <span style={{ transform: `scaleX(${busy.progress.done / Math.max(1, busy.progress.total)})` }} />
             </div>
           ) : null}
-          {state ? <RefreshChoice choice={choice} state={state} onPull={pullChosen} onImported={imported} pullBusy={running || !!busy} /> : null}
+          {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={pullChosen} onImported={imported} pullBusy={running || !!busy} /> : null}
 
           <dl className="cds-map-meta">
             <div>

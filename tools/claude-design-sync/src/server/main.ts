@@ -114,6 +114,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       dirty: isDirty(ctx.repo),
       syncPoints: listSyncPoints(ctx),
       snapshots: listSnapshots(ctx),
+      snapshotRoot: snapRoot(ctx),
       harnesses: harnesses(),
       implement: ctx.config.harness.implement,
       check: ctx.config.app.check,
@@ -292,7 +293,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       mkdirSync(dir, { recursive: true });
       writeFileSync(file, bytes);
       const at = Number.isFinite(modified) && modified > 0 ? new Date(modified).toISOString() : undefined;
-      return c.json(imported(importExport(ctx, file, `Imported ${name}`, at)));
+      return c.json(imported(importExport(ctx, file, `Imported ${name}`, at, { name })));
     } catch (e) {
       return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
     } finally {

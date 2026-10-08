@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import { loadConfig, type Ctx } from "../src/engine/config";
 import { downloadedAfter, exportCovers } from "../src/engine/designsync";
-import { findExports, importExport, namespaceMatches } from "../src/engine/snapshots";
+import { findExports, getSnapshot, importExport, namespaceMatches } from "../src/engine/snapshots";
 
 const PROJECT = "13419b94-fc55-494b-8a6d-e08632bb71e0";
 
@@ -55,6 +55,10 @@ describe("Claude Design exports", () => {
     at(ours, "2026-10-08T09:00:00.000Z");
     const snap = importExport(ctx, ours);
     expect(snap).toMatchObject({ source: "import", projectId: PROJECT, exportedAt: "2026-10-08T09:00:00.000Z" });
+    expect(getSnapshot(ctx, snap.id)?.archive).toEqual({ name: "Todoi Design System.zip", path: ours });
+    // Browser uploads preserve the original filename, never the disposable incoming path.
+    const picked = importExport(ctx, ours, "Imported picked.zip", undefined, { name: "picked.zip" });
+    expect(getSnapshot(ctx, picked.id)?.archive).toEqual({ name: "picked.zip" });
     // an import never claims Design's updatedAt: an upload from it always reads Design's live copies first
     expect(snap.projectUpdatedAt).toBeUndefined();
 
