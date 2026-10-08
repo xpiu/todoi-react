@@ -26,6 +26,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
+    "claude-design-sync": "npm run design-sync -- serve",
     "design-sync": "tsx tools/claude-design-sync/src/cli.ts",
     "design-sync:check": "tsc --noEmit -p tools/claude-design-sync && vitest run --config tools/claude-design-sync/vitest.config.ts",
     "design-sync:e2e": "playwright test -c tools/claude-design-sync/playwright.config.ts",

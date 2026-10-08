@@ -104,7 +104,7 @@ Update stories with component changes; add composed views and API mocks as neede
 The customizable [sync tool](tools/claude-design-sync/README.md) compares/transfers app and Claude Design changes by feature; the design kit is a creative reference, with limited app parity.
 
 ```sh
-npm run design-sync -- serve     # http://localhost:4477; loopback only
+npm run claude-design-sync       # http://localhost:4477; loopback only
 npm run design-sync:check        # separate tool typecheck + engine tests
 ```
 

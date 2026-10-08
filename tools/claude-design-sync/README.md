@@ -45,7 +45,7 @@ See the application's [Storybook guide](../../README.md#storybook) for commands 
 ## Start the tool
 
 ```bash
-npm run design-sync -- serve        # → http://localhost:4477 (127.0.0.1 only)
+npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only)
 ```
 
 - **Needs** Claude Code (`claude`) on PATH and signed in to claude.ai: it is the only harness with DesignSync.
@@ -197,7 +197,7 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
 ## CLI
 
 ```bash
-npm run design-sync -- serve                       # the GUI (CDS_PORT to move it)
+npm run claude-design-sync                         # the GUI (CDS_PORT to move it)
 npm run design-sync -- status                      # Design project's updatedAt (via Claude Code)
 npm run design-sync -- pull [--force]              # new snapshot; stops early when Design hasn't changed
 npm run design-sync -- import ~/Downloads/x.zip    # or an unzipped export folder
