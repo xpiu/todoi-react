@@ -4,6 +4,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { join } from "node:path";
 
 import type { Ctx } from "./config";
+import { ADAPTATION_BRIEF } from "./adaptation";
 import { mergeCss } from "./css";
 import { hash, listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
@@ -281,6 +282,12 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
     // runs in (a worktree), kit files in the stage
     const into = target === "app" ? u.app.paths : u.design.paths.map((p) => join(stage, p));
     if (into.length && u.kind !== "spec") lines.push(`- ${target === "app" ? "Change on top of the App's current files (relative to the repository root)" : "Change on top of the kit's current files"}: ${into.map((p) => `\`${p}\``).join(", ")}`);
+    if (u.status === "both") {
+      const receiving = changeLines(ctx, cmp, u, target);
+      lines.push("- Both sides changed. Read the receiving side's changes too, and reconcile their intent:");
+      if (receiving.run.length) lines.push("```sh", ...receiving.run, "```");
+      if (u.kind === "spec" && receiving.read.length) lines.push(`- Read in full: ${receiving.read.join(", ")}`);
+    }
   }
   if (target === "design") {
     // what the tool writes from Storybook before this step: the agent refines these instead of authoring them
@@ -297,9 +304,10 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   lines.push(target === "app" ? KIT_RULES.replace("files under the staging folder", "the snapshot under " + (cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : "(no snapshot)")) : APP_RULES);
   lines.push("");
   lines.push(target === "app" ? APP_RULES : KIT_RULES);
+  lines.push("", ADAPTATION_BRIEF);
   lines.push("");
   lines.push("## Done means");
-  if (target === "app") lines.push("- You read every change listed above, whole.", "- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- Base UI primitives, ref and render-prop forwarding, focused Zustand selectors and ARIA/keyboard behaviour are kept: the tool scans the draft for their loss, and the developer reviews it.", '- `npm run check` passes; commit actual changes. If every selected subfeature is already implemented, make no empty commit or cosmetic edit: explain the evidence and finish with one line CDS_ALREADY_IMPLEMENTED={"units":[{"id":"<exact subfeature id>","evidence":[{"path":"<existing App file, relative to worktree>","reason":"<specific existing behavior satisfying the kit change>"}]}]}. Include exactly every selected subfeature id, each once, with concrete file evidence. The tool checks the unchanged worktree and runs its final gate; the developer reviews this report.', "- Nothing outside this feature changed.");
+  if (target === "app") lines.push("- You read every change listed above, whole.", "- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- Base UI primitives, ref and render-prop forwarding, focused Zustand selectors and ARIA/keyboard behaviour are kept: the tool scans the draft for their loss, and the developer reviews it.", '- `npm run check` passes; commit actual changes. If every selected subfeature is already implemented, make no empty commit or cosmetic edit: explain the evidence and include one line alongside the adaptation report: CDS_ALREADY_IMPLEMENTED={"units":[{"id":"<exact subfeature id>","evidence":[{"path":"<existing App file, relative to worktree>","reason":"<specific existing behavior satisfying the kit change>"}]}]}. Include exactly every selected subfeature id, each once, with concrete file evidence. The tool checks the unchanged worktree and runs its final gate; the developer reviews this report.', "- Nothing outside this feature changed.");
   else lines.push("- You read every change listed above, whole.", `- The kit files for every subfeature are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card, readme.md, Minimal rules); Minimal twins are the tool's.`, "- The local bundle builds and every touched card renders without errors.", "- Reply with the list of files you changed.");
   return lines.join("\n");
 }

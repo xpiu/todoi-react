@@ -1,0 +1,26 @@
+# Feature adaptation during Claude Design sync
+
+Each AI feature step now treats synchronization as a translation of user behavior between the React 19/TypeScript/Base UI app and the React 18 UMD kit. The existing implementation run handles planning, edits and verification; no extra planning model call or framework is introduced. The Claude implementation limit remains 80 turns per direction with no tool-imposed wall-clock timeout.
+
+Before editing, the brief asks the agent to state a short plan: intended behavior, relevant runtime/API/state differences, the destination implementation and meaningful tradeoffs. It can adapt composition, APIs and preview scaffolding while reusing destination patterns and preserving production architecture. When both sides changed a unit, the brief supplies both sides' baseline diffs. Receiving App files remain relative to the actual worktree.
+
+After implementation, the agent reports each selected unit once using `CDS_ADAPTATION=` followed by a one-line JSON object. Each entry contains `id`, `intent`, `differences`, `implementation`, `tradeoffs`, and separate `interaction` and `appearance` checks. Checks contain a `status` (`passed`, `not-applicable`, or `blocked`) and concrete `evidence`. The brief requires relevant keyboard, focus, dismissal, callbacks, controlled state and independent-instance checks, plus Rounded/Minimal and light/dark appearance checks for visual changes. Unaffected dimensions need a specific not-applicable reason. Unexecuted checks must be blocked.
+
+The server validates the report and its exact unit coverage. Missing, malformed, duplicate or incomplete coverage fails the step. A blocked check is saved for review and fails acceptance. This is an agent's evidence report, not independent proof that its claims are true: the existing App gate, architecture review, kit rendering and developer review still apply. Already-implemented App ports keep their separate file-evidence report and need an adaptation report too. Legacy saved plans without the adaptation protocol remain resumable.
+
+For a two-way feature, the first direction sees current files for the selected parts on both sides. The second receives the first direction's saved report and paths to its updated App worktree and kit staging files, with read access to both. It must preserve the shared behavior while allowing destination-specific implementation differences. If reconciliation would overturn behavior already implemented in the completed direction, it must report the conflict as blocked. This remains sequential translation rather than a guarantee of automatic conflict resolution.
+
+Reports live on each job step as `adaptation`, are logged in Activity, and survive server restart. A failed App port's checkpoint includes its owned commits so verification can be retried without losing work; dirty files and subsequent manual edits still prevent resume. The existing restriction against resuming mixed App/Design runs is unchanged.
+
+Every implementation attempt, including failures and retries, is saved in `steps[].attempts` in `.state/jobs/<id>.json` and returned by the existing job API. Attempts contain:
+
+- Harness, requested model and optional requested effort, start/end timestamps, and the configured turn ceiling.
+- Models observed in Claude initialization/assistant events and result `modelUsage` (including fallback or auxiliary models).
+- Effective effort observed from Claude Code's `CLAUDE_EFFORT` environment inside the initial Bash telemetry probe, after runtime resolution. The brief requests this probe before edits. Values absent from the runtime remain unknown; the server does not infer them from account settings or the requested level.
+- Result-reported turns, cost and stop reason, including `error_max_turns`.
+
+`harness.implementModel` continues to inherit Claude Code settings when empty. Optional `harness.implementEffort` is passed as `--effort` for Claude implementations; omission preserves existing settings. Claude Code can apply model or organization limits, so requested effort is deliberately separate from observed effort. No default model or effort has changed. Codex remains the pre-existing untested App-only alternative; telemetry unavailable in its stream is recorded as unknown rather than attributed Claude defaults. Its top-level turns are not interchangeable with Claude's agentic turns.
+
+The harness schemas and effort observation follow Anthropic's published [Agent SDK TypeScript declarations](https://unpkg.com/@anthropic-ai/claude-agent-sdk@0.3.220/sdk.d.ts) (`SDKSystemMessage`, `SDKResultMessage`, and `BaseHookInput.effort`) and [Claude Code effort configuration](https://code.claude.com/docs/en/model-config#adjust-effort-level).
+
+Validation covers report coverage and evidence requirements, blocked versus unaffected checks, real stream parsing and turn-limit errors, two-way sharing of saved decisions and updated files, and persistence across failure, restart and retry. These tests use isolated fixture repositories and mock rendering; the existing renderer tests exercise the real browser separately. A read-only real Claude Code telemetry smoke check verified the installed harness without editing or uploading files: `claude-opus-5-5`, effective effort `high`, two reported turns (cost $0.1233694).

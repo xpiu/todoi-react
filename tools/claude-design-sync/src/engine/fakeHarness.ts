@@ -6,6 +6,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Runner } from "./designsync";
+import { ADAPTATION_MARKER } from "./adaptation";
 import { listFiles } from "./fsutil";
 import type { HarnessEvent } from "./harness";
 
@@ -49,7 +50,13 @@ export function fakeRunner(designDir: string, repo: string, { delayMs = 30, cost
         }
       }
     }
-    const done: Extract<HarnessEvent, { type: "done" }> = { type: "done", ok: true, result: "DONE", costUsd, turns: 1 };
+    const units = [...prompt.matchAll(/Subfeature id: (.+)/g)].map((m) => ({
+      id: m[1]!, intent: "Simulate a feature port", differences: "Fixture App and kit files",
+      implementation: "Append the fixture marker", tradeoffs: "Fake harness; no real translation",
+      interaction: { status: "not-applicable", evidence: "Fixture simulation only" },
+      appearance: { status: "not-applicable", evidence: "Fixture simulation only" },
+    }));
+    const done: Extract<HarnessEvent, { type: "done" }> = { type: "done", ok: true, result: units.length ? `DONE\n${ADAPTATION_MARKER}${JSON.stringify({ units })}` : "DONE", costUsd, turns: 1, models: ["fake"], stopReason: "success" };
     emit(done);
     return done;
   };

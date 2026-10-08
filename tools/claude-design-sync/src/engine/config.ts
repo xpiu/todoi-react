@@ -21,7 +21,7 @@ export interface Config {
   syncTagPrefix: string;
   renames: MapEntry[];
   screens: MapEntry[];
-  harness: { implement: "claude" | "codex"; claudeBin: string; codexBin: string; pullModel: string; implementModel: string; /** Claude Code --effort for DesignSync reads (they only dispatch tool calls) */ pullEffort?: string };
+  harness: { implement: "claude" | "codex"; claudeBin: string; codexBin: string; pullModel: string; implementModel: string; /** Optional override for implementation; absent inherits the harness settings. */ implementEffort?: string; /** Claude Code --effort for DesignSync reads (they only dispatch tool calls) */ pullEffort?: string };
 }
 
 export interface Ctx {

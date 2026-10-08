@@ -9,6 +9,7 @@ import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 
 import { canResume, uploadPending } from "../engine/approvals";
+import { ADAPTATION_MARKER, blockedAdaptation, readAdaptation } from "../engine/adaptation";
 import { compare, unitBaseline } from "../engine/compare";
 import { directionsFor } from "../engine/directions";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
@@ -65,10 +66,51 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       : createDesignRunner(ctx, job ? jobs.signal(job.id) : undefined), what, job?.id);
 
   /** App ports run in their worktree (`cwd`, reading Design snapshots via addDirs); kit ports in the repo, writing the stage */
-  const implementRunner = (kind: HarnessKind, job: Job, what: string, where: { cwd?: string; addDirs?: string[]; stage?: string }): Runner =>
-    meter.meter(opts.fake
+  const implement = async (kind: HarnessKind, job: Job, step: Step, prompt: string, where: { cwd?: string; addDirs?: string[] }) => {
+    const state = job.steps.find((s) => s.id === step.id)!;
+    const attempt: NonNullable<typeof state.attempts>[number] = {
+      harness: kind, requestedModel: ctx.config.harness.implementModel || undefined,
+      requestedEffort: kind === "claude" ? ctx.config.harness.implementEffort : undefined,
+      maxTurns: kind === "claude" ? 80 : undefined, startedAt: new Date().toISOString(), models: [], efforts: [],
+    };
+    jobs.step(job, step.id, { attempts: [...(state.attempts ?? []), attempt], adaptation: undefined });
+    if (kind === "claude") prompt += '\n\nBefore edits, use Bash to run exactly: printf \'CDS_RUNTIME_EFFORT=%s\\n\' "${CLAUDE_EFFORT:-unknown}". This records the effective effort supplied by Claude Code; do not invent a value if unavailable.';
+    const runner = meter.meter(opts.fake
       ? fakeRunner(opts.fake.designDir, where.cwd ?? ctx.repo, opts.fake)
-      : (prompt, _o, on) => runHarness({ kind, bin: kind === "codex" ? ctx.config.harness.codexBin : ctx.config.harness.claudeBin, cwd: where.cwd ?? ctx.repo, prompt: where.stage ? `${prompt}\n\n(Also allowed: files under ${where.stage}.)` : prompt, model: ctx.config.harness.implementModel || undefined, edits: true, maxTurns: 80, addDirs: where.addDirs, signal: jobs.signal(job.id) }, on), what, job.id);
+      : (brief, _o, on) => runHarness({ kind, bin: kind === "codex" ? ctx.config.harness.codexBin : ctx.config.harness.claudeBin, cwd: where.cwd ?? ctx.repo, prompt: brief, model: attempt.requestedModel, effort: attempt.requestedEffort, edits: true, maxTurns: attempt.maxTurns, addDirs: where.addDirs, signal: jobs.signal(job.id) }, on), step.title, job.id);
+    try {
+      const log = logHarness(job, step.id);
+      const done = await runner(prompt, {}, (e) => {
+        if (e.type === "runtime") {
+          const count = attempt.models.length + attempt.efforts.length;
+          if (e.model && !attempt.models.includes(e.model)) attempt.models.push(e.model);
+          if (e.effort && !attempt.efforts.includes(e.effort)) attempt.efforts.push(e.effort);
+          if (attempt.models.length + attempt.efforts.length !== count) jobs.update(job, {});
+        }
+        log(e);
+      });
+      attempt.models = [...new Set([...attempt.models, ...(done.models ?? [])])];
+      Object.assign(attempt, { turns: done.turns, costUsd: done.costUsd, stopReason: jobs.signal(job.id)?.aborted ? "cancelled" : done.stopReason ?? (done.ok ? "success" : "failed") });
+      if (!done.ok) throw new Error(done.result || "The harness reported a failure");
+      // Stored plans from before adaptation reports remain resumable.
+      if (step.brief?.includes(ADAPTATION_MARKER)) {
+        const adaptation = readAdaptation(done.result, step.units);
+        jobs.step(job, step.id, { adaptation });
+        for (const u of adaptation.units) jobs.log(job, "info", `${u.id}\nIntent: ${u.intent}\nDifferences: ${u.differences}\nImplementation: ${u.implementation}\nTradeoffs: ${u.tradeoffs}\nInteraction (${u.interaction.status}): ${u.interaction.evidence}\nAppearance (${u.appearance.status}): ${u.appearance.evidence}`, step.id);
+        const blocked = blockedAdaptation(adaptation);
+        if (blocked) throw new Error(blocked);
+      }
+      return done;
+    } catch (e) {
+      attempt.stopReason ??= jobs.signal(job.id)?.aborted ? "cancelled" : "error";
+      jobs.step(job, step.id, { state: "failed", summary: (e as Error).message.slice(0, 600) });
+      throw e;
+    } finally {
+      attempt.endedAt = new Date().toISOString();
+      jobs.update(job, {});
+      jobs.log(job, "info", `AI runtime: ${attempt.models.join(", ") || "model unknown"}; effort ${attempt.efforts.join(", ") || "unknown"}; turns ${attempt.turns ?? "unknown"}${attempt.maxTurns ? `/${attempt.maxTurns}` : ""}; ${attempt.stopReason ?? "unknown"}`, step.id);
+    }
+  };
 
   const logHarness = (job: Job, stepId?: string) => (e: HarnessEvent) => {
     if (e.type === "text") jobs.log(job, "ai", e.text, stepId);
@@ -414,6 +456,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     if (!run || run.state !== "working") return;
     try {
       run.commits = commitsSince(run);
+      // A port may commit before its fidelity report fails. Resume from that owned work,
+      // while verifyResume still refuses dirty files or edits made after the failure.
+      run.checkpoint = headOf(run);
     } catch {
       /* the worktree is gone */
     }
@@ -438,6 +483,18 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       let sb: Storybook | null | undefined;
       /** What the tool drafted per component (the .jsx it is for, and each file's drafted text) */
       const drafts: Array<{ jsx: string; files: Record<string, string> }> = [];
+      const sharedBrief = (s: Step, brief: string) => {
+        const siblings = steps.filter((other) => other.featureId === s.featureId && other.id !== s.id && other.brief);
+        if (!siblings.length) return brief;
+        const decisions = siblings.flatMap((other) => {
+          const completed = job.steps.find((state) => state.id === other.id);
+          return completed?.state === "done" && completed.adaptation ? [{ target: other.target, ...completed.adaptation }] : [];
+        });
+        const selected = new Set([s, ...siblings].flatMap((step) => step.units));
+        const units = cmp.units.filter((u) => selected.has(u.id));
+        const files = units.flatMap((u) => [...u.app.paths.map((p) => join(run?.worktree ?? ctx.repo, p)), ...u.design.paths.map((p) => join(stage!, p))]);
+        return `${brief}\n\n## Shared feature adaptation\nThis feature also has a translation in the opposite direction. Inspect the current files for all selected parts before choosing a solution:\n${files.map((p) => `- ${JSON.stringify(p)}`).join("\n")}\nCompleted direction's decisions: ${JSON.stringify(decisions)}\nPreserve these decisions and read their updated files, rather than translating the original source over them. If there are no decisions yet, choose an intent that can work in both destinations. Destination-specific implementations may differ; do not overturn behavior already implemented by the completed direction. Report irreconcilable intent as blocked so the run cannot mark divergent behavior synced.\n`;
+      };
       for (const s of steps) {
         if (jobs.signal(job.id)?.aborted) {
           keepAppRun(job, "Stopped by you");
@@ -462,12 +519,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         if (s.target === "app") {
           const before = headOf(run!);
           const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and commit actual edits there, or report that all selected parts are already implemented; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
-          const done = await implementRunner(harness, job, `Drafting “${s.featureTitle}” into the App`, { cwd: run!.worktree, addDirs: readable })(brief, {}, logHarness(job, s.id));
+          const done = await implement(harness, job, s, sharedBrief(s, brief), { cwd: run!.worktree, addDirs: [...readable, ...(stage ? [stage] : [])] });
           if (jobs.signal(job.id)?.aborted) { keepAppRun(job, "Stopped by you"); return; }
-          if (!done.ok) {
-            jobs.step(job, s.id, { state: "failed", summary: done.result.slice(0, 600) });
-            throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
-          }
           // The harness must commit edits or explicitly account for every already-implemented unit.
           const v = verifyPort(run!, before, { result: done.result, units: s.units });
           if (!v.ok) {
@@ -496,9 +549,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
             }
           }
         }
-        const done = await implementRunner("claude", job, `Porting “${s.featureTitle}” into the kit`, { stage, addDirs: [...readable, ...(stage ? [stage] : [])] })(fillStage(s.brief ?? "", stage ?? "(no staging folder)"), {}, logHarness(job, s.id));
-        jobs.step(job, s.id, { state: done.ok ? "done" : "failed", summary: done.result.slice(0, 600) });
-        if (!done.ok) throw new Error(`${s.title}: ${done.result || "the harness reported a failure"}`);
+        const done = await implement("claude", job, s, sharedBrief(s, fillStage(s.brief ?? "", stage ?? "(no staging folder)")), { addDirs: [...readable, ...(stage ? [stage] : []), ...(run ? [run.worktree] : [])] });
+        jobs.step(job, s.id, { state: "done", summary: done.result.slice(0, 600) });
       }
       const notes: string[] = [];
       if (run) {

@@ -5,6 +5,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import type { Comparison } from "../engine/types";
 import type { Step } from "../engine/plan";
 import type { HarnessKind } from "../engine/harness";
+import type { Adaptation } from "../engine/adaptation";
 import type { AlreadyImplemented } from "../engine/worktree";
 import type { Ctx } from "../engine/config";
 import { appPending, canResume, uploadPending } from "../engine/approvals";
@@ -28,6 +29,21 @@ export interface StepState {
   state: "pending" | "running" | "done" | "failed" | "skipped";
   summary?: string;
   alreadyImplemented?: AlreadyImplemented;
+  adaptation?: Adaptation;
+  /** Every attempt survives retries; unknown runtime settings remain absent, never guessed. */
+  attempts?: Array<{
+    harness: HarnessKind;
+    requestedModel?: string;
+    requestedEffort?: string;
+    maxTurns?: number;
+    startedAt: string;
+    endedAt?: string;
+    models: string[];
+    efforts: string[];
+    turns?: number;
+    costUsd?: number;
+    stopReason?: string;
+  }>;
 }
 
 export interface Job {

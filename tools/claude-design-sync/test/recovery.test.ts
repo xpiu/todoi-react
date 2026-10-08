@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { canResume } from "../src/engine/approvals";
+import { ADAPTATION_MARKER } from "../src/engine/adaptation";
 import * as fake from "../src/engine/fakeHarness";
 import { git } from "../src/engine/git";
 import type { Runner } from "../src/engine/designsync";
@@ -18,7 +19,12 @@ afterEach(() => {
   for (const run of runs.splice(0)) removeWorktree(fx.ctx, run, true);
   if (fx) rmSync(dirname(fx.repo), { recursive: true, force: true });
 });
-const report = (ids: string[], path = "DESIGN.md") => ALREADY_IMPLEMENTED_MARKER + JSON.stringify({ units: ids.map((id) => ({ id, evidence: [{ path, reason: "The existing spec already describes and implements the requested behavior." }] })) });
+const report = (ids: string[], path = "DESIGN.md") => ALREADY_IMPLEMENTED_MARKER + JSON.stringify({ units: ids.map((id) => ({ id, evidence: [{ path, reason: "The existing spec already describes and implements the requested behavior." }] })) }) + "\n" + ADAPTATION_MARKER + JSON.stringify({ units: ids.map((id) => ({
+  id, intent: "Preserve the existing behavior", differences: "No implementation differences remain",
+  implementation: "Keep existing files", tradeoffs: "No changes needed",
+  interaction: { status: "not-applicable", evidence: "No interaction changed" },
+  appearance: { status: "not-applicable", evidence: "No appearance changed" },
+})) });
 const request = (app: ReturnType<typeof createApp>, url: string, body?: unknown) => app.request(url, { method: "POST", headers: { "x-cds": "1", "content-type": "application/json" }, body: JSON.stringify(body ?? {}) });
 async function settled(app: ReturnType<typeof createApp>, id: string): Promise<Job> {
   let job: Job;

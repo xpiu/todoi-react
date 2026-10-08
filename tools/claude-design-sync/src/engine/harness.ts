@@ -60,11 +60,12 @@ export interface RunOptions {
 }
 
 export type HarnessEvent =
+  | { type: "runtime"; model?: string; effort?: string }
   | { type: "text"; text: string }
   | { type: "tool"; name: string; input: unknown }
   /** `isError`: the tool refused or failed (Claude Code's is_error) */
   | { type: "tool-result"; content: string; isError?: boolean }
-  | { type: "done"; ok: boolean; result: string; costUsd?: number; turns?: number }
+  | { type: "done"; ok: boolean; result: string; costUsd?: number; turns?: number; stopReason?: string; models?: string[] }
   | { type: "stderr"; text: string };
 
 export function commandFor(o: RunOptions): { cmd: string; args: string[] } {
@@ -110,13 +111,26 @@ export function parseClaudeLine(line: string): HarnessEvent[] {
     return line.trim() ? [{ type: "text", text: line }] : [];
   }
   const out: HarnessEvent[] = [];
-  const msg = e.message as { content?: Array<Record<string, unknown>> } | undefined;
+  const msg = e.message as { model?: string; content?: Array<Record<string, unknown>> } | undefined;
+  const model = e.type === "system" && e.subtype === "init" ? e.model : msg?.model;
+  if (typeof model === "string") out.push({ type: "runtime", model });
   if (e.type === "assistant") for (const c of msg?.content ?? []) {
     if (c.type === "text" && typeof c.text === "string" && c.text.trim()) out.push({ type: "text", text: c.text });
     if (c.type === "tool_use") out.push({ type: "tool", name: String(c.name), input: c.input });
   }
-  if (e.type === "user") for (const c of msg?.content ?? []) if (c.type === "tool_result") out.push({ type: "tool-result", content: toolResultText(c.content), ...(c.is_error === true ? { isError: true } : {}) });
-  if (e.type === "result") out.push({ type: "done", ok: e.subtype === "success" && !e.is_error, result: String(e.result ?? ""), costUsd: e.total_cost_usd as number | undefined, turns: e.num_turns as number | undefined });
+  if (e.type === "user") for (const c of msg?.content ?? []) if (c.type === "tool_result") {
+    const content = toolResultText(c.content);
+    out.push({ type: "tool-result", content, ...(c.is_error === true ? { isError: true } : {}) });
+    const effort = /^CDS_RUNTIME_EFFORT=(low|medium|high|xhigh|max)$/m.exec(content)?.[1];
+    if (!c.is_error && effort) out.push({ type: "runtime", effort });
+  }
+  if (e.type === "result") out.push({
+    type: "done", ok: e.subtype === "success" && !e.is_error,
+    result: String(e.result ?? (Array.isArray(e.errors) ? e.errors.join("\n") : "")),
+    costUsd: e.total_cost_usd as number | undefined, turns: e.num_turns as number | undefined,
+    stopReason: String(e.stop_reason ?? e.subtype ?? "unknown"),
+    models: e.modelUsage && typeof e.modelUsage === "object" ? Object.keys(e.modelUsage) : undefined,
+  });
   return out;
 }
 
