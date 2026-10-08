@@ -3067,6 +3067,34 @@ em {
   align-self: flex-start;
   margin: 8px 20px;
 }
+/* Features a run set aside, above the merge they're left out of; the set-aside choice under a refused resume */
+.cds-set-aside {
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: var(--cds-hair);
+}
+.cds-set-aside p,
+.cds-drift p {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.cds-set-aside-list {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.cds-drift {
+  margin-top: 10px;
+}
+.cds-confirm-kept {
+  margin: 0 0 12px;
+  padding: 10px 0;
+  border-block: var(--cds-hair);
+  font-size: 12px;
+}
+.cds-confirm-kept p {
+  margin: 0 0 8px;
+}
 
 /* Reading companion: the same paper, ink and rules as the plan. */
 .cds-guide {

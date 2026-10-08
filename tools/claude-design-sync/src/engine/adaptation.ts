@@ -42,6 +42,9 @@ export function readAdaptation(result: string, units: string[]): Adaptation {
   return adaptation;
 }
 
+/** The AI reported a check it couldn't run or intent it couldn't reconcile: another attempt wouldn't change that */
+export class BlockedAdaptation extends Error {}
+
 export function blockedAdaptation(adaptation: Adaptation): string | undefined {
   const blocked = adaptation.units.flatMap((u) => (["interaction", "appearance"] as const).flatMap((kind) => {
     const check = u[kind];

@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { expect, test } from "@playwright/test";
 
@@ -61,21 +61,30 @@ test("Activity resumes a failed App run, retaining prior commits and showing no-
     await expect(panel.getByRole("button", { name: "Resume run" })).toBeVisible();
     await panel.getByText("Evidence for already implemented parts").click();
     await expect(panel).toContainText("The existing board spec already describes the requested behavior.");
-    // This operation is reversible and uses the normal error feedback when its branch is dirty.
+    // Starting over is where the work got lost: the run confirmation points at the kept run instead.
+    await page.getByRole("button", { name: "Review selected sync steps" }).click();
+    const kept = page.getByRole("note").filter({ hasText: "already finished" });
+    await expect(kept).toContainText(run.branch);
+    await kept.getByRole("button", { name: "Show that run" }).click();
+    await expect(panel.getByRole("button", { name: "Resume run" })).toBeVisible();
+    // An interrupted port's leftovers refuse a plain resume, and offer to set them aside as a patch.
     writeFileSync(join(run.worktree, "stray.txt"), "uncommitted");
     await panel.getByRole("button", { name: "Resume run" }).click();
     await expect(panel.getByRole("alert")).toContainText("uncommitted files");
-    rmSync(join(run.worktree, "stray.txt"));
+    const drift = panel.getByRole("group", { name: "Set aside and resume" });
+    await expect(drift).toContainText("stray.txt");
     const screenshots = join(TOOL_DIR, "../../.tmp/design-sync-recovery");
     mkdirSync(screenshots, { recursive: true });
     await page.screenshot({ path: join(screenshots, "failed-run.png"), fullPage: true });
-    await panel.getByRole("button", { name: "Resume run" }).click();
+    await drift.getByRole("button", { name: "Set aside and resume" }).click();
     await expect(panel.getByRole("heading", { name: "Review the draft, then merge" })).toBeVisible({ timeout: 30000 });
     const ready = await (await page.request.get(`${url}/api/jobs/${job.id}`)).json() as Job;
     expect(ready.app!.branch).toBe(run.branch);
     expect(ready.app!.commits[0]).toEqual(run.commits[0]);
     expect(ready.app!.commits).toHaveLength(run.commits.length + unfinished);
     expect(ready.steps.find((s) => s.id === completedPort.id)).toEqual(completedPort);
+    expect(existsSync(join(run.worktree, "stray.txt"))).toBe(false);
+    await expect(panel).toContainText("Set aside 1 file changed after the last saved step");
     await page.screenshot({ path: join(screenshots, "resumed-run.png"), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -2,6 +2,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 
+import { canResume } from "../src/engine/approvals";
 import { ADAPTATION_MARKER, blockedAdaptation, readAdaptation, type Adaptation } from "../src/engine/adaptation";
 import * as fake from "../src/engine/fakeHarness";
 import { parseClaudeLine } from "../src/engine/harness";
@@ -139,6 +140,8 @@ it.each(["missing", "malformed", "blocked", "turn-limit"])("keeps %s verificatio
       return reported;
     };
   });
+  // One try per port: the failure is set aside at once, and the retry comes from Resume after a restart.
+  fx.ctx.config.harness.implementAttempts = 1;
   let app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir } });
   const body = { global: "design-to-app", overrides: {} };
   const { steps } = await (await request(app, "/api/plan", body)).json() as { steps: Step[] };
@@ -146,15 +149,18 @@ it.each(["missing", "malformed", "blocked", "turn-limit"])("keeps %s verificatio
   failingUnit = pull!.units[0]!;
   const { job: id } = await (await request(app, "/api/run", { ...body, only: [completed!.id, pull!.id] })).json() as { job: string };
   const failed = await settled(app, id);
-  expect(failed.state).toBe("failed");
+  // The failed feature is set aside; the completed one waits on a verified branch without it.
+  expect(failed.state).toBe("awaiting-approval");
+  expect(failed.app!.state).toBe("ready");
+  expect(canResume(failed)).toBe(true);
+  expect(failed.steps.find((s) => s.id === completed!.id)!.state).toBe("done");
   const failedStep = failed.steps.find((s) => s.id === pull!.id)!;
   expect(failedStep.state).toBe("failed");
   expect(failedStep.attempts).toHaveLength(1);
-  expect(failedStep.attempts![0]!.error).toBe(failedStep.summary);
+  expect(failedStep.summary).toContain(failedStep.attempts![0]!.error);
   expect(failedStep.attempts![0]!.turns).toBe(failure === "turn-limit" ? 80 : 4);
   expect(failedStep.attempts![0]!.efforts).toEqual([]);
   if (failure === "blocked") expect(failedStep.adaptation!.units[0]!.interaction.status).toBe("blocked");
-  expect((await request(app, `/api/jobs/${id}/merge`, { reviewed: true })).status).toBe(400);
   const stored = new Jobs(fx.ctx);
   const legacy = stored.get(id)!;
   delete legacy.steps.find((s) => s.id === pull!.id)!.attempts![0]!.error;

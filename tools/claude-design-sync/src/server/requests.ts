@@ -28,6 +28,8 @@ export const syncPointRequest = z.object({
 });
 /** A draft (an AI port from the kit) merges only with the developer's word that they reviewed it */
 export const mergeRequest = z.object({ reviewed: z.boolean().optional() });
+/** `setAside`: move edits made after the last saved step into a patch, then resume */
+export const resumeRequest = z.object({ setAside: z.boolean().default(false) });
 export const uploadRequest = z.object({ paths: z.array(z.string().min(1)).min(1, "Pick at least one staged file") });
 export const jobParam = z.object({ id });
 export const visualRequest = z.object({ unit: z.string().min(1), base, snapshot: id.optional() });

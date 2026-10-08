@@ -30,6 +30,8 @@ export interface StepState {
   summary?: string;
   alreadyImplemented?: AlreadyImplemented;
   adaptation?: Adaptation;
+  /** A port that still failed after its tries: the patch its partial changes were saved in (the branch went back to before it) */
+  setAside?: { patch: string; files: string[] };
   /** Every attempt survives retries; unknown runtime settings remain absent, never guessed. */
   attempts?: Array<{
     harness: HarnessKind;
@@ -151,7 +153,7 @@ export class Jobs {
       // Older runs recorded validation failures only in the step summary.
       const attempt = step.attempts?.at(-1);
       if (step.state === "failed" && attempt && step.summary) attempt.error ??= step.summary;
-      Object.assign(step, { state: "pending", summary: undefined, alreadyImplemented: undefined });
+      Object.assign(step, { state: "pending", summary: undefined, alreadyImplemented: undefined, setAside: undefined });
     }
     this.update(j, {});
   }

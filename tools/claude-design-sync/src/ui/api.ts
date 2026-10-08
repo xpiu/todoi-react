@@ -32,6 +32,8 @@ export interface AppState {
   /** codex only when config.json picks it (untested) */
   harnesses: { claude: HarnessInfo; codex?: HarnessInfo };
   implement: "claude" | "codex";
+  /** Tries per App port before the run sets it aside */
+  implementAttempts: number;
   /** What must pass on a run's App branch before it can be merged */
   check: string;
   jobs: Array<Omit<Job, "events">>;
@@ -62,9 +64,12 @@ export interface ExportsInfo {
   folders: string[];
 }
 
+/** A refused request, with the rest of the server's answer (e.g. the files a resume would set aside) */
+export type ApiError = Error & { data?: Record<string, unknown> };
+
 async function readResponse<T>(res: Response): Promise<T> {
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(data.error ?? `${res.status} ${res.statusText}`);
+  if (!res.ok) throw Object.assign(new Error(data.error ?? `${res.status} ${res.statusText}`), { data }) as ApiError;
   return data;
 }
 
@@ -100,7 +105,8 @@ export const api = {
   upload: (id: string, paths: string[]) => call<{ ok: true }>(`/api/jobs/${id}/upload`, { body: { paths } }),
   /** Read the handed-off files back from Claude Design; the upload step closes once all match */
   uploadCheck: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/upload-check`, { method: "POST" }),
-  resume: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/resume`, { method: "POST" }),
+  /** `setAside`: move edits made after the last saved step into a patch first (refused resumes list them as `drift`) */
+  resume: (id: string, setAside = false) => call<{ ok: true }>(`/api/jobs/${id}/resume`, { body: { setAside } }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
   /** `reviewed`: the developer confirmed their review of a draft (required for runs that ported kit code) */
   merge: (id: string, reviewed = false) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { body: { reviewed } }),

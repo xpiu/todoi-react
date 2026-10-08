@@ -8,8 +8,8 @@ import { basicAuth } from "hono/basic-auth";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 
-import { canResume, uploadPending } from "../engine/approvals";
-import { ADAPTATION_MARKER, blockedAdaptation, readAdaptation } from "../engine/adaptation";
+import { canResume, failedPorts, uploadPending } from "../engine/approvals";
+import { ADAPTATION_MARKER, BlockedAdaptation, blockedAdaptation, readAdaptation } from "../engine/adaptation";
 import { compare, unitBaseline } from "../engine/compare";
 import { directionsFor } from "../engine/directions";
 import { defaultCtx, exportDirs as defaultExportDirs, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
@@ -27,7 +27,7 @@ import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { kitHome, syncTwins, twinPath, writeDrafts } from "../engine/kitDraft";
 import { storybook, type Storybook } from "../engine/storybook";
 import { visualCompare } from "../engine/visual";
-import { commitAll, commitsSince, createWorktree, headOf, mergeRun, pushBranch, removeWorktree, runCheck, verifyPort, verifyResume } from "../engine/worktree";
+import { commitAll, commitsSince, createWorktree, headOf, mergeRun, pushBranch, removeWorktree, ResumeDrift, runCheck, setAside, verifyPort, verifyResume } from "../engine/worktree";
 import { hostingFromEnv, type Hosting } from "./hosting";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, findExports, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
@@ -37,7 +37,7 @@ import { Jobs, type Job } from "./jobs";
 import { Meter } from "./meter";
 import { mappingHistory } from "./mapping";
 import { buildUi, distDir } from "./ui-build";
-import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
+import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, resumeRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
 
 /** Larger than any Claude Design export; refuses a mistaken pick before it fills memory */
 const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
@@ -104,7 +104,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         jobs.step(job, step.id, { adaptation });
         for (const u of adaptation.units) jobs.log(job, "info", `${u.id}\nIntent: ${u.intent}\nDifferences: ${u.differences}\nImplementation: ${u.implementation}\nTradeoffs: ${u.tradeoffs}\nInteraction (${u.interaction.status}): ${u.interaction.evidence}\nAppearance (${u.appearance.status}): ${u.appearance.evidence}`, step.id);
         const blocked = blockedAdaptation(adaptation);
-        if (blocked) throw new Error(blocked);
+        if (blocked) throw new BlockedAdaptation(blocked);
       }
       return done;
     } catch (e) {
@@ -166,6 +166,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       snapshotRoot: snapRoot(ctx),
       harnesses: harnesses(),
       implement: ctx.config.harness.implement,
+      implementAttempts: Math.max(1, ctx.config.harness.implementAttempts ?? 2),
       check: ctx.config.app.check,
       jobs: jobs.list().slice(0, 20).map(({ events: _e, ...j }) => j),
       fake: !!opts.fake,
@@ -392,12 +393,12 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     return c.json({ job: job.id });
   });
 
-  app.post("/api/jobs/:id/resume", (c) => {
+  app.post("/api/jobs/:id/resume", validate("json", resumeRequest), (c) => {
     if (jobs.running()) return c.json({ error: "Another job is running" }, 409);
     const job = jobs.get(c.req.param("id"));
-    if (!job || !canResume(job)) return c.json({ error: "This run has no failed App-only plan to resume" }, 400);
+    if (!job || !canResume(job)) return c.json({ error: "This run has no unfinished App-only plan to resume" }, 400);
     try {
-      verifyResume(job.app!);
+      const drift = verifyResume(job.app!, { allowDrift: c.req.valid("json").setAside });
       let plan = jobs.plan(job);
       if (!plan) {
         // Older runs stored step ids and coverage but not briefs. Recover only the exact original steps.
@@ -418,12 +419,15 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         jobs.savePlan(job, plan);
       }
       if (plan.steps.some((s) => s.target !== "app")) throw new Error("Mixed App and Design runs cannot be resumed yet. Start a new run.");
+      const patch = drift.length ? join(ctx.state, "set-aside", job.id, `resume-${Date.now().toString(36)}.patch`) : null;
+      if (patch) setAside(job.app!, job.app!.checkpoint ?? headOf(job.app!), patch);
       jobs.resume(job);
-      jobs.log(job, "info", "Resuming the saved App branch: completed steps are kept; unfinished steps and the final check run again.");
+      if (patch) jobs.log(job, "warn", `Set aside ${plural(drift.length, "file")} changed after the last saved step (${drift.slice(0, 5).join(", ")}${drift.length > 5 ? "…" : ""}). They're saved in ${patch}; git apply it to look.`);
+      jobs.log(job, "info", "Resuming the saved App branch: completed steps are kept; unfinished and failed steps and the final check run again.");
       void runPlan(job, plan.comparison, plan.steps, plan.harness);
       return c.json({ ok: true });
     } catch (e) {
-      return c.json({ error: e instanceof Error ? e.message : String(e) }, 409);
+      return c.json({ error: e instanceof Error ? e.message : String(e), ...(e instanceof ResumeDrift ? { drift: e.files } : {}) }, 409);
     }
   });
 
@@ -442,7 +446,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     if (!latest || latest.id !== job.baseId) return latest ? " A newer sync point was recorded meanwhile, so this run didn't record one: use “Mark selected features synced” if both sides look right." : " Use “Mark selected features synced” to record the first sync point.";
     // a staged file left out of the upload never reached Design: the parts it carries stay open too
     const left = new Set((job.staged ?? []).filter((s) => !job.handoff?.paths.includes(s.path)).map((s) => s.path));
-    const covered = new Set(job.covers ?? []);
+    // a feature the run set aside after its attempts failed never reached the branch: it stays open too
+    const failed = new Set(failedPorts(job).map((s) => s.id));
+    const unported = new Set(jobs.plan(job)?.steps.filter((s) => failed.has(s.id)).flatMap((s) => s.units) ?? []);
+    const covered = new Set((job.covers ?? []).filter((id) => !unported.has(id)));
     const cmp = getComparison(job.baseId, null, true);
     const hold = cmp.units.filter((u) => (!covered.has(u.id) || u.design.paths.some((p) => left.has(p))) && directionsFor(u.status, u.kind).directions.some((d) => d !== "skip")).map((u) => u.id);
     try {
@@ -525,19 +532,48 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         }
         if (s.target === "app") {
           const before = headOf(run!);
-          const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and commit actual edits there, or report that all selected parts are already implemented; never edit ${ctx.repo} itself.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
-          const done = await implement(harness, job, s, sharedBrief(s, brief), { cwd: run!.worktree, addDirs: [...readable, ...(stage ? [stage] : [])] });
-          if (jobs.signal(job.id)?.aborted) { keepAppRun(job, "Stopped by you"); return; }
-          // The harness must commit edits or explicitly account for every already-implemented unit.
-          const v = verifyPort(run!, before, { result: done.result, units: s.units });
-          if (!v.ok) {
-            jobs.step(job, s.id, { state: "failed", summary: v.reason });
-            throw new Error(`${s.title}: ${v.reason}`);
+          const brief = `You are working in ${run!.worktree}, a git worktree of ${ctx.repo} on branch ${run!.branch}. Make every change there and commit actual edits there, or report that all selected parts are already implemented; never edit ${ctx.repo} itself. Delete scratch files you create (temporary configs, screenshots, notes) before you finish: every file left in the worktree must be committed.\n\n${(s.brief ?? "").replaceAll(`in this repository (${ctx.repo})`, `in this worktree (${run!.worktree})`)}`;
+          const tries = Math.max(1, ctx.config.harness.implementAttempts ?? 2);
+          let failure: string | null = null;
+          for (let n = 1; n <= tries; n++) {
+            let retry = true;
+            try {
+              // A retry works on top of the previous attempt's edits; implement() feeds it that attempt's error.
+              const done = await implement(harness, job, s, sharedBrief(s, brief), { cwd: run!.worktree, addDirs: [...readable, ...(stage ? [stage] : [])] });
+              if (jobs.signal(job.id)?.aborted) break;
+              // The harness must commit edits or explicitly account for every already-implemented unit.
+              const v = verifyPort(run!, before, { result: done.result, units: s.units });
+              if (v.ok) {
+                failure = null;
+                run!.checkpoint = headOf(run!);
+                const summary = v.alreadyImplemented ? "Already implemented: no App changes needed" : v.commits.map((c) => `${c.hash} ${c.subject}`).join(" · ");
+                jobs.step(job, s.id, { state: "done", summary, alreadyImplemented: v.alreadyImplemented });
+                if (v.alreadyImplemented) jobs.log(job, "info", summary, s.id);
+                break;
+              }
+              failure = v.reason;
+              const attempt = job.steps.find((x) => x.id === s.id)?.attempts?.at(-1);
+              if (attempt) attempt.error = v.reason;
+              jobs.step(job, s.id, { state: "failed", summary: v.reason });
+            } catch (e) {
+              if (jobs.signal(job.id)?.aborted) break;
+              failure = (e as Error).message;
+              retry = !(e instanceof BlockedAdaptation);
+            }
+            if (!retry || n === tries) break;
+            jobs.log(job, "warn", `Attempt ${n} of ${tries} failed: ${failure}. Trying again with that feedback, on top of what it already did.`, s.id);
+            jobs.step(job, s.id, { state: "running" });
           }
-          run!.checkpoint = headOf(run!);
-          const summary = v.alreadyImplemented ? "Already implemented: no App changes needed" : v.commits.map((c) => `${c.hash} ${c.subject}`).join(" · ");
-          jobs.step(job, s.id, { state: "done", summary, alreadyImplemented: v.alreadyImplemented });
-          if (v.alreadyImplemented) jobs.log(job, "info", summary, s.id);
+          if (jobs.signal(job.id)?.aborted) { keepAppRun(job, "Stopped by you"); return; }
+          if (failure !== null) {
+            // One feature's failure doesn't cost the others: its partial work goes into a patch, the branch
+            // returns to the last verified step, and the run carries on. The feature stays open.
+            const patch = join(ctx.state, "set-aside", job.id, `${s.id.replace(/[^\w.-]+/g, "_")}.patch`);
+            const files = setAside(run!, before, patch);
+            run!.checkpoint = headOf(run!);
+            jobs.step(job, s.id, { state: "failed", summary: failure.slice(0, 600), setAside: files ? { patch, files } : undefined });
+            jobs.log(job, "warn", `${s.title} failed and stays open: ${failure}.${files ? ` Its partial changes are saved in ${patch} (git apply it to look).` : ""} The run carries on with the next feature.`, s.id);
+          }
           continue;
         }
         // the mechanical kit files come from the App's Storybook, written before the AI refines them
@@ -560,6 +596,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         jobs.step(job, s.id, { state: "done", summary: done.result.slice(0, 600) });
       }
       const notes: string[] = [];
+      const setAsidePorts = failedPorts(job);
+      if (setAsidePorts.length && setAsidePorts.length === steps.filter((x) => x.target === "app" && x.kind !== "upload").length) {
+        throw new Error(setAsidePorts.length === 1 ? setAsidePorts[0]!.summary ?? "The port failed" : `None of the ${setAsidePorts.length} App steps succeeded`);
+      }
       if (run) {
         run.commits = commitsSince(run);
         jobs.step(job, "app-check", { state: "running" });
@@ -583,6 +623,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         const flagged = run.review?.findings.length;
         jobs.step(job, "app-merge", { state: "pending", summary: run.review ? `Draft: ${plural(run.commits.length, "commit")} to review${flagged ? `, ${plural(flagged, "architecture finding")}` : ""}` : `${plural(run.commits.length, "commit")} waiting for your merge` });
         notes.push(run.review ? `${plural(run.commits.length, "drafted App commit")} passed ${check.command}${flagged ? ` with ${plural(flagged, "architecture finding")}` : ""}: review, then merge` : `${plural(run.commits.length, "App commit")} passed ${check.command}: review and merge`);
+        if (setAsidePorts.length) notes.push(`${plural(setAsidePorts.length, "feature")} failed and stay${setAsidePorts.length === 1 ? "s" : ""} open: Retry failed features before merging, or merge the rest and run ${setAsidePorts.length === 1 ? "it" : "them"} again later`);
       }
       cache.clear();
       if (stage) {

@@ -1,9 +1,10 @@
 // Shared review for a whole plan or one feature, before either starts a job.
 import { Play } from "lucide-react";
 import { plural, type AppState, type SnapshotMeta, type Step } from "./api";
+import { canResume } from "../engine/approvals";
 import { ArchiveReview } from "./ArchiveReview";
 
-export function RunConfirmation({ steps, state, snapshot, busy, featureTitle, onRun, onBack, onImportArchive }: { steps: Step[]; state: AppState | null; snapshot: SnapshotMeta | null; busy: boolean; featureTitle?: string; onRun: () => void; onBack: () => void; onImportArchive: () => void }) {
+export function RunConfirmation({ steps, state, snapshot, busy, featureTitle, onRun, onBack, onImportArchive, onShowJob }: { steps: Step[]; state: AppState | null; snapshot: SnapshotMeta | null; busy: boolean; featureTitle?: string; onRun: () => void; onBack: () => void; onImportArchive: () => void; onShowJob: (id: string) => void }) {
   const merges = steps.filter((s) => s.kind === "merge-css");
   const pulls = steps.filter((s) => s.kind === "ai-pull");
   const pushes = steps.filter((s) => s.kind === "ai-push");
@@ -13,13 +14,29 @@ export function RunConfirmation({ steps, state, snapshot, busy, featureTitle, on
   const h = state?.harnesses;
   // App ports run the harness config.json picks: Claude Code, or Codex (untested, so never offered here)
   const harness = state?.implement ?? "claude";
+  const attempts = state?.implementAttempts ?? 2;
   const app = harness === "codex" ? h?.codex : h?.claude;
+  // A kept run that already finished some of these steps: resuming it keeps that work, a new run redoes it
+  const planned = new Set(steps.map((s) => s.id));
+  const kept = state?.jobs.find((j) => canResume(j) && j.steps.some((s) => s.state === "done" && planned.has(s.id)));
+  const keptDone = kept?.steps.filter((s) => s.state === "done" && planned.has(s.id) && s.kind !== "check").length ?? 0;
+  const keptNew = kept ? steps.filter((s) => s.kind !== "upload" && !kept.steps.some((k) => k.id === s.id)).length : 0;
   const missing = state?.fake ? null : (pushes.length || upload) && h && !h.claude.ok ? `${h.claude.error} — Claude Code is needed for DesignSync.` : pulls.length && app && !app.ok ? app.error : null;
 
   return (
     <div className="cds-confirm" role="group" aria-labelledby="confirm-h">
       <h3 id="confirm-h">Run {plural(work, "step")}?</h3>
       {featureTitle ? <p>Only “{featureTitle}” will run. Other features are left out.</p> : null}
+      {kept ? (
+        <div className="cds-confirm-kept" role="note">
+          <p>
+            <strong>“{kept.title}” already finished {keptDone} of these steps</strong> on <span className="cds-mono">{kept.app?.branch}</span>. Resume it to keep that work and run only what's left; a new run starts every step again.{keptNew ? ` ${plural(keptNew, "selected step")} ${keptNew === 1 ? "isn't" : "aren't"} in that run: run ${keptNew === 1 ? "it" : "them"} after it.` : ""}
+          </p>
+          <button type="button" className="cds-btn" onClick={() => onShowJob(kept.id)} data-tip="Open that run in Activity, where Resume (or Retry failed features) continues it">
+            Show that run
+          </button>
+        </div>
+      ) : null}
       {appWork && state && snapshot ? <ArchiveReview state={state} snapshot={snapshot} onImport={onImportArchive} /> : null}
       <ul>
         {merges.length ? <li>Writes {plural(merges.length, "token file")} by deterministic rule merge ({merges.filter((s) => s.target === "app").length} on the App branch, {merges.filter((s) => s.target === "design").length} staged for Design).</li> : null}
@@ -30,7 +47,7 @@ export function RunConfirmation({ steps, state, snapshot, busy, featureTitle, on
         ) : null}
         {pulls.length ? (
           <li>
-            Runs {harness === "codex" ? "Codex (untested, set in config.json)" : "Claude Code"} {plural(pulls.length, "time")} with permission to edit and run commands in that worktree. Each port must end with its own commit; one that doesn't stops the run.
+            Runs {harness === "codex" ? "Codex (untested, set in config.json)" : "Claude Code"} {plural(pulls.length, "time")} with permission to edit and run commands in that worktree. Each port must end with its own commit.{attempts > 1 ? ` One that doesn't gets ${plural(attempts - 1, "more try", "more tries")} with the failure fed back; if it still fails,` : " One that doesn't"} its partial changes are set aside as a patch and the run carries on, leaving that feature open.
           </li>
         ) : null}
         {pushes.length ? <li>Runs Claude Code {plural(pushes.length, "time")} to port App work into a staging copy of the kit.</li> : null}

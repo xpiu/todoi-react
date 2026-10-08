@@ -33,7 +33,14 @@ export const uploadPending = (j: { staged?: unknown[]; steps: Array<{ id: string
   return !!j.staged?.length && (state === "pending" || state === "failed");
 };
 
-/** Recovery currently covers App-only runs; mixed runs also need their kit staging checkpoints. */
+/** App ports a run set aside after their attempts failed; the rest of the branch is verified without them */
+export const failedPorts = (j: Pick<Job, "steps">) => j.steps.filter((s) => s.target === "app" && s.state === "failed" && s.kind !== "check" && s.kind !== "merge");
+
+/**
+ * Recovery currently covers App-only runs; mixed runs also need their kit staging checkpoints. A failed or
+ * stopped run resumes on its kept branch; a ready run can retry the features it set aside before Merge.
+ */
 export const canResume = (j: Pick<Job, "kind" | "state" | "app" | "steps">) => j.kind === "run"
-  && (j.state === "failed" || j.state === "cancelled") && j.app?.state === "failed"
-  && j.steps.length > 0 && j.steps.every((s) => s.target === "app");
+  && j.steps.length > 0 && j.steps.every((s) => s.target === "app")
+  && (((j.state === "failed" || j.state === "cancelled") && j.app?.state === "failed")
+    || (j.state === "awaiting-approval" && j.app?.state === "ready" && failedPorts(j).length > 0));

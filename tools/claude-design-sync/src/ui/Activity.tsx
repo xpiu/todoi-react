@@ -6,8 +6,8 @@
 import { CircleAlert, Check, GitMerge, LoaderCircle, Maximize2, Minimize2, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type AppState, type FidelityFinding, type Job } from "./api";
-import { canResume } from "../engine/approvals";
+import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type ApiError, type AppState, type FidelityFinding, type Job } from "./api";
+import { canResume, failedPorts } from "../engine/approvals";
 import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
@@ -209,6 +209,8 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
   const [err, setErr] = useState<string | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
+  /** Files a refused resume would set aside (an interrupted port's leftovers) */
+  const [drift, setDrift] = useState<string[] | null>(null);
   const cardErr = useMemo(() => new Map((job.cards ?? []).map((c) => [c.card, c.errors])), [job.cards]);
   const stageId = job.stage?.split("/").pop();
   const app = job.app;
@@ -220,6 +222,36 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
     ...(uploadWaiting ? [`${plural(staged.length, "staged kit file")} (nothing goes to Claude Design)`] : []),
     ...(app && appPending(job) ? [`branch ${app.branch} with ${plural(app.commits.length, "commit")} (nothing reaches ${app.into})`] : []),
   ];
+  const setAsideCount = app?.state === "ready" ? failedPorts(job).length : 0;
+  const maxAttempts = Math.max(1, ...failedPorts(job).map((s) => s.attempts?.length ?? 1));
+  const resume = (setAside: boolean) => act(async () => {
+    try {
+      await api.resume(job.id, setAside);
+      setDrift(null);
+    } catch (e) {
+      const files = (e as ApiError).data?.drift;
+      if (Array.isArray(files)) setDrift(files as string[]);
+      throw e;
+    }
+  });
+  /** Resume, or retry set-aside features; a worktree an interrupted port left dirty gets one more choice */
+  const resumeControls = (label: string, pending: string) => (
+    <>
+      <button type="button" className="cds-btn" disabled={busy || merge.coming || !!job.steps.some((s) => s.state === "running")} data-tip="Keep the branch and every completed step; run the unfinished and failed steps again, then the final check - Costs tokens" onClick={() => void resume(false)}>
+        {busy ? pending : label}
+      </button>
+      {drift?.length ? (
+        <div className="cds-drift" role="group" aria-label="Set aside and resume">
+          <p className="cds-quiet">
+            {plural(drift.length, "file")} changed after the last saved step: <span className="cds-mono cds-break">{drift.slice(0, 6).join(", ")}{drift.length > 6 ? "…" : ""}</span>. Setting them aside saves them as a patch in the tool's state folder (the log names it), returns the branch to its last saved step, and resumes.
+          </p>
+          <button type="button" className="cds-btn" disabled={busy} data-tip="Save those changes as a patch, reset the branch to its last verified step, and resume - Costs tokens" onClick={() => void resume(true)}>
+            Set aside and resume
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
   /** One approval action at a time; its error shows under the sections */
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -257,6 +289,7 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
                 <span className="cds-jobstep-mark" aria-hidden />
                 <span>{s.title}</span>
                 {s.summary ? <span className="cds-quiet">{s.summary}</span> : null}
+                {s.setAside ? <span className="cds-quiet">Partial changes ({plural(s.setAside.files.length, "file")}) set aside in <span className="cds-mono cds-break">{s.setAside.patch}</span></span> : null}
                 {s.alreadyImplemented ? <details className="cds-check-output cds-port-evidence">
                   <summary>Evidence for already implemented parts</summary>
                   <ul>{s.alreadyImplemented.units.map((u) => <li key={u.id}>
@@ -270,6 +303,14 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
         ) : null}
         {app?.state === "ready" ? (
           <section className="cds-approve" aria-labelledby="merge-h">
+            {setAsideCount ? <div className="cds-set-aside" role="group" aria-labelledby="set-aside-h">
+              <h4 id="set-aside-h">{plural(setAsideCount, "feature")} set aside</h4>
+              <p className="cds-quiet">
+                {setAsideCount === 1 ? "This port" : "These ports"} still failed after {plural(maxAttempts, "attempt")}, so {setAsideCount === 1 ? "its partial changes were" : "their partial changes were"} saved as a patch and the run carried on. The branch below holds only the features that passed, and the {setAsideCount === 1 ? "one" : "ones"} set aside stay open after Merge.
+              </p>
+              <ul className="cds-set-aside-list">{failedPorts(job).map((s) => <li key={s.id}>{s.title}</li>)}</ul>
+              {resumeControls("Retry failed features", "Retrying…")}
+            </div> : null}
             <h4 id="merge-h">{app.review ? "Review the draft, then merge" : "Merge into the App"}</h4>
             {app.review ? (
               <p className="cds-quiet">
@@ -300,9 +341,7 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
             </p>
             {canResume(job) ? <>
               <p className="cds-quiet">Resume keeps completed steps and commits, retries unfinished steps, and runs the final check again.</p>
-              <button type="button" className="cds-btn" disabled={busy || merge.coming} onClick={() => void act(() => api.resume(job.id))}>
-                {busy ? "Resuming…" : "Resume run"}
-              </button>
+              {resumeControls("Resume run", "Resuming…")}
             </> : null}
             {app.check && !app.check.ok ? (
               <details className="cds-check-output">

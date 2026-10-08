@@ -1,4 +1,4 @@
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -6,6 +6,7 @@ import { canResume } from "../src/engine/approvals";
 import { ADAPTATION_MARKER } from "../src/engine/adaptation";
 import * as fake from "../src/engine/fakeHarness";
 import { git } from "../src/engine/git";
+import { listSyncPoints } from "../src/engine/snapshots";
 import type { Runner } from "../src/engine/designsync";
 import { ALREADY_IMPLEMENTED_MARKER, createWorktree, headOf, removeWorktree, verifyPort, verifyResume } from "../src/engine/worktree";
 import { Jobs, type Job } from "../src/server/jobs";
@@ -100,7 +101,10 @@ it.each([false, true])("resumes the same branch after restart, retaining complet
   const { job: id } = await (await request(app, "/api/run", { global: "design-to-app", overrides: {} })).json() as { job: string };
   const failed = await settled(app, id);
   runs.push(failed.app!);
-  expect(failed.state).toBe("failed");
+  // Chip failed both of its tries and was set aside; every other feature still reached the verified branch.
+  expect(failed.state).toBe("awaiting-approval");
+  expect(failed.app!.state).toBe("ready");
+  expect(visited.filter((ids) => ids.includes("component:core/Chip"))).toHaveLength(2);
   expect(canResume(failed)).toBe(true);
   const completed = failed.steps.filter((s) => s.state === "done");
   expect(completed.length).toBeGreaterThan(0);
@@ -177,4 +181,106 @@ it("persists checkpoints atomically and keeps interrupted App jobs recoverable",
   expect(canResume(reloaded)).toBe(true);
   expect(canResume({ ...reloaded, steps: [...reloaded.steps, { id: "upload", title: "Upload", kind: "upload", target: "design", state: "pending" }] })).toBe(false);
   expect(readFileSync(join(fx.ctx.state, "jobs", `${job.id}.json`), "utf8")).toContain(job.id);
+});
+
+const CHIP = "component:core/Chip";
+const idsOf = (prompt: string) => [...prompt.matchAll(/Subfeature id: (.+)/g)].map((m) => m[1]!);
+const commit = (repo: string, message: string) => git(repo, ["-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-qm", message]);
+
+it("retries a failed port in place, feeding back the failure, on top of the first attempt's edits", async () => {
+  fx = makeFixture();
+  const chip: string[] = [];
+  vi.spyOn(fake, "fakeRunner").mockImplementation((_design, repo): Runner => async (prompt) => {
+    const ids = idsOf(prompt);
+    if (!ids.includes(CHIP)) return { type: "done", ok: true, result: report(ids) };
+    chip.push(prompt);
+    // the first try edits but forgets to commit; the retry commits what is already there
+    if (chip.length === 1) writeFileSync(join(repo, "chip-port.txt"), "ported");
+    else {
+      git(repo, ["add", "chip-port.txt"]);
+      commit(repo, "feat: port chip");
+    }
+    return { type: "done", ok: true, result: report(ids) };
+  });
+  const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir } });
+  const { job: id } = await (await request(app, "/api/run", { global: "design-to-app", overrides: {} })).json() as { job: string };
+  const job = await settled(app, id);
+  runs.push(job.app!);
+  expect(job.state).toBe("awaiting-approval");
+  const step = job.steps.find((s) => s.kind === "ai-pull" && s.state === "done" && s.summary?.includes("feat: port chip"))!;
+  expect(step.attempts).toHaveLength(2);
+  expect(step.attempts![0]!.error).toContain("made no commit");
+  expect(chip[1]).toContain("## Previous attempt failed");
+  expect(chip[1]).toContain("made no commit");
+  expect(job.app!.commits.map((c) => c.subject)).toContain("feat: port chip");
+  expect(job.events.some((e) => e.level === "warn" && e.text.startsWith("Attempt 1 of 2 failed"))).toBe(true);
+});
+
+it("sets a feature aside after its tries, verifies and merges the rest, and keeps the failed feature open", async () => {
+  fx = makeFixture();
+  vi.spyOn(fake, "fakeRunner").mockImplementation((_design, repo): Runner => async (prompt) => {
+    const ids = idsOf(prompt);
+    if (!ids.includes(CHIP)) return { type: "done", ok: true, result: report(ids) };
+    // commits half a port, then never reports its adaptation
+    writeFileSync(join(repo, "chip-port.txt"), `try ${Date.now()}`);
+    git(repo, ["add", "chip-port.txt"]);
+    commit(repo, "feat: half a chip");
+    writeFileSync(join(repo, "chip-scratch.txt"), "left behind");
+    return { type: "done", ok: true, result: "DONE" };
+  });
+  const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir } });
+  const { job: id } = await (await request(app, "/api/run", { global: "design-to-app", overrides: {} })).json() as { job: string };
+  const job = await settled(app, id);
+  runs.push(job.app!);
+  expect(job.state).toBe("awaiting-approval");
+  expect(job.app).toMatchObject({ state: "ready", check: { ok: true } });
+  const plan = new Jobs(fx.ctx).plan(job)!;
+  const chipStep = plan.steps.find((s) => s.units.includes(CHIP))!;
+  const failed = job.steps.find((s) => s.id === chipStep.id)!;
+  expect(failed).toMatchObject({ state: "failed", summary: expect.stringContaining("CDS_ADAPTATION") });
+  expect(failed.attempts).toHaveLength(2);
+  expect(failed.setAside!.files.sort()).toEqual(["chip-port.txt", "chip-scratch.txt"]);
+  expect(readFileSync(failed.setAside!.patch, "utf8")).toContain("chip-port.txt");
+  // the branch holds only verified work: no half port, no scratch file
+  expect(existsSync(join(job.app!.worktree, "chip-port.txt"))).toBe(false);
+  expect(existsSync(join(job.app!.worktree, "chip-scratch.txt"))).toBe(false);
+  expect(job.app!.commits.map((c) => c.subject)).not.toContain("feat: half a chip");
+  expect(job.steps.filter((s) => s.kind === "ai-pull" && s.id !== chipStep.id).every((s) => s.state === "done")).toBe(true);
+  expect(job.result).toContain("1 feature failed and stays open");
+  expect((await request(app, `/api/jobs/${id}/merge`, { reviewed: true })).status).toBe(200);
+  const merged = await (await app.request(`/api/jobs/${id}`)).json() as Job;
+  expect(merged.syncPointId).toBeTruthy();
+  const held = Object.keys(listSyncPoints(fx.ctx).find((p) => p.id === merged.syncPointId)!.held ?? {});
+  for (const unit of chipStep.units) expect(held).toContain(unit);
+  expect(held).not.toContain("component:board/BoardView");
+});
+
+it("offers to set aside an interrupted port's leftovers, then retries the failed feature on the clean branch", async () => {
+  fx = makeFixture();
+  fx.ctx.config.harness.implementAttempts = 1;
+  let fail = true;
+  vi.spyOn(fake, "fakeRunner").mockImplementation((): Runner => async (prompt) => {
+    const ids = idsOf(prompt);
+    return ids.includes(CHIP) && fail ? { type: "done", ok: false, result: "Temporary harness error" } : { type: "done", ok: true, result: report(ids) };
+  });
+  const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir } });
+  const { job: id } = await (await request(app, "/api/run", { global: "design-to-app", overrides: {} })).json() as { job: string };
+  const ready = await settled(app, id);
+  runs.push(ready.app!);
+  expect(ready.app!.state).toBe("ready");
+  expect(canResume(ready)).toBe(true);
+  writeFileSync(join(ready.app!.worktree, "stray.txt"), "an interrupted edit");
+  const refused = await request(app, `/api/jobs/${id}/resume`);
+  expect(refused.status).toBe(409);
+  expect(await refused.json()).toMatchObject({ error: expect.stringContaining("uncommitted files"), drift: ["stray.txt"] });
+  fail = false;
+  expect((await request(app, `/api/jobs/${id}/resume`, { setAside: true })).status).toBe(200);
+  const retried = await settled(app, id);
+  expect(retried.state).toBe("awaiting-approval");
+  expect(retried.steps.filter((s) => s.kind === "ai-pull").every((s) => s.state === "done")).toBe(true);
+  expect(existsSync(join(retried.app!.worktree, "stray.txt"))).toBe(false);
+  const dir = join(fx.ctx.state, "set-aside", id);
+  const patches = readdirSync(dir).filter((f) => f.startsWith("resume-"));
+  expect(patches).toHaveLength(1);
+  expect(readFileSync(join(dir, patches[0]!), "utf8")).toContain("an interrupted edit");
 });

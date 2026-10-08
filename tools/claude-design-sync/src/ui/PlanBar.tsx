@@ -13,7 +13,7 @@ import { MergeButton, type MergeOffer } from "./Merge";
 /** A part the plan could move but skips: it stays open at a sync point. Reference-only parts never move, so they never hold a feature open. */
 const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (unitChoices[u.id] ?? "skip") === "skip";
 
-export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkUnits, steps, features, global, overrides, unitChoices, state, snapshot, onImportArchive, onRun, busy, merge, onSyncPoint }: { runFeatureId: string | null; onRunFeature: (id: string | null) => void; baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; snapshot: SnapshotMeta | null; onImportArchive: () => void; onRun: (only?: string[]) => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
+export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkUnits, steps, features, global, overrides, unitChoices, state, snapshot, onImportArchive, onRun, onShowJob, busy, merge, onSyncPoint }: { runFeatureId: string | null; onRunFeature: (id: string | null) => void; baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; snapshot: SnapshotMeta | null; onImportArchive: () => void; onRun: (only?: string[]) => void; onShowJob: (id: string) => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
   const [planView, setPlanView] = useState<"closed" | "steps" | "confirm">("closed");
   const view = markUnits !== null ? "mark" : runFeatureId !== null ? "confirm" : planView;
   const runFeature = features.find((f) => f.id === runFeatureId);
@@ -79,6 +79,9 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
             <RunConfirmation steps={runSteps} state={state} snapshot={snapshot} busy={busy} featureTitle={runFeature?.title} onBack={() => setView("steps")} onImportArchive={() => {
               setView("closed");
               onImportArchive();
+            }} onShowJob={(id) => {
+              setView("closed");
+              onShowJob(id);
             }} onRun={() => {
               const only = runFeatureId !== null ? featureSteps.map((s) => s.id) : undefined;
               setView("closed");

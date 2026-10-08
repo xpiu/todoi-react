@@ -400,7 +400,7 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} busy={!!running || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} onShowJob={(id) => void openJob(id)} busy={!!running || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);

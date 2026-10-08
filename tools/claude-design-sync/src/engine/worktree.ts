@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { fileWithin } from "./fsutil";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, symlinkSync } from "node:fs";
+import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
@@ -110,25 +110,65 @@ export function verifyPort(run: AppRun, before: string, outcome?: { result: stri
   return { ok: false, reason: "No commit or valid already-implemented report; the feature is still unverified" };
 }
 
-/** Validate the saved worktree before any resumed work starts. */
-export function verifyResume(run: AppRun): void {
+/** Edits after the last saved step (an interrupted port's, or the developer's): resume refuses them unless they are set aside */
+export class ResumeDrift extends Error {
+  constructor(message: string, readonly files: string[]) {
+    super(message);
+  }
+}
+
+/**
+ * Validate the saved worktree before any resumed work starts. Returns the files changed after the last
+ * saved step when `allowDrift` (the caller sets them aside); otherwise they make it throw `ResumeDrift`.
+ */
+export function verifyResume(run: AppRun, { allowDrift = false } = {}): string[] {
   if (!existsSync(run.worktree)) throw new Error("The saved App worktree is missing. Start a new run.");
   const branch = git(run.worktree, ["symbolic-ref", "--short", "HEAD"]).trim();
   if (branch !== run.branch) throw new Error("The saved worktree is on a different branch. Restore its branch before resuming.");
   git(run.worktree, ["merge-base", "--is-ancestor", run.base, "HEAD"]);
-  if (run.checkpoint && headOf(run) !== run.checkpoint) throw new Error("The App branch changed after its last saved step. Review those edits before starting a new run.");
-  if (leftovers(run).length) throw new Error("The App worktree has uncommitted files. Review and remove those changes before resuming, or start a new run to keep them.");
+  const since = run.checkpoint ?? headOf(run);
+  try {
+    git(run.worktree, ["merge-base", "--is-ancestor", since, "HEAD"]);
+  } catch {
+    throw new Error("The App branch was rewritten after its last saved step. Review it by hand, or discard the run and start a new one.");
+  }
+  const committed = git(run.worktree, ["diff", "--name-only", since, "HEAD"]).trim();
+  const dirty = leftovers(run);
+  const files = [...new Set([...(committed ? committed.split("\n") : []), ...dirty])];
+  if (allowDrift || !files.length) return files;
+  throw new ResumeDrift(committed
+    ? "The App branch changed after its last saved step. Set those edits aside to resume (they're saved as a patch), or review them first."
+    : "The App worktree has uncommitted files, usually from a port that was interrupted. Set them aside to resume (they're saved as a patch), or review them first.", files);
 }
+
+// Wildcards avoid Git treating an ignored node_modules symlink as an explicitly named path.
+// Exclude both the link itself and directory contents, even in repos without a dependency ignore.
+const OWN_PATHS = [".", ":(exclude,glob)**/node_modules", ":(exclude,glob)**/node_modules/**"];
 
 /** Commit what the tool itself wrote (a deterministic token merge) on the run's branch */
 export function commitAll(run: AppRun, message: string): boolean {
-  // Wildcards avoid Git treating an ignored node_modules symlink as an explicitly named path.
-  // Exclude both the link itself and directory contents, even in repos without a dependency ignore.
-  const paths = [".", ":(exclude,glob)**/node_modules", ":(exclude,glob)**/node_modules/**"];
-  git(run.worktree, ["add", "-A", "--", ...paths]);
-  if (!git(run.worktree, ["status", "--porcelain", "--", ...paths]).trim()) return false;
+  git(run.worktree, ["add", "-A", "--", ...OWN_PATHS]);
+  if (!git(run.worktree, ["status", "--porcelain", "--", ...OWN_PATHS]).trim()) return false;
   git(run.worktree, ["-c", "user.name=Claude Design Sync", "-c", "user.email=design-sync@localhost", "commit", "-q", "-m", message]);
   return true;
+}
+
+/**
+ * Move everything on the branch past `since` (commits and uncommitted files) into a patch file, then
+ * return the worktree to `since`. Nothing is lost: `git apply <patch>` brings it back. Returns the files
+ * the patch holds, or null when there was nothing to set aside.
+ */
+export function setAside(run: AppRun, since: string, patch: string): string[] | null {
+  git(run.worktree, ["merge-base", "--is-ancestor", since, "HEAD"]);
+  git(run.worktree, ["add", "-A", "--", ...OWN_PATHS]);
+  const files = git(run.worktree, ["diff", "--cached", "--name-only", since, "--", ...OWN_PATHS]).trim();
+  if (files) {
+    mkdirSync(dirname(patch), { recursive: true });
+    writeFileSync(patch, git(run.worktree, ["diff", "--cached", "--binary", since, "--", ...OWN_PATHS]));
+  }
+  git(run.worktree, ["reset", "-q", "--hard", since]);
+  git(run.worktree, ["clean", "-fdq", "-e", "node_modules"]);
+  return files ? files.split("\n") : null;
 }
 
 /** Run the repo's check (e.g. `npm run check`) in the worktree; keeps the last part of its output */
