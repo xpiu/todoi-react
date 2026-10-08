@@ -1,6 +1,7 @@
 // Loads config.json and resolves the tool's paths. Every module takes a Ctx so tests can point the
 // engine at fixture trees instead of the real repo and state folder.
 import { readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -56,6 +57,11 @@ export function pairingProblems(config: Pick<Config, "renames">): string[] {
     for (const [path, others] of seen) if (others.length > 1) out.push(`renames pairs ${path} with ${others.length} files (${others.join(", ")}); a rename must pair one ${side === "app" ? "App" : "kit"} file with one ${side === "app" ? "kit" : "App"} file.`);
   }
   return out;
+}
+
+/** Where Project archives are looked for: CDS_EXPORTS (folders separated by ":"), else ~/Downloads and the tool's uploads/ drop folder */
+export function exportDirs(): string[] {
+  return process.env.CDS_EXPORTS ? process.env.CDS_EXPORTS.split(":").filter(Boolean) : [join(homedir(), "Downloads"), join(TOOL_DIR, "uploads")];
 }
 
 export function defaultCtx(): Ctx {

@@ -7,6 +7,7 @@ A local tool that compares **this repo's React 19 app** (todoi-react) with the *
 - [Architecture and design-tool priorities](#architecture-and-design-tool-priorities)
   - [Storybook examples in sync](#storybook-examples-in-sync)
 - [Start the tool](#start-the-tool)
+  - [Run it on a server](#run-it-on-a-server)
 - [A typical loop](#a-typical-loop)
 - [Plan page (`/`)](#plan-page-)
 - [Mapping page (`/mapping`)](#mapping-page-mapping)
@@ -52,13 +53,21 @@ npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only)
 - **The GUI is bundled on every `serve`** (into `dist/`), so restart after pulling tool changes.
 - **First run:** with no snapshot yet, the page offers the two ways in (below).
 
+### Run it on a server
+
+To sync from afar, run Claude Code (signed in to claude.ai, with Playwright) in a server checkout such as `/srv/todoi-react`, and ask it to follow the [design-sync-operator skill](.claude/skills/design-sync-operator/SKILL.md). Start Claude Code in `tools/claude-design-sync/` so it finds the skill, or name the file.
+
+- Drop Project archives into `tools/claude-design-sync/uploads/` (gitignored); `npm run design-sync -- import` takes the newest.
+- The GUI stays on `127.0.0.1`; Claude drives it there with Playwright and carries out the upload request itself, while you approve DesignSync's prompt in that session.
+- Merges land in the server checkout. Pushing `main` deploys staging, so the skill asks first.
+
 ## Bringing Design's work in: import or pull
 
 **Import project archive** is always visible on Plan and Mapping; it opens the download-and-import guide without a Claude Code status check. First run shows the guide immediately. **Bring the changes in** and **Bring the mapping up to date** also open it when Design is behind.
 
 The archive entry always shows the current archive or snapshot, its import time and file count, where its extracted files are stored, and whether the active comparison loaded it successfully. The last three successful archive imports remain visible, including while the guide is open. Their history survives reloads. New imports preserve the original filename (and source path for local path imports); older imports use their existing labels. The app compares the stored extracted files; browser-picked ZIPs are removed after extraction.
 
-- **Import an export (no tokens).** In Claude Design, choose **Share → Project HTML → Project archive → Export** to download the project as a .zip. The tool lists this project's exports from `~/Downloads` (newest first, last 30 days) and looks again whenever its window regains focus. Each export says whether it was downloaded after Design's last change, as far as the last check knows. You can also drop a .zip on that side, choose one, or import an unzipped folder by its path.
+- **Import an export (no tokens).** In Claude Design, choose **Share → Project HTML → Project archive → Export** to download the project as a .zip. The tool lists this project's exports from `~/Downloads` and the tool's `uploads/` drop folder (newest first, last 30 days) and looks again whenever its window regains focus. Each export says whether it was downloaded after Design's last change, as far as the last check knows. You can also drop a .zip on that side, choose one, or import an unzipped folder by its path.
   - An export's project is read from its manifest: Claude Design names the bundle namespace `<Name>_<first six characters of the project id>`. Exports of other projects never show up, and importing one is refused.
   - An import downloaded at least 2 minutes after Design's last change reads as current in the GUI. It never claims Design's `updatedAt`, so an upload built on it still reads Design's live copies and merges newer edits first, and a later pull still reads everything.
 - **Pull with Claude Code (costs tokens).** Expand **Alternative: pull with Claude Code** beneath the archive guide. It shows what the last complete pull cost and how long it took.
@@ -218,7 +227,7 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
 npm run claude-design-sync                         # the GUI (CDS_PORT to move it)
 npm run design-sync -- status                      # Design project's updatedAt (via Claude Code)
 npm run design-sync -- pull [--force]              # new snapshot; stops early when Design hasn't changed
-npm run design-sync -- import ~/Downloads/x.zip    # or an unzipped export folder
+npm run design-sync -- import [~/Downloads/x.zip]  # or an unzipped export folder; none = newest export of this project
 npm run design-sync -- compare [--base <id>]       # print features per status
 npm run design-sync -- sync-point "label" [--tag]  # App HEAD + newest snapshot (marks all synced; keep features open from the GUI)
 npm run design-sync -- twin components/x/y.card.html          # write a card's Minimal twin
@@ -254,7 +263,7 @@ Environment overrides, used by the tests:
 
 - `CDS_REPO`, `CDS_STATE`, `CDS_CONFIG`, `CDS_PORT`.
 - `CDS_FAKE_HARNESS=1` plus `CDS_FAKE_DESIGN=<folder>`: a stand-in harness that serves a local folder as the Design project. Both are required; `design-sync:demo` sets them up. `CDS_FAKE_PROJECT` names the project id the folder plays (default `fake`).
-- `CDS_EXPORTS`: folders (separated by `:`) to look for exports in, instead of `~/Downloads`. With the fake harness, none unless set.
+- `CDS_EXPORTS`: folders (separated by `:`) to look for exports in, instead of `~/Downloads` and `uploads/`. With the fake harness, none unless set.
 
 ## State on disk
 

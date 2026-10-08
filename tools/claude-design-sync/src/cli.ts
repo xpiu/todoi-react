@@ -1,11 +1,11 @@
 // Command line for the engine — the same operations the GUI offers, for scripts and for an AI harness.
-//   npm run design-sync -- serve | pull [--force] | status | import <zip|folder> | compare [--base <id>] | sync-point <label> [--tag]
+//   npm run design-sync -- serve | pull [--force] | status | import [zip|folder] | compare [--base <id>] | sync-point <label> [--tag]
 //   npm run design-sync -- twin <card.html> [out] | bundle <projectDir> | check-cards <projectDir> <card…>
-import { defaultCtx } from "./engine/config";
+import { defaultCtx, exportDirs } from "./engine/config";
 import { compare } from "./engine/compare";
 import { createDesignRunner, projectStatus, pullIfChanged } from "./engine/designsync";
 import { recordSyncPoint } from "./engine/plan";
-import { importExport, latestSnapshot, listSyncPoints } from "./engine/snapshots";
+import { findExports, importExport, latestSnapshot, listSyncPoints } from "./engine/snapshots";
 import { buildBundle, checkCards, writeTwin } from "./engine/kit";
 
 const ctx = defaultCtx();
@@ -38,7 +38,10 @@ async function main() {
       return;
     }
     case "import": {
-      const snap = importExport(ctx, args[0]!, flag("--label"));
+      const source = args[0] && !args[0].startsWith("--") ? args[0] : findExports(ctx, exportDirs())[0]?.path;
+      if (!source) throw new Error(`No Project archive of this project in ${exportDirs().join(", ")} from the last 30 days. Pass a .zip or folder.`);
+      const snap = importExport(ctx, source, flag("--label"));
+      console.log(`Imported ${source}`);
       console.log(`Snapshot ${snap.id}: ${snap.fileCount} files`);
       return;
     }

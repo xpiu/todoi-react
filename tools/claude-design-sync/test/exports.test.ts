@@ -2,11 +2,11 @@
 // when one counts as fresh (for the GUI only; uploads never trust it)
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { loadConfig, type Ctx } from "../src/engine/config";
+import { exportDirs, loadConfig, TOOL_DIR, type Ctx } from "../src/engine/config";
 import { downloadedAfter, exportCovers } from "../src/engine/designsync";
 import { findExports, getSnapshot, importExport, namespaceMatches } from "../src/engine/snapshots";
 
@@ -64,6 +64,19 @@ describe("Claude Design exports", () => {
 
     // without a manifest it can't tell, so it imports without claiming the project
     expect(importExport(ctx, exportFolder(join(root, "bare"))).projectId).toBeUndefined();
+  });
+
+  it("looks in Downloads and the uploads drop folder unless CDS_EXPORTS names folders", () => {
+    const saved = process.env.CDS_EXPORTS;
+    try {
+      delete process.env.CDS_EXPORTS;
+      expect(exportDirs()).toEqual([join(homedir(), "Downloads"), join(TOOL_DIR, "uploads")]);
+      process.env.CDS_EXPORTS = "/srv/a::/srv/b";
+      expect(exportDirs()).toEqual(["/srv/a", "/srv/b"]);
+    } finally {
+      if (saved === undefined) delete process.env.CDS_EXPORTS;
+      else process.env.CDS_EXPORTS = saved;
+    }
   });
 
   it("finds this project's exports in Downloads, newest first, and nothing else", () => {

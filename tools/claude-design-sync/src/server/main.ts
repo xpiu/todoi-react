@@ -2,7 +2,6 @@
 // another site in the browser can't trigger runs.
 import { serve } from "@hono/node-server";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { extname, join, resolve } from "node:path";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -12,7 +11,7 @@ import { canResume, uploadPending } from "../engine/approvals";
 import { ADAPTATION_MARKER, blockedAdaptation, readAdaptation } from "../engine/adaptation";
 import { compare, unitBaseline } from "../engine/compare";
 import { directionsFor } from "../engine/directions";
-import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
+import { defaultCtx, exportDirs as defaultExportDirs, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, createDesignRunner, downloadedAfter, exportCovers, findProject, isCurrent, projectStatus, pullIfChanged, uploadRequest as uploadHandoff, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { fileWithin, readText } from "../engine/fsutil";
@@ -51,8 +50,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   const cache = new Map<string, Comparison>();
   /** The last time Claude Design was asked whether it changed (this server's lifetime) */
   let lastCheck: { at: string; updatedAt: string | null; stale: boolean } | null = null;
-  // Where exports are looked for: ~/Downloads, or CDS_EXPORTS (folders separated by ":"); none in a fake run unless set
-  const exportDirs = process.env.CDS_EXPORTS ? process.env.CDS_EXPORTS.split(":").filter(Boolean) : opts.fake ? [] : [join(homedir(), "Downloads")];
+  // None in a fake run unless CDS_EXPORTS is set
+  const exportDirs = opts.fake && !process.env.CDS_EXPORTS ? [] : defaultExportDirs();
 
   // Codex is untested (no working install to test against), so it's only probed when config.json picks it
   let probed: { claude: HarnessInfo; codex?: HarnessInfo } | null = null;
