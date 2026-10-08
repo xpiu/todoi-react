@@ -76,8 +76,11 @@ export function verifyPort(run: AppRun, before: string): { ok: true; commits: Ar
 
 /** Commit what the tool itself wrote (a deterministic token merge) on the run's branch */
 export function commitAll(run: AppRun, message: string): boolean {
-  git(run.worktree, ["add", "-A", "--", ".", ":!node_modules"]);
-  if (!git(run.worktree, ["status", "--porcelain", "--", ".", ":!node_modules"]).trim()) return false;
+  // Wildcards avoid Git treating an ignored node_modules symlink as an explicitly named path.
+  // Exclude both the link itself and directory contents, even in repos without a dependency ignore.
+  const paths = [".", ":(exclude,glob)**/node_modules", ":(exclude,glob)**/node_modules/**"];
+  git(run.worktree, ["add", "-A", "--", ...paths]);
+  if (!git(run.worktree, ["status", "--porcelain", "--", ...paths]).trim()) return false;
   git(run.worktree, ["-c", "user.name=Claude Design Sync", "-c", "user.email=design-sync@localhost", "commit", "-q", "-m", message]);
   return true;
 }

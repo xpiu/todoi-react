@@ -420,6 +420,41 @@ describe("App runs in a worktree", () => {
     git(dir, ["commit", "-qm", msg]);
   };
 
+  it.each([
+    { ignored: true, directory: false },
+    { ignored: false, directory: false },
+    { ignored: true, directory: true },
+    { ignored: false, directory: true },
+  ])("commits App edits while excluding dependencies ($ignored ignored, $directory directory)", ({ ignored, directory }) => {
+    const fx = makeFixture();
+    commitIn(fx.repo, ".gitignore", `${ignored ? "/node_modules\n" : ""}.env\n`, "chore: ignores");
+    mkdirSync(join(fx.repo, "node_modules"));
+    const originalSpec = readFileSync(join(fx.repo, "DESIGN.md"), "utf8");
+    const run = createWorktree(fx.ctx, "dependencies");
+    try {
+      if (directory) {
+        rmSync(join(run.worktree, "node_modules"), { recursive: true });
+        mkdirSync(join(run.worktree, "node_modules"));
+        writeFileSync(join(run.worktree, "node_modules/pkg.js"), "dependency\n");
+      }
+      writeFileSync(join(run.worktree, ".env"), "LOCAL_ONLY=true\n");
+      expect(commitAll(run, "nothing")).toBe(false);
+      const before = headOf(run);
+      writeFileSync(join(run.worktree, "DESIGN.md"), "# Updated spec\n");
+      writeFileSync(join(run.worktree, "tokens.css"), "a{}\n");
+      rmSync(join(run.worktree, "src/client/design/core/Badge.tsx"));
+
+      expect(commitAll(run, "style(tokens): merge")).toBe(true);
+      expect(git(run.worktree, ["diff", "--name-only", before, "HEAD"]).trim().split("\n")).toEqual([
+        "DESIGN.md", "src/client/design/core/Badge.tsx", "tokens.css",
+      ]);
+      expect(commitAll(run, "nothing")).toBe(false);
+      expect(readFileSync(join(fx.repo, "DESIGN.md"), "utf8")).toBe(originalSpec);
+    } finally {
+      removeWorktree(fx.ctx, run, true);
+    }
+  });
+
   it("works on its own branch, and counts only a committed, clean port", async () => {
     const fx = makeFixture();
     const run = createWorktree(fx.ctx, "r1");
