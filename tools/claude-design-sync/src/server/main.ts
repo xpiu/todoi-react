@@ -422,7 +422,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       const patch = drift.length ? join(ctx.state, "set-aside", job.id, `resume-${Date.now().toString(36)}.patch`) : null;
       if (patch) setAside(job.app!, job.app!.checkpoint ?? headOf(job.app!), patch);
       jobs.resume(job);
-      if (patch) jobs.log(job, "warn", `Set aside ${plural(drift.length, "file")} changed after the last saved step (${drift.slice(0, 5).join(", ")}${drift.length > 5 ? "…" : ""}). They're saved in ${patch}; git apply it to look.`);
+      if (patch) jobs.log(job, "warn", `Set aside ${plural(drift.length, "file")} changed after the last saved step (${drift.slice(0, 5).join(", ")}${drift.length > 5 ? "…" : ""}). They're saved in ${patch} until the run is merged or discarded; git apply it to look.`);
       jobs.log(job, "info", "Resuming the saved App branch: completed steps are kept; unfinished and failed steps and the final check run again.");
       void runPlan(job, plan.comparison, plan.steps, plan.harness);
       return c.json({ ok: true });
@@ -572,7 +572,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
             const files = setAside(run!, before, patch);
             run!.checkpoint = headOf(run!);
             jobs.step(job, s.id, { state: "failed", summary: failure.slice(0, 600), setAside: files ? { patch, files } : undefined });
-            jobs.log(job, "warn", `${s.title} failed and stays open: ${failure}.${files ? ` Its partial changes are saved in ${patch} (git apply it to look).` : ""} The run carries on with the next feature.`, s.id);
+            jobs.log(job, "warn", `${s.title} failed and stays open: ${failure}.${files ? ` Its partial changes are saved in ${patch} until the run is merged or discarded (git apply it to look).` : ""} The run carries on with the next feature.`, s.id);
           }
           continue;
         }

@@ -297,14 +297,25 @@ Environment overrides, used by the tests:
 
 - `snapshots/<id>/` (meta plus files);
 - `sync-points.json`;
-- `jobs/<id>.json` (logs and approvals);
-- `stage/<run>/` (Design staging copies, pruned on start);
+- `jobs/<id>.json` (logs and approvals, kept as history);
+- `stage/<run>/` (Design staging copies);
+- `plans/<run>.json` (a run's comparison and briefs, for Resume and the sync point it records);
+- `set-aside/<run>/*.patch` (partial changes of ports that failed, and leftovers a resume set aside);
 - `storybook/<hash>/` (the newest static Storybook build, keyed by what it read);
 - `visual/<key>/` (cached pictures for Compare visually);
 - `sections/<hash>.md` (spec sections the briefs word-diff);
 - `cdn/` (cached unpkg scripts for card renders).
 
 Run worktrees live outside the repo, under `$TMPDIR/cds-runs/`.
+
+**Cleanup.** Whenever a job ends, and when the server starts, the tool deletes what only an unfinished run needs, and the run's log says what of its own went:
+
+- a staging copy, once its run neither runs nor waits for upload approval;
+- a saved plan and set-aside patches, once the run can't go on: it merged, was discarded, or ended without a kept branch. A failed or stopped run's kept branch keeps them until Resume finishes it or Discard drops it, so look at a patch before you merge or discard;
+- spec sections that no kept plan names and no brief used for a day;
+- a merged or discarded run's worktree and branch (as before), and the repo's `cds-runs` folder with its last worktree.
+
+A Storybook rebuild also drops the cached pictures, which were keyed by the old build. Snapshots, sync points and job logs stay: the comparison and the Mapping history read them.
 
 ## Code and tests
 

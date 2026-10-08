@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -253,7 +253,44 @@ it("sets a feature aside after its tries, verifies and merges the rest, and keep
   const held = Object.keys(listSyncPoints(fx.ctx).find((p) => p.id === merged.syncPointId)!.held ?? {});
   for (const unit of chipStep.units) expect(held).toContain(unit);
   expect(held).not.toContain("component:board/BoardView");
+  // merged: what only an unfinished run needs is gone, its worktree folder included
+  expect(existsSync(join(fx.ctx.state, "plans", `${id}.json`))).toBe(false);
+  expect(existsSync(join(fx.ctx.state, "set-aside", id))).toBe(false);
+  expect(existsSync(dirname(job.app!.worktree))).toBe(false);
+  expect(merged.events.at(-1)!.text).toBe("Removed what only an unfinished run needs: its saved plan, its set-aside patches");
 });
+
+it("sweeps finished runs' temporary files on start and keeps what unfinished runs still need", () => {
+  fx = makeFixture();
+  const jobs = new Jobs(fx.ctx);
+  const run = (title: string, app: Partial<NonNullable<Job["app"]>> | undefined, state: Job["state"]) => {
+    const j = jobs.create("run", title, app ? { app: { worktree: "/nowhere", branch: "b", base: "x", into: "main", commits: [], ...app } as NonNullable<Job["app"]> } : {});
+    jobs.savePlan(j, { comparison: {} as never, steps: [], harness: "claude" });
+    writeFileSync(join(mkdirp(join(fx.ctx.state, "set-aside", j.id)), "port.patch"), "diff");
+    if (state !== "running") jobs.finish(j, state);
+    return j;
+  };
+  const merged = run("merged", { state: "merged" }, "done");
+  const kept = run("kept", { state: "failed" }, "failed");
+  const waiting = run("waiting", { state: "ready" }, "awaiting-approval");
+  const stopped = run("stopped mid-port", { state: "working" }, "cancelled");
+  const sections = mkdirp(join(fx.ctx.state, "sections"));
+  writeFileSync(join(sections, "old.md"), "old");
+  utimesSync(join(sections, "old.md"), new Date(0), new Date(0));
+  writeFileSync(join(sections, "fresh.md"), "fresh");
+  const left = (j: Job) => [existsSync(join(fx.ctx.state, "plans", `${j.id}.json`)), existsSync(join(fx.ctx.state, "set-aside", j.id))];
+  expect(left(merged)).toEqual([false, false]);
+  for (const j of [kept, waiting, stopped]) expect(left(j)).toEqual([true, true]);
+  // a restart marks the stopped port's branch kept, and the sweep on start drops only the old unused section
+  new Jobs(fx.ctx);
+  for (const j of [kept, waiting, stopped]) expect(left(j)).toEqual([true, true]);
+  expect(readdirSync(sections)).toEqual(["fresh.md"]);
+});
+
+const mkdirp = (dir: string) => {
+  mkdirSync(dir, { recursive: true });
+  return dir;
+};
 
 it("offers to set aside an interrupted port's leftovers, then retries the failed feature on the clean branch", async () => {
   fx = makeFixture();

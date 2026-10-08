@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { fileWithin } from "./fsutil";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
@@ -38,6 +38,9 @@ export interface AppRun {
 }
 
 /** A worktree on a new branch from HEAD, with the repo's node_modules linked in so its check can run */
+/** Where a repo's run worktrees live: outside it, one folder per repo */
+export const runsDir = (repo: string) => join(tmpdir(), "cds-runs", `${basename(repo)}-${createHash("sha1").update(repo).digest("hex").slice(0, 6)}`);
+
 export function createWorktree(ctx: Ctx, runId: string): AppRun {
   let into: string;
   try {
@@ -46,8 +49,7 @@ export function createWorktree(ctx: Ctx, runId: string): AppRun {
     throw new Error("The App repo has no branch checked out (detached HEAD). Check out the branch the work should land on, then run again.");
   }
   const base = git(ctx.repo, ["rev-parse", "HEAD"]).trim();
-  const id = createHash("sha1").update(ctx.repo).digest("hex").slice(0, 6);
-  const worktree = join(tmpdir(), "cds-runs", `${basename(ctx.repo)}-${id}`, runId);
+  const worktree = join(runsDir(ctx.repo), runId);
   const branch = `design-sync/${runId.startsWith("run-") ? runId : `run-${runId}`}`;
   mkdirSync(dirname(worktree), { recursive: true });
   git(ctx.repo, ["worktree", "add", "-q", "-b", branch, worktree, base]);
@@ -223,5 +225,11 @@ export function removeWorktree(ctx: Ctx, run: AppRun, dropBranch: boolean): void
     } catch {
       /* already gone */
     }
+  }
+  // the repo's folder under cds-runs goes with its last worktree
+  try {
+    rmdirSync(dirname(run.worktree));
+  } catch {
+    /* other runs still live there */
   }
 }

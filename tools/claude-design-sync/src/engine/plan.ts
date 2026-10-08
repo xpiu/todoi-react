@@ -1,6 +1,6 @@
 // From decisions to work: each feature's direction becomes steps — deterministic CSS merges where both
 // sides speak the same language, AI port briefs where they don't, and an upload that waits for approval.
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Ctx } from "./config";
@@ -219,7 +219,9 @@ function specReading(ctx: Ctx, was: string | null, now: string | null, name: str
   mkdirSync(dir, { recursive: true });
   const [a, b] = [before, after].map((text) => {
     const f = join(dir, `${hash(text)}.md`);
+    // touched on reuse: the job sweep keeps sections a brief used within the last day
     if (!existsSync(f)) writeFileSync(f, `${text}\n`);
+    else utimesSync(f, new Date(), new Date());
     return f;
   });
   // the spec writes a paragraph per line, so a word diff stays short

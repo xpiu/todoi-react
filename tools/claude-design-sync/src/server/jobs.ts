@@ -1,5 +1,5 @@
 // Long-running work (pulls, plan runs, uploads) as jobs with an event log the GUI streams.
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 
 import type { Comparison } from "../engine/types";
@@ -8,7 +8,7 @@ import type { HarnessKind } from "../engine/harness";
 import type { Adaptation } from "../engine/adaptation";
 import type { AlreadyImplemented } from "../engine/worktree";
 import type { Ctx } from "../engine/config";
-import { appPending, canResume, uploadPending } from "../engine/approvals";
+import { appPending, canResume, keepsRunFiles, uploadPending } from "../engine/approvals";
 import { removeWorktree, type AppRun } from "../engine/worktree";
 
 export type JobKind = "pull" | "status" | "run" | "upload";
@@ -112,15 +112,70 @@ export class Jobs {
         /* ignore a torn file */
       }
     }
-    // staging copies only live while their run waits for upload approval
-    const stages = join(this.ctx.state, "stage");
-    const keep = new Set(this.list().filter((j) => j.state === "awaiting-approval" && j.stage).map((j) => resolve(j.stage!)));
-    if (existsSync(stages)) for (const d of readdirSync(stages)) if (!keep.has(resolve(stages, d))) rmSync(join(stages, d), { recursive: true, force: true });
+    this.sweep();
   }
-  /** Delete a finished run's staging copy (a full copy of the Design project) */
-  private dropStage(j: Job) {
-    const stages = resolve(this.ctx.state, "stage") + sep;
-    if (j.stage && resolve(j.stage).startsWith(stages)) rmSync(j.stage, { recursive: true, force: true });
+  /**
+   * Delete what only an unfinished run needs, for every run that has finished: Design staging copies (live while
+   * their run runs or waits), saved plans and set-aside patches (kept while the run can resume or holds a kept
+   * branch), and spec sections no kept plan's brief names and no brief used for a day. Returns what went.
+   */
+  sweep(): string[] {
+    // best effort: an unreadable folder or a file in use never fails the job that triggered the sweep
+    const removed: string[] = [];
+    const drop = (path: string) => {
+      try {
+        rmSync(path, { recursive: true, force: true });
+        removed.push(path);
+      } catch {
+        /* left for the next sweep */
+      }
+    };
+    const entries = (dir: string) => {
+      try {
+        return readdirSync(dir);
+      } catch {
+        return [];
+      }
+    };
+    const unused = (path: string, before: number) => {
+      try {
+        return statSync(path).mtimeMs < before;
+      } catch {
+        return false;
+      }
+    };
+    const stages = join(this.ctx.state, "stage");
+    const staged = new Set(this.list().filter((j) => (j.state === "running" || j.state === "awaiting-approval") && j.stage).map((j) => resolve(j.stage!)));
+    for (const d of entries(stages)) if (!staged.has(resolve(stages, d))) drop(join(stages, d));
+    const kept = (id: string) => {
+      const j = this.jobs.get(id);
+      return !!j && keepsRunFiles(j);
+    };
+    const plans = join(this.ctx.state, "plans");
+    for (const f of entries(plans)) if (!kept(f.replace(/\.json(\.tmp)?$/, ""))) drop(join(plans, f));
+    const setAside = join(this.ctx.state, "set-aside");
+    for (const d of entries(setAside)) if (!kept(d)) drop(join(setAside, d));
+    // briefs name spec sections by path; a section file is rewritten (or touched) whenever a plan uses it
+    const briefs = entries(plans).map((f) => {
+      try {
+        return readFileSync(join(plans, f), "utf8");
+      } catch {
+        return "";
+      }
+    }).join("\n");
+    const sections = join(this.ctx.state, "sections");
+    const dayAgo = Date.now() - 86_400_000;
+    for (const f of entries(sections)) if (!briefs.includes(f) && unused(join(sections, f), dayAgo)) drop(join(sections, f));
+    return removed;
+  }
+  /** Sweep when a run ends or lets go of its branch, and say in its log what of its own went */
+  private tidy(j: Job) {
+    const own = this.sweep().filter((p) => p.split(sep).some((seg) => seg === j.id || seg === `${j.id}.json`));
+    const stageGone = own.some((p) => p.includes(`${sep}stage${sep}`));
+    const patches = own.some((p) => p.includes(`${sep}set-aside${sep}`));
+    const plan = own.some((p) => p.includes(`${sep}plans${sep}`));
+    const what = [stageGone && "its Design staging copy", plan && "its saved plan", patches && "its set-aside patches"].filter(Boolean);
+    if (what.length) this.log(j, "info", `Removed what only an unfinished run needs: ${what.join(", ")}`);
   }
   private dir() {
     return join(this.ctx.state, "jobs");
@@ -205,7 +260,10 @@ export class Jobs {
     }
     const text = `Discarded: ${notes.join("; ") || "nothing was left waiting"}`;
     if (j.state === "awaiting-approval") this.finish(j, "cancelled", text);
-    else this.log(j, "done", text);
+    else {
+      this.log(j, "done", text);
+      this.tidy(j);
+    }
     return true;
   }
   log(j: Job, level: JobEvent["level"], text: string, stepId?: string) {
@@ -230,12 +288,10 @@ export class Jobs {
     if (j.state !== "running" && j.state !== "awaiting-approval") return;
     j.state = state;
     j.result = result;
-    if (state !== "awaiting-approval") {
-      j.endedAt = new Date().toISOString();
-      this.dropStage(j);
-    }
+    if (state !== "awaiting-approval") j.endedAt = new Date().toISOString();
     this.persist(j);
     this.emit(j, { at: new Date().toISOString(), level: state === "failed" ? "error" : "done", text: result ?? state });
+    this.tidy(j);
   }
   subscribe(id: string, fn: Listener) {
     const set = this.listeners.get(id) ?? new Set();

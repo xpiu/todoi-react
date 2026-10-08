@@ -27,6 +27,12 @@ export const isDraft = (j: { app?: Pick<AppRun, "state" | "review"> }) => j.app?
 /** A verified branch to merge, or a failed one kept for a look */
 export const appPending = (j: { app?: Pick<AppRun, "state"> }) => j.app?.state === "ready" || j.app?.state === "failed";
 
+/**
+ * A run keeps its temporary files (saved plan, set-aside patches) while it can still go on: running, waiting,
+ * or holding a branch (a stopped run's port may still be winding down, its branch about to be kept)
+ */
+export const keepsRunFiles = (j: Pick<Job, "state" | "app">) => j.state === "running" || j.state === "awaiting-approval" || appPending(j) || j.app?.state === "working";
+
 /** Staged kit files still waiting for the upload decision */
 export const uploadPending = (j: { staged?: unknown[]; steps: Array<{ id: string; state: string }> }) => {
   const state = j.steps.find((s) => s.id === "upload")?.state;

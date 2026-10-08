@@ -50,8 +50,9 @@ export async function storybook(ctx: Ctx, signal?: AbortSignal): Promise<Storybo
     mkdirSync(root, { recursive: true });
     const r = await runCommand(ctx.repo, cmd.replaceAll("{out}", `'${dir}'`), signal);
     if (!r.ok || !existsSync(manifest)) throw new Error(`Storybook didn't build (${cmd}): ${r.output.trim().split("\n").slice(-3).join(" ") || "no manifest written"}`);
-    // keep only the newest build
+    // keep only the newest build; pictures are keyed by the build they came from, so the old ones are unreachable now
     for (const old of readdirSync(root)) if (old !== key) rmSync(join(root, old), { recursive: true, force: true });
+    rmSync(join(ctx.state, "visual"), { recursive: true, force: true });
   }
   const data = JSON.parse(readFileSync(manifest, "utf8")) as { components: Record<string, ManifestComponent> };
   return { dir, components: Object.values(data.components) };

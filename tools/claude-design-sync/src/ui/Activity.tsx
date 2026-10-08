@@ -7,7 +7,7 @@ import { CircleAlert, Check, GitMerge, LoaderCircle, Maximize2, Minimize2, Uploa
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type ApiError, type AppState, type FidelityFinding, type Job } from "./api";
-import { canResume, failedPorts } from "../engine/approvals";
+import { canResume, failedPorts, keepsRunFiles } from "../engine/approvals";
 import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
@@ -289,7 +289,7 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
                 <span className="cds-jobstep-mark" aria-hidden />
                 <span>{s.title}</span>
                 {s.summary ? <span className="cds-quiet">{s.summary}</span> : null}
-                {s.setAside ? <span className="cds-quiet">Partial changes ({plural(s.setAside.files.length, "file")}) set aside in <span className="cds-mono cds-break">{s.setAside.patch}</span></span> : null}
+                {s.setAside ? <span className="cds-quiet">Partial changes ({plural(s.setAside.files.length, "file")}) set aside{keepsRunFiles(job) ? <> in <span className="cds-mono cds-break">{s.setAside.patch}</span></> : "; the patch was deleted when the run finished"}</span> : null}
                 {s.alreadyImplemented ? <details className="cds-check-output cds-port-evidence">
                   <summary>Evidence for already implemented parts</summary>
                   <ul>{s.alreadyImplemented.units.map((u) => <li key={u.id}>
@@ -306,7 +306,7 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
             {setAsideCount ? <div className="cds-set-aside" role="group" aria-labelledby="set-aside-h">
               <h4 id="set-aside-h">{plural(setAsideCount, "feature")} set aside</h4>
               <p className="cds-quiet">
-                {setAsideCount === 1 ? "This port" : "These ports"} still failed after {plural(maxAttempts, "attempt")}, so {setAsideCount === 1 ? "its partial changes were" : "their partial changes were"} saved as a patch and the run carried on. The branch below holds only the features that passed, and the {setAsideCount === 1 ? "one" : "ones"} set aside stay open after Merge.
+                {setAsideCount === 1 ? "This port" : "These ports"} still failed after {plural(maxAttempts, "attempt")}, so {setAsideCount === 1 ? "its partial changes were" : "their partial changes were"} saved as a patch and the run carried on. The branch below holds only the features that passed, and the {setAsideCount === 1 ? "one" : "ones"} set aside stay open after Merge. Merge and Discard delete the {setAsideCount === 1 ? "patch" : "patches"}, so open {setAsideCount === 1 ? "it" : "them"} first if you want a look.
               </p>
               <ul className="cds-set-aside-list">{failedPorts(job).map((s) => <li key={s.id}>{s.title}</li>)}</ul>
               {resumeControls("Retry failed features", "Retrying…")}
