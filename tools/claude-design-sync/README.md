@@ -46,7 +46,7 @@ See the application's [Storybook guide](../../README.md#storybook) for commands 
 ## Start the tool
 
 ```bash
-npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only)
+npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only, unless hosted)
 ```
 
 - **Needs** Claude Code (`claude`) on PATH and signed in to claude.ai: it is the only harness with DesignSync.
@@ -55,11 +55,24 @@ npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only)
 
 ### Run it on a server
 
-To sync from afar, run Claude Code (signed in to claude.ai, with Playwright) in a server checkout such as `/srv/todoi-react`, and ask it to follow the [design-sync-operator skill](.claude/skills/design-sync-operator/SKILL.md). Start Claude Code in `tools/claude-design-sync/` so it finds the skill, or name the file.
+The tool runs in two environments. Nothing below changes the local default (`127.0.0.1`, no login, no push).
 
-- Drop Project archives into `tools/claude-design-sync/uploads/` (gitignored); `npm run design-sync -- import` takes the newest.
-- The GUI stays on `127.0.0.1`; Claude drives it there with Playwright and carries out the upload request itself, while you approve DesignSync's prompt in that session.
-- Merges land in the server checkout. Pushing `main` deploys staging, so the skill asks first.
+**A Claude Code operator, anywhere.** Run Claude Code (signed in to claude.ai, with Playwright) in a checkout, such as `/srv/todoi-react` on a VPS, and ask it to follow the [design-sync-operator skill](.claude/skills/design-sync-operator/SKILL.md). Start Claude Code in `tools/claude-design-sync/` so it finds the skill, or name the file. Claude drives the GUI on localhost with Playwright and carries out the upload request itself; you approve DesignSync's prompt in that session. Drop Project archives into `uploads/` (gitignored); `npm run design-sync -- import` takes the newest.
+
+**Hosted in Dokploy, e.g. at design.todoi.com.** [`deploy/`](deploy/) holds a toolchain image (Node, git, Claude Code, Chromium's libraries). On start it clones the repo onto the `/data` volume, pulls, runs `npm ci` when the lockfile changed, and serves the tool from that clone, so the tool always matches the pushed repo and redeploys keep snapshots, jobs and the Claude login.
+
+1. Create a Dockerfile application from this repo: Dockerfile `tools/claude-design-sync/deploy/Dockerfile`, build context `tools/claude-design-sync/deploy`.
+2. Paste [`deploy/dokploy.env.example`](deploy/dokploy.env.example) into Environment and fill it in. Use the same Basic Auth pair under **Advanced → Security**: the proxy and the server both check it, so the port is never open even if it gets published.
+3. Mount a volume at `/data`. Add the domain on port 4477, and publish no ports.
+4. After the first start, sign Claude Code in once from Dokploy's container terminal (`claude`, then `/login`); the login lives on the volume. `CLAUDE_CODE_OAUTH_TOKEN` is the alternative.
+
+Then use the GUI at the domain. Archives arrive by drag and drop. **Merge** also pushes the branch to `origin` (`CDS_PUSH_AFTER_MERGE=1`), which deploys staging through CI; a failed push leaves the merge in place and says so in Activity. Uploads hand over to Claude Code as usual: run the request in the container terminal. Restart the application to pick up new commits, or run `git pull` in `/data/repo`.
+
+| Variable | Default | Hosted |
+|---|---|---|
+| `CDS_HOST` | `127.0.0.1` | `0.0.0.0`; anything beyond loopback refuses to start without a login |
+| `CDS_BASIC_AUTH_USER`, `CDS_BASIC_AUTH_PASS` | unset | required; `/healthz` stays open for the health check |
+| `CDS_PUSH_AFTER_MERGE` | off | `1` |
 
 ## Bringing Design's work in: import or pull
 
@@ -200,7 +213,8 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
   - A file that won't merge (same lines edited, or deleted in Design) stops the upload. It is unticked with the reason, and stays out until you pull and rerun the feature.
 - **Every upload is read back** (Check the upload) and compared with the staged copy, ignoring line endings and trailing whitespace. Files that don't match yet, or can't be read, are named, and the upload keeps waiting.
 - **The post-upload snapshot is marked current** (it takes Design's `updatedAt`) only when Design had changed nothing else when the files were checked. Otherwise "Check for changes" asks for a pull.
-- **POST endpoints require an `x-cds: 1` header**, so other sites in your browser can't trigger runs.
+- **POST endpoints require an `x-cds: 1` header**, so other sites in your browser can't trigger runs. This matters more when hosted, because browsers resend a Basic Auth login on their own.
+- **Hosted means logged in.** The server refuses to listen beyond loopback without `CDS_BASIC_AUTH_USER`/`CDS_BASIC_AUTH_PASS`, and then asks for them on every route but `/healthz` ([Run it on a server](#run-it-on-a-server)).
 - **API input is validated at the server boundary.** Invalid requests return a JSON error before starting work.
 - **A waiting upload keeps its staged files until it checks out or you discard it.** Preparing the request again checks live Design edits again.
 - **Stop terminates the run's subprocess group**, including App-check descendants, and prevents subsequent harness calls from starting.

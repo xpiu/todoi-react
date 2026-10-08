@@ -1,11 +1,23 @@
 ---
 name: design-sync-operator
-description: Operate Claude Design Sync on a server (VPS) for a remote developer — import the newest Project archive from tools/claude-design-sync/uploads/ or pull through DesignSync, compare, run the agreed sync steps in the GUI with Playwright, merge, upload to Claude Design, and push. Use when asked to sync the App with Claude Design, process a dropped Project archive, or run claude-design-sync on the server.
+description: Operate Claude Design Sync for a developer, on their machine, a VPS checkout or the Dokploy container — import the newest Project archive from tools/claude-design-sync/uploads/ or pull through DesignSync, compare, run the agreed sync steps in the GUI with Playwright, merge, upload to Claude Design, and push. Use when asked to sync the App with Claude Design, process a dropped Project archive, or run claude-design-sync on the server.
 ---
 
-# Operate Claude Design Sync on the server
+# Operate Claude Design Sync
 
-You are the developer's hands on a server checkout of todoi-react (normally `/srv/todoi-react`). The developer is remote: they talk to you in this Claude Code session and approve DesignSync prompts here. The tool's [README](../../../README.md) is the reference for what every control does; this skill only says how to drive it from here.
+You are the developer's hands on a checkout of todoi-react. The developer may be remote: they talk to you in this Claude Code session and approve DesignSync prompts here. The tool's [README](../../../README.md) is the reference for what every control does; this skill only says how to drive it from here.
+
+## Where you are
+
+Check `echo "$CDS_HOST"` and `pwd -P` first:
+
+| Environment | Checkout | The GUI |
+|---|---|---|
+| **Dev machine** | the developer's clone | not running: start it (step 4) |
+| **VPS checkout** | normally `/srv/todoi-react` | not running: start it (step 4) |
+| **Dokploy container** (`CDS_HOST` set, opened from Dokploy's container terminal) | `/data/repo` | already serving on port 4477 behind a login: don't start a second one; use `http://127.0.0.1:4477` with `CDS_BASIC_AUTH_USER`/`CDS_BASIC_AUTH_PASS` as HTTP credentials |
+
+In the container, `CDS_PUSH_AFTER_MERGE=1` makes **Merge** also push, so treat pressing Merge as a push and ask for both at once. The entrypoint already pulled and installed dependencies at start; repeat step 1 only if the developer pushed since.
 
 ## Ground rules
 
@@ -50,7 +62,7 @@ Summarise for the developer: features changed on both sides first, then App-ahea
 
 ## 4. Run it in the GUI
 
-Start the server in the background and keep it on localhost (it binds `127.0.0.1`):
+Outside the container, start the server in the background and keep it on localhost (it binds `127.0.0.1` unless `CDS_HOST` says otherwise):
 
 ```bash
 npm run claude-design-sync     # http://localhost:4477
@@ -67,7 +79,7 @@ Drive the page with Playwright (the Playwright MCP tools if available, otherwise
 - **Token-only runs:** show the verified commits, then press **Merge** on the developer's yes.
 - **Drafts (kit code ported into the App):** the run shows **Review the draft**. Read each finding's diff yourself, summarise every finding for the developer, and tick **I reviewed this draft against these points** only after they confirm. Then Merge.
 
-Merge lands on the server checkout's branch. Show `git log --oneline -5` and ask before `git push origin main`.
+Merge lands on the checkout's branch. Show `git log --oneline -5` and ask before `git push origin main` (in the container, Merge already pushed; check its summary for "pushed" or "not pushed").
 
 ## 6. Upload kit work to Claude Design
 

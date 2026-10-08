@@ -1,9 +1,10 @@
-// Claude Design Sync — local server. Binds to 127.0.0.1 only; every POST needs the x-cds header so
-// another site in the browser can't trigger runs.
+// Claude Design Sync server. Binds to 127.0.0.1 unless hosted (see hosting.ts, which then requires a login);
+// every POST needs the x-cds header so another site in the browser can't trigger runs.
 import { serve } from "@hono/node-server";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { Hono } from "hono";
+import { basicAuth } from "hono/basic-auth";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 
@@ -26,7 +27,8 @@ import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { kitHome, syncTwins, twinPath, writeDrafts } from "../engine/kitDraft";
 import { storybook, type Storybook } from "../engine/storybook";
 import { visualCompare } from "../engine/visual";
-import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort, verifyResume } from "../engine/worktree";
+import { commitAll, commitsSince, createWorktree, headOf, mergeRun, pushBranch, removeWorktree, runCheck, verifyPort, verifyResume } from "../engine/worktree";
+import { hostingFromEnv, type Hosting } from "./hosting";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, findExports, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
 import type { Comparison } from "../engine/types";
@@ -42,9 +44,12 @@ const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
 
 export type { HarnessInfo } from "../engine/harness";
 
-export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?: number; costUsd?: number; projectId?: string } } = {}) {
+export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?: number; costUsd?: number; projectId?: string }; hosting?: Pick<Hosting, "auth" | "pushAfterMerge"> } = {}) {
   const app = new Hono();
   app.onError((e, c) => c.json({ error: e.message }, e instanceof HTTPException ? e.status : 500));
+  // Before the login, so a container health check needs no credentials
+  app.get("/healthz", (c) => c.text("ok"));
+  if (opts.hosting?.auth) app.use("*", basicAuth(opts.hosting.auth));
   const jobs = new Jobs(ctx);
   const meter = new Meter();
   const cache = new Map<string, Comparison>();
@@ -731,9 +736,19 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       removeWorktree(ctx, run, true);
       run.state = "merged";
       cache.clear();
-      const summary = `${run.commits.length} commit(s) merged into ${run.into} (${how === "fast-forward" ? "fast-forward" : "merge commit"})`;
-      jobs.step(job, "app-merge", { state: "done", summary });
+      let summary = `${run.commits.length} commit(s) merged into ${run.into} (${how === "fast-forward" ? "fast-forward" : "merge commit"})`;
       jobs.log(job, "info", `${summary}; ${run.branch} and its worktree removed`, "app-merge");
+      if (opts.hosting?.pushAfterMerge) {
+        try {
+          pushBranch(ctx, run.into);
+          summary += `, pushed to origin/${run.into}`;
+          jobs.log(job, "info", `Pushed ${run.into} to origin`, "app-merge");
+        } catch (e) {
+          summary += `, not pushed`;
+          jobs.log(job, "warn", `The merge stands, but pushing ${run.into} failed: ${e instanceof Error ? e.message : String(e)}. Push it by hand.`, "app-merge");
+        }
+      }
+      jobs.step(job, "app-merge", { state: "done", summary });
       settle(job, `${summary}.${uploadPending(job) ? " Upload the kit files to finish; the run is marked synced then." : markRunSynced(job)}`);
       return c.json({ ok: true });
     } catch (e) {
@@ -830,10 +845,10 @@ function plainDiff(a: string, b: string): string {
 // Start when run directly (npm run design-sync -- serve)
 if (process.argv[1]?.endsWith("cli.ts") || process.argv[1]?.endsWith("main.ts")) {
   const ctx = defaultCtx();
+  const hosting = hostingFromEnv();
   mkdirSync(ctx.state, { recursive: true });
   if (process.env.CDS_FAKE_HARNESS && !process.env.CDS_FAKE_DESIGN) throw new Error("CDS_FAKE_HARNESS needs CDS_FAKE_DESIGN=<folder that plays the Design project>. For a demo world, run npm run design-sync:demo.");
   const fake = process.env.CDS_FAKE_HARNESS ? { designDir: resolve(process.env.CDS_FAKE_DESIGN!), ...(process.env.CDS_FAKE_PROJECT ? { projectId: process.env.CDS_FAKE_PROJECT } : {}) } : undefined;
   await buildUi();
-  const port = Number(process.env.CDS_PORT ?? 4477);
-  serve({ fetch: createApp(ctx, { fake }).fetch, port, hostname: "127.0.0.1" }, (i) => console.log(`Claude Design Sync → http://localhost:${i.port}`));
+  serve({ fetch: createApp(ctx, { fake, hosting }).fetch, port: hosting.port, hostname: hosting.host }, (i) => console.log(`Claude Design Sync → http://${hosting.host === "127.0.0.1" ? "localhost" : hosting.host}:${i.port}${hosting.auth ? " (login required)" : ""}`));
 }

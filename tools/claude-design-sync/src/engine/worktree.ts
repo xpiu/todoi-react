@@ -161,6 +161,15 @@ export function mergeRun(ctx: Ctx, run: AppRun): "fast-forward" | "merge" {
   }
 }
 
+/** Push `branch` to origin (hosted servers, so CI/CD sees the merge); never forced */
+export function pushBranch(ctx: Ctx, branch: string): void {
+  try {
+    git(ctx.repo, ["push", "-q", "origin", branch]);
+  } catch (e) {
+    throw new Error(String((e as { stderr?: string }).stderr ?? (e as Error).message).trim().split("\n").slice(0, 4).join(" "));
+  }
+}
+
 /** Remove the worktree; `dropBranch` also deletes the branch (after a merge it's fully contained) */
 export function removeWorktree(ctx: Ctx, run: AppRun, dropBranch: boolean): void {
   try {
