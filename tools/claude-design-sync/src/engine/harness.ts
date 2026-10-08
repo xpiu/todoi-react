@@ -1,7 +1,8 @@
 // The local AI harness: Claude Code (`claude -p`, the only one with DesignSync) or Codex (`codex exec`).
 // Runs stream their events so the server can show a live log and read tool results (pulled files).
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { isAbsolute, resolve as resolvePath } from "node:path";
 
 import { terminateOnAbort } from "./process";
 
@@ -12,6 +13,32 @@ export interface HarnessInfo {
   path?: string;
   version?: string;
   error?: string;
+}
+
+/** Login shells may find a harness that the server's inherited PATH cannot launch by name. */
+function resolveHarnessBin(bin: string): string {
+  if (isAbsolute(bin)) return bin;
+  const path = execFileSync("/bin/sh", ["-lc", 'command -v "$1"', "design-sync", bin], { encoding: "utf8", timeout: 15000 }).trim();
+  if (!path) throw new Error(`${bin} isn't on PATH`);
+  return resolvePath(path);
+}
+
+/** Check the same executable that a sync run will launch. */
+export function probeHarness(bin: string): HarnessInfo {
+  let path: string;
+  try {
+    path = resolveHarnessBin(bin);
+  } catch {
+    return { ok: false, error: `${bin} isn't on PATH` };
+  }
+  try {
+    const version = execFileSync(path, ["--version"], { encoding: "utf8", timeout: 15000, stdio: ["ignore", "pipe", "pipe"] }).trim().split("\n")[0];
+    return { ok: true, path, version };
+  } catch (e) {
+    const out = String((e as { stderr?: string }).stderr ?? (e as Error).message);
+    const msg = /^(?:\w*Error): (.+)$/m.exec(out)?.[1] ?? out.split("\n").find((l) => l.trim() && !/^\s*(at |throw|\^|file:)/.test(l))?.trim() ?? "it exits with an error";
+    return { ok: false, path, error: `${bin} is installed but doesn't start: ${msg}` };
+  }
 }
 
 export interface RunOptions {
@@ -114,8 +141,14 @@ export function parseCodexLine(line: string): HarnessEvent[] {
 export function runHarness(o: RunOptions, onEvent: (e: HarnessEvent) => void): Promise<Extract<HarnessEvent, { type: "done" }>> {
   if (o.signal?.aborted) return Promise.resolve({ type: "done", ok: false, result: "Stopped by you" });
   const { cmd, args } = commandFor(o);
+  let executable: string;
+  try {
+    executable = resolveHarnessBin(cmd);
+  } catch (e) {
+    return Promise.resolve({ type: "done", ok: false, result: `Couldn't start ${cmd}: ${(e as Error).message}` });
+  }
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: o.cwd, env: process.env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(executable, args, { cwd: o.cwd, env: process.env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
     let done: Extract<HarnessEvent, { type: "done" }> | null = null;
     let buf = "";
     const parse = o.kind === "codex" ? parseCodexLine : parseClaudeLine;

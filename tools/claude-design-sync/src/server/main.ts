@@ -1,7 +1,6 @@
 // Claude Design Sync — local server. Binds to 127.0.0.1 only; every POST needs the x-cds header so
 // another site in the browser can't trigger runs.
 import { serve } from "@hono/node-server";
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { extname, join, resolve } from "node:path";
@@ -19,7 +18,7 @@ import { fileWithin, readText } from "../engine/fsutil";
 import { reviewDraft } from "../engine/fidelity";
 import { plural } from "../engine/words";
 import { commitsAfter, diffNoIndex, diffSince, git, head, isDirty, showAt } from "../engine/git";
-import { runHarness, type HarnessEvent, type HarnessInfo, type HarnessKind } from "../engine/harness";
+import { probeHarness, runHarness, type HarnessEvent, type HarnessInfo, type HarnessKind } from "../engine/harness";
 import { sections } from "../engine/inventory";
 import { laneRules } from "../engine/lanes";
 import { parseProjectRef } from "../engine/project";
@@ -54,27 +53,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   // Where exports are looked for: ~/Downloads, or CDS_EXPORTS (folders separated by ":"); none in a fake run unless set
   const exportDirs = process.env.CDS_EXPORTS ? process.env.CDS_EXPORTS.split(":").filter(Boolean) : opts.fake ? [] : [join(homedir(), "Downloads")];
 
-  /** Is the harness on PATH, and does it actually start? (A broken install is worse than a missing one.) */
-  const probe = (bin: string): HarnessInfo => {
-    try {
-      const path = execFileSync("/bin/sh", ["-lc", `command -v ${bin}`], { encoding: "utf8" }).trim();
-      if (!path) return { ok: false, error: `${bin} isn't on PATH` };
-      try {
-        const version = execFileSync(bin, ["--version"], { encoding: "utf8", timeout: 15000, stdio: ["ignore", "pipe", "pipe"] }).trim().split("\n")[0];
-        return { ok: true, path, version };
-      } catch (e) {
-        const out = String((e as { stderr?: string }).stderr ?? (e as Error).message);
-        const msg = /^(?:\w*Error): (.+)$/m.exec(out)?.[1] ?? out.split("\n").find((l) => l.trim() && !/^\s*(at |throw|\^|file:)/.test(l))?.trim() ?? "it exits with an error";
-        return { ok: false, path, error: `${bin} is installed but doesn't start: ${msg}` };
-      }
-    } catch {
-      return { ok: false, error: `${bin} isn't on PATH` };
-    }
-  };
   // Codex is untested (no working install to test against), so it's only probed when config.json picks it
   let probed: { claude: HarnessInfo; codex?: HarnessInfo } | null = null;
   const harnesses = () =>
-    opts.fake ? { claude: { ok: true, version: "fake" } } : (probed ??= { claude: probe(ctx.config.harness.claudeBin), ...(ctx.config.harness.implement === "codex" ? { codex: probe(ctx.config.harness.codexBin) } : {}) });
+    opts.fake ? { claude: { ok: true, version: "fake" } } : (probed ??= { claude: probeHarness(ctx.config.harness.claudeBin), ...(ctx.config.harness.implement === "codex" ? { codex: probeHarness(ctx.config.harness.codexBin) } : {}) });
 
   /** DesignSync always goes through Claude Code (it's the only harness with the tool); `what` names the call for the bar's flame */
   const designRunner = (what: string, job?: Job): Runner =>
