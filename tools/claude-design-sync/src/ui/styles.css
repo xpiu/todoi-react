@@ -558,6 +558,16 @@ em {
 .cds-row {
   border-bottom: var(--cds-hair);
 }
+/* Follow the effective choice: unavailable directions already resolve to Skip. */
+.cds-row[data-direction="both"],
+.cds-row[data-direction="app-to-design"],
+.cds-row[data-direction="design-to-app"] {
+  background: color-mix(in srgb, var(--chrome-canvas) 92%, var(--label-green));
+}
+.cds-row[data-direction="skip"],
+.cds-row[data-direction="reference"] {
+  background: var(--cds-wash);
+}
 .cds-row-head {
   display: flex;
   align-items: baseline;

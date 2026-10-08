@@ -110,14 +110,14 @@ Scope: the GUI in `src/ui/` of this tool only. The tool wears Todoi's Minimal th
 
 The sync is a plan document, not a dashboard. Every changed feature is one ruled line: its App work on the left, its Design work on the right, twinned around a narrow centre rail where its direction is set. The page reads top to bottom: a one-sentence verdict, one three-way direction control, the column heads, the ledger, and a plan bar pinned to the bottom that carries the one primary action.
 
-The material is paper, ink and hairlines. No radius, no cards, no fills except where something is set (a chosen key, the primary button). Hierarchy comes from weight (400/500), ink depth and rules (a full ink rule above the column heads and the plan bar; 12% hairlines between rows; dashed hairlines between subfeatures). Density is that of a ledger: 13px text, tight rows, generous outer margins.
+The material is paper, ink and hairlines. No radius, no cards. Fills mark chosen controls and feature applicability: a light green wash for an active direction, a light gray wash for skipped or reference-only rows. Hierarchy comes from weight (400/500), ink depth and rules (a full ink rule above the column heads and the plan bar; 12% hairlines between rows; dashed hairlines between subfeatures). Density is that of a ledger: 13px text, tight rows, generous outer margins.
 
 It refuses the status-card dashboard and the file-diff tree. Paths, SHAs and logs appear only as mono evidence inside a line, never as the structure.
 
 **Key Characteristics:**
 - Three-column ledger: App | rail (132px) | Design, on a 1180px page.
 - Ink on paper, hairline rules, zero radius, flat except the activity panel.
-- One colour (`danger`), reserved for "changed on both" and errors.
+- Red (`danger`) for "changed on both" and errors; a light green feature-row wash for active sync directions.
 - Inter 13/1.45 for everything you read; Geist Mono 11px only for data.
 - Arrows on the rail point at the column that receives the work.
 - Light and dark use the App's `data-mode` tokens. The navbar's sun/moon button switches modes and remembers the choice across pages and reloads; until a choice is made, the tool follows `prefers-color-scheme`. The saved mode is applied before styles load.
@@ -141,7 +141,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 - **Both-Sides Red** (`--danger`): see the rule below.
 
 ### Named Rules
-**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, failed jobs and steps; inline errors and warn/error log lines keep ink words and carry the red as a 6px square or a 2px margin bar, for the same contrast reason). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink. One exception, by design: the **token meter's flame** in the bar burns in the App's flat `--label-orange` while Claude Code runs, the only warm colour in the tool; unlit, it is an ink outline like every bar icon.
+**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, failed jobs and steps; inline errors and warn/error log lines keep ink words and carry the red as a 6px square or a 2px margin bar, for the same contrast reason). Text and controls otherwise stay ink. Feature rows use an 8% mix of `--label-green` into `--chrome-canvas` for active directions, and `--cds-wash` for skipped or reference-only work. These fills follow the effective feature choice, including overrides, in Full sync, Into the App and Into Design. Another exception, by design: the **token meter's flame** in the bar burns in the App's flat `--label-orange` while Claude Code runs, the only warm colour in the tool; unlit, it is an ink outline like every bar icon.
 
 **The Borrowed Tokens Rule.** The tool loads the App's token files and consumes them by name. It never adds a raw hex, never forks a value, and adds only layout aliases prefixed `--cds-`.
 
@@ -243,7 +243,7 @@ Every control explains what it does in one sentence (or why it's unavailable, wh
 Opened under a component part ("Compare visually"), never by default. A sticky bar (it sits under the column heads) holds the Rounded / Minimal toggle (Mapping filter style) and one quiet line naming the mode; then the twin: App stories in the App column, kit cards in the Design column, the rail empty. Each picture is a figure with a 12px caption (story or card name; cards add "Name × n" quiet; render errors as an inline-error disclosure) over an image at actual size inside a frame that scrolls rather than shrinks, ringed with `--border-input`. Loading is one quiet status line plus two skeleton blocks; a side with nothing says why in a quiet line. On a narrow page the column labels hide and captions carry the pairing.
 
 ### Ledger row
-Feature head (chevron rotates 90° when open; title underlines on hover), status word (red only for "changed on both"; ink for one-sided; quiet for others), part count in mono. Opening reveals the work twin ("—" bulleted), one unit per subfeature (name, kind, mono paths, evidence, link actions) separated by dashed hairlines, inline diffs and preview iframes in hairline frames, and "What runs for this feature" with numbered steps.
+Feature head (chevron rotates 90° when open; title underlines on hover), status word (red only for "changed on both"; ink for one-sided; quiet for others), part count in mono. The whole feature row has a light green background when its effective direction is active and a light gray background when skipped or reference-only, whether folded or open. The rail retains its direction and reference labels so color is a supplemental cue. Opening reveals the work twin ("—" bulleted), one unit per subfeature (name, kind, mono paths, evidence, link actions) separated by dashed hairlines, inline diffs and preview iframes in hairline frames, and "What runs for this feature" with numbered steps.
 
 ### Plan bar
 Pinned summary ("n features · direction · n skipped" in 500, tallies in mono) with Mark selected features synced (the latest run supplies the selection when available) and Review selected sync steps. Open features also offer Mark this feature synced; its dialog selects only that feature. The sheet above holds the shared run confirmation and the mark-synced form. A feature-only confirmation names the feature and reviews its writes, harness, App worktree and upload approval.
