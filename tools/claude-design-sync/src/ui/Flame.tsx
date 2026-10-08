@@ -2,13 +2,13 @@
 // and flickering while the server runs Claude Code (a pull, Check for changes, an AI port, an upload's
 // checks). It follows the server's own count of live calls (polled: every second while lit, so the tip's
 // clock ticks, every two otherwise, never while the tab is hidden).
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api, plural, type MeterState } from "./api";
 
 /** Lucide's flame, so the unlit meter reads as one of the bar's icons */
 const FLAME = "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z";
-/** The hotter heart near the base */
+/** The open heart near the base */
 const CORE = "M12 21.2a3.2 3.2 0 0 1-3.2-3.2c0-1.5 1-2.5 1.8-3.4.6-.7 1.1-1.5 1.3-2.6 1.4 1 3.3 3 3.3 5.9a3.2 3.2 0 0 1-3.2 3.3z";
 
 const WHAT_BURNS = "It burns while this tool runs Claude Code for you: Pull, Check for changes, AI ports either way, and an upload's checks. Each of those spends tokens.";
@@ -33,8 +33,6 @@ function tipFor(m: MeterState | null | undefined, now: number): string {
 export function Flame() {
   const [meter, setMeter] = useState<MeterState | null | undefined>(undefined);
   const [now, setNow] = useState(() => Date.now());
-  // a fragment id that url(#…) takes as is
-  const gradient = `cds-flame-${useId().replace(/[^\w-]/g, "")}`;
   useEffect(() => {
     let timer = 0;
     let stopped = false;
@@ -65,17 +63,10 @@ export function Flame() {
     <>
       <span className={`cds-flame ${burning ? "is-burning" : ""}`} role="img" tabIndex={0} aria-label={label} data-tip={tipFor(meter, now)}>
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-          <defs>
-            <linearGradient id={gradient} gradientUnits="userSpaceOnUse" x1="0" y1="22" x2="0" y2="3">
-              <stop offset="0" className="cds-flame-base" />
-              <stop offset="0.5" className="cds-flame-mid" />
-              <stop offset="1" className="cds-flame-tip" />
-            </linearGradient>
-          </defs>
           <path className="cds-flame-outline" d={FLAME} />
           <g className="cds-flame-lit">
             <g className="cds-flame-sway">
-              <path d={FLAME} fill={`url(#${gradient})`} />
+              <path d={FLAME} fill="var(--label-orange)" />
               <path className="cds-flame-core" d={CORE} />
             </g>
           </g>

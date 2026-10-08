@@ -141,7 +141,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 - **Both-Sides Red** (`--danger`): see the rule below.
 
 ### Named Rules
-**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, failed jobs and steps; inline errors and warn/error log lines keep ink words and carry the red as a 6px square or a 2px margin bar, for the same contrast reason). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink. One exception, by design: the **token meter's flame** in the bar burns in the App's `--warning`, `--label-orange` and `--danger` while Claude Code runs, the only warm colours in the tool; unlit, it is an ink outline like every bar icon.
+**The One Colour Rule.** `--danger` appears only where both sides changed (the square mark before the "changed on both" status, whose words stay ink because red text at 12px fails AA contrast; the both-sides count in the verdict) and for errors (error banners, failed jobs and steps; inline errors and warn/error log lines keep ink words and carry the red as a 6px square or a 2px margin bar, for the same contrast reason). Everything else is ink. If a new state wants colour, it is either a conflict or an error, or it stays ink. One exception, by design: the **token meter's flame** in the bar burns in the App's flat `--label-orange` while Claude Code runs, the only warm colour in the tool; unlit, it is an ink outline like every bar icon.
 
 **The Borrowed Tokens Rule.** The tool loads the App's token files and consumes them by name. It never adds a raw hex, never forks a value, and adds only layout aliases prefixed `--cds-`.
 
@@ -226,8 +226,8 @@ One action in four places, all driven by one hook (`Merge.tsx`), so they agree a
 ### Token meter (bar)
 A 16px flame just left of the light/dark toggle (`Flame.tsx`), following the server's own count of live Claude Code calls (`/api/meter`, polled every second while lit and every two otherwise, never in a hidden tab), so it burns as long as tokens are being spent.
 - **Unlit:** lucide's flame outline, Quiet Ink, stroke 1.75: one of the bar's icons.
-- **Lit:** the same shape filled with a vertical gradient (thinned `--warning` at the base, `--label-orange`, `--danger` at the tip) and a paler heart, with a soft orange glow. It rises out of the outline with a small overshoot (360ms) and sinks back when the last call ends.
-- **Flicker:** sway (1.7s), heart (1.1s) and the two colour stops (1.3s, 2.3s) run on unrelated periods, so it never visibly loops; the colours stay within the flame's range, the tip always the hottest. Reduced motion keeps it lit and still.
+- **Lit:** the same shape filled with flat `--label-orange` and an open heart in `--chrome-canvas`, with no gradient or glow. It rises out of the outline with a small overshoot (360ms) and sinks back when the last call ends.
+- **Flicker:** the silhouette stretches, compresses and leans from its planted base (1.4s), while the open heart changes shape independently (1.1s). Colour stays solid throughout. Reduced motion keeps it lit and still.
 - **Tip:** what is burning now with its elapsed time, which actions spend tokens and which are free, and the calls and cost since the server started. Focusable (`role="img"`, named "Token meter: …"); a polite live region announces when it lights.
 
 ### Links
