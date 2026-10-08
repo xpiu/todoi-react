@@ -50,8 +50,8 @@ export interface Unit {
 export interface Feature {
   id: string;
   title: string;
-  /** Where the title came from: a commit subject, a preview card, an area */
-  source: "commit" | "card" | "area" | "spec";
+  /** Where the title came from: a commit subject, a preview card, an area, a spec heading, or the parts' names */
+  source: "commit" | "card" | "area" | "spec" | "parts";
   status: UnitStatus;
   units: Unit[];
   /** Commit subjects (App) and card names / spec headings (Design) behind this feature */

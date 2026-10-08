@@ -12,7 +12,7 @@ import { isStoryFile, sections } from "./inventory";
 import { plannedDrafts } from "./kitDraft";
 import { saveSyncPoint, snapshotFilesDir } from "./snapshots";
 import { appMoved, designMoved, featureDirection, REFERENCE_KINDS, unitDirection } from "./directions";
-import { unitBaseline } from "./compare";
+import { partsTitle, unitBaseline } from "./compare";
 import type { Baseline, Comparison, Direction, Feature, SyncPoint, Unit } from "./types";
 
 export type StepKind = "merge-css" | "ai-pull" | "ai-push" | "upload";
@@ -52,6 +52,9 @@ export function unitChoicesFor(cmp: Comparison, global: Direction, featureOverri
   return out;
 }
 
+/** What a pull brings in: a commit subject names App work, so the kit's side of that feature is named by its parts */
+const pullName = (f: Feature, units: Unit[]) => (f.source === "commit" ? `the kit's changes to ${partsTitle(units)}` : `“${f.title}” from the kit`);
+
 /** Steps for the chosen directions. `choices` are per feature; `unitChoices` (from unitChoicesFor) win per subfeature. */
 export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Direction>, unitChoices: Record<string, Direction> = {}): Step[] {
   const steps: Step[] = [];
@@ -67,7 +70,7 @@ export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Dir
       for (const u of css) steps.push({ id: `${f.id}:css:${target}:${u.id}`, featureId: f.id, featureTitle: f.title, kind: "merge-css", target, title: `Merge ${u.name} rules into ${target === "app" ? "the App" : "Design"}`, units: [u.id] });
       if (ai.length) {
         const kind = target === "app" ? "ai-pull" : "ai-push";
-        steps.push({ id: `${f.id}:${kind}`, featureId: f.id, featureTitle: f.title, kind, target, title: target === "app" ? `Draft “${f.title}” from the kit for your review` : `Port “${f.title}” into the kit`, units: ai.map((u) => u.id), brief: briefFor(ctx, cmp, f, target, ai) });
+        steps.push({ id: `${f.id}:${kind}`, featureId: f.id, featureTitle: f.title, kind, target, title: target === "app" ? `Draft ${pullName(f, ai)} for your review` : `Port “${f.title}” into the kit`, units: ai.map((u) => u.id), brief: briefFor(ctx, cmp, f, target, ai) });
       }
     }
   }
@@ -252,7 +255,7 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   // a pull carries Design's work into the App; a push carries the App's work into the kit
   const from = target === "app" ? "design" : "app";
   const lines: string[] = [];
-  lines.push(`# ${target === "app" ? "Draft into the App" : "Push to Claude Design"}: ${f.title}`);
+  lines.push(`# ${target === "app" ? `Draft into the App: ${pullName(f, units)}` : `Push to Claude Design: ${f.title}`}`);
   lines.push("");
   lines.push(target === "app"
     ? `Bring the Claude Design kit's changes for this feature into the React 19 app in this repository (${ctx.repo}). The kit is a different framework: translate, don't copy. Your work is a draft: the developer reviews it against the App's architecture before it merges.`

@@ -64,7 +64,7 @@ test("a port from the kit is a draft: scanned for architecture, merged only afte
     const hidden = row(page, "Recover hidden lists");
     await hidden.getByRole("radio", { name: "Into the App" }).first().click();
     await hidden.getByRole("button", { name: "Recover hidden lists", exact: true }).click();
-    await expect(hidden.locator(".cds-proposal")).toContainText("Draft “Recover hidden lists” from the kit for your review");
+    await expect(hidden.locator(".cds-proposal")).toContainText("Draft the kit's changes to BoardView for your review");
     await hidden.getByRole("button", { name: "Run this feature only" }).click();
     await page.getByRole("button", { name: /^Run \d+ steps?$/ }).click();
 
@@ -115,7 +115,7 @@ test("a brief names what to read instead of pasting truncated diffs (3.6, 5.4)",
   await page.goto("/");
   const hidden = row(page, "Recover hidden lists");
   await hidden.getByRole("button", { name: "Recover hidden lists", exact: true }).click();
-  const step = hidden.locator(".cds-step", { hasText: "Draft “Recover hidden lists” from the kit for your review" });
+  const step = hidden.locator(".cds-step", { hasText: "Draft the kit's changes to BoardView for your review" });
   await step.getByRole("button", { name: "Read brief" }).click();
   const brief = step.locator(".cds-brief");
   await expect(brief).toContainText("## Read the changes first");

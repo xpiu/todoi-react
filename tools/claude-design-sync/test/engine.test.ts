@@ -11,7 +11,7 @@ import { commandFor, parseClaudeLine, toolResultText } from "../src/engine/harne
 import { resolveKitFile, twinOf } from "../src/engine/kit";
 import { parseProjectRef, projectUrl } from "../src/engine/project";
 import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor } from "../src/engine/plan";
-import { deriveSnapshot, getSnapshot, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
+import { deriveSnapshot, getSnapshot, importExport, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
 import { Jobs } from "../src/server/jobs";
 import { laneOf, laneRules, LANE_ORDER } from "../src/engine/lanes";
@@ -109,6 +109,31 @@ describe("compare (three-way)", () => {
     expect(brief).toMatch(/React 19/);
     expect(brief).toContain("## Read the changes first");
     expect(brief).toMatch(/^git diff --no-index \S+BoardView\.d\.ts \S+BoardView\.d\.ts {3}# \+1 −0$/m);
+  });
+  it("names a pull by the kit's parts when an App commit names the feature", () => {
+    const hidden = cmp.features.find((f) => f.title === "Recover hidden lists")!;
+    const pull = planSteps(fx.ctx, cmp, { [hidden.id]: "design-to-app" }).find((s) => s.kind === "ai-pull")!;
+    // the commit recovered hidden lists; the kit added `dense` to BoardView, which is what the pull brings in
+    expect(pull.title).toBe("Draft the kit's changes to BoardView for your review");
+    expect(pull.brief).toMatch(/^# Draft into the App: the kit's changes to BoardView$/m);
+    const chips = cmp.features.find((f) => f.title === "Chips")!;
+    expect(planSteps(fx.ctx, cmp, { [chips.id]: "design-to-app" }).find((s) => s.kind === "ai-pull")!.title).toBe("Draft “Chips” from the kit for your review");
+  });
+  it("reads the kit's own comments as Design evidence, and files a spec edit under the component it names", () => {
+    const later = makeFixture();
+    try {
+      writeFileSync(join(later.designNowDir, "components/core/Toast.jsx"), 'import React from "react";\n// Retry sits beside the message, not under it: one line per toast.\nconst DOCS = "https://example.com/toasts with the retry rules";\nexport function Toast({message}){return React.createElement("div",null,message);}\n');
+      writeFileSync(join(later.designNowDir, "readme.md"), "# Kit\n\n## Board\n\nBoards show lists and dense mode.\n\n## Toasts\n\nToasts confirm.\n\nA Toast offers Retry beside its message.\n");
+      importExport(later.ctx, later.designNowDir, "Design later");
+      const c = compare(later.ctx, { base: listSyncPoints(later.ctx)[0]! });
+      const toast = c.units.find((u) => u.id === "component:core/Toast")!;
+      expect(toast.design.evidence).toEqual(["Kit note: Retry sits beside the message, not under it"]);
+      const feature = c.features.find((f) => f.units.some((u) => u.id === "component:core/Toast"))!;
+      expect(feature.title).toBe("Retryable toast");
+      expect(feature.units.map((u) => u.id)).toContain("spec:Toasts");
+    } finally {
+      rmSync(dirname(later.repo), { recursive: true, force: true });
+    }
   });
   it("lets a subfeature override its feature, even when the feature is skipped", () => {
     const hidden = cmp.features.find((f) => f.title === "Recover hidden lists")!;

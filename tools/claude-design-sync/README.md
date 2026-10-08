@@ -124,7 +124,8 @@ Choose **Project archive**, which the export dialog labels instant and free. **S
   - **Design:** the snapshot, with **Check for changes**, then **Pull now** when it's behind.
   - **Design warnings:** "from another project" and "N files not pulled", each with a pull link.
 - **Ledger:** one ruled line per *feature*, App work left, Design work right.
-  - Each subfeature (component, tokens, spec section, screen, preview card) is listed with its evidence: commit subjects, new props, rule counts, "Minimal twin added".
+  - Each subfeature (component, tokens, spec section, screen, preview card) is listed with its evidence: commit subjects, new props, rule counts, "Minimal twin added", and "Kit note: …" (the first clause of a comment the kit's edit added, since Claude Design explains its changes in comments).
+  - A spec section joins the feature of the component its edit names (the changed lines first, then the whole section).
   - **"N units in sync"** at the bottom lists everything that matches.
 - **Rail** (between the columns): **←** Into the App · **⇄** Full sync · **→** Into Design · **⊘** Skip, set per feature.
   - Arrows point at the side that receives the work.
@@ -242,7 +243,7 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
 - **A pull that misses files says so.**
   - A file still failing after a retry (or sent truncated) keeps its previous snapshot's content, so it never reads as deleted in Design.
   - Its units say "Not pulled", the header offers **Pull again**, and the snapshot never passes as current.
-- **Feature grouping is heuristic.** Commit subjects make the titles, so one-feature conventional commits make the tool read like a changelog.
+- **Feature grouping is heuristic.** Commit subjects make the titles, so one-feature conventional commits make the tool read like a changelog. A commit's subject only describes App work, so a pull from a commit-titled feature is named by the kit's parts instead ("Draft the kit's changes to TopNavbar"), and a feature left without any part its commit changed is named by its parts.
 - **Jobs survive a restart, but a running job doesn't.** Waiting runs persist in `.state/jobs/`. A job that was running when the server stopped is marked failed, and its App branch is kept for a look.
 - **The Mapping history** knows only what the tool recorded (snapshots, sync points, its jobs). Whether Design changed is known only after asking since the server started.
 

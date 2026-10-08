@@ -91,6 +91,32 @@ export const cleanSubject = (s: string) => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
+/** A feature named by its parts: "TopNavbar", "Avatar and Badge", "AuthShell, InvitePage and 3 more" (spec headings in sentence case) */
+export function partsTitle(units: Array<Pick<Unit, "kind" | "name">>): string {
+  const names = units.map((u) => (u.kind === "spec" ? `${u.name.replace(/^[A-Z0-9][A-Z0-9 ,&/-]*[A-Z0-9](?![a-z])/, (m) => m.charAt(0) + m.slice(1).toLowerCase())} spec` : u.name));
+  if (names.length <= 2) return names.join(" and ");
+  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+}
+
+/**
+ * The comments a kit edit added (up to two, first clause each): Claude Design explains its changes in
+ * comments, which describe the work better than "edited". A `//` inside a URL is not a comment, and a
+ * comment's second line starts mid-sentence.
+ */
+function kitNotes(before: string, after: string): string[] {
+  const had = new Set(before.split("\n").map((l) => l.trim()));
+  const lines = after.split("\n").map((l) => l.trim());
+  const out: string[] = [];
+  for (const [i, t] of lines.entries()) {
+    if (had.has(t) || (t.startsWith("//") && lines[i - 1]?.startsWith("//"))) continue;
+    const text = /(?:^|[\s;{}])(?:\/\*+|\/\/)\s*(.+?)\s*(?:\*\/.*)?$/.exec(t)?.[1]?.split(/(?<!\b(?:e\.g|i\.e))[.:;](?:\s|$)/)[0]?.trim();
+    if (!text || text.length < 16 || !text.includes(" ") || /^(eslint|@ts-|prettier)/.test(text)) continue;
+    out.push(text.length > 90 ? `${text.slice(0, 89).replace(/\s+\S*$/, "")}…` : text);
+    if (out.length === 2) break;
+  }
+  return out;
+}
+
 /** Commits that touched a unit (spec sections share DESIGN.md, so they never claim its commits) */
 const unitCommits = (def: UnitDef, log: Commit[]) => (def.kind === "spec" ? [] : log.filter((c) => c.files.some((f) => def.appPaths.includes(f))));
 
@@ -123,6 +149,7 @@ function evidence(def: UnitDef, unit: Unit, r: Readers, base: Pick<Baseline, "re
       const before = new Set(propsOf(def.designPaths.map(r.designBase).join("\n")));
       const gained = designProps.filter((p) => !before.has(p));
       if (gained.length) unit.design.evidence.push(`New props: ${gained.slice(0, 5).join(", ")}${gained.length > 5 ? "…" : ""}`);
+      unit.design.evidence.push(...kitNotes(def.designPaths.map((p) => r.designBase!(p) ?? "").join("\n"), def.designPaths.map((p) => r.designNow(p) ?? "").join("\n")).map((n) => `Kit note: ${n}`));
     }
     if (unit.design.changed && !unit.design.evidence.length) unit.design.evidence.push("Kit source edited");
     if (unit.app.exists && unit.design.exists) {
@@ -156,7 +183,8 @@ const AREA_TITLE: Record<string, string> = { core: "Core components", board: "Bo
 export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: SyncPoint | null, r: Readers, logFor: (unitId: string) => Commit[]): Feature[] {
   const drifting = units.filter((u) => DRIFT.includes(u.status) || (u.status === "unknown" && (u.app.changed || u.design.changed)));
   const ids = new Set(drifting.map((u) => u.id));
-  type Group = { title: string; source: Feature["source"]; units: Set<string>; appWork: Set<string>; designWork: Set<string> };
+  /** `touched`: the units a commit group's commit itself changed (cards merged in later add units it didn't) */
+  type Group = { title: string; source: Feature["source"]; units: Set<string>; appWork: Set<string>; designWork: Set<string>; touched?: Set<string> };
   const groups: Group[] = [];
 
   // App: one group per commit since the sync point
@@ -165,8 +193,9 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
     for (const u of drifting) {
       if (!u.app.changed) continue;
       for (const c of unitCommits(defs.get(u.id)!, logFor(u.id))) {
-        const g = byCommit.get(c.hash) ?? { title: cleanSubject(c.subject), source: "commit" as const, units: new Set<string>(), appWork: new Set([cleanSubject(c.subject)]), designWork: new Set<string>() };
+        const g = byCommit.get(c.hash) ?? { title: cleanSubject(c.subject), source: "commit" as const, units: new Set<string>(), appWork: new Set([cleanSubject(c.subject)]), designWork: new Set<string>(), touched: new Set<string>() };
         g.units.add(u.id);
+        g.touched!.add(u.id);
         byCommit.set(c.hash, g);
       }
     }
@@ -184,16 +213,6 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
     const g: Group = { title: info.name || u.name, source: "card", units: new Set([u.id]), appWork: new Set(), designWork: new Set([`Preview card “${info.name || u.name}”`]) };
     for (const name of info.uses) for (const v of drifting) if (v.kind === "component" && v.name === name && (v.design.changed || v.status === "design-only")) g.units.add(v.id);
     groups.push(g);
-  }
-
-  // Spec sections join the group of a component they name; otherwise they stand alone
-  for (const u of drifting) {
-    if (u.kind !== "spec") continue;
-    const text = [r.designNow(defs.get(u.id)!.designPaths[0] ?? ""), r.appNow(defs.get(u.id)!.appPaths[0] ?? "")].join("\n");
-    const sec = sections(text).get(u.name) ?? "";
-    const home = groups.find((g) => [...g.units].some((id) => id.startsWith("component:") && new RegExp(`\\b${id.split("/").pop()}\\b`).test(sec)));
-    if (home) home.units.add(u.id);
-    else groups.push({ title: u.name, source: "spec", units: new Set([u.id]), appWork: new Set(), designWork: new Set() });
   }
 
   // A Design card and the App commits that touched the same (non-hub) units are one feature; commits
@@ -221,6 +240,30 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
     const holders = finals.filter((g) => g.units.has(id)).sort((a, b) => Number(b.source === "card") - Number(a.source === "card") || a.units.size - b.units.size);
     if (holders[0]) assigned.set(id, holders[0]);
   }
+
+  // A spec section joins the feature that holds the component its edit names (the changed lines first, then
+  // the whole section); otherwise it stands alone. Only PascalCase names count: modules like `text` are prose words too.
+  const components = drifting.filter((u) => u.kind === "component" && /^[A-Z]/.test(u.name) && assigned.has(u.id));
+  const mostNamed = (text: string) => components
+    .map((v) => ({ v, at: text.search(new RegExp(`\\b${v.name}\\b`)), n: text.split(new RegExp(`\\b${v.name}\\b`)).length - 1 }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n || a.at - b.at)[0]?.v;
+  for (const u of drifting) {
+    if (u.kind !== "spec") continue;
+    const def = defs.get(u.id)!;
+    const sides = [[r.designNow, r.designBase, def.designPaths[0]], [r.appNow, r.appBase, def.appPaths[0]]] as const;
+    const now = sides.map(([read, , p]) => (p ? sections(read(p)).get(u.name) ?? "" : ""));
+    const changed = sides.map(([, was, p], i) => {
+      const before = new Set(p && was ? (sections(was(p)).get(u.name) ?? "").split("\n") : []);
+      return now[i]!.split("\n").filter((l) => !before.has(l)).join("\n");
+    });
+    const named = mostNamed(changed.join("\n")) ?? mostNamed(now.join("\n"));
+    const home = named ? assigned.get(named.id)! : { title: u.name, source: "spec" as const, units: new Set<string>(), appWork: new Set<string>(), designWork: new Set<string>() };
+    if (!named) finals.push(home);
+    home.units.add(u.id);
+    assigned.set(u.id, home);
+  }
+
   for (const u of drifting) {
     if (assigned.has(u.id)) continue;
     const area = u.kind === "guideline" ? u.area.split("/")[0]! : u.area;
@@ -247,13 +290,16 @@ export function groupFeatures(defs: Map<string, UnitDef>, units: Unit[], base: S
     const suggested = directions.includes(directionsFor(status).suggested) ? directionsFor(status).suggested : (directions[0] ?? "skip");
     const kindOrder = ["component", "tokens", "card", "screen", "spec", "guideline"];
     own.sort((a, b) => kindOrder.indexOf(a.kind) - kindOrder.indexOf(b.kind) || a.name.localeCompare(b.name));
+    // A commit names its feature only when it changed one of the parts the feature ended up with
+    const namesake = !g.touched || own.some((u) => g.touched!.has(u.id));
+    const title = namesake ? g.title : partsTitle(own);
     features.push({
-      id: `f-${slug(g.title)}-${own[0]!.id.length.toString(36)}${own.length}`,
-      title: g.title,
-      source: g.source,
+      id: `f-${slug(title)}-${own[0]!.id.length.toString(36)}${own.length}`,
+      title,
+      source: namesake ? g.source : "parts",
       status,
       units: own,
-      appWork: [...g.appWork],
+      appWork: namesake ? [...g.appWork] : [],
       designWork: [...g.designWork, ...own.filter((u) => u.kind === "spec" && u.design.changed).map((u) => `Spec: ${u.name}`)],
       directions,
       suggested,
