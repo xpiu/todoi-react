@@ -1242,28 +1242,115 @@ em {
   margin: 0 0 28px;
   color: var(--ink-600);
 }
-/* ── Bringing Design in: import an export | or | pull ───────────────────────── */
+/* ── Bringing Design in: the archive workflow, with an optional paid pull ──── */
+.cds-archive-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 20px 0 28px;
+  padding: 16px 0;
+  border-top: 1px solid var(--ink-900);
+  border-bottom: var(--cds-hair);
+}
+.cds-archive-entry strong {
+  font-weight: 500;
+}
+.cds-archive-entry p {
+  margin: 4px 0 0;
+  color: var(--ink-600);
+  font-size: 12px;
+}
+.cds-archive-entry .cds-btn,
+.cds-archive-flow .cds-btn {
+  box-sizing: border-box;
+  min-height: 36px;
+  height: auto;
+  padding-block: 8px;
+}
+.cds-archive-flow a.cds-btn {
+  text-decoration: none;
+}
 .cds-routes {
   border-top: 1px solid var(--ink-900);
   border-bottom: var(--cds-hair);
 }
-.cds-routes > .cds-cell {
-  padding: 18px 20px 22px 0;
-}
-.cds-routes > .cds-cell:last-child {
-  padding: 18px 0 22px 20px;
+.cds-archive-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-top: 18px;
 }
 .cds-routes h3 {
-  margin: 0 0 6px;
+  margin: 0;
+  font: 500 20px/1.3 var(--font-ui);
+}
+.cds-archive-recommendation {
+  font-size: 12px;
+  padding: 3px 8px;
+  background: var(--cds-wash);
+}
+.cds-routes > p {
+  padding-top: 6px;
+  color: var(--ink-600);
+}
+.cds-archive-flow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+  padding: 24px 0;
+}
+.cds-archive-flow h4 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 8px;
   font: 500 13px/1.45 var(--font-ui);
 }
 .cds-routes p {
   margin: 0;
+  overflow-wrap: anywhere;
 }
-.cds-routes .cds-rail-cell {
-  justify-content: center;
+.cds-archive-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 0;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
 }
-.cds-routes > .cds-cell > .cds-path {
+.cds-archive-menu li {
+  display: flex;
+  align-items: center;
+}
+.cds-archive-menu li + li::before {
+  content: "→";
+  margin: 0 8px;
+  color: var(--ink-600);
+}
+.cds-archive-menu strong {
+  padding: 5px 8px;
+  background: var(--ink-900);
+  color: var(--chrome-canvas);
+  font-weight: 500;
+}
+.cds-archive-download > .cds-quiet {
+  max-width: 52ch;
+  font-size: 12px;
+}
+.cds-archive-download > .cds-btn {
+  margin-top: 16px;
+}
+.cds-routes .cds-archive-empty {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--cds-wash);
+  font-size: 12px;
+}
+.cds-routes-pull > .cds-path {
   display: block;
   margin-top: 8px;
 }
@@ -1312,18 +1399,6 @@ em {
 .cds-routes-file .cds-map-fresh {
   margin-top: 2px;
 }
-.cds-routes-steps {
-  display: grid;
-  gap: 6px;
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.cds-routes-steps li {
-  display: grid;
-  grid-template-columns: 14px minmax(0, 1fr);
-  column-gap: 8px;
-}
 .cds-routes-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1342,6 +1417,23 @@ em {
 }
 .cds-routes-path summary:hover {
   color: var(--ink-900);
+}
+.cds-routes-pull {
+  padding: 14px 0;
+  border-top: var(--cds-hair);
+}
+.cds-routes-pull summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.cds-routes-pull summary .cds-quiet {
+  margin-left: 12px;
+  font-size: 12px;
+}
+.cds-routes-pull[open] > p:first-of-type {
+  margin-top: 12px;
+  max-width: 70ch;
+  color: var(--ink-600);
 }
 .cds-routes-path form {
   display: flex;
@@ -1399,9 +1491,16 @@ em {
   font: 500 15px/1.4 var(--font-ui);
 }
 @container page (max-width: 699px) {
-  .cds-routes > .cds-cell,
-  .cds-routes > .cds-cell:last-child {
-    padding: 14px 0 18px;
+  .cds-archive-flow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .cds-routes-import {
+    padding-top: 20px;
+    border-top: var(--cds-hair);
+  }
+  .cds-routes-pull summary .cds-quiet {
+    display: inline-block;
   }
 }
 

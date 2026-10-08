@@ -246,7 +246,7 @@ export function Mapping() {
           </p>
           <h2 className="cds-verdict-line">{verdict ?? <span className="cds-skel cds-skel-line" />}</h2>
           <div className="cds-map-refresh">
-            <button type="button" className={`cds-btn ${behind && !choice.open ? "cds-btn-primary" : ""}`} onClick={() => void bringUpToDate()} disabled={!state || !!busy || running} data-tip={!state ? "Loading the tool's state" : running ? "A job is running. Refresh when it finishes" : "Ask Claude Design whether it changed and recompare the App. When Design is ahead, choose: import an export (no tokens) or pull - Asking costs a few tokens"}>
+            <button type="button" className="cds-btn" onClick={() => void bringUpToDate()} disabled={!state || !!busy || running} data-tip={!state ? "Loading the tool's state" : running ? "A job is running. Refresh when it finishes" : "Ask Claude Design whether it changed and recompare the App. When Design is ahead, import a Project archive (no tokens) or pull - Asking costs a few tokens"}>
               {busy ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} Bring the mapping up to date
             </button>
             <span className="cds-quiet" role="status">

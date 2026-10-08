@@ -255,9 +255,10 @@ test.describe.serial("Claude Design Sync", () => {
     await head.getByRole("button", { name: "Bring the changes in" }).click();
     const choice = page.getByRole("region", { name: "Bring in Design's changes" });
     // no export of the project waits in the (empty) exports folder, so the import side teaches how to get one
-    await expect(choice.getByRole("heading", { name: "Import an export" })).toBeVisible();
-    await expect(choice.locator(".cds-routes-steps li")).toHaveCount(2);
-    await expect(choice.locator(".cds-btn-primary")).toHaveText(/Pull the project/);
+    await expect(choice.getByRole("heading", { name: "Project archive", exact: true })).toBeVisible();
+    await expect(choice.getByRole("list", { name: "Claude Design download steps" }).getByRole("listitem")).toHaveText(["Share", "Project HTML", "Project archive", "Export"]);
+    await expect(choice.locator(".cds-btn-primary")).toHaveText(/Open Claude Design/);
+    await choice.locator(".cds-routes-pull summary").click();
     await choice.getByRole("button", { name: "Pull the project" }).click();
     await expect(choice).toHaveCount(0);
     const panel = page.getByRole("complementary", { name: "Activity" });
@@ -310,6 +311,7 @@ test.describe.serial("Claude Design Sync", () => {
     const choice = page.getByRole("region", { name: "Bring in Design's changes" });
     await expect(choice).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".cds-map-refresh [role=status]")).toHaveText("Claude Design is ahead of the snapshot: bring its changes in below.");
+    await choice.locator(".cds-routes-pull summary").click();
     await choice.getByRole("button", { name: "Pull the project" }).click();
     await expect(page.locator(".cds-map-refresh [role=status]")).toHaveText("Both sides are current.", { timeout: 30_000 });
     await expect(meta.locator('.cds-map-fresh[data-ok="true"]')).toHaveCount(2);

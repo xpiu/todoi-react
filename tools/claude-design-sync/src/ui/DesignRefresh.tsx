@@ -6,6 +6,7 @@ import { useCallback, useEffect, useId, useRef, useState, type DragEvent } from 
 import { api, fmtTime, projectUrl, type AppState, type ExportsInfo, type Imported } from "./api";
 
 const CHOICE_ID = "cds-refresh";
+const ENTRY_ID = "cds-refresh-open";
 
 /** The choice inline on a page (one per page): whether it's open, and bringing it into view each time it's asked for */
 export function useRefreshChoice() {
@@ -13,10 +14,10 @@ export function useRefreshChoice() {
   const [asked, setAsked] = useState(0);
   useEffect(() => {
     if (!asked) return;
-    const el = document.getElementById(CHOICE_ID);
-    el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const el = document.getElementById(open ? CHOICE_ID : ENTRY_ID);
+    if (open) el?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "nearest" });
     el?.focus({ preventScroll: true });
-  }, [asked]);
+  }, [asked, open]);
   const show = useCallback(() => {
     setOpen(true);
     setAsked((n) => n + 1);
@@ -27,7 +28,17 @@ export function useRefreshChoice() {
 
 /** The choice as a closable section above the plan's ledger or under the Mapping's refresh */
 export function RefreshChoice({ choice, ...props }: { choice: ReturnType<typeof useRefreshChoice> } & Parameters<typeof DesignRefresh>[0]) {
-  if (!choice.open) return null;
+  if (!choice.open) return (
+    <div className="cds-archive-entry">
+      <div>
+        <strong>Update the Design snapshot</strong>
+        <p>Use Claude Design's Project archive. All project files, no tokens.</p>
+      </div>
+      <button id={ENTRY_ID} type="button" className="cds-btn cds-btn-primary" onClick={choice.show} aria-expanded={false}>
+        <FileArchive size={14} strokeWidth={1.75} aria-hidden /> Import project archive
+      </button>
+    </div>
+  );
   return (
     <section className="cds-refresh" id={CHOICE_ID} tabIndex={-1} aria-labelledby="refresh-h">
       <div className="cds-refresh-head">
@@ -102,7 +113,7 @@ export function DesignRefresh({ state, onPull, onImported, pullBusy }: { state: 
 
   const found = info?.exports ?? [];
   const chosen = found.find((x) => x.path === picked) ?? found[0] ?? null;
-  // one primary: the export when it holds Design's last change (or nobody knows yet), otherwise the pull
+  // Keep the archive route primary, even when a fresh download is needed.
   const importFirst = !!chosen && chosen.covers !== false;
   const claudeOk = state.harnesses.claude.ok || state.fake;
 
@@ -137,102 +148,107 @@ export function DesignRefresh({ state, onPull, onImported, pullBusy }: { state: 
   const where = info?.folders.length ? info.folders.map((f) => f.replace(/^\/Users\/[^/]+/, "~")).join(", ") : "Downloads";
 
   return (
-    <div className="cds-twin cds-routes">
-      <div
-        className="cds-cell cds-routes-import"
-        data-drag={drag || undefined}
-        onDragOver={(e) => {
-          if (![...e.dataTransfer.types].includes("Files")) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "copy";
-          setDrag(true);
-        }}
-        onDragLeave={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDrag(false);
-        }}
-        onDrop={onDrop}
-      >
-        <h3>Import an export</h3>
-        <p className="cds-quiet">No tokens: Claude Design's project download, read on this machine.</p>
-
-        {!info ? (
-          <span className="cds-skel" aria-hidden />
-        ) : found.length ? (
-          <fieldset className="cds-routes-list" aria-label={`Exports of ${state.project.name} in ${where}`}>
-            {found.map((x) => {
-              const f = coverage(x.covers, info.designUpdatedAt);
-              return (
-                <label key={x.path} className="cds-routes-file" data-picked={x === chosen || undefined}>
-                  <input type="radio" name={radios} checked={x === chosen} onChange={() => setPicked(x.path)} />
-                  <span className="cds-routes-file-name">{x.name}</span>
-                  <span className="cds-path">
-                    {x.kind === "folder" ? "unzipped folder" : mb(x.bytes)} · downloaded {fmtTime(x.modifiedAt)}
-                  </span>
-                  <Fresh {...f} />
-                </label>
-              );
-            })}
-          </fieldset>
-        ) : (
-          <ol className="cds-routes-steps">
-            <li>
-              <span className="cds-map-step-n">1</span>
-              <span>
-                Open {state.project.name} in Claude Design and download the project as a .zip.
-              </span>
-            </li>
-            <li>
-              <span className="cds-map-step-n">2</span>
-              <span>Come back here: an export in {where} shows up on its own, or drop it on this side.</span>
-            </li>
+    <div className="cds-routes">
+      <div className="cds-archive-heading">
+        <h3>Project archive</h3>
+        <span className="cds-archive-recommendation">Recommended · No tokens</span>
+      </div>
+      <p>Download the project's original files, then import them here to compare.</p>
+      <div className="cds-archive-flow">
+        <div className="cds-archive-download">
+          <h4><span className="cds-map-step-n">1</span> Download from Claude Design</h4>
+          <p>Open {state.project.name}, then choose:</p>
+          <ol className="cds-archive-menu" aria-label="Claude Design download steps">
+            <li>Share</li>
+            <li>Project HTML</li>
+            <li><strong>Project archive</strong></li>
+            <li><strong>Export</strong></li>
           </ol>
-        )}
-
-        <div className="cds-routes-actions">
-          {found.length ? (
-            <button type="button" className={`cds-btn ${importFirst ? "cds-btn-primary" : ""}`} disabled={!chosen || !!busy} onClick={() => chosen && void importing(chosen.name, () => api.importExport(chosen.path))} data-tip={chosen ? `Read ${chosen.name} into a new snapshot and compare against it. No tokens` : "Pick an export first"}>
-              <FolderInput size={14} strokeWidth={1.75} aria-hidden /> {busy && busy === chosen?.name ? "Importing…" : "Import this export"}
-            </button>
-          ) : null}
-          <a className="cds-link" href={projectUrl(state.project.id)} target="_blank" rel="noreferrer" data-tip={`Open ${state.project.name} in Claude Design to download a fresh export`}>
-            {found.length ? "Download a fresh one" : "Open in Claude Design"} <ExternalLink size={11} strokeWidth={1.75} aria-hidden />
+          <p className="cds-quiet">Project archive is instant and free. Standalone HTML uses Claude and costs tokens.</p>
+          <a className={`cds-btn ${importFirst ? "" : "cds-btn-primary"}`} href={projectUrl(state.project.id)} target="_blank" rel="noreferrer">
+            Open Claude Design <ExternalLink size={14} strokeWidth={1.75} aria-hidden />
           </a>
-          <button type="button" className="cds-link" disabled={!!busy} onClick={() => fileInput.current?.click()} data-tip="Pick an export .zip from anywhere on this machine. You can also drop it on this side">
-            Choose a .zip…
-          </button>
-          <input ref={fileInput} type="file" accept=".zip,application/zip" hidden onChange={(e) => { importFile(e.target.files?.[0]); e.target.value = ""; }} />
         </div>
+        <div
+          className="cds-routes-import"
+          data-drag={drag || undefined}
+          onDragOver={(e) => {
+            if (![...e.dataTransfer.types].includes("Files")) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            setDrag(true);
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDrag(false);
+          }}
+          onDrop={onDrop}
+        >
+          <h4><span className="cds-map-step-n">2</span> Import the downloaded archive</h4>
+          <p>Come back here. We'll look in {where}, or you can choose or drop a .zip.</p>
 
-        <details className="cds-routes-path">
-          <summary>Import a folder by its path</summary>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void importing(path.trim(), () => api.importExport(path.trim()));
-            }}
-          >
-            <label className="cds-field">
-              <span>Path</span>
-              <input value={path} onChange={(e) => setPath(e.target.value)} placeholder={`~/Downloads/${state.project.name}`} required data-tip="The folder an export unzips to, or a .zip" />
-            </label>
-            <button type="submit" className="cds-btn" disabled={!!busy || !path.trim()} data-tip={path.trim() ? "Read it into a new snapshot. No tokens" : "Enter a path first"}>
-              {busy && busy === path.trim() ? "Importing…" : "Import"}
+          {!info ? (
+            <span className="cds-skel" aria-hidden />
+          ) : found.length ? (
+            <fieldset className="cds-routes-list" aria-label={`Exports of ${state.project.name} in ${where}`}>
+              {found.map((x) => {
+                const f = coverage(x.covers, info.designUpdatedAt);
+                return (
+                  <label key={x.path} className="cds-routes-file" data-picked={x === chosen || undefined}>
+                    <input type="radio" name={radios} checked={x === chosen} onChange={() => setPicked(x.path)} />
+                    <span className="cds-routes-file-name">{x.name}</span>
+                    <span className="cds-path">
+                      {x.kind === "folder" ? "unzipped folder" : mb(x.bytes)} · downloaded {fmtTime(x.modifiedAt)}
+                    </span>
+                    <Fresh {...f} />
+                  </label>
+                );
+              })}
+            </fieldset>
+          ) : (
+            <p className="cds-archive-empty">No project archive found yet. Download one using the steps on this page.</p>
+          )}
+
+          <div className="cds-routes-actions">
+            {found.length ? (
+              <button type="button" className={`cds-btn ${importFirst ? "cds-btn-primary" : ""}`} disabled={!chosen || !!busy} onClick={() => chosen && void importing(chosen.name, () => api.importExport(chosen.path))} data-tip={chosen ? `Read ${chosen.name} into a new snapshot and compare against it. No tokens` : "Pick an export first"}>
+                <FolderInput size={14} strokeWidth={1.75} aria-hidden /> {busy && busy === chosen?.name ? "Importing…" : "Import this archive"}
+              </button>
+            ) : null}
+            <button type="button" className="cds-btn" disabled={!!busy} onClick={() => fileInput.current?.click()} data-tip="Pick a project archive .zip from anywhere on this machine. You can also drop it on this side">
+              Choose a .zip…
             </button>
-          </form>
-        </details>
+            <input ref={fileInput} type="file" accept=".zip,application/zip" hidden onChange={(e) => { importFile(e.target.files?.[0]); e.target.value = ""; }} />
+          </div>
 
-        {busy && !found.some((x) => x.name === busy) && busy !== path.trim() ? <p className="cds-quiet" role="status">Importing {busy}…</p> : null}
-        {err ? <p className="cds-error-inline" role="alert">{err}</p> : null}
-        <p className="cds-routes-drop" aria-hidden>
-          <FileArchive size={16} strokeWidth={1.75} /> Drop the export to import it
-        </p>
+          <details className="cds-routes-path">
+            <summary>Import a folder by its path</summary>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void importing(path.trim(), () => api.importExport(path.trim()));
+              }}
+            >
+              <label className="cds-field">
+                <span>Path</span>
+                <input value={path} onChange={(e) => setPath(e.target.value)} placeholder={`~/Downloads/${state.project.name}`} required data-tip="The folder an export unzips to, or a .zip" />
+              </label>
+              <button type="submit" className="cds-btn" disabled={!!busy || !path.trim()} data-tip={path.trim() ? "Read it into a new snapshot. No tokens" : "Enter a path first"}>
+                {busy && busy === path.trim() ? "Importing…" : "Import"}
+              </button>
+            </form>
+          </details>
+
+          {busy && !found.some((x) => x.name === busy) && busy !== path.trim() ? <p className="cds-quiet" role="status">Importing {busy}…</p> : null}
+          {err ? <p className="cds-error-inline" role="alert">{err}</p> : null}
+          <p className="cds-routes-drop" aria-hidden>
+            <FileArchive size={16} strokeWidth={1.75} /> Drop the export to import it
+          </p>
+        </div>
       </div>
 
-      <div className="cds-rail-cell cds-rail-label">or</div>
-
-      <div className="cds-cell">
-        <h3>Pull with Claude Code</h3>
-        <p className="cds-quiet">Reads every text file through DesignSync in the background. Costs tokens; needs Claude Code signed in to claude.ai.</p>
+      <details className="cds-routes-pull">
+        <summary>Alternative: pull with Claude Code <span className="cds-quiet">Costs tokens</span></summary>
+        <p>Claude Code reads the project in the background. Use this if you prefer an automated pull. Needs Claude Code signed in to claude.ai.</p>
         {info?.lastPull ? (
           <p className="cds-path" data-tip="What Claude Code reported for the last complete pull, at API prices. On a subscription it counts against your usage instead">
             Last pull {fmtTime(info.lastPull.at)}
@@ -241,12 +257,12 @@ export function DesignRefresh({ state, onPull, onImported, pullBusy }: { state: 
           </p>
         ) : null}
         <div className="cds-routes-actions">
-          <button type="button" className={`cds-btn ${importFirst ? "" : "cds-btn-primary"}`} onClick={onPull} disabled={!claudeOk || pullBusy || !!busy} data-tip={pullBusy ? "A job is running. Pull when it finishes" : "Run Claude Code headless to read every text file of the project into a new snapshot. Follow it in Activity - Costs tokens"}>
+          <button type="button" className="cds-btn" onClick={onPull} disabled={!claudeOk || pullBusy || !!busy} data-tip={pullBusy ? "A job is running. Pull when it finishes" : "Run Claude Code headless to read every text file of the project into a new snapshot. Follow it in Activity - Costs tokens"}>
             <Download size={14} strokeWidth={1.75} aria-hidden /> Pull the project
           </button>
         </div>
         {!claudeOk ? <p className="cds-error-inline">{state.harnesses.claude.error}</p> : null}
-      </div>
+      </details>
     </div>
   );
 }

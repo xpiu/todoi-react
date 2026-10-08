@@ -16,7 +16,7 @@ export const TIP = {
   check: "Ask Claude Design whether the project changed since the newest snapshot. Nothing is pulled yet",
   pull: "Pull every text file of the Design project into a fresh snapshot with Claude Code. Takes a few minutes - Costs tokens",
   pullAgain: "Pull again to fetch the files the last pull couldn't read - Costs tokens",
-  bringIn: "Choose how: import an export from Claude Design (no tokens) or pull with Claude Code (costs tokens)",
+  bringIn: "Import a Project archive from Claude Design (recommended, no tokens). An automated Claude Code pull is also available and costs tokens",
   project: "Open the project in Claude Design, in a new tab",
   showOnDiagram: "Play this move through the lanes of the diagram",
   closePreview: "Close the preview",
