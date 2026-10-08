@@ -7,7 +7,7 @@ html[data-theme="minimal"] .td-topnav{height:48px;gap:24px;padding:0 24px;border
 html[data-theme="minimal"] .td-topnav svg,html[data-theme="minimal"] .td-subnav svg,html[data-theme="minimal"] .td-sidebar svg,html[data-theme="minimal"] .td-list-head svg,html[data-theme="minimal"] .td-lsec-head svg,html[data-theme="minimal"] .td-calhead svg{stroke-width:1.75}
 html[data-theme="minimal"] .td-topnav-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;margin:0}
 html[data-theme="minimal"] span.td-topnav-title[data-editable="true"]{padding:0;margin:0;gap:6px}
-html[data-theme="minimal"] input.td-topnav-title{background:none;color:var(--ink-900);border:0;border-bottom:1px solid var(--ink-900);border-radius:0;padding:0;margin:0;font:500 13px/1.45 var(--font-ui);width:240px}
+html[data-theme="minimal"] input.td-topnav-title{background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/var(--td-title-line,100%) 1px;color:var(--ink-900);border:0;border-radius:0;padding:0 0 1px;margin:0;font:500 13px/1.45 var(--font-ui);margin-right:-24px}
 html[data-theme="minimal"] .td-topnav-spacer{margin:0}
 html[data-theme="minimal"] .td-topnav .td-subnav{column-gap:24px;row-gap:0;min-height:0;padding:0}
 html[data-theme="minimal"] .td-subnav-actions{gap:16px}
@@ -582,7 +582,9 @@ html[data-theme="minimal"] .td-desc-ta.is-mono{font:400 12px/1.5 var(--font-mono
 html[data-theme="minimal"] .td-desc-bar .td-iconbtn{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-desc-bar .td-iconbtn:hover,html[data-theme="minimal"] .td-desc-bar .td-iconbtn[aria-pressed="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-md{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-md h1{font:500 16px/1.35 var(--font-ui)}html[data-theme="minimal"] .td-md h2{font:500 14px/1.4 var(--font-ui)}html[data-theme="minimal"] .td-md h3{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-md h1{font:500 16px/1.35 var(--font-ui)}
+html[data-theme="minimal"] .td-md h2{font:500 14px/1.4 var(--font-ui)}
+html[data-theme="minimal"] .td-md h3{font:500 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-md a,html[data-theme="minimal"] .td-md .td-md-mention{color:var(--ink-900);font-weight:400;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
 html[data-theme="minimal"] .td-md .td-md-key:hover{color:var(--ink-900)}
 html[data-theme="minimal"] .td-md code{border-radius:2px;font-size:11.5px}
