@@ -56,12 +56,14 @@ npm run claude-design-sync          # → http://localhost:4477 (127.0.0.1 only)
 
 Whenever the Design side is missing or behind (first run, **Bring the changes in** on the plan, **Bring the mapping up to date** on Mapping), the tool offers two routes side by side:
 
-- **Import an export (no tokens).** Download the project from Claude Design as a .zip. The tool lists this project's exports from `~/Downloads` (newest first, last 30 days) and looks again whenever its window regains focus. Each export says whether it was downloaded after Design's last change, as far as the last check knows. You can also drop a .zip on that side, choose one, or import an unzipped folder by its path.
+- **Import an export (no tokens).** In Claude Design, choose **Share → Project HTML → Project archive → Export** to download the project as a .zip. The tool lists this project's exports from `~/Downloads` (newest first, last 30 days) and looks again whenever its window regains focus. Each export says whether it was downloaded after Design's last change, as far as the last check knows. You can also drop a .zip on that side, choose one, or import an unzipped folder by its path.
   - An export's project is read from its manifest: Claude Design names the bundle namespace `<Name>_<first six characters of the project id>`. Exports of other projects never show up, and importing one is refused.
   - An import downloaded at least 2 minutes after Design's last change reads as current in the GUI. It never claims Design's `updatedAt`, so an upload built on it still reads Design's live copies and merges newer edits first, and a later pull still reads everything.
 - **Pull with Claude Code (costs tokens).** The headless pull below; the card shows what the last complete pull cost and how long it took.
 
 The primary button goes to the import when the chosen export holds Design's last change, and to the pull otherwise.
+
+Choose **Project archive**, which the export dialog labels instant and free. **Standalone HTML** uses Claude and counts toward usage limits. The [archive investigation](../../docs/features/20261008_claude_design_project_archive_investigation.md) verifies source fidelity, existing import support, and savings against recorded full pulls.
 
 ## A typical loop
 
