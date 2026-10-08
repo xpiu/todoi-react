@@ -51,11 +51,22 @@ export const WithSubNavbar: Story = {
 };
 export const RenameTitle: Story = {
   async play({ args, canvas, userEvent }) {
+    const search = canvas.getByRole("combobox", { name: "Search" });
+    const searchLeft = search.getBoundingClientRect().left;
     await userEvent.click(canvas.getByRole("button", { name: "Rename project: Helicopter sales" }));
-    const field = canvas.getByRole("textbox", { name: "Project name" });
+    const field = canvas.getByRole<HTMLInputElement>("textbox", { name: "Project name" });
     await expect(field).toHaveFocus();
+    // The field takes the spacer's free space without pushing the controls to its right.
+    await expect(field.getBoundingClientRect().width).toBeGreaterThan(280);
+    await expect(search.getBoundingClientRect().left).toBeCloseTo(searchLeft, 0);
+    // --td-title-line (Minimal's underline) follows the typed text, floored at 24px and capped at the field.
+    const line = () => parseFloat(field.style.getPropertyValue("--td-title-line"));
     await userEvent.clear(field);
-    await userEvent.type(field, "Helicopter sales 2027{Enter}");
+    await expect(line()).toBe(24);
+    await userEvent.type(field, "Helicopter sales 2027");
+    await expect(line()).toBeGreaterThan(24);
+    await expect(line()).toBeLessThan(field.clientWidth);
+    await userEvent.keyboard("{Enter}");
     await expect(args.onTitleChange).toHaveBeenCalledWith("Helicopter sales 2027");
   },
 };

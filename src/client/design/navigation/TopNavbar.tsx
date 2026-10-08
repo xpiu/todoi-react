@@ -67,6 +67,19 @@ export interface TopNavbarProps {
   children?: ReactNode;
 }
 
+// Minimal underlines the rename field under the typed text: --td-title-line = text width, floored so an empty
+// field still reads as a field, capped at the field.
+let titleMeasure: CanvasRenderingContext2D | null = null;
+function sizeTitleLine(input: HTMLInputElement) {
+  titleMeasure ??= document.createElement("canvas").getContext("2d");
+  if (!titleMeasure) return;
+  const cs = getComputedStyle(input);
+  titleMeasure.font = cs.font;
+  if ("letterSpacing" in titleMeasure) titleMeasure.letterSpacing = cs.letterSpacing;
+  const w = Math.ceil(titleMeasure.measureText(input.value).width) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  input.style.setProperty("--td-title-line", `${Math.min(Math.max(w, 24), input.clientWidth)}px`);
+}
+
 function GuestAvatar({ size, tone }: { size: number; tone: "chrome" | "card" }) {
   return (
     <span aria-hidden className="td-topnav-guest" data-tone={tone} style={{ width: size, height: size }}>
@@ -150,7 +163,9 @@ export function TopNavbar({
       onFocus={(e) => {
         e.target.setSelectionRange(0, e.target.value.length, "backward");
         e.target.scrollLeft = 0;
+        sizeTitleLine(e.target);
       }}
+      onChange={(e) => sizeTitleLine(e.target)}
       onBlur={(e) => commitTitle(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === "Enter") e.currentTarget.blur();
