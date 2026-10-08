@@ -233,6 +233,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       ctx.config.design.projectName = found.name;
       saveConfig(ctx);
       cache.clear();
+      lastCheck = null;
       return c.json({ project: { id: found.projectId, name: found.name } });
     } catch (e) {
       return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
@@ -281,8 +282,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   /** After an import, the last answer from Claude Design says whether the new snapshot is behind it */
   const imported = (snap: ReturnType<typeof importExport>) => {
     cache.clear();
-    if (lastCheck) lastCheck = { ...lastCheck, stale: !!lastCheck.updatedAt && !exportCovers(ctx, snap, lastCheck.updatedAt) };
-    return { snapshot: snap, covers: lastCheck?.updatedAt ? exportCovers(ctx, snap, lastCheck.updatedAt) : null };
+    const covers = lastCheck?.updatedAt ? exportCovers(ctx, snap, lastCheck.updatedAt) : null;
+    if (lastCheck) lastCheck = { ...lastCheck, stale: covers === false };
+    return { snapshot: snap, covers };
   };
 
   app.post("/api/import", validate("json", importRequest), async (c) => {

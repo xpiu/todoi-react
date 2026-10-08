@@ -48,7 +48,7 @@ const diffs = new Map<string, string[]>();
  * pull would fetch count, so an import (which keeps everything) next to a pull doesn't read as deletions.
  */
 export function snapshotChanges(ctx: Ctx, from: string | null, to: string): string[] {
-  const key = `${ctx.state}|${from}|${to}`;
+  const key = JSON.stringify([ctx.state, from, to, ctx.config.design.ignore]);
   const hit = diffs.get(key);
   if (hit) return hit;
   const inScope = (dir: string) => pullable(listFiles(dir), ctx.config.design.ignore);

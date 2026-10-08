@@ -197,7 +197,7 @@ Statuses: *changed on both* (red, the tool's one colour), *App ahead*, *Design a
   - DesignSync has no per-file timestamps, so "Check for changes" compares the project's `updatedAt` with the snapshot's.
   - Each "Check for changes" starts a Claude Code model request through DesignSync and uses tokens even when nothing changed. It checks metadata without downloading file contents. Recompare reads local files and snapshots without a model request.
   - A pull first makes the same check, and stops with "Already up to date" when the newest complete snapshot from the same project matches. Otherwise it reads every text file (~3 min, ~$0.60 with Haiku at low effort).
-  - Each read run stops after its fetch turn: file contents arrive in Claude Code's event stream and are never sent back to the model, so the model, effort and tokens cover only dispatching the calls. Files a run didn't reach are asked for again while rounds bring files in.
+  - Each file read run is capped at two turns: loading DesignSync, then fetching files. When calls follow that order, contents arrive in Claude Code's event stream without being sent back to the model. If DesignSync is already available and the model skips ToolSearch, it can fetch on the first turn and read the contents on the second. Files a run didn't reach are asked for again while rounds bring files in.
   - Binaries, uploads, the generated `_ds_bundle.js` and the `design.ignore` paths are skipped, except `_ds_manifest.json` (the kit tooling reads its namespace). Previews use a locally built bundle, and borrow the App's fonts and covers (`assetFallbacks`).
 - **A pull that misses files says so.**
   - A file still failing after a retry (or sent truncated) keeps its previous snapshot's content, so it never reads as deleted in Design.
@@ -241,6 +241,7 @@ The last three are how the AI harness checks kit work before you upload it.
   - `implement`: `claude`, or the untested `codex`;
   - the binaries;
   - `pullModel` and `pullEffort`: DesignSync reads only (status checks, pulls, upload read-backs). Contents come from tool results, never from the model's reply, so a cheaper model can't alter a file;
+  - `haiku` is a moving model alias, rather than a pin to Haiku 4.5. Supported effort levels depend on the resolved model; see [Claude Code's model configuration](https://code.claude.com/docs/en/model-config);
   - `implementModel`: App and kit ports (empty = Claude Code's default).
 
 Environment overrides, used by the tests:

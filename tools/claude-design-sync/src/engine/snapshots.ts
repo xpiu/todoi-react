@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import type { Ctx } from "./config";
-import { isIgnored, listFiles } from "./fsutil";
+import { isIgnored, listFiles, readText } from "./fsutil";
 import type { SnapshotMeta, SyncPoint } from "./types";
 
 export const snapRoot = (ctx: Ctx) => join(ctx.state, "snapshots");
@@ -170,7 +170,7 @@ export function importExport(ctx: Ctx, source: string, label?: string, exportedA
     }
     const root = findProjectRoot(dir);
     if (!root) throw new Error("This doesn't look like a Claude Design project export (no components/ next to styles.css or _ds_manifest.json).");
-    const namespace = namespaceOf(existsSync(join(root, "_ds_manifest.json")) ? readFileSync(join(root, "_ds_manifest.json"), "utf8") : null);
+    const namespace = namespaceOf(readText(join(root, "_ds_manifest.json")));
     const same = namespaceMatches(namespace, ctx.config.design.projectId);
     if (same === false) throw new Error(`This export is from another Claude Design project (${namespace}), not ${ctx.config.design.projectName}. Nothing was imported.`);
     const id = newSnapshotId();

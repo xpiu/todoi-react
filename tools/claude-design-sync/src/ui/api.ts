@@ -61,15 +61,19 @@ export interface ExportsInfo {
   folders: string[];
 }
 
+async function readResponse<T>(res: Response): Promise<T> {
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) throw new Error(data.error ?? `${res.status} ${res.statusText}`);
+  return data;
+}
+
 async function call<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const res = await fetch(path, {
     method: init?.method ?? (init?.body ? "POST" : "GET"),
     headers: { "content-type": "application/json", "x-cds": "1" },
     body: init?.body ? JSON.stringify(init.body) : init?.method === "POST" ? "{}" : undefined,
   });
-  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(data.error ?? `${res.status} ${res.statusText}`);
-  return data;
+  return readResponse<T>(res);
 }
 
 export const api = {
@@ -84,9 +88,7 @@ export const api = {
   /** A .zip picked or dropped in the browser; its lastModified is the download time */
   importFile: async (file: File): Promise<Imported> => {
     const res = await fetch(`/api/import-file?${new URLSearchParams({ name: file.name, modified: String(file.lastModified) })}`, { method: "POST", headers: { "content-type": "application/zip", "x-cds": "1" }, body: file });
-    const data = (await res.json().catch(() => ({}))) as Imported & { error?: string };
-    if (!res.ok) throw new Error(data.error ?? `${res.status} ${res.statusText}`);
-    return data;
+    return readResponse<Imported>(res);
   },
   exports: () => call<ExportsInfo>("/api/exports"),
   /** `hold`: unit ids kept open, still compared against their baseline under `base` */

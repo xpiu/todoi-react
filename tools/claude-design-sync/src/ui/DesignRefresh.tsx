@@ -36,7 +36,7 @@ export function RefreshChoice({ choice, ...props }: { choice: ReturnType<typeof 
           <X size={14} strokeWidth={1.75} aria-hidden />
         </button>
       </div>
-      <DesignRefresh {...props} />
+      <DesignRefresh key={props.state.project.id} {...props} />
     </section>
   );
 }
@@ -79,11 +79,15 @@ export function DesignRefresh({ state, onPull, onImported, pullBusy }: { state: 
   const [drag, setDrag] = useState(false);
   const [path, setPath] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const importPending = useRef(false);
+  const looking = useRef(false);
   const radios = useId();
 
   // Look again whenever the window comes back: the developer has likely just downloaded an export
   const look = useCallback(() => {
-    api.exports().then(setInfo, () => {});
+    if (looking.current) return;
+    looking.current = true;
+    api.exports().then(setInfo, () => {}).finally(() => { looking.current = false; });
   }, []);
   useEffect(() => {
     look();
@@ -103,6 +107,8 @@ export function DesignRefresh({ state, onPull, onImported, pullBusy }: { state: 
   const claudeOk = state.harnesses.claude.ok || state.fake;
 
   const importing = async (what: string, fn: () => Promise<Imported>) => {
+    if (importPending.current) return;
+    importPending.current = true;
     setBusy(what);
     setErr(null);
     try {
@@ -111,6 +117,7 @@ export function DesignRefresh({ state, onPull, onImported, pullBusy }: { state: 
       setErr((e as Error).message);
       look();
     } finally {
+      importPending.current = false;
       setBusy(null);
     }
   };

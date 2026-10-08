@@ -204,11 +204,12 @@ test.describe.serial("Claude Design Sync", () => {
     await page.getByRole("button", { name: /Mark selected features synced/ }).click();
     await page.getByLabel("Label").fill("After the e2e run");
     await page.getByRole("checkbox", { name: /git tag/ }).uncheck();
-    // everything ran, so every feature starts ticked; Chips is left open on purpose
+    // Leave Chips open on purpose, alongside anything the refreshed plan skipped.
     const synced = page.getByRole("group", { name: "Synced this round" });
     await expect(synced.getByRole("checkbox", { name: /Chips/ })).toBeChecked();
+    const kept = await synced.getByRole("checkbox").evaluateAll((inputs) => inputs.filter((input) => !(input as HTMLInputElement).checked).length);
     await synced.getByRole("checkbox", { name: /Chips/ }).uncheck();
-    await expect(page.locator(".cds-mark")).toContainText("1 feature stays open");
+    await expect(page.locator(".cds-mark .cds-confirm-actions")).toContainText(`${kept + 1} feature${kept ? "s stay" : " stays"} open`);
     await page.getByRole("button", { name: "Record sync point" }).click();
     await expect(page.locator(".cds-verdict-line")).toContainText("Since After the e2e run");
     // the kept-open feature is still compared, from where it was
@@ -332,6 +333,8 @@ test.describe.serial("Claude Design Sync", () => {
     await page.getByRole("button", { name: "Bring the mapping up to date" }).click();
     const choice = page.getByRole("region", { name: "Bring in Design's changes" });
     await expect(choice).toBeVisible({ timeout: 30_000 });
+    // Measure the settled colors, after the section's opacity animation finishes.
+    await choice.evaluate(async (el) => { await Promise.all(el.getAnimations().map((animation) => animation.finished)); });
     const axe = await new AxeBuilder({ page }).include(".cds-refresh").analyze();
     expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
 

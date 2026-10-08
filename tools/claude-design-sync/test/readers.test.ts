@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { readersFor } from "../src/engine/compare";
 import * as git from "../src/engine/git";
 import { getSnapshot, listSnapshots, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
+import { snapshotChanges } from "../src/server/mapping";
 import { makeFixture, type Fixture } from "./fixture";
 
 let fx: Fixture | undefined;
@@ -34,4 +35,12 @@ it("lists snapshot metadata without traversing project contents", () => {
   const before = listSnapshots(fx.ctx);
   symlinkSync(join(fx.repo, "does-not-exist"), join(snapshotFilesDir(fx.ctx, fx.nowSnapshot), "broken-link"));
   expect(listSnapshots(fx.ctx)).toEqual(before);
+});
+
+it("scopes cached snapshot history to the configured pull ignores", () => {
+  fx = makeFixture();
+  const before = snapshotChanges(fx.ctx, fx.baseSnapshot, fx.nowSnapshot);
+  expect(before).toContain("components/core/Chip.jsx");
+  fx.ctx.config.design.ignore = [...fx.ctx.config.design.ignore, "components/core/Chip.jsx"];
+  expect(snapshotChanges(fx.ctx, fx.baseSnapshot, fx.nowSnapshot)).toEqual(before.filter((p) => p !== "components/core/Chip.jsx"));
 });

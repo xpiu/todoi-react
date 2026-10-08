@@ -7,7 +7,7 @@ export function Onboarding({ state, onPull, onImported }: { state: AppState; onP
     <section className="cds-onboard" aria-labelledby="onboard-h">
       <h2 id="onboard-h">Bring in the Design side</h2>
       <p>To compare, the tool keeps a local snapshot of {state.project.name}. Take one of two routes; you can use either later too.</p>
-      <DesignRefresh state={state} onPull={onPull} onImported={onImported} />
+      <DesignRefresh key={state.project.id} state={state} onPull={onPull} onImported={onImported} />
     </section>
   );
 }

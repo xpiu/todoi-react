@@ -106,9 +106,10 @@ const MAX_ROUNDS = 6;
 
 /**
  * Live text content of `paths`. Each run ends after its fetch turn (max turns 2: loading DesignSync, then
- * every get_file call in one message): the contents arrive verbatim in the event stream, and the model never
- * reads them back, which is what a pull's tokens used to go on. A model that spreads its calls over several
- * messages is cut off, so the paths still missing go into another round, which runs while rounds bring files in.
+ * every get_file call in one message): the contents arrive verbatim in the event stream. With loading on the
+ * first turn, the model never reads them back; an already-available tool can be fetched on the first turn instead.
+ * A model that spreads its calls over several messages is cut off, so paths still missing go into another
+ * round, which runs while rounds bring files in.
  * Files Design doesn't have, couldn't send, or sent truncated are left out (the caller carries or flags them).
  */
 export async function getFiles(ctx: Ctx, runner: Runner, paths: string[], onLog?: (e: HarnessEvent) => void): Promise<Map<string, string>> {
