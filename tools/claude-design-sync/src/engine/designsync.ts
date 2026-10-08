@@ -137,6 +137,22 @@ export function isCurrent(ctx: Ctx, snap: SnapshotMeta | null, updatedAt: string
   return !!snap && !!updatedAt && snap.projectUpdatedAt === updatedAt && !snap.unpulled && (snap.projectId ?? ctx.config.design.projectId) === ctx.config.design.projectId;
 }
 
+/** Margin for the clocks of this machine and Claude Design */
+const EXPORT_MARGIN_MS = 2 * 60_000;
+
+/**
+ * An imported export of this project, downloaded clearly after Design's last change, shows Design as it is
+ * now, for the GUI's freshness and the "bring it up to date" choice only. Nothing that guards data trusts it:
+ * pulls still compare updatedAt (isCurrent), and an upload from it still reads Design's live copies first.
+ */
+export function exportCovers(ctx: Ctx, snap: SnapshotMeta | null, updatedAt: string | null): boolean {
+  if (!snap || snap.source !== "import" || snap.projectId !== ctx.config.design.projectId) return false;
+  return downloadedAfter(snap.exportedAt, updatedAt);
+}
+
+/** Was an export downloaded clearly after Design's last change? */
+export const downloadedAfter = (exportedAt: string | undefined, updatedAt: string | null): boolean => !!exportedAt && !!updatedAt && Date.parse(exportedAt) - Date.parse(updatedAt) >= EXPORT_MARGIN_MS;
+
 /** Checks updatedAt through Claude first, then fetches file contents only if needed (or `force`). */
 export async function pullIfChanged(ctx: Ctx, runner: Runner, opts: Parameters<typeof pullSnapshot>[2] & { force?: boolean }): Promise<{ snapshot: SnapshotMeta | null; current: SnapshotMeta | null; updatedAt: string | null }> {
   const { updatedAt } = await projectStatus(ctx, runner, opts.onLog);

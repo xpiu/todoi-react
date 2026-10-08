@@ -2,7 +2,8 @@
 // another site in the browser can't trigger runs.
 import { serve } from "@hono/node-server";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { extname, join, resolve } from "node:path";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -12,7 +13,7 @@ import { uploadPending } from "../engine/approvals";
 import { compare, unitBaseline } from "../engine/compare";
 import { directionsFor } from "../engine/directions";
 import { defaultCtx, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
-import { checkUpload, createDesignRunner, findProject, isCurrent, projectStatus, pullIfChanged, uploadRequest as uploadHandoff, verifyUpload, type Runner } from "../engine/designsync";
+import { checkUpload, createDesignRunner, downloadedAfter, exportCovers, findProject, isCurrent, projectStatus, pullIfChanged, uploadRequest as uploadHandoff, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
 import { fileWithin, readText } from "../engine/fsutil";
 import { reviewDraft } from "../engine/fidelity";
@@ -28,7 +29,7 @@ import { storybook, type Storybook } from "../engine/storybook";
 import { visualCompare } from "../engine/visual";
 import { commitAll, commitsSince, createWorktree, headOf, mergeRun, removeWorktree, runCheck, verifyPort } from "../engine/worktree";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
-import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
+import { deriveSnapshot, findExports, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
 import type { Comparison } from "../engine/types";
 import { stepsForSelection } from "../engine/selection";
 import { Jobs, type Job } from "./jobs";
@@ -36,6 +37,9 @@ import { Meter } from "./meter";
 import { mappingHistory } from "./mapping";
 import { buildUi, distDir } from "./ui-build";
 import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
+
+/** Larger than any Claude Design export; refuses a mistaken pick before it fills memory */
+const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
 
 export type { HarnessInfo } from "../engine/harness";
 
@@ -47,6 +51,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   const cache = new Map<string, Comparison>();
   /** The last time Claude Design was asked whether it changed (this server's lifetime) */
   let lastCheck: { at: string; updatedAt: string | null; stale: boolean } | null = null;
+  // Where exports are looked for: ~/Downloads, or CDS_EXPORTS (folders separated by ":"); none in a fake run unless set
+  const exportDirs = process.env.CDS_EXPORTS ? process.env.CDS_EXPORTS.split(":").filter(Boolean) : opts.fake ? [] : [join(homedir(), "Downloads")];
 
   /** Is the harness on PATH, and does it actually start? (A broken install is worse than a missing one.) */
   const probe = (bin: string): HarnessInfo => {
@@ -237,7 +243,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     try {
       const st = await projectStatus(ctx, designRunner("Asking Claude Design whether the project changed"));
       const snap = latestSnapshot(ctx);
-      const stale = !!st.updatedAt && !isCurrent(ctx, snap, st.updatedAt);
+      const stale = !!st.updatedAt && !isCurrent(ctx, snap, st.updatedAt) && !exportCovers(ctx, snap, st.updatedAt);
       lastCheck = { at: new Date().toISOString(), updatedAt: st.updatedAt, stale };
       return c.json({ ...st, snapshotUpdatedAt: snap?.projectUpdatedAt ?? null, stale });
     } catch (e) {
@@ -272,15 +278,51 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     return c.json({ job: job.id });
   });
 
+  /** After an import, the last answer from Claude Design says whether the new snapshot is behind it */
+  const imported = (snap: ReturnType<typeof importExport>) => {
+    cache.clear();
+    if (lastCheck) lastCheck = { ...lastCheck, stale: !!lastCheck.updatedAt && !exportCovers(ctx, snap, lastCheck.updatedAt) };
+    return { snapshot: snap, covers: lastCheck?.updatedAt ? exportCovers(ctx, snap, lastCheck.updatedAt) : null };
+  };
+
   app.post("/api/import", validate("json", importRequest), async (c) => {
     const { path, label } = c.req.valid("json");
     try {
-      const snap = importExport(ctx, resolve(path.replace(/^~(?=\/)/, process.env.HOME ?? "~")), label);
-      cache.clear();
-      return c.json({ snapshot: snap });
+      return c.json(imported(importExport(ctx, resolve(path.replace(/^~(?=\/)/, process.env.HOME ?? "~")), label)));
     } catch (e) {
       return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
     }
+  });
+
+  // An export picked or dropped in the browser: the zip's bytes, its name and its download time
+  app.post("/api/import-file", async (c) => {
+    const name = (c.req.query("name") ?? "export.zip").replace(/[/\\]/g, "_").slice(0, 200);
+    const modified = Number(c.req.query("modified"));
+    if (!/\.zip$/i.test(name)) return c.json({ error: "Pick the .zip Claude Design exports. An unzipped folder can be imported by its path." }, 400);
+    if (Number(c.req.header("content-length") ?? 0) > MAX_EXPORT_BYTES) return c.json({ error: "That file is larger than any Claude Design export (over 256 MB)." }, 413);
+    const bytes = Buffer.from(await c.req.arrayBuffer());
+    if (!bytes.length || bytes.length > MAX_EXPORT_BYTES) return c.json({ error: bytes.length ? "That file is larger than any Claude Design export (over 256 MB)." : "The file arrived empty." }, 400);
+    const dir = join(ctx.state, "incoming");
+    const file = join(dir, `${Date.now()}-${Math.random().toString(36).slice(2)}.zip`);
+    try {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(file, bytes);
+      const at = Number.isFinite(modified) && modified > 0 ? new Date(modified).toISOString() : undefined;
+      return c.json(imported(importExport(ctx, file, `Imported ${name}`, at)));
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
+    } finally {
+      rmSync(file, { force: true });
+    }
+  });
+
+  // Exports of this project waiting in Downloads, how they compare with Design's last change, and what a pull cost last time
+  app.get("/api/exports", (c) => {
+    const updatedAt = lastCheck?.updatedAt ?? null;
+    const exports = findExports(ctx, exportDirs).map((x) => ({ ...x, covers: updatedAt ? downloadedAfter(x.modifiedAt, updatedAt) : null }));
+    const pull = jobs.list().find((j) => j.kind === "pull" && j.snapshotId && j.state === "done");
+    const lastPull = pull ? { at: pull.endedAt ?? pull.startedAt, costUsd: pull.costUsd ?? null, seconds: pull.endedAt ? Math.round((Date.parse(pull.endedAt) - Date.parse(pull.startedAt)) / 1000) : null } : null;
+    return c.json({ exports, designUpdatedAt: updatedAt, checkedAt: lastCheck?.at ?? null, lastPull, folders: exportDirs });
   });
 
   app.post("/api/sync-point", validate("json", syncPointRequest), async (c) => {
