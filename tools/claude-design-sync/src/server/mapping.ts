@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { appPending, uploadPending } from "../engine/approvals";
 import type { Ctx } from "../engine/config";
+import { pullable } from "../engine/designsync";
 import { listFiles } from "../engine/fsutil";
 import { filesTouched } from "../engine/git";
 import { tally, type LaneId } from "../engine/lanes";
@@ -42,18 +43,22 @@ const plural = (n: number, w: string) => `${n} ${n === 1 ? w : `${w}s`}`;
 // Snapshots never change once written, so a pair's diff is computed once per server
 const diffs = new Map<string, string[]>();
 
-/** Files added, changed or gone between two snapshots (every file when there is no earlier one) */
+/**
+ * Files added, changed or gone between two snapshots (every file when there is no earlier one). Only files a
+ * pull would fetch count, so an import (which keeps everything) next to a pull doesn't read as deletions.
+ */
 export function snapshotChanges(ctx: Ctx, from: string | null, to: string): string[] {
   const key = `${ctx.state}|${from}|${to}`;
   const hit = diffs.get(key);
   if (hit) return hit;
+  const inScope = (dir: string) => pullable(listFiles(dir), ctx.config.design.ignore);
   const b = snapshotFilesDir(ctx, to);
-  const bf = listFiles(b);
+  const bf = inScope(b);
   const out: string[] = [];
   if (!from) out.push(...bf);
   else {
     const a = snapshotFilesDir(ctx, from);
-    const af = new Set(listFiles(a));
+    const af = new Set(inScope(a));
     for (const f of bf) if (!af.has(f) || !readFileSync(join(a, f)).equals(readFileSync(join(b, f)))) out.push(f);
     const now = new Set(bf);
     for (const f of af) if (!now.has(f)) out.push(f);

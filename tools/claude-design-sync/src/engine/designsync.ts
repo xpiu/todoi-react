@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Ctx } from "./config";
-import { readText } from "./fsutil";
+import { isIgnored, readText } from "./fsutil";
 import { mergeText } from "./git";
 import { runHarness, type HarnessEvent } from "./harness";
 import { latestSnapshot, newSnapshotId, snapshotFilesDir, writeSnapshotFile, writeSnapshotMeta } from "./snapshots";
@@ -89,9 +89,15 @@ export async function listProjectFiles(ctx: Ctx, runner: Runner, onLog?: (e: Har
   return paths.filter((p) => !paths.some((q) => q !== p && q.startsWith(p + "/")));
 }
 
-/** Files worth pulling: text the comparison reads. Binaries, uploads and the generated bundle stay out. */
-export function pullable(paths: string[]): string[] {
-  return paths.filter((p) => !/^(uploads|assets)\//.test(p) && !/(^|\/)\.thumbnail$|_ds_bundle\.js$|\.(png|jpe?g|gif|webp|woff2?|ttf|otf|ico|pdf|mp4)$/i.test(p));
+/** Ignored for comparison, yet read by the kit tooling: the manifest names the bundle's namespace */
+const KIT_READS = new Set(["_ds_manifest.json"]);
+
+/**
+ * Files worth pulling: text the tool reads. Binaries, uploads and the generated bundle stay out, and so do
+ * the config's `design.ignore` paths (each pulled file costs tokens), except the ones the kit tooling reads.
+ */
+export function pullable(paths: string[], ignore: string[] = []): string[] {
+  return paths.filter((p) => !/^(uploads|assets)\//.test(p) && !/(^|\/)\.thumbnail$|_ds_bundle\.js$|\.(png|jpe?g|gif|webp|woff2?|ttf|otf|ico|pdf|mp4)$/i.test(p) && (KIT_READS.has(p) || !isIgnored(p, ignore)));
 }
 
 /** Live text content of `paths`, read in one headless run. Files Design doesn't have (or couldn't send) are left out. */
@@ -128,7 +134,7 @@ export async function pullIfChanged(ctx: Ctx, runner: Runner, opts: Parameters<t
  * recorded in the meta, and the snapshot doesn't claim Design's updatedAt, so it never passes as current.
  */
 export async function pullSnapshot(ctx: Ctx, runner: Runner, opts: { paths?: string[]; label?: string; batch?: number; parallel?: number; updatedAt?: string | null; onProgress?: (p: PullProgress) => void; onLog?: (e: HarnessEvent) => void }): Promise<SnapshotMeta> {
-  const all = opts.paths ?? pullable(await listProjectFiles(ctx, runner, opts.onLog));
+  const all = opts.paths ?? pullable(await listProjectFiles(ctx, runner, opts.onLog), ctx.config.design.ignore);
   const prev = latestSnapshot(ctx);
   const id = newSnapshotId();
   const size = opts.batch ?? 40;

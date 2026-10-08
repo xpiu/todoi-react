@@ -231,7 +231,7 @@ describe("DesignSync through the harness", () => {
     const fx = makeFixture();
     const runner = fakeRunner(fx.designNowDir, fx.repo);
     const snap = await pullSnapshot(fx.ctx, runner, { batch: 3, parallel: 2 });
-    expect(snap.fileCount).toBe(pullable(Object.keys((await import("./fixture")).DESIGN_NOW)).length);
+    expect(snap.fileCount).toBe(pullable(Object.keys((await import("./fixture")).DESIGN_NOW), fx.ctx.config.design.ignore).length);
     expect(readFileSync(join(snapshotFilesDir(fx.ctx, snap.id), "components/core/Chip.jsx"), "utf8")).toContain("Chip");
   });
   it("hands an upload to Claude Code as one locked plan, quoted for a shell", () => {
@@ -354,6 +354,11 @@ describe("DesignSync through the harness", () => {
   });
   it("keeps uploads, binaries and the generated bundle out of pulls", () => {
     expect(pullable(["a.jsx", "uploads/x.png", "assets/fonts/I.ttf", "_ds_bundle.js", "c/.thumbnail", "readme.md"])).toEqual(["a.jsx", "readme.md"]);
+  });
+  it("leaves the config's ignored paths out of pulls, except the manifest the kit tooling reads", () => {
+    const ignore = ["_ds_manifest.json", "_adherence.oxlintrc.json", "templates/**", "SKILL.md"];
+    const paths = ["_ds_manifest.json", "_adherence.oxlintrc.json", "templates/todoi/support.js", "SKILL.md", "guidelines/a.html", "explorations/b.html", "styles.css", "components/core/Chip.jsx"];
+    expect(pullable(paths, ignore)).toEqual(["_ds_manifest.json", "guidelines/a.html", "explorations/b.html", "styles.css", "components/core/Chip.jsx"]);
   });
   it("reads Claude Code stream-json, including results saved to a file", () => {
     const ev = parseClaudeLine(JSON.stringify({ type: "user", message: { content: [{ type: "tool_result", content: '{"method":"get_file","path":"a"}' }] } }));
