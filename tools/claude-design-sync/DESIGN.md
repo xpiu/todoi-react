@@ -174,6 +174,7 @@ A monochrome ink-and-paper palette with one alarm colour. All values come from t
 - **Row:** feature head (chevron, title, status, count) across the full width at 14px top padding; then the twin. Closed rows show at most four moved parts per side plus "+n more".
 - **Plan bar:** fixed bottom, min 56px (`--cds-plan`), aligned to the page width; summary left, actions right. Its sheet opens above it, capped at min(56vh, 520px).
 - **Activity panel:** fixed right, 440px (`--cds-panel`), from under the bar to the bottom. Widen activity uses up to 800px or 65vw; the page and plan bar make room for either width. Under 820px the panel fills the window and the width toggle hides.
+- **Log heading:** "Log (n)" with the job's token meter beside it in mono 11px: Quiet Ink once done (`$1.23 · 412k tok · 13:54`, the time in Faint Ink), Ledger Ink with a pulsing 5px square while Claude Code works, its figures counting up rather than jumping (not under reduced motion). Pause sits beside Stop in the job head as a link; a paused job shows Resume there as the primary button.
 - **Tips:** the page closes with "Before a large sync": an ink rule, the heading and a one-line lead on the left, four numbered habits (Skip, small batches, check dependants, Compare visually) on the right, and one plain button, Pick a first batch, that unticks every feature and scrolls to the ledger. It stacks to one column on a narrow page.
 - **Rhythm:** small steps (4, 6, 8, 10, 12, 14, 16, 20, 24px) set directly in the stylesheet; the tool does not use the App's `--space-*` scale.
 

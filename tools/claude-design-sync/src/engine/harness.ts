@@ -4,6 +4,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { isAbsolute, resolve as resolvePath } from "node:path";
 
+import type { Tokens } from "./pricing";
 import { terminateOnAbort } from "./process";
 
 export type HarnessKind = "claude" | "codex";
@@ -65,6 +66,8 @@ export type HarnessEvent =
   | { type: "tool"; name: string; input: unknown }
   /** `isError`: the tool refused or failed (Claude Code's is_error) */
   | { type: "tool-result"; content: string; isError?: boolean }
+  /** Tokens one model message has used so far (Claude Code repeats it for each of the message's blocks) */
+  | { type: "usage"; messageId: string; model?: string; tokens: Tokens }
   | { type: "done"; ok: boolean; result: string; costUsd?: number; turns?: number; stopReason?: string; models?: string[] }
   | { type: "stderr"; text: string };
 
@@ -114,6 +117,13 @@ export function parseClaudeLine(line: string): HarnessEvent[] {
   const msg = e.message as { model?: string; content?: Array<Record<string, unknown>> } | undefined;
   const model = e.type === "system" && e.subtype === "init" ? e.model : msg?.model;
   if (typeof model === "string") out.push({ type: "runtime", model });
+  const usage = (msg as { usage?: Record<string, unknown> } | undefined)?.usage;
+  const id = (msg as { id?: unknown } | undefined)?.id;
+  if (e.type === "assistant" && usage && typeof id === "string") {
+    const n = (v: unknown) => (typeof v === "number" ? v : 0);
+    const split = usage.cache_creation as Record<string, unknown> | undefined;
+    out.push({ type: "usage", messageId: id, model: msg?.model, tokens: { input: n(usage.input_tokens), output: n(usage.output_tokens), cacheRead: n(usage.cache_read_input_tokens), cacheWrite: n(usage.cache_creation_input_tokens), cacheWrite1h: n(split?.ephemeral_1h_input_tokens) } });
+  }
   if (e.type === "assistant") for (const c of msg?.content ?? []) {
     if (c.type === "text" && typeof c.text === "string" && c.text.trim()) out.push({ type: "text", text: c.text });
     if (c.type === "tool_use") out.push({ type: "tool", name: String(c.name), input: c.input });

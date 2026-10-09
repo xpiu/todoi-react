@@ -44,6 +44,8 @@ export function fakeRunner(designDir: string, repo: string, { delayMs = 30, cost
         const careless = !stage && file.endsWith(".tsx") ? "export const useFakePort = () => useKitStore();\n" : "";
         writeFileSync(file, (existsSync(file) ? readFileSync(file, "utf8") : "") + `\n/* ported by the fake harness */\n${careless}`);
         emit({ type: "text", text: `Edited ${file}` });
+        // what a real port's message reports, so the job's token meter has something to count
+        emit({ type: "usage", messageId: `fake-${Date.now().toString(36)}`, model: "fake", tokens: { input: 1200, output: 400, cacheRead: 24_000, cacheWrite: 6000, cacheWrite1h: 6000 } });
         if (!stage) {
           execFileSync("git", ["-C", repo, "add", "-A"], { stdio: "ignore" });
           execFileSync("git", ["-C", repo, "-c", "user.name=fake", "-c", "user.email=fake@localhost", "commit", "-qm", `feat: port ${target[1]} (fake)`], { stdio: "ignore" });

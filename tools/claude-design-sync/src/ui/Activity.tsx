@@ -11,6 +11,7 @@ import { canResume, failedPorts, keepsRunFiles } from "../engine/approvals";
 import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
+import { UsageMeter } from "./UsageMeter";
 
 const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", paused: "paused", done: "done", failed: "failed", cancelled: "stopped" };
 
@@ -281,7 +282,6 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
           <p className="cds-quiet">
             {STATE_WORD[job.state]}
             {job.progress ? ` · ${job.progress.done}/${job.progress.total} files` : ""}
-            {typeof job.costUsd === "number" && job.costUsd > 0 ? ` · $${job.costUsd.toFixed(2)}` : ""}
           </p>
           {job.state === "running" ? (
             <span className="cds-jobview-controls">
@@ -505,7 +505,10 @@ function JobLog({ job, logRef, expanded, onToggleExpanded }: { job: Job; logRef:
     <section className="cds-log-section" aria-label="Run log">
       <div className="cds-log-toolbar">
         <div className="cds-log-heading">
-          <h4>Log <span className="cds-quiet">({job.events.length})</span></h4>
+          <div className="cds-log-title">
+            <h4>Log <span className="cds-quiet">({job.events.length})</span></h4>
+            <UsageMeter job={job} />
+          </div>
           <div className="cds-log-actions">
             <CopyLink text={logText} label="Copy log" tip="Copy every log entry, including timestamps" />
             <button type="button" className="cds-btn" aria-expanded={expanded} aria-controls="activity-log" onClick={onToggleExpanded} data-tip={expanded ? "Return to the run's steps" : "Give the log the whole panel"}>{expanded ? "Back to run" : "Expand log"}</button>

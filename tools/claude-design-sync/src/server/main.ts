@@ -24,6 +24,7 @@ import { probeHarness, runHarness, type HarnessEvent, type HarnessInfo, type Har
 import { sections } from "../engine/inventory";
 import { laneRules } from "../engine/lanes";
 import { parseProjectRef } from "../engine/project";
+import { addTokens, estimateUsd, NO_TOKENS, type Tokens } from "../engine/pricing";
 import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { kitHome, syncTwins, twinPath, writeDrafts } from "../engine/kitDraft";
 import { storybook, type Storybook } from "../engine/storybook";
@@ -127,12 +128,39 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     }
   };
 
-  const logHarness = (job: Job, stepId?: string) => (e: HarnessEvent) => {
-    if (e.type === "text") jobs.log(job, "ai", e.text, stepId);
-    else if (e.type === "tool") jobs.log(job, "tool", `${e.name} ${summarise(e.input)}`, stepId);
-    else if (e.type === "done") {
-      if (typeof e.costUsd === "number") jobs.update(job, { costUsd: (job.costUsd ?? 0) + e.costUsd });
-    } else if (e.type === "stderr" && e.text.trim()) jobs.log(job, "warn", e.text.trim(), stepId);
+  /** One Claude Code call's log, and its share of the job's token meter */
+  const logHarness = (job: Job, stepId?: string) => {
+    // the call's messages, each with the latest usage Claude Code streamed for it
+    const messages = new Map<string, { tokens: Tokens; model?: string }>();
+    // what this call has added to the job's meter so far
+    let counted = { tokens: NO_TOKENS, usd: 0 };
+    let shownAt = 0;
+    const count = (tokens: Tokens, usd: number, reported: boolean) => {
+      const u = job.usage ?? { ...NO_TOKENS, usd: 0, estimatedUsd: 0, at: "" };
+      // a reported cost replaces this call's estimate; an estimate replaces the last one
+      const estimatedUsd = Math.max(0, u.estimatedUsd - counted.usd + (reported ? 0 : usd));
+      job.usage = { ...addTokens(u, addTokens(tokens, counted.tokens, -1)), usd: u.usd - counted.usd + usd, estimatedUsd, at: new Date().toISOString() };
+      counted = { tokens, usd };
+      // Claude Code streams usage several times a second: the GUI hears of it once a second, and when the call ends
+      if (reported || Date.now() - shownAt > 1000) {
+        shownAt = Date.now();
+        jobs.update(job, {});
+      }
+    };
+    return (e: HarnessEvent) => {
+      if (e.type === "text") jobs.log(job, "ai", e.text, stepId);
+      else if (e.type === "tool") jobs.log(job, "tool", `${e.name} ${summarise(e.input)}`, stepId);
+      else if (e.type === "usage") {
+        messages.set(e.messageId, { tokens: e.tokens, model: e.model });
+        const all = [...messages.values()];
+        count(all.reduce((t, m) => addTokens(t, m.tokens), NO_TOKENS), all.reduce((sum, m) => sum + estimateUsd(m.tokens, m.model), 0), false);
+      } else if (e.type === "done") {
+        if (typeof e.costUsd === "number") {
+          job.costUsd = (job.costUsd ?? 0) + e.costUsd;
+          count(counted.tokens, e.costUsd, true);
+        }
+      } else if (e.type === "stderr" && e.text.trim()) jobs.log(job, "warn", e.text.trim(), stepId);
+    };
   };
 
   const baseFor = (id?: string | null) => {

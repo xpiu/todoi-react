@@ -8,6 +8,7 @@ import type { HarnessKind } from "../engine/harness";
 import type { Adaptation } from "../engine/adaptation";
 import type { AlreadyImplemented } from "../engine/worktree";
 import type { Ctx } from "../engine/config";
+import type { Tokens } from "../engine/pricing";
 import { appPending, canResume, keepsRunFiles, uploadPending } from "../engine/approvals";
 import { removeWorktree, type AppRun } from "../engine/worktree";
 
@@ -85,6 +86,12 @@ export interface Job {
   /** The sync point this run recorded on its own */
   syncPointId?: string;
   costUsd?: number;
+  /**
+   * The job's token meter: what its Claude Code calls used, and their cost. `usd` holds the cost each finished
+   * call reported, plus a list-price estimate for a call still running (or one stopped before it reported),
+   * which `estimatedUsd` counts; `at` is the last time it moved.
+   */
+  usage?: Tokens & { usd: number; estimatedUsd: number; at: string };
   result?: string;
   baseId?: string | null;
   snapshotId?: string | null;
