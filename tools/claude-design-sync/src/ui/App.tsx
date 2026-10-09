@@ -11,6 +11,7 @@ import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
 import { ProjectFooter } from "./ProjectFooter";
 import { applySelection, featureSelection } from "./selection";
+import { Tips } from "./Tips";
 import { TIP } from "./Tooltip";
 import { Select } from "./Select";
 import { TopBar } from "./TopBar";
@@ -417,6 +418,10 @@ export function App() {
                 ) : null}
               </section>
             ) : null}
+            {cmp ? <Tips canStart={selectable.length > 0} onStartBatch={() => {
+              select(selectable, false);
+              document.getElementById("ledger")?.scrollIntoView({ block: "start", behavior: "smooth" });
+            }} /> : null}
           </>
         )}
       </main>

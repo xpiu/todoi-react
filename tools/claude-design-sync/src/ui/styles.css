@@ -1234,6 +1234,64 @@ em {
   break-inside: avoid;
 }
 
+/* ── Tips: the page's closing note on keeping a large sync reviewable ─────────── */
+.cds-tips {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 14px 24px;
+  margin-top: 24px;
+  padding: 20px 0 8px;
+  border-top: 1px solid var(--ink-900);
+}
+.cds-tips-head h2 {
+  margin: 0 0 6px;
+  font: 500 15px/1.4 var(--font-ui);
+}
+.cds-tips-head p {
+  margin: 0;
+  max-width: 34ch;
+}
+.cds-tips-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tip;
+}
+.cds-tips-list li {
+  position: relative;
+  padding: 8px 0 8px 28px;
+  border-bottom: var(--cds-hair);
+  color: var(--ink-600);
+  counter-increment: tip;
+}
+.cds-tips-list li:first-child {
+  padding-top: 0;
+}
+.cds-tips-list li::before {
+  content: counter(tip);
+  position: absolute;
+  left: 0;
+  color: var(--ink-300);
+  font: 400 11px/1.45 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+.cds-tips-list strong {
+  color: var(--ink-900);
+  font-weight: 500;
+}
+.cds-tips-cta {
+  grid-column: 2;
+}
+@container page (max-width: 699px) {
+  .cds-tips {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cds-tips-cta {
+    grid-column: 1;
+  }
+}
+
 /* ── Footer: the Claude Design project every pull and upload targets ─────────── */
 /* the page's last block: clears the pinned plan bar */
 .cds-foot {
