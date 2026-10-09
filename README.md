@@ -19,6 +19,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 ## 📖 Contents
 
 - [📝 About](#-about)
+- [⚡ Quick Start](#-quick-start)
 - [✨ Features and limits](#-features-and-limits)
 - [👥 Visitors and accounts](#-visitors-and-accounts)
 - [🧰 Tech stack](#-tech-stack)
@@ -29,6 +30,19 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - [💻 Local development](#-local-development)
 - [🚀 Production](#-production)
 - [✅ Quality gates](#-quality-gates)
+
+## ⚡ Quick Start
+
+Requires Node 22.12+, npm and running PostgreSQL (18 used here).
+
+```sh
+cp .env.example .env       # adjust DATABASE_URL for your machine
+createdb todoi_react       # once; match DATABASE_URL
+npm ci
+npm run dev
+```
+
+Open [localhost:5173](http://localhost:5173). Migrations and demo data load automatically; see [Local development](#-local-development) for details.
 
 ## ✨ Features and limits
 
@@ -112,19 +126,12 @@ Configure mappings/harness in `tools/claude-design-sync/config.json`. Pull/uploa
 
 ## 💻 Local development
 
-Requirements: **Node 22.12+**, npm and running PostgreSQL (development, CI and staging use PostgreSQL 18). On macOS, add the keg-only PostgreSQL tools to your shell's PATH:
+Follow [Quick Start](#-quick-start). On macOS, install/start PostgreSQL and add its tools to your shell's PATH:
 
 ```sh
 brew install postgresql@18
 brew services start postgresql@18
 export PATH="$(brew --prefix postgresql@18)/bin:$PATH"  # also add to ~/.zshrc
-```
-
-```sh
-cp .env.example .env       # set DATABASE_URL for your machine
-createdb todoi_react       # once; match the database name in DATABASE_URL
-npm ci
-npm run dev
 ```
 
 The API runs on `:3000`, migrating/seeding on development boot. Vite serves `http://localhost:5173`, proxying `/api` to `:3000`; update `vite.config.ts` when changing the API port. API scripts read `.env`; Vite also reads `.env.local`.
