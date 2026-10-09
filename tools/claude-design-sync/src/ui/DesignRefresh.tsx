@@ -1,9 +1,9 @@
 // The two ways to bring Claude Design's work in: import an export (free: the download is read on this
 // machine) or pull with Claude Code (costs tokens). Used on first run, on the Mapping page and on the plan.
-import { Download, ExternalLink, FileArchive, FolderInput, X } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState, type DragEvent } from "react";
+import { Download, ExternalLink, FileArchive, FolderInput, LoaderCircle, RefreshCw, X } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from "react";
 
-import { api, archiveName, fmtTime, isProjectArchive, plural, projectUrl, type AppState, type Comparison, type ExportsInfo, type Imported } from "./api";
+import { api, archiveName, featureTally, fmtTime, isProjectArchive, plural, projectUrl, type AppState, type ArchiveChanges, type ArchiveReport, type ArchiveUsed, type Comparison, type ExportsInfo, type Imported, type SnapshotMeta } from "./api";
 
 const CHOICE_ID = "cds-refresh";
 const ENTRY_ID = "cds-refresh-open";
@@ -27,7 +27,8 @@ export function useRefreshChoice() {
 }
 
 /** The choice as a closable section above the plan's ledger or under the Mapping's refresh */
-export function RefreshChoice({ choice, comparison, comparisonError, ...props }: { choice: ReturnType<typeof useRefreshChoice>; comparison: Comparison | null; comparisonError: string | null } & Parameters<typeof DesignRefresh>[0]) {
+export function RefreshChoice({ choice, comparison, comparisonError, onArchiveUsed, ...props }: { choice: ReturnType<typeof useRefreshChoice>; comparison: Comparison | null; comparisonError: string | null; onArchiveUsed: (r: ArchiveUsed) => void } & Parameters<typeof DesignRefresh>[0]) {
+  const archive = useArchive(props.state, comparison, onArchiveUsed);
   return (
     <>
       <section className="cds-archive-entry" aria-label="Project archive status">
@@ -36,11 +37,14 @@ export function RefreshChoice({ choice, comparison, comparisonError, ...props }:
             <strong>Update the Design snapshot</strong>
             <p>Use Claude Design's Project archive. All project files, no tokens.</p>
           </div>
-          {!choice.open ? <button id={ENTRY_ID} type="button" className="cds-btn cds-btn-primary" onClick={choice.show} aria-expanded={false}>
-            <FileArchive size={14} strokeWidth={1.75} aria-hidden /> Import project archive
-          </button> : null}
+          <div className="cds-archive-actions">
+            {archive.newest ? <UseArchiveButton archive={archive} primary={!archive.only} /> : null}
+            {!choice.open ? <button id={ENTRY_ID} type="button" className={`cds-btn ${archive.newest ? "" : "cds-btn-primary"}`} onClick={choice.show} aria-expanded={false} data-tip="Read a Project archive .zip downloaded from Claude Design. All project files, no tokens">
+              <FileArchive size={14} strokeWidth={1.75} aria-hidden /> Import project archive
+            </button> : null}
+          </div>
         </div>
-        <ArchiveStatus state={props.state} comparison={comparison} comparisonError={comparisonError} />
+        <ArchiveStatus state={props.state} comparison={comparison} comparisonError={comparisonError} archive={archive} />
       </section>
       {choice.open ? <section className="cds-refresh" id={CHOICE_ID} tabIndex={-1} aria-labelledby="refresh-h">
         <div className="cds-refresh-head">
@@ -55,17 +59,107 @@ export function RefreshChoice({ choice, comparison, comparisonError, ...props }:
   );
 }
 
+/**
+ * The newest Project archive and the one action that makes it the only Design source: it becomes Design now
+ * (newer pulls and uploads set aside), Claude Design isn't asked, and the App is recompared against it.
+ */
+function useArchive(state: AppState, comparison: Comparison | null, onUsed: (r: ArchiveUsed) => void) {
+  const base = comparison?.base?.id ?? null;
+  const [report, setReport] = useState<ArchiveReport | null>(null);
+  const [using, setUsing] = useState<string | null>(null);
+  const [done, setDone] = useState<ArchiveUsed | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pending = useRef(false);
+  // Read again whenever the snapshots or the comparison change (an import, a recompare, an update from an archive)
+  const newestSnapshot = state.snapshots[0]?.id;
+  const comparedAt = comparison?.generatedAt;
+  useEffect(() => {
+    let live = true;
+    api.archive(base).then((r) => live && setReport(r), () => {});
+    return () => {
+      live = false;
+    };
+  }, [base, newestSnapshot, comparedAt]);
+  const newest = report?.archive ?? state.snapshots.find((s) => isProjectArchive(s, state.project.id)) ?? null;
+  const running = state.jobs.some((j) => j.state === "running");
+  // The comparison reads this archive alone: it is Design now, and its freshness wasn't taken from Claude Design
+  const only = !!newest && comparison?.designSnapshot?.id === newest.id && report?.basis?.snapshot === newest.id;
+  const use = async (snapshot?: SnapshotMeta) => {
+    if (pending.current) return;
+    pending.current = true;
+    setUsing(snapshot?.id ?? newest?.id ?? "");
+    setError(null);
+    try {
+      const r = await api.useArchive(base, snapshot?.id);
+      setDone(r);
+      onUsed(r);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      pending.current = false;
+      setUsing(null);
+    }
+  };
+  return { report, newest, only, running, using, done, error, use };
+}
+type ArchiveUse = ReturnType<typeof useArchive>;
+
+function UseArchiveButton({ archive, primary }: { archive: ArchiveUse; primary: boolean }) {
+  const { newest, running, using, use } = archive;
+  const tip = running
+    ? "A job is running. Update the comparison when it finishes"
+    : `Compare the App with ${newest ? archiveName(newest) : "the archive"} alone: it becomes Design's current state on every page, newer pulls and uploads are set aside, and Claude Design isn't asked. No tokens`;
+  return (
+    <button type="button" className={`cds-btn ${primary ? "cds-btn-primary" : ""}`} onClick={() => void use()} disabled={!newest || running || using !== null} data-tip={tip}>
+      {using === newest?.id ? <LoaderCircle size={14} className="cds-spin" aria-hidden /> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden />} {using === newest?.id ? "Updating the comparison…" : "Update comparison from this archive"}
+    </button>
+  );
+}
+
+const sourceWord = (s: SnapshotMeta) => (s.source === "pull" ? "a Claude Code pull" : s.source === "upload" ? "an upload to Claude Design" : "an import");
+
+/** One "what changed" line: the count, and the files behind a disclosure */
+function Changes({ label, changes }: { label: ReactNode; changes: ArchiveChanges }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>
+        {changes.count ? (
+          <details className="cds-archive-files">
+            <summary data-tip="List the kit files that differ">{plural(changes.count, "kit file")} changed</summary>
+            <ul className="cds-path">
+              {changes.files.map((f) => <li key={f}>{f}</li>)}
+              {changes.count > changes.files.length ? <li className="cds-quiet">and {changes.count - changes.files.length} more</li> : null}
+            </ul>
+          </details>
+        ) : "No kit file changed"}
+      </dd>
+    </div>
+  );
+}
+
 /** Stored imports are successful events; the comparison confirms which snapshot the app actually uses. */
-function ArchiveStatus({ state, comparison, comparisonError }: { state: AppState; comparison: Comparison | null; comparisonError: string | null }) {
+function ArchiveStatus({ state, comparison, comparisonError, archive }: { state: AppState; comparison: Comparison | null; comparisonError: string | null; archive: ArchiveUse }) {
+  const { report, newest, only, done } = archive;
   const current = state.snapshots[0];
-  const imports = state.snapshots.filter((s) => isProjectArchive(s, state.project.id)).slice(0, 3);
+  // A re-used archive is a copy of an earlier import: list it once, as its newest copy
+  const origins = new Set<string>();
+  const imports = state.snapshots.filter((s) => {
+    if (!isProjectArchive(s, state.project.id) || origins.has(s.parent ?? s.id)) return false;
+    origins.add(s.parent ?? s.id);
+    return true;
+  }).slice(0, 3);
   const loaded = !!current && comparison?.designSnapshot?.id === current.id && !comparisonError;
+  const inUse = loaded && current?.id === newest?.id;
   const storage = current && state.snapshotRoot ? `${state.snapshotRoot}/${current.id}/files` : null;
+  const newer = report?.newer?.[0];
   const freshness: Freshness = comparisonError
     ? { ok: false, text: "Loading could not be confirmed · see the error above" }
     : loaded
       ? { ok: true, text: "Loaded successfully · used for comparison" }
       : { ok: null, text: current ? "Snapshot stored · comparison not loaded yet" : "Import an archive to load its files" };
+  const tally = comparison ? featureTally(comparison.features) : null;
+  const headMoved = !!comparison && comparison.appHead !== state.appHead;
   return (
     <div className="cds-archive-status">
       <dl className="cds-archive-current">
@@ -73,6 +167,9 @@ function ArchiveStatus({ state, comparison, comparisonError }: { state: AppState
           <dt>{current?.source === "import" ? "Current archive" : "Current Design snapshot"}</dt>
           <dd>{current ? <strong>{current.source === "import" ? archiveName(current) : current.label}</strong> : "No snapshot stored yet"}</dd>
           {current ? <dd className="cds-quiet">{current.source === "import" ? `Imported ${fmtTime(current.createdAt)}` : current.source === "pull" ? "From a Claude Code pull" : "From an upload to Claude Design"} · {plural(current.fileCount, "file")}</dd> : null}
+          {current?.source === "import" ? <dd className="cds-quiet">
+            {current.exportedAt ? `Downloaded ${fmtTime(current.exportedAt)} (file time)` : "Download time not recorded"} · {current.projectId ? `Its manifest names ${state.project.name}` : "Its manifest names no project"}
+          </dd> : null}
           {current?.archive?.path ? <dd className="cds-path">Source: {current.archive.path}</dd> : null}
           {storage ? <dd className="cds-path">Stored files: {storage}</dd> : null}
         </div>
@@ -80,16 +177,49 @@ function ArchiveStatus({ state, comparison, comparisonError }: { state: AppState
           <dt>Loaded in this app</dt>
           <dd><span role="status"><Fresh {...freshness} /></span></dd>
           {current?.source === "import" ? <dd className="cds-quiet">The app uses the extracted files stored above.</dd> : null}
+          {newest && newer && !inUse ? <dd className="cds-archive-note">
+            {archiveName(newest)} isn't used: “{newer.label}” from {sourceWord(newer)}, {fmtTime(newer.createdAt)}, is newer. Updating from the archive sets {report?.newer && report.newer.length > 1 ? `those ${report.newer.length} snapshots` : "it"} aside.
+          </dd> : null}
+          {newest ? <dd className="cds-quiet">
+            {only ? `Design side: this archive only · Claude Design not asked · updated ${fmtTime(report?.basis?.at)}` : "Design side: the newest snapshot · not yet updated from this archive alone"}
+          </dd> : null}
         </div>
       </dl>
+      {comparison && tally ? (
+        <p className="cds-archive-result">
+          <span className="cds-archive-label">Comparison</span>
+          <span>
+            Compared {fmtTime(comparison.generatedAt)} with App @{comparison.appHead}
+            {comparison.base ? ` since ${comparison.base.label}` : ""}: {plural(tally.app, "feature")} changed only in the App, {tally.design} only in Design, {tally.both} on both sides · {plural(comparison.counts["in-sync"] ?? 0, "part")} in sync
+            {headMoved ? ` · the App moved to @${state.appHead} since, so update to include it` : ""}
+          </span>
+        </p>
+      ) : null}
+      {report?.sinceArchive || report?.sinceBase ? (
+        <dl className="cds-archive-changes" aria-label="What this archive changed">
+          {report.sinceArchive ? <Changes label={<>Since the previous archive <span className="cds-quiet">{archiveName(report.sinceArchive.snapshot)}, {fmtTime(report.sinceArchive.snapshot.createdAt)}</span></>} changes={report.sinceArchive} /> : null}
+          {report.sinceBase ? <Changes label={<>Since sync point <span className="cds-quiet">{report.sinceBase.syncPoint.label}, {fmtTime(report.sinceBase.syncPoint.createdAt)}</span></>} changes={report.sinceBase} /> : null}
+        </dl>
+      ) : null}
+      {done || archive.error ? (
+        <p className={archive.error ? "cds-error-inline" : "cds-quiet"} role={archive.error ? "alert" : "status"}>
+          {archive.error ?? `Updated ${fmtTime(done!.comparedAt)} from ${archiveName(done!.snapshot)} alone${done!.setAside.length ? `, setting aside ${plural(done!.setAside.length, "newer snapshot")}` : ""}.`}
+        </p>
+      ) : null}
       <div className="cds-archive-history">
         <h4>Last 3 successful archive imports</h4>
         {imports.length ? <ol aria-label="Successful archive imports">
-          {imports.map((s) => <li key={s.id}>
-            <time dateTime={s.createdAt} title={s.createdAt}>{fmtTime(s.createdAt)}</time>
-            <span>{archiveName(s)}</span>
-            <span className="cds-quiet">{plural(s.fileCount, "file")} · {loaded && current?.id === s.id ? "In use" : "Stored"}</span>
-          </li>)}
+          {imports.map((s) => {
+            const used = loaded && current?.id === s.id;
+            return <li key={s.id}>
+              <time dateTime={s.createdAt} title={s.createdAt}>{fmtTime(s.createdAt)}</time>
+              <span>{archiveName(s)}</span>
+              <span className="cds-quiet">
+                {plural(s.fileCount, "file")} · {used ? "In use" : "Stored"}
+                {!used ? <> · <button type="button" className="cds-link" onClick={() => void archive.use(s)} disabled={archive.running || archive.using !== null} aria-label={`Update comparison from ${archiveName(s)}`} data-tip={`Compare the App with ${archiveName(s)} alone instead. No tokens`}>{archive.using === s.id ? "Updating…" : "Use"}</button></> : null}
+              </span>
+            </li>;
+          })}
         </ol> : <p>No Project archive has been imported successfully yet.</p>}
       </div>
     </div>

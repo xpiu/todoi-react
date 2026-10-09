@@ -7,6 +7,7 @@ import { basename, dirname, join } from "node:path";
 
 import type { Ctx } from "./config";
 import { isIgnored, listFiles, readText } from "./fsutil";
+import { isProjectArchive } from "./paths";
 import type { SnapshotMeta, SyncPoint } from "./types";
 
 export const snapRoot = (ctx: Ctx) => join(ctx.state, "snapshots");
@@ -186,12 +187,29 @@ export function importExport(ctx: Ctx, source: string, label?: string, exportedA
   }
 }
 
-/** A new snapshot = an existing one with some files replaced (after an upload). Pass projectUpdatedAt only when it is Design's exact state. */
-export function deriveSnapshot(ctx: Ctx, fromId: string, changes: Record<string, string>, label: string, source: SnapshotMeta["source"], projectUpdatedAt?: string): SnapshotMeta {
+/**
+ * A new snapshot = an existing one with some files replaced (after an upload). Pass projectUpdatedAt only when it
+ * is Design's exact state; `keep` carries an archive's provenance onto the copy.
+ */
+export function deriveSnapshot(ctx: Ctx, fromId: string, changes: Record<string, string>, label: string, source: SnapshotMeta["source"], projectUpdatedAt?: string, keep: Pick<SnapshotMeta, "archive" | "exportedAt"> = {}): SnapshotMeta {
   const id = newSnapshotId();
   cpSync(snapshotFilesDir(ctx, fromId), snapshotFilesDir(ctx, id), { recursive: true });
   for (const [p, c] of Object.entries(changes)) writeSnapshotFile(ctx, id, p, c);
-  return writeSnapshotMeta(ctx, { id, label, source, createdAt: new Date().toISOString(), projectId: getSnapshot(ctx, fromId)?.projectId, projectUpdatedAt, parent: fromId });
+  return writeSnapshotMeta(ctx, { id, label, source, createdAt: new Date().toISOString(), projectId: getSnapshot(ctx, fromId)?.projectId, projectUpdatedAt, parent: fromId, ...keep });
+}
+
+/**
+ * Make an imported archive "Design now" (the newest snapshot) again: a no-op when it already is, else an
+ * unchanged copy that keeps its provenance, so pulls and uploads taken after it stop counting.
+ */
+export function promoteArchive(ctx: Ctx, id: string): { snapshot: SnapshotMeta; promoted: boolean; setAside: SnapshotMeta[] } {
+  const all = listSnapshots(ctx);
+  const archive = all.find((s) => s.id === id);
+  if (!archive || !isProjectArchive(archive, ctx.config.design.projectId)) throw new Error("That snapshot isn't a Project archive of this project.");
+  const setAside = all.slice(0, all.indexOf(archive));
+  if (!setAside.length) return { snapshot: archive, promoted: false, setAside };
+  const copy = deriveSnapshot(ctx, archive.id, {}, archive.label, "import", undefined, { archive: archive.archive, exportedAt: archive.exportedAt });
+  return { snapshot: copy, promoted: true, setAside };
 }
 
 // ── Sync points ──────────────────────────────────────────────────────────────────────────────

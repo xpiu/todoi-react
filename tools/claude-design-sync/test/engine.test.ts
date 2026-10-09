@@ -11,7 +11,7 @@ import { commandFor, parseClaudeLine, toolResultText } from "../src/engine/harne
 import { resolveKitFile, twinOf } from "../src/engine/kit";
 import { parseProjectRef, projectUrl } from "../src/engine/project";
 import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor } from "../src/engine/plan";
-import { deriveSnapshot, getSnapshot, importExport, listSyncPoints, snapshotFilesDir } from "../src/engine/snapshots";
+import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSyncPoints, promoteArchive, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
 import { Jobs } from "../src/server/jobs";
 import { laneOf, laneRules, LANE_ORDER } from "../src/engine/lanes";
@@ -323,6 +323,21 @@ describe("DesignSync through the harness", () => {
     const at = "2026-10-05T10:00:00.000Z";
     expect(getSnapshot(fx.ctx, deriveSnapshot(fx.ctx, fx.nowSnapshot, { "a.jsx": "a" }, "After upload", "upload", at).id)?.projectUpdatedAt).toBe(at);
     expect(getSnapshot(fx.ctx, deriveSnapshot(fx.ctx, fx.nowSnapshot, { "a.jsx": "a" }, "After upload", "upload").id)?.projectUpdatedAt).toBeUndefined();
+  });
+  it("makes an older Project archive Design now again, keeping its provenance and setting newer snapshots aside", () => {
+    const fx = makeFixture();
+    const archive = importExport(fx.ctx, fx.designNowDir, "Imported Kit.zip", "2026-10-09T06:06:42.940Z", { name: "Kit.zip", path: "/Downloads/Kit.zip" });
+    expect(promoteArchive(fx.ctx, archive.id)).toMatchObject({ promoted: false, setAside: [], snapshot: { id: archive.id } });
+    const upload = deriveSnapshot(fx.ctx, archive.id, { "components/core/Chip.jsx": "export const Chip = 2;\n" }, "After upload (1 file)", "upload", "2026-10-09T07:00:00.000Z");
+    const used = promoteArchive(fx.ctx, archive.id);
+    expect(used.promoted).toBe(true);
+    expect(used.setAside.map((s) => s.id)).toEqual([upload.id]);
+    expect(latestSnapshot(fx.ctx)?.id).toBe(used.snapshot.id);
+    expect(used.snapshot).toMatchObject({ source: "import", label: "Imported Kit.zip", parent: archive.id, exportedAt: "2026-10-09T06:06:42.940Z", archive: { name: "Kit.zip", path: "/Downloads/Kit.zip" }, fileCount: archive.fileCount });
+    // an archive is never trusted as Design's exact state for an upload's safety check
+    expect(used.snapshot.projectUpdatedAt).toBeUndefined();
+    expect(readFileSync(join(snapshotFilesDir(fx.ctx, used.snapshot.id), "components/core/Chip.jsx"), "utf8")).toBe(readFileSync(join(snapshotFilesDir(fx.ctx, archive.id), "components/core/Chip.jsx"), "utf8"));
+    expect(() => promoteArchive(fx.ctx, upload.id)).toThrow("isn't a Project archive");
   });
   it("never lets a file a pull couldn't fetch read as deleted in Design", async () => {
     const fx = makeFixture();

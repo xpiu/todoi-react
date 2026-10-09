@@ -9,7 +9,8 @@ const direction = z.enum(["both", "app-to-design", "design-to-app", "skip"]);
 const directions = z.record(z.string(), direction);
 
 export const comparisonQuery = z.object({ base, snapshot: id.optional(), fresh: z.enum(["0", "1"]).optional() });
-export const mappingQuery = comparisonQuery.pick({ base: true });
+/** Pages that only need the sync point: the Mapping and the archive report */
+export const baseQuery = comparisonQuery.pick({ base: true });
 export const diffQuery = comparisonQuery.omit({ fresh: true }).extend({ unit: z.string().min(1), side: z.enum(["app", "design"]).default("app") });
 export const planRequest = z.object({
   base, snapshot: id.optional(), global: direction, overrides: directions,
@@ -21,6 +22,7 @@ export type RunRequest = z.infer<typeof runRequest>;
 
 export const projectRequest = z.object({ project: z.string() });
 export const pullRequest = z.object({ force: z.boolean().optional() });
+export const archiveUseRequest = z.object({ snapshot: id.optional(), base });
 export const importRequest = z.object({ path: z.string().min(1), label: z.string().optional() });
 export const syncPointRequest = z.object({
   label: z.string().min(1), tag: z.boolean().optional(), snapshot: id.optional(), base,

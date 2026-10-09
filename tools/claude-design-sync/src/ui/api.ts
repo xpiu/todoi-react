@@ -1,5 +1,5 @@
 // Typed calls to the local server, and the words the GUI uses for statuses and directions.
-import { directionsFor } from "../engine/directions";
+import { appMoved, designMoved, directionsFor } from "../engine/directions";
 import type { Comparison, Direction, SnapshotMeta, SyncPoint, Unit, UnitStatus } from "../engine/types";
 import type { Job, JobEvent } from "../server/jobs";
 import type { MeterState } from "../server/meter";
@@ -44,8 +44,8 @@ export interface AppState {
 export interface MappingData {
   lanes: LaneRule[];
   history: MappingEvent[];
-  /** The last time Claude Design was asked whether it changed, while this server has run */
-  lastCheck: { at: string; updatedAt: string | null; stale: boolean } | null;
+  /** The last time Claude Design was asked whether it changed, while this server has run (`archive`: taken from that archive instead) */
+  lastCheck: { at: string; updatedAt: string | null; stale: boolean; archive?: string } | null;
   app: { branch: string | null; commitsSinceBase: number | null };
 }
 
@@ -62,6 +62,31 @@ export interface ExportsInfo {
   checkedAt: string | null;
   lastPull: { at: string; costUsd: number | null; seconds: number | null } | null;
   folders: string[];
+}
+
+/** Kit files that differ between two snapshots (the first ones listed) */
+export interface ArchiveChanges {
+  count: number;
+  files: string[];
+}
+
+/** The newest Project archive, what it changed, and whether the comparison reads it alone */
+export interface ArchiveReport {
+  archive: SnapshotMeta | null;
+  /** Snapshots taken after it (pulls, uploads), which the comparison reads instead */
+  newer?: SnapshotMeta[];
+  sinceArchive?: (ArchiveChanges & { snapshot: SnapshotMeta }) | null;
+  sinceBase?: (ArchiveChanges & { syncPoint: SyncPoint }) | null;
+  /** The comparison was last updated from this archive alone, without asking Claude Design */
+  basis?: { snapshot: string; at: string } | null;
+}
+
+/** An archive made the only Design source; `setAside`: the newer snapshots it replaced */
+export interface ArchiveUsed {
+  snapshot: SnapshotMeta;
+  promoted: boolean;
+  setAside: SnapshotMeta[];
+  comparedAt: string;
 }
 
 /** A refused request, with the rest of the server's answer (e.g. the files a resume would set aside) */
@@ -97,6 +122,9 @@ export const api = {
     return readResponse<Imported>(res);
   },
   exports: () => call<ExportsInfo>("/api/exports"),
+  archive: (base?: string | null) => call<ArchiveReport>(`/api/archive?${new URLSearchParams(base ? { base } : {})}`),
+  /** Make an archive (default: the newest) the only Design source and recompare against it. No tokens */
+  useArchive: (base: string | null, snapshot?: string) => call<ArchiveUsed>("/api/archive/use", { body: { base, snapshot } }),
   /** `hold`: unit ids kept open, still compared against their baseline under `base` */
   setProject: (project: string) => call<{ project: { id: string; name: string } }>("/api/project", { body: { project } }),
   syncPoint: (label: string, tag: boolean, base: string | null, hold: string[]) => call<{ syncPoint: SyncPoint }>("/api/sync-point", { body: { label, tag, base, hold } }),
@@ -222,10 +250,19 @@ export const REFERENCE_NOTE = "Design references are read, never ported.";
 export const KIND_WORD: Record<string, string> = { component: "component", tokens: "tokens", spec: "spec", screen: "screen", card: "preview card", guideline: "guideline" };
 
 export const fmtTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
+/** Features by the side that moved: only the App, only Design, or both */
+export function featureTally(features: Array<{ status: UnitStatus }>) {
+  const t = { app: 0, design: 0, both: 0 };
+  for (const f of features) {
+    if (f.status === "both") t.both++;
+    else if (appMoved(f.status)) t.app++;
+    else if (designMoved(f.status)) t.design++;
+  }
+  return t;
+}
 export const archiveName = (snapshot: SnapshotMeta) => snapshot.archive?.name ?? snapshot.label.replace(/^Imported /, "");
-export const isProjectArchive = (snapshot: SnapshotMeta, projectId: string) => snapshot.source === "import" && (!snapshot.projectId || snapshot.projectId === projectId);
 export { plural } from "../engine/words";
-export { isStoryFile as isStoryPath } from "../engine/paths";
+export { isProjectArchive, isStoryFile as isStoryPath } from "../engine/paths";
 
 /** Default acknowledgement scope: selected work, or an entirely reference-only feature. */
 export function selectedUnitIds(units: Unit[], choices: Record<string, Direction>) {

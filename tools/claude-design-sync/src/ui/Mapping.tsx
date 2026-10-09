@@ -3,7 +3,7 @@
 import { LoaderCircle, RefreshCw, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { api, appMoved, designMoved, followJob, fmtTime, plural, projectUrl, REFERENCE_KINDS, store, type AppState, type Comparison, type LaneId, type MappingData, type MappingEvent, type Unit } from "./api";
+import { api, appMoved, archiveName, designMoved, followJob, fmtTime, plural, projectUrl, REFERENCE_KINDS, store, type AppState, type Comparison, type LaneId, type MappingData, type MappingEvent, type Unit } from "./api";
 import { Fresh, RefreshChoice, useRefreshChoice, type Freshness } from "./DesignRefresh";
 import { MapLane, type LaneFlow, type LaneStats } from "./MapLane";
 import { MergeBanner, useMerge } from "./Merge";
@@ -139,6 +139,8 @@ export function Mapping() {
     choice.hide();
     void recompare().catch(() => {});
   };
+  // The server already recompared against the archive: read that comparison and the archive-based freshness
+  const archiveUsed = () => void step("Reading the comparison from the archive…", () => load()).catch(() => {});
   const pullChosen = () => {
     choice.hide();
     void pullNow().catch(() => {});
@@ -200,7 +202,9 @@ export function Mapping() {
       ? { ok: false, text: "The newest snapshot came from another project.", fix: { label: "Bring it in", tip: TIP.bringIn, run: openChoice } }
       : unpulled
         ? { ok: false, text: `${plural(unpulled, "file")} couldn't be pulled.`, fix: { label: "Bring them in", tip: TIP.bringIn, run: openChoice } }
-        : !last
+        : last?.archive && last.archive === snap.id
+          ? { ok: true, text: `Taken from the Project archive ${archiveName(snap)} alone, ${fmtTime(last.at)}. Claude Design not asked.`, fix: { label: "Check for changes", tip: TIP.check, run: () => void check().catch(() => {}) } }
+        : !last || last.archive
           ? { ok: null, text: "Not asked whether it changed since the tool started.", fix: { label: "Check for changes", tip: TIP.check, run: () => void check().catch(() => {}) } }
           : last.stale
             ? { ok: false, text: `Changed since the snapshot (asked ${fmtTime(last.at)}).`, fix: { label: "Bring the changes in", tip: TIP.bringIn, run: openChoice } }
@@ -258,7 +262,7 @@ export function Mapping() {
               <span style={{ transform: `scaleX(${busy.progress.done / Math.max(1, busy.progress.total)})` }} />
             </div>
           ) : null}
-          {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={pullChosen} onImported={imported} pullBusy={running || !!busy} /> : null}
+          {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={pullChosen} onImported={imported} onArchiveUsed={archiveUsed} pullBusy={running || !!busy} /> : null}
 
           <dl className="cds-map-meta">
             <div>

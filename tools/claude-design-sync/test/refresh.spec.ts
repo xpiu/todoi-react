@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 import { ownWorld } from "./world";
-import { importExport } from "../src/engine/snapshots";
+import { deriveSnapshot, importExport } from "../src/engine/snapshots";
 
 for (const path of ["/", "/mapping"]) {
   test(`offers project archive directly on ${path} without a Claude Code check`, async ({ page }) => {
@@ -121,6 +121,50 @@ for (const path of ["/", "/mapping"]) {
     }
   });
 }
+
+test("updates the whole comparison from the newest archive alone, without model calls", async ({ page }) => {
+  const world = await ownWorld();
+  try {
+    importExport(world.fx.ctx, world.fx.designNowDir, "Imported Older kit.zip", undefined, { name: "Older kit.zip" });
+    const archive = importExport(world.fx.ctx, world.fx.designNowDir, "Imported Newest kit.zip", "2026-10-09T06:06:42.940Z", { name: "Newest kit.zip", path: "/Downloads/Newest kit.zip" });
+    deriveSnapshot(world.fx.ctx, archive.id, { "components/core/Chip.jsx": "export const Chip = 2;\n" }, "After upload (1 file)", "upload");
+    const before = await (await page.request.get(`${world.url}/api/meter`)).json();
+    await page.goto(world.url);
+    const status = page.getByRole("region", { name: "Project archive status" });
+    await expect(status.getByText(/Newest kit\.zip isn't used: “After upload \(1 file\)” from an upload to Claude Design/)).toBeVisible();
+    await expect(status.getByText("Design side: the newest snapshot · not yet updated from this archive alone")).toBeVisible();
+    const changes = status.getByRole("definition").filter({ hasText: "No kit file changed" });
+    await expect(changes.first()).toBeVisible();
+    await expect(status.getByText(/^Compared .* with App @/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Update comparison from this archive" }).click();
+    await expect(status.getByRole("status").filter({ hasText: /from Newest kit\.zip alone, setting aside 1 newer snapshot\./ })).toBeVisible();
+    await expect(status.getByText("Loaded successfully · used for comparison", { exact: true })).toBeVisible();
+    await expect(status.getByText(/^Design side: this archive only · Claude Design not asked/)).toBeVisible();
+    await expect(status.getByText(/isn't used/)).toHaveCount(0);
+    await expect(page.locator(".cds-head-meta").last()).toContainText("Imported Newest kit.zip");
+    const history = status.getByRole("list", { name: "Successful archive imports" });
+    // the re-used archive is listed once, in use
+    await expect(history.getByRole("listitem").nth(0)).toHaveText(/Newest kit\.zip.*In use/);
+    await expect(history.getByRole("listitem").nth(1)).toHaveText(/Older kit\.zip.*Stored/);
+    const state = await (await page.request.get(`${world.url}/api/state`)).json();
+    expect(state.snapshots[0]).toMatchObject({ source: "import", parent: archive.id, archive: { name: "Newest kit.zip" } });
+    const cmp = await (await page.request.get(`${world.url}/api/compare`)).json();
+    expect(cmp.designSnapshot.id).toBe(state.snapshots[0].id);
+
+    // the Mapping page takes Design's freshness from the archive too
+    await page.goto(`${world.url}/mapping`);
+    await expect(page.getByText(/^Taken from the Project archive Newest kit\.zip alone, .*Claude Design not asked\.$/)).toBeVisible();
+    // an older stored archive can be used the same way
+    await page.getByRole("button", { name: "Update comparison from Older kit.zip" }).click();
+    await expect(page.getByRole("region", { name: "Project archive status" }).getByText(/^Design side: this archive only/)).toBeVisible();
+    await expect(page.getByText(/^Taken from the Project archive Older kit\.zip alone/)).toBeVisible();
+    const after = await (await page.request.get(`${world.url}/api/meter`)).json();
+    expect(after.calls).toBe(before.calls);
+  } finally {
+    await world.close();
+  }
+});
 
 test("keeps stored archive history visible when comparison loading fails", async ({ page }) => {
   const world = await ownWorld();

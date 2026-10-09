@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRigh
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, selectedUnitIds, appMoved, designMoved, store, unitDirection, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Imported, type Step } from "./api";
+import { api, featureTally, selectedUnitIds, store, unitDirection, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Imported, type Step } from "./api";
 import { RefreshChoice, useRefreshChoice } from "./DesignRefresh";
 import { FeatureRow, TriCheck } from "./FeatureRow";
 import { MergeBanner, useMerge } from "./Merge";
@@ -119,15 +119,7 @@ export function App() {
 
   const features = useMemo(() => cmp?.features ?? [], [cmp]);
   const visibleSteps = cmp ? steps : [];
-  const tally = useMemo(() => {
-    const t = { app: 0, design: 0, both: 0 };
-    for (const f of features) {
-      if (f.status === "both") t.both++;
-      else if (appMoved(f.status)) t.app++;
-      else if (designMoved(f.status)) t.design++;
-    }
-    return t;
-  }, [features]);
+  const tally = useMemo(() => featureTally(features), [features]);
   // the same rule as the server's plan, so ticks answer at once instead of after its reply
   const unitChoices = useMemo(() => Object.fromEntries(features.flatMap((f) => f.units.map((u) => [u.id, unitDirection(f.directions, u.status, global, overrides[f.id], unitOverrides[u.id], u.kind)]))), [features, global, overrides, unitOverrides]);
   const selections = useMemo(() => Object.fromEntries(features.map((f) => [f.id, featureSelection(f, unitChoices)])), [features, unitChoices]);
@@ -290,7 +282,7 @@ export function App() {
               </div>
             </section>
 
-            {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={() => void pull()} onImported={imported} pullBusy={!!running} /> : null}
+            {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={() => void pull()} onImported={imported} onArchiveUsed={() => refresh()} pullBusy={!!running} /> : null}
 
             <div className="cds-heads">
               <div className="cds-head">

@@ -30,14 +30,15 @@ import { visualCompare } from "../engine/visual";
 import { commitAll, commitsSince, createWorktree, headOf, mergeRun, pushBranch, removeWorktree, ResumeDrift, runCheck, setAside, verifyPort, verifyResume } from "../engine/worktree";
 import { hostingFromEnv, type Hosting } from "./hosting";
 import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
-import { deriveSnapshot, findExports, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, snapRoot, snapshotFilesDir } from "../engine/snapshots";
+import { deriveSnapshot, findExports, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, promoteArchive, snapRoot, snapshotFilesDir } from "../engine/snapshots";
+import { isProjectArchive } from "../engine/paths";
 import type { Comparison } from "../engine/types";
 import { stepsForSelection } from "../engine/selection";
 import { Jobs, type Job } from "./jobs";
 import { Meter } from "./meter";
-import { mappingHistory } from "./mapping";
+import { mappingHistory, snapshotChanges } from "./mapping";
 import { buildUi, distDir } from "./ui-build";
-import { comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mappingQuery, mergeRequest, planRequest, resumeRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
+import { archiveUseRequest, baseQuery, comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mergeRequest, planRequest, resumeRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
 
 /** Larger than any Claude Design export; refuses a mistaken pick before it fills memory */
 const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
@@ -53,8 +54,11 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   const jobs = new Jobs(ctx);
   const meter = new Meter();
   const cache = new Map<string, Comparison>();
-  /** The last time Claude Design was asked whether it changed (this server's lifetime) */
-  let lastCheck: { at: string; updatedAt: string | null; stale: boolean } | null = null;
+  /**
+   * The last time Claude Design was asked whether it changed (this server's lifetime). `archive`: Design's state
+   * was instead taken from that Project archive alone, on the developer's word, without asking Claude Design.
+   */
+  let lastCheck: { at: string; updatedAt: string | null; stale: boolean; archive?: string } | null = null;
   // None in a fake run unless CDS_EXPORTS is set
   const exportDirs = opts.fake && !process.env.CDS_EXPORTS ? [] : defaultExportDirs();
 
@@ -174,7 +178,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   );
 
   // The Mapping page: the lane rules from config.json, recent traffic, and how fresh each side's data is
-  app.get("/api/mapping", validate("query", mappingQuery), (c) => {
+  app.get("/api/mapping", validate("query", baseQuery), (c) => {
     try {
       const base = baseFor(c.req.valid("query").base);
       let branch: string | null = null;
@@ -358,6 +362,48 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     const pull = jobs.list().find((j) => j.kind === "pull" && j.snapshotId && j.state === "done");
     const lastPull = pull ? { at: pull.endedAt ?? pull.startedAt, costUsd: pull.costUsd ?? null, seconds: pull.endedAt ? Math.round((Date.parse(pull.endedAt) - Date.parse(pull.startedAt)) / 1000) : null } : null;
     return c.json({ exports, designUpdatedAt: updatedAt, checkedAt: lastCheck?.at ?? null, lastPull, folders: exportDirs });
+  });
+
+  // The newest Project archive: whether the comparison reads it, what it changed, and what would set it aside
+  const FILES_SHOWN = 40;
+  const changes = (from: string, to: string) => {
+    const files = snapshotChanges(ctx, from, to);
+    return { count: files.length, files: files.slice(0, FILES_SHOWN) };
+  };
+  app.get("/api/archive", validate("query", baseQuery), (c) => {
+    const snaps = listSnapshots(ctx);
+    const archives = snaps.filter((s) => isProjectArchive(s, ctx.config.design.projectId));
+    const archive = archives[0];
+    if (!archive) return c.json({ archive: null });
+    // A re-used archive is a copy: compare with the archive before its original
+    const origin = archive.parent ?? archive.id;
+    const before = archives.find((s) => s !== archive && s.id !== origin && (s.parent ?? s.id) !== origin) ?? null;
+    const base = baseFor(c.req.valid("query").base);
+    return c.json({
+      archive,
+      newer: snaps.slice(0, snaps.indexOf(archive)),
+      sinceArchive: before ? { snapshot: before, ...changes(before.id, archive.id) } : null,
+      sinceBase: base?.designSnapshot && getSnapshot(ctx, base.designSnapshot) ? { syncPoint: base, ...changes(base.designSnapshot, archive.id) } : null,
+      basis: lastCheck?.archive ? { snapshot: lastCheck.archive, at: lastCheck.at } : null,
+    });
+  });
+
+  // "Compare from this archive only": it becomes Design now (newer pulls and uploads set aside), Design's
+  // freshness is taken from it instead of asking Claude Design, and the App is recompared against it. No tokens.
+  app.post("/api/archive/use", validate("json", archiveUseRequest), (c) => {
+    if (jobs.running()) return c.json({ error: "A job is running. Update the comparison when it has finished." }, 409);
+    const { snapshot, base } = c.req.valid("json");
+    const id = snapshot ?? listSnapshots(ctx).find((s) => isProjectArchive(s, ctx.config.design.projectId))?.id;
+    if (!id) return c.json({ error: "No Project archive has been imported yet. Import one first." }, 400);
+    try {
+      const used = promoteArchive(ctx, id);
+      cache.clear();
+      lastCheck = { at: new Date().toISOString(), updatedAt: null, stale: false, archive: used.snapshot.id };
+      const cmp = getComparison(base, used.snapshot.id, true);
+      return c.json({ ...used, comparedAt: cmp.generatedAt });
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
+    }
   });
 
   app.post("/api/sync-point", validate("json", syncPointRequest), async (c) => {
