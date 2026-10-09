@@ -335,7 +335,7 @@ em {
     transition: none;
   }
   .cds-flame.is-burning *,
-  .cds-usage-dot {
+  .cds-live {
     animation: none !important;
   }
 }
@@ -2036,12 +2036,9 @@ em {
 .cds-usage.is-live {
   color: var(--ink-900);
 }
-.cds-usage-dot {
+.cds-usage .cds-live {
   align-self: center;
-  width: 5px;
-  height: 5px;
-  background: var(--ink-900);
-  animation: cds-pulse 1.2s var(--ease-standard) infinite alternate;
+  margin-left: 0;
 }
 .cds-usage time {
   color: var(--ink-400);
@@ -3378,9 +3375,4 @@ em {
 .cds-jobview-controls {
   display: flex;
   gap: 14px;
-}
-.cds-jobview-controls .cds-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }

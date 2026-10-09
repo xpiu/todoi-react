@@ -7,7 +7,7 @@ import { CircleAlert, Check, GitMerge, LoaderCircle, Maximize2, Minimize2, Pause
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type ApiError, type AppState, type FidelityFinding, type Job } from "./api";
-import { canResume, failedPorts, keepsRunFiles } from "../engine/approvals";
+import { canPause, canResume, failedPorts, isOpen, keepsRunFiles } from "../engine/approvals";
 import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
@@ -22,7 +22,7 @@ export function Activity({ state, merge, focus, onFocus, wide, onToggleWide, exp
   const logRef = useRef<HTMLOListElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [historyLimit, setHistoryLimit] = useState(8);
-  const unfinished = (j: AppState["jobs"][number]) => j.state === "running" || j.state === "awaiting-approval" || j.state === "paused" || appPending(j);
+  const unfinished = (j: AppState["jobs"][number]) => isOpen(j) || appPending(j);
   const history = jobs.filter((j) => !unfinished(j));
   const visibleIds = new Set(history.slice(0, historyLimit).map((j) => j.id));
   const visibleJobs = [...jobs.filter(unfinished), ...history.filter((j) => visibleIds.has(j.id) || j.id === id)];
@@ -35,7 +35,7 @@ export function Activity({ state, merge, focus, onFocus, wide, onToggleWide, exp
   useEffect(() => {
     if (!id) return;
     return subscribeJob(id, (nextJob, event) => {
-      setJob((prev) => event ? { ...nextJob, events: [...(prev?.id === nextJob.id ? prev.events : []), event] } : nextJob);
+      setJob(nextJob);
       if (event?.level === "done" || event?.level === "error") changed.current();
     });
   }, [id]);
@@ -216,15 +216,16 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
   const stageId = job.stage?.split("/").pop();
   const app = job.app;
   const uploadWaiting = job.state === "awaiting-approval" && uploadPending(job);
+  const paused = job.state === "paused";
   // the request handed to Claude Code still names exactly the ticked files
   const handoff = job.handoff && job.handoff.paths.length === picked.size && job.handoff.paths.every((p) => picked.has(p)) ? job.handoff : null;
   // what Discard would give up, in words
   const held = [
     ...(uploadWaiting ? [`${plural(staged.length, "staged kit file")} (nothing goes to Claude Design)`] : []),
     ...(app && appPending(job) ? [`branch ${app.branch} with ${plural(app.commits.length, "commit")} (nothing reaches ${app.into})`] : []),
-    ...(job.state === "paused" ? [[job.stage ? "its kit staging copy (nothing goes to Claude Design)" : "", app ? `branch ${app.branch} (nothing reaches ${app.into})` : ""].filter(Boolean).join(" and ") || "the paused run"] : []),
+    ...(paused && job.stage ? ["its kit staging copy (nothing goes to Claude Design)"] : []),
+    ...(paused && app ? [`branch ${app.branch} (nothing reaches ${app.into})`] : []),
   ];
-  const paused = job.state === "paused";
   const setAsideCount = app?.state === "ready" ? failedPorts(job).length : 0;
   const maxAttempts = Math.max(1, ...failedPorts(job).map((s) => s.attempts?.length ?? 1));
   const resume = (setAside: boolean) => act(async () => {
@@ -286,7 +287,7 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
           {job.state === "running" ? (
             <span className="cds-jobview-controls">
               {job.kind === "run" ? (
-                <button type="button" className="cds-link" disabled={busy || job.steps.some((s) => s.id === "upload" && s.state === "running")} onClick={() => void act(() => api.pause(job.id))} data-tip="Pause now to come back later: the running step stops and goes back to waiting, finished steps, the staging copy and the App branch are kept, and Resume goes on from here. Spends nothing while paused">
+                <button type="button" className="cds-link" disabled={busy || !canPause(job)} onClick={() => void act(() => api.pause(job.id))} data-tip="Pause now to come back later: the running step stops and goes back to waiting, finished steps, the staging copy and the App branch are kept, and Resume goes on from here. Spends nothing while paused">
                   <Pause size={12} strokeWidth={1.75} aria-hidden /> Pause
                 </button>
               ) : null}

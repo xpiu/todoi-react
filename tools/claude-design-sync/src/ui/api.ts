@@ -152,13 +152,23 @@ export const api = {
 export function subscribeJob(id: string, onJob: (job: Job, event?: JobEvent) => void): () => void {
   const es = new EventSource(`/api/jobs/${id}/events`);
   let live = true;
+  // the log arrives whole once, then entry by entry; updates leave it out, so it's kept here
+  let events: JobEvent[] = [];
+  const read = <T,>(e: Event) => JSON.parse((e as MessageEvent).data) as T;
   es.addEventListener("job", (e) => {
-    if (live) onJob(JSON.parse((e as MessageEvent).data) as Job);
+    if (!live) return;
+    const job = read<Job>(e);
+    events = job.events;
+    onJob(job);
+  });
+  es.addEventListener("update", (e) => {
+    if (live) onJob({ ...read<Job>(e), events });
   });
   es.addEventListener("event", (e) => {
     if (!live) return;
-    const { job, event } = JSON.parse((e as MessageEvent).data) as { job: Job; event: JobEvent };
-    onJob(job, event);
+    const { job, event } = read<{ job: Job; event: JobEvent }>(e);
+    events = [...events, event].slice(-2000);
+    onJob({ ...job, events }, event);
   });
   return () => {
     live = false;

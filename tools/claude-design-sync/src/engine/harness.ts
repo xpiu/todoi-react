@@ -114,15 +114,14 @@ export function parseClaudeLine(line: string): HarnessEvent[] {
     return line.trim() ? [{ type: "text", text: line }] : [];
   }
   const out: HarnessEvent[] = [];
-  const msg = e.message as { model?: string; content?: Array<Record<string, unknown>> } | undefined;
+  const msg = e.message as { id?: unknown; model?: string; usage?: Record<string, unknown>; content?: Array<Record<string, unknown>> } | undefined;
   const model = e.type === "system" && e.subtype === "init" ? e.model : msg?.model;
   if (typeof model === "string") out.push({ type: "runtime", model });
-  const usage = (msg as { usage?: Record<string, unknown> } | undefined)?.usage;
-  const id = (msg as { id?: unknown } | undefined)?.id;
-  if (e.type === "assistant" && usage && typeof id === "string") {
+  const usage = msg?.usage;
+  if (e.type === "assistant" && usage && typeof msg.id === "string") {
     const n = (v: unknown) => (typeof v === "number" ? v : 0);
-    const split = usage.cache_creation as Record<string, unknown> | undefined;
-    out.push({ type: "usage", messageId: id, model: msg?.model, tokens: { input: n(usage.input_tokens), output: n(usage.output_tokens), cacheRead: n(usage.cache_read_input_tokens), cacheWrite: n(usage.cache_creation_input_tokens), cacheWrite1h: n(split?.ephemeral_1h_input_tokens) } });
+    const hour = n((usage.cache_creation as Record<string, unknown> | undefined)?.ephemeral_1h_input_tokens);
+    out.push({ type: "usage", messageId: msg.id, model: msg.model, tokens: { input: n(usage.input_tokens), output: n(usage.output_tokens), cacheRead: n(usage.cache_read_input_tokens), cacheWrite: n(usage.cache_creation_input_tokens) - hour, cacheWrite1h: hour } });
   }
   if (e.type === "assistant") for (const c of msg?.content ?? []) {
     if (c.type === "text" && typeof c.text === "string" && c.text.trim()) out.push({ type: "text", text: c.text });

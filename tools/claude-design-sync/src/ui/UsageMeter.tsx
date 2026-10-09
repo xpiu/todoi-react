@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { Job } from "./api";
+import { totalTokens } from "../engine/pricing";
 
 const fmtTokens = (n: number) => (n < 1000 ? String(Math.round(n)) : n < 1_000_000 ? `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k` : `${(n / 1_000_000).toFixed(2)}M`);
 const fmtUsd = (n: number) => `$${n < 10 ? n.toFixed(2) : n.toFixed(1)}`;
@@ -39,9 +40,9 @@ function useCountUp(target: number, ms = 600): number {
 export function UsageMeter({ job }: { job: Job }) {
   const u = job.usage;
   const live = job.state === "running";
-  const tokens = u ? u.input + u.output + u.cacheRead + u.cacheWrite : 0;
-  // jobs from before the meter only know what Claude Code reported
-  const usd = u?.usd ?? job.costUsd ?? 0;
+  const tokens = u ? totalTokens(u) : 0;
+  // what finished calls reported, plus the estimate for a call still running
+  const usd = (job.costUsd ?? 0) + (u?.estimatedUsd ?? 0);
   const shownUsd = useCountUp(usd);
   const shownTokens = useCountUp(tokens);
   if (!live && !u && !job.costUsd) return null;
@@ -49,14 +50,14 @@ export function UsageMeter({ job }: { job: Job }) {
   const at = u?.at ?? job.endedAt;
   const tip = [
     live ? "Token meter for this job, very rough: it counts up while Claude Code works." : `Token meter for this job: what its Claude Code calls used${at ? `, last at ${new Date(at).toLocaleTimeString("en-GB")}` : ""}.`,
-    u ? `Input ${full(u.input)} · output ${full(u.output)} · cache read ${full(u.cacheRead)} · cache write ${full(u.cacheWrite)} tokens.` : "Token counts weren't recorded for this job; the cost is what Claude Code reported.",
-    u ? `${fmtUsd(u.usd - u.estimatedUsd)} reported by Claude Code for finished calls${u.estimatedUsd > 0 ? `; about ${fmtUsd(u.estimatedUsd)} estimated from list prices for ${live ? "the call still running" : "calls that stopped before reporting"}` : ""}.` : null,
+    u ? `Input ${full(u.input)} · output ${full(u.output)} · cache read ${full(u.cacheRead)} · cache write ${full(u.cacheWrite + u.cacheWrite1h)} tokens.` : "Token counts weren't recorded for this job; the cost is what Claude Code reported.",
+    u ? `${fmtUsd(job.costUsd ?? 0)} reported by Claude Code for finished calls${u.estimatedUsd > 0 ? `; about ${fmtUsd(u.estimatedUsd)} estimated from list prices for ${live ? "the call still running" : "calls that stopped before reporting"}` : ""}.` : null,
     "Output is counted as it streams, before thinking tokens, so a running estimate errs low until the call reports.",
   ].filter(Boolean).join("\n");
   const label = live ? `Spending now: about ${fmtUsd(usd)}, ${fmtTokens(tokens)} tokens` : `Spent ${rough ? "about " : ""}${fmtUsd(usd)}${u ? `, ${fmtTokens(tokens)} tokens` : ""}${at ? `, last at ${clock(at)}` : ""}`;
   return (
     <span className={`cds-usage ${live ? "is-live" : ""}`} role="img" tabIndex={0} aria-label={label} data-tip={tip}>
-      {live ? <span className="cds-usage-dot" aria-hidden /> : null}
+      {live ? <span className="cds-live" aria-hidden /> : null}
       <span aria-hidden>{live || rough ? "≈ " : ""}{fmtUsd(shownUsd)}</span>
       {u || live ? <span aria-hidden>· {fmtTokens(shownTokens)} tok</span> : null}
       {!live && at ? <time aria-hidden dateTime={at}>· {clock(at)}</time> : null}

@@ -4,6 +4,7 @@
 // it (GET /api/meter) rather than holding a stream open: a page already keeps a job stream or two, and a
 // browser allows six connections per host.
 import type { Runner } from "../engine/designsync";
+import { CallUsage, type UsageChange } from "../engine/pricing";
 
 export interface Burning {
   id: number;
@@ -27,6 +28,8 @@ export class Meter {
   private calls = 0;
   private spentUsd = 0;
   private readonly since = new Date().toISOString();
+  /** `onUsage`: a job's calls report their tokens and cost here as they stream, and when they end */
+  constructor(private onUsage?: (jobId: string, change: UsageChange) => void) {}
 
   state(): MeterState {
     return { burning: [...this.live.values()], calls: this.calls, spentUsd: this.spentUsd, since: this.since };
@@ -37,9 +40,16 @@ export class Meter {
     return async (prompt, opts, on) => {
       const id = this.next++;
       this.live.set(id, { id, what, since: new Date().toISOString(), ...(jobId ? { jobId } : {}) });
+      const usage = new CallUsage();
       try {
-        const done = await runner(prompt, opts, on);
-        if (typeof done.costUsd === "number") this.spentUsd += done.costUsd;
+        const done = await runner(prompt, opts, (e) => {
+          if (e.type === "usage" && jobId) this.onUsage?.(jobId, usage.add(e.messageId, e.tokens, e.model));
+          on(e);
+        });
+        if (typeof done.costUsd === "number") {
+          this.spentUsd += done.costUsd;
+          if (jobId) this.onUsage?.(jobId, usage.report(done.costUsd));
+        }
         return done;
       } finally {
         this.calls++;

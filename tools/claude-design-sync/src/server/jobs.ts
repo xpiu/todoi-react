@@ -8,8 +8,8 @@ import type { HarnessKind } from "../engine/harness";
 import type { Adaptation } from "../engine/adaptation";
 import type { AlreadyImplemented } from "../engine/worktree";
 import type { Ctx } from "../engine/config";
-import type { Tokens } from "../engine/pricing";
-import { appPending, canResume, keepsRunFiles, uploadPending } from "../engine/approvals";
+import { addTokens, NO_TOKENS, type Tokens, type UsageChange } from "../engine/pricing";
+import { appPending, canPause, canResume, isOpen, keepsRunFiles, uploadPending } from "../engine/approvals";
 import { removeWorktree, type AppRun } from "../engine/worktree";
 
 export type JobKind = "pull" | "status" | "run" | "upload";
@@ -66,8 +66,8 @@ export interface Job {
   /** `conflict`: why uploading this file would overwrite newer Design work (set by the pre-upload check) */
   staged?: Array<{ path: string; status: "new" | "changed"; conflict?: string }>;
   cards?: Array<{ card: string; errors: string[] }>;
-  /** What the tool drafted from Storybook per component: the .jsx it is for, and a hash of each drafted file (kept so a paused run still knows after Resume) */
-  drafts?: Array<{ jsx: string; files: Record<string, string> }>;
+  /** What the tool drafted from Storybook, per component .jsx: a hash of each drafted file (kept so a paused run still knows after Resume) */
+  drafts?: Record<string, Record<string, string | null>>;
   /** Staged files the tool wrote itself, not the AI: drafts from the App's Storybook (then maybe refined by the AI), and Minimal twins */
   origin?: Record<string, "storybook" | "storybook-refined" | "twin">;
   /** Why a staged file deserves a look before it goes up (a twin that couldn't follow its card, render errors, a draft without its component) */
@@ -87,11 +87,10 @@ export interface Job {
   syncPointId?: string;
   costUsd?: number;
   /**
-   * The job's token meter: what its Claude Code calls used, and their cost. `usd` holds the cost each finished
-   * call reported, plus a list-price estimate for a call still running (or one stopped before it reported),
-   * which `estimatedUsd` counts; `at` is the last time it moved.
+   * The job's token meter: the tokens its Claude Code calls used, and a list-price estimate for a call still
+   * running (or one stopped before it reported) on top of `costUsd`; `at` is the last time it moved.
    */
-  usage?: Tokens & { usd: number; estimatedUsd: number; at: string };
+  usage?: Tokens & { estimatedUsd: number; at: string };
   result?: string;
   baseId?: string | null;
   snapshotId?: string | null;
@@ -104,12 +103,15 @@ export interface SavedPlan { comparison: Comparison; steps: Step[]; harness: Har
 
 type Listener = (e: { job: Job; event?: JobEvent }) => void;
 
+/** The abort reason of a pause, so a stopped step can tell a pause from Stop */
+const PAUSED = "paused";
+
 export class Jobs {
   private jobs = new Map<string, Job>();
   private listeners = new Map<string, Set<Listener>>();
   private aborts = new Map<string, AbortController>();
-  /** Runs asked to pause: their abort ends the running step, and the run parks instead of stopping */
-  private pausing = new Set<string>();
+  /** When each job's streamed usage last reached the GUI */
+  private usageShownAt = new Map<string, number>();
   constructor(private ctx: Ctx) {
     const dir = this.dir();
     if (existsSync(dir)) for (const f of readdirSync(dir)) {
@@ -157,7 +159,7 @@ export class Jobs {
       }
     };
     const stages = join(this.ctx.state, "stage");
-    const staged = new Set(this.list().filter((j) => (j.state === "running" || j.state === "awaiting-approval" || j.state === "paused") && j.stage).map((j) => resolve(j.stage!)));
+    const staged = new Set(this.list().filter((j) => isOpen(j) && j.stage).map((j) => resolve(j.stage!)));
     for (const d of entries(stages)) if (!staged.has(resolve(stages, d))) drop(join(stages, d));
     const kept = (id: string) => {
       const j = this.jobs.get(id);
@@ -209,12 +211,15 @@ export class Jobs {
     const path = join(this.ctx.state, "plans", `${j.id}.json`);
     return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) as SavedPlan : null;
   }
+  /** Go on with a run: a paused one from its pending steps; a failed or stopped one reruns what didn't finish */
   resume(j: Job) {
     if (!canResume(j)) throw new Error("This run cannot be resumed");
     this.aborts.set(j.id, new AbortController());
+    const paused = j.state === "paused";
     j.state = "running";
     j.endedAt = undefined;
     j.result = undefined;
+    if (paused) return this.update(j, {});
     if (j.app) Object.assign(j.app, { state: "working", reason: undefined, check: undefined, review: undefined });
     for (const step of j.steps) if (step.state !== "done" || step.kind === "check" || step.kind === "merge") {
       // Older runs recorded validation failures only in the step summary.
@@ -248,33 +253,23 @@ export class Jobs {
   signal(id: string) {
     return this.aborts.get(id)?.signal;
   }
-  /** Ask a running run to pause: its AI call or check stops now, and the run parks at that step */
+  /** Ask a running run to pause: its AI call or check stops now (the abort says why), and the run parks at that step */
   pause(id: string): boolean {
     const j = this.jobs.get(id);
-    if (!j || j.kind !== "run" || j.state !== "running") return false;
-    this.pausing.add(id);
-    this.aborts.get(id)?.abort();
+    if (!j || !canPause(j)) return false;
+    this.aborts.get(id)?.abort(PAUSED);
     return true;
   }
   isPausing(id: string) {
-    return this.pausing.has(id);
+    return this.aborts.get(id)?.signal.reason === PAUSED;
   }
   /** The run stopped where it was asked to: it waits, holding its stage and branch, until Resume or Discard */
   park(j: Job, text: string) {
-    this.pausing.delete(j.id);
     if (j.state !== "running") return;
     j.state = "paused";
     j.result = text;
     this.persist(j);
     this.emit(j, { at: new Date().toISOString(), level: "done", text });
-  }
-  /** Go on with a paused run: a fresh abort signal, and its pending steps run from where it stopped */
-  unpause(j: Job) {
-    if (j.state !== "paused") throw new Error("This run isn't paused");
-    this.aborts.set(j.id, new AbortController());
-    j.state = "running";
-    j.result = undefined;
-    this.update(j, {});
   }
   cancel(id: string) {
     this.aborts.get(id)?.abort();
@@ -297,10 +292,9 @@ export class Jobs {
     if (uploadPending(j)) {
       this.step(j, "upload", { state: "skipped", summary: "Discarded" });
       notes.push("nothing uploaded");
-    }
+    } else if (j.state === "paused" && j.stage) notes.push("its staging copy deleted, nothing uploaded");
     const text = `Discarded: ${notes.join("; ") || "nothing was left waiting"}`;
-    if (j.state === "paused" && j.stage) notes.push("its staging copy deleted, nothing uploaded");
-    if (j.state === "awaiting-approval" || j.state === "paused") this.finish(j, "cancelled", text);
+    if (isOpen(j)) this.finish(j, "cancelled", text);
     else {
       this.log(j, "done", text);
       this.tidy(j);
@@ -326,14 +320,29 @@ export class Jobs {
     this.emit(j);
   }
   finish(j: Job, state: JobState, result?: string) {
-    if (j.state !== "running" && j.state !== "awaiting-approval" && j.state !== "paused") return;
-    this.pausing.delete(j.id);
+    if (!isOpen(j)) return;
     j.state = state;
     j.result = result;
     if (state !== "awaiting-approval") j.endedAt = new Date().toISOString();
     this.persist(j);
     this.emit(j, { at: new Date().toISOString(), level: state === "failed" ? "error" : "done", text: result ?? state });
     this.tidy(j);
+  }
+  /**
+   * Count a Claude Code call's usage on its job. Streamed usage moves a few numbers several times a second:
+   * it reaches the GUI once a second and is saved with the next log line; a call's end is saved at once.
+   */
+  addUsage(id: string, change: UsageChange) {
+    const j = this.jobs.get(id);
+    if (!j) return;
+    const u = j.usage ?? { ...NO_TOKENS, estimatedUsd: 0, at: "" };
+    j.usage = { ...addTokens(u, change.tokens), estimatedUsd: Math.max(0, u.estimatedUsd + change.estimatedUsd), at: new Date().toISOString() };
+    if (change.reportedUsd !== undefined) {
+      j.costUsd = (j.costUsd ?? 0) + change.reportedUsd;
+      this.persist(j);
+    } else if (Date.now() - (this.usageShownAt.get(id) ?? 0) < 1000) return;
+    this.usageShownAt.set(id, Date.now());
+    this.emit(j);
   }
   subscribe(id: string, fn: Listener) {
     const set = this.listeners.get(id) ?? new Set();

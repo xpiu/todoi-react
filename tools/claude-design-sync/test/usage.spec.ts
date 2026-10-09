@@ -27,7 +27,7 @@ test("the log's token meter counts while a run works, then keeps the total with 
     const calls = job.steps.filter((s) => s.kind === "ai-push").length;
     // every call reported, so the total is exact: no estimate left
     expect(job.usage?.estimatedUsd).toBe(0);
-    expect(job.usage?.usd).toBeCloseTo(0.05 * calls, 5);
+    expect(job.costUsd).toBeCloseTo(0.05 * calls, 5);
     expect(job.usage?.output).toBe(400 * calls);
     const at = new Date(job.usage!.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     await expect(meter).toHaveAccessibleName(`Spent $${(0.05 * calls).toFixed(2)}, ${((31_600 * calls) / 1000).toFixed(calls * 31_600 < 10_000 ? 1 : 0)}k tokens, last at ${at}`);

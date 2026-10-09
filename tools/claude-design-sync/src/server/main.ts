@@ -1,7 +1,6 @@
 // Claude Design Sync server. Binds to 127.0.0.1 unless hosted (see hosting.ts, which then requires a login);
 // every POST needs the x-cds header so another site in the browser can't trigger runs.
 import { serve } from "@hono/node-server";
-import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { Hono } from "hono";
@@ -16,7 +15,7 @@ import { directionsFor } from "../engine/directions";
 import { defaultCtx, exportDirs as defaultExportDirs, saveConfig, TOOL_DIR, type Ctx } from "../engine/config";
 import { checkUpload, createDesignRunner, downloadedAfter, exportCovers, findProject, isCurrent, projectStatus, pullIfChanged, uploadRequest as uploadHandoff, verifyUpload, type Runner } from "../engine/designsync";
 import { fakeRunner } from "../engine/fakeHarness";
-import { fileWithin, readText } from "../engine/fsutil";
+import { fileWithin, hash, readText } from "../engine/fsutil";
 import { reviewDraft } from "../engine/fidelity";
 import { plural } from "../engine/words";
 import { commitsAfter, diffNoIndex, diffSince, git, head, isDirty, showAt } from "../engine/git";
@@ -24,7 +23,6 @@ import { probeHarness, runHarness, type HarnessEvent, type HarnessInfo, type Har
 import { sections } from "../engine/inventory";
 import { laneRules } from "../engine/lanes";
 import { parseProjectRef } from "../engine/project";
-import { addTokens, estimateUsd, NO_TOKENS, type Tokens } from "../engine/pricing";
 import { buildBundle, checkCards, resolveKitFile } from "../engine/kit";
 import { kitHome, syncTwins, twinPath, writeDrafts } from "../engine/kitDraft";
 import { storybook, type Storybook } from "../engine/storybook";
@@ -42,9 +40,6 @@ import { mappingHistory, snapshotChanges } from "./mapping";
 import { buildUi, distDir } from "./ui-build";
 import { archiveUseRequest, baseQuery, comparisonQuery, diffQuery, importRequest, jobParam, kitParam, mergeRequest, planRequest, resumeRequest, projectRequest, pullRequest, runRequest, syncPointRequest, uploadRequest, validate, visualParam, visualRequest, type PlanRequest } from "./requests";
 
-/** Enough to tell whether a drafted file was changed afterwards */
-const textHash = (text: string) => createHash("sha1").update(text).digest("hex");
-
 /** Larger than any Claude Design export; refuses a mistaken pick before it fills memory */
 const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
 
@@ -57,7 +52,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   app.get("/healthz", (c) => c.text("ok"));
   if (opts.hosting?.auth) app.use("*", basicAuth(opts.hosting.auth));
   const jobs = new Jobs(ctx);
-  const meter = new Meter();
+  const meter = new Meter((id, change) => jobs.addUsage(id, change));
   const cache = new Map<string, Comparison>();
   /**
    * The last time Claude Design was asked whether it changed (this server's lifetime). `archive`: Design's state
@@ -77,6 +72,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     meter.meter(opts.fake
       ? fakeRunner(opts.fake.designDir, ctx.repo, opts.fake)
       : createDesignRunner(ctx, job ? jobs.signal(job.id) : undefined), what, job?.id);
+
+  /** Why a job's AI call stopped early, if it was stopped */
+  const stopped = (job: Job) => (jobs.isPausing(job.id) ? "paused" : jobs.signal(job.id)?.aborted ? "cancelled" : undefined);
 
   /** App ports run in their worktree (`cwd`, reading Design snapshots via addDirs); kit ports in the repo, writing the stage */
   const implement = async (kind: HarnessKind, job: Job, step: Step, prompt: string, where: { cwd?: string; addDirs?: string[] }) => {
@@ -105,7 +103,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         log(e);
       });
       attempt.models = [...new Set([...attempt.models, ...(done.models ?? [])])];
-      Object.assign(attempt, { turns: done.turns, costUsd: done.costUsd, stopReason: jobs.signal(job.id)?.aborted ? "cancelled" : done.stopReason ?? (done.ok ? "success" : "failed") });
+      Object.assign(attempt, { turns: done.turns, costUsd: done.costUsd, stopReason: stopped(job) ?? done.stopReason ?? (done.ok ? "success" : "failed") });
       if (!done.ok) throw new Error(done.result || "The harness reported a failure");
       // Stored plans from before adaptation reports remain resumable.
       if (step.brief?.includes(ADAPTATION_MARKER)) {
@@ -117,8 +115,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       }
       return done;
     } catch (e) {
-      attempt.error = (e as Error).message;
-      attempt.stopReason ??= jobs.signal(job.id)?.aborted ? "cancelled" : "error";
+      // a paused attempt didn't fail: Resume mustn't brief the next one about an error
+      if (!jobs.isPausing(job.id)) attempt.error = (e as Error).message;
+      attempt.stopReason ??= stopped(job) ?? "error";
       jobs.step(job, step.id, { state: "failed", summary: (e as Error).message.slice(0, 600) });
       throw e;
     } finally {
@@ -128,39 +127,10 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     }
   };
 
-  /** One Claude Code call's log, and its share of the job's token meter */
-  const logHarness = (job: Job, stepId?: string) => {
-    // the call's messages, each with the latest usage Claude Code streamed for it
-    const messages = new Map<string, { tokens: Tokens; model?: string }>();
-    // what this call has added to the job's meter so far
-    let counted = { tokens: NO_TOKENS, usd: 0 };
-    let shownAt = 0;
-    const count = (tokens: Tokens, usd: number, reported: boolean) => {
-      const u = job.usage ?? { ...NO_TOKENS, usd: 0, estimatedUsd: 0, at: "" };
-      // a reported cost replaces this call's estimate; an estimate replaces the last one
-      const estimatedUsd = Math.max(0, u.estimatedUsd - counted.usd + (reported ? 0 : usd));
-      job.usage = { ...addTokens(u, addTokens(tokens, counted.tokens, -1)), usd: u.usd - counted.usd + usd, estimatedUsd, at: new Date().toISOString() };
-      counted = { tokens, usd };
-      // Claude Code streams usage several times a second: the GUI hears of it once a second, and when the call ends
-      if (reported || Date.now() - shownAt > 1000) {
-        shownAt = Date.now();
-        jobs.update(job, {});
-      }
-    };
-    return (e: HarnessEvent) => {
-      if (e.type === "text") jobs.log(job, "ai", e.text, stepId);
-      else if (e.type === "tool") jobs.log(job, "tool", `${e.name} ${summarise(e.input)}`, stepId);
-      else if (e.type === "usage") {
-        messages.set(e.messageId, { tokens: e.tokens, model: e.model });
-        const all = [...messages.values()];
-        count(all.reduce((t, m) => addTokens(t, m.tokens), NO_TOKENS), all.reduce((sum, m) => sum + estimateUsd(m.tokens, m.model), 0), false);
-      } else if (e.type === "done") {
-        if (typeof e.costUsd === "number") {
-          job.costUsd = (job.costUsd ?? 0) + e.costUsd;
-          count(counted.tokens, e.costUsd, true);
-        }
-      } else if (e.type === "stderr" && e.text.trim()) jobs.log(job, "warn", e.text.trim(), stepId);
-    };
+  const logHarness = (job: Job, stepId?: string) => (e: HarnessEvent) => {
+    if (e.type === "text") jobs.log(job, "ai", e.text, stepId);
+    else if (e.type === "tool") jobs.log(job, "tool", `${e.name} ${summarise(e.input)}`, stepId);
+    else if (e.type === "stderr" && e.text.trim()) jobs.log(job, "warn", e.text.trim(), stepId);
   };
 
   const baseFor = (id?: string | null) => {
@@ -474,14 +444,13 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
   app.post("/api/jobs/:id/resume", validate("json", resumeRequest), (c) => {
     if (jobs.running()) return c.json({ error: "Another job is running" }, 409);
     const job = jobs.get(c.req.param("id"));
+    if (!job || !canResume(job)) return c.json({ error: "This run has no unfinished plan to resume" }, 400);
     // a paused run goes on from where it stopped; a failed or stopped one resumes on its kept branch (App-only)
-    const paused = job?.state === "paused";
-    if (!job || !(paused || canResume(job))) return c.json({ error: "This run has no unfinished App-only plan to resume" }, 400);
+    const paused = job.state === "paused";
     try {
-      if (paused && job.stage && !existsSync(job.stage)) throw new Error("The paused run's staging copy is missing. Discard the run and start a new one.");
+      if (job.stage && !existsSync(job.stage)) throw new Error("The run's staging copy is missing. Discard the run and start a new one.");
       const drift = job.app ? verifyResume(job.app, { allowDrift: c.req.valid("json").setAside }) : [];
       let plan = jobs.plan(job);
-      if (!plan && paused) throw new Error("The paused run's saved plan is missing. Discard the run and start a new one.");
       if (!plan) {
         // Older runs stored step ids and coverage but not briefs. Recover only the exact original steps.
         if (!job.snapshotId || !getSnapshot(ctx, job.snapshotId)) throw new Error("The original Design snapshot is missing. Start a new run.");
@@ -503,8 +472,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       if (!paused && plan.steps.some((s) => s.target !== "app")) throw new Error("Mixed App and Design runs cannot be resumed yet. Start a new run.");
       const patch = drift.length ? join(ctx.state, "set-aside", job.id, `resume-${Date.now().toString(36)}.patch`) : null;
       if (patch) setAside(job.app!, job.app!.checkpoint ?? headOf(job.app!), patch);
-      if (paused) jobs.unpause(job);
-      else jobs.resume(job);
+      jobs.resume(job);
       if (patch) jobs.log(job, "warn", `Set aside ${plural(drift.length, "file")} changed after the last saved step (${drift.slice(0, 5).join(", ")}${drift.length > 5 ? "…" : ""}). They're saved in ${patch} until the run is merged or discarded; git apply it to look.`);
       jobs.log(job, "info", paused ? "Resumed where it was paused: finished steps are kept; the paused step and the rest run now." : "Resuming the saved App branch: completed steps are kept; unfinished and failed steps and the final check run again.");
       void runPlan(job, plan.comparison, plan.steps, plan.harness);
@@ -574,9 +542,6 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     const step = stepId ? job.steps.find((s) => s.id === stepId && s.state !== "done") : undefined;
     const notes: string[] = [];
     if (step) {
-      const attempt = step.attempts?.at(-1);
-      // the paused attempt didn't fail: Resume mustn't brief the next one about an error
-      if (attempt?.stopReason === "cancelled") Object.assign(attempt, { stopReason: "paused", error: undefined });
       Object.assign(step, { state: "pending", summary: "Paused here: runs again when you resume" });
       if (step.target === "design" && job.stage) notes.push("Its partial kit edits stay in the staging copy, and it runs again on top of them.");
     }
@@ -609,8 +574,6 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         jobs.log(job, "info", `App work runs on ${run.branch}, a separate worktree from ${run.base.slice(0, 7)} on ${run.into}. Your checkout isn't touched until you merge. (${run.worktree})`);
       }
       let sb: Storybook | null | undefined;
-      /** What the tool drafted per component (the .jsx it is for, and a hash of each drafted file); on the job, so it survives a pause */
-      const drafts = [...(job.drafts ?? [])];
       const sharedBrief = (s: Step, brief: string) => {
         const siblings = steps.filter((other) => other.featureId === s.featureId && other.id !== s.id && other.brief);
         if (!siblings.length) return brief;
@@ -699,19 +662,20 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
             jobs.log(job, "warn", `${e.message}. Nothing was drafted from Storybook; the AI writes those files.`, s.id);
             return null;
           });
-          if (sb) for (const u of pushed) {
-            const files = writeDrafts(ctx, sb, u, stage);
-            if (files.length) {
-              const jsx = `${kitHome(ctx, u).dir}/${kitHome(ctx, u).name}.jsx`;
-              // a step that runs again after a pause drafts again: the newer draft replaces the older
-              const at = drafts.findIndex((d) => d.jsx === jsx);
-              drafts.splice(at < 0 ? drafts.length : at, at < 0 ? 0 : 1, { jsx, files: Object.fromEntries(files.map((p) => [p, textHash(readText(join(stage, p)) ?? "")])) });
-              jobs.update(job, { drafts: [...drafts] });
+          if (sb) {
+            // what the tool drafted per component .jsx, with a hash of each file: on the job, so it survives a pause
+            // (a step that runs again after a pause drafts again, and the newer draft replaces the older)
+            const drafts = { ...job.drafts };
+            const origin = { ...job.origin };
+            for (const u of pushed) {
+              const files = writeDrafts(ctx, sb, u, stage);
+              if (files.length) drafts[`${kitHome(ctx, u).dir}/${kitHome(ctx, u).name}.jsx`] = Object.fromEntries(files.map((p) => [p, hash(readText(join(stage, p)))]));
+              for (const p of files) {
+                origin[p] = "storybook";
+                jobs.log(job, "info", `Drafted ${p} from Storybook`, s.id);
+              }
             }
-            for (const p of files) {
-              jobs.update(job, { origin: { ...job.origin, [p]: "storybook" } });
-              jobs.log(job, "info", `Drafted ${p} from Storybook`, s.id);
-            }
+            jobs.update(job, { drafts, origin });
           }
         }
         const done = await implement("claude", job, s, sharedBrief(s, fillStage(s.brief ?? "", stage ?? "(no staging folder)")), { addDirs: [...readable, ...(stage ? [stage] : []), ...(run ? [run.worktree] : [])] });
@@ -765,12 +729,12 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
           jobs.log(job, "warn", `${t}: the card's edit overlaps the twin's own Minimal changes, so the twin was left as it was. Update it by hand before uploading.`);
         }
         // drafts the AI changed are its refinements now; drafts for a component it never wrote stay back
-        for (const d of drafts) {
-          for (const [p, hash] of Object.entries(d.files)) if (textHash(readText(join(stage, p)) ?? "") !== hash) jobs.update(job, { origin: { ...job.origin, [p]: "storybook-refined" } });
-          if (existsSync(join(stage, d.jsx))) continue;
-          for (const p of [...Object.keys(d.files), ...Object.keys(d.files).filter((f) => f.endsWith(".card.html")).map(twinPath)]) {
+        for (const [jsx, files] of Object.entries(job.drafts ?? {})) {
+          for (const [p, drafted] of Object.entries(files)) if (hash(readText(join(stage, p))) !== drafted) jobs.update(job, { origin: { ...job.origin, [p]: "storybook-refined" } });
+          if (existsSync(join(stage, jsx))) continue;
+          for (const p of [...Object.keys(files), ...Object.keys(files).filter((f) => f.endsWith(".card.html")).map(twinPath)]) {
             holdBack.add(p);
-            fileNotes[p] = `${d.jsx.split("/").pop()} wasn't written, so this would describe a component Design doesn't have. Left out.`;
+            fileNotes[p] = `${jsx.split("/").pop()} wasn't written, so this would describe a component Design doesn't have. Left out.`;
           }
         }
         const staged = stagedChanges(ctx, cmp, stage);
@@ -928,9 +892,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
 
   // Pause: the running AI call or check stops now; the run parks at that step and keeps its stage and branch
   app.post("/api/jobs/:id/pause", (c) => {
-    const job = jobs.get(c.req.param("id"));
-    if (job?.steps.find((s) => s.id === "upload")?.state === "running") return c.json({ error: "The upload check is running; it finishes in a moment" }, 409);
-    return jobs.pause(c.req.param("id")) ? c.json({ ok: true }) : c.json({ error: "Only a running sync run can be paused" }, 400);
+    return jobs.pause(c.req.param("id")) ? c.json({ ok: true }) : c.json({ error: "Only a running sync run can be paused, and not while its upload is checked" }, 400);
   });
 
   app.post("/api/jobs/:id/cancel", (c) => {
@@ -953,7 +915,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       if (!j) return;
       await stream.writeSSE({ event: "job", data: JSON.stringify(j) });
       const off = jobs.subscribe(id, ({ job, event }) => {
-        void stream.writeSSE({ event: event ? "event" : "job", data: JSON.stringify(event ? { job: { ...job, events: [] }, event } : job) });
+        // the log went out with the first message and goes on as events: updates leave it out
+        void stream.writeSSE({ event: event ? "event" : "update", data: JSON.stringify(event ? { job: { ...job, events: [] }, event } : { ...job, events: [] }) });
       });
       const ping = setInterval(() => void stream.writeSSE({ event: "ping", data: "" }), 15000);
       await new Promise<void>((done) =>

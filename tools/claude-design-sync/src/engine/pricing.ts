@@ -8,20 +8,22 @@ export interface Tokens {
   input: number;
   output: number;
   cacheRead: number;
-  /** All cache writes, the one-hour ones included */
+  /** Five-minute cache writes (1.25x input) */
   cacheWrite: number;
+  /** One-hour cache writes (2x input) */
   cacheWrite1h: number;
 }
 
-type Rate = Omit<Tokens, "cacheWrite1h">;
+/** Per million tokens; cache writes follow from input */
+type Rate = { input: number; output: number; cacheRead: number };
 
 const RATES: Array<[RegExp, Rate]> = [
-  [/fable|mythos/, { input: 10, output: 50, cacheRead: 0.25, cacheWrite: 12.5 }],
-  [/opus-5-5/, { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 }],
-  [/opus/, { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 }],
-  [/sonnet-5/, { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 }],
-  [/sonnet/, { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 }],
-  [/haiku/, { input: 1, output: 5, cacheRead: 0.1, cacheWrite: 1.25 }],
+  [/fable|mythos/, { input: 10, output: 50, cacheRead: 0.25 }],
+  [/opus-5-5/, { input: 4, output: 20, cacheRead: 0.2 }],
+  [/opus/, { input: 5, output: 25, cacheRead: 0.5 }],
+  [/sonnet-5/, { input: 2, output: 10, cacheRead: 0.2 }],
+  [/sonnet/, { input: 3, output: 15, cacheRead: 0.3 }],
+  [/haiku/, { input: 1, output: 5, cacheRead: 0.1 }],
 ];
 
 /** Claude Code's default model, for a model the list doesn't know */
@@ -37,11 +39,41 @@ export const addTokens = (a: Tokens, b: Tokens, sign = 1): Tokens => ({
   cacheWrite1h: a.cacheWrite1h + sign * b.cacheWrite1h,
 });
 
-export const totalTokens = (t: Tokens) => t.input + t.output + t.cacheRead + t.cacheWrite;
+export const totalTokens = (t: Tokens) => t.input + t.output + t.cacheRead + t.cacheWrite + t.cacheWrite1h;
 
 /** What these tokens cost at list price, roughly */
 export function estimateUsd(t: Tokens, model?: string): number {
   const rate = RATES.find(([re]) => re.test(model ?? ""))?.[1] ?? FALLBACK;
-  const short = t.cacheWrite - t.cacheWrite1h;
-  return (t.input * rate.input + t.output * rate.output + t.cacheRead * rate.cacheRead + short * rate.cacheWrite + t.cacheWrite1h * rate.input * 2) / 1_000_000;
+  return (t.input * rate.input + t.output * rate.output + t.cacheRead * rate.cacheRead + t.cacheWrite * rate.input * 1.25 + t.cacheWrite1h * rate.input * 2) / 1_000_000;
+}
+
+/** A change to a job's token meter. `reportedUsd` is set once, when the call ends with its own cost */
+export interface UsageChange {
+  tokens: Tokens;
+  estimatedUsd: number;
+  reportedUsd?: number;
+}
+
+/**
+ * One call's usage as it streams. Claude Code repeats a message's usage for each of its blocks, so each
+ * message keeps its latest counts and a repeat adds only what changed.
+ */
+export class CallUsage {
+  private messages = new Map<string, { tokens: Tokens; usd: number }>();
+  private estimated = 0;
+
+  add(messageId: string, tokens: Tokens, model?: string): UsageChange {
+    const was = this.messages.get(messageId) ?? { tokens: NO_TOKENS, usd: 0 };
+    const usd = estimateUsd(tokens, model);
+    this.messages.set(messageId, { tokens, usd });
+    this.estimated += usd - was.usd;
+    return { tokens: addTokens(tokens, was.tokens, -1), estimatedUsd: usd - was.usd };
+  }
+
+  /** The call ended with its own cost, which replaces its estimate */
+  report(usd: number): UsageChange {
+    const change = { tokens: NO_TOKENS, estimatedUsd: -this.estimated, reportedUsd: usd };
+    this.estimated = 0;
+    return change;
+  }
 }
