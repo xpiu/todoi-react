@@ -1,14 +1,31 @@
 // One ledger line: the feature title across, its App work left and Design work right, the direction
 // on the rail between. Opening it shows each subfeature's evidence, diffs and preview cards.
 import { ChevronRight, Play } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useState, type InputHTMLAttributes } from "react";
 
 import { api, appMoved, designMoved, directionsFor, displayName, DIRECTION_LABEL, isReference, KIND_WORD, plural, REFERENCE_NOTE, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
 import { CopyLink } from "./CopyLink";
 import { Diff } from "./Diff";
 import { RailKeys } from "./Rail";
+import type { Selection } from "./selection";
 import { TIP } from "./Tooltip";
 import { canPicture, useVisual } from "./Visual";
+
+/** A checkbox whose third state ("some") shows as a dash; `indeterminate` only exists as a DOM property */
+export function TriCheck({ state, ...props }: { state: "all" | "some" | "none" } & Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "checked">) {
+  return (
+    <input
+      {...props}
+      type="checkbox"
+      className="cds-tick"
+      checked={state === "all"}
+      aria-checked={state === "some" ? "mixed" : state === "all"}
+      ref={(el) => {
+        if (el) el.indeterminate = state === "some";
+      }}
+    />
+  );
+}
 
 function SideCell({ units, side, known }: { units: Unit[]; side: "app" | "design"; known: string[] }) {
   const moved = units.filter((u) => (side === "app" ? appMoved : designMoved)(u.status));
@@ -35,7 +52,7 @@ interface UnitDirections {
   onUnitDirection: (unitId: string, d: Direction | null) => void;
 }
 
-export function FeatureRow({ feature, direction, overridden, onDirection, baseId, snapshotId, steps, busy, onRunOne, onMarkSynced, ...dirs }: { feature: Feature; direction: Direction; overridden: boolean; onDirection: (d: Direction | null) => void; baseId: string | null; snapshotId: string | null; steps: Step[]; busy: boolean; onRunOne: () => void; onMarkSynced: () => void } & UnitDirections) {
+export function FeatureRow({ feature, direction, overridden, onDirection, selection, onSelect, baseId, snapshotId, steps, busy, onRunOne, onMarkSynced, ...dirs }: { feature: Feature; direction: Direction; overridden: boolean; onDirection: (d: Direction | null) => void; selection: Selection; onSelect: (on: boolean) => void; baseId: string | null; snapshotId: string | null; steps: Step[]; busy: boolean; onRunOne: () => void; onMarkSynced: () => void } & UnitDirections) {
   const [open, setOpen] = useState(false);
   const status = feature.status;
   // a feature made only of Design references has nothing to decide: it says so instead of looking skipped
@@ -45,14 +62,24 @@ export function FeatureRow({ feature, direction, overridden, onDirection, baseId
     "app-to-design": "App → Design: the App hasn't changed this feature since the sync point",
   };
   return (
-    <section className={`cds-row ${open ? "is-open" : ""}`} data-status={status} data-direction={reference ? "reference" : direction} aria-labelledby={`${feature.id}-t`}>
+    <section className={`cds-row ${open ? "is-open" : ""}`} data-status={status} data-direction={reference ? "reference" : direction} data-selected={selection.state} aria-labelledby={`${feature.id}-t`}>
       <header className="cds-row-head">
+        {selection.state === "reference" ? (
+          <input type="checkbox" className="cds-tick" disabled checked={false} aria-label={`${feature.title}: reference only, nothing to sync`} data-tip="Reference only: nothing here can be synced. Port it by hand, then mark it synced" />
+        ) : (
+          <TriCheck
+            state={selection.state}
+            onChange={() => onSelect(selection.state !== "all")}
+            aria-label={`Include ${feature.title} in the sync`}
+            data-tip={selection.state === "all" ? "Selected: this feature runs. Untick to skip it" : selection.state === "some" ? `${selection.on} of ${plural(selection.total, "part")} selected. Tick to include every part` : "Skipped: nothing runs for this feature. Tick to include it"}
+          />
+        )}
         <button type="button" className="cds-row-toggle" aria-expanded={open} aria-controls={`${feature.id}-d`} data-tip={open ? "Fold this feature away" : "Show each part's files, diffs and previews, and what runs for this feature"} onClick={() => setOpen((o) => !o)}>
           <ChevronRight size={14} strokeWidth={1.75} className="cds-chev" aria-hidden />
           <span id={`${feature.id}-t`} className="cds-row-title">{feature.title}</span>
         </button>
         <span className="cds-status" data-status={reference ? undefined : status}>{reference ? "changed in Design, not ported" : STATUS_WORD[status]}</span>
-        <span className="cds-count">{plural(feature.units.length, "part")}</span>
+        <span className="cds-count">{selection.state === "some" ? `${selection.on}/${plural(selection.total, "part")}` : plural(feature.units.length, "part")}</span>
       </header>
       <div className={`cds-twin ${open ? "is-head" : ""}`}>
         {open ? <div className="cds-cell cds-cell-app is-quiet">{plural(feature.units.filter((u) => appMoved(u.status)).length, "part")} moved in the App</div> : <SideCell units={feature.units} side="app" known={[feature.title, ...feature.appWork, "New since the sync point"]} />}
@@ -130,11 +157,13 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, busy, onRunOne,
   );
 }
 
-export function StepLine({ step }: { step: Step }) {
+/** `feature`: the feature this step starts, as a heading over its group */
+export function StepLine({ step, feature }: { step: Step; feature?: string }) {
   const [show, setShow] = useState(false);
   const kind = { "merge-css": "deterministic merge", "ai-pull": "AI draft → App, reviewed before merge", "ai-push": "AI port → Design", upload: "upload, after your approval" }[step.kind];
   return (
     <li className="cds-step" data-kind={step.kind}>
+      {feature ? <span className="cds-step-feature">{feature}</span> : null}
       <span className="cds-step-title">{step.title}</span>
       <span className="cds-kind">{kind}</span>
       {step.brief ? (

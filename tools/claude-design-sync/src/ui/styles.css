@@ -568,11 +568,54 @@ em {
 .cds-row[data-direction="reference"] {
   background: var(--cds-wash);
 }
+.cds-row[data-selected="none"] .cds-row-title {
+  color: var(--ink-400);
+}
 .cds-row-head {
   display: flex;
   align-items: baseline;
   gap: 12px;
   padding: 14px 0 6px;
+}
+.cds-tick {
+  flex: none;
+  align-self: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--ink-900);
+  cursor: pointer;
+}
+.cds-tick:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.cds-row-head .cds-tick + .cds-row-toggle {
+  margin-left: -4px;
+}
+.cds-selectbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px 0;
+  border-bottom: var(--cds-hair);
+}
+.cds-selectbar .cds-check {
+  margin: 0;
+  color: var(--ink-900);
+  cursor: pointer;
+}
+.cds-selectbar-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-600);
+}
+.cds-selectbar-count strong {
+  font-weight: 500;
+  color: var(--ink-900);
+}
+.cds-selectbar .cds-link {
+  margin-left: auto;
 }
 .cds-row-toggle {
   display: inline-flex;
@@ -1009,6 +1052,15 @@ em {
   font: 400 11px/1.45 var(--font-mono);
   color: var(--ink-300);
 }
+.cds-step-feature {
+  flex-basis: 100%;
+  order: -1;
+  margin-top: 8px;
+  font-weight: 500;
+}
+.cds-step:first-child .cds-step-feature {
+  margin-top: 0;
+}
 .cds-step-actions {
   display: inline-flex;
   gap: 12px;
@@ -1054,6 +1106,14 @@ em {
 .cds-btn-primary:hover:not(:disabled) {
   background: var(--ink-600);
   box-shadow: none;
+}
+.cds-btn-count {
+  margin-left: 2px;
+  padding: 1px 6px;
+  font: 400 11px/1.45 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.8;
 }
 .cds-btn:disabled {
   color: var(--ink-400);
@@ -1694,6 +1754,29 @@ em {
 .cds-mark-features .cds-check {
   align-items: baseline;
   margin: 4px 0;
+.cds-confirm .cds-run-features {
+  max-width: 78ch;
+  max-height: 180px;
+  overflow: auto;
+  margin: 4px 0 14px;
+  padding: 6px 0;
+  border-block: var(--cds-hair);
+  list-style: none;
+  color: var(--ink-900);
+}
+.cds-run-features li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.cds-run-tick {
+  flex: none;
+  align-self: center;
+}
+.cds-run-title {
+  font-weight: 500;
+}
 }
 
 /* ── Activity panel ──────────────────────────────────────────────────────────── */
@@ -2857,7 +2940,7 @@ em {
   }
   .cds-map-event-actions {
     margin-left: 0;
-    flex-basis: 100%;
+    flex: 1 1 calc(100% - 28px);
   }
   /* a move that brought nothing to one side says nothing there, rather than a lone dash */
   .cds-map-event .cds-cell:has(> .cds-quiet:only-child) {

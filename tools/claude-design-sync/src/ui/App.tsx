@@ -3,13 +3,14 @@ import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRigh
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, selectedUnitIds, appMoved, designMoved, store, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Imported, type Step } from "./api";
+import { api, selectedUnitIds, appMoved, designMoved, store, unitDirection, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Imported, type Step } from "./api";
 import { RefreshChoice, useRefreshChoice } from "./DesignRefresh";
-import { FeatureRow } from "./FeatureRow";
+import { FeatureRow, TriCheck } from "./FeatureRow";
 import { MergeBanner, useMerge } from "./Merge";
 import { Onboarding } from "./Onboarding";
 import { PlanBar } from "./PlanBar";
 import { ProjectFooter } from "./ProjectFooter";
+import { applySelection, featureSelection } from "./selection";
 import { TIP } from "./Tooltip";
 import { Select } from "./Select";
 import { TopBar } from "./TopBar";
@@ -36,7 +37,6 @@ export function App() {
   const [overrides, setOverrides] = useState<Record<string, Direction>>(() => store.get("cds-overrides", {}));
   const [unitOverrides, setUnitOverrides] = useState<Record<string, Direction>>(() => store.get("cds-unit-overrides", {}));
   const [steps, setSteps] = useState<Step[]>([]);
-  const [unitChoices, setUnitChoices] = useState<Record<string, Direction>>({});
   // /?job=<id> (linked from the Mapping page) opens that job in the activity panel
   const [activity, setActivity] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
   const [panel, setPanel] = useState(() => !!new URLSearchParams(location.search).get("job"));
@@ -109,7 +109,6 @@ export function App() {
       (r) => {
         if (!live) return;
         setSteps(r.steps);
-        setUnitChoices(r.units);
       },
       (e) => live && setError((e as Error).message),
     );
@@ -129,6 +128,17 @@ export function App() {
     }
     return t;
   }, [features]);
+  // the same rule as the server's plan, so ticks answer at once instead of after its reply
+  const unitChoices = useMemo(() => Object.fromEntries(features.flatMap((f) => f.units.map((u) => [u.id, unitDirection(f.directions, u.status, global, overrides[f.id], unitOverrides[u.id], u.kind)]))), [features, global, overrides, unitOverrides]);
+  const selections = useMemo(() => Object.fromEntries(features.map((f) => [f.id, featureSelection(f, unitChoices)])), [features, unitChoices]);
+  const selectable = features.filter((f) => selections[f.id]?.state !== "reference");
+  const selectedCount = selectable.filter((f) => selections[f.id]?.state !== "none").length;
+  const allState = !selectedCount ? "none" : selectedCount === selectable.length && selectable.every((f) => selections[f.id]?.state === "all") ? "all" : "some";
+  const select = (fs: typeof features, on: boolean) => {
+    const next = applySelection(fs, on, global, overrides, unitOverrides);
+    setOverrides(next.overrides);
+    setUnitOverrides(next.unitOverrides);
+  };
 
   // Available features, independent of plan choices; reference-only work has no one-way direction.
   const available = useMemo(() => ({
@@ -320,6 +330,24 @@ export function App() {
             </div>
             {check?.error ? <p className="cds-error">{check.error}</p> : null}
 
+            {cmp && selectable.length ? (
+              <div className="cds-selectbar" role="group" aria-label="Feature selection">
+                <label className="cds-check" data-tip={allState === "all" ? "Skip every feature" : "Include every feature, each in the direction the plan or its own choice gives it"}>
+                  <TriCheck state={allState} onChange={() => select(selectable, allState !== "all")} />
+                  <span>{allState === "all" ? "All features selected" : "Select all"}</span>
+                </label>
+                <span className="cds-selectbar-count" aria-live="polite">
+                  <strong>{selectedCount}</strong> of {plural(selectable.length, "feature")} selected
+                  {visibleSteps.length ? <span className="cds-quiet"> · {plural(visibleSteps.filter((s) => s.kind !== "upload").length, "step")}</span> : null}
+                </span>
+                {selectedCount ? (
+                  <button type="button" className="cds-link" onClick={() => select(selectable, false)} data-tip="Untick every feature, to pick just the ones to sync">
+                    Clear selection
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
             <div id="ledger" className="cds-ledger" aria-busy={loading}>
               {loading && !cmp
                 ? [0, 1, 2, 3].map((i) => <div key={i} className="cds-row cds-row-skel"><span className="cds-skel" /><span className="cds-skel" /></div>)
@@ -331,6 +359,8 @@ export function App() {
                         feature={f}
                         direction={d}
                         overridden={f.id in overrides}
+                        selection={selections[f.id]!}
+                        onSelect={(on) => select([f], on)}
                         onDirection={(nd) =>
                           setOverrides((o) => {
                             const n = { ...o };
@@ -400,7 +430,7 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} global={global} overrides={overrides} unitChoices={unitChoices} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} onShowJob={(id) => void openJob(id)} busy={!!running || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} selections={selections} unitChoices={unitChoices} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} onShowJob={(id) => void openJob(id)} busy={!!running || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);

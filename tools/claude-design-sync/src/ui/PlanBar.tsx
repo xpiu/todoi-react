@@ -4,16 +4,17 @@
 import { ChevronRight, Flag, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { directionsFor, effective, isReference, plural, selectedUnitIds, type AppState, type Direction, type Feature, type SnapshotMeta, type Step, type Unit } from "./api";
+import { DIRECTION_LABEL, plural, selectedUnitIds, type AppState, type Direction, type Feature, type SnapshotMeta, type Step, type Unit } from "./api";
 import { stepsForSelection } from "../engine/selection";
-import { RunConfirmation } from "./RunConfirmation";
+import { RunConfirmation, type RunFeature } from "./RunConfirmation";
 import { StepLine } from "./FeatureRow";
 import { MergeButton, type MergeOffer } from "./Merge";
+import { movable, type Selection } from "./selection";
 
 /** A part the plan could move but skips: it stays open at a sync point. Reference-only parts never move, so they never hold a feature open. */
-const skipped = (u: Unit, unitChoices: Record<string, Direction>) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (unitChoices[u.id] ?? "skip") === "skip";
+const skipped = (u: Unit, unitChoices: Record<string, Direction>) => movable(u) && (unitChoices[u.id] ?? "skip") === "skip";
 
-export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkUnits, steps, features, global, overrides, unitChoices, state, snapshot, onImportArchive, onRun, onShowJob, busy, merge, onSyncPoint }: { runFeatureId: string | null; onRunFeature: (id: string | null) => void; baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; global: Direction; overrides: Record<string, Direction>; unitChoices: Record<string, Direction>; state: AppState | null; snapshot: SnapshotMeta | null; onImportArchive: () => void; onRun: (only?: string[]) => void; onShowJob: (id: string) => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
+export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkUnits, steps, features, selections, unitChoices, state, snapshot, onImportArchive, onRun, onShowJob, busy, merge, onSyncPoint }: { runFeatureId: string | null; onRunFeature: (id: string | null) => void; baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; selections: Record<string, Selection>; unitChoices: Record<string, Direction>; state: AppState | null; snapshot: SnapshotMeta | null; onImportArchive: () => void; onRun: (only?: string[]) => void; onShowJob: (id: string) => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
   const [planView, setPlanView] = useState<"closed" | "steps" | "confirm">("closed");
   const view = markUnits !== null ? "mark" : runFeatureId !== null ? "confirm" : planView;
   const runFeature = features.find((f) => f.id === runFeatureId);
@@ -35,18 +36,29 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
 
+  /** The one direction each feature's selected parts move in, "both" when they mix, null when none move */
+  const way = useMemo(() => Object.fromEntries(features.map((f) => {
+    const ways = new Set(f.units.map((u) => unitChoices[u.id] ?? "skip").filter((d) => d !== "skip"));
+    return [f.id, ways.size === 1 ? [...ways][0]! : ways.size ? "both" : null];
+  })) as Record<string, Direction | null>, [features, unitChoices]);
   const t = useMemo(() => {
     const c = { toDesign: 0, toApp: 0, both: 0, skip: 0, reference: 0 };
     for (const f of features) {
-      const d = effective(f, global, overrides[f.id]);
-      if (f.units.every(isReference)) c.reference++;
-      else if (d === "skip") c.skip++;
+      const d = way[f.id];
+      if (selections[f.id]?.state === "reference") c.reference++;
+      else if (!d) c.skip++;
       else if (d === "both") c.both++;
       else if (d === "app-to-design") c.toDesign++;
       else c.toApp++;
     }
     return c;
-  }, [features, global, overrides]);
+  }, [features, selections, way]);
+  const runFeatures: RunFeature[] = features.flatMap((f) => {
+    const mine = runSteps.filter((s) => s.featureId === f.id && s.kind !== "upload").length;
+    const sel = selections[f.id];
+    const d = way[f.id];
+    return mine && d ? [{ id: f.id, title: f.title, direction: DIRECTION_LABEL[d], steps: mine, parts: sel?.state === "some" ? `${sel.on} of ${plural(sel.total, "part")}` : null }] : [];
+  });
   const merges = steps.filter((s) => s.kind === "merge-css");
   const pulls = steps.filter((s) => s.kind === "ai-pull");
   const pushes = steps.filter((s) => s.kind === "ai-push");
@@ -61,7 +73,7 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
   const covered = new Set(markUnits ?? []);
   const keepOpen = (f: Feature) => !(ticked[f.id] ?? f.units.some((u) => covered.has(u.id)));
   const kept = features.filter(keepOpen).length;
-  const partOpen = (f: Feature, u: Unit) => directionsFor(u.status, u.kind).directions.some((d) => d !== "skip") && (ticked[f.id] === true ? skipped(u, unitChoices) : !covered.has(u.id));
+  const partOpen = (f: Feature, u: Unit) => movable(u) && (ticked[f.id] === true ? skipped(u, unitChoices) : !covered.has(u.id));
   const hold = features.flatMap((f) => (keepOpen(f) ? f.units : f.units.filter((u) => partOpen(f, u))).map((u) => u.id));
   const startMark = () => {
     onRunFeature(null);
@@ -76,7 +88,7 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
       {open ? (
         <div className="cds-plan-sheet">
           {view === "confirm" ? (
-            <RunConfirmation steps={runSteps} state={state} snapshot={snapshot} busy={busy} featureTitle={runFeature?.title} onBack={() => setView("steps")} onImportArchive={() => {
+            <RunConfirmation steps={runSteps} features={runFeatures} state={state} snapshot={snapshot} busy={busy} featureTitle={runFeature?.title} onBack={() => setView("steps")} onImportArchive={() => {
               setView("closed");
               onImportArchive();
             }} onShowJob={(id) => {
@@ -150,7 +162,7 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
           ) : (
             <>
               <h3 className="cds-plan-h">Steps, in order</h3>
-              {steps.length ? <ol className="cds-steps">{steps.map((s) => <StepLine key={s.id} step={s} />)}</ol> : <p className="cds-quiet">Every feature is skipped. Pick a direction above or on a feature's rail.</p>}
+              {steps.length ? <ol className="cds-steps">{steps.map((s, i) => <StepLine key={s.id} step={s} feature={s.kind !== "upload" && s.featureTitle !== steps[i - 1]?.featureTitle ? s.featureTitle : undefined} />)}</ol> : <p className="cds-quiet">Every feature is skipped. Tick a feature in the list to include it.</p>}
             </>
           )}
         </div>
@@ -177,6 +189,7 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
           {view === "confirm" ? null : (
             <button type="button" className={`cds-btn ${merge.ready ? "" : "cds-btn-primary"}`} disabled={!work || busy} data-tip={!work ? "Nothing to run: every feature is skipped" : merge.ready ? "A run waits for your merge (or Discard in Activity) before the next one can start" : busy ? "Another job is running. Wait for it to finish" : "Review exactly what the run will write and where, then start it"} onClick={() => setView("confirm")}>
               <Play size={14} strokeWidth={1.75} aria-hidden /> Review selected sync steps
+              {work ? <span className="cds-btn-count">{plural(moving, "feature")} · {plural(work, "step")}</span> : null}
             </button>
           )}
         </div>

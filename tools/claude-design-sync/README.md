@@ -100,8 +100,8 @@ Choose **Project archive**, which the export dialog labels instant and free. **S
 ## A typical loop
 
 1. **Check for changes** in the Design column header, then **Bring the changes in** if Design moved: import a fresh export, or pull.
-2. Read the verdict and the ledger. Pick a plan-wide direction, and override single features or subfeatures on the rail.
-3. **Review selected sync steps** (or **Run this feature only**).
+2. Read the verdict and the ledger. Pick a plan-wide direction, and override single features or subfeatures on the rail. Each feature's checkbox shows whether it runs (a dash: only some of its parts); untick it to skip it, or use **Select all** / **Clear selection** above the ledger, which counts what's selected.
+3. **Review selected sync steps** (its badge counts the selected features and steps; the review lists each feature with its direction), or **Run this feature only**.
 4. **Merge** the App branch: the button appears in the navbar, above the verdict, in the plan bar and in Activity as soon as the run's check passes. Upload the staged kit files from **Activity**: **Upload n files from Claude Code** gives you a request to paste into Claude Code, where you approve DesignSync's prompt; then **Check the upload**.
 5. **Mark selected features synced** when both sides look right.
 

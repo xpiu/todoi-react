@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.3, 1.5, 0.5, 1)",
+        "createdAt": "2026-10-09T06:23:30.368Z",
+        "reason": "User confirmed cubic-bezier(0.3, 1.5, 0.5, 1) is intentional (flame ignition overshoot)"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "tools/claude-design-sync/src/ui/styles.css"
+        ],
+        "createdAt": "2026-10-09T06:23:30.401Z",
+        "reason": "User confirmed: CSS-triangle arrowheads on Mapping lane segments, not side tabs"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "tools/claude-design-sync/src/ui/styles.css"
+        ],
+        "createdAt": "2026-10-09T06:23:30.434Z",
+        "reason": "User confirmed: animated dashed flow line on Mapping lanes"
+      }
+    ]
+  }
+}

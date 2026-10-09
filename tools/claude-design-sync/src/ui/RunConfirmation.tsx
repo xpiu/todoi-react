@@ -1,10 +1,19 @@
 // Shared review for a whole plan or one feature, before either starts a job.
-import { Play } from "lucide-react";
+import { Check, Play } from "lucide-react";
 import { plural, type AppState, type SnapshotMeta, type Step } from "./api";
 import { canResume } from "../engine/approvals";
 import { ArchiveReview } from "./ArchiveReview";
 
-export function RunConfirmation({ steps, state, snapshot, busy, featureTitle, onRun, onBack, onImportArchive, onShowJob }: { steps: Step[]; state: AppState | null; snapshot: SnapshotMeta | null; busy: boolean; featureTitle?: string; onRun: () => void; onBack: () => void; onImportArchive: () => void; onShowJob: (id: string) => void }) {
+/** A feature the run covers; `parts`: set when only some of its parts are selected */
+export interface RunFeature {
+  id: string;
+  title: string;
+  direction: string;
+  steps: number;
+  parts: string | null;
+}
+
+export function RunConfirmation({ steps, features, state, snapshot, busy, featureTitle, onRun, onBack, onImportArchive, onShowJob }: { steps: Step[]; features: RunFeature[]; state: AppState | null; snapshot: SnapshotMeta | null; busy: boolean; featureTitle?: string; onRun: () => void; onBack: () => void; onImportArchive: () => void; onShowJob: (id: string) => void }) {
   const merges = steps.filter((s) => s.kind === "merge-css");
   const pulls = steps.filter((s) => s.kind === "ai-pull");
   const pushes = steps.filter((s) => s.kind === "ai-push");
@@ -25,8 +34,22 @@ export function RunConfirmation({ steps, state, snapshot, busy, featureTitle, on
 
   return (
     <div className="cds-confirm" role="group" aria-labelledby="confirm-h">
-      <h3 id="confirm-h">Run {plural(work, "step")}?</h3>
+      <h3 id="confirm-h">Run {plural(work, "step")} for {plural(features.length, "feature")}?</h3>
       {featureTitle ? <p>Only “{featureTitle}” will run. Other features are left out.</p> : null}
+      {features.length ? (
+        <ul className="cds-run-features" aria-label="Features in this run">
+          {features.map((f) => (
+            <li key={f.id}>
+              <Check size={14} strokeWidth={2} className="cds-run-tick" aria-hidden />
+              <span className="cds-run-title">{f.title}</span>
+              <span className="cds-kind">
+                {f.direction} · {plural(f.steps, "step")}
+                {f.parts ? ` · ${f.parts}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {kept ? (
         <div className="cds-confirm-kept" role="note">
           <p>
