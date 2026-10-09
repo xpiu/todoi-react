@@ -111,8 +111,8 @@ export const api = {
   state: () => call<AppState>("/api/state"),
   compare: (base?: string | null, fresh = false) => call<Comparison>(`/api/compare?${new URLSearchParams({ ...(base ? { base } : {}), ...(fresh ? { fresh: "1" } : {}) })}`),
   diff: (unit: string, side: "app" | "design", base?: string | null) => call<{ text: string }>(`/api/diff?${new URLSearchParams({ unit, side, ...(base ? { base } : {}) })}`),
-  plan: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>) => call<{ steps: Step[]; choices: Record<string, Direction>; units: Record<string, Direction> }>("/api/plan", { body: { base, global, overrides, unitOverrides } satisfies PlanRequest }),
-  run: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>, only?: string[]) => call<{ job: string }>("/api/run", { body: { base, global, overrides, unitOverrides, only } satisfies RunRequest }),
+  plan: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>, leaveExamples: boolean) => call<{ steps: Step[]; choices: Record<string, Direction>; units: Record<string, Direction> }>("/api/plan", { body: { base, global, overrides, unitOverrides, leaveExamples } satisfies PlanRequest }),
+  run: (base: string | null, global: Direction, overrides: Record<string, Direction>, unitOverrides: Record<string, Direction>, kit: KitPorts, only?: string[]) => call<{ job: string }>("/api/run", { body: { base, global, overrides, unitOverrides, leaveExamples: kit.leaveExamples, batch: kit.batch, only } satisfies RunRequest }),
   pull: (force = false) => call<{ job: string }>("/api/pull", { body: { force } }),
   statusCheck: () => call<{ updatedAt: string | null; snapshotUpdatedAt: string | null; stale: boolean }>("/api/status-check", { method: "POST" }),
   importExport: (path: string) => call<Imported>("/api/import", { body: { path } }),
@@ -189,6 +189,12 @@ export function followJob(id: string, onJob: (j: Job) => void = () => {}): Promi
 }
 
 /** Per-browser memory (the chosen sync point, directions); a private window just forgets */
+/** How a run ports App work into the kit: leave example-only changes out, and features per Claude Code session */
+export interface KitPorts {
+  leaveExamples: boolean;
+  batch: number;
+}
+
 export const store = {
   get<T>(k: string, d: T): T {
     try {

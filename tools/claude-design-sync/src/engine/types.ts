@@ -23,6 +23,8 @@ export interface SideState {
   changed: boolean | null;
   /** The unit did not exist at the sync point */
   added: boolean;
+  /** Which of `paths` changed since the sync point (set when there is a baseline to compare against) */
+  changedPaths?: string[];
   /** Short, human evidence lines: commit subjects, "3 props added", "12 Minimal rules" */
   evidence: string[];
   /** Exported names / props found on this side (for cross-checks) */

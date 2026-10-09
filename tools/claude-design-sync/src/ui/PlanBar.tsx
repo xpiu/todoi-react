@@ -4,7 +4,9 @@
 import { ChevronRight, Flag, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { DIRECTION_LABEL, plural, selectedUnitIds, type AppState, type Direction, type Feature, type SnapshotMeta, type Step, type Unit } from "./api";
+import { DIRECTION_LABEL, plural, selectedUnitIds, type AppState, type Direction, type Feature, type KitPorts, type SnapshotMeta, type Step, type Unit } from "./api";
+import { appMoved } from "../engine/directions";
+import { examplesOnly } from "../engine/paths";
 import { stepsForSelection } from "../engine/selection";
 import { RunConfirmation, type RunFeature } from "./RunConfirmation";
 import { StepLine } from "./FeatureRow";
@@ -14,7 +16,7 @@ import { movable, type Selection } from "./selection";
 /** A part the plan could move but skips: it stays open at a sync point. Reference-only parts never move, so they never hold a feature open. */
 const skipped = (u: Unit, unitChoices: Record<string, Direction>) => movable(u) && (unitChoices[u.id] ?? "skip") === "skip";
 
-export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkUnits, steps, features, selections, unitChoices, state, snapshot, onImportArchive, onRun, onShowJob, busy, merge, onSyncPoint }: { runFeatureId: string | null; onRunFeature: (id: string | null) => void; baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; selections: Record<string, Selection>; unitChoices: Record<string, Direction>; state: AppState | null; snapshot: SnapshotMeta | null; onImportArchive: () => void; onRun: (only?: string[]) => void; onShowJob: (id: string) => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
+export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkUnits, steps, features, selections, unitChoices, kitPorts, onKitPorts, state, snapshot, onImportArchive, onRun, onShowJob, busy, merge, onSyncPoint }: { runFeatureId: string | null; onRunFeature: (id: string | null) => void; baseId: string | null; markUnits: string[] | null; onMarkUnits: (units: string[] | null) => void; steps: Step[]; features: Feature[]; selections: Record<string, Selection>; unitChoices: Record<string, Direction>; kitPorts: KitPorts; onKitPorts: (next: KitPorts) => void; state: AppState | null; snapshot: SnapshotMeta | null; onImportArchive: () => void; onRun: (only?: string[]) => void; onShowJob: (id: string) => void; busy: boolean; merge: MergeOffer; onSyncPoint: (label: string, tag: boolean, hold: string[]) => Promise<void> }) {
   const [planView, setPlanView] = useState<"closed" | "steps" | "confirm">("closed");
   const view = markUnits !== null ? "mark" : runFeatureId !== null ? "confirm" : planView;
   const runFeature = features.find((f) => f.id === runFeatureId);
@@ -59,6 +61,8 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
     const d = way[f.id];
     return mine && d ? [{ id: f.id, title: f.title, direction: DIRECTION_LABEL[d], steps: mine, parts: sel?.state === "some" ? `${sel.on} of ${plural(sel.total, "part")}` : null }] : [];
   });
+  // parts moving into the kit whose App side changed only in their stories and docs: the run can leave them out
+  const exampleParts = (runFeature ? [runFeature] : features).flatMap((f) => f.units).filter((u) => examplesOnly(u) && appMoved(u.status) && (unitChoices[u.id] === "app-to-design" || unitChoices[u.id] === "both")).length;
   const merges = steps.filter((s) => s.kind === "merge-css");
   const pulls = steps.filter((s) => s.kind === "ai-pull");
   const pushes = steps.filter((s) => s.kind === "ai-push");
@@ -88,7 +92,7 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
       {open ? (
         <div className="cds-plan-sheet">
           {view === "confirm" ? (
-            <RunConfirmation steps={runSteps} features={runFeatures} state={state} snapshot={snapshot} busy={busy} featureTitle={runFeature?.title} onBack={() => setView("steps")} onImportArchive={() => {
+            <RunConfirmation steps={runSteps} features={runFeatures} kitPorts={kitPorts} onKitPorts={onKitPorts} exampleParts={exampleParts} state={state} snapshot={snapshot} busy={busy} featureTitle={runFeature?.title} onBack={() => setView("steps")} onImportArchive={() => {
               setView("closed");
               onImportArchive();
             }} onShowJob={(id) => {

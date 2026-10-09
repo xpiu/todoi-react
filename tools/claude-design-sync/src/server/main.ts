@@ -29,7 +29,7 @@ import { storybook, type Storybook } from "../engine/storybook";
 import { visualCompare } from "../engine/visual";
 import { commitAll, commitsSince, createWorktree, headOf, mergeRun, pushBranch, removeWorktree, ResumeDrift, runCheck, setAside, verifyPort, verifyResume } from "../engine/worktree";
 import { hostingFromEnv, type Hosting } from "./hosting";
-import { createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor, type Step } from "../engine/plan";
+import { batchPorts, createStage, cssMergeFor, effectiveDirection, fillStage, planSteps, recordSyncPoint, stagedChanges, stepFeatures, unitChoicesFor, type Step } from "../engine/plan";
 import { deriveSnapshot, findExports, getSnapshot, importExport, latestSnapshot, listSnapshots, listSyncPoints, promoteArchive, snapRoot, snapshotFilesDir } from "../engine/snapshots";
 import { isProjectArchive } from "../engine/paths";
 import type { Comparison } from "../engine/types";
@@ -84,7 +84,8 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     const attempt: NonNullable<typeof state.attempts>[number] = {
       harness: kind, requestedModel: ctx.config.harness.implementModel || undefined,
       requestedEffort: kind === "claude" ? ctx.config.harness.implementEffort : undefined,
-      maxTurns: kind === "claude" ? 80 : undefined, startedAt: new Date().toISOString(), models: [], efforts: [],
+      // a session that ports several features gets more turns for each
+      maxTurns: kind === "claude" ? 80 + 50 * (stepFeatures(step).length - 1) : undefined, startedAt: new Date().toISOString(), models: [], efforts: [],
     };
     jobs.step(job, step.id, { attempts: [...(state.attempts ?? []), attempt], adaptation: undefined });
     if (kind === "claude") prompt += '\n\nBefore edits, use Bash to run exactly: printf \'CDS_RUNTIME_EFFORT=%s\\n\' "${CLAUDE_EFFORT:-unknown}". This records the effective effort supplied by Claude Code; do not invent a value if unavailable.';
@@ -151,7 +152,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     const cmp = getComparison(body.base, body.snapshot);
     const choices = Object.fromEntries(cmp.features.map((f) => [f.id, effectiveDirection(f, body.global, body.overrides[f.id])]));
     const units = unitChoicesFor(cmp, body.global, body.overrides, body.unitOverrides);
-    return { cmp, choices, units, steps: planSteps(ctx, cmp, choices, units) };
+    return { cmp, choices, units, steps: planSteps(ctx, cmp, choices, units, { leaveExamples: body.leaveExamples }) };
   };
 
   app.use("/api/*", async (c, next) => {
@@ -424,8 +425,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
     const body = c.req.valid("json");
     const prepared = requestedPlan(body);
     const cmp = prepared.cmp;
-    const steps = stepsForSelection(prepared.steps, body.only);
-    if (!steps.length) return c.json({ error: "Nothing to do: every feature is skipped or already in sync" }, 400);
+    const selected = stepsForSelection(prepared.steps, body.only);
+    if (!selected.length) return c.json({ error: "Nothing to do: every feature is skipped or already in sync" }, 400);
+    const steps = batchPorts(ctx, cmp, selected, body.batch ?? 1, { leaveExamples: body.leaveExamples });
     const jobSteps: Job["steps"] = steps.map((s) => ({ id: s.id, title: s.title, kind: s.kind, target: s.target, state: "pending" as const }));
     // App work ends with the repo's check on the run's branch, then waits for the developer's merge
     if (steps.some((s) => s.target === "app")) {
@@ -433,7 +435,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       const draft = steps.some((s) => s.kind === "ai-pull");
       jobSteps.splice(at < 0 ? jobSteps.length : at, 0, { id: "app-check", title: `Run ${ctx.config.app.check} on the run's branch`, kind: "check", target: "app", state: "pending" }, { id: "app-merge", title: draft ? "Review the draft against the App's architecture, then merge it into your branch" : "Merge the run's branch into your branch (after your review)", kind: "merge", target: "app", state: "pending" });
     }
-    const titles = [...new Set(steps.filter((s) => s.kind !== "upload").map((s) => s.featureTitle))];
+    const titles = [...new Set(selected.filter((s) => s.kind !== "upload").map((s) => s.featureTitle))];
     const label = titles.join(", ");
     const job = jobs.create("run", titles.length === 1 ? titles[0]! : `Sync ${plural(titles.length, "feature")}`, { baseId: cmp.base?.id ?? null, snapshotId: cmp.designSnapshot?.id ?? null, steps: jobSteps, covers: [...new Set(steps.flatMap((s) => s.units))], label: label.length > 80 ? `${label.slice(0, 79)}…` : label });
     jobs.savePlan(job, { comparison: cmp, steps, harness: ctx.config.harness.implement });
@@ -575,7 +577,7 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
       }
       let sb: Storybook | null | undefined;
       const sharedBrief = (s: Step, brief: string) => {
-        const siblings = steps.filter((other) => other.featureId === s.featureId && other.id !== s.id && other.brief);
+        const siblings = steps.filter((other) => other.id !== s.id && other.brief && stepFeatures(other).some((id) => stepFeatures(s).includes(id)));
         if (!siblings.length) return brief;
         const decisions = siblings.flatMap((other) => {
           const completed = job.steps.find((state) => state.id === other.id);
@@ -604,6 +606,12 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
             commitAll(run!, `style(tokens): merge Claude Design's ${unit.name} rules`);
             run!.checkpoint = headOf(run!);
           }
+          jobs.step(job, s.id, { state: "done", summary });
+          jobs.log(job, "info", summary, s.id);
+          continue;
+        }
+        if (s.kind === "leave-examples") {
+          const summary = "Only their Storybook examples changed: no AI port, recorded synced with the run";
           jobs.step(job, s.id, { state: "done", summary });
           jobs.log(job, "info", summary, s.id);
           continue;
@@ -759,7 +767,11 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         if (staged.length) {
           jobs.step(job, "upload", { state: "pending", summary: `${staged.length} file(s) waiting for your approval` });
           notes.push(`${staged.length} kit file(s) staged: review and approve the upload`);
-        } else jobs.step(job, "upload", { state: "skipped", summary: "No kit files changed" });
+        } else {
+          jobs.step(job, "upload", { state: "skipped", summary: "No kit files changed" });
+          // nothing to upload, so nothing to read back: without an App branch to merge, the run is synced now
+          if (!run) notes.push(`No kit files changed.${markRunSynced(job)}`);
+        }
       }
       settle(job, notes.join(" · ") || "All steps finished");
     } catch (e) {

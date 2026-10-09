@@ -15,8 +15,11 @@ export const diffQuery = comparisonQuery.omit({ fresh: true }).extend({ unit: z.
 export const planRequest = z.object({
   base, snapshot: id.optional(), global: direction, overrides: directions,
   unitOverrides: directions.optional(),
+  /** Components whose App side changed only in their stories and docs are settled without an AI port */
+  leaveExamples: z.boolean().optional(),
 });
-export const runRequest = planRequest.extend({ only: z.array(z.string().min(1)).optional() });
+/** `batch`: kit ports per Claude Code session (1, the default, ports each feature in its own) */
+export const runRequest = planRequest.extend({ only: z.array(z.string().min(1)).optional(), batch: z.number().int().min(1).max(100).optional() });
 export type PlanRequest = z.infer<typeof planRequest>;
 export type RunRequest = z.infer<typeof runRequest>;
 

@@ -160,7 +160,7 @@ function FeatureDetail({ id, feature, baseId, snapshotId, steps, busy, onRunOne,
 /** `feature`: the feature this step starts, as a heading over its group */
 export function StepLine({ step, feature }: { step: Step; feature?: string }) {
   const [show, setShow] = useState(false);
-  const kind = { "merge-css": "deterministic merge", "ai-pull": "AI draft → App, reviewed before merge", "ai-push": "AI port → Design", upload: "upload, after your approval" }[step.kind];
+  const kind = { "merge-css": "deterministic merge", "ai-pull": "AI draft → App, reviewed before merge", "ai-push": "AI port → Design", "leave-examples": "no AI: recorded synced with the run", upload: "upload, after your approval" }[step.kind];
   return (
     <li className="cds-step" data-kind={step.kind}>
       {feature ? <span className="cds-step-feature">{feature}</span> : null}

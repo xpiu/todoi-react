@@ -1842,6 +1842,39 @@ em {
   border-block: var(--cds-hair);
   overflow-wrap: anywhere;
 }
+.cds-kit-ports {
+  max-width: 78ch;
+  margin: 0 0 14px;
+  padding: 10px 0 0;
+  border: 0;
+  border-top: var(--cds-hair);
+}
+.cds-kit-ports legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  font: 500 13px/1.45 var(--font-ui);
+}
+/* the legend floats to sit inside the fieldset; flex rows would otherwise squeeze in beside it */
+.cds-kit-ports legend + * {
+  clear: both;
+}
+.cds-kit-ports .cds-check {
+  align-items: baseline;
+  margin: 4px 0;
+}
+.cds-kit-sessions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 6px 0;
+  color: var(--ink-600);
+}
+.cds-kit-ports p {
+  margin: 6px 0 0;
+}
 .cds-archive-review h4 {
   margin: 0 0 8px;
   font: 500 13px/1.45 var(--font-ui);

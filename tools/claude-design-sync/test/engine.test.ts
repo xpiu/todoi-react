@@ -10,7 +10,8 @@ import { fakeRunner } from "../src/engine/fakeHarness";
 import { commandFor, parseClaudeLine, toolResultText } from "../src/engine/harness";
 import { resolveKitFile, twinOf } from "../src/engine/kit";
 import { parseProjectRef, projectUrl } from "../src/engine/project";
-import { createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, unitChoicesFor } from "../src/engine/plan";
+import { batchPorts, createStage, cssMergeFor, effectiveDirection, planSteps, recordSyncPoint, stagedChanges, stepFeatures, unitChoicesFor } from "../src/engine/plan";
+import { examplesOnly } from "../src/engine/paths";
 import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSyncPoints, promoteArchive, snapshotFilesDir } from "../src/engine/snapshots";
 import type { Comparison } from "../src/engine/types";
 import { Jobs } from "../src/server/jobs";
@@ -220,6 +221,68 @@ describe("component stories and documentation", () => {
     fx.ctx.config.app = { ...fx.ctx.config.app, ignore: [...fx.ctx.config.app.ignore, "**/*.stories.ts"] };
     const ignored = compare(fx.ctx, { base });
     expect(ignored.units.find((u) => u.id === "component:core/Badge")!.status).toBe("in-sync");
+  });
+
+  it("can leave a component whose stories alone changed out of the kit ports", () => {
+    const fx = makeFixture();
+    const story = "src/client/design/core/Badge.stories.tsx";
+    writeFileSync(join(fx.repo, story), "export const Basic = { args: { n: 1 } };\n");
+    git(fx.repo, ["add", story]);
+    git(fx.repo, ["commit", "-qm", "docs: badge examples"]);
+    const base = recordSyncPoint(fx.ctx, { label: "With stories", snapshotId: fx.nowSnapshot, hold: [] });
+    writeFileSync(join(fx.repo, story), "export const Basic = { args: { n: 2 } };\nexport const Large = { args: { n: 99 } };\n");
+    const cmp = compare(fx.ctx, { base });
+    const badge = cmp.units.find((u) => u.id === "component:core/Badge")!;
+    expect(badge.app.changedPaths).toEqual([story]);
+    expect(examplesOnly(badge)).toBe(true);
+    const choices = Object.fromEntries(cmp.features.map((f) => [f.id, "app-to-design" as const]));
+    // by default the story change is ported like any other
+    expect(planSteps(fx.ctx, cmp, choices).some((s) => s.kind === "ai-push" && s.units.includes(badge.id))).toBe(true);
+    const steps = planSteps(fx.ctx, cmp, choices, {}, { leaveExamples: true });
+    expect(steps.some((s) => s.kind === "ai-push" && s.units.includes(badge.id))).toBe(false);
+    const left = steps.find((s) => s.kind === "leave-examples")!;
+    expect(left.units).toEqual([badge.id]);
+    expect(left.target).toBe("design");
+    // the run still uploads (and so records the part synced) with the rest
+    expect(steps.at(-1)!.kind).toBe("upload");
+
+    // a component whose own source changed too is still ported
+    writeFileSync(join(fx.repo, "src/client/design/core/Badge.tsx"), "export function Badge({ n }: { n: number }) { return <span>{n}</span>; }\n");
+    const both = compare(fx.ctx, { base });
+    const changed = both.units.find((u) => u.id === badge.id)!;
+    expect(examplesOnly(changed)).toBe(false);
+    const port = planSteps(fx.ctx, both, choices, {}, { leaveExamples: true }).find((s) => s.kind === "ai-push" && s.units.includes(badge.id))!;
+    // its stories are named, not read or translated into cards
+    expect(port.brief).toContain("leaves the App's Storybook examples out of the kit");
+    expect(port.brief).not.toContain("## Component examples (reference)");
+    expect(port.brief).not.toContain(`diff ${base.rev} -- ${story}`);
+  });
+});
+
+describe("kit ports grouped into one session", () => {
+  it("ports several features in one Claude Code session, each with its own section", () => {
+    const fx = makeFixture();
+    const cmp = compare(fx.ctx, { base: listSyncPoints(fx.ctx)[0]! });
+    const steps = planSteps(fx.ctx, cmp, Object.fromEntries(cmp.features.map((f) => [f.id, "app-to-design" as const])));
+    const ports = steps.filter((s) => s.kind === "ai-push");
+    expect(ports.length).toBeGreaterThan(1);
+    // one per feature leaves the plan as it is
+    expect(batchPorts(fx.ctx, cmp, steps, 1)).toEqual(steps);
+    const batched = batchPorts(fx.ctx, cmp, steps, 100);
+    const sessions = batched.filter((s) => s.kind === "ai-push");
+    expect(sessions).toHaveLength(1);
+    const session = sessions[0]!;
+    expect(stepFeatures(session).sort()).toEqual(ports.map((s) => s.featureId).sort());
+    expect(session.units.sort()).toEqual(ports.flatMap((s) => s.units).sort());
+    expect(session.brief).toContain(`# Push to Claude Design: ${ports.length} features in one session`);
+    for (const p of ports) expect(session.brief).toContain(`of ${ports.length}: ${p.featureTitle}`);
+    // the rules are written once
+    expect(session.brief!.split("Kit conventions").length).toBe(2);
+    // the other steps keep their places, and the upload stays last
+    expect(batched.filter((s) => s.kind !== "ai-push")).toEqual(steps.filter((s) => s.kind !== "ai-push"));
+    expect(batched.at(-1)!.kind).toBe("upload");
+    // groups of two: as many sessions as pairs
+    expect(batchPorts(fx.ctx, cmp, steps, 2).filter((s) => s.kind === "ai-push")).toHaveLength(Math.ceil(ports.length / 2));
   });
 });
 

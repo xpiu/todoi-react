@@ -8,14 +8,15 @@ import { ADAPTATION_BRIEF } from "./adaptation";
 import { mergeCss } from "./css";
 import { hash, listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
-import { isStoryFile, sections } from "./inventory";
+import { sections } from "./inventory";
+import { examplesOnly, isExampleFile } from "./paths";
 import { plannedDrafts } from "./kitDraft";
 import { saveSyncPoint, snapshotFilesDir } from "./snapshots";
 import { appMoved, designMoved, featureDirection, REFERENCE_KINDS, unitDirection } from "./directions";
 import { partsTitle, unitBaseline } from "./compare";
 import type { Baseline, Comparison, Direction, Feature, SyncPoint, Unit } from "./types";
 
-export type StepKind = "merge-css" | "ai-pull" | "ai-push" | "upload";
+export type StepKind = "merge-css" | "ai-pull" | "ai-push" | "leave-examples" | "upload";
 
 export interface Step {
   id: string;
@@ -28,7 +29,22 @@ export interface Step {
   units: string[];
   /** The AI brief (ai-* steps) */
   brief?: string;
+  /** Every feature a kit port carries when it ports several in one session (`featureId` is the first) */
+  featureIds?: string[];
 }
+
+/** How the plan ports App work into the kit */
+export interface PlanOptions {
+  /**
+   * Components whose App side changed only in their stories and docs get no AI port: a "leave-examples"
+   * step settles them instead, and the run records them synced like the rest. Their kit cards keep the
+   * figures they have, and the briefs of other ports skip translating stories into cards.
+   */
+  leaveExamples?: boolean;
+}
+
+/** The features a step works on */
+export const stepFeatures = (s: Pick<Step, "featureId" | "featureIds">) => s.featureIds ?? [s.featureId];
 
 const flows = (u: Unit, d: Direction): Array<"app" | "design"> => {
   const out: Array<"app" | "design"> = [];
@@ -56,7 +72,7 @@ export function unitChoicesFor(cmp: Comparison, global: Direction, featureOverri
 const pullName = (f: Feature, units: Unit[]) => (f.source === "commit" ? `the kit's changes to ${partsTitle(units)}` : `“${f.title}” from the kit`);
 
 /** Steps for the chosen directions. `choices` are per feature; `unitChoices` (from unitChoicesFor) win per subfeature. */
-export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Direction>, unitChoices: Record<string, Direction> = {}): Step[] {
+export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Direction>, unitChoices: Record<string, Direction> = {}, opts: PlanOptions = {}): Step[] {
   const steps: Step[] = [];
   for (const f of cmp.features) {
     const fd = choices[f.id] ?? "skip";
@@ -66,16 +82,55 @@ export function planSteps(ctx: Ctx, cmp: Comparison, choices: Record<string, Dir
     const toApp = f.units.filter((u) => flows(u, dir(u)).includes("app"));
     for (const [target, units] of [["app", toApp], ["design", toDesign]] as const) {
       const css = units.filter((u) => u.mergeable && u.app.exists && u.design.exists);
-      const ai = units.filter((u) => !css.includes(u));
+      const left = target === "design" && opts.leaveExamples ? units.filter((u) => !css.includes(u) && examplesOnly(u)) : [];
+      const ai = units.filter((u) => !css.includes(u) && !left.includes(u));
       for (const u of css) steps.push({ id: `${f.id}:css:${target}:${u.id}`, featureId: f.id, featureTitle: f.title, kind: "merge-css", target, title: `Merge ${u.name} rules into ${target === "app" ? "the App" : "Design"}`, units: [u.id] });
+      if (left.length) steps.push({ id: `${f.id}:leave-examples`, featureId: f.id, featureTitle: f.title, kind: "leave-examples", target, title: `Leave ${partsTitle(left)}'s new Storybook examples out of the kit`, units: left.map((u) => u.id) });
       if (ai.length) {
         const kind = target === "app" ? "ai-pull" : "ai-push";
-        steps.push({ id: `${f.id}:${kind}`, featureId: f.id, featureTitle: f.title, kind, target, title: target === "app" ? `Draft ${pullName(f, ai)} for your review` : `Port “${f.title}” into the kit`, units: ai.map((u) => u.id), brief: briefFor(ctx, cmp, f, target, ai) });
+        steps.push({ id: `${f.id}:${kind}`, featureId: f.id, featureTitle: f.title, kind, target, title: target === "app" ? `Draft ${pullName(f, ai)} for your review` : `Port “${f.title}” into the kit`, units: ai.map((u) => u.id), brief: briefFor(ctx, cmp, [{ f, units: ai }], target, opts) });
       }
     }
   }
   if (steps.some((s) => s.target === "design")) steps.push({ id: "upload", featureId: "*", featureTitle: "Upload", kind: "upload", target: "design", title: "Upload the staged kit files to Claude Design (shows the file list first)", units: [] });
   return steps;
+}
+
+/** The area most of a feature's parts live in, so ports of one area share a session */
+const mainArea = (units: Unit[]) => {
+  const count = new Map<string, number>();
+  for (const u of units) count.set(u.area, (count.get(u.area) ?? 0) + 1);
+  return [...count].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
+};
+
+/**
+ * Kit ports `size` features to a Claude Code session, grouped by area: each session reads the kit's rules
+ * and spec, builds the bundle and checks its cards once for all its features. Done when a run starts, on
+ * the steps it runs, so a single feature's run never takes others along. Other steps keep their order;
+ * a session takes the place of its first port.
+ */
+export function batchPorts(ctx: Ctx, cmp: Comparison, steps: Step[], size: number, opts: PlanOptions = {}): Step[] {
+  const ports = steps.filter((s) => s.kind === "ai-push");
+  if (size < 2 || ports.length < 2) return steps;
+  const parts = (s: Step) => ({ f: cmp.features.find((f) => f.id === s.featureId)!, units: cmp.units.filter((u) => s.units.includes(u.id)) });
+  const byArea = ports.map((s, i) => ({ s, i, area: mainArea(parts(s).units) })).sort((a, b) => a.area.localeCompare(b.area) || a.i - b.i).map((x) => x.s);
+  const sessions = new Map<Step, Step>();
+  for (let i = 0; i < byArea.length; i += size) {
+    const group = byArea.slice(i, i + size);
+    const first = ports.find((s) => group.includes(s))!;
+    if (group.length === 1) {
+      sessions.set(first, first);
+      continue;
+    }
+    const titles = group.map((s) => s.featureTitle);
+    sessions.set(first, {
+      id: `${group[0]!.featureId}+${group.length - 1}:ai-push`, featureId: group[0]!.featureId, featureIds: group.map((s) => s.featureId),
+      featureTitle: titles.join(" · "), kind: "ai-push", target: "design",
+      title: `Port ${group.length} features into the kit in one session: ${titles.map((t) => `“${t}”`).join(", ")}`,
+      units: group.flatMap((s) => s.units), brief: briefFor(ctx, cmp, group.map(parts), "design", opts),
+    });
+  }
+  return steps.flatMap((s) => (s.kind !== "ai-push" ? [s] : sessions.has(s) ? [sessions.get(s)!] : []));
 }
 
 // ── Deterministic merges ─────────────────────────────────────────────────────────────────────
@@ -183,7 +238,7 @@ interface Reading {
   context: string[];
 }
 
-function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design"): Reading {
+function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design", leaveExamples = false): Reading {
   const r: Reading = { run: [], read: [], context: [] };
   const b = unitBaseline(cmp, u);
   // one file of the unit, before and now; `diff` is how a command shows the change
@@ -196,7 +251,11 @@ function changeLines(ctx: Ctx, cmp: Comparison, u: Unit, side: "app" | "design")
   };
   if (side === "app") {
     if (u.kind === "spec") return specReading(ctx, b ? showAt(ctx.repo, b.rev, u.app.paths[0] ?? "") : null, readText(join(ctx.repo, u.app.paths[0] ?? "")), u.name);
-    for (const p of u.app.paths) add(join(ctx.repo, p), b ? showAt(ctx.repo, b.rev, p) : null, () => ({ cmd: `git -C ${q(ctx.repo)} diff ${b!.rev} -- ${q(p)}`, text: diffSince(ctx.repo, b!.rev, [p]) }));
+    for (const p of u.app.paths) {
+      // examples left out of the kit are named, not read: the port doesn't translate them
+      if (leaveExamples && isExampleFile(p)) r.context.push(`\`${join(ctx.repo, p)}\``);
+      else add(join(ctx.repo, p), b ? showAt(ctx.repo, b.rev, p) : null, () => ({ cmd: `git -C ${q(ctx.repo)} diff ${b!.rev} -- ${q(p)}`, text: diffSince(ctx.repo, b!.rev, [p]) }));
+    }
     return r;
   }
   const snap = cmp.designSnapshot ? snapshotFilesDir(ctx, cmp.designSnapshot.id) : null;
@@ -251,35 +310,39 @@ const APP_RULES = `App conventions (this repo, React 19 + TypeScript; read CLAUD
 - DESIGN.md is the spec; update the matching section when behaviour changes.
 - Run \`npm run check\` until it passes; when files changed, commit with a conventional message (feat:/fix:/style:) ending with the Co-Authored-By line your harness uses.`;
 
-export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | "design", units: Unit[]): string {
+/** One feature's parts in a brief */
+type BriefPart = { f: Feature; units: Unit[] };
+
+/** A brief for one feature's port, or for several kit ports in one session (each feature gets its own section) */
+export function briefFor(ctx: Ctx, cmp: Comparison, parts: BriefPart[], target: "app" | "design", opts: PlanOptions = {}): string {
   const base = cmp.base;
   const stage = "STAGE";
   // a pull carries Design's work into the App; a push carries the App's work into the kit
   const from = target === "app" ? "design" : "app";
+  const leaveExamples = target === "design" && !!opts.leaveExamples;
+  const units = parts.flatMap((p) => p.units);
+  const many = parts.length > 1;
   const lines: string[] = [];
-  lines.push(`# ${target === "app" ? `Draft into the App: ${pullName(f, units)}` : `Push to Claude Design: ${f.title}`}`);
+  lines.push(many ? `# Push to Claude Design: ${parts.length} features in one session` : `# ${target === "app" ? `Draft into the App: ${pullName(parts[0]!.f, units)}` : `Push to Claude Design: ${parts[0]!.f.title}`}`);
   lines.push("");
   lines.push(target === "app"
     ? `Bring the Claude Design kit's changes for this feature into the React 19 app in this repository (${ctx.repo}). The kit is a different framework: translate, don't copy. Your work is a draft: the developer reviews it against the App's architecture before it merges.`
-    : `Bring the App's changes for this feature into the Claude Design kit. Work ONLY inside the staging folder ${stage} — a full copy of the current Design project. Do not upload anything: the developer reviews the staged files and uploads them from the Claude Design Sync tool.`);
+    : `Bring the App's changes for ${many ? "these features" : "this feature"} into the Claude Design kit. Work ONLY inside the staging folder ${stage} — a full copy of the current Design project. Do not upload anything: the developer reviews the staged files and uploads them from the Claude Design Sync tool.`);
+  if (many) lines.push("", "Port the features one after another, in the order below. They share the kit's rules, its spec (readme.md) and its preview cards: read those once, and build the bundle and check the cards once, after the last feature.");
   lines.push("");
   lines.push(`Sync point: ${base ? `${base.label} (App rev ${base.rev})` : "none recorded"} · App now: ${cmp.appHead} · Design snapshot: ${cmp.designSnapshot?.label ?? "none"}`);
-  if (f.appWork.length) lines.push(`App work since then: ${f.appWork.join("; ")}`);
-  if (f.designWork.length) lines.push(`Design work since then: ${f.designWork.join("; ")}`);
-  lines.push("");
-  lines.push("## Subfeatures");
-  for (const u of units) {
-    lines.push(`- **${u.name}** (${u.kind}, ${u.status}) — App: ${u.app.paths.join(", ") || "none"} · Design: ${u.design.paths.join(", ") || "none"}`);
-    lines.push(`  - Subfeature id: ${u.id}`);
-    for (const e of [...u.app.evidence.map((x) => `App: ${x}`), ...u.design.evidence.map((x) => `Design: ${x}`)]) lines.push(`  - ${e}`);
-  }
-  lines.push("");
-  lines.push(`## Read the changes first`);
-  lines.push(`The ${from === "design" ? "kit's" : "App's"} changes are not pasted here. Before you edit anything, run each command (each line ends with the lines it adds and removes) and read each file in full, with your own tools. Paths are absolute, so the commands work from any folder.`);
-  if (target === "design") lines.push(`STAGE is the staging folder: the run creates it as a copy of the newest Design snapshot${cmp.designSnapshot ? ` (${snapshotFilesDir(ctx, cmp.designSnapshot.id)})` : ""}. To run this brief yourself, copy that folder and use the copy as STAGE.`);
-  for (const u of units) {
-    const r = changeLines(ctx, cmp, u, from);
-    lines.push("", `### ${u.name}`);
+  const work = (f: Feature) => [...(f.appWork.length ? [`App work since then: ${f.appWork.join("; ")}`] : []), ...(f.designWork.length ? [`Design work since then: ${f.designWork.join("; ")}`] : [])];
+  const subfeatures = (heading: string, featureUnits: Unit[]) => {
+    lines.push(heading);
+    for (const u of featureUnits) {
+      lines.push(`- **${u.name}** (${u.kind}, ${u.status}) — App: ${u.app.paths.join(", ") || "none"} · Design: ${u.design.paths.join(", ") || "none"}`);
+      lines.push(`  - Subfeature id: ${u.id}`);
+      for (const e of [...u.app.evidence.map((x) => `App: ${x}`), ...u.design.evidence.map((x) => `Design: ${x}`)]) lines.push(`  - ${e}`);
+    }
+  };
+  const reading = (heading: string, u: Unit) => {
+    const r = changeLines(ctx, cmp, u, from, leaveExamples);
+    lines.push("", `${heading} ${u.name}`);
     if (r.run.length) lines.push("```sh", ...r.run, "```");
     if (r.read.length) lines.push(`- Read in full: ${r.read.join(", ")}`);
     if (r.context.length) lines.push(`- Unchanged, for context: ${r.context.join(", ")}`);
@@ -293,6 +356,21 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
       if (receiving.run.length) lines.push("```sh", ...receiving.run, "```");
       if (u.kind === "spec" && receiving.read.length) lines.push(`- Read in full: ${receiving.read.join(", ")}`);
     }
+  };
+  if (!many) {
+    lines.push(...work(parts[0]!.f), "");
+    subfeatures("## Subfeatures", units);
+    lines.push("");
+  }
+  lines.push(`## Read the changes first`);
+  lines.push(`The ${from === "design" ? "kit's" : "App's"} changes are not pasted here. Before you edit anything${many ? " for a feature" : ""}, run each command (each line ends with the lines it adds and removes) and read each file in full, with your own tools. Paths are absolute, so the commands work from any folder.`);
+  if (target === "design") lines.push(`STAGE is the staging folder: the run creates it as a copy of the newest Design snapshot${cmp.designSnapshot ? ` (${snapshotFilesDir(ctx, cmp.designSnapshot.id)})` : ""}. To run this brief yourself, copy that folder and use the copy as STAGE.`);
+  if (leaveExamples) lines.push("This run leaves the App's Storybook examples out of the kit: story and docs files are named for context only. Don't add or rework preview-card figures or .prompt.md examples for new stories; port the components' own changes.");
+  if (!many) for (const u of units) reading("###", u);
+  else for (const [i, { f, units: featureUnits }] of parts.entries()) {
+    lines.push("", `## Feature ${i + 1} of ${parts.length}: ${f.title}`, ...work(f), "");
+    subfeatures("### Subfeatures", featureUnits);
+    for (const u of featureUnits) reading("####", u);
   }
   if (target === "design") {
     // what the tool writes from Storybook before this step: the agent refines these instead of authoring them
@@ -300,7 +378,7 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
     const drafted = units.flatMap((u) => plannedDrafts(ctx, u, (p) => !!snap && existsSync(join(snap, p))));
     if (drafted.length) lines.push("", "## Drafted for you from Storybook", "Before you start, the tool writes these from the App's Storybook manifest (react-docgen props, one card figure per story). They are already in the stage: refine them and write the component's .jsx to match, don't start them over.", ...drafted.map((p) => `- \`${join(stage, p)}\``));
   }
-  const examples = units.filter((u) => u.kind === "component").flatMap((u) => u.app.paths.filter((p) => isStoryFile(p) || /\.mdx?$/.test(p)));
+  const examples = leaveExamples ? [] : units.filter((u) => u.kind === "component").flatMap((u) => u.app.paths.filter(isExampleFile));
   if (examples.length) {
     lines.push("", "## Component examples (reference)", "Usage guidance: read these whole and translate the relevant examples into the receiving environment.");
     for (const p of examples) lines.push(`- \`${join(ctx.repo, p)}\` (${lineCount(readText(join(ctx.repo, p)))} lines)`);
@@ -313,7 +391,7 @@ export function briefFor(ctx: Ctx, cmp: Comparison, f: Feature, target: "app" | 
   lines.push("");
   lines.push("## Done means");
   if (target === "app") lines.push("- You read every change listed above, whole.", "- The App renders the feature the way the kit specifies, in both themes (Rounded, Minimal) and modes.", "- Base UI primitives, ref and render-prop forwarding, focused Zustand selectors and ARIA/keyboard behaviour are kept: the tool scans the draft for their loss, and the developer reviews it.", '- `npm run check` passes; commit actual changes. If every selected subfeature is already implemented, make no empty commit or cosmetic edit: explain the evidence and include one line alongside the adaptation report: CDS_ALREADY_IMPLEMENTED={"units":[{"id":"<exact subfeature id>","evidence":[{"path":"<existing App file, relative to worktree>","reason":"<specific existing behavior satisfying the kit change>"}]}]}. Include exactly every selected subfeature id, each once, with concrete file evidence. The tool checks the unchanged worktree and runs its final gate; the developer reviews this report.', "- Nothing outside this feature changed.");
-  else lines.push("- You read every change listed above, whole.", `- The kit files for every subfeature are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card, readme.md, Minimal rules); Minimal twins are the tool's.`, "- The local bundle builds and every touched card renders without errors.", "- Reply with the list of files you changed.");
+  else lines.push("- You read every change listed above, whole.", `- The kit files for every subfeature${many ? " of every feature" : ""} are updated in ${stage} (component .jsx/.d.ts/.prompt.md, preview card, readme.md, Minimal rules); Minimal twins are the tool's.`, "- The local bundle builds and every touched card renders without errors.", `- Reply with the list of files you changed${many ? ", and one adaptation report covering every subfeature id above" : ""}.`);
   return lines.join("\n");
 }
 

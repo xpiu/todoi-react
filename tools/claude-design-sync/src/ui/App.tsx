@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowLeftRight, ArrowRight, History, LoaderCircle, PanelRigh
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Activity } from "./Activity";
-import { api, featureTally, selectedUnitIds, store, unitDirection, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Imported, type Step } from "./api";
+import { api, featureTally, selectedUnitIds, store, unitDirection, DIRECTION_HINT, DIRECTION_LABEL, DIRECTION_SUB, effective, fmtTime, plural, type AppState, type Comparison, type Direction, type Imported, type KitPorts, type Step } from "./api";
 import { RefreshChoice, useRefreshChoice } from "./DesignRefresh";
 import { FeatureRow, TriCheck } from "./FeatureRow";
 import { MergeBanner, useMerge } from "./Merge";
@@ -37,6 +37,7 @@ export function App() {
   const [global, setGlobal] = useState<Direction>(() => store.get<Direction>("cds-global", "both"));
   const [overrides, setOverrides] = useState<Record<string, Direction>>(() => store.get("cds-overrides", {}));
   const [unitOverrides, setUnitOverrides] = useState<Record<string, Direction>>(() => store.get("cds-unit-overrides", {}));
+  const [kitPorts, setKitPorts] = useState<KitPorts>(() => store.get("cds-kit-ports", { leaveExamples: false, batch: 1 }));
   const [steps, setSteps] = useState<Step[]>([]);
   // /?job=<id> (linked from the Mapping page) opens that job in the activity panel
   const [activity, setActivity] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
@@ -101,12 +102,14 @@ export function App() {
   useEffect(() => store.set("cds-global", global), [global]);
   useEffect(() => store.set("cds-overrides", overrides), [overrides]);
   useEffect(() => store.set("cds-unit-overrides", unitOverrides), [unitOverrides]);
+  useEffect(() => store.set("cds-kit-ports", kitPorts), [kitPorts]);
+  const leaveExamples = kitPorts.leaveExamples;
 
   // the plan follows every decision
   useEffect(() => {
     if (!cmp) return;
     let live = true;
-    api.plan(cmp.base?.id ?? null, global, overrides, unitOverrides).then(
+    api.plan(cmp.base?.id ?? null, global, overrides, unitOverrides, leaveExamples).then(
       (r) => {
         if (!live) return;
         setSteps(r.steps);
@@ -116,7 +119,7 @@ export function App() {
     return () => {
       live = false;
     };
-  }, [cmp, global, overrides, unitOverrides]);
+  }, [cmp, global, overrides, unitOverrides, leaveExamples]);
 
   const features = useMemo(() => cmp?.features ?? [], [cmp]);
   const visibleSteps = cmp ? steps : [];
@@ -144,7 +147,7 @@ export function App() {
     runPending.current = true;
     setStartingRun(true);
     try {
-      const r = await api.run(cmp?.base?.id ?? null, global, overrides, unitOverrides, only);
+      const r = await api.run(cmp?.base?.id ?? null, global, overrides, unitOverrides, kitPorts, only);
       await openJob(r.job);
     } catch (e) {
       setError((e as Error).message);
@@ -429,7 +432,7 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} selections={selections} unitChoices={unitChoices} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} onShowJob={(id) => void openJob(id)} busy={!!holding || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} selections={selections} unitChoices={unitChoices} kitPorts={kitPorts} onKitPorts={setKitPorts} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} onShowJob={(id) => void openJob(id)} busy={!!holding || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);

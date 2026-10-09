@@ -58,7 +58,9 @@ function sideState(def: UnitDef, side: "app" | "design", r: Readers): SideState 
   const baseText = base ? unitText(def, paths, base) : null;
   const existedAtBase = baseText ? baseText.some((t) => t != null) : null;
   const changed = baseText ? hashAll(nowText) !== hashAll(baseText) : null;
-  return { paths, exists, changed: exists || existedAtBase ? changed : false, added: existedAtBase === false && exists, evidence: [] };
+  // a spec unit reads one section of one file, so only its whole text compares
+  const changedPaths = baseText && def.kind !== "spec" ? paths.filter((_, i) => nowText[i] !== baseText[i]) : undefined;
+  return { paths, exists, changed: exists || existedAtBase ? changed : false, added: existedAtBase === false && exists, evidence: [], ...(changedPaths ? { changedPaths } : {}) };
 }
 
 function statusOf(u: Pick<Unit, "app" | "design">): UnitStatus {
