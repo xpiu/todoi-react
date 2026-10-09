@@ -12,7 +12,8 @@ import { appPending, canResume, keepsRunFiles, uploadPending } from "../engine/a
 import { removeWorktree, type AppRun } from "../engine/worktree";
 
 export type JobKind = "pull" | "status" | "run" | "upload";
-export type JobState = "running" | "awaiting-approval" | "done" | "failed" | "cancelled";
+/** `paused`: a run the developer paused; it keeps its staging copy and App branch until Resume or Discard */
+export type JobState = "running" | "awaiting-approval" | "paused" | "done" | "failed" | "cancelled";
 
 export interface JobEvent {
   at: string;
@@ -64,6 +65,8 @@ export interface Job {
   /** `conflict`: why uploading this file would overwrite newer Design work (set by the pre-upload check) */
   staged?: Array<{ path: string; status: "new" | "changed"; conflict?: string }>;
   cards?: Array<{ card: string; errors: string[] }>;
+  /** What the tool drafted from Storybook per component: the .jsx it is for, and a hash of each drafted file (kept so a paused run still knows after Resume) */
+  drafts?: Array<{ jsx: string; files: Record<string, string> }>;
   /** Staged files the tool wrote itself, not the AI: drafts from the App's Storybook (then maybe refined by the AI), and Minimal twins */
   origin?: Record<string, "storybook" | "storybook-refined" | "twin">;
   /** Why a staged file deserves a look before it goes up (a twin that couldn't follow its card, render errors, a draft without its component) */
@@ -98,6 +101,8 @@ export class Jobs {
   private jobs = new Map<string, Job>();
   private listeners = new Map<string, Set<Listener>>();
   private aborts = new Map<string, AbortController>();
+  /** Runs asked to pause: their abort ends the running step, and the run parks instead of stopping */
+  private pausing = new Set<string>();
   constructor(private ctx: Ctx) {
     const dir = this.dir();
     if (existsSync(dir)) for (const f of readdirSync(dir)) {
@@ -106,7 +111,7 @@ export class Jobs {
         const j = JSON.parse(readFileSync(join(dir, f), "utf8")) as Job;
         if ((j.state as string) === "awaiting-upload") j.state = "awaiting-approval"; // the name before App merges waited too
         if (j.state === "running") j.state = "failed";
-        if (j.app?.state === "working") Object.assign(j.app, { state: "failed", reason: "The tool stopped while the port was running" });
+        if (j.app?.state === "working" && j.state !== "paused") Object.assign(j.app, { state: "failed", reason: "The tool stopped while the port was running" });
         this.jobs.set(j.id, j);
       } catch {
         /* ignore a torn file */
@@ -145,7 +150,7 @@ export class Jobs {
       }
     };
     const stages = join(this.ctx.state, "stage");
-    const staged = new Set(this.list().filter((j) => (j.state === "running" || j.state === "awaiting-approval") && j.stage).map((j) => resolve(j.stage!)));
+    const staged = new Set(this.list().filter((j) => (j.state === "running" || j.state === "awaiting-approval" || j.state === "paused") && j.stage).map((j) => resolve(j.stage!)));
     for (const d of entries(stages)) if (!staged.has(resolve(stages, d))) drop(join(stages, d));
     const kept = (id: string) => {
       const j = this.jobs.get(id);
@@ -236,6 +241,34 @@ export class Jobs {
   signal(id: string) {
     return this.aborts.get(id)?.signal;
   }
+  /** Ask a running run to pause: its AI call or check stops now, and the run parks at that step */
+  pause(id: string): boolean {
+    const j = this.jobs.get(id);
+    if (!j || j.kind !== "run" || j.state !== "running") return false;
+    this.pausing.add(id);
+    this.aborts.get(id)?.abort();
+    return true;
+  }
+  isPausing(id: string) {
+    return this.pausing.has(id);
+  }
+  /** The run stopped where it was asked to: it waits, holding its stage and branch, until Resume or Discard */
+  park(j: Job, text: string) {
+    this.pausing.delete(j.id);
+    if (j.state !== "running") return;
+    j.state = "paused";
+    j.result = text;
+    this.persist(j);
+    this.emit(j, { at: new Date().toISOString(), level: "done", text });
+  }
+  /** Go on with a paused run: a fresh abort signal, and its pending steps run from where it stopped */
+  unpause(j: Job) {
+    if (j.state !== "paused") throw new Error("This run isn't paused");
+    this.aborts.set(j.id, new AbortController());
+    j.state = "running";
+    j.result = undefined;
+    this.update(j, {});
+  }
   cancel(id: string) {
     this.aborts.get(id)?.abort();
     const j = this.jobs.get(id);
@@ -247,9 +280,9 @@ export class Jobs {
    */
   discard(id: string): boolean {
     const j = this.jobs.get(id);
-    if (!j || !(j.state === "awaiting-approval" || appPending(j))) return false;
+    if (!j || !(j.state === "awaiting-approval" || j.state === "paused" || appPending(j))) return false;
     const notes: string[] = [];
-    if (j.app && appPending(j)) {
+    if (j.app && (appPending(j) || (j.state === "paused" && j.app.state === "working"))) {
       removeWorktree(this.ctx, j.app, true);
       j.app.state = "discarded";
       notes.push(`branch ${j.app.branch} deleted, nothing merged`);
@@ -259,7 +292,8 @@ export class Jobs {
       notes.push("nothing uploaded");
     }
     const text = `Discarded: ${notes.join("; ") || "nothing was left waiting"}`;
-    if (j.state === "awaiting-approval") this.finish(j, "cancelled", text);
+    if (j.state === "paused" && j.stage) notes.push("its staging copy deleted, nothing uploaded");
+    if (j.state === "awaiting-approval" || j.state === "paused") this.finish(j, "cancelled", text);
     else {
       this.log(j, "done", text);
       this.tidy(j);
@@ -285,7 +319,8 @@ export class Jobs {
     this.emit(j);
   }
   finish(j: Job, state: JobState, result?: string) {
-    if (j.state !== "running" && j.state !== "awaiting-approval") return;
+    if (j.state !== "running" && j.state !== "awaiting-approval" && j.state !== "paused") return;
+    this.pausing.delete(j.id);
     j.state = state;
     j.result = result;
     if (state !== "awaiting-approval") j.endedAt = new Date().toISOString();

@@ -135,6 +135,8 @@ export const api = {
   uploadCheck: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/upload-check`, { method: "POST" }),
   /** `setAside`: move edits made after the last saved step into a patch first (refused resumes list them as `drift`) */
   resume: (id: string, setAside = false) => call<{ ok: true }>(`/api/jobs/${id}/resume`, { body: { setAside } }),
+  /** Stop the running step now and park the run there, keeping its stage and branch, until Resume */
+  pause: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/pause`, { method: "POST" }),
   cancel: (id: string) => call<{ ok: true }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
   /** `reviewed`: the developer confirmed their review of a draft (required for runs that ported kit code) */
   merge: (id: string, reviewed = false) => call<{ ok: true }>(`/api/jobs/${id}/merge`, { body: { reviewed } }),

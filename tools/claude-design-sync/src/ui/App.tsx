@@ -184,6 +184,8 @@ export function App() {
   // the newest snapshot came from a project the tool no longer targets
   const otherProject = !!snap?.projectId && !!state && snap.projectId !== state.project.id;
   const running = state?.jobs.find((j) => j.state === "running" || j.state === "awaiting-approval");
+  // a paused run holds its plan too: the next run or pull waits until it's resumed or discarded
+  const holding = running ?? state?.jobs.find((j) => j.state === "paused");
   const synced = cmp?.units.filter((u) => u.status === "in-sync").length ?? 0;
 
   return (
@@ -283,7 +285,7 @@ export function App() {
               </div>
             </section>
 
-            {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={() => void pull()} onImported={imported} onArchiveUsed={() => refresh()} pullBusy={!!running} /> : null}
+            {state ? <RefreshChoice choice={choice} state={state} comparison={cmp} comparisonError={error} onPull={() => void pull()} onImported={imported} onArchiveUsed={() => refresh()} pullBusy={!!holding} /> : null}
 
             <div className="cds-heads">
               <div className="cds-head">
@@ -376,7 +378,7 @@ export function App() {
                         baseId={base?.id ?? null}
                         snapshotId={snap?.id ?? null}
                         steps={visibleSteps}
-                        busy={!!running || startingRun}
+                        busy={!!holding || startingRun}
                         onRunOne={() => { setMarkUnits(null); setRunFeatureId(f.id); }}
                         onMarkSynced={() => setMarkUnits(selectedUnitIds(f.units, unitChoices))}
                       />
@@ -427,7 +429,7 @@ export function App() {
       </main>
       {state ? <ProjectFooter state={state} onChanged={() => refresh(true)} /> : null}
 
-      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} selections={selections} unitChoices={unitChoices} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} onShowJob={(id) => void openJob(id)} busy={!!running || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
+      {cmp && features.length ? <PlanBar runFeatureId={runFeatureId} onRunFeature={setRunFeatureId} baseId={base?.id ?? null} markUnits={markUnits} onMarkUnits={setMarkUnits} steps={visibleSteps} features={features} selections={selections} unitChoices={unitChoices} state={state} snapshot={cmp.designSnapshot} onImportArchive={choice.show} onRun={(only) => void run(only)} onShowJob={(id) => void openJob(id)} busy={!!holding || startingRun} merge={merge} onSyncPoint={async (label, tag, hold) => {
         const { syncPoint } = await api.syncPoint(label, tag, base?.id ?? null, hold);
         // compare from the new point (the base change reloads); re-recording the same point just refreshes
         if (syncPoint.id !== baseId) setBaseId(syncPoint.id);

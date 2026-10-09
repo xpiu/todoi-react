@@ -28,10 +28,10 @@ export const isDraft = (j: { app?: Pick<AppRun, "state" | "review"> }) => j.app?
 export const appPending = (j: { app?: Pick<AppRun, "state"> }) => j.app?.state === "ready" || j.app?.state === "failed";
 
 /**
- * A run keeps its temporary files (saved plan, set-aside patches) while it can still go on: running, waiting,
+ * A run keeps its temporary files (saved plan, set-aside patches) while it can still go on: running, waiting, paused,
  * or holding a branch (a stopped run's port may still be winding down, its branch about to be kept)
  */
-export const keepsRunFiles = (j: Pick<Job, "state" | "app">) => j.state === "running" || j.state === "awaiting-approval" || appPending(j) || j.app?.state === "working";
+export const keepsRunFiles = (j: Pick<Job, "state" | "app">) => j.state === "running" || j.state === "awaiting-approval" || j.state === "paused" || appPending(j) || j.app?.state === "working";
 
 /** Staged kit files still waiting for the upload decision */
 export const uploadPending = (j: { staged?: unknown[]; steps: Array<{ id: string; state: string }> }) => {

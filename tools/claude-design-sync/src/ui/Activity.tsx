@@ -3,7 +3,7 @@
 // upload itself runs in Claude Code, where DesignSync's prompt can be approved, and is read back here),
 // and Discard gives up whatever is still waiting. A run waiting for Merge is pinned above the log even while
 // another job is shown.
-import { CircleAlert, Check, GitMerge, LoaderCircle, Maximize2, Minimize2, Upload, X } from "lucide-react";
+import { CircleAlert, Check, GitMerge, LoaderCircle, Maximize2, Minimize2, Pause, Play, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type ApiError, type AppState, type FidelityFinding, type Job } from "./api";
@@ -12,7 +12,7 @@ import { CopyLink } from "./CopyLink";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
 
-const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", done: "done", failed: "failed", cancelled: "stopped" };
+const STATE_WORD: Record<Job["state"], string> = { running: "running", "awaiting-approval": "waiting for your approval", paused: "paused", done: "done", failed: "failed", cancelled: "stopped" };
 
 export function Activity({ state, merge, focus, onFocus, wide, onToggleWide, expandedLog, onExpandLog, onClose, onChanged }: { state: AppState | null; merge: MergeOffer; focus: string | null; onFocus: (id: string) => void; wide: boolean; onToggleWide: () => void; expandedLog: boolean; onExpandLog: (expanded: boolean) => void; onClose: () => void; onChanged: () => void }) {
   const jobs = state?.jobs ?? [];
@@ -21,7 +21,7 @@ export function Activity({ state, merge, focus, onFocus, wide, onToggleWide, exp
   const logRef = useRef<HTMLOListElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [historyLimit, setHistoryLimit] = useState(8);
-  const unfinished = (j: AppState["jobs"][number]) => j.state === "running" || j.state === "awaiting-approval" || appPending(j);
+  const unfinished = (j: AppState["jobs"][number]) => j.state === "running" || j.state === "awaiting-approval" || j.state === "paused" || appPending(j);
   const history = jobs.filter((j) => !unfinished(j));
   const visibleIds = new Set(history.slice(0, historyLimit).map((j) => j.id));
   const visibleJobs = [...jobs.filter(unfinished), ...history.filter((j) => visibleIds.has(j.id) || j.id === id)];
@@ -70,7 +70,7 @@ export function Activity({ state, merge, focus, onFocus, wide, onToggleWide, exp
             {visibleJobs.map((j) => (
               <button key={j.id} type="button" className="cds-job" aria-current={j.id === id || undefined} data-tip={`${j.id === id ? "Shown below" : "Show its steps and log"}: ${STATE_WORD[j.state]}`} onClick={() => onFocus(j.id)}>
                 <span className="cds-job-mark" data-state={j.state} aria-hidden>
-                  {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : j.app?.state === "ready" ? <GitMerge size={12} /> : <Upload size={12} />}
+                  {j.state === "running" ? <LoaderCircle size={12} className="cds-spin" /> : j.state === "failed" ? <CircleAlert size={12} /> : j.state === "done" ? <Check size={12} /> : j.state === "cancelled" ? <X size={12} /> : j.state === "paused" ? <Pause size={12} /> : j.app?.state === "ready" ? <GitMerge size={12} /> : <Upload size={12} />}
                 </span>
                 <span className="cds-job-title">{j.title}</span>
                 <span className="cds-job-time">{fmtTime(j.startedAt)}</span>
@@ -221,7 +221,9 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
   const held = [
     ...(uploadWaiting ? [`${plural(staged.length, "staged kit file")} (nothing goes to Claude Design)`] : []),
     ...(app && appPending(job) ? [`branch ${app.branch} with ${plural(app.commits.length, "commit")} (nothing reaches ${app.into})`] : []),
+    ...(job.state === "paused" ? [[job.stage ? "its kit staging copy (nothing goes to Claude Design)" : "", app ? `branch ${app.branch} (nothing reaches ${app.into})` : ""].filter(Boolean).join(" and ") || "the paused run"] : []),
   ];
+  const paused = job.state === "paused";
   const setAsideCount = app?.state === "ready" ? failedPorts(job).length : 0;
   const maxAttempts = Math.max(1, ...failedPorts(job).map((s) => s.attempts?.length ?? 1));
   const resume = (setAside: boolean) => act(async () => {
@@ -234,12 +236,9 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
       throw e;
     }
   });
-  /** Resume, or retry set-aside features; a worktree an interrupted port left dirty gets one more choice */
-  const resumeControls = (label: string, pending: string) => (
+  /** A worktree an interrupted port left dirty gets one more choice before resuming */
+  const driftChoice = (
     <>
-      <button type="button" className="cds-btn" disabled={busy || merge.coming || !!job.steps.some((s) => s.state === "running")} data-tip="Keep the branch and every completed step; run the unfinished and failed steps again, then the final check - Costs tokens" onClick={() => void resume(false)}>
-        {busy ? pending : label}
-      </button>
       {drift?.length ? (
         <div className="cds-drift" role="group" aria-label="Set aside and resume">
           <p className="cds-quiet">
@@ -250,6 +249,15 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
           </button>
         </div>
       ) : null}
+    </>
+  );
+  /** Resume, or retry set-aside features */
+  const resumeControls = (label: string, pending: string) => (
+    <>
+      <button type="button" className="cds-btn" disabled={busy || merge.coming || !!job.steps.some((s) => s.state === "running")} data-tip="Keep the branch and every completed step; run the unfinished and failed steps again, then the final check - Costs tokens" onClick={() => void resume(false)}>
+        {busy ? pending : label}
+      </button>
+      {driftChoice}
     </>
   );
   /** One approval action at a time; its error shows under the sections */
@@ -276,11 +284,23 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
             {typeof job.costUsd === "number" && job.costUsd > 0 ? ` · $${job.costUsd.toFixed(2)}` : ""}
           </p>
           {job.state === "running" ? (
-            <button type="button" className="cds-link" onClick={() => void api.cancel(job.id)} data-tip="Stop this job and the process it runs">
-              Stop
+            <span className="cds-jobview-controls">
+              {job.kind === "run" ? (
+                <button type="button" className="cds-link" disabled={busy || job.steps.some((s) => s.id === "upload" && s.state === "running")} onClick={() => void act(() => api.pause(job.id))} data-tip="Pause now to come back later: the running step stops and goes back to waiting, finished steps, the staging copy and the App branch are kept, and Resume goes on from here. Spends nothing while paused">
+                  <Pause size={12} strokeWidth={1.75} aria-hidden /> Pause
+                </button>
+              ) : null}
+              <button type="button" className="cds-link" onClick={() => void api.cancel(job.id)} data-tip="Stop this job and the process it runs">
+                Stop
+              </button>
+            </span>
+          ) : paused ? (
+            <button type="button" className="cds-btn cds-btn-primary" disabled={busy || merge.coming} onClick={() => void resume(false)} data-tip="Go on from the paused step: finished steps are kept, the paused one runs again, then the rest - Costs tokens">
+              <Play size={12} strokeWidth={1.75} aria-hidden /> {busy ? "Resuming…" : "Resume"}
             </button>
           ) : null}
         </div>
+        {paused ? driftChoice : null}
         {job.progress ? <div className="cds-progress" role="progressbar" aria-valuemin={0} aria-valuemax={job.progress.total} aria-valuenow={job.progress.done}><span style={{ transform: `scaleX(${job.progress.done / Math.max(1, job.progress.total)})` }} /></div> : null}
         {job.steps.length ? (
           <ol className="cds-jobsteps">

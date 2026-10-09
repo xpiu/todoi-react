@@ -187,7 +187,7 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
           {/* a waiting merge takes the primary slot: it is what the plan waits on */}
           <MergeButton offer={merge} place="plan" />
           {view === "confirm" ? null : (
-            <button type="button" className={`cds-btn ${merge.ready ? "" : "cds-btn-primary"}`} disabled={!work || busy} data-tip={!work ? "Nothing to run: every feature is skipped" : merge.ready ? "A run waits for your merge (or Discard in Activity) before the next one can start" : busy ? "Another job is running. Wait for it to finish" : "Review exactly what the run will write and where, then start it"} onClick={() => setView("confirm")}>
+            <button type="button" className={`cds-btn ${merge.ready ? "" : "cds-btn-primary"}`} disabled={!work || busy} data-tip={!work ? "Nothing to run: every feature is skipped" : merge.ready ? "A run waits for your merge (or Discard in Activity) before the next one can start" : busy ? (state?.jobs.some((j) => j.state === "paused") ? "A run is paused: resume or discard it in Activity before the next one starts" : "Another job is running. Wait for it to finish") : "Review exactly what the run will write and where, then start it"} onClick={() => setView("confirm")}>
               <Play size={14} strokeWidth={1.75} aria-hidden /> Review selected sync steps
               {work ? <span className="cds-btn-count">{plural(moving, "feature")} · {plural(work, "step")}</span> : null}
             </button>
