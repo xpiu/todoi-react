@@ -20,6 +20,8 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 
 - [📝 About](#-about)
 - [⚡ Quick Start](#-quick-start)
+  - [Top commands](#top-commands)
+  - [Installation](#installation)
 - [✨ Features and limits](#-features-and-limits)
 - [👥 Visitors and accounts](#-visitors-and-accounts)
 - [🧰 Tech stack](#-tech-stack)
