@@ -114,7 +114,7 @@ test("does not add an App archive reminder to an Into Design review", async ({ p
     await page.locator(".cds-global").getByRole("radio", { name: /Into Design/ }).click();
     await expect(page.locator(".cds-plan-sum")).toContainText("into Design");
     await page.getByRole("button", { name: "Review selected sync steps" }).click();
-    await expect(page.getByRole("heading", { name: /Run \d+ steps?\?/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Run \d+ steps? for \d+ features?\?/ })).toBeVisible();
     await expect(page.getByRole("region", { name: "Project archive reminder" })).toHaveCount(0);
   } finally {
     await world.close();

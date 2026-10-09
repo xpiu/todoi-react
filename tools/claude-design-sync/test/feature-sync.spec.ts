@@ -20,7 +20,7 @@ test("feature-only runs and manual feature acknowledgements keep unrelated featu
   expect((await (await page.request.get("/api/state")).json()).jobs.length).toBe(jobsBefore);
   await page.getByRole("button", { name: "Back to the steps" }).click();
   await row.getByRole("button", { name: "Run this feature only" }).click();
-  await expect(page.getByRole("group", { name: /Run \d+ steps?\?/ })).toContainText(feature.title);
+  await expect(page.getByRole("group", { name: /Run \d+ steps? for \d+ features?\?/ })).toContainText(feature.title);
   await page.getByRole("button", { name: /^Run \d+ steps?$/ }).click();
   const panel = page.getByRole("complementary", { name: "Activity" });
   await expect(panel.getByRole("heading", { name: "Upload to Claude Design" })).toBeVisible({ timeout: 30_000 });

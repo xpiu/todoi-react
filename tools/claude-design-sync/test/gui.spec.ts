@@ -114,7 +114,7 @@ test.describe.serial("Claude Design Sync", () => {
   test("runs the plan, stops for merge and upload approval, does both, and marks a sync point", async ({ page }) => {
     await fresh(page);
     await page.getByRole("button", { name: /Review selected sync steps/ }).click();
-    await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Run \d+ steps? for \d+ features?\?/ })).toBeVisible();
     await page.getByRole("button", { name: /^Run \d+ steps$/ }).click();
     const panel = page.getByRole("complementary", { name: "Activity" });
     await expect(panel).toBeVisible();

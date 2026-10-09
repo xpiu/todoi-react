@@ -193,7 +193,7 @@ test("preserves plan dialog transitions and layouts at desktop and phone widths"
   await expect(page.locator(".cds-plan-sum strong")).toContainText("features");
   await capture(page, "after-plan-desktop");
   await page.getByRole("button", { name: "Review selected sync steps" }).click();
-  await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Run \d+ steps? for \d+ features?\?/ })).toBeVisible();
   await capture(page, "after-plan-confirmation");
   await page.getByRole("button", { name: "Back to the steps" }).click();
   await expect(page.getByRole("heading", { name: "Steps, in order" })).toBeVisible();
@@ -210,7 +210,7 @@ test("preserves plan dialog transitions and layouts at desktop and phone widths"
   await page.locator(".cds-plan-toggle").click();
   await page.getByRole("button", { name: "Review selected sync steps" }).click();
   await page.locator(".cds-plan-toggle").click();
-  await expect(page.getByRole("heading", { name: /Run \d+ steps\?/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /Run \d+ steps? for \d+ features?\?/ })).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await capture(page, "after-plan-phone", false);

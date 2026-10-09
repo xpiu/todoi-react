@@ -54,8 +54,8 @@ export function Activity({ state, merge, focus, onFocus, wide, onToggleWide, exp
       <header className="cds-panel-head">
         <h2>Activity</h2>
         <div className="cds-panel-actions">
-          <button type="button" className="cds-link" onClick={showJobs}>Jobs</button>
-          <button type="button" className="cds-link" onClick={jumpToLog} disabled={!shown}>Jump to log</button>
+          <button type="button" className="cds-link" onClick={showJobs} data-tip="Back to the list of jobs">Jobs</button>
+          <button type="button" className="cds-link" onClick={jumpToLog} disabled={!shown} data-tip={shown ? "Scroll to this job's log" : "Choose a job to see its log"}>Jump to log</button>
           <button type="button" className="cds-icon cds-panel-width" onClick={onToggleWide} aria-label={wide ? "Narrow activity" : "Widen activity"} aria-pressed={wide} data-tip={wide ? "Return to the sidebar width" : "Give steps and log more room"}>
             {wide ? <Minimize2 size={16} strokeWidth={1.75} aria-hidden /> : <Maximize2 size={16} strokeWidth={1.75} aria-hidden />}
           </button>
@@ -488,14 +488,14 @@ function JobLog({ job, logRef, expanded, onToggleExpanded }: { job: Job; logRef:
           <h4>Log <span className="cds-quiet">({job.events.length})</span></h4>
           <div className="cds-log-actions">
             <CopyLink text={logText} label="Copy log" tip="Copy every log entry, including timestamps" />
-            <button type="button" className="cds-btn" aria-expanded={expanded} aria-controls="activity-log" onClick={onToggleExpanded}>{expanded ? "Back to run" : "Expand log"}</button>
+            <button type="button" className="cds-btn" aria-expanded={expanded} aria-controls="activity-log" onClick={onToggleExpanded} data-tip={expanded ? "Return to the run's steps" : "Give the log the whole panel"}>{expanded ? "Back to run" : "Expand log"}</button>
           </div>
         </div>
         {expanded ? <p className="cds-log-job">{job.title} · {STATE_WORD[job.state]}</p> : null}
         <div className="cds-log-navigation" role="group" aria-label="Log navigation">
-          <button type="button" className="cds-link" disabled={!job.events.length} onClick={() => { setFollow(false); if (logRef.current) logRef.current.scrollTop = 0; }}>First entry</button>
-          <button type="button" className="cds-link" disabled={!job.events.length} onClick={latest}>Latest entry</button>
-          <button type="button" className="cds-link" aria-pressed={following} onClick={() => following ? setFollow(false) : latest()}>Follow live log: {following ? "on" : "off"}</button>
+          <button type="button" className="cds-link" disabled={!job.events.length} onClick={() => { setFollow(false); if (logRef.current) logRef.current.scrollTop = 0; }} data-tip={job.events.length ? "Scroll to the log's first entry" : "The log has no entries yet"}>First entry</button>
+          <button type="button" className="cds-link" disabled={!job.events.length} onClick={latest} data-tip={job.events.length ? "Scroll to the newest entry" : "The log has no entries yet"}>Latest entry</button>
+          <button type="button" className="cds-link" aria-pressed={following} onClick={() => following ? setFollow(false) : latest()} data-tip={following ? "Stop scrolling to new entries as they arrive" : "Keep the newest entry in view as it arrives"}>Follow live log: {following ? "on" : "off"}</button>
         </div>
       </div>
       <ol id="activity-log" ref={logRef} onScroll={() => {
