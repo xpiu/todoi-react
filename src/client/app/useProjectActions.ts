@@ -75,6 +75,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const createList = useCreateList(projectId ?? "");
   const updateList = useUpdateList(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
+  const announce = useFeedback((s) => s.announce);
   const lists = useMemo(() => project.lists.filter((l) => !l.hidden), [project.lists]);
   const hiddenLists = useMemo(() => project.lists.filter((l) => l.hidden), [project.lists]);
   const members = project.members;
@@ -100,7 +101,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     createItem.mutate({ id: newId(), title, listId: destination, priority: priorityOf(parsed), dueDate: parsed.due ?? undefined, labelIds, assigneeIds, position });
   };
 
-  /** Move with the undo toast for cross-list moves; same-list reorders stay quiet. */
+  /** Move with the undo toast for cross-list moves; same-list reorders only tell screen readers where the item landed. */
   const move = (id: string, target: DropTarget) => {
     const it = byId(id);
     if (!it) return;
@@ -110,7 +111,11 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       { id, listId: target.listId, position: target.position },
       {
         onSuccess: (result) => {
-          if (!crossList) return;
+          if (!crossList) {
+            const siblings = items.filter((x) => x.listId === it.listId && !x.parentItemId).length;
+            announce(`Moved ${quote(it.title)} to position ${Math.min(target.position, siblings - 1) + 1} of ${siblings} in ${listName(it.listId)}`);
+            return;
+          }
           const status = result.changed.status ? ` — Status set to ${statusName(result.changed.status.to)}` : "";
           const base = `Moved ${quote(it.title)} to ${listName(target.listId)}`;
           notify({ message: base + status, history: base, icon: "arrow-right", restore: () => moveItem.mutate({ id, listId: from.listId, position: from.position }) });

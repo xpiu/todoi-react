@@ -34,6 +34,9 @@ interface FeedbackStore {
   /** The screen the history belongs to (project id or path); changing it clears the stack. */
   scope: string;
   setScope: (scope: string) => void;
+  /** A quiet outcome for screen readers only (a same-list reorder); `key` makes a repeat announce again. */
+  announcement: { text: string; key: number } | null;
+  announce: (text: string) => void;
 }
 
 let seq = 0;
@@ -65,6 +68,8 @@ export const useFeedback = create<FeedbackStore>()((set, get) => ({
       if (get().undoing === entry) set({ undoing: null });
     }
   },
+  announcement: null,
+  announce: (text) => set({ announcement: { text, key: ++seq } }),
   scope: "",
   setScope: (scope) => {
     if (scope === get().scope) return;

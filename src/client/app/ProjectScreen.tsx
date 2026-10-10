@@ -129,7 +129,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const dnd = useItemDnd(root, { ...dndOpts, onDrop: actions.move });
   useTouchItemDrag(root, dnd, dndOpts.itemSelector, actions.move);
   // Files dropped on a card or row attach to that item.
-  const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files), { selector: dndOpts.itemSelector });
+  const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files, items.find((it) => it.id === id)?.title), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
   const [transfer, setTransfer] = useState<TransferKind | null>(null);
   // A new Status role on a list with items waits for the review: existing items, or future moves only.

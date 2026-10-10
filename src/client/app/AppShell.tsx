@@ -91,6 +91,7 @@ export function AppShell() {
   const removeProject = useRemoveProject();
   const toast = useFeedback((s) => s.toast);
   const dismiss = useFeedback((s) => s.dismiss);
+  const announcement = useFeedback((s) => s.announcement);
   const setUndoScope = useFeedback((s) => s.setScope);
   const [desktopSidebar, setDesktopSidebar] = usePersistedFlag(SIDEBAR_KEY, true);
   const [overlaySidebar, setOverlaySidebar] = useState(false);
@@ -341,6 +342,11 @@ export function AppShell() {
   return (
     <ToastPortalProvider toast={toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo && !toast.standalone ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}>
     <div className="td-app" data-sidebar-side={sidebarLeft ? "left" : "right"}>
+      {/* Quiet outcomes (same-list reorders) for screen readers: a bare polite live region (the Toast owns role="status"),
+          which keeps announcing under a modal; the alternating no-break space makes an identical repeat a change. */}
+      <span className="td-sr-only" aria-live="polite" data-announcer="">
+        {announcement ? announcement.text + (announcement.key % 2 ? "\u00a0" : "") : null}
+      </span>
       <TopNavbar
         title={title}
         status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}

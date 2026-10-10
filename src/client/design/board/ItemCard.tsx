@@ -9,6 +9,7 @@ import { Icon } from "../core/Icon";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
 import { PRIORITY_COLORS } from "../core/priorities";
 import { StatusChip } from "../core/StatusChip";
+import { tipProps } from "../core/Tooltip";
 import type { StatusLike } from "../core/statuses";
 import { DueDatePill, type DueState } from "./DueDatePill";
 import { LabelChip } from "./LabelChip";
@@ -64,6 +65,9 @@ function setCleanDragImage(e: DragEvent, card: HTMLElement) {
   e.dataTransfer.setDragImage(g, e.clientX - r.left, e.clientY - r.top);
   setTimeout(() => g.remove(), 0);
 }
+
+/** The ⋯ trigger carries the shared styled hint, never the browser's title balloon (DESIGN.md › Tooltips). */
+const MORE_TIP = tipProps("Item options", "bottom-end");
 
 function ItemKey({ itemId }: { itemId?: string }) {
   const [copy, doCopy] = useCopy();
@@ -186,7 +190,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
       </div>
       {itemId && onMenuAction ? (
         <span className="td-card-more-anchor" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-          <MenuPopover label="Item options" tier="detached" placement="bottom-end" width={184} trigger={<button className="td-card-more" type="button" title="Item options" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}>
+          <MenuPopover label="Item options" tier="detached" placement="bottom-end" width={184} trigger={<button {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}>
             {MENU_ITEMS.map(([icon, label]) => (
               <span key={label}>
                 {label === "Delete" ? <MenuDivider /> : null}

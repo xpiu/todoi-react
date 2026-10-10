@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 
 import type { ItemDetails, ProjectDetail } from "../../src/client/data/api";
 import { MAX_ATTACHMENT_BYTES } from "../../src/shared/uploads";
-import { seedProjectId, signIn } from "./helpers";
+import { freshProject, seedProjectId, signIn } from "./helpers";
 
 // Each file is its own upload: an oversized file fails before sending, a failed request keeps its row
 // with Retry, and Retry sends only that file — once.
@@ -45,5 +45,29 @@ test("uploads report per-file outcomes and retry only the failed file", async ({
     await expect(row("huge.bin")).toHaveCount(0);
   } finally {
     expect([204, 404]).toContain((await page.request.delete(`/api/archive/items/${itemId}`)).status());
+  }
+});
+
+// A file dropped onto a card attaches to that item, and the one toast names where it went (DESIGN.md › Files onto items).
+test("a file dropped on a card names the item in its toast", async ({ page }) => {
+  await signIn(page);
+  const f = await freshProject(page, "Card drop");
+  try {
+    const title = `Drop target ${f.projectId.slice(0, 4)}`;
+    await f.item(title);
+    await page.goto(`/p/${f.projectId}`);
+    const card = page.locator("[data-drag-id]", { hasText: title });
+    await expect(card).toBeVisible();
+    const dataTransfer = await page.evaluateHandle(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(["hello"], "note.txt", { type: "text/plain" }));
+      return dt;
+    });
+    await card.dispatchEvent("dragenter", { dataTransfer });
+    await card.dispatchEvent("dragover", { dataTransfer });
+    await card.dispatchEvent("drop", { dataTransfer });
+    await expect(page.locator(".td-toast")).toContainText(`Attached “note.txt” to “${title}”`);
+  } finally {
+    await f.cleanup();
   }
 });

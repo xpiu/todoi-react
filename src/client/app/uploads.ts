@@ -22,6 +22,8 @@ export interface PendingUpload {
   error?: string;
   /** False when sending the same file again cannot succeed (too large, over quota, no access) */
   retriable?: boolean;
+  /** Set when the files were dropped onto a card or row: the batch toast names the item they went to */
+  itemTitle?: string;
 }
 
 export const useUploads = create<{ byKey: Record<string, PendingUpload> }>()(() => ({ byKey: {} }));
@@ -63,11 +65,12 @@ async function send(key: string): Promise<Attachment | null> {
 const reason = (u: PendingUpload) => (u.error!.includes(u.file.name) ? u.error! : `Couldn't attach ${quote(u.file.name)}. ${u.error}`);
 
 /** One toast for a batch: what was attached, or what failed with a Retry for the files that can be retried. */
-function report(made: Attachment[], keys: string[]) {
+function report(made: Attachment[], keys: string[], itemTitle?: string) {
+  const onto = itemTitle ? ` to ${quote(itemTitle)}` : "";
   const failed = keys.map((k) => useUploads.getState().byKey[k]).filter((u): u is PendingUpload => !!u?.error);
   const { notify } = useFeedback.getState();
   if (!failed.length) {
-    if (made.length) notify({ message: made.length === 1 ? `Attached ${quote(made[0]!.name)}` : `Attached ${made.length} files`, icon: "paperclip" });
+    if (made.length) notify({ message: made.length === 1 ? `Attached ${quote(made[0]!.name)}${onto}` : `Attached ${made.length} files${onto}`, icon: "paperclip" });
     return;
   }
   const retriable = failed.filter((u) => u.retriable);
@@ -83,21 +86,23 @@ function report(made: Attachment[], keys: string[]) {
 
 /** Send `keys`, then report on the whole batch (`batch` also holds files refused before sending). */
 async function run(keys: string[], batch = keys) {
+  // Read before sending: finished files leave the store.
+  const itemTitle = useUploads.getState().byKey[batch[0] ?? ""]?.itemTitle;
   const made: Attachment[] = [];
   // One at a time: progress fills row by row and a slow connection is not split across files.
   for (const key of keys) {
     const m = await send(key);
     if (m) made.push(m);
   }
-  report(made, batch);
+  report(made, batch, itemTitle);
   return made;
 }
 
-/** Queue files for an item. Files over the size limit fail at once, without being sent. */
-export function attachFiles(itemId: string, projectId: string | null, files: File[]): Promise<Attachment[]> {
+/** Queue files for an item (`itemTitle` when they were dropped onto its card). Files over the size limit fail at once, without being sent. */
+export function attachFiles(itemId: string, projectId: string | null, files: File[], itemTitle?: string): Promise<Attachment[]> {
   const entries = files.map((file): PendingUpload => {
     const tooLarge = file.size > MAX_ATTACHMENT_BYTES;
-    return { key: `upload-${++seq}`, itemId, projectId, file, progress: 0, error: tooLarge ? tooLargeMessage(file.name) : undefined, retriable: tooLarge ? false : undefined };
+    return { key: `upload-${++seq}`, itemId, projectId, file, progress: 0, error: tooLarge ? tooLargeMessage(file.name) : undefined, retriable: tooLarge ? false : undefined, itemTitle };
   });
   useUploads.setState(({ byKey }) => ({ byKey: { ...byKey, ...Object.fromEntries(entries.map((e) => [e.key, e])) } }));
   return run(entries.filter((e) => !e.error).map((e) => e.key), entries.map((e) => e.key));
