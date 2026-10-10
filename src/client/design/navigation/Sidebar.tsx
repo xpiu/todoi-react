@@ -8,7 +8,7 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 
-import { useAppearance } from "../core/appearance";
+import { useThemePreference } from "../core/appearance";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { IconPicker } from "../core/IconPicker";
@@ -92,8 +92,8 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
   // The sheet's popup hosts its menus and the app toast, so both stay usable while the page is inert.
   const [sheetEl, setSheetEl] = useState<HTMLElement | null>(null);
   useToastHost(modal && !collapsed ? sheetEl : null);
-  const ap = useAppearance();
-  const dock = side ?? (ap.sidebarLeft ? "left" : "right");
+  const sidebarLeft = useThemePreference("sidebarLeft");
+  const dock = side ?? (sidebarLeft ? "left" : "right");
   const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
   const [renamingId, setRenamingId] = useState<string | null>(null);
   // Rename replaces the row (and its ⋯ trigger), so the closing menu hands focus to the field instead.

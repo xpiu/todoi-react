@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
-import { expect, fn } from "storybook/test";
+import { createRef, useState } from "react";
+import { expect, fn, waitFor } from "storybook/test";
 
 import { Switch, type SwitchProps } from "./Switch";
+import { Popover, usePopover } from "./Popover";
 
 // Story state models the caller; Switch is controlled through checked / onChange.
 function ControlledSwitch(args: SwitchProps) {
@@ -40,5 +41,50 @@ export const Disabled: Story = {
     await expect(toggle).toBeDisabled();
     toggle.click();
     await expect(args.onChange).not.toHaveBeenCalled();
+  },
+};
+
+const forwardedRef = createRef<HTMLButtonElement>();
+function SwitchTrigger(args: SwitchProps) {
+  const pop = usePopover();
+  return (
+    <>
+      <p id="delivery-hint">Choose how items reach your Inbox.</p>
+      <Popover open={pop.open} onOpenChange={pop.setOpen} role="dialog" aria-label="Delivery settings" trigger={<ControlledSwitch {...args} ref={forwardedRef} id="delivery-switch" aria-describedby="delivery-hint" data-testid="delivery-switch" />}>
+        Delivery settings
+      </Popover>
+    </>
+  );
+}
+
+export const ComposedTrigger: Story = {
+  render: (args) => <SwitchTrigger {...args} />,
+  args: { onFocus: fn(), onClick: fn() },
+  async play({ args, canvas, userEvent }) {
+    const toggle = canvas.getByRole("switch", { name: "Email delivery" });
+    await expect(toggle).toHaveAttribute("id", "delivery-switch");
+    await expect(toggle).toHaveAttribute("data-testid", "delivery-switch");
+    await expect(forwardedRef.current).toBe(toggle);
+    await expect(toggle).toHaveAccessibleDescription("Choose how items reach your Inbox.");
+    await userEvent.click(toggle);
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+    await expect(args.onClick).toHaveBeenCalledOnce();
+    await expect(args.onFocus).toHaveBeenCalled();
+    const popup = toggle.ownerDocument.querySelector('[role="dialog"][aria-label="Delivery settings"]');
+    await waitFor(() => expect(popup).toBeVisible());
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-expanded", "false"));
+    await waitFor(() => expect(toggle).toHaveFocus());
+  },
+};
+
+export const PreventedClick: Story = {
+  args: { onClick: (event) => event.preventDefault() },
+  async play({ args, canvas, userEvent }) {
+    const toggle = canvas.getByRole("switch", { name: "Email delivery" });
+    await userEvent.click(toggle);
+    await expect(args.onChange).not.toHaveBeenCalled();
+    await expect(toggle).toHaveAttribute("aria-checked", "false");
   },
 };

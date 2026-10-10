@@ -326,6 +326,11 @@ export function useAppearance(): Appearance {
   );
 }
 
+/** Subscribe only to one resolved per-theme preference, including its default. */
+export function useThemePreference(key: keyof ThemePrefs): boolean {
+  return useAppearanceStore((s) => s.themePrefs[s.theme]?.[key] ?? THEME_PREF_DEFAULTS[s.theme][key]);
+}
+
 /** Non-React read (tests, imperative code). */
 export const getAppearance = () => resolveAppearance(useAppearanceStore.getState());
 

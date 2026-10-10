@@ -5,7 +5,7 @@
 // aria-hidden: a pointer-user nudge, not an announcement. Spec: DESIGN.md › Shortcut suggestions.
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
-import { keyLabel } from "./shortcuts";
+import { isTyping, keyLabel } from "./shortcuts";
 import "./ShortcutHint.css";
 import "./kbd.css";
 
@@ -67,10 +67,6 @@ const writeSeen = (s: Record<string, number>) => {
     /* ignore */
   }
 };
-const typing = () => {
-  const t = document.activeElement as HTMLElement | null;
-  return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
-};
 
 export interface UseShortcutHintsOptions {
   /** @default "[data-drag-id]" */
@@ -101,12 +97,12 @@ export function useShortcutHints(enabled: boolean, { hoverSelector = "[data-drag
   }, []);
   const suggest = useCallback(
     (id: string, delay = 0) => {
-      if (!enabled || kb.current || typing()) return;
+      if (!enabled || kb.current || isTyping()) return;
       const def = SHORTCUT_HINTS[id];
       if (!def || (readSeen()[id] ?? 0) >= maxShows) return;
       if (showT.current) clearTimeout(showT.current);
       showT.current = setTimeout(() => {
-        if (kb.current || typing()) return;
+        if (kb.current || isTyping()) return;
         const s = readSeen();
         s[id] = (s[id] ?? 0) + 1;
         writeSeen(s);

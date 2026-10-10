@@ -4,7 +4,7 @@
 // goes through the SHORTCUTS registry. Items are located by itemSelector and identified by data-drag-id.
 import { useEffect, useImperativeHandle, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from "react";
 
-import { SHORTCUTS, type FocusDir, type ItemAction } from "./shortcuts";
+import { isTyping, SHORTCUTS, type FocusDir, type ItemAction } from "./shortcuts";
 
 const FOCUSABLE = "button,input,select,textarea,a[href],[tabindex]";
 const visible = (el: Element) => {
@@ -94,7 +94,7 @@ export function KeyNav({ itemSelector = ".td-card", columnSelector, sectionSelec
     onKeyDown?.(e);
     if (e.defaultPrevented) return;
     const t = e.target as HTMLElement;
-    if (!t.closest || t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) return;
+    if (!t.closest || isTyping(t)) return;
     const root = rootRef.current;
     const item = t.closest(itemSelector) as HTMLElement | null;
     if (!item || !root || !root.contains(item)) return;

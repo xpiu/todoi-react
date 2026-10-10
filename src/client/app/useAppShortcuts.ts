@@ -3,7 +3,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
-import { SHORTCUTS } from "../design/core/shortcuts";
+import { isTyping, SHORTCUTS } from "../design/core/shortcuts";
 import { useFeedback } from "./feedback";
 
 export interface AppShortcutHandlers {
@@ -16,11 +16,6 @@ export interface AppShortcutHandlers {
   openFilter?: () => void;
   addList?: () => void;
 }
-
-const typing = () => {
-  const t = document.activeElement as HTMLElement | null;
-  return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
-};
 
 export function useAppShortcuts(h: AppShortcutHandlers) {
   const navigate = useNavigate();
@@ -36,12 +31,12 @@ export function useAppShortcuts(h: AppShortcutHandlers) {
       const c = latest.current;
       // Ctrl/Cmd+K works everywhere except inside a field; Ctrl+Z always.
       if (SHORTCUTS.is("palette", e)) {
-        if (typing()) return;
+        if (isTyping()) return;
         e.preventDefault();
         c.openPalette();
         return;
       }
-      if (c.modalOpen || typing()) return;
+      if (c.modalOpen || isTyping()) return;
       if (chordArmed) {
         chordArmed = false;
         if (chord) clearTimeout(chord);

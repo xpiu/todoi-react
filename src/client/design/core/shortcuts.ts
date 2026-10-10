@@ -10,6 +10,12 @@ const noMod = (e: KeyEvt) => !e.ctrlKey && !e.metaKey && !e.altKey;
 const mod = (e: KeyEvt) => e.ctrlKey || e.metaKey;
 const low = (e: KeyEvt) => (e.key ?? "").toLowerCase();
 
+/** Single-key shortcuts and hints pause in text fields and rich editors. */
+export function isTyping(target: Element | null = document.activeElement): boolean {
+  const element = target as HTMLElement | null;
+  return !!element && (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.isContentEditable);
+}
+
 /** macOS / iOS show ⌘ where the map says ctrl (matching accepts either). */
 export const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || "");
 

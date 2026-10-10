@@ -4,7 +4,7 @@
 // Spec: DESIGN.md › Top navbar, Responsive.
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { useAppearance } from "../core/appearance";
+import { useThemePreference } from "../core/appearance";
 import { Avatar } from "../core/Avatar";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
@@ -113,8 +113,8 @@ export function TopNavbar({
   className,
   children,
 }: TopNavbarProps) {
-  const ap = useAppearance();
-  const side = sidebarSide ?? (ap.sidebarLeft ? "left" : "right");
+  const sidebarLeft = useThemePreference("sidebarLeft");
+  const side = sidebarSide ?? (sidebarLeft ? "left" : "right");
   const leftToggle = side === "left";
   const kbdHint = IS_MAC ? "⌘K" : "Ctrl+K";
 

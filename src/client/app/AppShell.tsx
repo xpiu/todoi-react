@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { listItemsQuery, projectsOf, useGroups, useInboxUnread, useLabels, useProject, useProjectItems } from "../data/queries";
 import { explain, type SearchHit } from "../data/api";
-import { useAppearance } from "../design/core/appearance";
+import { useThemePreference } from "../design/core/appearance";
 import { SHORTCUTS } from "../design/core/shortcuts";
 import { ShortcutHint, useShortcutHints } from "../design/core/ShortcutHint";
 import { Toast } from "../design/core/Toast";
@@ -63,7 +63,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const vp = useViewport();
-  const ap = useAppearance();
+  const sidebarLeft = useThemePreference("sidebarLeft");
+  const suggestShortcuts = useThemePreference("suggestShortcuts");
   const groups = useGroups();
   const unread = useInboxUnread();
   const projectMatch = useMatch({ from: "/app/p/$projectId", shouldThrow: false });
@@ -105,7 +106,7 @@ export function AppShell() {
   const inboxPreview = useQuery({ ...listItemsQuery(), enabled: navSearch.open && !navSearch.query.trim() });
   const openResult = useOpenResult();
   // "Suggest shortcuts": nudges after pointer actions a key could have done.
-  const hints = useShortcutHints(ap.suggestShortcuts);
+  const hints = useShortcutHints(suggestShortcuts);
   const suggest = hints.suggest;
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -322,7 +323,7 @@ export function AppShell() {
 
   return (
     <ToastPortalProvider toast={toast ? <Toast key={toast.key} message={toast.message} icon={toast.icon} meta={toast.meta} actionLabel={toast.undo ? (toast.actionLabel ?? "Undo") : undefined} shortcutHint={toast.undo && !toast.standalone ? `${SHORTCUTS.modLabel} Z` : undefined} onAction={toast.undo} onDismiss={dismiss} /> : null}>
-    <div className="td-app" data-sidebar-side={ap.sidebarLeft ? "left" : "right"}>
+    <div className="td-app" data-sidebar-side={sidebarLeft ? "left" : "right"}>
       <TopNavbar
         title={title}
         status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
