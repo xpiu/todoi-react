@@ -35,6 +35,16 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 
 ## ⚡ Quick Start
 
+### Top commands
+
+```
+npm run dev                   # run local dev environment
+npm run claude-design-sync    # run claude-design-sync tool
+npm run storybook             # run storybook
+```
+
+### Installation
+
 Requires Node 22.12+, npm and running PostgreSQL (18 used here).
 
 ```sh
@@ -55,7 +65,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 Current limits:
 
 - **Email:** no delivery; admins copy/send invite links. Password reset has a request screen, but no email sender or completed reset flow.
-- **Sync:** workspace JSON edits persist in IndexedDB before sending, survive reload/close and retry in order with server deduplication. Snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, preserving pending fields. Storage & sync retains submitted text for conflict review; access loss purges cached content. Unsubmitted description/comment drafts use `sessionStorage`. App-shell offline caching, binary uploads and account/session actions are outside the queue. See [sync behavior](docs/sync.md).
+- **Sync:** workspace JSON edits persist in IndexedDB before sending, survive reload/close and retry in order with server deduplication. Snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, preserving pending fields. Storage &amp; sync retains submitted text for conflict review; access loss purges cached content. Unsubmitted description/comment drafts use `sessionStorage`. App-shell offline caching, binary uploads and account/session actions are outside the queue. See [sync behavior](docs/sync.md).
 - **Deployment:** one API process with local attachment storage and in-process cleanup. Multiple processes would need shared persistent storage.
 - **Attachments:** 25 MiB per file; storage quotas per uploader: 100 MiB for guests, 2 GiB for accounts.
 - **Exports:** incomplete round-trips. Account JSON contains user details, groups, projects, lists, labels and items, excluding comments, attachments and association tables; it cannot be reimported. Back up PostgreSQL and uploads separately.
@@ -69,7 +79,7 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 
 ## 🧰 Tech stack
 
-- **Client:** React 19, TypeScript, Vite, Base UI, TanStack Router, Tiptap; local Inter/Geist Mono fonts. Rounded/Minimal themes × Dark/Light modes.
+- **Client:** React 19, TypeScript, Vite, Base UI, TanStack Router, Tiptap for some fields, Multiple themes: \`Minimal\` and \`Rounded\`, each theme has a Dark and Light mode.
 - **State:** Zustand for client state; TanStack Query for server data and optimistic mutations; IndexedDB for actor-scoped snapshots and outgoing operations.
 - **API:** Node.js + Hono typed routes/RPC client, Zod validation. `/api/health` returns `{ "ok": true }`.
 - **Data:** PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items, row versions check stale edits, and transactional operation receipts deduplicate replay.
