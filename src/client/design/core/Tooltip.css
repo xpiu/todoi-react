@@ -1,6 +1,27 @@
-/* Tooltip — the one styled hover hint (DESIGN.md › Tooltips). CSS-only through data-tip, so it never needs
-   a portal; IconButton, MenuButton and SwatchGroup reuse these rules. Shown after --duration-slow. */
+/* Tooltip — the one styled hover hint (DESIGN.md › Tooltips). CSS hints use data-tip; scroll-clipped anchors use a Base UI portal; IconButton, MenuButton and SwatchGroup reuse these rules. Shown after --duration-slow. */
 @layer components {
+  .td-tip-positioner { z-index: var(--z-menu-detached); }
+  .td-tip-popup,
+  .td-tip[data-tip]::after {
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--radius-md);
+    background: var(--ink-900);
+    color: var(--surface-card);
+    font: var(--weight-medium) var(--text-sm) / 18px var(--font-ui);
+    letter-spacing: 0.01em;
+    box-shadow: var(--shadow-raised);
+  }
+  .td-tip-popup { max-width: min(320px, calc(100vw - 16px)); }
+  .td-tip-arrow {
+    width: 8px;
+    height: 8px;
+    background: var(--ink-900);
+    transform: rotate(45deg);
+  }
+  .td-tip-arrow[data-side="bottom"] { top: -4px; }
+  .td-tip-arrow[data-side="top"] { bottom: -4px; }
+  .td-tip-arrow[data-side="left"] { right: -4px; }
+  .td-tip-arrow[data-side="right"] { left: -4px; }
   .td-tip[data-tip] {
     position: relative;
   }
@@ -11,16 +32,9 @@
     top: calc(100% + 6px);
     transform: translate(-50%, -2px);
     z-index: var(--z-menu-nav);
-    padding: var(--sp-1) var(--sp-2);
-    border-radius: var(--radius-md);
-    background: var(--ink-900);
-    color: var(--surface-card);
-    font: var(--weight-medium) var(--text-sm) / 18px var(--font-ui);
-    letter-spacing: 0.01em;
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
-    box-shadow: var(--shadow-raised);
     transition:
       opacity var(--duration-base) var(--ease-standard),
       transform var(--duration-base) var(--ease-standard);

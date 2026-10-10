@@ -3,6 +3,7 @@
 // Connectivity is never a Toast.
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 
+import { tipProps } from "./Tooltip";
 import { Icon, type IconName } from "./Icon";
 import { MenuDivider, MenuItem, MenuNote, MenuPopover } from "./Menu";
 import "./text.css";
@@ -144,14 +145,14 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
   if (!onSyncNow && !onOpenSettings && !onClearFailed)
     return (
       <>
-        <span className={cls + " td-conn-static"} title={c.message} aria-hidden style={style}>
+        <span {...tipProps(c.message, "bottom-end")} className={cls + " td-conn-static td-tip"} aria-hidden style={style}>
           {content}
         </span>
         {status}
       </>
     );
   const pill = (
-    <button type="button" className={cls} title={c.message} aria-label={c.message} style={style}>
+    <button {...tipProps(c.message, "bottom-end")} type="button" className={cls + " td-tip"} aria-label={c.message} style={style}>
       {content}
     </button>
   );

@@ -6,7 +6,7 @@
 import { Popover as BasePopover } from "@base-ui/react/popover";
 import { useCallback, useRef, useState, type CSSProperties, type PointerEvent, type ReactElement, type ReactNode, type RefObject } from "react";
 
-import { usePortalContainer } from "./portalContainer";
+import { PortalContainerContext, usePortalContainer } from "./portalContainer";
 import { useViewport } from "./viewport";
 import "./Popover.css";
 
@@ -101,6 +101,11 @@ export function Popover({
   const isSheet = sheet === true || (sheet === "auto" && vp.phone);
   const { side, align } = placementToSide(placement);
   const popupRef = useRef<HTMLDivElement>(null);
+  const [popupEl, setPopupEl] = useState<HTMLDivElement | null>(null);
+  const bindPopup = useCallback((el: HTMLDivElement | null) => {
+    popupRef.current = el;
+    setPopupEl(el);
+  }, []);
   const swipe = useRef<{ y: number; id: number; dy: number } | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -155,7 +160,7 @@ export function Popover({
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >
           <BasePopover.Popup
-            ref={popupRef}
+            ref={bindPopup}
             className={popupCls}
             data-sheet={isSheet ? "true" : undefined}
             role={role}
@@ -164,7 +169,7 @@ export function Popover({
             initialFocus={initialFocus}
           >
             {isSheet ? <div className="td-sheet-handle" aria-hidden onPointerDown={onHandleDown} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onPointerCancel={onHandleUp} /> : null}
-            {children}
+            <PortalContainerContext.Provider value={isSheet ? popupEl : container}>{children}</PortalContainerContext.Provider>
           </BasePopover.Popup>
         </BasePopover.Positioner>
       </BasePopover.Portal>

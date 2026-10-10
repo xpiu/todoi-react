@@ -10,7 +10,7 @@ const meta = {
   component: Tooltip,
   decorators: [(Story) => <div style={{ padding: "var(--sp-10) var(--sp-10)" }}><Story /></div>],
   args: { text: "Copy link", children: <Button variant="outline" icon="link">Copy</Button> },
-  parameters: { docs: { description: { component: "The CSS-only hover/focus hint (data-tip + pseudo-elements, no portal) for icon-only controls: 2–4 words, sentence case, never the only label and never on disabled controls. Tooltip merges the attributes onto exactly one child that accepts className; IconButton and MenuButton take a tooltip prop and tipProps() spreads the same attributes onto custom controls. Set off while a menu or drag is active." } } },
+  parameters: { docs: { description: { component: "The shared hover/focus hint (CSS data-tip, or a Base UI portal for scroll-clipped anchors) for icon-only controls: 2–4 words, sentence case, never the only label and never on disabled controls. Tooltip merges the attributes onto exactly one child that accepts className; IconButton and MenuButton take a tooltip prop and tipProps() spreads the same attributes onto custom controls. Set off while a menu or drag is active." } } },
 } satisfies Meta<typeof Tooltip>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -45,3 +45,5 @@ export const NoText: Story = {
     await expect(canvas.getByRole("button", { name: "Copy" })).not.toHaveAttribute("data-tip");
   },
 };
+
+export const ScrollClipped: Story = { args: { portal: true }, decorators: [(Story) => <div style={{ overflow: "hidden", width: 80, height: 32 }}><Story /></div>] };

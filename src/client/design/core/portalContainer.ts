@@ -1,5 +1,5 @@
-// A modal surface (Dialog, the item overlay) provides its popup element here so that every Popover,
-// Menu and Select opened inside it portals into that element instead of <body>. That keeps the
+// A modal surface (Dialog, the item overlay, a phone bottom sheet) provides its popup element here so that every Popover,
+// Menu, Select and Tooltip opened inside it portals into that element instead of <body>. That keeps the
 // floating layer inside the modal's stacking context (the --z-modal rung), exactly as the design
 // system's anchored popovers behaved, and lets Base UI's nested Escape handling work unchanged.
 import { createContext, useContext } from "react";

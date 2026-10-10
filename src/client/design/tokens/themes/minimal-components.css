@@ -327,7 +327,7 @@ html[data-theme="minimal"] .td-iconbtn{border-radius:2px}
 html[data-theme="minimal"] .td-field{box-shadow:none;font-size:13px}
 html[data-theme="minimal"] .td-field:focus{box-shadow:none;border-color:var(--ink-900)}
 /* Tooltips: the same ink pill at the theme's 12px, no medium weight, square corners. Labeled toolbar controls lose their text here (icon-only 48px row), so their hints turn on */
-html[data-theme="minimal"] .td-tip[data-tip]::after{font:400 12px/1.45 var(--font-ui);letter-spacing:0;padding:3px 7px;border-radius:2px}
+html[data-theme="minimal"] .td-tip-popup,html[data-theme="minimal"] .td-tip[data-tip]::after{font:400 12px/1.45 var(--font-ui);letter-spacing:0;padding:3px 7px;border-radius:2px}
 html[data-theme="minimal"] .td-subnav-act.td-tip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-act.td-tip-labeled[data-tip]::before,html[data-theme="minimal"] .td-subnav-seg.td-tip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-seg.td-tip-labeled[data-tip]::before{display:block}
 /* ── Account pages (Projects · Project groups · Settings): the same 24px gutter as the board; page title is a plain 500-weight line; no white card — the table is rows over hairlines, column heads in grey over one ink hairline */
 html[data-theme="minimal"] .td-pjs,html[data-theme="minimal"] .td-set,html[data-theme="minimal"] .td-ib{padding:20px 24px 24px!important}

@@ -2,6 +2,8 @@
 // swatches above a 6-wide grid of project glyphs. The trigger is the tile the sidebar and Projects page draw.
 import type { CSSProperties } from "react";
 
+import { iconLabel } from "../core/IconPicker";
+import { Tooltip, tipProps } from "../core/Tooltip";
 import { LABEL_COLORS, type LabelColor } from "../../../shared/enums";
 import { Icon, type IconName } from "../core/Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "../core/Popover";
@@ -41,7 +43,7 @@ export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, s
       minWidth={0}
       trigger={
         caption ? (
-          <button type="button" className="td-pip-tile td-pip-captioned" style={{ height: size, ...style }} aria-label={label} title={label} disabled={disabled}>
+          <button type="button" className="td-pip-tile td-pip-captioned" style={{ height: size, ...style }} aria-label={label} disabled={disabled}>
             <span className="td-pip-glyph" style={{ width: size - 10, height: size - 10 }}>
               {glyph}
             </span>
@@ -51,7 +53,7 @@ export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, s
             </span>
           </button>
         ) : (
-          <button type="button" className="td-pip-tile" style={{ width: size, height: size, ...style }} aria-label={label} title={label} disabled={disabled}>
+          <button type="button" {...tipProps(disabled ? undefined : label)} className="td-pip-tile td-tip" style={{ width: size, height: size, ...style }} aria-label={label} disabled={disabled}>
             {glyph}
           </button>
         )
@@ -60,27 +62,29 @@ export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, s
       <div className="td-pip-panel">
         <div className="td-pip-colors" role="radiogroup" aria-label="Color">
           {LABEL_COLORS.map((c) => (
-            <button key={c} type="button" role="radio" className="td-pip-swatch" style={{ background: `var(--label-${c})` }} aria-label={c} title={c} aria-checked={c === cur.color} onClick={() => onChange({ icon: cur.icon, color: c })} />
+            <Tooltip key={c} text={c.charAt(0).toUpperCase() + c.slice(1)} portal>
+              <button type="button" role="radio" className="td-pip-swatch" style={{ background: `var(--label-${c})` }} aria-label={c} aria-checked={c === cur.color} onClick={() => onChange({ icon: cur.icon, color: c })} />
+            </Tooltip>
           ))}
         </div>
         <div className="td-pip-div" />
         <div className="td-pip-grid" role="radiogroup" aria-label="Icon">
           {PROJECT_ICONS.map((n) => (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              className="td-pip-opt"
-              aria-label={n}
-              title={n}
-              aria-checked={n === cur.icon}
-              onClick={() => {
-                onChange({ icon: n, color: cur.color });
-                pop.close();
-              }}
-            >
-              <Icon name={n} size={16} color={projectColorVar(cur.color)} />
-            </button>
+            <Tooltip key={n} text={iconLabel(n)} portal>
+              <button
+                type="button"
+                role="radio"
+                className="td-pip-opt"
+                aria-label={n}
+                aria-checked={n === cur.icon}
+                onClick={() => {
+                  onChange({ icon: n, color: cur.color });
+                  pop.close();
+                }}
+              >
+                <Icon name={n} size={16} color={projectColorVar(cur.color)} />
+              </button>
+            </Tooltip>
           ))}
         </div>
       </div>

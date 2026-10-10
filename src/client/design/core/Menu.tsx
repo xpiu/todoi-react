@@ -3,13 +3,13 @@
 // MenuButton = MenuPopover with an IconButton trigger. Rows: MenuItem / MenuDivider / MenuNote /
 // MenuGroup + MenuHeading. Spec: DESIGN.md › Inline editing primitives.
 import { Menu as BaseMenu } from "@base-ui/react/menu";
-import { createContext, useCallback, useContext, useRef, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode } from "react";
 
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
 import { closeReasonOf, placementToSide, type PopoverCloseReason, type PopoverPlacement, type PopoverTier } from "./Popover";
 import type { TooltipSide } from "./Tooltip";
-import { usePortalContainer } from "./portalContainer";
+import { PortalContainerContext, usePortalContainer } from "./portalContainer";
 import { useViewport } from "./viewport";
 import "./Popover.css";
 import "./kbd.css";
@@ -141,6 +141,7 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
   const vp = useViewport();
   const container = usePortalContainer();
   const isSheet = vp.phone;
+  const [popupEl, setPopupEl] = useState<HTMLDivElement | null>(null);
   const { side, align } = placementToSide(placement);
   const actionsRef = useRef<BaseMenu.Root.Actions>(null);
   // Render-function children get a close() through Base UI's own state. It is the only imperative close and
@@ -166,6 +167,7 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >
           <BaseMenu.Popup
+            ref={setPopupEl}
             className={["td-pop", "td-menu", className ?? ""].filter(Boolean).join(" ")}
             data-sheet={isSheet ? "true" : undefined}
             // Base UI names the popup after its trigger; the caller's label is the menu's own name.
@@ -175,7 +177,9 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
             style={{ ...(width != null ? { width } : null), ...(minWidth != null ? { minWidth } : null), ...style }}
           >
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
-            {typeof children === "function" ? <MenuChildren render={children} close={close} /> : children}
+            <PortalContainerContext.Provider value={isSheet ? popupEl : container}>
+              {typeof children === "function" ? <MenuChildren render={children} close={close} /> : children}
+            </PortalContainerContext.Provider>
           </BaseMenu.Popup>
         </BaseMenu.Positioner>
       </BaseMenu.Portal>

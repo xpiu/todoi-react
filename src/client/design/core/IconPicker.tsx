@@ -3,6 +3,7 @@
 // Popover (ListSection) or as the Icon sub-view of the list-actions menu. Spec: DESIGN.md › Icon picker.
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
+import { Tooltip } from "./Tooltip";
 import { Icon, type IconName } from "./Icon";
 import { LUCIDE_ICONS } from "./icons";
 import "./Menu.css";
@@ -104,9 +105,11 @@ export function IconPicker({ value, autoIcon = "circle", autoLabel, onChange, ex
     }
   };
   const tile = (n: IconName) => (
-    <button key={n} type="button" className="td-ipk-opt" title={iconLabel(n)} aria-label={iconLabel(n)} aria-pressed={n === current} onClick={() => onChange?.(n)}>
-      <Icon name={n} size={16} />
-    </button>
+    <Tooltip key={n} text={iconLabel(n)} portal>
+      <button type="button" className="td-ipk-opt" aria-label={iconLabel(n)} aria-pressed={n === current} onClick={() => onChange?.(n)}>
+        <Icon name={n} size={16} />
+      </button>
+    </Tooltip>
   );
   const q = query.trim().toLowerCase();
   const match = (n: string) => !q || n.includes(q) || iconLabel(n).toLowerCase().includes(q);
@@ -115,9 +118,11 @@ export function IconPicker({ value, autoIcon = "circle", autoLabel, onChange, ex
     body = (
       <div className="td-ipk-grid" role="group" aria-label="Basic icons">
         {LIST_ICON_BASIC.map(tile)}
-        <button type="button" className="td-ipk-opt td-ipk-more" title="More icons" aria-label="More icons" onClick={() => setExpanded(true)}>
-          <Icon name="ellipsis" size={16} />
-        </button>
+        <Tooltip text="More icons" portal>
+          <button type="button" className="td-ipk-opt td-ipk-more" aria-label="More icons" onClick={() => setExpanded(true)}>
+            <Icon name="ellipsis" size={16} />
+          </button>
+        </Tooltip>
       </div>
     );
   } else {
