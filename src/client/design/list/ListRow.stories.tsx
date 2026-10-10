@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn } from "storybook/test";
+import { expect, fn, waitFor, within } from "storybook/test";
 
 import { ListRow } from "./ListRow";
 
@@ -41,9 +41,30 @@ export const ManyLabelsAndAssignees: Story = {
     labels: [{ color: "red", text: "Urgent" }, { color: "teal", text: "Parts" }, { color: "lime", text: "Ops" }, { color: "pink", text: "Finance" }, { color: "yellow", text: "Legal" }],
     assignees: ["Flo Zuallaert", "Sam Verhoeven", "Ana Peeters", "Jonas Claes", "Mia Janssens"],
   },
-  async play({ canvas }) {
-    await expect(canvas.getByLabelText("2 more labels")).toHaveTextContent("+2");
+  async play({ args, canvas, canvasElement, userEvent, globals }) {
     await expect(canvas.getByLabelText("2 more assignees")).toHaveTextContent("+2");
+    if (globals.theme === "minimal") {
+      // Minimal prints every name inline rather than hiding them behind a count.
+      await expect(canvas.getByText("Finance")).toBeVisible();
+      await expect(canvas.getByText("Legal")).toBeVisible();
+      return;
+    }
+    const more = canvas.getByRole("button", { name: "2 more labels" });
+    await userEvent.hover(more);
+    await expect(more).toBeVisible();
+    more.focus();
+    await userEvent.keyboard("{Enter}");
+    const page = within(canvasElement.ownerDocument.body);
+    const panel = await page.findByRole("dialog", { name: `Labels for ${args.title}` });
+    for (const label of ["Urgent", "Parts", "Ops", "Finance", "Legal"]) await waitFor(() => expect(within(panel).getByText(label)).toBeVisible());
+    await expect(args.onClick).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(more).toHaveFocus());
+    await userEvent.click(more);
+    await userEvent.click(await page.findByRole("button", { name: "Close labels" }));
+    await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
+    await expect(args.onClick).not.toHaveBeenCalled();
   },
 };
 export const WithSubitems: Story = {

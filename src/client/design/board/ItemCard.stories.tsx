@@ -33,3 +33,26 @@ export const KeyboardAndMenu: Story = {
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },
 };
+
+export const CrowdedMetadata: Story = {
+  args: {
+    due: "Oct 20, 2026", repeat: "Every week", priority: "High", status: "DOING",
+    badges: { description: true, checklist: { done: 12, total: 16 }, attachments: 8 },
+    assignees: ["Flo Zuallaert", "Sam Verhoeven", "Ana Peeters", "Jonas Claes"],
+  },
+  decorators: [(Story) => <div style={{ width: 220 }}><Story /></div>],
+  async play({ canvas }) {
+    const card = canvas.getByRole("listitem");
+    const bounds = card.getBoundingClientRect();
+    for (const selector of [".td-card-badges > *", ".td-card-badge .td-meta-text"]) {
+      for (const badge of card.querySelectorAll(selector)) {
+        if (!badge.getClientRects().length) continue;
+        const r = badge.getBoundingClientRect();
+        await expect(r.left).toBeGreaterThanOrEqual(bounds.left);
+        await expect(r.right).toBeLessThanOrEqual(bounds.right);
+      }
+    }
+    await expect(canvas.getByText("12 of 16")).toBeVisible();
+    await expect(canvas.getByText("HE-115")).toBeVisible();
+  },
+};

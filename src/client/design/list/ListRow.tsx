@@ -11,6 +11,8 @@ import { Avatar } from "../core/Avatar";
 import { Checkbox } from "../core/Checkbox";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
+import { IconButton } from "../core/IconButton";
+import { Popover, PopoverClose, usePopover } from "../core/Popover";
 import { PRIORITY_COLORS } from "../core/priorities";
 import { StatusChip } from "../core/StatusChip";
 import type { StatusLike } from "../core/statuses";
@@ -96,12 +98,44 @@ function AboutKey({ about }: { about: NonNullable<ListRowProps["about"]> }) {
   );
 }
 
+function RowLabels({ labels, title }: { labels: RowLabel[]; title: string }) {
+  const { open, setOpen } = usePopover();
+  const values = labels.map((l) => (typeof l === "string" ? { color: l, text: l } : l));
+  return (
+    <span className="td-lrow-labels" title={values.map((l) => l.text ?? l.color).join(", ")} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      {values.map((l, i) => (
+        <LabelChip key={i} color={l.color} text={l.text ?? l.color} size="sm" className={"td-lpill" + (i >= 3 ? " td-lpill-x" : "")} style={stack(values.length - i + 1)} />
+      ))}
+      {values.length > 3 ? (
+        <Popover
+          open={open}
+          onOpenChange={setOpen}
+          role="dialog"
+          aria-label={`Labels for ${title}`}
+          tier="detached"
+          width={280}
+          trigger={<button type="button" className="td-lpill td-lpill-n" aria-label={`${values.length - 3} more labels`}>+{values.length - 3}</button>}
+        >
+          <div className="td-row-label-panel">
+            <div className="td-row-label-head">
+              <strong>Labels</strong>
+              <PopoverClose render={<IconButton name="x" label="Close labels" size={28} />} />
+            </div>
+            <div className="td-row-label-list">
+              {values.map((l, i) => <LabelChip key={i} color={l.color} text={l.text ?? l.color} size="sm" />)}
+            </div>
+          </div>
+        </Popover>
+      ) : null}
+    </span>
+  );
+}
+
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
 export function ListRow({ title, itemId, showId = true, labels = [], done, onDone, due, dueState = "default", repeat, recurring = !!repeat, created, attachments, priority, assignees = [], status, subitems, sub, selected, dragId, unread, from, about, onClick, style }: ListRowProps) {
   const hasSubs = !sub && !!subitems?.length;
   const stop = (e: SyntheticEvent) => e.stopPropagation();
-  const labelObjs = labels.map((l) => (typeof l === "string" ? { color: l, text: l } : l));
   const row = (
     <div
       className={"td-lrow" + (sub ? " td-lrow-sub" : "") + (unread && !sub ? " is-unread" : "")}
@@ -143,18 +177,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
             <StatusChip status={status} />
           </span>
         ) : null}
-        {labelObjs.length ? (
-          <span className="td-lrow-labels" title={labelObjs.map((l) => l.text ?? l.color).join(", ")}>
-            {labelObjs.slice(0, 3).map((l, i) => (
-              <LabelChip key={i} color={l.color} text={l.text ?? l.color} size="sm" className="td-lpill" style={stack(labelObjs.length - i + 1)} />
-            ))}
-            {labelObjs.length > 3 ? (
-              <span className="td-lpill td-lpill-n" aria-label={`${labelObjs.length - 3} more labels`}>
-                +{labelObjs.length - 3}
-              </span>
-            ) : null}
-          </span>
-        ) : null}
+        {labels.length ? <RowLabels labels={labels} title={title} /> : null}
         {attachments ? (
           <span className="td-lrow-badge" title="Attachments">
             <Icon name="paperclip" size={14} />

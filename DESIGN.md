@@ -1,12 +1,15 @@
 # Todoi design spec
 
-This file is the canonical design specification for the Todoi web app. It is the contract: when
-the implementation and this document disagree, fix one of them, and prefer fixing the code.
+This file records the visual and interaction specification for the Todoi web app. Reconcile
+it with the current implementation when they disagree. Production React architecture, Base UI
+behavior, state ownership and server contracts take priority over Claude Design recreations.
 
 **Origin.** The content below is the `readme.md` of the Claude Design export "Todoi Design System"
 (exported 2026-10-01, ported into this repository the same day). The export itself is disposable
 and lives outside version control (`.tmp/`); this file and `docs/design/` are what the repo owns.
 Keep it in sync when a rule changes (plan: `docs/features/20261001_prepare_using_claude_design_system_in_this_app.md`).
+The 2026-10-10 Project archive review is recorded in `docs/design/20261010-archive-review.md`;
+its current app-compatible adaptations are included below.
 
 **Companion documents in `docs/design/`:**
 
@@ -43,9 +46,16 @@ map, with the Minimal theme switching glyph weights and type as the spec says; t
 
 Todoi is a kanban-style task manager: boards of lists, cards ("items") you drag between them, and a detail overlay that opens when you click an item. The product targets a **familiar, stable, predictable** feel — conventional kanban idioms, system fonts, a vivid high-chroma palette with full light and dark modes, small fast animations.
 
-**Sources:** three product screenshots provided by the user — `uploads/board.png` (the board view), `uploads/item-overlay.png` (item detail overlay), `uploads/item-overlay-with-checklist-items.png` (item overlay with subitems/checklist). No codebase, Figma, logo, or font files were provided. Layouts and values in this system are measured from those screenshots; branding, naming, and copy are original to Todoi.
+**Source of truth:** the current app's components, tokens and behavior in `src/client/design/`,
+with application state and server behavior in their existing layers. The original three product
+screenshots seeded the first visual system. Claude Design's Project archive supplies design ideas
+and comparison evidence; it does not override improvements already made in this app.
 
-**Planned stack (for consumers):** React + Zustand front-end, IndexedDB persistence, custom back-end. Components here are cosmetic recreations, not production code.
+**App stack:** React 19, TypeScript and Vite; Base UI interaction primitives; Zustand for client
+state; TanStack Query for server data and mutations; IndexedDB for actor-scoped snapshots and queued
+writes; TanStack Router, Tiptap for rich fields, and lucide-react. The server uses Node.js, Hono,
+Zod, PostgreSQL and Drizzle. The kit's bundler-free JSX recreates these APIs for previews; keep its
+custom focus management, editor, appearance store and simulated server behavior out of production.
 
 ## Hierarchy vocabulary (canonical — always use these terms)
 
@@ -128,6 +138,13 @@ In UI copy always say "item", "list", "project" — never "card", "column", "boa
 - **Filtering:** active filters always stay visible in the "Filter by" row under the SubNavbar — the board never silently looks empty. Label filters OR together, then AND with Overdue; list counts read "2 of 7" while filtered.
 - **Subnavbar rows (Views · Filter by · Sort by):** the SubNavbar owns its five dropdowns (Filter, Sort, Style, Members, Share) with ONE open-menu value (`openMenu` / `onOpenMenuChange`), so exactly one is open at a time; the host keeps `filters` and `sort`. Under the toolbar, in the content column, stack up to three `ChipBar` rows on the chrome canvas — `SavedViewTabs` (when the Views toggle is on), `FilterBar`, then `SortBar` — each "icon + label · chips · trailing actions". Filter / Sort row: while its menu is open it lists **every** option as a chip (selected ones carry × and remove themselves; the others add themselves, and a press there toggles without closing the menu — `Popover` `keepOpenWithin`); once the menu closes it keeps only the active chips; with nothing active and the menu closed the row is gone. Sort chips carry their dimension ("Lists: Name", "Items: Due date") and the active one's arrow shows the direction. Trailing "Reset filters" / "Reset sorting" (filled while something is active, ghost otherwise; resets and closes the menu) and, on the Views row, "Hide". ≥1024px: chips never wrap — they scroll in a rail (trackpad, touch or mouse-drag; a drag never clicks), the overflowing edge fades over 28px under an "…" chevron that pages by 60%; below, chips wrap. In List view the rows match the list column (900px, centred); on Board and Calendar they span the canvas. Trigger marker: Rounded draws a 6px dot after the Filter / Sort label while something is active (its own element — the trigger's `::after` is the tooltip's); Minimal draws none, the rows are the indicator. Minimal rows: 24px chips with a 1px ink outline (selected) or hairline + grey text, saved-view tabs as grey words with an ink underline under the open one, Reset / Hide as grey 12px words. F opens Filter, X clears filters, Esc closes.
 - **Inline editing primitives (one surface for every dropdown):** `Popover` (components/core) is the anchored floating card every menu, picker and panel sits on — card-white, radius 7, `--shadow-overlay`, 4px padding, 150ms fade + 4px settle; it owns outside-pointer close, a *captured* Escape (so the item overlay stays open when a menu inside it closes), viewport flip, focus return to the trigger, and the z-tier (`menu` → `--z-menu`, `nav` → `--z-menu-nav`, `detached` → `--z-menu-detached` + `position:fixed` for anchors inside scroll/transform ancestors, `toolbar` → `--z-menu-toolbar`). On top of it: `Menu`/`MenuItem`/`MenuDivider`/`MenuNote` (30px rows, 13/18, 15px `--ink-600` glyph, `--action-subtle` hover, trailing check on the picked radio row, `danger` rows, `drill` rows that swap in a sub-view, ↑↓/Home/End/first-letter roving, single keys never leak to the shortcut map), `MenuButton` (trigger + Popover + Menu — the ⋯ menu), `Select` (one-of-N picker: outline Button trigger showing the picked option's glyph + label + chevron, menuitemradio rows, automatic filter field above 8 options, `footer` rows like "Create new list"; `variant="chrome"` on the app bar) and `DatePicker` (due-date editor: clock Button trigger → typed-date field that speaks the quick-add `due` grammar via `resolveDate`, Today / Tomorrow / Next week, the `DateCalendar` month grid — 7×32px days, Monday start, today ringed, picked day filled action blue, arrow keys move the day — and Clear; ISO in/out, `formatDate` → "Sep 12, 2026", `state="overdue"|"complete"` tints the trigger like `DueDatePill`). **Never hand-roll another `position:absolute` card, outside-click or Escape effect, and never a native `<select>` or `<input type="date">`.** Adopted so far: the item overlay's Status, list picker, Priority (Selects), Dates (`DatesPicker`, `onSetDates`; `onSetDue` still accepted), Repeat, Labels, Assignees, Cover, Relations (their own pickers — see ITEM EDITING) and ⋯ (MenuButton), the calendar period picker, `ItemCard`'s ⋯ (`onMenuAction`), the list-head ⋯ (`ListActionsMenu` now returns MenuItems for a `MenuButton` in `ListColumn`, Icon and Status role as drill sub-views), `SavedViews` (⋯ menu + Save-view Popover), and in the UI kit `TDRowMenu` (now a MenuButton with a drill icon grid) and `TDSelect` (replaces every settings `<select>`). Still on their own code and next to migrate: sidebar/top-bar menus, and the Share/Style/Search/Filter/Sort/Members panels (Popover shell only, content stays custom). Full map: the **Inline editing — adoption map** card (Interaction group).
+
+**Compact item metadata:** Rounded board badges wrap when they do not fit; dates, progress,
+attachment counts, assignees and item keys remain visible rather than being clipped or replacing
+counts with icons. Minimal keeps its existing flowing text layout. List rows show three stacked
+label chips in Rounded; the “+N” button opens all labels in the shared Base UI Popover (a bottom
+sheet on phones), with Escape/Close returning focus to the trigger. Opening it never opens the
+item or edits its labels. Minimal displays every label name inline and hides the overflow button.
 
 ## ITEM EDITING (overlay properties and content)
 
@@ -305,6 +322,6 @@ List and Status are separate concepts, linked only by explicit configuration —
 
 ## Caveats
 
-- Screenshots were the only source: exact hexes/sizes are careful estimates at 2× scale, not extracted tokens.
+- The initial sizes and palette came from screenshot estimates; the current app tokens are authoritative.
 - The screenshots show colorblind-pattern label mode and a GIF cover image; the system ships solid labels and placeholder covers.
-- No font files shipped (system stack by design); no logo provided, none created.
+- Inter and Geist Mono ship locally in `src/client/design/fonts/`; no logo provided, none created.
