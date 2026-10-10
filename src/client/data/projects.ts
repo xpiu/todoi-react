@@ -13,6 +13,10 @@ export type ArchiveListing = InferResponseType<typeof api.api.archive.$get, 200>
 export const archiveQueryKey = (projectId?: string) => ["archive", projectId ?? "all"] as const;
 export const useArchive = (projectId?: string, enabled = true) => useQuery({ queryKey: archiveQueryKey(projectId), queryFn: ({ signal }) => api.api.archive.$get({ query: projectId ? { projectId } : {} }, { init: { signal } }).then((r) => unwrap<ArchiveListing>(r)), enabled });
 
+export type ProjectInvite = InferResponseType<(typeof api.api.projects)[":id"]["invites"]["$get"], 200>[number];
+export const projectInvitesKey = (projectId: string) => ["project-invites", projectId] as const;
+export const useProjectInvites = (projectId: string, enabled: boolean) => useQuery({ queryKey: projectInvitesKey(projectId), queryFn: ({ signal }) => api.api.projects[":id"].invites.$get({ param: { id: projectId } }, { init: { signal } }).then((r) => unwrap<ProjectInvite[]>(r)), enabled });
+
 export function useProjectMutations() {
   const qc = useQueryClient();
   const refresh = (projectId?: string) => Promise.all([
@@ -34,7 +38,9 @@ export function useProjectMutations() {
   const setMember = useMutation({ mutationFn: (vars: { projectId: string; userId: string; role: MemberRole } & Quiet) => api.api.projects[":id"].members[":userId"].$put({ param: { id: vars.projectId, userId: vars.userId }, json: { role: vars.role } }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => refresh(v.projectId) });
   const removeMember = useMutation({ mutationFn: (vars: { projectId: string; userId: string } & Quiet) => api.api.projects[":id"].members[":userId"].$delete({ param: { id: vars.projectId, userId: vars.userId } }).then((r) => unwrap<void>(r)), onSettled: (_d, _e, v) => refresh(v.projectId) });
   const destroyItem = useMutation({ mutationFn: ({ id }: { id: string } & Quiet) => api.api.archive.items[":id"].$delete({ param: { id } }).then((r) => unwrap<void>(r)), onSettled: () => refresh() });
-  const createInvite = useMutation({ mutationFn: ({ projectId, email, role }: { projectId: string; email: string; role: MemberRole } & Quiet) => api.api.projects[":id"].invites.$post({ param: { id: projectId }, json: { email, role } }).then((r) => unwrap<{ url: string }>(r)) });
+  const createInvite = useMutation({ mutationFn: ({ projectId, email, role }: { projectId: string; email: string; role: Exclude<MemberRole, "owner"> } & Quiet) => api.api.projects[":id"].invites.$post({ param: { id: projectId }, json: { email, role } }).then((r) => unwrap<{ url: string }>(r)), onSettled: (_d, _e, v) => qc.invalidateQueries({ queryKey: projectInvitesKey(v.projectId) }) });
+  const revokeInvite = useMutation({ mutationFn: ({ code }: { code: string; projectId: string } & Quiet) => api.api.invites[":code"].$delete({ param: { code } }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => qc.invalidateQueries({ queryKey: projectInvitesKey(v.projectId) }) });
+  const transferOwnership = useMutation({ mutationFn: ({ projectId, userId }: { projectId: string; userId: string } & Quiet) => api.api.projects[":id"].ownership.$post({ param: { id: projectId }, json: { userId } }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => refresh(v.projectId) });
   const destroyProject = useMutation({ mutationFn: ({ id }: { id: string } & Quiet) => api.api.archive.projects[":id"].$delete({ param: { id } }).then((r) => unwrap<void>(r)), onSettled: () => refresh() });
-  return { createProject, importProject, createGroup, updateProject, updateGroup, archiveProject, restoreProject, deleteProject, deleteGroup, setMember, removeMember, createInvite, destroyItem, destroyProject, refresh };
+  return { transferOwnership, revokeInvite, createProject, importProject, createGroup, updateProject, updateGroup, archiveProject, restoreProject, deleteProject, deleteGroup, setMember, removeMember, createInvite, destroyItem, destroyProject, refresh };
 }

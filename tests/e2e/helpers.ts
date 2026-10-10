@@ -161,6 +161,7 @@ export function trackAccounts(test: TestType<any, any>) {
       await client.query("delete from projects where id = any($1)", [projectIds]);
       await client.query("delete from lists where user_id = any($1)", [ids]);
       await client.query("delete from groups where owner_id = any($1)", [ids]);
+      await client.query("delete from members where user_id = any($1)", [ids]);
       await client.query("delete from users where id = any($1)", [ids]);
       await client.query("commit");
       await Promise.all(files.map((f) => rm(join(process.env.UPLOAD_DIR ?? ".data/uploads", f.storage_key), { force: true })));

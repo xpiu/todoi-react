@@ -9,6 +9,7 @@ import { viewerOf } from "../auth";
 import { db } from "../db";
 import { groups, items, lists, members, projects, users } from "../db/schema";
 import { createProject, importProject, listsWithCounts, memberProjectIds, updateList } from "../services/projects";
+import { changeMembership } from "../services/members";
 
 import { destroyItem, destroyProject, itemContainersLive, itemIsLive, setProjectLifecycle } from "../services/lifecycle";
 import { fail, validate } from "../errors";
@@ -65,7 +66,7 @@ export const projectsRoute = new Hono()
     const [group] = await db.select().from(groups).where(eq(groups.id, project.groupId));
     const ls = await listsWithCounts(id);
     const ms = await db
-      .select({ projectId: members.projectId, userId: members.userId, role: members.role, createdAt: members.createdAt, name: users.name, email: users.email, nickname: users.nickname, avatarColor: users.avatarColor, image: users.image })
+      .select({ projectId: members.projectId, userId: members.userId, role: members.role, createdAt: members.createdAt, name: users.name, email: users.email, nickname: users.nickname, avatarColor: users.avatarColor, image: users.image, isAnonymous: users.isAnonymous })
       .from(members)
       .innerJoin(users, eq(users.id, members.userId))
       .where(eq(members.projectId, id));
@@ -102,15 +103,20 @@ export const projectsRoute = new Hono()
 
 const roleBody = validate("json", z.object({ role: memberRoleSchema }));
 export const membersRoute = new Hono()
+  .post("/:id/ownership", idParam, validate("json", z.object({ userId: z.string().min(1) })), async (c) => {
+    await changeMembership(c.req.valid("param").id, viewerOf(c).userId, { kind: "transfer", userId: c.req.valid("json").userId });
+    return c.body(null, 204);
+  })
   .put("/:id/members/:userId", validate("param", z.object({ id: idSchema, userId: z.string().min(1) })), roleBody, async (c) => {
     const { id, userId } = c.req.valid("param");
     const { role } = c.req.valid("json");
-    await db.insert(members).values({ projectId: id, userId, role }).onConflictDoUpdate({ target: [members.projectId, members.userId], set: { role } });
+    if (role === "owner") return fail(c, 400, "Use Transfer ownership to choose a new owner");
+    await changeMembership(id, viewerOf(c).userId, { kind: "set", userId, role });
     return c.json({ projectId: id, userId, role });
   })
   .delete("/:id/members/:userId", validate("param", z.object({ id: idSchema, userId: z.string().min(1) })), async (c) => {
     const { id, userId } = c.req.valid("param");
-    await db.delete(members).where(and(eq(members.projectId, id), eq(members.userId, userId)));
+    await changeMembership(id, viewerOf(c).userId, { kind: "remove", userId });
     return c.body(null, 204);
   });
 

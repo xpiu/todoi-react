@@ -16,6 +16,7 @@ import { Select } from "../core/Select";
 import { Switch } from "../core/Switch";
 import { TextField } from "../core/TextField";
 import { ActivityLog, type ActivityEntryView } from "./ActivityLog";
+import { formatDate } from "../core/dates";
 import { PROJECT_VISIBILITY } from "./ProjectDialog";
 import { ProjectIconPicker } from "./ProjectIconPicker";
 import "./ProjectPanel.css";
@@ -53,7 +54,16 @@ export interface PanelMember {
   name: string;
   email?: string | null;
   color?: string;
+  image?: string | null;
+  isAnonymous?: boolean;
   role: MemberRole;
+}
+export interface PanelInvite {
+  code: string;
+  email: string | null;
+  role: MemberRole;
+  url: string;
+  expiresAt: string;
 }
 export type PanelAction = "leave" | "archive" | "delete" | "open-archive" | "open-group-settings";
 export interface ProjectPatch {
@@ -80,7 +90,13 @@ export interface ProjectPanelProps {
   onChangeRole?: (member: PanelMember, role: MemberRole) => void;
   onRemoveMember?: (member: PanelMember) => void;
   /** The form keeps the address and shows the reason when a returned promise rejects */
-  onInvite?: (email: string, role: MemberRole) => void | Promise<unknown>;
+  onInvite?: (email: string, role: Exclude<MemberRole, "owner">) => void | Promise<unknown>;
+  invites?: PanelInvite[];
+  invitesLoading?: boolean;
+  invitesError?: string;
+  onRetryInvites?: () => void;
+  onRevokeInvite?: (invite: PanelInvite) => Promise<unknown>;
+  onTransferOwnership?: (member: PanelMember) => Promise<unknown>;
   onOpenKey?: (key: string) => void;
   onClose: () => void;
 }
@@ -129,13 +145,31 @@ function PanelTitle({ project, onChange }: InnerProps) {
   );
 }
 
-function PanelBody({ project, members, activity, archivedCount, currentUserId, section, onChange, onAction, onChangeRole, onRemoveMember, onInvite, onOpenKey }: InnerProps) {
+function PanelBody({ project, members, activity, archivedCount, currentUserId, section, onChange, onAction, onChangeRole, onRemoveMember, onInvite, invites = [], invitesLoading, invitesError, onRetryInvites, onRevokeInvite, onTransferOwnership, onOpenKey }: InnerProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [confirm, setConfirm] = useState<PanelAction | null>(null);
   const [desc, setDesc] = useState(project.description ?? "");
   const [nameDraft, setNameDraft] = useState(project.name);
   const [inviteMail, setInviteMail] = useState("");
-  const [inviteRole, setInviteRole] = useState<MemberRole>("editor");
+  const [inviteRole, setInviteRole] = useState<Exclude<MemberRole, "owner">>("editor");
+  const [newOwner, setNewOwner] = useState("");
+  const [transferConfirm, setTransferConfirm] = useState(false);
+  const [transferring, setTransferring] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const eligibleOwners = members.filter((m) => m.id !== currentUserId && m.role !== "owner" && !m.isAnonymous);
+  const chosenOwner = eligibleOwners.find((m) => m.id === newOwner);
+  const transfer = async () => {
+    if (!chosenOwner || !onTransferOwnership || transferring) return;
+    setTransferring(true);
+    setTransferError(null);
+    try {
+      await onTransferOwnership(chosenOwner);
+      setTransferConfirm(false);
+      setNewOwner("");
+    } catch (err) {
+      setTransferError(`Couldn't transfer ownership: ${err instanceof Error ? err.message : "try again"}`);
+    } finally { setTransferring(false); }
+  };
   const isOwner = project.role === "owner", isAdmin = isOwner || project.role === "admin";
   const vis = PROJECT_VISIBILITY.find((v) => v.value === project.visibility) ?? PROJECT_VISIBILITY[0]!;
   useEffect(() => {
@@ -228,7 +262,7 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
           <div role="list" aria-label="Members">
             {members.map((m) => (
               <div className="td-pp-member" role="listitem" key={m.id}>
-                <Avatar name={m.name} color={m.color} size={28} decorative />
+                <Avatar name={m.name} src={m.image ?? undefined} color={m.color} size={28} decorative />
                 <span className="td-pp-mname">
                   <b>
                     {m.name}
@@ -256,6 +290,12 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
             </div>
           ) : null}
           <InlineError message={inviteError} className="td-pp-inviteerror" />
+          {isAdmin && onRevokeInvite ? (
+            <section aria-label="Pending invites">
+              <h4 className="td-pp-cap">Pending invites</h4>
+              {invitesLoading ? <p className="td-pp-cap" role="status">Loading invites…</p> : invitesError ? <><InlineError message={invitesError} /><Button onClick={onRetryInvites}>Retry</Button></> : invites.length ? invites.map((i) => <InviteRow key={i.code} invite={i} onRevoke={onRevokeInvite} />) : <p className="td-pp-cap">No pending invites.</p>}
+            </section>
+          ) : null}
           {!isAdmin ? <div className="td-pp-cap">Only admins can invite people or change roles.</div> : null}
         </>
       ))}
@@ -292,6 +332,12 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
       ))}
       {sec("danger", "Leave and archive", (
         <>
+          {isOwner && onTransferOwnership ? <>
+            {row("ownership", "Transfer ownership", transferConfirm && chosenOwner ? `${chosenOwner.name} will become the owner. You’ll stay as an admin and can leave afterward.` : eligibleOwners.length ? "Hand the project to another member. You’ll stay as an admin." : "Invite a member before handing over this project.", <>
+              {transferConfirm ? <><Button variant="ghost" disabled={transferring} onClick={() => setTransferConfirm(false)}>Cancel</Button><Button disabled={!chosenOwner || transferring} onClick={() => void transfer()}>{transferring ? "Transferring…" : "Transfer ownership"}</Button></> : <><Select aria-label="New owner" value={newOwner} options={eligibleOwners.map((m) => ({ value: m.id, label: m.name }))} placeholder="Choose a member" onChange={(v) => setNewOwner(v)} disabled={!eligibleOwners.length} tier="detached" width={180} /><Button disabled={!chosenOwner} onClick={() => { setTransferError(null); setTransferConfirm(true); }}>Transfer…</Button></>}
+            </>)}
+            <InlineError message={transferError} />
+          </> : null}
           {archivedCount != null ? row("archived", "Archived items", archivedCount ? `${archivedCount} archived item${archivedCount === 1 ? "" : "s"} from this project, ready to restore.` : "Nothing archived from this project yet.", <Button icon="archive-restore" disabled={!archivedCount} onClick={() => onAction("open-archive")}>View</Button>) : null}
           {dangerRow("leave", "Leave project", "You lose access. An admin can invite you back.", "Leave", false, isOwner, "Transfer ownership to another member before leaving.")}
           {isAdmin ? dangerRow("archive", "Archive project", "Hidden from the sidebar and search. Items stay; an admin can restore it.", "Archive", false) : null}
@@ -301,4 +347,27 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
       {sec("activity", "Activity", <ActivityLog entries={activity} onOpenKey={onOpenKey} />)}
     </div>
   );
+}
+
+function InviteRow({ invite, onRevoke }: { invite: PanelInvite; onRevoke: (invite: PanelInvite) => Promise<unknown> }) {
+  const [copied, copy] = useCopy(900);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [now] = useState(() => Date.now());
+  const expired = new Date(invite.expiresAt).getTime() <= now;
+  const revoke = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try { await onRevoke(invite); }
+    catch (err) { setError(`Couldn't revoke the invite: ${err instanceof Error ? err.message : "try again"}`); }
+    finally { setBusy(false); }
+  };
+  return <div>
+    <div className="td-pp-row td-pp-inviteentry">
+      <div className="td-pp-rowtext"><span className="td-pp-label">{invite.email ?? "Anyone with the link"}</span><span className="td-pp-hint">{roleName(invite.role)} · {expired ? "Expired" : "Expires"} {formatDate(invite.expiresAt)}</span></div>
+      <div className="td-pp-ctl"><Button icon={copyIcon(copied, "copy")} disabled={expired} onClick={() => void copy(invite.url)}>{copied === "copied" ? "Copied" : "Copy link"}</Button><Button disabled={busy} onClick={() => void revoke()}>{busy ? "Revoking…" : "Revoke"}</Button></div>
+    </div>
+    <InlineError message={error ?? (copied === "failed" ? COPY_FAILED : null)} />
+  </div>;
 }

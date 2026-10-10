@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { LABEL_COLORS, MEMBER_ROLES } from "../../shared/enums";
+import { LABEL_COLORS } from "../../shared/enums";
 import { idSchema } from "../../shared/items";
 import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
@@ -93,7 +93,7 @@ export const projectInvitesRoute = new Hono()
     const rows = await db.select().from(invites).where(and(eq(invites.projectId, c.req.valid("param").id), isNull(invites.acceptedAt), isNull(invites.revokedAt)));
     return c.json(rows.map((r) => ({ ...r, url: `${env.APP_URL}/i/${r.code}` })));
   })
-  .post("/:id/invites", validate("param", z.object({ id: idSchema })), validate("json", z.object({ email: z.string().email().optional(), role: z.enum(MEMBER_ROLES).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
+  .post("/:id/invites", validate("param", z.object({ id: idSchema })), validate("json", z.object({ email: z.string().email().optional(), role: z.enum(["admin", "editor", "viewer"]).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
     const v = viewerOf(c);
     const { id } = c.req.valid("param");
     const { email, role, days } = c.req.valid("json");
@@ -119,6 +119,7 @@ export const invitesRoute = new Hono()
     const inv = await inviteOut(c.req.param("code"));
     if (!inv) return fail(c, 404, "Not found");
     if (inv.invite.revokedAt || inv.invite.acceptedAt || inv.invite.expiresAt < new Date()) return fail(c, 410, "This invite is no longer open");
+    if (inv.invite.role === "owner") return fail(c, 410, "Ask a project admin for a new invite");
     if (inv.invite.email && inv.invite.email.toLowerCase() !== v.email.toLowerCase()) return fail(c, 403, "This invite is for a different email address");
     await db.transaction(async (tx) => {
       await tx.insert(members).values({ projectId: inv.project.id, userId: v.userId, role: inv.invite.role }).onConflictDoNothing();

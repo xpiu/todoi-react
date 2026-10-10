@@ -8,7 +8,7 @@ import { projectUrl } from "./links";
 import type { LabelColor, MemberRole } from "../../shared/enums";
 import { errorMessage, explain } from "../data/api";
 import { newId } from "../data/mutations";
-import { useProjectMutations } from "../data/projects";
+import { useProjectInvites, useProjectMutations } from "../data/projects";
 import { useActivity, useGroups, useProject } from "../data/queries";
 import type { IconName } from "../design/core/Icon";
 import { ProjectDialog, type NewGroup, type NewProject } from "../design/project/ProjectDialog";
@@ -69,6 +69,8 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   const [open, setOpen] = useState(true);
   const { user } = useCurrentUser();
   const p = project.data;
+  const admin = p?.members.some((x) => x.userId === user?.id && (x.role === "owner" || x.role === "admin")) ?? false;
+  const invites = useProjectInvites(projectId, admin);
   if (project.isError) return <StateDialog title="Couldn't load the project settings" body={`${errorMessage(project.error)} Check the connection and try again.`} action={{ label: "Retry", onClick: () => void project.refetch() }} onClose={onClose} />;
   if (!p || !user) return <StateDialog title="Opening the project settings…" body="pending" onClose={onClose} />;
   const me = p.members.find((x) => x.userId === user.id);
@@ -87,7 +89,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
     if (a === "archive" || a === "delete") removeProject(p, a, leaveTo);
     else if (a === "leave") {
       m.removeMember.mutate({ projectId: p.id, userId: user.id }, { onSuccess: () => {
-        notify({ message: `Left ${quote(p.name)}`, icon: "log-out", restore: () => m.setMember.mutateAsync({ projectId: p.id, userId: user.id, role, quiet: true }) });
+        notify({ message: `Left ${quote(p.name)}`, icon: "log-out" });
         leaveTo();
       } });
     } else if (a === "open-archive") {
@@ -102,7 +104,16 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
     <ProjectPanel
       open={open}
       project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: projectUrl(p.id), role }}
-      members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, color: x.avatarColor ? `var(--label-${x.avatarColor})` : undefined }))}
+      members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, image: x.image, isAnonymous: x.isAnonymous, color: x.avatarColor ? `var(--label-${x.avatarColor})` : undefined }))}
+      invites={invites.data}
+      invitesLoading={invites.isPending}
+      invitesError={invites.isError ? `Couldn't load invites: ${errorMessage(invites.error)}` : undefined}
+      onRetryInvites={() => void invites.refetch()}
+      onRevokeInvite={(invite) => m.revokeInvite.mutateAsync({ projectId, code: invite.code, quiet: true })}
+      onTransferOwnership={async (member) => {
+        await m.transferOwnership.mutateAsync({ projectId, userId: member.id, quiet: true });
+        notify({ message: `Transferred ${quote(p.name)} to ${member.name}. You’re now an admin.`, icon: "users" });
+      }}
       activity={(activity.data ?? []).map((a) => ({ id: a.id, type: a.type, actor: a.actor?.name ?? "Todoi", actorColor: a.actor?.avatarColor ? `var(--label-${a.actor.avatarColor})` : undefined, text: a.text, key: a.itemKey ? `${p.keyPrefix}-${a.itemKey}` : null, time: a.createdAt }))}
       archivedCount={p.archivedCount}
       currentUserId={user.id}

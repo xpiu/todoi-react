@@ -487,7 +487,7 @@ export const uploadCleanup = pgTable("upload_cleanup", {
 export interface OperationScope {
   kind: "project" | "group" | "personal" | "registered";
   id: string;
-  permission?: "read" | "edit" | "owner";
+  permission?: "read" | "edit" | "admin" | "owner";
 }
 export const operationReceipts = pgTable("operation_receipts", {
   actorId: text("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),

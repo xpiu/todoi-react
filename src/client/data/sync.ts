@@ -21,7 +21,8 @@ export const useSyncState = create<SyncState>(() => ({ ownerId: null, user: null
 
 const OWNER_KEY = "td-sync-owner";
 const WORKSPACE_KEYS = new Set(["groups", "project", "items", "item", "labels", "saved-views", "archive", "inbox", "activity", "search", "me"]);
-const queueable = (path: string) => /^\/api\/(items|comments|groups|projects|lists|labels|saved-views|archive|inbox|attachments|activity|search)(\/|$)/.test(path) && !path.includes("/file") || path === "/api/me/prefs" || path === "/api/me";
+// Access changes require a live confirmation; an unrelated project edit must not delay a leave.
+const queueable = (path: string) => !/\/(ownership|members|invites)(\/|$)/.test(path) && (/^\/api\/(items|comments|groups|projects|lists|labels|saved-views|archive|inbox|attachments|activity|search)(\/|$)/.test(path) && !path.includes("/file") || path === "/api/me/prefs" || path === "/api/me");
 let client: QueryClient | undefined;
 let workspace: LocalWorkspace | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;

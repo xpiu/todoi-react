@@ -149,6 +149,19 @@
     gap: var(--sp-2);
     padding: 10px 0 var(--sp-1);
   }
+  .td-pp-row[data-setting="ownership"],
+  .td-pp-inviteentry {
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+  .td-pp-row[data-setting="ownership"] .td-pp-rowtext,
+  .td-pp-inviteentry .td-pp-rowtext {
+    flex: 1 1 240px;
+    overflow-wrap: anywhere;
+  }
+  .td-pp-row[data-setting="ownership"] .td-pp-ctl {
+    flex-wrap: wrap;
+  }
   .td-pp-invite .td-field-wrap {
     flex: 1;
   }

@@ -8,7 +8,7 @@ import { maybeViewer, viewerOf } from "./auth";
 import { db } from "./db";
 import { attachments, comments, groups, invites, items, labels, lists, members, projects, savedViews, users, type OperationScope } from "./db/schema";
 
-type Permission = "read" | "edit" | "owner";
+type Permission = "read" | "edit" | "admin" | "owner";
 type ItemScope = Pick<typeof items.$inferSelect, "projectId" | "listId">;
 
 function sameItemScope(item: ItemScope, scope: ItemScope | undefined): boolean {
@@ -80,8 +80,14 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     case "groups":
       if (id) await groupAccess(id);
       break;
-    case "projects":
-      if (id && id !== "import") await projectAccess(id, action === "members" || action === "invites" || !read ? "owner" : "read");
+    case "projects": {
+      const selfRemoval = action === "members" && c.req.method === "DELETE" && c.req.path.split("/").at(-1) === viewer?.userId;
+      if (selfRemoval) scopes.push({ kind: "personal", id: viewerOf(c).userId });
+      else if (id && id !== "import") {
+        const ownerOnly = action === "ownership" || c.req.method === "DELETE" && action !== "members" || !!field("groupId");
+        const administration = action === "members" || action === "invites" || !read;
+        await projectAccess(id, ownerOnly ? "owner" : administration ? "admin" : "read");
+      }
       if (field("groupId")) await groupAccess(field("groupId")!);
       if (field("copyFrom")) await projectAccess(field("copyFrom")!, "read");
       if (action === "members" && !read && c.req.method !== "DELETE") {
@@ -90,6 +96,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
         if (!user || user.isAnonymous) throw invalid();
       }
       break;
+    }
     case "lists":
       if (id) await listAccess(id);
       if (field("projectId")) await projectAccess(field("projectId")!);
@@ -189,7 +196,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
         else {
           const [invite] = await db.select({ projectId: invites.projectId }).from(invites).where(eq(invites.code, id!));
           if (!invite) throw missing();
-          await projectAccess(invite.projectId, "owner");
+          await projectAccess(invite.projectId, "admin");
         }
       }
       break;
@@ -222,6 +229,7 @@ async function authorizeProject(viewer: ReturnType<typeof maybeViewer>, projectI
   const [member] = viewer ? await db.select({ role: members.role }).from(members).where(and(eq(members.projectId, projectId), eq(members.userId, viewer.userId))) : [];
   if (permission === "read" && canReadProject(project.visibility, !!member, !!viewer)) return;
   if (permission === "edit" && member && member.role !== "viewer") return;
+  if (permission === "admin" && (member?.role === "admin" || member?.role === "owner")) return;
   if (permission === "owner" && member?.role === "owner") return;
   throw forbidden();
 }
