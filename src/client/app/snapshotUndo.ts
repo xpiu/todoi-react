@@ -1,4 +1,5 @@
 import { api, unwrap, type Item, type ItemLocation } from "../data/api";
+import { queryClient } from "../queryClient";
 
 type Values = Record<string, unknown>;
 interface SnapshotStep {
@@ -30,7 +31,20 @@ export function snapshotUndo(steps: SnapshotStep[], read: (id: string) => Promis
 
 /** Scoped snapshots include queued field edits, including labels and assignees. */
 async function readItem(id: string): Promise<Values> {
-  const location = await api.api.items[":id"].$get({ param: { id } }).then((r) => unwrap<ItemLocation>(r));
-  const rows = await api.api.items.$get({ query: { listId: location.listId } }).then((r) => unwrap<Item[]>(r));
-  return rows.find((item) => item.id === id) ?? location;
+  try {
+    const location = await api.api.items[":id"].$get({ param: { id } }).then((r) => unwrap<ItemLocation>(r));
+    const rows = await api.api.items.$get({ query: { listId: location.listId } }).then((r) => unwrap<Item[]>(r));
+    return rows.find((item) => item.id === id) ?? location;
+  } catch (error) {
+    // A newly requested read may have no durable reply yet. Keep existing offline Undo working
+    // with the current optimistic item, but never substitute a cache for an access refusal.
+    if (error instanceof TypeError) {
+      const queries = queryClient.getQueryCache().findAll({ queryKey: ["items"] }).sort((a, b) => Number(b.isActive()) - Number(a.isActive()) || b.state.dataUpdatedAt - a.state.dataUpdatedAt);
+      for (const query of queries) {
+        const item = (query.state.data as Item[] | undefined)?.find((row) => row.id === id);
+        if (item) return item;
+      }
+    }
+    throw error;
+  }
 }

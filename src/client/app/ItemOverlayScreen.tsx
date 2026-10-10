@@ -175,12 +175,12 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       onConvertSubitem={(id) => {
         const s = subitems.find((x) => x.id === id);
         updateItem.mutate({ id, parentItemId: null, position: items.filter((it) => it.listId === item.listId && !it.parentItemId).length });
-        if (s) notify({ message: `${quote(s.title)} is now an item in ${listName(item.listId) ?? "the list"}`, icon: "arrow-up-from-line", restore: snapshotUndo([{ id, before: { parentItemId: item.id }, after: { parentItemId: null }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
+        if (s) notify({ message: `${quote(s.title)} is now an item in ${listName(item.listId) ?? "the list"}`, icon: "arrow-up-from-line", restore: snapshotUndo([{ id, before: { parentItemId: item.id, listId: item.listId }, after: { parentItemId: null, listId: item.listId }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
       }}
       onMoveSubitem={(id, target) => {
         const s = subitems.find((x) => x.id === id);
         updateItem.mutate({ id, parentItemId: target.id });
-        if (s) notify({ message: `Moved ${quote(s.title)} under ${target.itemId ?? target.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id, before: { parentItemId: item.id }, after: { parentItemId: target.id }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
+        if (s) notify({ message: `Moved ${quote(s.title)} under ${target.itemId ?? target.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id, before: { parentItemId: item.id, listId: item.listId }, after: { parentItemId: target.id, listId: items.find((it) => it.id === target.id)?.listId ?? item.listId }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
       }}
       onDeleteSubitem={(id) => void actions.remove(id)}
       onDeleteSubitems={() => void actions.removeMany(subitems.map((s) => s.id), "subitem")}

@@ -29,7 +29,7 @@ export function useCompletion(scope: ItemsScope) {
 
   /** Restore only the fields completion changed, and report later edits to them. */
   const undoSteps = (outcomes: Outcome[]) => snapshotUndo(outcomes.map(({ it, occurrence, row }) => {
-    const before = occurrence ? { dueDate: it.dueDate, startDate: it.startDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { done: false } : {}) } : { status: it.status };
+    const before = occurrence ? { dueDate: it.dueDate, startDate: it.startDate, repeatCount: it.repeatCount, ...(occurrence.ended ? { status: it.status } : {}) } : { status: it.status };
     const after = Object.fromEntries(Object.keys(before).map((key) => [key, row[key as keyof UpdatedItem]]));
     return { id: it.id, before, after, restore: () => updateItem.mutateAsync({ id: it.id, ...before, quiet: true }) };
   }));
