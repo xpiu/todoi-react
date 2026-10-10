@@ -1,0 +1,22 @@
+--- a/readme.md
++++ b/readme.md
+@@ -48,7 +48,7 @@
+ - **Ink ladder:** #131f45 body → #3b4a70 secondary → #5a6a8c icons/meta → #8091ad faint borders.
+ - **Label palette:** 8 solids (green #1ed07c, yellow #ffd024, orange #ff8f3e, red #ff5a4f, pink #ff5ca8, blue #3d7efc, teal #14c3ea, lime #96da14). Compact form: 40×8px bars, radius 4. Expanded form: 32px chips with dark ink text.
+ - **Semantic greens:** #1fbd53 done check icon; #42a12e due-date pill (white text).
+-- **Type:** system UI stack only (`--font-ui`); no webfonts shipped. Scale 12/14/16/18/20/24. Body 14/20. Section headings 16 semibold. Item overlay title 24 semibold. Board title 18 bold white. Weights: 400 body, 500 buttons, 600 headings, 700 board title.
++- **Type:** Rounded uses the system UI stack (`--font-ui`); Minimal uses Inter for UI and Geist Mono for keys and counts, shipped in `assets/fonts/` and loaded by `tokens/typography.css`. Scale 12/14/16/18/20/24. Body 14/20. Section headings 16 semibold. Item overlay title 24 semibold. Board title 18 bold white. Weights: 400 body, 500 buttons, 600 headings, 700 board title.
+ - **Spacing:** 4px base grid; 8px card padding unit; 12px gaps between lists; lists fixed 272px wide.
+ - **Radii:** 4px label bars/pills, 8px cards/buttons/inputs, 12px lists and overlay panel.
+ - **Stacking:** one tokenized ladder in `tokens/elevation.css` — `--z-raised` 1 → `--z-hover-control` 20 → `--z-above-content` 30 (sidebar) → `--z-menu` 60 / `--z-menu-nav` 70 / `--z-menu-detached` 80 → `--z-modal` 100 → `--z-sheet` 150 (phone bottom sheets) → `--z-menu-toolbar` 190 (app-bar dropdowns) → `--z-palette` 200 → `--z-drag` 250 (touch drag ghost) → `--z-toast` 300. Components never write a raw z-index: `z-index:var(--z-menu,60)`, fallback equal to the token. Rungs are spaced so consumers can slot layers between them; a menu trapped in a scroll/transform ancestor uses `position:fixed` + `--z-menu-detached`. Full map: the Stacking ladder card.
+--- a/guidelines/states.html
++++ b/guidelines/states.html
+@@ -15,7 +15,7 @@
+ <body><div class="wrap">
+ <section><h4>Situation → treatment</h4>
+ <table>
+-<tr><td>Project with no lists</td><td>EmptyState chrome</td><td>Fills the content slot. Glyph, title and one filled "Add a list" action; no hint, no starter set.</td></tr>
++<tr><td>Project with no lists</td><td>EmptyState chrome</td><td>Fills the content slot. Glyph, title, a short hint, the primary "Add a list" action and the secondary "To-do · Doing · Done" starter set. The starter set creates three lists linked to their matching statuses.</td></tr>
+ <tr><td>Filters hide every item</td><td>EmptyState chrome</td><td>Replaces the lists; the FilterChip row stays above with Reset filters (X). Hint counts what is hidden.</td></tr>
+ <tr><td>List with no items</td><td>nothing</td><td>The list's own "Add an item" row is the affordance. No note, no glyph.</td></tr>
+ <tr><td>First-run inbox</td><td>EmptyState card</td><td>Compact, inside the Inbox section above its add row. Explains capture → drag onto a project.</td></tr>

@@ -42,7 +42,8 @@ client/server builds passed. Impeccable found no issues in the changed UI.
 ## Completed: calendar export and expired invite requests
 
 - Account › Data downloads dated items from accessible live projects and the Inbox
-  as an `.ics` snapshot. Archived, deleted and undated items are excluded. Date
+  as an `.ics` snapshot, including items with only a start date. Archived, deleted
+  and undated items are excluded. Date
   ranges, local times, stable identities, escaping and UTF-8 folding follow
   [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html).
 - Expired invites offer a signed-in request. The inviter (or current owner) receives
@@ -64,15 +65,44 @@ notifications). All 184 unit tests, typechecking, lint and production builds pas
   restoration use the shared helper. Successful bulk steps survive a retry without
   being repeated. Bulk outcomes enter history only after successful writes.
 - A single-item read now includes its fields and relations; the scoped read supplies
-  queued local edits through the existing offline transport.
+  queued local edits through the existing offline transport. Network failures can
+  use the current optimistic item; access refusals cannot use that fallback.
+  Offline restoration confirms after the server acknowledges the queued write.
+  Last-repeat status and parent-list changes are included in restored-field feedback.
 
 Verification: all twelve focused Playwright tests passed (four theme/mode scopes
 plus existing delete and cross-project move coverage); helper tests cover unrelated
 edits, relation ordering, failures and partial retries. All 189 unit tests,
 typechecking and lint passed.
 
-## Remaining scope
+## Completed: styled and scroll-safe hints
 
-- Styled connection hints and icon-picker hints that escape scrolling clipping.
-- Corrections for the Design project's empty-project guideline, font copy and
-  theme manifest, prepared for the next app-to-Design push.
+- Connection pills use the existing CSS hint and suppress it while the menu is open.
+- List/project icon tiles and color swatches use the shared Tooltip's portal option.
+  Base UI owns trigger composition, delay, collision placement and portal behavior;
+  the skin and Minimal typography reuse the existing CSS rules and tokens.
+- Phone bottom sheets provide their popup through the existing portal context, so
+  nested hints stay inside the active modal and escape inner scrolling. Keyboard
+  navigation, selection handlers, accessible labels and disabled behavior remain.
+
+Verification: four Playwright theme/mode checks passed, including scrolled last-row
+hints, keyboard selection, offline connection menus, phone layout and axe. All 144
+focused Storybook checks passed across the four scopes. Screenshots were inspected;
+Impeccable's detector found no issues in the changed controls.
+
+## Prepared: Design references for the next sync
+
+[The correction package](../design/20261010-next-push.md) provides an apply-checked
+patch for the empty-project guideline and font statement, plus the exact four
+canonical theme/mode manifest entries and regeneration criteria. The patched
+empty-project guideline was rendered and inspected in a disposable archive copy.
+The live Design project has not been published from this task.
+
+## Final verification
+
+The combined browser run passed 36 scenarios; one expired-invite scenario timed out
+and passed its focused rerun. All 37 scenarios are verified, including each new
+workflow plus existing completion, delete and cross-project Undo coverage. The
+start-only calendar export passed both download and retry checks after its final
+update. Ten isolated database checks, all 190 unit tests, typechecking, lint and
+production client/server builds passed. Lint retains pre-existing warnings.
