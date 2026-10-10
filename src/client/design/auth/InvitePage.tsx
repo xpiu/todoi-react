@@ -38,12 +38,25 @@ export interface InvitePageProps {
   onCreateAccount?: () => void;
   onSwitchAccount?: () => void;
   onOpenProject?: () => void;
+  requested?: boolean;
+  onRequestInvite?: () => Promise<unknown>;
 }
 
-export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline, onLogin, onCreateAccount, onSwitchAccount, onOpenProject }: InvitePageProps) {
+export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline, onLogin, onCreateAccount, onSwitchAccount, onOpenProject, requested = false, onRequestInvite }: InvitePageProps) {
   const p = invite.project;
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requesting, setRequesting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const requestInvite = async () => {
+    if (!signedIn) { onLogin?.(); return; }
+    if (!onRequestInvite || requesting || sent || requested) return;
+    setRequesting(true);
+    setError(null);
+    try { await onRequestInvite(); setSent(true); }
+    catch (err) { setError(`Couldn't request an invite: ${err instanceof Error ? err.message : "try again"}`); }
+    finally { setRequesting(false); }
+  };
   const accept = async () => {
     setAccepting(true);
     setError(null);
@@ -77,7 +90,11 @@ export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline,
       {action ? <div className="td-auth-stack">{action}</div> : null}
     </AuthShell>
   );
-  if (state === "expired") return closed("clock", "danger", "This invite has expired", <>{invite.expiresAt ? `It stopped working on ${fmtDate(invite.expiresAt)}. ` : ""}Ask <b>{invite.inviter ?? "the person who sent it"}</b> for a new one.</>);
+  if (state === "expired") return closed("clock", "danger", "This invite has expired", <>{invite.expiresAt ? `It stopped working on ${fmtDate(invite.expiresAt)}. ` : ""}{sent || requested ? "Your request is in the project admin’s Inbox. They can send you a new link." : <>Ask <b>{invite.inviter ?? "the person who sent it"}</b> for a new one.</>}</>, onRequestInvite ? <>
+    <InlineError message={error} />
+    <Button variant="primary" size="lg" disabled={requesting || sent || requested} onClick={() => void requestInvite()}>{sent || requested ? "Invite requested" : requesting ? "Requesting…" : "Ask for a new invite"}</Button>
+    {!signedIn ? <div className="td-auth-links is-center">Log in to send your request.</div> : null}
+  </> : null);
   if (state === "revoked") return closed("ban", "danger", "This invite was withdrawn", <>You'd need a new invite from <b>{invite.inviter ?? "a project admin"}</b>.</>);
   if (state === "member") return closed("circle-check", "success", "You're already a member", <>You have <b>{roleName}</b> access to this project.</>, onOpenProject ? <Button variant="primary" size="lg" onClick={onOpenProject}>Open project</Button> : null);
   if (state === "accepted") return closed("circle-check", "success", "You're in", <>You joined as <b>{roleName}</b>.</>, onOpenProject ? <Button variant="primary" size="lg" onClick={onOpenProject}>Open project</Button> : null);

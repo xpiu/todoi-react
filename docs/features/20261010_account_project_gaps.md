@@ -39,9 +39,24 @@ upload recovery. Two isolated database tests passed for concurrent replacement,
 cleanup and validation. All 181 unit tests, typechecking, lint and production
 client/server builds passed. Impeccable found no issues in the changed UI.
 
+## Completed: calendar export and expired invite requests
+
+- Account › Data downloads dated items from accessible live projects and the Inbox
+  as an `.ics` snapshot. Archived, deleted and undated items are excluded. Date
+  ranges, local times, stable identities, escaping and UTF-8 folding follow
+  [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html).
+- Expired invites offer a signed-in request. The inviter (or current owner) receives
+  one Inbox notification per person and invite, with instructions to send a fresh
+  link. Requests persist across reload, reject mismatched locked emails and closed
+  projects, and never grant access. Invite acceptance rechecks under the same locks.
+
+Verification: six Playwright checks passed across the four theme/mode scopes,
+including phone layout, axe, download contents, failure recovery, request delivery,
+deduplication and authorization. Five database checks passed (requests and existing
+notifications). All 184 unit tests, typechecking, lint and production builds passed.
+
 ## Remaining scope
 
-- Account calendar (.ics) download and a real request path for expired invites.
 - Accurate undo confirmation when snapshot restoration reverts later edits.
 - Styled connection hints and icon-picker hints that escape scrolling clipping.
 - Corrections for the Design project's empty-project guideline, font copy and

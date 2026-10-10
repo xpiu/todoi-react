@@ -1,5 +1,5 @@
 // The signed-in person: profile (name, handle, avatar colour) and project invites.
-import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { nanoid } from "nanoid";
@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { LABEL_COLORS } from "../../shared/enums";
 import { MAX_AVATAR_BYTES } from "../../shared/avatars";
+import { itemsToCalendar } from "../../shared/calendarExport";
 import { idSchema } from "../../shared/items";
 import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
@@ -15,10 +16,12 @@ import { apiTokens, groups, invites, items, labels, lists, members, projects, us
 import { env } from "../env";
 import { logActivity } from "../services/activity";
 import { memberProjectIds } from "../services/projects";
-import { fail, validate } from "../errors";
+import { ApiFailure, fail, validate } from "../errors";
 import { setAvatar } from "../services/avatars";
 import { attachmentHeaders } from "../services/attachmentResponse";
 import { openUpload } from "../services/uploads";
+import { itemIsLive } from "../services/lifecycle";
+import { inviteRequestId, requestNewInvite } from "../services/inviteRequests";
 
 export const meRoute = new Hono()
   .post("/avatar", bodyLimit({ maxSize: MAX_AVATAR_BYTES + 65536, onError: (c) => fail(c, 413, "Choose an image up to 2 MB") }), async (c) => {
@@ -80,7 +83,12 @@ export const tokensRoute = new Hono()
   });
 
 /** Everything the viewer can see, as one JSON document. */
-export const exportRoute = new Hono().get("/", async (c) => {
+export const exportRoute = new Hono().get("/calendar", async (c) => {
+  const v = viewerOf(c);
+  const ids = await memberProjectIds(v.userId);
+  const dated = await db.select().from(items).where(and(itemIsLive, isNotNull(items.dueDate), or(ids.length ? inArray(items.projectId, ids) : undefined, eq(items.listId, v.inboxListId)))).orderBy(asc(items.dueDate), asc(items.id));
+  return c.body(itemsToCalendar(dated, env.APP_URL), 200, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="todoi-calendar-${new Date().toISOString().slice(0, 10)}.ics"` });
+}).get("/", async (c) => {
   const v = viewerOf(c);
   const ids = await memberProjectIds(v.userId);
   const ps = ids.length ? await db.select().from(projects).where(inArray(projects.id, ids)) : [];
@@ -132,8 +140,13 @@ export const invitesRoute = new Hono()
     if (!inv) return fail(c, 404, "Not found");
     const v = maybeViewer(c);
     const already = v ? (await db.select().from(members).where(and(eq(members.projectId, inv.project.id), eq(members.userId, v.userId)))).length > 0 : false;
-    const state = inv.invite.revokedAt ? "revoked" : inv.invite.acceptedAt ? "accepted" : inv.invite.expiresAt < new Date() ? "expired" : already ? "member" : "open";
-    return c.json({ ...inv, state, signedIn: !!v && !v.isAnonymous });
+    const state = already ? "member" : inv.invite.revokedAt ? "revoked" : inv.invite.acceptedAt ? "accepted" : inv.invite.expiresAt < new Date() ? "expired" : "open";
+    const requested = v ? (await db.select({ id: items.id }).from(items).where(eq(items.id, inviteRequestId(c.req.param("code"), v.userId)))).length > 0 : false;
+    return c.json({ ...inv, state, requested, signedIn: !!v && !v.isAnonymous });
+  })
+  .post("/:code/request", async (c) => {
+    await requestNewInvite(c.req.param("code"), viewerOf(c));
+    return c.json({ requested: true });
   })
   .post("/:code/accept", async (c) => {
     const v = viewerOf(c);
@@ -143,6 +156,9 @@ export const invitesRoute = new Hono()
     if (inv.invite.role === "owner") return fail(c, 410, "Ask a project admin for a new invite");
     if (inv.invite.email && inv.invite.email.toLowerCase() !== v.email.toLowerCase()) return fail(c, 403, "This invite is for a different email address");
     await db.transaction(async (tx) => {
+      await tx.select({ id: projects.id }).from(projects).where(eq(projects.id, inv.project.id)).for("update");
+      const [current] = await tx.select().from(invites).where(eq(invites.id, inv.invite.id)).for("update");
+      if (!current || current.revokedAt || current.acceptedAt || current.expiresAt < new Date()) throw new ApiFailure(410, "This invite is no longer open");
       await tx.insert(members).values({ projectId: inv.project.id, userId: v.userId, role: inv.invite.role }).onConflictDoNothing();
       await tx.update(invites).set({ acceptedAt: new Date(), acceptedBy: v.userId }).where(eq(invites.id, inv.invite.id));
       await logActivity(tx, { projectId: inv.project.id, actorId: v.userId, type: "member", text: `joined as ${inv.invite.role}` });

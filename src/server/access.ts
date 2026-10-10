@@ -192,7 +192,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
       break;
     case "invites":
       if (!read) {
-        if (action === "accept") registered();
+        if (action === "accept" || action === "request") registered();
         else {
           const [invite] = await db.select({ projectId: invites.projectId }).from(invites).where(eq(invites.code, id!));
           if (!invite) throw missing();

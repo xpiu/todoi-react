@@ -92,16 +92,16 @@ export function SettingsScreen({ page }: { page: Page }) {
 }
 
 /** Fetches the export first, so "Exported" means the file was handed to the browser; a failure says why. */
-function ExportAllButton({ notify }: { notify: Notify }) {
+function ExportAllButton({ notify, format = "json" }: { notify: Notify; format?: "json" | "ics" }) {
   const [busy, setBusy] = useState(false);
   const run = async () => {
     setBusy(true);
     try {
-      const res = await api.api.me.export.$get();
+      const res = await (format === "ics" ? api.api.me.export.calendar.$get() : api.api.me.export.$get());
       if (!res.ok) throw await apiError(res);
-      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "todoi-export.json";
+      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `todoi-export.${format}`;
       downloadText(name, await res.blob());
-      notify({ message: "Exported everything as JSON", icon: "download" });
+      notify({ message: format === "ics" ? "Exported dated items as a calendar" : "Exported everything as JSON", icon: "download" });
     } catch (err) {
       notifyFailure(err, "Couldn't export: ");
     } finally {
@@ -110,7 +110,7 @@ function ExportAllButton({ notify }: { notify: Notify }) {
   };
   return (
     <Button icon="download" disabled={busy} onClick={() => void run()}>
-      {busy ? "Exporting…" : "Export .json"}
+      {busy ? "Exporting…" : `Export .${format}`}
     </Button>
   );
 }
@@ -118,6 +118,7 @@ function ExportAllButton({ notify }: { notify: Notify }) {
 /** The export rows appear under Settings › Storage and Account › Data alike. */
 const exportRows = (notify: Notify, navigate: UseNavigateResult<string>): SettingsRow[] => [
   { id: "exportJson", label: "Export everything", hint: "One JSON file with your groups, projects, lists, labels and items", control: <ExportAllButton notify={notify} /> },
+  { id: "exportCalendar", label: "Export calendar", hint: "Dated items from your projects and Inbox · archived and deleted items stay out", control: <ExportAllButton notify={notify} format="ics" /> },
   { id: "exportMd", label: "Export a project", hint: "Share › Export this view on the project writes Markdown or CSV of what you see", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/projects" })}>Projects</Button> },
 ];
 

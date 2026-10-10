@@ -9,7 +9,7 @@ import { prefsOf, type Prefs } from "../../shared/prefs";
 import { inboxFor } from "../auth";
 import { readableItemIds } from "../access";
 import { db, inRequestTransaction } from "../db";
-import { groups, items, itemWatchers, members, projects, users } from "../db/schema";
+import { groups, items, itemWatchers, members, projects, users, type ItemNotification } from "../db/schema";
 
 type Kind = "assignment" | "mention" | "watch";
 const OPT_IN: Record<Kind, keyof Prefs> = { assignment: "notifyAssignments", mention: "notifyMentions", watch: "notifyWatched" };
@@ -24,6 +24,13 @@ interface About {
 
 /** An @handle as the comment composer writes it: the nickname, else the first name (DESIGN.md › Mentions). */
 const handleOf = (u: { name: string; nickname: string | null }) => (u.nickname || u.name.split(/\s+/)[0] || u.name).toLowerCase();
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export async function createInboxNotification(source: typeof db | Tx, listId: string, actorId: string, message: { id?: string; title: string; description?: string | null; notification: ItemNotification }) {
+  const [last] = await source.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, listId));
+  await source.insert(items).values({ ...message, id: message.id ?? nanoid(), title: message.title.slice(0, 500), listId, unread: true, position: (last?.max ?? -1) + 1, createdBy: actorId }).onConflictDoNothing();
+}
 
 /** Deliver one notification to each recipient who may and wants to get it; returns who got one. */
 export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { userId: string; name: string }, about: About, opts: { excerpt?: string } = {}): Promise<string[]> {
@@ -40,16 +47,10 @@ export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { 
     if (!(await readableItemIds({ userId: person.id, inboxListId }, [about])).has(about.id)) continue;
     const ref = key ? `${key}: ${about.title}` : about.title;
     const title = kind === "assignment" ? `${actor.name} assigned ${key ?? "an item"} to you: ${about.title}` : kind === "mention" ? `${actor.name} mentioned you on ${ref}` : `${actor.name} commented on ${ref}`;
-    const [last] = await db.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, inboxListId));
-    await db.insert(items).values({
-      id: nanoid(),
-      listId: inboxListId,
-      title: title.slice(0, 500),
+    await createInboxNotification(db, inboxListId, actor.userId, {
+      title,
       description: opts.excerpt ? `> ${opts.excerpt.slice(0, 400).replace(/\n/g, "\n> ")}` : null,
-      unread: true,
       notification: { kind, fromUserId: actor.userId, aboutKey: key, aboutItemId: about.id },
-      position: (last?.max ?? -1) + 1,
-      createdBy: actor.userId,
     });
     sent.push(person.id);
   }

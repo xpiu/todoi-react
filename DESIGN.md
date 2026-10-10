@@ -294,6 +294,12 @@ regaining access requires an invitation. Project admins can manage settings, mem
 invites; ownership transfer and project deletion remain owner-only. Members shows pending
 invites with copy-link, expiry and revoke; failures stay local with Retry.
 
+Account › Data exports dated live items as a calendar (.ics) snapshot, including
+the Inbox and accessible projects. Archived, deleted and undated items stay out.
+Expired invites offer “Ask for a new invite” after login: this sends one persistent
+Inbox request to the inviter or current owner, without granting access. Delivery
+failures stay inline and retryable; sent requests remain visible after reload.
+
 ## ARCHIVE & TRASH (restore later)
 
 Archive and Delete are two different distances. **Archive** puts a project or item out of the way for good — hidden from the sidebar, views, search and counts — but keeps it. **Delete** moves it to the **Trash**, where it stays 90 days (`ARCHIVE_RETENTION_DAYS`) and is then removed for good. Both still raise the undo toast at the moment they happen; the view below is for later. Only "Delete forever" (from the Trash) is permanent, and it confirms inline on the row.

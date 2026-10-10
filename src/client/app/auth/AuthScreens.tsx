@@ -122,6 +122,7 @@ export function InviteScreen() {
   const openProject = () => navigate({ to: "/p/$projectId", params: { projectId: d.project.id }, search: {} });
   return (
     <InvitePage
+      key={code}
       invite={{ project: { name: d.project.name, icon: d.project.icon as IconName | null, color: d.project.color ? `var(--label-${d.project.color})` : undefined, description: d.project.description }, groupName: d.groupName, itemCount: d.itemCount, memberCount: d.memberCount, inviter: d.inviter, role: d.invite.role, email: d.invite.email, expiresAt: d.invite.expiresAt }}
       state={state}
       signedIn={!!user && !user.isAnonymous}
@@ -138,6 +139,8 @@ export function InviteScreen() {
         return invite.refetch();
       })}
       onOpenProject={openProject}
+      requested={d.requested}
+      onRequestInvite={() => api.api.invites[":code"].request.$post({ param: { code } }).then((r) => unwrap(r)).catch(explain)}
     />
   );
 }
