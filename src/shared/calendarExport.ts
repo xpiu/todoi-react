@@ -30,16 +30,17 @@ function fold(line: string): string {
 export function itemsToCalendar(items: CalendarItem[], appUrl: string, now = new Date()): string {
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Todoi//Calendar export//EN", "CALSCALE:GREGORIAN"];
   for (const item of items) {
-    if (!item.dueDate) continue;
+    const dueDate = item.dueDate ?? item.startDate;
+    if (!dueDate) continue;
     lines.push("BEGIN:VEVENT", `UID:${item.id}@todoi.app`, `DTSTAMP:${timestamp(now)}`, `SUMMARY:${text(item.title)}`, "TRANSP:TRANSPARENT");
     if (item.dueTime) {
-      const due = `${date(item.dueDate)}T${item.dueTime.replace(":", "")}00`;
-      lines.push(`DTSTART:${item.startDate && item.startDate < item.dueDate ? `${date(item.startDate)}T000000` : due}`);
-      if (item.startDate && item.startDate < item.dueDate) lines.push(`DTEND:${due}`);
+      const due = `${date(dueDate)}T${item.dueTime.replace(":", "")}00`;
+      lines.push(`DTSTART:${item.startDate && item.startDate < dueDate ? `${date(item.startDate)}T000000` : due}`);
+      if (item.startDate && item.startDate < dueDate) lines.push(`DTEND:${due}`);
     } else {
-      const end = new Date(`${item.dueDate}T00:00:00Z`);
+      const end = new Date(`${dueDate}T00:00:00Z`);
       end.setUTCDate(end.getUTCDate() + 1);
-      lines.push(`DTSTART;VALUE=DATE:${date(item.startDate ?? item.dueDate)}`, `DTEND;VALUE=DATE:${date(end.toISOString().slice(0, 10))}`);
+      lines.push(`DTSTART;VALUE=DATE:${date(item.startDate ?? dueDate)}`, `DTEND;VALUE=DATE:${date(end.toISOString().slice(0, 10))}`);
     }
     const description = [item.description, item.done ? "Completed in Todoi." : null].filter(Boolean).join("\n\n");
     if (description) lines.push(`DESCRIPTION:${text(description)}`);

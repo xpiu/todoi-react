@@ -86,7 +86,7 @@ export const tokensRoute = new Hono()
 export const exportRoute = new Hono().get("/calendar", async (c) => {
   const v = viewerOf(c);
   const ids = await memberProjectIds(v.userId);
-  const dated = await db.select().from(items).where(and(itemIsLive, isNotNull(items.dueDate), or(ids.length ? inArray(items.projectId, ids) : undefined, eq(items.listId, v.inboxListId)))).orderBy(asc(items.dueDate), asc(items.id));
+  const dated = await db.select().from(items).where(and(itemIsLive, or(isNotNull(items.dueDate), isNotNull(items.startDate)), or(ids.length ? inArray(items.projectId, ids) : undefined, eq(items.listId, v.inboxListId)))).orderBy(asc(items.dueDate), asc(items.id));
   return c.body(itemsToCalendar(dated, env.APP_URL), 200, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="todoi-calendar-${new Date().toISOString().slice(0, 10)}.ics"` });
 }).get("/", async (c) => {
   const v = viewerOf(c);

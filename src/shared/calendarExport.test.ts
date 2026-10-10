@@ -30,3 +30,8 @@ it("escapes user text and folds Unicode without breaking code points or injectin
   expect(data.split("\r\n").every((line) => new TextEncoder().encode(line).length <= 75)).toBe(true);
   expect(data.match(/\r\nEND:VEVENT\r\n/g)).toHaveLength(1);
 });
+
+it("includes items with only a start date as a one-day event", () => {
+  const data = exportItems([{ ...item, dueDate: null, startDate: "2028-02-29" }]);
+  expect(data).toContain("DTSTART;VALUE=DATE:20280229\r\nDTEND;VALUE=DATE:20280301");
+});

@@ -13,6 +13,7 @@ test("account calendar download includes live dated project and Inbox items", as
   const f = await freshProject(page, "Calendar export", { groupId });
   const dated = await f.item("Dated project item", { dueDate: "2026-10-12", startDate: "2026-10-10" });
   await f.item("Undated project item");
+  await f.item("Start date only", { startDate: "2026-10-17" });
   const removed = await f.item("Deleted dated item", { dueDate: "2026-10-13" });
   expect((await page.request.delete(`/api/items/${removed}`)).status()).toBe(204);
   const archived = await f.item("Archived dated item", { dueDate: "2026-10-14" });
@@ -27,9 +28,11 @@ test("account calendar download includes live dated project and Inbox items", as
   const download = await downloaded;
   expect(download.suggestedFilename()).toMatch(/^todoi-calendar-.*\.ics$/);
   const data = (await readFile((await download.path())!, "utf8")).replace(/\r\n /g, "");
-  expect(data.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+  expect(data.match(/BEGIN:VEVENT/g)).toHaveLength(3);
   expect(data).toContain("SUMMARY:Dated project item");
   expect(data).toContain("SUMMARY:Dated Inbox item");
+  expect(data).toContain("SUMMARY:Start date only");
+  expect(data).toContain("DTSTART;VALUE=DATE:20261017\r\nDTEND;VALUE=DATE:20261018");
   expect(data).toContain("DTSTART;VALUE=DATE:20261010\r\nDTEND;VALUE=DATE:20261013");
   expect(data).toContain("DTSTART:20261016T093000");
   expect(data).toContain(`?item=${dated}`);
