@@ -55,9 +55,24 @@ including phone layout, axe, download contents, failure recovery, request delive
 deduplication and authorization. Five database checks passed (requests and existing
 notifications). All 184 unit tests, typechecking, lint and production builds passed.
 
+## Completed: snapshot undo feedback
+
+- Snapshot restores read current values, compare only the fields they restore and
+  name later edits that were overwritten. Unrelated edits stay intact; values
+  already restored do not raise a warning. Relation order does not count as a change.
+- Priority, labels, assignees, dates, recurrence, moves, parent links and membership
+  restoration use the shared helper. Successful bulk steps survive a retry without
+  being repeated. Bulk outcomes enter history only after successful writes.
+- A single-item read now includes its fields and relations; the scoped read supplies
+  queued local edits through the existing offline transport.
+
+Verification: all twelve focused Playwright tests passed (four theme/mode scopes
+plus existing delete and cross-project move coverage); helper tests cover unrelated
+edits, relation ordering, failures and partial retries. All 189 unit tests,
+typechecking and lint passed.
+
 ## Remaining scope
 
-- Accurate undo confirmation when snapshot restoration reverts later edits.
 - Styled connection hints and icon-picker hints that escape scrolling clipping.
 - Corrections for the Design project's empty-project guideline, font copy and
   theme manifest, prepared for the next app-to-Design push.

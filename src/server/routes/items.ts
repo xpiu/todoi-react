@@ -56,7 +56,8 @@ export const itemsRoute = new Hono()
     if (!row) return fail(c, 404, "This item doesn't exist");
     const { item } = row;
     const state = item.deletedAt ? "deleted" : item.archivedAt ? "archived" : row.live ? "live" : "container";
-    return c.json({ id: item.id, version: item.version, title: item.title, projectId: item.projectId, listId: item.listId, parentItemId: item.parentItemId, keyNumber: item.keyNumber, projectName: row.projectName, keyPrefix: row.keyPrefix, state } as const);
+    const [current] = await withRelations([item]);
+    return c.json({ ...current!, projectName: row.projectName, keyPrefix: row.keyPrefix, state } as const);
   })
   .post("/", validate("json", createItemSchema), async (c) => {
     const viewer = viewerOf(c);

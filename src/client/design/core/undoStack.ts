@@ -10,7 +10,9 @@ export interface UndoEntry {
 export const UNDO_DEPTH = 10;
 
 /** 'Undid: moved “Campaign proposal” to Ongoing' — the confirmation message for the toast after an undo. */
-export function undoneMessage(entry: UndoEntry): string {
+export function undoneMessage(entry: UndoEntry, result?: unknown): string {
   const m = entry.message;
-  return "Undid: " + m.charAt(0).toLowerCase() + m.slice(1);
+  const fields = result && typeof result === "object" && "revertedFields" in result ? result.revertedFields : null;
+  const later = Array.isArray(fields) && fields.length ? ` — also reverted later edits to ${fields.join(", ")}` : "";
+  return "Undid: " + m.charAt(0).toLowerCase() + m.slice(1) + later;
 }

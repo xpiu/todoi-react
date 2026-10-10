@@ -56,12 +56,12 @@ export const useFeedback = create<FeedbackStore>()((set, get) => ({
     const toastKey = ++seq;
     set({ undoing: entry, toast: { key: toastKey, message: "Undoing…", icon: "undo-2" } });
     try {
-      await entry.restore();
+      const result = await entry.restore();
       // A newer outcome or navigation may have arrived while the request was pending.
       if (!get().stack.includes(entry)) return;
       const rest = get().stack.filter((e) => e !== entry);
       set({ stack: rest });
-      if (get().toast?.key === toastKey) set({ toast: { key: ++seq, message: undoneMessage(entry), icon: "undo-2", meta: rest.length ? `${rest.length} more` : undefined, undo: rest.length ? () => get().undo() : undefined, actionLabel: rest.length ? "Undo more" : undefined } });
+      if (get().toast?.key === toastKey) set({ toast: { key: ++seq, message: undoneMessage(entry, result), icon: "undo-2", meta: rest.length ? `${rest.length} more` : undefined, undo: rest.length ? () => get().undo() : undefined, actionLabel: rest.length ? "Undo more" : undefined } });
     } catch (error) {
       if (get().stack.includes(entry) && get().toast?.key === toastKey) set({ toast: { key: ++seq, message: "Couldn't undo. " + errorMessage(error), icon: "circle-alert", undo: () => get().undo(), actionLabel: "Retry Undo" } });
     } finally {

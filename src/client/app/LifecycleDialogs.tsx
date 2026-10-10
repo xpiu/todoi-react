@@ -6,7 +6,7 @@ import { useState } from "react";
 import { projectUrl } from "./links";
 
 import type { LabelColor, MemberRole } from "../../shared/enums";
-import { errorMessage, explain } from "../data/api";
+import { api, unwrap, type ProjectDetail, errorMessage, explain } from "../data/api";
 import { newId } from "../data/mutations";
 import { useProjectInvites, useProjectMutations } from "../data/projects";
 import { useActivity, useGroups, useProject } from "../data/queries";
@@ -14,6 +14,7 @@ import type { IconName } from "../design/core/Icon";
 import { ProjectDialog, type NewGroup, type NewProject } from "../design/project/ProjectDialog";
 import { ProjectPanel, type PanelAction, type ProjectPatch } from "../design/project/ProjectPanel";
 import { copyText } from "../design/core/clipboard";
+import { snapshotUndo } from "./snapshotUndo";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { useCurrentUser } from "./session";
@@ -121,7 +122,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
       onChange={patch}
       onAction={act}
       onChangeRole={(mem, r) => m.setMember.mutate({ projectId: p.id, userId: mem.id, role: r })}
-      onRemoveMember={(mem) => m.removeMember.mutate({ projectId: p.id, userId: mem.id }, { onSuccess: () => notify({ message: `Removed ${mem.name} from ${quote(p.name)}`, icon: "user-x", restore: () => m.setMember.mutateAsync({ projectId: p.id, userId: mem.id, role: mem.role, quiet: true }) }) })}
+      onRemoveMember={(mem) => m.removeMember.mutate({ projectId: p.id, userId: mem.id }, { onSuccess: () => notify({ message: `Removed ${mem.name} from ${quote(p.name)}`, icon: "user-x", restore: snapshotUndo([{ id: mem.id, before: { role: mem.role }, after: { role: null }, restore: () => m.setMember.mutateAsync({ projectId: p.id, userId: mem.id, role: mem.role, quiet: true }) }], async (id) => { const fresh = await api.api.projects[":id"].$get({ param: { id: p.id } }).then((r) => unwrap<ProjectDetail>(r)); return { role: fresh.members.find((member) => member.userId === id)?.role ?? null }; }) }) })}
       // Todoi does not send email: the invite is a link, copied for the admin to send themselves.
       onInvite={async (email, r) => {
         const invite = await m.createInvite.mutateAsync({ projectId: p.id, email, role: r, quiet: true }).catch(explain);

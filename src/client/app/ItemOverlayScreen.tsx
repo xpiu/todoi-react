@@ -19,6 +19,7 @@ import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { useDrafts } from "./drafts";
 import { MissingItem } from "./MissingItem";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
+import { snapshotUndo } from "./snapshotUndo";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { coverOf, dueStateOf, keyOf, type Person } from "./items";
 import { useToday } from "./today";
@@ -174,12 +175,12 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       onConvertSubitem={(id) => {
         const s = subitems.find((x) => x.id === id);
         updateItem.mutate({ id, parentItemId: null, position: items.filter((it) => it.listId === item.listId && !it.parentItemId).length });
-        if (s) notify({ message: `${quote(s.title)} is now an item in ${listName(item.listId) ?? "the list"}`, icon: "arrow-up-from-line", restore: () => updateItem.mutate({ id, parentItemId: item.id }) });
+        if (s) notify({ message: `${quote(s.title)} is now an item in ${listName(item.listId) ?? "the list"}`, icon: "arrow-up-from-line", restore: snapshotUndo([{ id, before: { parentItemId: item.id }, after: { parentItemId: null }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
       }}
       onMoveSubitem={(id, target) => {
         const s = subitems.find((x) => x.id === id);
         updateItem.mutate({ id, parentItemId: target.id });
-        if (s) notify({ message: `Moved ${quote(s.title)} under ${target.itemId ?? target.title}`, icon: "corner-down-right", restore: () => updateItem.mutate({ id, parentItemId: item.id }) });
+        if (s) notify({ message: `Moved ${quote(s.title)} under ${target.itemId ?? target.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id, before: { parentItemId: item.id }, after: { parentItemId: target.id }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
       }}
       onDeleteSubitem={(id) => void actions.remove(id)}
       onDeleteSubitems={() => void actions.removeMany(subitems.map((s) => s.id), "subitem")}
@@ -199,14 +200,14 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       onReactComment={(id, emoji) => reactComment.mutate({ id, emoji })}
       onMakeSubitemOf={(parent) => {
         updateItem.mutate({ id: item.id, parentItemId: parent.id });
-        notify({ message: `${quote(item.title)} is now a subitem of ${parent.itemId ?? parent.title}`, icon: "corner-down-right", restore: () => updateItem.mutate({ id: item.id, parentItemId: null }) });
+        notify({ message: `${quote(item.title)} is now a subitem of ${parent.itemId ?? parent.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id: item.id, before: { parentItemId: null }, after: { parentItemId: parent.id }, restore: () => updateItem.mutateAsync({ id: item.id, parentItemId: null, quiet: true }) }]) });
         onClose();
       }}
       onMenuAction={(action) => {
         if (action === "duplicate") void actions.copyItems([item.id], { projectId, listId: item.listId, name: null });
         else if (action === "archive") {
           patch({ archived: true });
-          notify({ message: `Archived ${quote(item.title)}`, icon: "archive", restore: () => updateItem.mutate({ id: item.id, archived: false }) });
+          notify({ message: `Archived ${quote(item.title)}`, icon: "archive", restore: () => updateItem.mutateAsync({ id: item.id, archived: false, quiet: true }) });
           onClose();
         } else if (action === "delete") {
           void actions.remove(item.id);

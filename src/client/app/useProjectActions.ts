@@ -19,6 +19,7 @@ import type { QuickAddResult } from "../design/core/quickAdd";
 import type { ItemAction } from "../design/core/shortcuts";
 import { STATUSES } from "../design/core/statuses";
 import { count, joinAnd } from "../design/core/text";
+import { snapshotUndo } from "./snapshotUndo";
 import { useCompletion } from "./completion";
 import { quote, useFeedback } from "./feedback";
 import { PRIORITY_LABEL, type Person } from "./items";
@@ -85,6 +86,12 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   /** A top-level item's index among its list's items — what a move's `position` means (stored positions can have gaps). */
   const rankOf = (it: Item) => (it.parentItemId ? it.position : items.filter((x) => x.listId === it.listId && !x.parentItemId).sort((a, b) => a.position - b.position).findIndex((x) => x.id === it.id));
 
+  // Moving back only rewrites Status when the original list has a linked role.
+  const moveSnapshot = (before: Item, after: Item) => {
+    const role = project.linkStatuses ? project.lists.find((l) => l.id === before.listId)?.statusRole : null;
+    return { before: { position: rankOf(before), listId: before.listId, projectId: before.projectId, ...(before.parentItemId ? { parentItemId: before.parentItemId } : {}), ...(role ? { status: role } : {}) }, after: { position: after.position, listId: after.listId, projectId: after.projectId, ...(before.parentItemId ? { parentItemId: after.parentItemId } : {}), ...(role ? { status: after.status } : {}) } };
+  };
+
   const smartDates = usePrefs((s) => s.smartDates);
   const defaultPriority = usePrefs((s) => s.defaultPriority);
   /** Settings › Default priority, unless quick-add set one. */
@@ -118,7 +125,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
           }
           const status = result.changed.status ? ` — Status set to ${statusName(result.changed.status.to)}` : "";
           const base = `Moved ${quote(it.title)} to ${listName(target.listId)}`;
-          notify({ message: base + status, history: base, icon: "arrow-right", restore: () => moveItem.mutate({ id, listId: from.listId, position: from.position }) });
+          notify({ message: base + status, history: base, icon: "arrow-right", restore: snapshotUndo([{ id, ...moveSnapshot(it, result.item), restore: () => moveItem.mutateAsync({ id, listId: from.listId, position: from.position, quiet: true }) }]) });
         },
       },
     );
@@ -189,8 +196,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     if (!it || !it.dueDate || !n) return;
     const prev = { startDate: it.startDate, dueDate: it.dueDate };
     const next = { startDate: shiftISO(it.startDate, n), dueDate: shiftISO(it.dueDate, n) };
-    updateItem.mutate({ id, ...next });
-    notify({ message: `Moved ${quote(it.title)} to ${formatDateRange(next.startDate, next.dueDate, null, { year: "auto" })}`, icon: "calendar", restore: () => updateItem.mutateAsync({ id, ...prev, quiet: true }).then(() => undefined) });
+    updateItem.mutate({ id, ...next }, { onSuccess: () => notify({ message: `Moved ${quote(it.title)} to ${formatDateRange(next.startDate, next.dueDate, null, { year: "auto" })}`, icon: "calendar", restore: snapshotUndo([{ id, before: prev, after: next, restore: () => updateItem.mutateAsync({ id, ...prev, quiet: true }) }]) }) });
   };
 
   /** Calendar "+": a fresh item due that day in the first list, undoable (the overlay then names it). */
@@ -278,14 +284,14 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       history: base,
       meta: moved.length < roots.length ? `${roots.length - moved.length} not moved` : undefined,
       icon: "folder-input",
-      restore: async () => {
-        while (back.length) {
-          const { it, at, result: forward } = back[0]!;
+      restore: snapshotUndo(back.map(({ it, at, result: forward }) => ({
+        id: it.id,
+        ...moveSnapshot(it, forward.item),
+        restore: async () => {
           const result = await moveItem.mutateAsync({ id: it.id, listId: it.listId, position: at, toProjectId: projectId, restore: { ...carried, parentItemId: forward.undo?.parentItemId ?? null }, quiet: true });
           mergeRestore(carried, { ...emptyRestore(), relations: result.undo?.relations ?? [] });
-          back.shift();
-        }
-      },
+        },
+      }))),
     });
   };
 
@@ -326,31 +332,39 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       void removeMany(selectedIds);
       return true;
     }
-    const noun = count(sel.length, "item");
-    const snapshot = sel.map((it) => ({ ...it, position: rankOf(it) }));
     if (action === "move" && value) {
       const end = items.filter((it) => it.listId === value && !it.parentItemId).length;
-      sel.forEach((it, i) => moveItem.mutate({ id: it.id, listId: value, position: end + i }));
-      const dest = project.lists.find((l) => l.id === value);
-      const status = dest?.statusRole && project.linkStatuses ? ` — Statuses set to ${statusName(dest.statusRole)}` : "";
-      const base = `Moved ${noun} to ${listName(value)}`;
-      notify({ message: base + status, history: base, icon: "arrow-right", restore: () => [...snapshot].reverse().forEach((it) => moveItem.mutate({ id: it.id, listId: it.listId, position: it.position })) });
+      void inTurn(sel, async (it) => ({ at: rankOf(it), forward: await moveItem.mutateAsync({ id: it.id, listId: value, position: end + sel.indexOf(it) }) })).then((moved) => {
+        if (!moved) return;
+        const dest = project.lists.find((l) => l.id === value);
+        const status = dest?.statusRole && project.linkStatuses ? ` — Statuses set to ${statusName(dest.statusRole)}` : "";
+        const base = `Moved ${count(moved.length, "item")} to ${listName(value)}`;
+        notify({ message: base + status, history: base, icon: "arrow-right", restore: snapshotUndo([...moved].reverse().map(({ it, result }) => ({ id: it.id, ...moveSnapshot(it, result.forward.item), restore: () => moveItem.mutateAsync({ id: it.id, listId: it.listId, position: result.at, quiet: true }) }))) });
+      });
       return true;
     }
     if (action === "priority") {
       const p = (value as ItemPriority | null) ?? null;
-      sel.forEach((it) => updateItem.mutate({ id: it.id, priority: p }));
-      notify({ message: p ? `Set priority ${PRIORITY_LABEL[p]} on ${noun}` : `Cleared priority on ${noun}`, icon: "flag", restore: () => snapshot.forEach((it) => updateItem.mutate({ id: it.id, priority: it.priority })) });
+      void inTurn(sel, (it) => updateItem.mutateAsync({ id: it.id, priority: p })).then((done) => {
+        if (!done) return;
+        const noun = count(done.length, "item");
+        notify({ message: p ? `Set priority ${PRIORITY_LABEL[p]} on ${noun}` : `Cleared priority on ${noun}`, icon: "flag", restore: snapshotUndo(done.map(({ it, result }) => ({ id: it.id, before: { priority: it.priority }, after: { priority: result.priority }, restore: () => updateItem.mutateAsync({ id: it.id, priority: it.priority, quiet: true }) }))) });
+      });
     } else if (action === "label" && value) {
       const label = labels.find((l) => l.id === value);
       if (!label) return false;
       const allHave = sel.every((it) => it.labelIds.includes(value));
-      sel.forEach((it) => setLabels.mutate({ id: it.id, labelIds: allHave ? it.labelIds.filter((x) => x !== value) : [...it.labelIds.filter((x) => x !== value), value] }));
-      notify({ message: `${allHave ? "Removed" : "Added"} the label ${label.name} ${allHave ? "from" : "to"} ${noun}`, icon: "tag", restore: () => snapshot.forEach((it) => setLabels.mutate({ id: it.id, labelIds: it.labelIds })) });
+      void inTurn(sel, (it) => setLabels.mutateAsync({ id: it.id, labelIds: allHave ? it.labelIds.filter((x) => x !== value) : [...it.labelIds.filter((x) => x !== value), value] })).then((done) => {
+        if (!done) return;
+        notify({ message: `${allHave ? "Removed" : "Added"} the label ${label.name} ${allHave ? "from" : "to"} ${count(done.length, "item")}`, icon: "tag", restore: snapshotUndo(done.map(({ it, result }) => ({ id: it.id, before: { labelIds: it.labelIds }, after: { labelIds: result.labelIds }, restore: () => setLabels.mutateAsync({ id: it.id, labelIds: it.labelIds }) }))) });
+      });
     } else if (action === "assign") {
-      sel.forEach((it) => setAssignees.mutate({ id: it.id, userIds: value ? [value] : [] }));
-      const who = people.find((p) => p.id === value);
-      notify({ message: who ? `Assigned ${noun} to ${who.name.split(" ")[0]}` : `Unassigned ${noun}`, icon: "user-plus", restore: () => snapshot.forEach((it) => setAssignees.mutate({ id: it.id, userIds: it.assigneeIds })) });
+      void inTurn(sel, (it) => setAssignees.mutateAsync({ id: it.id, userIds: value ? [value] : [] })).then((done) => {
+        if (!done) return;
+        const noun = count(done.length, "item");
+        const who = people.find((p) => p.id === value);
+        notify({ message: who ? `Assigned ${noun} to ${who.name.split(" ")[0]}` : `Unassigned ${noun}`, icon: "user-plus", restore: snapshotUndo(done.map(({ it, result }) => ({ id: it.id, before: { assigneeIds: it.assigneeIds }, after: { assigneeIds: result.userIds }, restore: () => setAssignees.mutateAsync({ id: it.id, userIds: it.assigneeIds }) }))) });
+      });
     } else if (action === "done") {
       void completion.setDoneMany(sel, !sel.every((it) => it.done));
     }
