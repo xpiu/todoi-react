@@ -89,6 +89,13 @@ export function matchesFilters(it: Item, filters: ViewFilter[], ctx: FilterConte
   return true;
 }
 
+/** Filter parent items once; their direct subitems stay with them in every view. */
+export function filterViewItems(items: Item[], filters: ViewFilter[], ctx: FilterContext, showCompleted: boolean): Item[] {
+  if (!filters.length && showCompleted) return items;
+  const keep = new Set(items.filter((it) => !it.parentItemId && (showCompleted || !it.done) && matchesFilters(it, filters, ctx)).map((it) => it.id));
+  return items.filter((it) => keep.has(it.parentItemId ?? it.id));
+}
+
 export interface SortOption {
   key: string;
   label: string;

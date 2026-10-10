@@ -2,13 +2,13 @@
 // on desktop), Sidebar, the content, the one Toast, the ? dialog and the Ctrl+K palette. The URL is
 // the single source of truth for the current project and view. Spec: DESIGN.md › Responsive.
 import { Outlet, useLocation, useMatch, useNavigate } from "@tanstack/react-router";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import { newId, useCreateList } from "../data/mutations";
 import { useQuery } from "@tanstack/react-query";
 
 import { listItemsQuery, projectsOf, useGroups, useInboxUnread, useLabels, useProject, useProjectItems } from "../data/queries";
-import { explain, type SearchHit } from "../data/api";
+import { explain, type Item, type SearchHit } from "../data/api";
 import { useThemePreference } from "../design/core/appearance";
 import { SHORTCUTS } from "../design/core/shortcuts";
 import { ShortcutHint, useShortcutHints } from "../design/core/ShortcutHint";
@@ -34,8 +34,8 @@ import { CommandPalette } from "../design/overlay/CommandPalette";
 import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { downloadText, fileSlug, itemsToCsv, viewToMarkdown } from "./exportData";
-import { availableFilters, FILTER_SECTIONS, filterKey, matchesFilters, nextSort, sameFilter, SORT_OPTS, type SortDim } from "./filters";
-import { keyOf } from "./items";
+import { availableFilters, FILTER_SECTIONS, filterKey, filterViewItems, itemComparator, matchesFilters, nextSort, sameFilter, sortLists, SORT_OPTS, type SortDim } from "./filters";
+import { itemOrder, keyOf } from "./items";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LifecycleDialogs } from "./LifecycleDialogs";
 import { useProjectMutations } from "../data/projects";
@@ -177,12 +177,31 @@ export function AppShell() {
   const selectSort = (dim: string, key: string) => setViewState({ sort: nextSort(state!.sort, dim as SortDim, key) });
 
   // Filter options and their match counts over the project's top-level items.
-  const topItems = (projectItems.data ?? []).filter((it) => !it.parentItemId);
-  const filterCtx = { labels: projectLabels.data ?? [], people: peopleOf(project.data), today };
-  const available = availableFilters(filterCtx.labels, filterCtx.people);
-  const counts = Object.fromEntries(available.map((f) => [filterKey(f), topItems.filter((it) => matchesFilters(it, [f], filterCtx)).length]));
-  const filters = state?.filters ?? [];
-  const sort = state?.sort ?? { lists: null, items: null };
+  const topItems = useMemo(() => (projectItems.data ?? []).filter((it) => !it.parentItemId), [projectItems.data]);
+  const members = project.data?.members;
+  const filterCtx = useMemo(() => ({ labels: projectLabels.data ?? [], people: peopleOf(members ? { members } : null), today }), [projectLabels.data, members, today]);
+  const available = useMemo(() => availableFilters(filterCtx.labels, filterCtx.people), [filterCtx]);
+  const counts = useMemo(() => Object.fromEntries(available.map((f) => [filterKey(f), topItems.filter((it) => matchesFilters(it, [f], filterCtx)).length])), [available, topItems, filterCtx]);
+  const filters = resolved.state.filters;
+  const sort = resolved.state.sort;
+  const showCompleted = usePrefs((s) => s.showCompleted);
+  const projectLists = project.data?.lists;
+  // The menu note, download and outcome use the same visible, sorted collection.
+  const exportLists = useMemo(() => {
+    const byList = new Map<string, Item[]>();
+    for (const it of filterViewItems(topItems, filters, filterCtx, showCompleted)) {
+      if (view === "calendar" && !it.dueDate) continue;
+      const siblings = byList.get(it.listId);
+      if (siblings) siblings.push(it);
+      else byList.set(it.listId, [it]);
+    }
+    const order = itemOrder(itemComparator(sort.items));
+    return sortLists((projectLists ?? []).filter((l) => !l.hidden).map((l) => {
+      const items = (byList.get(l.id) ?? []).sort(order);
+      return { name: l.name, items, count: items.length };
+    }), sort.lists);
+  }, [topItems, filters, filterCtx, showCompleted, view, projectLists, sort]);
+  const exportCount = exportLists.reduce((total, l) => total + l.count, 0);
   const sortActive = (["lists", "items"] as const).filter((d) => sort[d]);
   // The Filter row offers the quick filters (labels, Overdue) plus whatever else is active.
   const barAvailable = [...available.filter((f) => f.type === "label" || f.type === "due"), ...filters.filter((f) => f.type !== "label" && f.type !== "due").map((f) => available.find((a) => sameFilter(a, f)) ?? f)];
@@ -202,13 +221,11 @@ export function AppShell() {
       window.print();
       return;
     }
-    const visible = topItems.filter((it) => matchesFilters(it, filters, filterCtx));
     const ctx = { prefix: p.keyPrefix, labels: filterCtx.labels, people: filterCtx.people, listName: (id: string) => p.lists.find((l) => l.id === id)?.name ?? "" };
-    const lists = p.lists.filter((l) => !l.hidden).map((l) => ({ name: l.name, items: visible.filter((it) => it.listId === l.id) }));
     const slug = fileSlug(`${p.name} ${view}`);
-    if (format === "md") downloadText(`${slug}.md`, viewToMarkdown(p.name, lists, ctx), "text/markdown");
-    else downloadText(`${slug}.csv`, itemsToCsv(lists.flatMap((l) => l.items), ctx), "text/csv");
-    notify({ message: `Exported “${p.name}” ${view} view as ${format.toUpperCase()} — ${count(visible.length, "item")}`, icon: "download" });
+    if (format === "md") downloadText(`${slug}.md`, viewToMarkdown(p.name, exportLists, ctx), "text/markdown");
+    else downloadText(`${slug}.csv`, itemsToCsv(exportLists.flatMap((l) => l.items), ctx), "text/csv");
+    notify({ message: `Exported “${p.name}” ${view} view as ${format.toUpperCase()} — ${count(exportCount, "item")}`, icon: "download" });
   };
   const savedViewsRow =
     projectId && savedViewsOpen ? (
@@ -303,7 +320,7 @@ export function AppShell() {
       url={projectUrl(pd.id)}
     />
   ) : undefined;
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={setOpenMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={topItems.filter((it) => matchesFilters(it, filters, filterCtx)).length} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={setOpenMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={clearFilters} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
 
   const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));

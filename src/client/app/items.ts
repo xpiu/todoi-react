@@ -87,6 +87,11 @@ export function itemRowMapper(opts: RowOptions) {
   });
 }
 
+/** A view's active sort, with the same manual-order tie breakers for rendering and export. */
+export function itemOrder(order: RowOptions["order"]) {
+  return (a: Item, b: Item) => (order?.(a, b) ?? 0) || a.position - b.position || a.createdAt.localeCompare(b.createdAt);
+}
+
 /** Group once for the whole view, rather than scan all items again for each list. */
 export function rowsByList(items: Item[], opts: RowOptions, toRow = itemRowMapper(opts)): Map<string, RowModel[]> {
   const byList = new Map<string, Item[]>();
@@ -99,7 +104,7 @@ export function rowsByList(items: Item[], opts: RowOptions, toRow = itemRowMappe
     else groups.set(key, [it]);
   }
   return new Map([...byList].map(([listId, siblings]) => {
-    siblings.sort((a, b) => (opts.order ? opts.order(a, b) : 0) || a.position - b.position || a.createdAt.localeCompare(b.createdAt));
+    siblings.sort(itemOrder(opts.order));
     const rows = siblings.map((it) => {
       const subitems = (byParent.get(it.id) ?? []).filter((child) => child.listId === listId).sort((a, b) => a.position - b.position).map(toRow);
       return { ...toRow(it), subitems };

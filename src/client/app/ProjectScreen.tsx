@@ -26,7 +26,7 @@ import { ListRow } from "../design/list/ListRow";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
-import { itemComparator, matchesFilters, sortLists } from "./filters";
+import { filterViewItems, itemComparator, sortLists } from "./filters";
 import { coverOf, itemRowMapper, rowsByList, rowsForList } from "./items";
 import { ConfirmDialog } from "../design/core/Dialog";
 import { statusById } from "../design/core/statuses";
@@ -139,11 +139,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
 
   const ctx = useFilterContext(project, labels);
   const showCompleted = usePrefs((s) => s.showCompleted);
-  const visibleItems = useMemo(() => {
-    if (!filters.length && showCompleted) return items;
-    const keep = new Set(items.filter((it) => !it.parentItemId && (showCompleted || !it.done) && matchesFilters(it, filters, ctx)).map((it) => it.id));
-    return items.filter((it) => (it.parentItemId ? keep.has(it.parentItemId) : keep.has(it.id)));
-  }, [items, filters, ctx, showCompleted]);
+  const visibleItems = useMemo(() => filterViewItems(items, filters, ctx, showCompleted), [items, filters, ctx, showCompleted]);
   const order = useMemo(() => itemComparator(sort.items), [sort.items]);
   const rowOptions = useMemo(() => ({ prefix: project.keyPrefix, labels, people: actions.people, order, today: ctx.today }), [project.keyPrefix, labels, actions.people, order, ctx.today]);
   const toRow = useMemo(() => itemRowMapper(rowOptions), [rowOptions]);
@@ -461,8 +457,8 @@ function ProjectCalendar({ projectId, project, items, labels, filters, openItem 
     const visibleListIds = new Set(actions.lists.map((l) => l.id));
     const subs = new Map<string, Item[]>();
     for (const it of items) if (it.parentItemId) subs.set(it.parentItemId, [...(subs.get(it.parentItemId) ?? []), it]);
-    return items
-      .filter((it) => !it.parentItemId && it.dueDate && (showCompleted || !it.done) && visibleListIds.has(it.listId) && matchesFilters(it, filters, ctx))
+    return filterViewItems(items, filters, ctx, showCompleted)
+      .filter((it) => !it.parentItemId && it.dueDate && visibleListIds.has(it.listId))
       .map((it) => {
         const row = rowsForList([it, ...(subs.get(it.id) ?? [])], it.listId, { prefix: project.keyPrefix, labels, people: actions.people, today })[0]!;
         return { id: it.id, title: it.title, itemId: row.itemId, labels: row.labels.map((l) => (typeof l === "string" ? { color: l } : l)), done: it.done, due: it.dueDate, start: it.startDate, priority: row.priority, assignees: row.assignees.map((a) => (typeof a === "string" ? { name: a } : a)), subitems: row.subitems.map((s) => ({ id: s.id, title: s.title, itemId: s.itemId, done: s.done })), dueState: row.dueState };
