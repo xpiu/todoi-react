@@ -285,7 +285,7 @@ The last three are how the AI harness checks kit work before you upload it.
   - the same roots in the repo;
   - ignore globs;
   - `check`: the command a run's branch must pass before it can merge.
-- **`renames`** (`SavedViews.jsx` ↔ `SavedViewTabs.tsx` …) and **`screens`:** pairs that path rules can't find.
+- **`renames`** (`StateDialog.jsx` ↔ `src/client/app/StateDialog.tsx` …) and **`screens`:** pairs that path rules can't find.
 - **`syncTagPrefix`:** `design-sync/`.
 - **`harness`:**
   - `implement`: `claude`, or the untested `codex`;

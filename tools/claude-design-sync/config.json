@@ -42,20 +42,12 @@
   "syncTagPrefix": "design-sync/",
   "renames": [
     {
-      "design": "components/navigation/SavedViews.jsx",
-      "app": "src/client/design/navigation/SavedViewTabs.tsx"
-    },
-    {
-      "design": "components/navigation/ChipRail.jsx",
-      "app": "src/client/design/navigation/ChipBar.tsx"
-    },
-    {
-      "design": "components/core/QuickAdd.jsx",
-      "app": "src/client/design/core/QuickAddInput.tsx"
-    },
-    {
       "design": "components/overlay/StateDialog.jsx",
       "app": "src/client/app/StateDialog.tsx"
+    },
+    {
+      "design": "components/core/SyncRecovery.jsx",
+      "app": "src/client/app/SyncRecovery.tsx"
     }
   ],
   "screens": [
