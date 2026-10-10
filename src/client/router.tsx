@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { PROJECT_VIEWS } from "../shared/enums";
 import { AppShell } from "./app/AppShell";
+import { preloadDescriptionEditor } from "./design/overlay/DescriptionEditor";
 import { ScreenError, SessionError } from "./app/RouteError";
 import { InviteScreen, LoginScreen, ResetScreen, SignupScreen } from "./app/auth/AuthScreens";
 import { authClient, ensureBrowserSession } from "./auth";
@@ -68,8 +69,11 @@ export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: 
 // Settings, Account and Import load on demand, like the design gallery.
 const loadSettings = () => import("./app/SettingsScreen");
 const SettingsScreen = lazy(() => loadSettings().then((m) => ({ default: m.SettingsScreen })));
-// Fetched once the app is idle, so Settings (Storage & sync above all) still opens after the connection drops.
-if (typeof window !== "undefined") (window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1500)))(() => void loadSettings().catch(() => undefined));
+// Warm Settings and the rich editor once idle, so both still open after the connection drops.
+if (typeof window !== "undefined") (window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1500)))(() => {
+  void loadSettings().catch(() => undefined);
+  void preloadDescriptionEditor().catch(() => undefined);
+});
 const ImportScreen = lazy(() => import("./app/ImportScreen").then((m) => ({ default: m.ImportScreen })));
 const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });

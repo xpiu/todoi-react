@@ -149,4 +149,10 @@
   .td-desc-error {
     margin-top: var(--sp-2);
   }
+  .td-desc-load-error {
+    color: var(--ink-900);
+  }
+  .td-desc-load-error .td-inline-error-ico {
+    color: var(--danger);
+  }
 }

@@ -28,11 +28,11 @@ export const Empty: Story = {
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByRole("button", { name: "Add a more detailed description…" })).toBeInTheDocument();
     await userEvent.click(canvas.getByText("Add a more detailed description…"));
-    const editor = await canvas.findByLabelText("Description");
+    const editor = await canvas.findByLabelText("Description", {}, { timeout: 5000 });
     await waitFor(() => expect(editor).toHaveFocus());
     await expect(canvas.getByRole("toolbar", { name: "Formatting" })).toBeVisible();
     await userEvent.keyboard("Confirm the delivery dates");
-    await expect(canvas.getByText("Unsaved")).toBeVisible();
+    await expect(await canvas.findByText("Unsaved")).toBeVisible();
     await userEvent.keyboard("{Control>}{Enter}{/Control}");
     await expect(args.onChange).toHaveBeenCalledWith("Confirm the delivery dates");
     await waitFor(() => expect(canvas.queryByRole("toolbar")).not.toBeInTheDocument());
@@ -67,7 +67,7 @@ export const SaveFails: Story = {
 export const ResumedDraft: Story = {
   args: { value: "Quote the H145.", initialDraft: "Quote the H145 with the rescue hoist." },
   async play({ canvas }) {
-    await expect(canvas.getByText("Unsaved")).toBeVisible();
+    await expect(await canvas.findByText("Unsaved", {}, { timeout: 5000 })).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Discard" })).toBeVisible();
   },
 };
