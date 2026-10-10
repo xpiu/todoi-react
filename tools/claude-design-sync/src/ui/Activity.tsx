@@ -228,6 +228,19 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
   ];
   const setAsideCount = app?.state === "ready" ? failedPorts(job).length : 0;
   const maxAttempts = Math.max(1, ...failedPorts(job).map((s) => s.attempts?.length ?? 1));
+  /** One approval action at a time; its error shows under the sections */
+  const act = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await fn();
+      onChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const resume = (setAside: boolean) => act(async () => {
     try {
       await api.resume(job.id, setAside);
@@ -262,19 +275,6 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
       {driftChoice}
     </>
   );
-  /** One approval action at a time; its error shows under the sections */
-  const act = async (fn: () => Promise<unknown>) => {
-    setBusy(true);
-    setErr(null);
-    try {
-      await fn();
-      onChanged();
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
   return (
     <div className="cds-jobview">
       <div className="cds-job-details" hidden={expandedLog}>
