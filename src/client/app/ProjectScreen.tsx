@@ -2,7 +2,7 @@
 // also carries the filters and sort; selection lives here so it survives a view switch.
 // Spec: DESIGN.md › Views, Filtering, Selection.
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 
 import type { ItemStatus } from "../../shared/item-status";
 import { ApiError, type Item, type Label, type ProjectDetail } from "../data/api";
@@ -27,7 +27,7 @@ import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { itemComparator, matchesFilters, sortLists } from "./filters";
-import { coverOf, rowsForList } from "./items";
+import { coverOf, itemRowMapper, rowsByList, rowsForList } from "./items";
 import { ConfirmDialog } from "../design/core/Dialog";
 import { statusById } from "../design/core/statuses";
 import { count } from "../design/core/text";
@@ -58,7 +58,10 @@ export function ProjectScreen() {
   // Selection is per project: a different project reads as an empty selection.
   const [sel, setSel] = useState<{ pid: string; ids: string[] }>({ pid: projectId, ids: [] });
   const selectedIds = sel.pid === projectId ? sel.ids : [];
-  const setSelectedIds = (next: string[] | ((prev: string[]) => string[])) => setSel((cur) => ({ pid: projectId, ids: typeof next === "function" ? next(cur.pid === projectId ? cur.ids : []) : next }));
+  const setSelectedIds = useCallback((next: string[] | ((prev: string[]) => string[])) => setSel((cur) => ({ pid: projectId, ids: typeof next === "function" ? next(cur.pid === projectId ? cur.ids : []) : next })), [projectId]);
+  // Keep card callbacks stable when only item data changes.
+  const go = useCallback((next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, next) }), [navigate, projectId, state]);
+  const openItem = useCallback((id: string, edit?: boolean) => go({ item: id, edit: !!edit }), [go]);
 
   const failed = project.isError ? project : items.isError ? items : labels.isError ? labels : null;
   if (failed && failed.error instanceof ApiError && failed.error.status === 401) {
@@ -68,7 +71,6 @@ export function ProjectScreen() {
   if (failed) return <LoadFailed what="this project" error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
   // A change to filters or sort leaves the saved view (the URL turns ad-hoc); opening an item keeps it.
-  const go = (next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, next) });
   const props: ViewProps = {
     projectId,
     project: project.data,
@@ -79,9 +81,9 @@ export function ProjectScreen() {
     selectedIds,
     setSelectedIds,
     clearFilters: () => go({ filters: [] }),
-    openItem: (id, edit) => go({ item: id, edit: !!edit }),
+    openItem,
   };
-  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={(id, edit) => go({ item: id, edit: !!edit })} /> : null;
+  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={openItem} /> : null;
   const body = view === "board" ? <ProjectBoard {...props} /> : view === "calendar" ? <ProjectCalendar {...props} /> : <ProjectList {...props} />;
   return (
     <>
@@ -94,7 +96,8 @@ export function ProjectScreen() {
 /** What filters read: the project's labels and people, and today's date (Overdue, age windows). */
 function useFilterContext(project: ProjectDetail, labels: Label[]) {
   const today = useToday();
-  return useMemo(() => ({ labels, people: peopleOf(project), today }), [labels, project, today]);
+  const members = project.members;
+  return useMemo(() => ({ labels, people: peopleOf({ members }), today }), [labels, members, today]);
 }
 
 interface ViewProps {
@@ -141,40 +144,55 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
     const keep = new Set(items.filter((it) => !it.parentItemId && (showCompleted || !it.done) && matchesFilters(it, filters, ctx)).map((it) => it.id));
     return items.filter((it) => (it.parentItemId ? keep.has(it.parentItemId) : keep.has(it.id)));
   }, [items, filters, ctx, showCompleted]);
-  const order = itemComparator(sort.items);
+  const order = useMemo(() => itemComparator(sort.items), [sort.items]);
+  const rowOptions = useMemo(() => ({ prefix: project.keyPrefix, labels, people: actions.people, order, today: ctx.today }), [project.keyPrefix, labels, actions.people, order, ctx.today]);
+  const toRow = useMemo(() => itemRowMapper(rowOptions), [rowOptions]);
+  const groupedRows = useMemo(() => rowsByList(visibleItems, rowOptions, toRow), [visibleItems, rowOptions, toRow]);
+  const { itemsById, totals } = useMemo(() => {
+    const byId = new Map<string, Item>();
+    const counts = new Map<string, number>();
+    for (const it of items) {
+      byId.set(it.id, it);
+      if (!it.parentItemId) counts.set(it.listId, (counts.get(it.listId) ?? 0) + 1);
+    }
+    return { itemsById: byId, totals: counts };
+  }, [items]);
   const lists: VisibleList[] = sortLists(
     actions.lists.map((l) => {
-      const total = items.filter((it) => it.listId === l.id && !it.parentItemId).length;
-      const count = visibleItems.filter((it) => it.listId === l.id && !it.parentItemId).length;
+      const total = totals.get(l.id) ?? 0;
+      const count = groupedRows.get(l.id)?.length ?? 0;
       return { id: l.id, name: l.name, icon: (l.icon as IconName | null) ?? null, statusRole: l.statusRole, total, count, countLabel: filters.length ? `${count} of ${total}` : count };
     }),
     sort.lists,
   );
-  const rowsOf = (listId: string) => rowsForList(visibleItems, listId, { prefix: project.keyPrefix, labels, people: actions.people, order, today: ctx.today });
+  const rowsOf = (listId: string) => groupedRows.get(listId) ?? [];
   const allFiltered = filters.length > 0 && lists.length > 0 && lists.every((l) => !l.count) && lists.some((l) => l.total);
   const hiddenCount = lists.reduce((n, l) => n + (l.total - l.count), 0);
 
   // Selection: S / shift+arrows / Ctrl+A from KeyNav, Ctrl+click toggles, shift+click ranges within a list.
-  const onItemSelect = (ids: string[], mode: SelectMode) => {
+  const onItemSelect = useCallback((ids: string[], mode: SelectMode) => {
     if (mode === "toggle") setSelectedIds((prev) => (ids.every((id) => prev.includes(id)) ? prev.filter((id) => !ids.includes(id)) : [...new Set([...prev, ...ids])]));
     else if (mode === "extend") setSelectedIds((prev) => [...new Set([...prev, ...ids])]);
     else setSelectedIds(ids);
     anchor.current = ids[ids.length - 1] ?? null;
-  };
-  const onItemClick = (id: string, listId: string, e: SyntheticEvent) => {
+  }, [setSelectedIds]);
+  const onItemClick = useCallback((id: string, listId: string, e: SyntheticEvent) => {
     const me = e as unknown as { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean };
     if (me.ctrlKey || me.metaKey) {
       e.preventDefault();
       onItemSelect([id], "toggle");
     } else if (me.shiftKey && anchor.current) {
       e.preventDefault();
-      const ids = rowsOf(listId).map((r) => r.id);
+      // KeyNav already uses DOM order; the same visible order keeps range selection current
+      // without making every card's callback depend on the entire items array.
+      const list = root.current?.querySelector(`[data-list-id="${listId}"]`);
+      const ids = [...(list?.querySelectorAll<HTMLElement>(dndOpts.itemSelector) ?? [])].map((el) => el.dataset.dragId!).filter((visibleId) => !visibleId.includes("/"));
       const a = ids.indexOf(anchor.current), b = ids.indexOf(id);
       if (a >= 0 && b >= 0) setSelectedIds((prev) => [...new Set([...prev, ...ids.slice(Math.min(a, b), Math.max(a, b) + 1)])]);
       else onItemSelect([id], "toggle");
     }
     else openItem(id);
-  };
+  }, [root, dndOpts.itemSelector, onItemSelect, setSelectedIds, openItem]);
   // Single-key actions apply to the whole selection when the focused item is part of it.
   const onItemKey = (id: string, action: ItemAction) => {
     if (action === "edit") {
@@ -250,9 +268,9 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       }}
     />
   );
-  const hiddenMenu = <HiddenListsMenu lists={actions.hiddenLists.map((l) => ({ id: l.id, name: l.name, count: items.filter((it) => it.listId === l.id && !it.parentItemId).length }))} onShow={actions.showLists} />;
+  const hiddenMenu = <HiddenListsMenu lists={actions.hiddenLists.map((l) => ({ id: l.id, name: l.name, count: totals.get(l.id) ?? 0 }))} onShow={actions.showLists} />;
   const isSelected = (id: string) => selectedIds.includes(id);
-  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
+  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -365,6 +383,37 @@ function ProjectList(props: ViewProps) {
   );
 }
 
+/** Raw immutable item records and stable callbacks let unchanged cards skip a board update. */
+const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, selected, onClick, onDelete }: {
+  item: Item;
+  toRow: ReturnType<typeof itemRowMapper>;
+  subitemTotal: number;
+  subitemDone: number;
+  selected: boolean;
+  onClick: (id: string, listId: string, e: SyntheticEvent) => void;
+  onDelete: ProjectActions["remove"];
+}) {
+  const r = toRow(item);
+  return <ItemCard
+    dragId={item.id}
+    title={r.title}
+    itemId={r.itemId}
+    pendingId={item.version === 0 && item.projectId !== null && item.keyNumber === null}
+    done={r.done}
+    labels={r.labels}
+    due={r.due}
+    dueState={r.dueState}
+    repeat={r.repeat}
+    priority={r.priority}
+    assignees={r.assignees}
+    selected={selected}
+    onClick={(e) => onClick(item.id, item.listId, e)}
+    cover={coverOf(item)}
+    badges={{ description: !!item.description, attachments: r.attachments, checklist: subitemTotal ? { done: subitemDone, total: subitemTotal } : undefined }}
+    onMenuAction={(action) => { if (action === "Delete") void onDelete(item.id); }}
+  />;
+});
+
 function ProjectBoard(props: ViewProps) {
   const root = useRef<HTMLDivElement | null>(null);
   const v = useProjectView(props, root, { listSelector: ".td-list", itemSelector: ".td-card[data-drag-id]", cardsSelector: ".td-list-cards" });
@@ -379,27 +428,17 @@ function ProjectBoard(props: ViewProps) {
           return (
             <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed) => actions.addItem(list.id, title, parsed)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
               {rows.map((r) => {
-                const it = props.items.find((x) => x.id === r.id);
+                const it = v.itemsById.get(r.id)!;
                 return (
-                  <ItemCard
+                  <ProjectBoardItem
                     key={r.id}
-                    dragId={r.id}
-                    title={r.title}
-                    itemId={r.itemId}
-                    done={r.done}
-                    labels={r.labels}
-                    due={r.due}
-                    dueState={r.dueState}
-                    repeat={r.repeat}
-                    priority={r.priority}
-                    assignees={r.assignees}
+                    item={it}
+                    toRow={v.toRow}
+                    subitemTotal={r.subitems.length}
+                    subitemDone={r.subitems.filter((s) => s.done).length}
                     selected={v.isSelected(r.id)}
-                    onClick={(e) => v.onItemClick(r.id, list.id, e)}
-                    cover={coverOf(it)}
-                    badges={{ description: !!it?.description, attachments: r.attachments, checklist: r.subitems.length ? { done: r.subitems.filter((s) => s.done).length, total: r.subitems.length } : undefined }}
-                    onMenuAction={(action) => {
-                      if (action === "Delete") actions.remove(r.id);
-                    }}
+                    onClick={v.onItemClick}
+                    onDelete={actions.remove}
                   />
                 );
               })}

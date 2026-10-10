@@ -3,12 +3,13 @@
 import { useSavedViews, type SavedView } from "../data/savedViews";
 import { decodeViewState, type DecodedViewState } from "../design/navigation/viewState";
 import type { ProjectView } from "../../shared/enums";
+import { useMemo } from "react";
 
 export function useResolvedView(projectId: string, search: Record<string, unknown>, defaultView?: ProjectView) {
-  const raw = decodeViewState(search);
+  const raw = useMemo(() => decodeViewState(search), [search]);
   const saved = useSavedViews(projectId);
   const active: SavedView | null = raw.savedView ? (saved.data?.find((v) => v.id === raw.savedView) ?? null) : null;
   const d = active?.definition;
-  const state: DecodedViewState = d ? { ...raw, view: d.view ?? raw.view, filters: d.filters ?? [], sort: { lists: d.sort?.lists ?? null, items: d.sort?.items ?? null } } : raw;
+  const state = useMemo<DecodedViewState>(() => d ? { ...raw, view: d.view ?? raw.view, filters: d.filters ?? [], sort: { lists: d.sort?.lists ?? null, items: d.sort?.items ?? null } } : raw, [raw, d]);
   return { raw, state, active, savedViews: saved.data ?? [], view: state.view ?? defaultView ?? ("list" as ProjectView) };
 }

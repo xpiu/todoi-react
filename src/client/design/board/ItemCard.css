@@ -122,6 +122,10 @@
   .td-card-id:hover {
     color: var(--ink-600);
   }
+  .td-card-id.is-pending {
+    cursor: default;
+    text-transform: none;
+  }
   .td-card-id-pop {
     position: absolute;
     right: calc(100% + 5px);

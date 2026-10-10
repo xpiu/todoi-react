@@ -31,4 +31,17 @@ describe("optimisticCreate", () => {
     expect(next.find((it) => it.id === "s2")).toMatchObject({ parentItemId: "a", position: 10 });
     expect(order(next)).toEqual(order(items));
   });
+  it("preserves unchanged records while replacing siblings whose positions shift", () => {
+    const records = [item("a"), item("b", { position: 1 }), item("other", { listId: "l2" })];
+    records.forEach(Object.freeze);
+    Object.freeze(records);
+    const bottom = optimisticCreate(records, { id: "new", title: "New" }, dest);
+    expect(bottom.slice(0, records.length)).toEqual(records);
+    bottom.slice(0, records.length).forEach((record, i) => expect(record).toBe(records[i]));
+    const top = optimisticCreate(records, { id: "new", title: "New", position: "top" }, dest);
+    expect(top[0]).not.toBe(records[0]);
+    expect(top[1]).not.toBe(records[1]);
+    expect(top[2]).toBe(records[2]);
+    expect(records.map((record) => record.position)).toEqual([0, 1, 0]);
+  });
 });

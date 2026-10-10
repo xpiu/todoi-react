@@ -55,11 +55,21 @@ export interface RowModel {
   unread: boolean;
 }
 
-/** Items of one list as row models: top-level rows in position order, each with its subitems. */
-export function rowsForList(items: Item[], listId: string, opts: { prefix: string; labels: Label[]; people: Person[]; today: string; withCreated?: boolean; /** Overrides board order (a sort) */ order?: ((a: Item, b: Item) => number) | null }): RowModel[] {
+export interface RowOptions {
+  prefix: string;
+  labels: Label[];
+  people: Person[];
+  today: string;
+  withCreated?: boolean;
+  /** Overrides board order (a sort). */
+  order?: ((a: Item, b: Item) => number) | null;
+}
+
+/** Share label and person lookups across every row in a view. */
+export function itemRowMapper(opts: RowOptions) {
   const labelById = new Map(opts.labels.map((l) => [l.id, l]));
   const personById = new Map(opts.people.map((p) => [p.id, p]));
-  const toRow = (it: Item): RowModel => ({
+  return (it: Item): RowModel => ({
     id: it.id,
     itemId: keyOf(it, opts.prefix),
     title: it.title,
@@ -75,13 +85,30 @@ export function rowsForList(items: Item[], listId: string, opts: { prefix: strin
     created: opts.withCreated ? formatDate(it.createdAt) : undefined,
     unread: it.unread,
   });
-  const inList = items.filter((it) => it.listId === listId);
+}
+
+/** Group once for the whole view, rather than scan all items again for each list. */
+export function rowsByList(items: Item[], opts: RowOptions, toRow = itemRowMapper(opts)): Map<string, RowModel[]> {
+  const byList = new Map<string, Item[]>();
   const byParent = new Map<string, Item[]>();
-  for (const it of inList) {
-    if (it.parentItemId) byParent.set(it.parentItemId, [...(byParent.get(it.parentItemId) ?? []), it]);
+  for (const it of items) {
+    const groups = it.parentItemId ? byParent : byList;
+    const key = it.parentItemId ?? it.listId;
+    const siblings = groups.get(key);
+    if (siblings) siblings.push(it);
+    else groups.set(key, [it]);
   }
-  return inList
-    .filter((it) => !it.parentItemId)
-    .sort((a, b) => (opts.order ? opts.order(a, b) : 0) || a.position - b.position || a.createdAt.localeCompare(b.createdAt))
-    .map((it) => ({ ...toRow(it), subitems: (byParent.get(it.id) ?? []).sort((a, b) => a.position - b.position).map(toRow) }));
+  return new Map([...byList].map(([listId, siblings]) => {
+    siblings.sort((a, b) => (opts.order ? opts.order(a, b) : 0) || a.position - b.position || a.createdAt.localeCompare(b.createdAt));
+    const rows = siblings.map((it) => {
+      const subitems = (byParent.get(it.id) ?? []).filter((child) => child.listId === listId).sort((a, b) => a.position - b.position).map(toRow);
+      return { ...toRow(it), subitems };
+    });
+    return [listId, rows];
+  }));
+}
+
+/** Items of one list as row models: top-level rows in position order, each with its subitems. */
+export function rowsForList(items: Item[], listId: string, opts: RowOptions): RowModel[] {
+  return rowsByList(items.filter((it) => it.listId === listId), opts).get(listId) ?? [];
 }

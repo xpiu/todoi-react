@@ -8,7 +8,7 @@ The RPC transport stores an operation and its projected query snapshots together
 
 Operations replay in insertion order, including creates before subsequent edits and comments. A Web Lock coordinates tabs, and BroadcastChannel refreshes their local state. Persisted acknowledgment results settle a request even when another tab replayed it. Fetch failures, timeouts, HTTP 408/425/429 and server errors retry with bounded exponential backoff. A rejected operation stops replay until it is retried or discarded.
 
-Each replay revalidates the session and sends its original owner ID. A cached offline identity does not authorize server writes. Queues are never replayed as another user. Guest sign-in/sign-up first drains outstanding changes; unresolved guest changes keep authentication on the form with a recovery message, since transferring the guest removes its original identity.
+Each replay sends its original owner ID; the mutation endpoint authenticates the current session and rejects an owner mismatch before any writes. No separate session preflight is needed. A 401 keeps pending changes as failed drafts until the original account returns and retries them. A cached offline identity does not authorize server writes. Queues are never replayed as another user. Guest sign-in/sign-up first drains outstanding changes; unresolved guest changes keep authentication on the form with a recovery message, since transferring the guest removes its original identity.
 
 Successful sign-out clears the active offline identity before navigation. Stored work stays partitioned under its original owner for recovery after a later login; an unavailable session check cannot reopen that account after explicit sign-out.
 

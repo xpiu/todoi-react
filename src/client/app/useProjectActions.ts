@@ -2,7 +2,7 @@
 // undo toast, delete, and the bulk versions behind the BulkBar. Views only render; this hook talks to
 // the data layer and the feedback store. Every undoable outcome raises exactly one toast.
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import type { ItemPriority } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
@@ -65,17 +65,20 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   const completion = useCompletion(scope);
   const moveItem = useMoveItem(scope);
   const deleteItem = useDeleteItem(scope);
+  const deleteOne = deleteItem.mutateAsync;
   const duplicateItem = useDuplicateItem(scope);
   const qc = useQueryClient();
   const restoreItem = useRestoreItem(scope);
+  const restoreOne = restoreItem.mutateAsync;
   const setLabels = useSetItemLabels(scope);
   const setAssignees = useSetItemAssignees(scope);
   const createList = useCreateList(projectId ?? "");
   const updateList = useUpdateList(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
-  const lists = project.lists.filter((l) => !l.hidden);
-  const hiddenLists = project.lists.filter((l) => l.hidden);
-  const people: Person[] = useMemo(() => peopleOf(project), [project]);
+  const lists = useMemo(() => project.lists.filter((l) => !l.hidden), [project.lists]);
+  const hiddenLists = useMemo(() => project.lists.filter((l) => l.hidden), [project.lists]);
+  const members = project.members;
+  const people: Person[] = useMemo(() => peopleOf({ members }), [members]);
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name ?? "the list";
   const byId = (id: string) => items.find((x) => x.id === id);
   /** A top-level item's index among its list's items — what a move's `position` means (stored positions can have gaps). */
@@ -127,14 +130,16 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     } else move(id, { listId: it.listId, position: Math.max(0, rankOf(it) + (dir === "up" ? -1 : 1)) });
   };
 
-  const removeMany = async (ids: string[], noun = "item") => {
-    const selected = [...new Set(ids)].map(byId).filter((it): it is Item => !!it);
+  const removeMany = useCallback(async (ids: string[], noun = "item") => {
+    // Read at the action boundary, so a stable callback always uses the current optimistic data.
+    const current = new Map((qc.getQueryData<Item[]>(keys.items(scope)) ?? []).map((it) => [it.id, it]));
+    const selected = [...new Set(ids)].map((id) => current.get(id)).filter((it): it is Item => !!it);
     const undoScope = useFeedback.getState().scope;
     const removed: Item[] = [];
     // Serial deletion keeps one failed request from rolling back another deletion's cache patch.
     for (const it of selected) {
       try {
-        await deleteItem.mutateAsync({ id: it.id });
+        await deleteOne({ id: it.id });
         removed.push(it);
       } catch { /* The mutation reports the request error; only successful deletes become undoable. */ }
     }
@@ -147,13 +152,13 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       restore: async () => {
         // Retain only unfinished work if a bulk restore fails midway through.
         while (pending.length) {
-          await restoreItem.mutateAsync({ id: pending[0]!, quiet: true });
+          await restoreOne({ id: pending[0]!, quiet: true });
           pending.shift();
         }
       },
     });
-  };
-  const remove = (id: string) => removeMany([id]);
+  }, [qc, scope, deleteOne, restoreOne, notify]);
+  const remove = useCallback((id: string) => removeMany([id]), [removeMany]);
 
   /** Done toggle; a recurring item moves to its next due instead (the API decides; one undoable toast). */
   const setDone = (id: string, done: boolean) => {

@@ -44,5 +44,5 @@ export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: { l
   const siblings = items.filter((it) => it.listId === dest.listId && !it.parentItemId).sort((x, y) => x.position - y.position || x.createdAt.localeCompare(y.createdAt));
   const at = vars.position === "top" ? 0 : siblings.length;
   const renumbered = new Map(siblings.map((it, i) => [it.id, i < at ? i : i + 1]));
-  return [...items.map((it) => (renumbered.has(it.id) ? { ...it, position: renumbered.get(it.id)! } : it)), { ...item, position: at }];
+  return [...items.map((it) => (renumbered.has(it.id) && it.position !== renumbered.get(it.id) ? { ...it, position: renumbered.get(it.id)! } : it)), { ...item, position: at }];
 }

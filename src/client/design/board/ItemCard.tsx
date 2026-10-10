@@ -29,6 +29,8 @@ const MENU_ITEMS: ReadonlyArray<["pencil" | "arrow-right" | "copy" | "repeat" | 
 export interface ItemCardProps {
   title: string;
   itemId?: string;
+  /** Reserve the ID's metadata row while a new project item awaits its server number. */
+  pendingId?: boolean;
   /** @default true */
   showId?: boolean;
   labels?: RowLabel[];
@@ -63,8 +65,9 @@ function setCleanDragImage(e: DragEvent, card: HTMLElement) {
   setTimeout(() => g.remove(), 0);
 }
 
-function ItemKey({ itemId }: { itemId: string }) {
+function ItemKey({ itemId }: { itemId?: string }) {
   const [copy, doCopy] = useCopy();
+  if (!itemId) return <span className="td-card-id is-pending" aria-label="Item ID pending">Pending</span>;
   return (
     <span
       className={"td-card-id" + (copy !== "idle" ? " is-copied" : "")}
@@ -84,12 +87,13 @@ function ItemKey({ itemId }: { itemId: string }) {
 
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
-export function ItemCard({ title, itemId, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, style }: ItemCardProps) {
+export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, style }: ItemCardProps) {
   const cl = badges.checklist;
   const clComplete = !!cl && cl.total > 0 && cl.done === cl.total;
   const hasOtherBadges = !!(due || repeat || badges.description || cl || badges.attachments || status || priority || assignees.length);
-  const keyInLabels = !!(itemId && showId && labels.length && !hasOtherBadges);
-  const hasBadges = hasOtherBadges || (itemId && showId && !keyInLabels);
+  const hasKey = showId && !!(itemId || pendingId);
+  const keyInLabels = !!(hasKey && labels.length && !hasOtherBadges);
+  const hasBadges = hasOtherBadges || (hasKey && !keyInLabels);
   const labelObjs = labels.map((l) => (typeof l === "string" ? { color: l } : l));
   return (
     <div
@@ -122,7 +126,7 @@ export function ItemCard({ title, itemId, showId = true, labels = [], done, due,
             {labelObjs.map((l, i) => (
               <LabelChip key={i} color={l.color} text={l.text} size="sm" />
             ))}
-            {keyInLabels ? <ItemKey itemId={itemId!} /> : null}
+            {keyInLabels ? <ItemKey itemId={itemId} /> : null}
           </div>
         ) : null}
         {hasBadges ? (
@@ -176,7 +180,7 @@ export function ItemCard({ title, itemId, showId = true, labels = [], done, due,
                 ) : null}
               </span>
             ) : null}
-            {itemId && showId && !keyInLabels ? <ItemKey itemId={itemId} /> : null}
+            {hasKey && !keyInLabels ? <ItemKey itemId={itemId} /> : null}
           </div>
         ) : null}
       </div>

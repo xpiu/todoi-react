@@ -323,14 +323,8 @@ async function replay() {
   if (!ownerId || !navigator.onLine) return;
   const queued = await readWorkspace(ownerId);
   if (!queued?.operations.length || queued.operations[0]?.state === "failed") return;
-  // Revalidate the actor before every replay pass. Cached offline identity grants no server writes.
-  const session = await fetch("/api/auth/get-session", { credentials: "same-origin", signal: AbortSignal.timeout(15_000) });
-  if (!session.ok) { scheduleRetry(5000); return; }
-  const identity = await session.json() as { user?: { id: string } } | null;
-  if (identity?.user?.id !== ownerId) {
-    await editWorkspace((record) => ({ ...record, operations: record.operations.map((op) => op.state === "pending" ? { ...op, state: "failed", status: 401, error: "Your session has ended. Sign in to the account that made these changes, then retry." } : op) }));
-    return;
-  }
+  // Every write authenticates the session and checks X-Todoi-Owner-Id on the server.
+  // A separate session preflight adds a round trip and cannot protect against a later account switch.
   for (;;) {
     const record = await readWorkspace(ownerId);
     if (!record || workspace?.ownerId !== ownerId) return;
@@ -347,7 +341,9 @@ async function replay() {
       if (!response.ok) {
         let detail: { error?: string } = {};
         try { detail = JSON.parse(body) as typeof detail; } catch { /* A proxy refusal may have no JSON body. */ }
-        await editWorkspace((latest) => ({ ...latest, operations: latest.operations.map((entry) => entry.id === op.id ? { ...entry, state: "failed", status: response.status, error: detail.error ?? "Couldn't sync this change. Review it and try again." } : entry) }));
+        const sessionEnded = response.status === 401;
+        const error = sessionEnded ? "Your session has ended or your account changed. Sign in to the account that made these changes, then retry." : detail.error ?? "Couldn't sync this change. Review it and try again.";
+        await editWorkspace((latest) => ({ ...latest, operations: latest.operations.map((entry) => (entry.id === op.id || sessionEnded && entry.state === "pending") ? { ...entry, state: "failed", status: response.status, error } : entry) }));
         if ([403, 404].includes(response.status)) await purgeScope(record, response.status === 403 ? projectFor(record, op.path, operationBody(op)) : undefined, op.path, response.status);
         return;
       }
@@ -367,6 +363,8 @@ async function replay() {
       // dropping the local overlay; the refresh below then starts after the acknowledgment.
       await client?.cancelQueries({ predicate: (query) => queryPath(query.queryKey) !== undefined });
       if (workspace?.ownerId !== ownerId) return;
+      // Mounted mutations refresh their own scopes. Restored operations need the transport to do it.
+      const handled = waiters.has(op.id);
       const complete = await editWorkspace((latest) => {
         const next: LocalWorkspace = {
           ...latest,
@@ -384,7 +382,10 @@ async function replay() {
         return { ...next, queries: projectedQueries(next) };
       });
       // Live hooks perform their normal invalidations; restored operations have no mounted handler.
-      if (!complete.operations.length) void client?.invalidateQueries();
+      if (!handled) {
+        projectCachedQueries(complete);
+        if (!complete.operations.length) void client?.invalidateQueries();
+      }
     } catch (error) {
       if (workspace?.ownerId !== ownerId) return;
       if (!(error instanceof TypeError) && !(error instanceof DOMException)) { storageFailure(error); return; }

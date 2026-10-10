@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item, Label } from "../data/api";
-import { coverOf, dueStateOf, keyOf, rowsForList } from "./items";
+import { coverOf, dueStateOf, keyOf, rowsByList, rowsForList } from "./items";
 
 const item = (over: Partial<Item>): Item => ({ id: "x", projectId: "p", listId: "l1", parentItemId: null, keyNumber: 7, title: "T", description: null, status: "TODO", priorStatus: null, done: false, priority: null, startDate: null, dueDate: null, dueTime: null, repeatRule: null, repeatCount: 0, cover: null, notification: null, unread: false, position: 0, createdBy: null, archivedAt: null, deletedAt: null, createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "", labelIds: [], assigneeIds: [], attachmentCount: 0, ...over }) as Item;
 
@@ -32,5 +32,20 @@ describe("item helpers", () => {
     expect(rows[0]!.subitems.map((s) => s.title)).toEqual(["Sub"]);
     const sorted = rowsForList(items, "l1", { prefix: "MP", labels, people, today: "2026-10-01", order: (a, b) => b.title.localeCompare(a.title) });
     expect(sorted.map((r) => r.title)).toEqual(["Second", "First"]);
+  });
+  it("groups lists without mutating records and keeps child ordering within their list", () => {
+    const items = [
+      item({ id: "b", position: 1 }), item({ id: "a", position: 0 }),
+      item({ id: "s2", parentItemId: "a", position: 2 }), item({ id: "s1", parentItemId: "a", position: 1 }),
+      item({ id: "other", listId: "l2" }), item({ id: "wrong-list", listId: "l2", parentItemId: "a" }),
+    ];
+    const before = structuredClone(items);
+    items.forEach(Object.freeze);
+    Object.freeze(items);
+    const rows = rowsByList(items, { prefix: "MP", labels: [], people: [], today: "2026-10-01" });
+    expect(rows.get("l1")?.map((row) => row.id)).toEqual(["a", "b"]);
+    expect(rows.get("l1")?.[0]?.subitems.map((row) => row.id)).toEqual(["s1", "s2"]);
+    expect(rows.get("l2")?.map((row) => row.id)).toEqual(["other"]);
+    expect(items).toEqual(before);
   });
 });
