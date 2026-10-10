@@ -240,7 +240,7 @@ export const savedViewsRoute = new Hono()
 export const activityRoute = new Hono().get("/", projectQuery, validate("query", z.object({ projectId: idSchema, limit: z.coerce.number().int().min(1).max(200).default(60) })), async (c) => {
   const { projectId, limit } = c.req.valid("query");
   const rows = await db
-    .select({ entry: activity, actor: { id: users.id, name: users.name, nickname: users.nickname, avatarColor: users.avatarColor } })
+    .select({ entry: activity, actor: { id: users.id, name: users.name, nickname: users.nickname, avatarColor: users.avatarColor, image: users.image } })
     .from(activity)
     .leftJoin(users, eq(users.id, activity.actorId))
     .where(eq(activity.projectId, projectId))

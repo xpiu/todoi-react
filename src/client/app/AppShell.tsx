@@ -311,7 +311,7 @@ export function AppShell() {
   const pd = project.data;
   const membersMenu = pd ? (
     <MembersMenu
-      members={pd.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, color: avatarColorVar(x.avatarColor) }))}
+      members={pd.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, image: x.image, color: avatarColorVar(x.avatarColor) }))}
       currentUserId={user?.id}
       canManage={myRole === "owner" || myRole === "admin"}
       visibility={pd.visibility}

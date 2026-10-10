@@ -17,7 +17,20 @@ export const useSessions = (enabled = true) => useQuery({ queryKey: ["me", "sess
 export function useAccountMutations() {
   const qc = useQueryClient();
   const updateMe = useMutation({ mutationFn: (vars: { name?: string; nickname?: string | null; avatarColor?: LabelColor | null }) => api.api.me.$patch({ json: vars }).then((r) => unwrap<Me>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me"] }) });
+  const updateAvatar = useMutation({
+    mutationFn: async ({ file }: { file: File | null; quiet?: boolean }) => {
+      if (!file) return api.api.me.avatar.$delete().then((r) => unwrap<Me>(r));
+      const body = new FormData();
+      body.set("file", file);
+      return fetch("/api/me/avatar", { method: "POST", body }).then((r) => unwrap<Me>(r));
+    },
+    onSuccess: async () => {
+      await authClient.getSession({ query: { disableCookieCache: true } });
+      authClient.$store.notify("$sessionSignal");
+      await Promise.all([qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["project"] }), qc.invalidateQueries({ queryKey: ["activity"] }), qc.invalidateQueries({ queryKey: ["item"] })]);
+    },
+  });
   const createToken = useMutation({ mutationFn: (vars: { name: string; days?: number }) => api.api.me.tokens.$post({ json: vars }).then((r) => unwrap<ApiToken & { secret: string }>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
   const revokeToken = useMutation({ mutationFn: (vars: { id: string }) => api.api.me.tokens[":id"].$delete({ param: vars }).then((r) => unwrap<void>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
-  return { updateMe, createToken, revokeToken };
+  return { updateMe, updateAvatar, createToken, revokeToken };
 }

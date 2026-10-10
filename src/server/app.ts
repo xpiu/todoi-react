@@ -4,7 +4,7 @@ import { requestId } from "hono/request-id";
 
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
-import { exportRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
+import { avatarsRoute, exportRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
 import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
@@ -23,6 +23,7 @@ export const app = new Hono()
   .use("*", authMiddleware)
   .use("*", workspaceMutations)
   .route("/me", meRoute)
+  .route("/avatars", avatarsRoute)
   .route("/me/tokens", tokensRoute)
   .route("/me/export", exportRoute)
   .route("/invites", invitesRoute)

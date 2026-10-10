@@ -83,6 +83,7 @@ export interface OverlayComment {
 }
 export interface OverlayActivity {
   id: string;
+  src?: string;
   author: string;
   meta: string;
   text: string;
@@ -514,7 +515,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
             />
           ))}
           {p.activity.filter((a) => matches(a.text, a.author)).map((a) => (
-            <Comment key={a.id} author={a.author} meta={a.meta} variant="activity">
+            <Comment key={a.id} author={a.author} src={a.src} meta={a.meta} variant="activity">
               {a.text}
             </Comment>
           ))}

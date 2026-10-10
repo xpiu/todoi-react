@@ -5,6 +5,8 @@ import { getRouteApi, useNavigate, type UseNavigateResult } from "@tanstack/reac
 import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { LABEL_COLORS, type LabelColor } from "../../shared/enums";
+import { AVATAR_HINT } from "../../shared/avatars";
+import { AvatarUpload } from "./AvatarUpload";
 import { authClient } from "../auth";
 import { useAccountMutations, useMe, useSessions, useTokens } from "../data/account";
 import { useLabelMutations } from "../data/itemContent";
@@ -476,7 +478,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             title: "Profile",
             lead: (
               <div className="td-set-id">
-                <Avatar name={name || "?"} color={avatarColorVar(m?.avatarColor)} size={40} decorative />
+                <Avatar name={name || "?"} src={m?.image ?? undefined} color={avatarColorVar(m?.avatarColor)} size={40} decorative />
                 <div className="td-set-idtext">
                   <div className="td-set-idname">{name}</div>
                   <div className="td-set-idmail">{m?.email ?? user?.email}</div>
@@ -486,7 +488,8 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             rows: [
               { id: "name", label: "Display name", hint: "Shown on comments, avatars and activity", control: <TextField value={name} aria-label="Display name" onChange={(e) => setDraft({ name: e.target.value, nickname })} onKeyDown={(e) => e.key === "Enter" && saveProfile()} /> },
               { id: "nickname", label: "Handle", hint: `@${nickname || (name.split(/\s+/)[0] ?? "").toLowerCase()} · used for @mentions and quick-add`, control: <TextField value={nickname} aria-label="Handle" placeholder="handle" onChange={(e) => setDraft({ name, nickname: e.target.value.replace(/[^a-z0-9._-]/gi, "").toLowerCase() })} onKeyDown={(e) => e.key === "Enter" && saveProfile()} /> },
-              { id: "avatarColor", label: "Avatar color", hint: "Behind your initials until you upload an image", control: <SwatchGroup size={22} aria-label="Avatar color" options={LABEL_SWATCHES} value={m?.avatarColor} onChange={(c) => am.updateMe.mutate({ avatarColor: c as LabelColor })} /> },
+              { id: "avatarImage", label: "Avatar image", hint: AVATAR_HINT, control: <AvatarUpload image={m?.image} onChange={(file) => am.updateAvatar.mutateAsync({ file, quiet: true })} /> },
+              { id: "avatarColor", label: "Avatar color", hint: "Behind your initials when you have no image", control: <SwatchGroup size={22} aria-label="Avatar color" options={LABEL_SWATCHES} value={m?.avatarColor} onChange={(c) => am.updateMe.mutate({ avatarColor: c as LabelColor })} /> },
               {
                 id: "save",
                 label: "Save profile",

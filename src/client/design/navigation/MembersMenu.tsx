@@ -45,7 +45,7 @@ export function MembersMenu({ members, currentUserId, canManage, visibility, onV
         <div role="list" aria-label="Members">
           {members.map((m) => (
             <div key={m.id} className="td-mm-row" role="listitem">
-              <Avatar name={m.name} color={m.color} size={28} decorative />
+              <Avatar name={m.name} src={m.image ?? undefined} color={m.color} size={28} decorative />
               <span className="td-mm-name">
                 <span className="td-mm-line">
                   {m.name}

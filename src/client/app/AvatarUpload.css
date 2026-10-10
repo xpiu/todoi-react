@@ -1,0 +1,13 @@
+@layer components {
+  .td-avatar-upload {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    max-width: 100%;
+  }
+  .td-avatar-upload-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+}

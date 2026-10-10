@@ -1,6 +1,6 @@
 // Avatar + AvatarStack. Initials fall back to the label palette (tokens, never hexes) so avatars
 // sit inside every theme; the Account page's "Avatar colour" swatches use the same eight tokens.
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
 import "./Avatar.css";
 
@@ -46,8 +46,9 @@ export interface AvatarProps {
 }
 
 export function Avatar({ name = "?", src, size = 32, color, decorative, style, className }: AvatarProps) {
+  const [failed, setFailed] = useState<string | undefined>();
   const cls = ["td-avatar", className ?? ""].join(" ").trim();
-  if (src) return <img className={cls} src={src} alt={decorative ? "" : name} style={{ width: size, height: size, ...style }} />;
+  if (src && src !== failed) return <img className={cls} src={src} alt={decorative ? "" : name} onError={() => setFailed(src)} style={{ width: size, height: size, ...style }} />;
   const bg = color ?? avatarColorFor(name);
   const ink = LIGHT_INK.test(bg) || isDark(bg) ? "light" : "dark";
   return (

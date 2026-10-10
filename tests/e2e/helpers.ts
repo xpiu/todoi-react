@@ -154,6 +154,7 @@ export function trackAccounts(test: TestType<any, any>) {
       const { rows: ps } = await client.query("select id from projects where group_id in (select id from groups where owner_id = any($1))", [ids]);
       const projectIds = ps.map((p) => p.id);
       const { rows: files } = await client.query("select storage_key from attachments where item_id in (select id from items where project_id = any($1) or list_id in (select id from lists where user_id = any($2)))", [projectIds, ids]);
+      const { rows: avatars } = await client.query("select image from users where id = any($1)", [ids]);
       await client.query("delete from items where project_id = any($1) or list_id in (select id from lists where user_id = any($2))", [projectIds, ids]);
       for (const table of ["activity", "saved_views", "labels", "invites", "lists", "members"]) {
         await client.query(`delete from ${table} where project_id = any($1)`, [projectIds]);
@@ -165,6 +166,7 @@ export function trackAccounts(test: TestType<any, any>) {
       await client.query("delete from users where id = any($1)", [ids]);
       await client.query("commit");
       await Promise.all(files.map((f) => rm(join(process.env.UPLOAD_DIR ?? ".data/uploads", f.storage_key), { force: true })));
+      await Promise.all(avatars.map((u) => /^\/api\/avatars\/(avatar-[A-Za-z0-9_-]{21})$/.exec(u.image ?? "")?.[1]).filter((key): key is string => !!key).map((key) => rm(join(process.env.UPLOAD_DIR ?? ".data/uploads", key), { force: true })));
     } catch (error) {
       await client.query("rollback");
       throw error;

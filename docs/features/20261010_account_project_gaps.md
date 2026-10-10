@@ -23,9 +23,24 @@ phone layout, screenshots and the existing axe gate. Three isolated database tes
 passed, including concurrent handovers and rollback. Repository typechecking,
 lint and all 181 unit tests passed; lint retains existing warnings.
 
+## Completed: avatar images
+
+- Account › Profile uploads/replaces a PNG, JPEG, GIF or WebP image (2 MB maximum)
+  and removes it back to initials. Inline failures leave the current image intact.
+- Images use existing disk storage, signature checks, constrained response headers
+  and the cleanup queue. The user row serializes replacement; only the current
+  opaque image URL is served. Superseded and removed URLs return 404.
+- The existing image fields now reach the profile, account menu, member roster,
+  assignees, pickers, comments and activity. Failed images fall back to initials.
+
+Verification: five Playwright checks passed across all four theme/mode scopes,
+including refresh, propagation, replacement, removal, phone layout, axe and failed
+upload recovery. Two isolated database tests passed for concurrent replacement,
+cleanup and validation. All 181 unit tests, typechecking, lint and production
+client/server builds passed. Impeccable found no issues in the changed UI.
+
 ## Remaining scope
 
-- Avatar image upload, removal and propagation through the existing image fields.
 - Account calendar (.ics) download and a real request path for expired invites.
 - Accurate undo confirmation when snapshot restoration reverts later edits.
 - Styled connection hints and icon-picker hints that escape scrolling clipping.

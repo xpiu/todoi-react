@@ -15,6 +15,7 @@ export interface Person {
   name: string;
   nickname?: string | null;
   avatarColor?: string | null;
+  image?: string | null;
 }
 
 /** Overdue against `today` (ISO, from `useToday`, so it turns over at midnight). */
@@ -79,7 +80,7 @@ export function itemRowMapper(opts: RowOptions) {
     dueState: dueStateOf(it, opts.today),
     repeat: it.repeatRule ? describeRepeat(it.repeatRule, it.dueDate) : undefined,
     priority: it.priority ? PRIORITY_LABEL[it.priority] : undefined,
-    assignees: it.assigneeIds.map((id) => personById.get(id)).filter((p): p is Person => !!p).map((p) => ({ name: p.name, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined })),
+    assignees: it.assigneeIds.map((id) => personById.get(id)).filter((p): p is Person => !!p).map((p) => ({ name: p.name, src: p.image ?? undefined, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined })),
     subitems: [],
     attachments: it.attachmentCount || undefined,
     created: opts.withCreated ? formatDate(it.createdAt) : undefined,

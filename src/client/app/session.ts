@@ -24,13 +24,13 @@ export interface ItemContainer {
   keyPrefix: string;
   linkStatuses: boolean;
   lists: ProjectDetail["lists"];
-  members: Array<Pick<ProjectDetail["members"][number], "userId" | "name" | "nickname" | "avatarColor">>;
+  members: Array<Pick<ProjectDetail["members"][number], "userId" | "name" | "nickname" | "avatarColor"> & { image?: string | null }>;
 }
 
 /** The Inbox as an item container: no key prefix, no lists to pick, only its owner. */
-export const inboxContainer = (user: SessionUser | null): ItemContainer => ({ keyPrefix: "", linkStatuses: false, lists: [], members: user ? [{ userId: user.id, name: user.name, nickname: user.nickname ?? null, avatarColor: user.avatarColor ?? null }] : [] });
+export const inboxContainer = (user: SessionUser | null): ItemContainer => ({ keyPrefix: "", linkStatuses: false, lists: [], members: user ? [{ userId: user.id, name: user.name, nickname: user.nickname ?? null, avatarColor: user.avatarColor ?? null, image: user.image }] : [] });
 
 /** A project's members as the views' Person shape. */
 export function peopleOf(project: Pick<ItemContainer, "members"> | null | undefined): Person[] {
-  return (project?.members ?? []).map((m) => ({ id: m.userId, name: m.name, nickname: m.nickname, avatarColor: m.avatarColor }));
+  return (project?.members ?? []).map((m) => ({ id: m.userId, name: m.name, nickname: m.nickname, avatarColor: m.avatarColor, image: m.image }));
 }

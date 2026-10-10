@@ -1,10 +1,12 @@
 // The signed-in person: profile (name, handle, avatar colour) and project invites.
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { LABEL_COLORS } from "../../shared/enums";
+import { MAX_AVATAR_BYTES } from "../../shared/avatars";
 import { idSchema } from "../../shared/items";
 import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
@@ -14,8 +16,17 @@ import { env } from "../env";
 import { logActivity } from "../services/activity";
 import { memberProjectIds } from "../services/projects";
 import { fail, validate } from "../errors";
+import { setAvatar } from "../services/avatars";
+import { attachmentHeaders } from "../services/attachmentResponse";
+import { openUpload } from "../services/uploads";
 
 export const meRoute = new Hono()
+  .post("/avatar", bodyLimit({ maxSize: MAX_AVATAR_BYTES + 65536, onError: (c) => fail(c, 413, "Choose an image up to 2 MB") }), async (c) => {
+    const body = await c.req.parseBody();
+    if (!(body.file instanceof File)) return fail(c, 400, "Choose an image to upload");
+    return c.json(await setAvatar(viewerOf(c).userId, body.file));
+  })
+  .delete("/avatar", async (c) => c.json(await setAvatar(viewerOf(c).userId, null)))
   .get("/", async (c) => {
     const v = viewerOf(c);
     const [u] = await db.select().from(users).where(eq(users.id, v.userId));
@@ -33,6 +44,16 @@ export const meRoute = new Hono()
     const [u] = await db.update(users).set(c.req.valid("json")).where(eq(users.id, v.userId)).returning();
     return u ? c.json(u) : fail(c, 404, "Not found");
   });
+
+/** Opaque, shareable profile images. Only the current image is served; removed URLs stop working. */
+export const avatarsRoute = new Hono().get("/:key", validate("param", z.object({ key: z.string().regex(/^avatar-[A-Za-z0-9_-]{21}$/) })), async (c) => {
+  const { key } = c.req.valid("param");
+  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.image, `/api/avatars/${key}`));
+  if (!user) return fail(c, 404, "Image not found");
+  const file = await openUpload(key);
+  if (!file) return fail(c, 404, "Image not found");
+  return c.body(file.stream, 200, attachmentHeaders(file.head, file.size, "avatar", false));
+});
 
 const DAY = 86400000;
 export const tokensRoute = new Hono()

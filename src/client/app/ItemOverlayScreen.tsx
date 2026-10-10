@@ -37,7 +37,7 @@ export interface ItemOverlayScreenProps {
   onSuggestShortcut?: (id: string, delay?: number) => void;
 }
 
-const memberOf = (p: Person) => ({ id: p.id, name: p.name, nickname: p.nickname ?? undefined, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined });
+const memberOf = (p: Person) => ({ id: p.id, name: p.name, nickname: p.nickname ?? undefined, src: p.image ?? undefined, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined });
 
 /** The overlay for an item among the live items on screen; otherwise why it is not there (MissingItem). */
 export function ItemOverlayScreen(props: ItemOverlayScreenProps) {
@@ -117,9 +117,9 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
     const author = personOf(c.authorId);
     const by = (emoji: string) => c.reactions.filter((r) => r.emoji === emoji).map((r) => personOf(r.userId)?.name ?? "Someone");
     const emojis = [...new Set(c.reactions.map((r) => r.emoji))];
-    return { id: c.id, author: author?.name ?? "Someone", authorId: c.authorId, color: author?.avatarColor ? `var(--label-${author.avatarColor})` : undefined, meta: formatRelative(c.createdAt, now), text: c.body, edited: !!c.editedAt, reactions: emojis.map((e) => ({ emoji: e, count: by(e).length, mine: c.reactions.some((r) => r.emoji === e && r.userId === user?.id), by: by(e) })) };
+    return { id: c.id, author: author?.name ?? "Someone", authorId: c.authorId, src: author?.image ?? undefined, color: author?.avatarColor ? `var(--label-${author.avatarColor})` : undefined, meta: formatRelative(c.createdAt, now), text: c.body, edited: !!c.editedAt, reactions: emojis.map((e) => ({ emoji: e, count: by(e).length, mine: c.reactions.some((r) => r.emoji === e && r.userId === user?.id), by: by(e) })) };
   });
-  const activityRows = (activity.data ?? []).filter((a) => a.itemId === item.id).map((a) => ({ id: a.id, author: a.actor?.name ?? "Todoi", meta: formatRelative(a.createdAt, now), text: a.text }));
+  const activityRows = (activity.data ?? []).filter((a) => a.itemId === item.id).map((a) => ({ id: a.id, author: a.actor?.name ?? "Todoi", src: a.actor?.image ?? undefined, meta: formatRelative(a.createdAt, now), text: a.text }));
   const relations = (details.data?.relations ?? []).map((r) => ({ type: r.type, item: { id: r.item.id, title: r.item.title, itemId: keyOf(r.item, project.keyPrefix), listName: listName(r.item.listId), status: r.item.status, done: r.item.done } }));
   const patch = (changes: Parameters<typeof updateItem.mutate>[0] extends infer V ? Omit<V, "id"> : never) => updateItem.mutate({ id: item.id, ...changes });
   /** A save the overlay waits on: it keeps the draft and shows this reason when the request fails. */
