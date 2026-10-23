@@ -19,6 +19,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 ## 📖 Contents
 
 - [📝 About](#-about)
+- [💎 Unique selling propositions](#-unique-selling-propositions)
 - [⚡ Quick Start](#-quick-start)
   - [Top commands](#top-commands)
   - [Installation](#installation)
@@ -32,6 +33,19 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - [💻 Local development](#-local-development)
 - [🚀 Production](#-production)
 - [✅ Quality gates](#-quality-gates)
+
+## 💎 Unique selling propositions
+
+These six USPs define the intended commercial positioning of Todoi at todoi.com. They describe the product direction; current implementation status is noted below.
+
+1. **Freedom of data storage.** Choose where task data lives, including Todoi-hosted storage and external repositories or other supported storage providers, so users retain control of their data and can keep it outside the SaaS.
+2. **Freedom of storage format and export.** Keep tasks in portable, accessible formats, with Markdown, JSON and CSV as target options. Users should be able to choose supported formats, export their work and continue using it with other tools.
+3. **Direct agent access in the codebase.** Store task files alongside source code so coding agents can read and update them with their existing file and Git tools, without requiring a separate task-management API integration.
+4. **Bidirectional synchronization.** Keep changes made in Todoi and changes made directly in external task files synchronized, supporting an ongoing workflow for humans, agents and other tools.
+5. **Tasks versioned alongside the work.** Keep task files under Git version control with the code they describe. Developers and agents can commit task updates with code changes, review diffs and trace the history and authorship of task changes using Git.
+6. **Substantially lower pricing.** Aim to offer the key task-management workflows our customers need at roughly one-fifth of the price of a major competitor such as Linear. This is a pricing goal, subject to sustainable operating costs and final plan design.
+
+**React implementation status:** Repository-backed task-file synchronization is still to be brought into this app from the original [Todoi prototype](https://github.com/xpiu/todoi). The client/server synchronization described under [Features and limits](#-features-and-limits) is separate from that planned capability. Current import/export limits still apply; broader formats and storage providers are goals, and the pricing target is not a published subscription price.
 
 ## ⚡ Quick Start
 
