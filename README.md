@@ -59,7 +59,7 @@ npm run storybook             # run storybook
 
 ### Installation
 
-Requires Node 22.12+, npm and running PostgreSQL (18 used here).
+Requires Node 22.22.2+ (22.x), 24.15+ (24.x), or 26+, npm and running PostgreSQL (18 used here). CI and the production image use Node 22.
 
 ```sh
 cp .env.example .env       # adjust DATABASE_URL for your machine

@@ -4,7 +4,7 @@
 # because it compares, branches, merges and pushes that clone. Build context: this folder.
 
 FROM node:22-bookworm-slim
-ARG PLAYWRIGHT_VERSION=1.63.0
+ARG PLAYWRIGHT_VERSION=1.65.0
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates git openssh-client tini unzip zip \
   && npm install -g @anthropic-ai/claude-code \
