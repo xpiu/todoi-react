@@ -2,19 +2,19 @@
 # Production image (README › Production): one Node process serves the API and the built client.
 # Build: all dependencies → `npm run build`. Runtime: production dependencies, dist/, dist-server/, drizzle/.
 
-FROM node:22-slim AS build
+FROM node:22.23.4-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 
-FROM node:22-slim AS deps
+FROM node:22.23.4-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
-FROM node:22-slim
+FROM node:22.23.4-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d
 ENV NODE_ENV=production PORT=3000 UPLOAD_DIR=/data/uploads
 WORKDIR /app
 # package.json carries "type": "module" for dist-server; drizzle/ feeds MIGRATE_ON_START.
