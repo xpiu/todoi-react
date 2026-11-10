@@ -1,4 +1,4 @@
-import { dehydrate, hydrate, type QueryClient } from "@tanstack/react-query";
+import { dehydrate, hydrate, type Query, type QueryClient } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
 import { create } from "zustand";
 
@@ -361,8 +361,10 @@ async function replay() {
       }
       const createdComment = createdCommentVersion(op, acknowledgedBody);
       // A snapshot started before this write may contain older server data. Abort it before
-      // dropping the local overlay; the refresh below then starts after the acknowledgment.
-      await client?.cancelQueries({ predicate: (query) => queryPath(query.queryKey) !== undefined });
+      // dropping the local overlay; it starts again below, after the acknowledgment.
+      const synced = (query: Query) => queryPath(query.queryKey) !== undefined;
+      const interrupted = new Set(client?.getQueryCache().findAll({ predicate: (query) => synced(query) && query.state.fetchStatus === "fetching" }).map((query) => query.queryHash));
+      await client?.cancelQueries({ predicate: synced });
       if (workspace?.ownerId !== ownerId) return;
       // Mounted mutations refresh their own scopes. Restored operations need the transport to do it.
       const handled = waiters.has(op.id);
@@ -387,6 +389,9 @@ async function replay() {
         projectCachedQueries(complete);
         if (!complete.operations.length) void client?.invalidateQueries();
       }
+      // Restart the snapshots aborted above. A cancelled first load has no data to fall back on, so a
+      // screen opened while this write was in flight (a notification's item) would otherwise stay loading.
+      if (interrupted.size) void client?.invalidateQueries({ predicate: (query) => interrupted.has(query.queryHash) });
     } catch (error) {
       if (workspace?.ownerId !== ownerId) return;
       if (!(error instanceof TypeError) && !(error instanceof DOMException)) { storageFailure(error); return; }
