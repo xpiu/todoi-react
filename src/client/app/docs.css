@@ -1,0 +1,49 @@
+/* Docs: the prose composed into SettingsCards on /docs and /docs/agents; the page and cards are the settings shell's. */
+@layer components {
+  .td-docs {
+    padding: 0 var(--sp-5) 14px;
+    font: var(--type-body);
+    color: var(--ink-600);
+    text-wrap: pretty;
+  }
+  /* Minimal's cards are ledgers with flush rows; the prose follows */
+  html[data-theme="minimal"] .td-docs {
+    padding: 10px 0 14px;
+  }
+  .td-docs p,
+  .td-docs ul,
+  .td-docs pre {
+    margin: 0;
+  }
+  .td-docs > * + * {
+    margin-top: var(--sp-2);
+  }
+  .td-docs ul {
+    padding-left: var(--sp-5);
+  }
+  .td-docs li + li {
+    margin-top: var(--sp-1);
+  }
+  .td-docs strong {
+    color: var(--ink-900);
+    font-weight: var(--weight-semibold);
+  }
+  .td-docs code,
+  .td-docs kbd,
+  .td-docs pre {
+    font: var(--weight-regular) var(--text-xs) / var(--lh-xs) var(--font-mono);
+    color: var(--ink-900);
+    background: var(--action-subtle);
+    border-radius: var(--radius-xs);
+  }
+  .td-docs code,
+  .td-docs kbd {
+    padding: 1px 5px;
+    overflow-wrap: anywhere;
+  }
+  .td-docs pre {
+    padding: var(--sp-2) var(--sp-3);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}

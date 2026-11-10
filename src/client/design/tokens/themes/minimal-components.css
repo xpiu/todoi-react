@@ -364,6 +364,7 @@ html[data-theme="minimal"] .td-gps-edit{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-gps-edit:hover{background:none;color:var(--ink-900)}
 /* Settings: the left nav is the sidebar's vocabulary — grey words, ink when current, no pill; the search a hairline; groups are ledgers with the group name in 500 over an ink hairline */
 html[data-theme="minimal"] .td-set-inner{grid-template-columns:172px minmax(0,1fr);gap:40px}
+html[data-theme="minimal"] .td-set-inner[data-nav="false"]{grid-template-columns:minmax(0,1fr)}
 html[data-theme="minimal"] .td-set-search .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-set-search .td-field::placeholder{color:var(--ink-400)}
 html[data-theme="minimal"] .td-set-search svg{width:16px;height:16px;stroke-width:1.75;color:var(--ink-900)}

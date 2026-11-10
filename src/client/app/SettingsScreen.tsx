@@ -77,7 +77,7 @@ const HELP_TOPICS = [
   { id: "h-export", label: "Export and print", hint: "PDF, Markdown or CSV", body: "Share › Export this view writes what you see — filters and sort applied — as PDF, Markdown or CSV. An item's ⋯ menu has Export… for that item with its subitems and comments, and Print. Markdown is the same format Import reads." },
 ];
 const ABOUT_LINKS = [["privacy", "Privacy", "https://todoi.com/privacy"], ["terms", "Terms", "https://todoi.com/terms"], ["licences", "Licences", "https://todoi.com/licences"]] as const;
-const SUPPORT_LINKS = [["docs", "Documentation", "Guides for every part of Todoi", "https://todoi.com/docs"], ["status", "Service status", "Uptime and incidents", "https://status.todoi.com"], ["contact", "Contact support", "We answer within a working day", "mailto:support@todoi.com"]] as const;
+const SUPPORT_LINKS = [["status", "Service status", "Uptime and incidents", "https://status.todoi.com"], ["contact", "Contact support", "We answer within a working day", "mailto:support@todoi.com"]] as const;
 
 export function SettingsScreen({ page }: { page: Page }) {
   const search = (page === "settings" ? settingsRoute : accountRoute).useSearch();
@@ -271,6 +271,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             title: "Getting started",
             rows: [
               { id: "sample", label: "Sample project", hint: "A small project to click around in; delete it whenever you like", control: <Button icon="kanban" onClick={() => lifecycle.openNewProject()}>Create a project</Button> },
+              { id: "docs", label: "How Todoi works", hint: "The basics on one page", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> },
               { id: "shortcuts", label: "Keyboard shortcuts", hint: "The full map, also behind ? anywhere in the app", control: <Button icon="keyboard" onClick={() => navigate({ to: "/settings", search: { s: "keyboard" } })}>Open</Button> },
             ],
           },
@@ -290,7 +291,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         icon: "git-branch",
         groups: [
           { id: "gh", title: "GitHub sync", tone: "info", rows: [{ id: "ghNone", label: "Not connected", hint: "Keeping a project in a Markdown file in a GitHub repository is a later milestone; Export and Import already speak that format", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/settings", search: { s: "storage" } })}>Import & export</Button> }] },
-          { id: "api", title: "API", rows: [{ id: "apiTokens", label: "API tokens", hint: "Scripts and tools act as you with a personal token", control: <Button icon="code" onClick={() => navigate({ to: "/account", search: { s: "tokens" } })}>Manage tokens</Button> }] },
+          { id: "api", title: "API", rows: [{ id: "apiTokens", label: "API tokens", hint: "Scripts and tools act as you with a personal token", control: <Button icon="code" onClick={() => navigate({ to: "/account", search: { s: "tokens" } })}>Manage tokens</Button> }, { id: "agentDocs", label: "Todoi for agents", hint: "How an AI agent or a script uses the API", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs/agents" })}>Open</Button> }] },
         ],
       },
       {
@@ -643,7 +644,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
           { id: "danger", title: "Delete account", tone: "danger", rows: [{ id: "deleteAccount", label: "Delete my account", hint: "Removes your profile and every project you own — contact support to run this until self-service deletion ships", control: <Button icon="trash-2" className="td-set-danger" disabled>Delete</Button> }] },
         ],
       },
-      { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> })) }] },
+      { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How Todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> }))] }] },
     ],
   };
   const dialogs = <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} onDone={() => notify({ message: "Password updated", icon: "check" })} />;
