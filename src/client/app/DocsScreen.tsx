@@ -1,11 +1,13 @@
 // Docs — two short secondary pages: /docs (how to use Todoi) and /docs/agents (how an AI agent uses the
 // API). Brief on purpose; the full reference comes later. Same canvas and cards as Import
 // (SettingsPageFrame + SettingsCard); each card's body is prose. Spec: DESIGN.md › Secondary pages.
+// public/docs/agents.md is the plain-Markdown copy of the agents page (served at /docs/agents.md and
+// listed in /llms.txt): change both together.
 import { useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { Button } from "../design/core/Button";
-import { SettingsCard, SettingsPageFrame } from "../design/settings/SettingsShell";
+import { SettingsCard, SettingsLink, SettingsPageFrame, type SettingsRow } from "../design/settings/SettingsShell";
 import "./docs.css";
 
 export type DocsPage = "people" | "agents";
@@ -169,6 +171,8 @@ export function DocsScreen({ page }: { page: DocsPage }) {
   const navigate = useNavigate();
   const doc = PAGES[page];
   const other = page === "people" ? { label: "Todoi for agents", hint: "Using Todoi from an AI agent or a script", to: "/docs/agents" as const } : { label: "How Todoi works", hint: "The guide for people", to: "/docs" as const };
+  const more: SettingsRow[] = [{ id: "other", label: other.label, hint: other.hint, control: <Button icon="arrow-right" onClick={() => void navigate({ to: other.to })}>Open</Button> }];
+  if (page === "agents") more.push({ id: "markdown", label: "This page as Markdown", hint: "/docs/agents.md — plain text for agents, also listed in /llms.txt", control: <SettingsLink href="/docs/agents.md" /> });
   return (
     <SettingsPageFrame title={doc.title} crumb={doc.crumb}>
       {doc.cards.map((c) => (
@@ -176,7 +180,7 @@ export function DocsScreen({ page }: { page: DocsPage }) {
           <div className="td-docs">{c.body}</div>
         </SettingsCard>
       ))}
-      <SettingsCard group={{ id: "docs-more", title: "More", rows: [{ id: "other", label: other.label, hint: other.hint, control: <Button icon="arrow-right" onClick={() => void navigate({ to: other.to })}>Open</Button> }] }} />
+      <SettingsCard group={{ id: "docs-more", title: "More", rows: more }} />
     </SettingsPageFrame>
   );
 }

@@ -1,0 +1,9 @@
+# Todoi
+
+> Todoi is a task manager: project groups hold projects, projects hold lists, and lists hold items, shown as a List, Board or Calendar. People and AI agents use the same JSON API at https://todoi.com/api with a personal API token.
+
+## Docs
+
+- [Todoi for agents (Markdown)](https://todoi.com/docs/agents.md): how an AI agent authenticates with an API token, the main API endpoints, and the rules to follow
+- [Todoi for agents (web page)](https://todoi.com/docs/agents): the same guide as a page in the app
+- [How Todoi works](https://todoi.com/docs): the basics of using Todoi, on one page

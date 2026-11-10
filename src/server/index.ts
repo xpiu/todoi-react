@@ -37,7 +37,13 @@ if (env.CLIENT_DIR) {
   // Hashed build assets never change; index.html and deep links revalidate so a deploy shows at once.
   const files = serveStatic({ root: env.CLIENT_DIR, onFound: (path, c) => c.header("Cache-Control", path.includes("/assets/") ? "public, max-age=31536000, immutable" : "no-cache") });
   const page = serveStatic({ path: index, onFound: (_path, c) => c.header("Cache-Control", "no-cache") });
-  server.use("*", (c, next) => (isApi(c.req.path) ? next() : files(c, next)));
+  // Markdown copies for agents (/docs/agents.md) read as text, not a download.
+  server.use("*", async (c, next) => {
+    if (isApi(c.req.path)) return next();
+    const res = await files(c, next);
+    if (res && c.req.path.endsWith(".md")) res.headers.set("Content-Type", "text/markdown; charset=utf-8");
+    return res;
+  });
   server.get("*", (c, next) => (isApi(c.req.path) ? next() : page(c, next)));
 }
 server.onError(onError).notFound(notFound);
