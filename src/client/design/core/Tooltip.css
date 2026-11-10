@@ -135,4 +135,19 @@
   .td-tip-labeled[data-tip]::before {
     display: none;
   }
+
+  /* Suggest shortcuts: a control's key rides in its hint via data-tip-kbd, set only while the option
+     is on. A labeled control whose text is visible shows the key alone, in mono. */
+  .td-tip[data-tip][data-tip-kbd]::after {
+    content: attr(data-tip) "\2003" attr(data-tip-kbd);
+  }
+  .td-tip-labeled[data-tip][data-tip-kbd]::after,
+  .td-tip-labeled[data-tip][data-tip-kbd]::before {
+    display: block;
+  }
+  .td-tip-labeled[data-tip][data-tip-kbd]::after {
+    content: attr(data-tip-kbd);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
 }

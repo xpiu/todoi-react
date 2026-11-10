@@ -98,7 +98,6 @@
     display: flex;
     gap: 14px;
     padding: 7px var(--sp-3);
-    border-top: 1px solid var(--border-divider);
     font: var(--type-small);
     color: var(--ink-400);
   }

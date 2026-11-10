@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useId, useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
-import { useAppearanceStore } from "../core/appearance";
+import { getAppearance, useAppearanceStore } from "../core/appearance";
 import { FilterMenu } from "./FilterMenu";
 import { MembersMenu } from "./MembersMenu";
 import { SavedViewTabs } from "./SavedViewTabs";
@@ -107,6 +107,24 @@ export const Default: Story = {
     const rowId = toggle.getAttribute("aria-controls");
     await expect(rowId).toBeTruthy();
     await expect(canvas.getByRole("navigation", { name: "Saved views" })).toHaveAttribute("id", rowId);
+  },
+};
+/** Suggest shortcuts adds each view's and Filter's key to its hint; with it off, the hints carry no key. */
+export const ShortcutHints: Story = {
+  async play({ canvas }) {
+    const { set } = useAppearanceStore.getState();
+    const before = getAppearance().suggestShortcuts;
+    try {
+      set({ suggestShortcuts: true });
+      await waitFor(() => expect(canvas.getByRole("button", { name: "Board" })).toHaveAttribute("data-tip-kbd", "G then B"));
+      await expect(canvas.getByRole("button", { name: "Calendar" })).toHaveAttribute("data-tip-kbd", "G then C");
+      await expect(canvas.getByRole("button", { name: /^Filter/ })).toHaveAttribute("data-tip-kbd", "F");
+      await expect(canvas.getByRole("button", { name: /^Sort/ })).not.toHaveAttribute("data-tip-kbd");
+      set({ suggestShortcuts: false });
+      await waitFor(() => expect(canvas.getByRole("button", { name: "Board" })).not.toHaveAttribute("data-tip-kbd"));
+    } finally {
+      set({ suggestShortcuts: before });
+    }
   },
 };
 /** One open menu at a time: opening Sort closes Filter. */

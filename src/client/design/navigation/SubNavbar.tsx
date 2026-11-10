@@ -13,6 +13,7 @@ import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
 import { MenuDivider, MenuGroup, MenuHeading, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
 import { Popover } from "../core/Popover";
 import { Segmented } from "../core/Segmented";
+import { hintKeysText } from "../core/ShortcutHint";
 import { SwatchGroup } from "../core/SwatchGroup";
 import { MODES, THEMES } from "../core/themes";
 import { LabelChip } from "../board/LabelChip";
@@ -112,6 +113,8 @@ export interface SubNavbarProps {
 
 export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, filterActive = false, sortActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, savedViewsId, style, className }: SubNavbarProps) {
   const ap = useAppearance();
+  // Suggest shortcuts puts each view's and Filter's key in its hint (the key alone while the label shows).
+  const tipKeys = (hintId: string) => (ap.suggestShortcuts ? hintKeysText(hintId) : undefined);
   const active = activeView ?? views[0]?.id;
   // One open-menu value for all five dropdowns. The ref guards against a late close of the previous
   // menu (its outside press) clearing the one that has just opened.
@@ -233,7 +236,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             const marked = a.id === "filter" ? filterActive : a.id === "sort" ? sortActive : false;
             // The active marker is its own element: the trigger's ::after belongs to the tooltip.
             const button = (
-              <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-menu={menu ? a.id : undefined} data-active={marked ? "true" : undefined} onClick={menu ? undefined : () => onAction?.(a.id)}>
+              <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-tip-kbd={a.id === "filter" ? tipKeys("filter") : undefined} data-menu={menu ? a.id : undefined} data-active={marked ? "true" : undefined} onClick={menu ? undefined : () => onAction?.(a.id)}>
                 {a.icon ? <Icon name={a.icon} size={16} /> : null}
                 {a.label}
                 {marked ? (
@@ -306,7 +309,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       {views.length ? (
         <div className="td-subnav-views" role="group" aria-label="View">
           {views.map((v) => (
-            <button key={v.id} type="button" className="td-subnav-seg td-tip td-tip-labeled" data-tip={v.label === "Cal." ? "Calendar" : v.label} aria-label={v.label === "Cal." ? "Calendar" : undefined} aria-pressed={v.id === active} onClick={() => onViewChange?.(v.id)}>
+            <button key={v.id} type="button" className="td-subnav-seg td-tip td-tip-labeled" data-tip={v.label === "Cal." ? "Calendar" : v.label} data-tip-kbd={tipKeys(`view-${v.id}`)} aria-label={v.label === "Cal." ? "Calendar" : undefined} aria-pressed={v.id === active} onClick={() => onViewChange?.(v.id)}>
               {v.icon ? <Icon name={v.icon} size={16} /> : null}
               {v.label}
             </button>

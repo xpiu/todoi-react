@@ -2,9 +2,11 @@
 // with a swatch or glyph and a mono match count. Body of a toolbar-tier Popover. Spec: DESIGN.md › Filtering.
 import { useRef, useState } from "react";
 
+import { useThemePreference } from "../core/appearance";
 import { Button } from "../core/Button";
 import { Checkbox } from "../core/Checkbox";
 import { Icon, type IconName } from "../core/Icon";
+import { hintKeysText } from "../core/ShortcutHint";
 import "./FilterMenu.css";
 
 export interface FilterMenuOption {
@@ -31,6 +33,8 @@ const key = (f: { type: string; value: string }) => `${f.type}:${f.value}`;
 export function FilterMenu({ sections, available, filters, counts = {}, onToggle, onClear }: FilterMenuProps) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  // The key footer is a shortcut suggestion, like the search dropdown's: it follows Suggest shortcuts.
+  const suggestShortcuts = useThemePreference("suggestShortcuts");
   const isActive = (f: FilterMenuOption) => filters.some((a) => a.type === f.type && a.value === f.value);
   const q = query.trim().toLowerCase();
   const groups = sections.map(([label, type]) => ({ label, rows: available.filter((f) => f.type === type && (!q || f.value.toLowerCase().includes(q) || label.toLowerCase().includes(q))) })).filter((s) => s.rows.length);
@@ -94,6 +98,21 @@ export function FilterMenu({ sections, available, filters, counts = {}, onToggle
         ))}
         {q && !groups.length ? <div className="td-fm-empty">No filters match “{query}”</div> : null}
       </div>
+      {suggestShortcuts ? (
+        <div className="td-fm-foot" aria-hidden="true">
+          <span>
+            <kbd className="td-kbd">{hintKeysText("filter")}</kbd> opens this menu
+          </span>
+          {filters.length ? (
+            <span>
+              <kbd className="td-kbd">{hintKeysText("clear-filters")}</kbd> clears filters
+            </span>
+          ) : null}
+          <span>
+            <kbd className="td-kbd">esc</kbd> close
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }

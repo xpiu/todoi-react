@@ -19,4 +19,17 @@
     font: var(--weight-regular) 11px / 17px var(--font-mono);
     color: var(--ink-600);
   }
+  /* Suggest shortcuts: the N chip at the end of an "Add an item" row, on hover or keyboard focus only. */
+  .td-add-kbd {
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-standard);
+  }
+  :hover > .td-add-kbd,
+  :focus-visible > .td-add-kbd {
+    opacity: 1;
+  }
+  html[data-touch="true"] .td-add-kbd {
+    display: none;
+  }
 }

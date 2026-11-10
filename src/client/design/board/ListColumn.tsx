@@ -6,6 +6,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import type { ItemStatus } from "../../../shared/item-status";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
+import { AddItemKey } from "../core/ShortcutHint";
 import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
 import { QuickAddInput } from "../core/QuickAddInput";
 import { suggestedRoleForTitle } from "../core/statuses";
@@ -77,6 +78,7 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
           <button type="button" className="td-list-add" data-add-item={name} onClick={() => setAdding(true)}>
             <Icon name="plus" size={16} />
             Add an item
+            <AddItemKey />
           </button>
         </div>
       )}

@@ -5,7 +5,7 @@
 // the one listed exception to the Popover rule until it migrates. Spec: DESIGN.md › Search dropdown.
 import { useEffect, useId, useState, type CSSProperties } from "react";
 
-import { useProjectIcons } from "../core/appearance";
+import { useProjectIcons, useThemePreference } from "../core/appearance";
 import { Icon, type IconName } from "../core/Icon";
 import { Mark } from "../core/text";
 import "./SearchDropdown.css";
@@ -80,6 +80,8 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
   const listId = id ?? ownId;
   // Minimal shows no project glyphs: project and group rows lead with the name.
   const projectIcons = useProjectIcons();
+  // The ↑↓ ↵ esc footer is a shortcut suggestion: it follows Suggest shortcuts.
+  const suggestShortcuts = useThemePreference("suggestShortcuts");
   const needle = query.trim().toLowerCase();
   const has = (s?: string) => !!s && s.toLowerCase().includes(needle);
   const { groups = [], projects = [], items = [], inbox = [] } = sources;
@@ -180,17 +182,19 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
       ) : (
         <div className="td-sd-empty" role="status" data-tone={note ? status : undefined}>{note ?? `No projects or items match “${query.trim()}”`}</div>
       )}
-      <div className="td-sd-foot">
-        <span>
-          <kbd className="td-kbd">↑↓</kbd> navigate
-        </span>
-        <span>
-          <kbd className="td-kbd">↵</kbd> open
-        </span>
-        <span>
-          <kbd className="td-kbd">esc</kbd> close
-        </span>
-      </div>
+      {suggestShortcuts ? (
+        <div className="td-sd-foot">
+          <span>
+            <kbd className="td-kbd">↑↓</kbd> navigate
+          </span>
+          <span>
+            <kbd className="td-kbd">↵</kbd> open
+          </span>
+          <span>
+            <kbd className="td-kbd">esc</kbd> close
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor, within } from "storybook/test";
 
+import { getAppearance, useAppearanceStore } from "../core/appearance";
 import { Button } from "../core/Button";
 import { ListRow } from "./ListRow";
 import { ListSection } from "./ListSection";
@@ -24,6 +25,24 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Populated: Story = {};
+/** Suggest shortcuts puts N in the + hint and a hover chip at the end of "Add an item"; the chip stays out of the name. */
+export const AddItemKey: Story = {
+  async play({ canvas }) {
+    const { set } = useAppearanceStore.getState();
+    const before = getAppearance().suggestShortcuts;
+    const add = canvas.getByRole("button", { name: "Add an item" });
+    try {
+      set({ suggestShortcuts: true });
+      await waitFor(() => expect(add.querySelector(".td-add-kbd")).toHaveTextContent("N"));
+      await expect(canvas.getByRole("button", { name: "Add an item at the top of Doing" })).toHaveAttribute("data-tip-kbd", "N");
+      set({ suggestShortcuts: false });
+      await waitFor(() => expect(add.querySelector(".td-add-kbd")).toBeNull());
+      await expect(canvas.getByRole("button", { name: "Add an item at the top of Doing" })).not.toHaveAttribute("data-tip-kbd");
+    } finally {
+      set({ suggestShortcuts: before });
+    }
+  },
+};
 export const Empty: Story = { args: { name: "Backlog", count: 0, children: undefined } };
 export const Collapsed: Story = {
   args: { defaultCollapsed: true },

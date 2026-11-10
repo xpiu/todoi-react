@@ -5,7 +5,9 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 
 import type { ItemStatus } from "../../../shared/item-status";
 import { ListActionsPopover, ListIconButton, useListRename } from "../board/listHeader";
+import { useThemePreference } from "../core/appearance";
 import { Icon, type IconName } from "../core/Icon";
+import { AddItemKey, hintKeysText } from "../core/ShortcutHint";
 import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
 import { QuickAddInput } from "../core/QuickAddInput";
 import "./ListSection.css";
@@ -49,6 +51,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
   const rename = useListRename(name, onRename);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [adding, setAdding] = useState<AddPosition | false>(false);
+  const suggestShortcuts = useThemePreference("suggestShortcuts");
   const startAdd = (where: AddPosition) => {
     if (adding === where) {
       setAdding(false);
@@ -88,7 +91,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
               </button>
             ) : null}
             {/* A toggle with one name: aria-pressed says whether the top add row is open. */}
-            <button type="button" className="td-lsec-addbtn td-tip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
+            <button type="button" className="td-lsec-addbtn td-tip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
               <Icon name="plus" size={16} />
             </button>
             {menu ? (
@@ -124,6 +127,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
                   <Icon name="plus" size={18} />
                 </span>
                 Add an item
+                <AddItemKey />
               </button>
             )}
           </div>

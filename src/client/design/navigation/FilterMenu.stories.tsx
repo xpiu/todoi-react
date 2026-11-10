@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, fn } from "storybook/test";
+import { expect, fn, waitFor } from "storybook/test";
 
+import { getAppearance, useAppearanceStore } from "../core/appearance";
 import { FilterMenu, type FilterMenuOption, type FilterMenuProps } from "./FilterMenu";
 
 const SECTIONS: ReadonlyArray<[string, string]> = [["Labels", "label"], ["Assignee", "assignee"], ["Due date", "due"], ["Priority", "priority"]];
@@ -65,6 +66,24 @@ export const WithActiveFilters: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Clear all" }));
     await expect(args.onClear).toHaveBeenCalledOnce();
     await expect(canvas.queryByRole("button", { name: "Clear all" })).not.toBeInTheDocument();
+  },
+};
+/** Suggest shortcuts adds an F · X · esc footer (X only while filters are set); with it off there is none. */
+export const ShortcutFooter: Story = {
+  args: { filters: [{ type: "label", value: "Urgent" }] },
+  async play({ canvasElement }) {
+    const { set } = useAppearanceStore.getState();
+    const before = getAppearance().suggestShortcuts;
+    const footer = () => canvasElement.querySelector(".td-fm-foot");
+    try {
+      set({ suggestShortcuts: true });
+      await waitFor(() => expect(footer()).toHaveTextContent(/F opens this menu.*X clears filters.*esc close/));
+      await expect(footer()).toHaveAttribute("aria-hidden", "true");
+      set({ suggestShortcuts: false });
+      await waitFor(() => expect(footer()).toBeNull());
+    } finally {
+      set({ suggestShortcuts: before });
+    }
   },
 };
 export const Search: Story = {

@@ -5,6 +5,7 @@
 // aria-hidden: a pointer-user nudge, not an announcement. Spec: DESIGN.md › Shortcut suggestions.
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
+import { useThemePreference } from "./appearance";
 import { isTyping, keyLabel } from "./shortcuts";
 import "./ShortcutHint.css";
 import "./kbd.css";
@@ -31,6 +32,19 @@ export const SHORTCUT_HINTS: Record<string, HintDef> = {
   overlay: { parts: [[["ctrl", "+", "↵"], "save and close"], [["esc"], "close"]] },
   help: { parts: [[["?"], "shows every shortcut"]] },
 };
+
+/** A situation's keys as plain text for a tooltip or chip: "N", "G then B" (⌘ on macOS). */
+export const hintKeysText = (id: string): string | undefined => SHORTCUT_HINTS[id]?.parts[0]?.[0].map(keyLabel).join(" ");
+
+/** The N chip at the end of an "Add an item" row while Suggest shortcuts is on; shown on hover or focus. */
+export function AddItemKey() {
+  const suggest = useThemePreference("suggestShortcuts");
+  return suggest ? (
+    <kbd className="td-kbd td-add-kbd" aria-hidden="true">
+      {hintKeysText("add-item")}
+    </kbd>
+  ) : null;
+}
 
 const STORE = "td-hint-seen";
 const SEPS = new Set(["+", "or", "then", "–"]);

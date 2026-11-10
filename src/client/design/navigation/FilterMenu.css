@@ -95,4 +95,14 @@
     color: var(--ink-400);
     text-align: center;
   }
+  /* Suggest shortcuts: F · X · esc, like the search dropdown's footer. */
+  .td-fm-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) 14px;
+    padding: 7px var(--sp-3);
+    border-top: 1px solid var(--border-divider);
+    font: var(--type-small);
+    color: var(--ink-400);
+  }
 }
