@@ -50,6 +50,9 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
+  .td-att-thumb[data-kind]::after {
+    content: attr(data-kind);
+  }
   .td-att-thumb[data-kind] {
     background: var(--surface-list);
     color: var(--ink-400);

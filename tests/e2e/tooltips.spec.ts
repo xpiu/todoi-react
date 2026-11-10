@@ -34,7 +34,7 @@ for (const scope of SCOPES) test(`styled connection and unclipped picker hints i
     await expect(page.locator(".td-ipk")).toHaveCount(0);
     await expect(hint).toHaveCount(0);
     await context.setOffline(true);
-    const pill = page.getByRole("button", { name: "You're offline", exact: true });
+    const pill = page.getByRole("button", { name: "Offline: You're offline", exact: true });
     await expect(pill).toBeVisible();
     await expect(pill).not.toHaveAttribute("title");
     await pill.hover();

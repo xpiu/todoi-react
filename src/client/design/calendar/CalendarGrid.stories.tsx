@@ -28,7 +28,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Month: Story = {
   async play({ args, canvas, userEvent }) {
-    const today = canvas.getByRole("gridcell", { name: "Wednesday, October 7, 2026, 3 items" });
+    const today = canvas.getByRole("gridcell", { name: /^Wednesday, October 7, 2026, 3 items/ });
     await expect(today).toHaveAttribute("aria-current", "date");
     await expect(today).toHaveAttribute("tabindex", "0");
     await userEvent.click(canvas.getByRole("button", { name: /Prepare the helicopter quote/ }));

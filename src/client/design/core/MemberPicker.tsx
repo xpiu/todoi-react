@@ -6,6 +6,7 @@ import { Avatar, AvatarStack } from "./Avatar";
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
+import { labelWithValue } from "./text";
 import "./ItemPicker.css";
 import "./Menu.css";
 import "./MemberPicker.css";
@@ -43,6 +44,7 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
   const label = rest["aria-label"] ?? "Assignees";
   const sel = new Set(value);
   const picked = members.filter((m) => sel.has(m.id));
+  const shownValue = picked.length ? picked.map((m) => m.nickname || first(m.name)).join(", ") : placeholder;
   const ql = q.trim().toLowerCase();
   const match = (m: PickableMember) => !ql || [m.name, m.nickname, m.email].filter(Boolean).some((s) => String(s).toLowerCase().includes(ql));
   const ordered = [...members.filter((m) => sel.has(m.id)), ...members.filter((m) => !sel.has(m.id))].filter(match);
@@ -67,10 +69,10 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
       aria-label={label}
       block={block}
       trigger={
-        <Button variant="outline" disabled={disabled} aria-label={label} data-block={block ? "true" : undefined} className="td-aside-btn">
+        <Button variant="outline" disabled={disabled} aria-label={labelWithValue(label, shownValue)} data-block={block ? "true" : undefined} className="td-aside-btn">
           {picked.length ? <AvatarStack people={picked} size={20} max={3} /> : <Icon name={icon} size={16} />}
           <span className="td-mp-value" data-placeholder={picked.length ? undefined : "true"}>
-            {picked.length ? picked.map((m) => m.nickname || first(m.name)).join(", ") : placeholder}
+            {shownValue}
           </span>
         </Button>
       }

@@ -1,4 +1,4 @@
-// Small text helpers every surface needs: a pluralised count, an "a, b and c" list and a search-match highlighter.
+// Small text helpers every surface needs: a pluralised count, a value trigger's name, an "a, b and c" list and a search-match highlighter.
 import type { ReactNode } from "react";
 
 import "./text.css";
@@ -7,6 +7,10 @@ import "./text.css";
 export const count = (n: number, word: string, plural = `${word}s`) => `${n} ${n === 1 ? word : plural}`;
 
 /** "a", "a and b", "a, b and c" — no Oxford comma, as the app's copy is written. */
+/** A value trigger's name: its label plus the value it shows, so the visible text sits inside the name
+ * (WCAG 2.5.3) — "Labels: Sales, Ops"; just the label while it shows the label as its placeholder. */
+export const labelWithValue = (label: string, shown: string) => (shown && shown !== label ? `${label}: ${shown}` : label);
+
 export const joinAnd = (parts: string[]) => (parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : (parts[0] ?? ""));
 
 /** `text` with the first case-insensitive occurrence of `q` wrapped in <mark>; `q` is already lower-cased and trimmed. */

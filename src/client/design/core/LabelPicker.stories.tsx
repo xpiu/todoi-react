@@ -51,7 +51,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Toggle: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Labels" });
+    const trigger = canvas.getByRole("button", { name: /^Labels/ });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Labels" });
@@ -62,12 +62,12 @@ export const Toggle: Story = {
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
-    await expect(trigger).toHaveTextContent("SalesUrgent");
+    await expect(trigger).toHaveTextContent("Sales Urgent");
   },
 };
 export const SearchKeyboard: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Labels" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Labels/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Labels" });
     const search = within(panel).getByRole("textbox", { name: "Search labels" });
@@ -84,7 +84,7 @@ export const SearchKeyboard: Story = {
 };
 export const CreateLabel: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Labels" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Labels/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Labels" });
     await userEvent.type(within(panel).getByRole("textbox", { name: "Search labels" }), "Spare parts");
@@ -104,7 +104,7 @@ export const CreateLabel: Story = {
 };
 export const EditAndDelete: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Labels" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Labels/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Labels" });
     await userEvent.click(within(panel).getByRole("button", { name: "Edit Urgent" }));

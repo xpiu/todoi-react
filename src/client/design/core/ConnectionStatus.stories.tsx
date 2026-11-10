@@ -15,7 +15,7 @@ type Story = StoryObj<typeof meta>;
 
 export const OfflineWithQueue: Story = {
   async play({ canvas, canvasElement, userEvent }) {
-    const pill = canvas.getByRole("button", { name: "You're offline — 3 edits saved on this device" });
+    const pill = canvas.getByRole("button", { name: "Offline · 3: You're offline — 3 edits saved on this device" });
     await expect(pill).toHaveTextContent("Offline· 3");
     // The live region sits beside the menu button, not on it.
     await expect(pill).not.toHaveAttribute("aria-live");
@@ -35,7 +35,7 @@ export const OfflineWithQueue: Story = {
 export const QueuedOnline: Story = {
   args: { online: true, pending: 2 },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "2 edits saved on this device" }));
+    await userEvent.click(canvas.getByRole("button", { name: "2 edits queued: 2 edits saved on this device" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: "Sync now" }));
     await expect(args.onSyncNow).toHaveBeenCalledOnce();
@@ -54,7 +54,7 @@ export const Syncing: Story = {
 export const NeedsReview: Story = {
   args: { online: true, pending: 0, failed: 2, onClearFailed: fn() },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "2 edits couldn't sync" }));
+    await userEvent.click(canvas.getByRole("button", { name: "2 need review: 2 edits couldn't sync" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: "Review changes" }));
     await expect(args.onClearFailed).toHaveBeenCalledOnce();

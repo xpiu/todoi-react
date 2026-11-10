@@ -76,7 +76,8 @@ export function BulkBar({ count, noun = "item", actions, onAction, onClear, clea
         <>
           <Toolbar.Button className="td-bulk-btn td-bulk-clear" aria-label="Clear selection" onClick={onClear}>
             Clear
-            {clearHint ? <kbd className="td-bulk-kbd">{clearHint}</kbd> : null}
+            {/* The key is drawn from data-key (BulkBar.css): a hint beside the label, not part of its name. */}
+            {clearHint ? <kbd className="td-bulk-kbd" data-key={clearHint} aria-hidden="true" /> : null}
           </Toolbar.Button>
           <Toolbar.Button render={<IconButton name="x" label="Close" variant="chrome" size={28} />} onClick={onClear} />
         </>

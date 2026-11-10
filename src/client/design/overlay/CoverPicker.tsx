@@ -6,6 +6,7 @@ import { LABEL_COLORS } from "../../../shared/enums";
 import { Button } from "../core/Button";
 import { Icon } from "../core/Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "../core/Popover";
+import { labelWithValue } from "../core/text";
 import "./CoverPicker.css";
 
 export interface CoverValue {
@@ -44,6 +45,7 @@ export function CoverPicker({ cover, images = [], onChange, onUpload, placeholde
     onChange(c);
   };
   const curSwatch = cover && !cover.src ? SWATCHES.find((s) => s.color === cover.color) : null;
+  const shown = cover ? (cover.src ? "Image cover" : `${curSwatch ? curSwatch.key[0]!.toUpperCase() + curSwatch.key.slice(1) : "Color"} cover`) : placeholder;
   return (
     <Popover
       open={pop.open}
@@ -55,10 +57,10 @@ export function CoverPicker({ cover, images = [], onChange, onUpload, placeholde
       aria-label={label}
       block={block}
       trigger={
-        <Button variant="outline" icon={cover ? undefined : "image"} disabled={disabled} aria-label={label} data-block={block ? "true" : undefined} className="td-aside-btn">
+        <Button variant="outline" icon={cover ? undefined : "image"} disabled={disabled} aria-label={labelWithValue(label, shown)} data-block={block ? "true" : undefined} className="td-aside-btn">
           {cover ? cover.src ? <img className="td-cp-thumb" src={cover.src} alt="" /> : <span className="td-cp-dot" style={{ background: cover.color }} /> : null}
           <span className="td-cp-value" data-placeholder={cover ? undefined : "true"}>
-            {cover ? (cover.src ? "Image cover" : `${curSwatch ? curSwatch.key[0]!.toUpperCase() + curSwatch.key.slice(1) : "Color"} cover`) : placeholder}
+            {shown}
           </span>
         </Button>
       }

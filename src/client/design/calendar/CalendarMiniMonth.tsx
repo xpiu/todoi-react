@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 
 import { parseDateValue, sameDay, toISO } from "./calendar";
 import { dateConventions } from "../core/dates";
+import "../core/text.css";
 import "./CalendarMiniMonth.css";
 
 export interface CalendarMiniMonthProps {
@@ -26,8 +27,10 @@ export function CalendarMiniMonth({ year, month, dates, today, weekStartsOn = da
   const wd = Array.from({ length: 7 }, (_, i) => "SMTWTFS"[(weekStartsOn + i) % 7]);
   const cells: Array<Date | null> = [...Array.from({ length: lead }, () => null), ...Array.from({ length: daysIn }, (_, i) => new Date(year, month, i + 1))];
   return (
-    <button type="button" className="td-calmini" style={style} aria-label={`${name} ${year}`} onClick={onOpen}>
+    // Named from its content ("October 2026"): the visible month, the year for assistive tech; the grid is a picture.
+    <button type="button" className="td-calmini" style={style} onClick={onOpen}>
       <span className="td-calmini-name">{name}</span>
+      <span className="td-sr-only"> {year}</span>
       <span className="td-calmini-grid" aria-hidden>
         {wd.map((c, i) => (
           <span key={`w${i}`} className="td-calmini-wd">

@@ -1,7 +1,7 @@
 // LabelPicker — multi-select label picker with in-place create and edit: search, check rows (colour
 // bar + name), pencil on hover to edit name / colour / delete, "Create “…”" when the query names no
 // label. Value = label ids. A dialog Popover on the detached tier inside the overlay. Spec: DESIGN.md › Labels.
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { LABEL_COLORS, type LabelColor } from "../../../shared/enums";
 import { LabelChip } from "../board/LabelChip";
@@ -9,6 +9,7 @@ import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
+import { labelWithValue } from "./text";
 import "./ItemPicker.css";
 import "./LabelPicker.css";
 
@@ -152,9 +153,17 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
       aria-label={label}
       block={block}
       trigger={
-        <Button variant="outline" icon="tag" disabled={disabled} aria-label={label} data-block={block ? "true" : undefined} className="td-aside-btn">
+        <Button variant="outline" icon="tag" disabled={disabled} aria-label={labelWithValue(label, picked.length ? picked.map((l) => l.name).join(", ") : placeholder)} data-block={block ? "true" : undefined} className="td-aside-btn">
           <span className="td-lp-value" data-placeholder={picked.length ? undefined : "true"}>
-            {picked.length ? picked.map((l) => <LabelChip key={l.id} color={l.color} text={l.name} size="sm" />) : placeholder}
+            {/* The spaces keep the names apart as text (the flex row drops them visually). */}
+            {picked.length
+              ? picked.map((l, i) => (
+                  <Fragment key={l.id}>
+                    {i ? " " : null}
+                    <LabelChip color={l.color} text={l.name} size="sm" />
+                  </Fragment>
+                ))
+              : placeholder}
           </span>
         </Button>
       }

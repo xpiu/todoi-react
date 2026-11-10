@@ -24,9 +24,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Initials: Story = {
   async play({ canvas }) {
-    // Screen readers hear the name, not the initials.
+    // Screen readers hear the name; the initials are drawn as part of the picture, never as text.
     const avatar = canvas.getByRole("img", { name: "Flo Zuallaert" });
-    await expect(avatar).toHaveTextContent("FZ");
+    await expect(avatar).toHaveAttribute("data-initials", "FZ");
+    await expect(avatar).toHaveTextContent("");
+    await expect(getComputedStyle(avatar, "::after").content).toBe('"FZ"');
   },
 };
 export const Photo: Story = {
@@ -66,11 +68,12 @@ export const Stack: Story = {
       <AvatarStack people={MEMBERS} size={20} max={2} />
     </div>
   ),
-  async play({ canvas }) {
+  async play({ canvas, canvasElement }) {
     // Five people, three faces, then the overflow disc; each stack is one image named by everyone in it.
     await expect(canvas.getAllByRole("img", { name: "Flo Zuallaert, Sam Verhoeven, Marit Olsen, Jonas Berg, Ana Lopes" })).toHaveLength(2);
     await expect(canvas.getByRole("img", { name: "Flo Zuallaert, Sam Verhoeven" })).toBeVisible();
-    await expect(canvas.getByText("+2")).toBeVisible();
-    await expect(canvas.getByText("+3")).toBeVisible();
+    const more = (n: number) => canvasElement.querySelector(`.td-avstack-more[data-more="+${n}"]`)!;
+    await expect(more(2)).toBeVisible();
+    await expect(getComputedStyle(more(3), "::after").content).toBe('"+3"');
   },
 };

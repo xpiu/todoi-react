@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const SetDueAndTime: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Dates" });
+    const trigger = canvas.getByRole("button", { name: /^Dates(:|$)/ });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Dates" });
@@ -41,7 +41,7 @@ export const SetDueAndTime: Story = {
 export const AddStartDate: Story = {
   args: { due: "2026-09-12" },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Dates" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Dates(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Dates" });
     await userEvent.click(within(panel).getByRole("button", { name: "Add start date" }));
@@ -58,7 +58,7 @@ export const AddStartDate: Story = {
 export const InvalidTyping: Story = {
   args: { due: "2026-09-12", time: "14:00" },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Dates" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Dates(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Dates" });
     const due = within(panel).getByRole("textbox", { name: "Due date" });

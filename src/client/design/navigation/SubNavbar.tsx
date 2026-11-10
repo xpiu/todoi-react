@@ -309,7 +309,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       {views.length ? (
         <div className="td-subnav-views" role="group" aria-label="View">
           {views.map((v) => (
-            <button key={v.id} type="button" className="td-subnav-seg td-tip td-tip-labeled" data-tip={v.label === "Cal." ? "Calendar" : v.label} data-tip-kbd={tipKeys(`view-${v.id}`)} aria-label={v.label === "Cal." ? "Calendar" : undefined} aria-pressed={v.id === active} onClick={() => onViewChange?.(v.id)}>
+            <button key={v.id} type="button" className="td-subnav-seg td-tip td-tip-labeled" data-tip={v.label === "Cal." ? "Calendar" : v.label} data-tip-kbd={tipKeys(`view-${v.id}`)} aria-label={v.label === "Cal." ? "Cal. (Calendar)" : undefined} aria-pressed={v.id === active} onClick={() => onViewChange?.(v.id)}>
               {v.icon ? <Icon name={v.icon} size={16} /> : null}
               {v.label}
             </button>

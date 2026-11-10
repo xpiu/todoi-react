@@ -25,7 +25,7 @@ type Story = StoryObj<typeof meta>;
 
 export const PickPreset: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Repeat" });
+    const trigger = canvas.getByRole("button", { name: /^Repeat(:|$)/ });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Repeat" });
@@ -40,7 +40,7 @@ export const PickPreset: Story = {
 export const KeyboardRows: Story = {
   args: { value: { freq: "daily", interval: 1 } },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Repeat" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Repeat(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Repeat" });
     const off = within(panel).getByRole("radio", { name: "Doesn't repeat" });
@@ -54,7 +54,7 @@ export const KeyboardRows: Story = {
 };
 export const CustomRule: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Repeat" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Repeat(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Repeat" });
     await userEvent.click(within(panel).getByRole("radio", { name: "Custom…" }));
@@ -81,7 +81,7 @@ export const CustomRule: Story = {
 export const UntilNeedsADate: Story = {
   args: { value: { freq: "monthly", interval: 1 } },
   async play({ canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Repeat" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Repeat(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Repeat" });
     await userEvent.click(within(panel).getByRole("radio", { name: "Custom…" }));

@@ -10,6 +10,7 @@ import { useTouchDrag } from "../core/touchDrag";
 import { addDays, daysBetweenISO, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
 import { dateConventions } from "../core/dates";
 import { CalendarItemChip } from "./CalendarItemChip";
+import "../core/text.css";
 import "./CalendarGrid.css";
 
 export interface CalendarGridProps {
@@ -199,7 +200,6 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                       cellRefs.current[dIso] = el;
                     }}
                     tabIndex={dIso === shown ? 0 : -1}
-                    aria-label={label}
                     aria-current={isT ? "date" : undefined}
                     onClick={(e) => {
                       // A button inside the cell (a chip, "+N more", "+") does its own thing.
@@ -219,12 +219,16 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     }}
                     {...dropHandlers(dIso)}
                   >
-                    {period === "month" ? <span className={"td-calnum" + (isT ? " is-today" : out ? " is-out" : "")}>{d.getDate() === 1 ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : d.getDate()}</span> : null}
+                    {/* Named from its content: the full date and count first, then the day's chips and "+n more" —
+                        so everything the cell shows is part of its name. The number and the pointer-only + repeat it. */}
+                    <span className="td-sr-only">{label}</span>
+                    {period === "month" ? <span className={"td-calnum" + (isT ? " is-today" : out ? " is-out" : "")} aria-hidden="true">{d.getDate() === 1 ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : d.getDate()}</span> : null}
                     {onAddItem ? (
                       <button
                         type="button"
                         className="td-calcell-add td-tip"
                         tabIndex={-1}
+                        aria-hidden="true"
                         data-tip="Add an item"
                         data-tip-side="bottom-end"
                         aria-label={`Add an item on ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}

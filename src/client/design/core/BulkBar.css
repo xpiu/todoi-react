@@ -74,6 +74,9 @@
     font: var(--weight-regular) 11px / 18px var(--font-mono);
     color: var(--chrome-text-dim);
   }
+  .td-bulk-kbd[data-key]::before {
+    content: attr(data-key);
+  }
   html[data-device="phone"] .td-bulk {
     left: var(--sp-2);
     right: var(--sp-2);

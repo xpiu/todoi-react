@@ -14,6 +14,14 @@
   img.td-avatar {
     object-fit: cover;
   }
+  /* Initials and the stack's "+n" are generated content (::after; Minimal's stack separators use ::before):
+     part of the picture, never of a control's label. */
+  .td-avatar[data-initials]::after {
+    content: attr(data-initials);
+  }
+  .td-avstack-more[data-more]::after {
+    content: attr(data-more);
+  }
   .td-avatar[data-ink="light"] {
     color: var(--text-inverse);
   }

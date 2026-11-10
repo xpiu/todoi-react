@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const TypeADate: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Until" });
+    const trigger = canvas.getByRole("button", { name: /^Until(:|$)/ });
     await expect(trigger).toHaveTextContent("Sep 12, 2026");
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
@@ -41,7 +41,7 @@ export const TypeADate: Story = {
 };
 export const QuickPick: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Until" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Until(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Until" });
     await userEvent.click(within(panel).getByRole("button", { name: "Tomorrow" }));
@@ -52,7 +52,7 @@ export const QuickPick: Story = {
 };
 export const ClearAndEscape: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Until" });
+    const trigger = canvas.getByRole("button", { name: /^Until(:|$)/ });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.keyboard("{Escape}");
@@ -67,7 +67,7 @@ export const ClearAndEscape: Story = {
 };
 export const Open: Story = {
   async play({ canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Until" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Until(:|$)/ }));
     const panel = await within(canvasElement.ownerDocument.body).findByRole("dialog", { name: "Until" });
     // Let the popup finish opening (focus in its field) before the a11y check runs.
     await waitFor(() => expect(within(panel).getByRole("textbox", { name: "Type a date" })).toHaveFocus());
@@ -81,6 +81,6 @@ export const Overdue: Story = { args: { value: "2026-08-18", state: "overdue", "
 export const Disabled: Story = {
   args: { disabled: true },
   async play({ canvas }) {
-    await expect(canvas.getByRole("button", { name: "Until" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: /^Until(:|$)/ })).toBeDisabled();
   },
 };

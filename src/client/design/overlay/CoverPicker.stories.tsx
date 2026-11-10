@@ -29,7 +29,7 @@ type Story = StoryObj<typeof meta>;
 
 export const NoCover: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Cover" });
+    const trigger = canvas.getByRole("button", { name: /^Cover(:|$)/ });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Cover" });
@@ -42,7 +42,7 @@ export const NoCover: Story = {
 export const ColorCover: Story = {
   args: { cover: { color: "var(--label-teal)" } },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Cover" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Cover(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Cover" });
     await expect(within(panel).getByRole("radio", { name: "teal" })).toHaveAttribute("aria-checked", "true");
@@ -53,7 +53,7 @@ export const ColorCover: Story = {
 export const ImageCover: Story = {
   args: { cover: { src: IMAGES[0]!.src, attachmentId: "a1" } },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Cover" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Cover(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Cover" });
     await expect(within(panel).getByRole("button", { name: "hangar.png" })).toHaveAttribute("aria-pressed", "true");
@@ -65,6 +65,6 @@ export const ColorsOnly: Story = { args: { images: [], onUpload: undefined } };
 export const Disabled: Story = {
   args: { disabled: true },
   async play({ canvas }) {
-    await expect(canvas.getByRole("button", { name: "Cover" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: /^Cover(:|$)/ })).toBeDisabled();
   },
 };

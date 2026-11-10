@@ -117,7 +117,7 @@ export const ShortcutHints: Story = {
     try {
       set({ suggestShortcuts: true });
       await waitFor(() => expect(canvas.getByRole("button", { name: "Board" })).toHaveAttribute("data-tip-kbd", "G then B"));
-      await expect(canvas.getByRole("button", { name: "Calendar" })).toHaveAttribute("data-tip-kbd", "G then C");
+      await expect(canvas.getByRole("button", { name: "Cal. (Calendar)" })).toHaveAttribute("data-tip-kbd", "G then C");
       await expect(canvas.getByRole("button", { name: /^Filter/ })).toHaveAttribute("data-tip-kbd", "F");
       await expect(canvas.getByRole("button", { name: /^Sort/ })).not.toHaveAttribute("data-tip-kbd");
       set({ suggestShortcuts: false });

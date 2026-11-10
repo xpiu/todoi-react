@@ -81,10 +81,8 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
         {img ? (
           <img src={file.src ?? file.url} alt="" />
         ) : (
-          <>
-            <Icon name={icon} size={20} />
-            {ext}
-          </>
+          // The type badge is drawn from data-kind (Attachments.css): the button is named by the file.
+          <Icon name={icon} size={20} />
         )}
       </button>
       <div className="td-att-main">

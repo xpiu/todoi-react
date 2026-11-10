@@ -10,6 +10,7 @@ import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
 import { Segmented } from "./Segmented";
 import { describeRepeat, UNITS, type RepeatEnds, type RepeatFreq, type RepeatRule } from "./repeat";
+import { labelWithValue } from "./text";
 import "./DatePicker.css";
 import "./Menu.css";
 import "./RepeatPicker.css";
@@ -216,7 +217,7 @@ export function RepeatPicker({ value, onChange, anchor, today, placeholder = "Re
   const trig = trigger ? (
     <span>{trigger(pop.open, value)}</span>
   ) : (
-    <Button variant={variant} icon="repeat" disabled={disabled} className="td-dp-trigger" data-block={block ? "true" : undefined} aria-label={ariaLabel} title={title} style={style}>
+    <Button variant={variant} icon="repeat" disabled={disabled} className="td-dp-trigger" data-block={block ? "true" : undefined} aria-label={labelWithValue(ariaLabel, label || placeholder)} title={title} style={style}>
       <span className="td-rp-value" data-placeholder={label ? undefined : "true"}>
         {label || placeholder}
       </span>

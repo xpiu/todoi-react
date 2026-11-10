@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 import { tipProps } from "./Tooltip";
 import { Icon, type IconName } from "./Icon";
 import { MenuDivider, MenuItem, MenuNote, MenuPopover } from "./Menu";
+import { labelWithValue } from "./text";
 import "./text.css";
 import "./ConnectionStatus.css";
 
@@ -152,7 +153,8 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
       </>
     );
   const pill = (
-    <button {...tipProps(c.message, "bottom-end")} type="button" className={cls + " td-tip"} aria-label={c.message} style={style}>
+    // Named by what it shows, then the full condition ("2 need review: 2 edits couldn't sync").
+    <button {...tipProps(c.message, "bottom-end")} type="button" className={cls + " td-tip"} aria-label={labelWithValue(c.count ? `${c.label} · ${c.count}` : c.label, c.message)} style={style}>
       {content}
     </button>
   );

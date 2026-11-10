@@ -8,6 +8,7 @@ import { DateCalendar, type WeekStart } from "./DateCalendar";
 import { dateConventions, formatDate, parseDateValue, resolveDate, toISO, type DateInput } from "./dates";
 import { Icon, type IconName } from "./Icon";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
+import { labelWithValue } from "./text";
 import "./DatePicker.css";
 
 export const QUICK_PICKS: ReadonlyArray<[label: string, phrase: string]> = [
@@ -17,10 +18,11 @@ export const QUICK_PICKS: ReadonlyArray<[label: string, phrase: string]> = [
 ];
 
 /** The default trigger of DatePicker and DatesPicker: a Button reading `text`, or the muted placeholder when
- *  it is empty. Popover renders it through Base UI's trigger, so the trigger props and ref pass to the Button. */
-export function DateTrigger({ text, placeholder, block, className, ...rest }: ButtonProps & { text: string; placeholder: string; block?: boolean }) {
+ *  it is empty, named by its label plus that text ("Due date: Oct 7"). Popover renders it through Base UI's
+ *  trigger, so the trigger props and ref pass to the Button. */
+export function DateTrigger({ text, placeholder, block, className, "aria-label": label, ...rest }: ButtonProps & { text: string; placeholder: string; block?: boolean }) {
   return (
-    <Button {...rest} className={["td-dp-trigger", className ?? ""].join(" ").trim()} data-block={block ? "true" : undefined}>
+    <Button {...rest} aria-label={label ? labelWithValue(label, text || placeholder) : undefined} className={["td-dp-trigger", className ?? ""].join(" ").trim()} data-block={block ? "true" : undefined}>
       <span className="td-dp-value" data-placeholder={text ? undefined : "true"}>
         {text || placeholder}
       </span>

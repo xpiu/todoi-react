@@ -28,7 +28,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Assign: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Assignees" });
+    const trigger = canvas.getByRole("button", { name: /^Assignees/ });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Assignees" });
@@ -49,7 +49,7 @@ export const Assign: Story = {
 export const KeyboardRows: Story = {
   args: { value: ["u2"] },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Assignees" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Assignees/ }));
     const page = within(canvasElement.ownerDocument.body);
     const panel = await page.findByRole("dialog", { name: "Assignees" });
     await waitFor(() => expect(within(panel).getByRole("textbox", { name: "Search people" })).toHaveFocus());
@@ -65,7 +65,7 @@ export const KeyboardRows: Story = {
 export const ClearAll: Story = {
   args: { value: ["u1", "u2", "u3", "u4"] },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Assignees" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Assignees/ }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("button", { name: "Clear assignees" }));
     await expect(args.onChange).toHaveBeenLastCalledWith([]);
@@ -76,7 +76,7 @@ export const ClearAll: Story = {
 export const MaxOne: Story = {
   args: { value: ["u1"], max: 1, "aria-label": "Owner", placeholder: "Owner" },
   async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Owner" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Owner(:|$)/ }));
     const page = within(canvasElement.ownerDocument.body);
     const jonas = await page.findByRole("checkbox", { name: "Jonas Berg" });
     // At the cap the other rows are disabled, say why, and a pick leaves the selection unchanged.
