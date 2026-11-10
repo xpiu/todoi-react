@@ -47,7 +47,7 @@ for (const scope of SCOPES) test(`styled connection and unclipped picker hints i
     await context.setOffline(false);
     // Minimal shows no project icons in Project settings; the New project dialog keeps its picker in every theme.
     await page.goto("/projects");
-    await page.getByRole("button", { name: "New project", exact: true }).click();
+    await page.getByRole("main").getByRole("button", { name: "New project", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "New project" });
     await dialog.getByRole("button", { name: "Change icon and color" }).first().click();
     const swatch = page.getByRole("radio", { name: "blue", exact: true });
