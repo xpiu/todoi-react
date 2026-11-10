@@ -32,7 +32,7 @@ export function itemsToCalendar(items: CalendarItem[], appUrl: string, now = new
   for (const item of items) {
     const dueDate = item.dueDate ?? item.startDate;
     if (!dueDate) continue;
-    lines.push("BEGIN:VEVENT", `UID:${item.id}@todoi.app`, `DTSTAMP:${timestamp(now)}`, `SUMMARY:${text(item.title)}`, "TRANSP:TRANSPARENT");
+    lines.push("BEGIN:VEVENT", `UID:${item.id}@todoi.com`, `DTSTAMP:${timestamp(now)}`, `SUMMARY:${text(item.title)}`, "TRANSP:TRANSPARENT");
     if (item.dueTime) {
       const due = `${date(dueDate)}T${item.dueTime.replace(":", "")}00`;
       lines.push(`DTSTART:${item.startDate && item.startDate < dueDate ? `${date(item.startDate)}T000000` : due}`);

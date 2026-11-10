@@ -9,7 +9,7 @@ const exportItems = (items: Parameters<typeof itemsToCalendar>[0]) => itemsToCal
 it("exports all-day ranges with an exclusive end and skips undated items", () => {
   const data = exportItems([{ ...item, startDate: "2028-02-27" }, { ...item, id: "undated", dueDate: null }]);
   expect(data).toContain("DTSTART;VALUE=DATE:20280227\r\nDTEND;VALUE=DATE:20280301");
-  expect(data).toContain("UID:calendar-item@todoi.app\r\nDTSTAMP:20261010T123456Z");
+  expect(data).toContain("UID:calendar-item@todoi.com\r\nDTSTAMP:20261010T123456Z");
   expect(data.match(/BEGIN:VEVENT/g)).toHaveLength(1);
   expect(data).toContain("URL:https://todoi.example/p/project?item=calendar-item");
   expect(data).toMatch(/END:VCALENDAR\r\n$/);

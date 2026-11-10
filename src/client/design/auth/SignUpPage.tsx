@@ -52,7 +52,7 @@ export function SignUpPage({ context, defaultName = "", defaultEmail = "", lockE
           </Button>
         </div>
         <p className="td-auth-sub is-legal">
-          By creating an account you agree to the <a href="https://todoi.app/terms">Terms</a> and <a href="https://todoi.app/privacy">Privacy policy</a>.
+          By creating an account you agree to the <a href="https://todoi.com/terms">Terms</a> and <a href="https://todoi.com/privacy">Privacy policy</a>.
         </p>
       </form>
       {onLogin ? (

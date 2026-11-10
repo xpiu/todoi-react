@@ -38,7 +38,7 @@ const meta = {
   title: "Navigation/MembersMenu",
   component: MembersMenu,
   render: (args) => <MembersPopover {...args} />,
-  args: { members: MEMBERS, currentUserId: "u1", canManage: true, visibility: "private", url: "https://todoi.app/p/helicopters-europe", onVisibilityChange: fn(), onChangeRole: fn(), onInvite: fn() },
+  args: { members: MEMBERS, currentUserId: "u1", canManage: true, visibility: "private", url: "https://todoi.com/p/helicopters-europe", onVisibilityChange: fn(), onChangeRole: fn(), onInvite: fn() },
   parameters: { docs: { description: { component: "The Members action's panel: the roster with roles, Invite people, the Visibility radio group and the copyable project link. It must render inside a Popover (SubNavbar's `membersMenu`), because Invite closes it via PopoverClose. The host owns members, roles and visibility; canManage unlocks the role pickers and visibility." } } },
 } satisfies Meta<typeof MembersMenu>;
 export default meta;

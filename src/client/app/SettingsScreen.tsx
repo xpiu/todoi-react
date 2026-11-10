@@ -76,8 +76,8 @@ const HELP_TOPICS = [
   { id: "h-undo", label: "Undo", hint: "Deletions, moves and bulk actions", body: "Anything undoable shows a toast bottom-left. Press Z or Ctrl + Z to undo it — also after the toast is gone, up to 10 steps back in this session. Each undo confirms with its own toast; there is no redo." },
   { id: "h-export", label: "Export and print", hint: "PDF, Markdown or CSV", body: "Share › Export this view writes what you see — filters and sort applied — as PDF, Markdown or CSV. An item's ⋯ menu has Export… for that item with its subitems and comments, and Print. Markdown is the same format Import reads." },
 ];
-const ABOUT_LINKS = [["privacy", "Privacy", "https://todoi.app/privacy"], ["terms", "Terms", "https://todoi.app/terms"], ["licences", "Licences", "https://todoi.app/licences"]] as const;
-const SUPPORT_LINKS = [["docs", "Documentation", "Guides for every part of Todoi", "https://todoi.app/docs"], ["status", "Service status", "Uptime and incidents", "https://status.todoi.com"], ["contact", "Contact support", "We answer within a working day", "mailto:support@todoi.com"]] as const;
+const ABOUT_LINKS = [["privacy", "Privacy", "https://todoi.com/privacy"], ["terms", "Terms", "https://todoi.com/terms"], ["licences", "Licences", "https://todoi.com/licences"]] as const;
+const SUPPORT_LINKS = [["docs", "Documentation", "Guides for every part of Todoi", "https://todoi.com/docs"], ["status", "Service status", "Uptime and incidents", "https://status.todoi.com"], ["contact", "Contact support", "We answer within a working day", "mailto:support@todoi.com"]] as const;
 
 export function SettingsScreen({ page }: { page: Page }) {
   const search = (page === "settings" ? settingsRoute : accountRoute).useSearch();

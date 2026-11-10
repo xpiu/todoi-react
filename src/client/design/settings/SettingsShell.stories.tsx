@@ -98,7 +98,7 @@ const PAGES: SettingsPage[] = [
           {
             id: "tokens",
             title: "API tokens",
-            rows: [{ id: "token", label: "tdi_live_•••• 4f2a", mono: true, hint: "Created 12 Sep", keywords: ["secret"], control: <SettingsLink href="https://todoi.app/docs/api" label="Docs" /> }],
+            rows: [{ id: "token", label: "tdi_live_•••• 4f2a", mono: true, hint: "Created 12 Sep", keywords: ["secret"], control: <SettingsLink href="https://todoi.com/docs/api" label="Docs" /> }],
           },
         ],
       },

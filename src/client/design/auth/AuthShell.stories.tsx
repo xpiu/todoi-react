@@ -26,7 +26,7 @@ export const Default: Story = {
     await expect(canvas.getByRole("heading", { level: 1, name: "Log in" })).toBeVisible();
     // The wordmark is plain text: no aria-label on a role-less element.
     await expect(canvas.getByText("Todoi")).not.toHaveAttribute("aria-label");
-    await expect(canvas.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "https://todoi.app/privacy");
+    await expect(canvas.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "https://todoi.com/privacy");
   },
 };
 export const SuccessState: Story = {

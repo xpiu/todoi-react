@@ -16,7 +16,7 @@ const PROJECT: PanelProject = {
   groupId: "g1",
   groupName: "Helicopters Europe",
   keyPrefix: "HE",
-  url: "https://todoi.app/p/helicopter-sales",
+  url: "https://todoi.com/p/helicopter-sales",
   role: "owner",
 };
 const MEMBERS: PanelMember[] = [

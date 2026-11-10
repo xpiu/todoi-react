@@ -34,7 +34,7 @@ const membersMenu = (
     visibility="shared"
     onVisibilityChange={() => {}}
     onChangeRole={() => {}}
-    url="https://todoi.app/p/helicopter-sales"
+    url="https://todoi.com/p/helicopter-sales"
   />
 );
 
@@ -72,7 +72,7 @@ const meta = {
   decorators: [(Story) => <div style={{ background: "var(--chrome-canvas)", padding: 8 }}><Story /></div>],
   args: {
     activeView: "board",
-    projectUrl: "https://todoi.app/p/helicopter-sales",
+    projectUrl: "https://todoi.com/p/helicopter-sales",
     visibility: "Shared",
     filterMenu,
     sortMenu,
@@ -146,7 +146,7 @@ export const ShareAndExport: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Share" }));
     const page = within(canvasElement.ownerDocument.body);
     const menu = within(await page.findByRole("menu", { name: "Share project" }));
-    await waitFor(() => expect(menu.getByText("https://todoi.app/p/helicopter-sales")).toBeVisible());
+    await waitFor(() => expect(menu.getByText("https://todoi.com/p/helicopter-sales")).toBeVisible());
     await userEvent.click(menu.getByRole("menuitem", { name: /CSV/ }));
     await expect(args.onExport).toHaveBeenCalledWith("csv");
   },

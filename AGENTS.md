@@ -10,5 +10,6 @@ This file provides guidance to AI agents when working with code in this reposito
 - If you discover things that might hinder the goals of the latest assignment, then feel free to pause and ask the user for clarification.
 - If you decide to make and use new git branches for your work, then you MUST merge your work back into our `main` branch after working on your new git branch.
 - Git commit with a relevant message after completing a feature or subfeature, unless the files are in .gitignore
+- Our domains are todoi.com and todoi.org; we do not own todoi.com, so never use it in links, emails, IDs or examples.
 
  

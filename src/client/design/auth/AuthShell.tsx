@@ -17,8 +17,8 @@ export function AuthShell({ brand = "Todoi", footer, children, width, style }: {
         <div className="td-auth-foot">
           {footer ?? (
             <>
-              <a href="https://todoi.app/privacy">Privacy</a>
-              <a href="https://todoi.app/terms">Terms</a>
+              <a href="https://todoi.com/privacy">Privacy</a>
+              <a href="https://todoi.com/terms">Terms</a>
             </>
           )}
         </div>
