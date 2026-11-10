@@ -76,9 +76,15 @@ export const RenameProject: Story = {
   },
 };
 export const ChangeIcon: Story = {
-  async play({ args, canvas, canvasElement, userEvent }) {
+  async play({ args, canvas, canvasElement, globals, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Settings for Helicopter sales" }));
     const page = within(canvasElement.ownerDocument.body);
+    if (globals.theme === "minimal") {
+      // Minimal shows no project icons, so it offers no way to change one.
+      await expect(await page.findByRole("menuitem", { name: "Rename" })).toBeInTheDocument();
+      await expect(page.queryByRole("menuitem", { name: "Change icon" })).not.toBeInTheDocument();
+      return;
+    }
     await userEvent.click(await page.findByRole("menuitem", { name: "Change icon" }));
     await userEvent.click(await page.findByRole("button", { name: "Backlog" }));
     await expect(args.onProjectIconChange).toHaveBeenCalledWith("p1", "archive");

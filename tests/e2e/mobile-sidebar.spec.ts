@@ -62,12 +62,13 @@ test.describe("phone", () => {
     const sheetBox = (await sheet(page).boundingBox())!;
     expect(moreBox.x + moreBox.width).toBeLessThanOrEqual(sheetBox.x + sheetBox.width);
 
-    // A nested menu inside the sheet: Escape closes the menu first, the sheet second.
+    // A menu inside the sheet: Escape closes the menu first, the sheet second. (Minimal, the default
+    // theme, has no "Change icon" drill-in, since it shows no project icons.)
     await more.tap();
     await expect(page.getByRole("menuitem", { name: "Project settings" })).toBeVisible();
-    await page.getByRole("menuitem", { name: "Change icon" }).tap();
-    await expect(page.getByRole("menuitem", { name: "Project settings" })).toBeHidden();
+    await expect(page.getByRole("menuitem", { name: "Change icon" })).toHaveCount(0);
     await page.keyboard.press("Escape");
+    await expect(page.getByRole("menuitem", { name: "Project settings" })).toBeHidden();
     await expect(sheet(page)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(sheet(page)).toBeHidden();

@@ -47,8 +47,10 @@ const panelOf = async (canvasElement: HTMLElement) => {
 };
 
 export const Owner: Story = {
-  async play({ args, canvasElement, userEvent }) {
+  async play({ args, canvasElement, globals, userEvent }) {
     const panel = await panelOf(canvasElement);
+    // Rounded offers the icon in the header and under Appearance; Minimal shows no project icons.
+    await expect(panel.queryAllByRole("button", { name: "Change icon and color" })).toHaveLength(globals.theme === "minimal" ? 0 : 2);
     const name = panel.getByRole("textbox", { name: "Project name" });
     await userEvent.clear(name);
     await userEvent.type(name, "Helicopter sales Benelux{Enter}");
