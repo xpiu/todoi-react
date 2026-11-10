@@ -21,6 +21,7 @@ import {
   defaultBackground,
   defaultForeground,
   foregroundsOf,
+  getTheme,
   isMode,
   isTheme,
   type ModeId,
@@ -329,6 +330,11 @@ export function useAppearance(): Appearance {
 /** Subscribe only to one resolved per-theme preference, including its default. */
 export function useThemePreference(key: keyof ThemePrefs): boolean {
   return useAppearanceStore((s) => s.themePrefs[s.theme]?.[key] ?? THEME_PREF_DEFAULTS[s.theme][key]);
+}
+
+/** Whether the current theme shows project icon glyphs (Minimal leads with the name instead). */
+export function useProjectIcons(): boolean {
+  return useAppearanceStore((s) => getTheme(s.theme).projectIcons);
 }
 
 /** Non-React read (tests, imperative code). */

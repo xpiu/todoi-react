@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { LabelColor, MemberRole, ProjectView, ProjectVisibility } from "../../../shared/enums";
+import { useProjectIcons } from "../core/appearance";
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
 import { Dialog } from "../core/Dialog";
@@ -129,9 +130,11 @@ function CopyLink({ url }: { url: string }) {
 
 function PanelTitle({ project, onChange }: InnerProps) {
   const isAdmin = project.role === "owner" || project.role === "admin";
+  // Minimal shows no project glyphs: no icon tile in the header.
+  const projectIcons = useProjectIcons();
   return (
     <span className="td-pp-head">
-      <ProjectIconPicker icon={project.icon} color={project.color} size={32} onChange={(v) => onChange({ icon: v.icon, color: v.color })} disabled={!isAdmin} />
+      {projectIcons ? <ProjectIconPicker icon={project.icon} color={project.color} size={32} onChange={(v) => onChange({ icon: v.icon, color: v.color })} disabled={!isAdmin} /> : null}
       <span className="td-pp-title">
         <span className="td-pp-name">{project.name}</span>
         {project.groupName ? (
@@ -147,6 +150,7 @@ function PanelTitle({ project, onChange }: InnerProps) {
 
 function PanelBody({ project, members, activity, archivedCount, currentUserId, section, onChange, onAction, onChangeRole, onRemoveMember, onInvite, invites = [], invitesLoading, invitesError, onRetryInvites, onRevokeInvite, onTransferOwnership, onOpenKey }: InnerProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
+  const projectIcons = useProjectIcons();
   const [confirm, setConfirm] = useState<PanelAction | null>(null);
   const [desc, setDesc] = useState(project.description ?? "");
   const [nameDraft, setNameDraft] = useState(project.name);
@@ -308,7 +312,7 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
       ))}
       {sec("appearance", "Appearance", (
         <>
-          {row("icon", "Icon and color", null, <ProjectIconPicker icon={project.icon} color={project.color} placement="bottom-end" onChange={(v) => onChange({ icon: v.icon, color: v.color })} disabled={!isAdmin} />)}
+          {projectIcons ? row("icon", "Icon and color", null, <ProjectIconPicker icon={project.icon} color={project.color} placement="bottom-end" onChange={(v) => onChange({ icon: v.icon, color: v.color })} disabled={!isAdmin} />) : null}
           <div className="td-pp-field" data-setting="description">
             <div className="td-pp-rowtext td-pp-fieldlabel">
               <span className="td-pp-label">Description</span>

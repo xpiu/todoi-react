@@ -8,7 +8,7 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 
-import { useThemePreference } from "../core/appearance";
+import { useProjectIcons, useThemePreference } from "../core/appearance";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { IconPicker } from "../core/IconPicker";
@@ -93,6 +93,7 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
   const [sheetEl, setSheetEl] = useState<HTMLElement | null>(null);
   useToastHost(modal && !collapsed ? sheetEl : null);
   const sidebarLeft = useThemePreference("sidebarLeft");
+  const projectIcons = useProjectIcons();
   const dock = side ?? (sidebarLeft ? "left" : "right");
   const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -161,7 +162,7 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
     const canDrop = !!onItemDrop;
     const btn = renaming ? (
       <div className="td-sidebar-row" data-static="true">
-        <Icon name={p.icon ?? "kanban"} size={16} color={p.color} />
+        {projectIcons ? <Icon name={p.icon ?? "kanban"} size={16} color={p.color} /> : null}
         <input
           ref={renameRef}
           className="td-sidebar-rename"
@@ -299,7 +300,9 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
 
 function ProjectMenu({ project, close, onRename, onIconChange, onAction }: { project: SidebarProject; close: () => void; onRename: () => void; onIconChange?: SidebarProps["onProjectIconChange"]; onAction?: SidebarProps["onProjectAction"] }) {
   const [picking, setPicking] = useState(false);
-  if (picking) {
+  // Minimal shows no project glyphs, so it offers no "Change icon" either.
+  const projectIcons = useProjectIcons();
+  if (picking && projectIcons) {
     return (
       <IconPicker
         value={project.icon ?? null}
@@ -319,9 +322,11 @@ function ProjectMenu({ project, close, onRename, onIconChange, onAction }: { pro
       <MenuItem icon="pencil" onSelect={onRename}>
         Rename
       </MenuItem>
-      <MenuItem icon="shapes" drill onSelect={() => setPicking(true)}>
-        Change icon
-      </MenuItem>
+      {projectIcons ? (
+        <MenuItem icon="shapes" drill onSelect={() => setPicking(true)}>
+          Change icon
+        </MenuItem>
+      ) : null}
       <MenuItem icon="copy" onSelect={() => onAction?.(project.id, "duplicate")}>
         Duplicate
       </MenuItem>

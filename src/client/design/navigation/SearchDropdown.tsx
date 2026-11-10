@@ -5,6 +5,7 @@
 // the one listed exception to the Popover rule until it migrates. Spec: DESIGN.md › Search dropdown.
 import { useEffect, useId, useState, type CSSProperties } from "react";
 
+import { useProjectIcons } from "../core/appearance";
 import { Icon, type IconName } from "../core/Icon";
 import { Mark } from "../core/text";
 import "./SearchDropdown.css";
@@ -77,6 +78,8 @@ export interface SearchDropdownProps {
 export function SearchDropdown({ query = "", sources = {}, status, recent = [], onSelect, onClose, maxPerSection = 4, id, onActiveChange, style, className }: SearchDropdownProps) {
   const ownId = useId();
   const listId = id ?? ownId;
+  // Minimal shows no project glyphs: project and group rows lead with the name.
+  const projectIcons = useProjectIcons();
   const needle = query.trim().toLowerCase();
   const has = (s?: string) => !!s && s.toLowerCase().includes(needle);
   const { groups = [], projects = [], items = [], inbox = [] } = sources;
@@ -157,7 +160,7 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
                     <button key={r.type + r.id} id={optId(i)} type="button" className="td-sd-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(r)}>
                       {r.itemId ? (
                         <span className="td-sd-id">{r.itemId}</span>
-                      ) : (
+                      ) : !projectIcons && (r.type === "project" || r.type === "group") ? null : (
                         <span className="td-sd-ico">
                           <Icon name={r.icon ?? "kanban"} size={14} color={r.iconColor} />
                         </span>

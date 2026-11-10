@@ -53,6 +53,8 @@ export interface ThemeDefinition {
   backgrounds: Record<ModeId, ReadonlyArray<ThemeBackground>>;
   /** An empty list for a mode disables the Foreground control there */
   foregrounds: Record<ModeId, ReadonlyArray<ThemeForeground>>;
+  /** Whether projects show their icon glyph (sidebar rename, search, project panel) and offer to change it */
+  projectIcons: boolean;
 }
 
 // ── Rounded ──────────────────────────────────────────────────────────────────────
@@ -102,6 +104,7 @@ export const THEMES: ReadonlyArray<ThemeDefinition> = [
     description: "Rounded corners, colored chrome, cream lists and white cards.",
     backgrounds: { dark: ROUNDED_DARK_BACKGROUNDS, light: ROUNDED_LIGHT_BACKGROUNDS },
     foregrounds: { dark: ROUNDED_DARK_FOREGROUNDS, light: ROUNDED_LIGHT_FOREGROUNDS },
+    projectIcons: true,
   },
   {
     id: "minimal",
@@ -109,6 +112,7 @@ export const THEMES: ReadonlyArray<ThemeDefinition> = [
     description: "Ledger — plain paper, hairlines instead of fills, black and grey type.",
     backgrounds: { dark: MINIMAL_DARK_BACKGROUNDS, light: MINIMAL_LIGHT_BACKGROUNDS },
     foregrounds: { dark: MINIMAL_DARK_FOREGROUNDS, light: MINIMAL_LIGHT_FOREGROUNDS },
+    projectIcons: false,
   },
 ];
 
