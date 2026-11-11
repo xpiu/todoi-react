@@ -97,7 +97,7 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 - **Client:** React 19, TypeScript, Vite, Base UI, TanStack Router, Tiptap for some fields, Multiple themes: \`Minimal\` and \`Rounded\`, each theme has a Dark and Light mode.
 - **State:** Zustand for client state; TanStack Query for server data and optimistic mutations; IndexedDB for actor-scoped snapshots and outgoing operations.
 - **API:** Node.js + Hono typed routes/RPC client, Zod validation. `/api/health` returns `{ "ok": true }`.
-- **Data:** PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items, row versions check stale edits, and transactional operation receipts deduplicate replay.
+- **Data:** PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items, row versions check stale edits, and transactional operation receipts deduplicate replay and are pruned after 30 days.
 - **Authentication:** Better Auth sessions/accounts in PostgreSQL; API tokens use `Authorization: Bearer tdi_…`.
 - **Jobs and logging:** API drains a transactional attachment-cleanup outbox. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation.
 

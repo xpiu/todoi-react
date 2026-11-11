@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 
@@ -24,6 +24,21 @@ function versionTarget(c: Context, body: Record<string, unknown>): Target | unde
 async function targetVersion(target: Target, lock = false) {
   const result = await db.execute<{ version: number }>(sql`select version from ${sql.identifier(target.table)} where id = ${target.id} ${lock ? sql`for update` : sql``}`);
   return result.rows[0]?.version;
+}
+
+/** How long a receipt can answer a replay. A copy re-sent later runs as a new write, under the same version checks. */
+export const RECEIPT_RETENTION_DAYS = 30;
+
+/** Receipts keep whole response bodies, so they are dropped once no queued copy should still be waiting on them. */
+export async function pruneOperationReceipts() {
+  try {
+    const pruned = await db.delete(operationReceipts).where(lt(operationReceipts.createdAt, sql`now() - ${RECEIPT_RETENTION_DAYS} * interval '1 day'`));
+    return pruned.rowCount ?? 0;
+  } catch (error) {
+    // Housekeeping: the next tick tries again.
+    console.error("Old operation receipts could not be pruned", error);
+    return 0;
+  }
 }
 
 // Hono turns thrown route errors into responses within next(); throwing this forces their writes to roll back.

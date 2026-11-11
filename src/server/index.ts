@@ -12,6 +12,7 @@ import { env } from "./env";
 import { notFound, onError } from "./errors";
 import { seedIfEmpty } from "./seed";
 import { drainUploadCleanup } from "./services/uploadCleanup";
+import { pruneOperationReceipts } from "./sync";
 
 // Development runs pending migrations on boot so the API and the schema never drift; production
 // applies them explicitly with `npm run db:migrate` (or sets MIGRATE_ON_START=true).
@@ -20,8 +21,12 @@ if (env.MIGRATE_ON_START) {
   console.log("Migrations applied");
 }
 if (env.SEED_ON_START) await seedIfEmpty();
-void drainUploadCleanup();
-const cleanup = setInterval(() => void drainUploadCleanup(), 60_000);
+const housekeeping = () => {
+  void drainUploadCleanup();
+  void pruneOperationReceipts();
+};
+housekeeping();
+const cleanup = setInterval(housekeeping, 60_000);
 cleanup.unref();
 
 // The API under /api; in production also the built client (CLIENT_DIR), with every other path answered

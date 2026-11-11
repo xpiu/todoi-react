@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { describe, expect, it, vi } from "vitest";
@@ -13,7 +13,7 @@ import { archiveRoute } from "./routes/projects";
 import { destroyItem } from "./services/lifecycle";
 import { readUpload, saveUpload } from "./services/uploads";
 import { onError, fail } from "./errors";
-import { workspaceMutations } from "./sync";
+import { pruneOperationReceipts, RECEIPT_RETENTION_DAYS, workspaceMutations } from "./sync";
 
 vi.mock("./auth", () => ({
   inboxFor: (id: string) => { if (notificationFailure.userId === id) throw new Error("Intentional notification delivery failure"); return Promise.resolve(viewers.get(id)!.inboxListId); },
@@ -310,5 +310,19 @@ describe("workspace operation receipts", () => {
     expect((await send(f.actor, `/labels/${labelId}`, "PATCH", { name: "Updated" }, nanoid(), 1)).status).toBe(200);
     expect((await send(f.actor, `/labels/${labelId}`, "PATCH", { name: "Stale" }, nanoid(), 1)).status).toBe(409);
     expect((await app.request(`/api/items/${f.item}`, { method: "PATCH", headers: { "content-type": "application/json", "X-Test-Actor": f.actor }, body: JSON.stringify({ title: "Legacy client" }) })).status).toBe(200);
+  });
+
+  it("prunes receipts past their retention; a copy re-sent later is a new write under the same version check", async () => {
+    const f = await fixture(), base = await versionOf(f.item), old = nanoid(), recent = nanoid();
+    expect((await send(f.actor, `/items/${f.item}`, "PATCH", { description: "Mine" }, old, base)).status).toBe(200);
+    expect((await send(f.actor, `/items/${f.item}/comments`, "POST", { id: nanoid(), body: "Recent" }, recent)).status).toBe(201);
+    const age = (operationId: string, days: number) => db.update(operationReceipts).set({ createdAt: sql`now() - ${days} * interval '1 day'` }).where(eq(operationReceipts.operationId, operationId));
+    await age(old, RECEIPT_RETENTION_DAYS + 1);
+    await age(recent, RECEIPT_RETENTION_DAYS - 1);
+    expect(await pruneOperationReceipts()).toBe(1);
+    expect(await receipt(f.actor, old)).toHaveLength(0);
+    expect(await receipt(f.actor, recent)).toHaveLength(1);
+    // Without its receipt the old copy no longer replays: its base version is stale now, so the edit is kept, not repeated.
+    expect((await send(f.actor, `/items/${f.item}`, "PATCH", { description: "Mine" }, old, base)).status).toBe(409);
   });
 });

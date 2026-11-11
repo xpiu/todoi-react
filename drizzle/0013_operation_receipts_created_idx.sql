@@ -1,0 +1,1 @@
+CREATE INDEX "operation_receipts_created_idx" ON "operation_receipts" USING btree ("created_at");

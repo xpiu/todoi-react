@@ -92,6 +92,13 @@
       "when": 1794404739232,
       "tag": "0012_members_user_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794404750207,
+      "tag": "0013_operation_receipts_created_idx",
+      "breakpoints": true
     }
   ]
 }

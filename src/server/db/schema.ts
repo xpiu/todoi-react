@@ -499,4 +499,4 @@ export const operationReceipts = pgTable("operation_receipts", {
   headers: jsonb("headers").$type<Record<string, string>>().notNull(),
   scopes: jsonb("scopes").$type<OperationScope[]>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [uniqueIndex("operation_receipts_actor_operation_idx").on(t.actorId, t.operationId)]);
+}, (t) => [uniqueIndex("operation_receipts_actor_operation_idx").on(t.actorId, t.operationId), index("operation_receipts_created_idx").on(t.createdAt)]);
