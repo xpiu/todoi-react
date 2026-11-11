@@ -35,8 +35,8 @@ export const groupsRoute = new Hono()
       db.select({ projectId: members.projectId, name: users.name }).from(members).innerJoin(users, eq(users.id, members.userId)).where(and(inArray(members.projectId, mine), eq(members.role, "owner"))),
     ]);
     const stat = (id: string) => {
-      const c = counts.find((x) => x.projectId === id);
-      return { itemCount: c?.items ?? 0, doneCount: c?.done ?? 0, lead: owners.find((o) => o.projectId === id)?.name ?? null };
+      const count = counts.find((x) => x.projectId === id);
+      return { itemCount: count?.items ?? 0, doneCount: count?.done ?? 0, lead: owners.find((o) => o.projectId === id)?.name ?? null };
     };
     return c.json(gs.map((g) => ({ ...g, projects: ps.filter((p) => p.groupId === g.id).map((p) => ({ ...p, ...stat(p.id) })) })));
   })

@@ -79,6 +79,7 @@ function useArchive(state: AppState, comparison: Comparison | null, onUsed: (r: 
     return () => {
       live = false;
     };
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- the snapshot and comparison are the refetch triggers
   }, [base, newestSnapshot, comparedAt]);
   const newest = report?.archive ?? state.snapshots.find((s) => isProjectArchive(s, state.project.id)) ?? null;
   const running = state.jobs.some((j) => j.state === "running");
@@ -90,7 +91,7 @@ function useArchive(state: AppState, comparison: Comparison | null, onUsed: (r: 
     setUsing(snapshot?.id ?? newest?.id ?? "");
     setError(null);
     try {
-      const r = await api.useArchive(base, snapshot?.id);
+      const r = await api.adoptArchive(base, snapshot?.id);
       setDone(r);
       onUsed(r);
     } catch (e) {

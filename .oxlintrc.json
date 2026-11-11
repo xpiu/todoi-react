@@ -12,6 +12,9 @@
     "correctness": "error",
     "suspicious": "warn"
   },
+  "options": {
+    "denyWarnings": true
+  },
   "env": {
     "browser": true,
     "node": true,

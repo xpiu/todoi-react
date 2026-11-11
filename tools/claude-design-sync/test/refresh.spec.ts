@@ -1,5 +1,5 @@
 // Import interactions use their own world and intercepted downloads, without calling Claude Code.
-import AxeBuilder from "@axe-core/playwright";
+import { AxeBuilder } from "@axe-core/playwright";
 import { execFileSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { dirname, join } from "node:path";

@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, appPending, fmtTime, isDraft, plural, REVIEW_POINTS, subscribeJob, uploadPending, type ApiError, type AppState, type FidelityFinding, type Job } from "./api";
 import { canPause, canResume, failedPorts, isOpen, keepsRunFiles } from "../engine/approvals";
 import { CopyLink } from "./CopyLink";
+import { KitPreview } from "./KitPreview";
 import { MergeButton, MergeStrip, type MergeOffer } from "./Merge";
 import { TIP } from "./Tooltip";
 import { UsageMeter } from "./UsageMeter";
@@ -404,7 +405,7 @@ function JobView({ job, merge, logRef, expandedLog, onToggleLog, onChanged }: { 
                 );
               })}
             </ul>
-            {preview && stageId ? <div className="cds-preview"><iframe title={`Staged ${preview}`} src={`/kit/stage/${stageId}/${preview}`} sandbox="allow-scripts allow-same-origin" /></div> : null}
+            {preview && stageId ? <KitPreview title={`Staged ${preview}`} src={`/kit/stage/${stageId}/${preview}`} /> : null}
             {handoff ? (
               <>
                 <ol className="cds-handoff" aria-label="Upload from Claude Code">

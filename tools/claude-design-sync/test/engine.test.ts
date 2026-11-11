@@ -672,7 +672,7 @@ describe("staging copies", () => {
 
     // a restart prunes leftovers but keeps the copy a run still waits on
     const orphan = createStage(fx.ctx, cmp, "run-orphan");
-    new Jobs(fx.ctx);
+    void new Jobs(fx.ctx);
     expect(existsSync(orphan)).toBe(false);
     expect(existsSync(waiting.stage!)).toBe(true);
   });

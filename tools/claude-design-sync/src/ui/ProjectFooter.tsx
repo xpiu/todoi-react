@@ -33,8 +33,8 @@ export function ProjectFooter({ state, onChanged }: { state: AppState; onChanged
               await api.setProject(value);
               close();
               onChanged();
-            } catch (e) {
-              setErr((e as Error).message);
+            } catch (error) {
+              setErr((error as Error).message);
             } finally {
               setBusy(false);
             }

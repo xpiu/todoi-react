@@ -132,12 +132,12 @@ export function PlanBar({ runFeatureId, onRunFeature, baseId, markUnits, onMarkU
                   <p className="cds-quiet">Unticked features stay open: they keep their starting point and show up in the next comparison. Ticked ones start over from here.</p>
                   <ul>
                     {features.map((f) => {
-                      const open = keepOpen(f);
-                      const parts = open ? 0 : f.units.filter((u) => partOpen(f, u)).length;
+                      const staysOpen = keepOpen(f);
+                      const parts = staysOpen ? 0 : f.units.filter((u) => partOpen(f, u)).length;
                       return (
                         <li key={f.id}>
-                          <label className="cds-check" data-tip={open ? "Stays open: keeps its starting point and shows up in the next comparison. Tick it if it's synced" : "Synced: starts over from this sync point. Untick it to keep it open"}>
-                            <input type="checkbox" checked={!open} onChange={(e) => setTicked((t) => ({ ...t, [f.id]: e.target.checked }))} />
+                          <label className="cds-check" data-tip={staysOpen ? "Stays open: keeps its starting point and shows up in the next comparison. Tick it if it's synced" : "Synced: starts over from this sync point. Untick it to keep it open"}>
+                            <input type="checkbox" checked={!staysOpen} onChange={(e) => setTicked((prev) => ({ ...prev, [f.id]: e.target.checked }))} />
                             <span>
                               {f.title}
                               {parts ? <span className="cds-quiet"> · {plural(parts, "skipped part")} stay{parts === 1 ? "s" : ""} open</span> : null}

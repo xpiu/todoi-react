@@ -6,6 +6,7 @@ import { Fragment, useState, type InputHTMLAttributes } from "react";
 import { api, appMoved, designMoved, directionsFor, displayName, DIRECTION_LABEL, isReference, KIND_WORD, plural, REFERENCE_NOTE, STATUS_WORD, unitDirection, type Direction, type Feature, type Step, type Unit } from "./api";
 import { CopyLink } from "./CopyLink";
 import { Diff } from "./Diff";
+import { KitPreview } from "./KitPreview";
 import { RailKeys } from "./Rail";
 import type { Selection } from "./selection";
 import { TIP } from "./Tooltip";
@@ -294,9 +295,7 @@ function UnitDetail({ unit, known, baseId, snapshotId, direction, overridden, on
       {visual.panel}
       {diff ? <Diff text={diff.text} /> : null}
       {preview && snapshotId ? (
-        <div className="cds-preview">
-          <iframe title={`Preview of ${preview}`} src={`/kit/snapshot/${snapshotId}/${preview}`} loading="lazy" sandbox="allow-scripts allow-same-origin" />
-        </div>
+        <KitPreview title={`Preview of ${preview}`} src={`/kit/snapshot/${snapshotId}/${preview}`} lazy />
       ) : null}
     </div>
   );

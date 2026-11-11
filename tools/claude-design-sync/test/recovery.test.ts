@@ -282,7 +282,7 @@ it("sweeps finished runs' temporary files on start and keeps what unfinished run
   expect(left(merged)).toEqual([false, false]);
   for (const j of [kept, waiting, stopped]) expect(left(j)).toEqual([true, true]);
   // a restart marks the stopped port's branch kept, and the sweep on start drops only the old unused section
-  new Jobs(fx.ctx);
+  void new Jobs(fx.ctx);
   for (const j of [kept, waiting, stopped]) expect(left(j)).toEqual([true, true]);
   expect(readdirSync(sections)).toEqual(["fresh.md"]);
 });

@@ -67,7 +67,7 @@ describe("storing attachment uploads", () => {
     const before = await stored();
     const results = await Promise.allSettled(Array.from({ length: 6 }, (_, i) => storeAttachments(f.item, [file(`${i}.txt`, 10)], f.uploader)));
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
-    for (const r of results.filter((r) => r.status === "rejected")) expect(r.reason).toMatchObject({ status: 403, message: expect.stringContaining("Guest workspaces can store up to 100 MB") });
+    for (const refused of results.filter((r) => r.status === "rejected")) expect(refused.reason).toMatchObject({ status: 403, message: expect.stringContaining("Guest workspaces can store up to 100 MB") });
     expect((await stored()).length).toBe(before.length + 1);
     expect(await db.select().from(uploadCleanup)).toEqual([]);
   });

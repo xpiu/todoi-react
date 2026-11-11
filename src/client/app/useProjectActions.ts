@@ -251,14 +251,14 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   };
 
   /** Move or copy items to a list in another project: one undo toast; a copy gets new keys. */
-  const transfer = async (ids: string[], project: { id: string; name: string }, list: { id: string; name: string }, copy: boolean) => {
-    const dest = `${project.name} › ${list.name}`;
-    if (copy) return copyItems(ids, { projectId: project.id, listId: list.id, name: dest });
+  const transfer = async (ids: string[], target: { id: string; name: string }, list: { id: string; name: string }, copy: boolean) => {
+    const dest = `${target.name} › ${list.name}`;
+    if (copy) return copyItems(ids, { projectId: target.id, listId: list.id, name: dest });
     // Subitems travel with a selected parent; one at a time, so relations between moved items survive.
     const roots = rootsOf(ids.map(byId).filter((x): x is Item => !!x));
     const carried = emptyRestore();
     const moved = await inTurn(roots, async (it) => {
-      const result = await moveItem.mutateAsync({ id: it.id, listId: list.id, toProjectId: project.id, restore: carried.relations.length ? { ...emptyRestore(), relations: carried.relations } : undefined });
+      const result = await moveItem.mutateAsync({ id: it.id, listId: list.id, toProjectId: target.id, restore: carried.relations.length ? { ...emptyRestore(), relations: carried.relations } : undefined });
       mergeRestore(carried, result.undo);
       return result;
     });

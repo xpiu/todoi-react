@@ -168,7 +168,7 @@ Seeded accounts: `flo@todoi.com` and `sam@helicopterseurope.com`, verified, pass
 Common commands:
 
 - **`npm run check`:** Typecheck, lint and unit tests.
-- **`npm run typecheck` / `npm run lint`:** TypeScript; oxlint with `tools/lint/` design rules + stylelint for client CSS.
+- **`npm run typecheck` / `npm run lint`:** TypeScript; oxlint with `tools/lint/` design rules + stylelint for client CSS. Lint warnings fail the run.
 - **`npm test` / `npm run test:watch`:** Vitest once / watch mode.
 - **`npm run build`:** Client → `dist/`; API → `dist-server/index.js`.
 - **`npm run db:generate`:** Generate migrations after changing `src/server/db/schema.ts`; review the SQL.

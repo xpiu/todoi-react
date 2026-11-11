@@ -124,7 +124,7 @@ export const api = {
   exports: () => call<ExportsInfo>("/api/exports"),
   archive: (base?: string | null) => call<ArchiveReport>(`/api/archive?${new URLSearchParams(base ? { base } : {})}`),
   /** Make an archive (default: the newest) the only Design source and recompare against it. No tokens */
-  useArchive: (base: string | null, snapshot?: string) => call<ArchiveUsed>("/api/archive/use", { body: { base, snapshot } }),
+  adoptArchive: (base: string | null, snapshot?: string) => call<ArchiveUsed>("/api/archive/use", { body: { base, snapshot } }),
   /** `hold`: unit ids kept open, still compared against their baseline under `base` */
   setProject: (project: string) => call<{ project: { id: string; name: string } }>("/api/project", { body: { project } }),
   syncPoint: (label: string, tag: boolean, base: string | null, hold: string[]) => call<{ syncPoint: SyncPoint }>("/api/sync-point", { body: { label, tag, base, hold } }),

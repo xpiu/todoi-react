@@ -851,9 +851,9 @@ export function createApp(ctx: Ctx, opts: { fake?: { designDir: string; delayMs?
         // before the files were checked and everything read back intact; then it takes Design's updatedAt
         // now, so "Check for changes" doesn't ask for a pull it doesn't need.
         const from = job.snapshotId ? getSnapshot(ctx, job.snapshotId) : latestSnapshot(ctx);
-        const changes = Object.fromEntries(h.paths.map((p) => [p, contents.get(p)!]));
+        const readBack = Object.fromEntries(h.paths.map((p) => [p, contents.get(p)!]));
         const after = h.fresh ? await projectStatus(ctx, runner, logHarness(job, "upload")).catch(() => null) : null;
-        if (from) deriveSnapshot(ctx, from.id, changes, `After upload (${h.paths.length} files)`, "upload", after?.updatedAt ?? undefined);
+        if (from) deriveSnapshot(ctx, from.id, readBack, `After upload (${h.paths.length} files)`, "upload", after?.updatedAt ?? undefined);
         cache.clear();
         jobs.step(job, "upload", { state: "done", summary: `${h.paths.length} file(s) in Claude Design, read back intact` });
         const uploaded = `Uploaded ${h.paths.length} file(s) to Claude Design, all read back intact.${h.fresh ? "" : " Claude Design also changed elsewhere since this run's snapshot: Pull now to compare those changes."}`;

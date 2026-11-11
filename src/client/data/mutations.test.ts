@@ -4,7 +4,7 @@ import type { Item } from "./api";
 import { optimisticCreate } from "./mutations";
 
 const item = (id: string, over: Partial<Item> = {}): Item => ({ id, projectId: "p", listId: "l1", parentItemId: null, keyNumber: 1, title: id, description: null, status: null, priorStatus: null, done: false, priority: null, startDate: null, dueDate: null, dueTime: null, repeatRule: null, repeatCount: 0, cover: null, notification: null, unread: false, position: 0, createdBy: null, archivedAt: null, deletedAt: null, createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "", labelIds: [], assigneeIds: [], attachmentCount: 0, ...over }) as Item;
-const order = (items: Item[], listId = "l1") => items.filter((it) => it.listId === listId && !it.parentItemId).sort((a, b) => a.position - b.position).map((it) => `${it.id}@${it.position}`);
+const order = (items: Item[], listId = "l1") => items.filter((i) => i.listId === listId && !i.parentItemId).sort((a, b) => a.position - b.position).map((i) => `${i.id}@${i.position}`);
 const dest = { listId: "l1", projectId: "p", statusRole: null };
 
 describe("optimisticCreate", () => {
@@ -28,7 +28,7 @@ describe("optimisticCreate", () => {
 
   it("puts subitems last without renumbering the list", () => {
     const next = optimisticCreate(items, { id: "s2", title: "Sub", parentItemId: "a" }, dest);
-    expect(next.find((it) => it.id === "s2")).toMatchObject({ parentItemId: "a", position: 10 });
+    expect(next.find((i) => i.id === "s2")).toMatchObject({ parentItemId: "a", position: 10 });
     expect(order(next)).toEqual(order(items));
   });
   it("preserves unchanged records while replacing siblings whose positions shift", () => {

@@ -156,8 +156,8 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const lists: VisibleList[] = sortLists(
     actions.lists.map((l) => {
       const total = totals.get(l.id) ?? 0;
-      const count = groupedRows.get(l.id)?.length ?? 0;
-      return { id: l.id, name: l.name, icon: (l.icon as IconName | null) ?? null, statusRole: l.statusRole, total, count, countLabel: filters.length ? `${count} of ${total}` : count };
+      const shown = groupedRows.get(l.id)?.length ?? 0;
+      return { id: l.id, name: l.name, icon: (l.icon as IconName | null) ?? null, statusRole: l.statusRole, total, count: shown, countLabel: filters.length ? `${shown} of ${total}` : shown };
     }),
     sort.lists,
   );
