@@ -7,3 +7,7 @@
 3. Write the docs for people at '/docs' (only a brief one-page placeholder so far)
 4. Write the docs for agents at '/docs/agents' (only a brief one-page placeholder so far)
 5. check https://www.werkyn.com/ (competitor) - they have some nice designs there -> perhaps move this to our todoi-business repo where there is its own competitors folder
+
+# Backlog
+
+1. Automate updates. A weekly grouped Dependabot or Renovate config with a few days' minimum release age would cover item 8 automatically.
