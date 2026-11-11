@@ -279,7 +279,8 @@ export const members = pgTable(
     role: memberRoleEnum("role").notNull().default("editor"),
     ...timestamps,
   },
-  (t) => [uniqueIndex("members_pk_idx").on(t.projectId, t.userId)],
+  // The unique index leads with the project; "which projects is this person in" (the sidebar, search, exports) reads by user.
+  (t) => [uniqueIndex("members_pk_idx").on(t.projectId, t.userId), index("members_user_idx").on(t.userId)],
 );
 
 export type User = typeof users.$inferSelect;
