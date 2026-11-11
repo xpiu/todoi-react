@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push to the same branch or pull request replaces the run still in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     name: Typecheck, lint, unit tests, theme parity
@@ -13,7 +18,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run check
@@ -26,10 +31,10 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright-chromium
       - run: npm run build-storybook
       - run: npm run test:storybook
       - run: npm run design-sync:check
@@ -56,12 +61,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: cp .env.example .env
       - run: npm run test:integration
-      - run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright-chromium
       # Visual baselines are recorded per platform; until linux baselines are committed the snapshots
       # are skipped here and only the scope, axe and motion assertions gate the build.
       - run: npm run test:e2e -- --ignore-snapshots

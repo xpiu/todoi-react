@@ -1,0 +1,21 @@
+name: Playwright Chromium
+description: Installs the Chromium that the locked Playwright drives, downloading it only when Playwright's version changed.
+
+runs:
+  using: composite
+  steps:
+    - id: playwright
+      shell: bash
+      run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+    - id: cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install --with-deps chromium
+    # The cache holds the browser only; its system libraries are installed on every runner.
+    - if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx playwright install-deps chromium
