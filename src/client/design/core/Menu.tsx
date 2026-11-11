@@ -95,9 +95,9 @@ const InMenuGroup = createContext(false);
 /** A set of rows announced as one group (role="group"), named by the MenuHeading inside it — e.g. the options of a choice. */
 export function MenuGroup({ children }: { children?: ReactNode }) {
   return (
-    <InMenuGroup.Provider value>
+    <InMenuGroup value>
       <BaseMenu.Group className="td-menu-group">{children}</BaseMenu.Group>
-    </InMenuGroup.Provider>
+    </InMenuGroup>
   );
 }
 
@@ -177,9 +177,9 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
             style={{ ...(width != null ? { width } : null), ...(minWidth != null ? { minWidth } : null), ...style }}
           >
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
-            <PortalContainerContext.Provider value={isSheet ? popupEl : container}>
+            <PortalContainerContext value={isSheet ? popupEl : container}>
               {typeof children === "function" ? <MenuChildren render={children} close={close} /> : children}
-            </PortalContainerContext.Provider>
+            </PortalContainerContext>
           </BaseMenu.Popup>
         </BaseMenu.Positioner>
       </BaseMenu.Portal>

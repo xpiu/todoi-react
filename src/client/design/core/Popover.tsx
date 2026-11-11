@@ -169,7 +169,7 @@ export function Popover({
             initialFocus={initialFocus}
           >
             {isSheet ? <div className="td-sheet-handle" aria-hidden onPointerDown={onHandleDown} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onPointerCancel={onHandleUp} /> : null}
-            <PortalContainerContext.Provider value={isSheet ? popupEl : container}>{children}</PortalContainerContext.Provider>
+            <PortalContainerContext value={isSheet ? popupEl : container}>{children}</PortalContainerContext>
           </BasePopover.Popup>
         </BasePopover.Positioner>
       </BasePopover.Portal>

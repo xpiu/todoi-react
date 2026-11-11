@@ -89,7 +89,7 @@ export function Dialog({ open, onClose, title, titleExtra, width, footer, footer
         <Parts.Backdrop className="td-dialog-backdrop" />
         <Parts.Viewport className="td-dialog-viewport">
           <Parts.Popup {...popupProps} ref={setPopupEl}>
-            <PortalContainerContext.Provider value={popupEl}>{body}</PortalContainerContext.Provider>
+            <PortalContainerContext value={popupEl}>{body}</PortalContainerContext>
           </Parts.Popup>
         </Parts.Viewport>
       </Parts.Portal>

@@ -199,7 +199,7 @@ export function mergeRun(ctx: Ctx, run: AppRun): "fast-forward" | "merge" {
       /* the merge never started (e.g. it would overwrite uncommitted changes) */
     }
     const msg = String((e as { stderr?: string }).stderr ?? (e as Error).message).trim().split("\n").slice(0, 4).join(" ");
-    throw new Error(`Couldn't merge ${run.branch} into ${run.into}: ${msg}. Nothing changed; merge it by hand (git merge ${run.branch}) or discard the run.`);
+    throw new Error(`Couldn't merge ${run.branch} into ${run.into}: ${msg}. Nothing changed; merge it by hand (git merge ${run.branch}) or discard the run.`, { cause: e });
   }
 }
 
@@ -208,7 +208,7 @@ export function pushBranch(ctx: Ctx, branch: string): void {
   try {
     git(ctx.repo, ["push", "-q", "origin", branch]);
   } catch (e) {
-    throw new Error(String((e as { stderr?: string }).stderr ?? (e as Error).message).trim().split("\n").slice(0, 4).join(" "));
+    throw new Error(String((e as { stderr?: string }).stderr ?? (e as Error).message).trim().split("\n").slice(0, 4).join(" "), { cause: e });
   }
 }
 

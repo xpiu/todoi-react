@@ -11,10 +11,10 @@ export function ToastPortalProvider({ children, toast }: { children: ReactNode; 
     return () => setHosts((current) => current.filter((element) => element !== host));
   }, []);
   return (
-    <ToastHostContext.Provider value={register}>
+    <ToastHostContext value={register}>
       {children}
       {toast ? createPortal(toast, hosts.at(-1) ?? document.body) : null}
-    </ToastHostContext.Provider>
+    </ToastHostContext>
   );
 }
 

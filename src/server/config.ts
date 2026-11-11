@@ -13,7 +13,7 @@ export function parseEnv(source: Record<string, string | undefined>) {
   const dev = source.NODE_ENV !== "production";
   const schema = z
     .object({
-      DATABASE_URL: z.string().url(),
+      DATABASE_URL: z.url(),
       PORT: z.coerce.number().int().positive().default(3000),
       /** Apply pending Drizzle migrations when the API boots (development default; production runs `npm run db:migrate` or sets this) */
       MIGRATE_ON_START: z.stringbool().default(dev),
@@ -22,7 +22,7 @@ export function parseEnv(source: Record<string, string | undefined>) {
       /** Where uploaded attachment bytes live; a persistent volume in production */
       UPLOAD_DIR: z.string().default(".data/uploads"),
       /** Where the app is served (cookies, trusted origins, links in invites) */
-      APP_URL: dev ? z.string().url().default("http://localhost:5173") : z.string({ error: "Set APP_URL to the public URL the app is served from" }).url(),
+      APP_URL: dev ? z.url().default("http://localhost:5173") : z.url({ error: "Set APP_URL to the public URL the app is served from" }),
       /** Better Auth signing secret: 32+ random characters outside development (`openssl rand -base64 32`) */
       BETTER_AUTH_SECRET: dev ? z.string().min(16).default(DEV_AUTH_SECRET) : z.string({ error: "Set BETTER_AUTH_SECRET to 32+ random characters (openssl rand -base64 32)" }).min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
       /** The built client (`npm run build`) the API serves in production; empty to serve the API only */

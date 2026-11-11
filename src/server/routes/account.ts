@@ -122,7 +122,7 @@ export const projectInvitesRoute = new Hono()
     const rows = await db.select().from(invites).where(and(eq(invites.projectId, c.req.valid("param").id), isNull(invites.acceptedAt), isNull(invites.revokedAt)));
     return c.json(rows.map((r) => ({ ...r, url: `${env.APP_URL}/i/${r.code}` })));
   })
-  .post("/:id/invites", validate("param", z.object({ id: idSchema })), validate("json", z.object({ email: z.string().email().optional(), role: z.enum(["admin", "editor", "viewer"]).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
+  .post("/:id/invites", validate("param", z.object({ id: idSchema })), validate("json", z.object({ email: z.email().optional(), role: z.enum(["admin", "editor", "viewer"]).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
     const v = viewerOf(c);
     const { id } = c.req.valid("param");
     const { email, role, days } = c.req.valid("json");

@@ -281,12 +281,12 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
         <BaseDialog.Portal>
           <BaseDialog.Backdrop className="td-sidebar-scrim" />
           <BaseDialog.Popup ref={setSheetEl} className={cls + " td-sidebar-sheet"} aria-label="Sidebar" style={{ width, ...style }} {...asideDnd}>
-            <PortalContainerContext.Provider value={sheetEl}>
+            <PortalContainerContext value={sheetEl}>
               <div className="td-sidebar-sheethead">
                 <IconButton name="x" label="Hide sidebar" size={32} iconSize={18} variant="chrome" onClick={() => onClose?.()} />
               </div>
               <div className="td-sidebar-sheetbody">{inner}</div>
-            </PortalContainerContext.Provider>
+            </PortalContainerContext>
           </BaseDialog.Popup>
         </BaseDialog.Portal>
       </BaseDialog.Root>

@@ -70,7 +70,7 @@ export function Modal({ open, onClose, title, cover, corner, aside, children, wi
         <BaseDialog.Backdrop className="td-modal-backdrop" />
         <BaseDialog.Viewport className={"td-modal-viewport" + (sheet ? " is-sheet" : "")}>
           <BaseDialog.Popup className={"td-modal" + (sheet ? " is-sheet" : "")} ref={setPopupEl} aria-label={rest["aria-label"]} style={{ ...(width != null && !sheet ? { width } : null), ...style }} {...rootProps}>
-            <PortalContainerContext.Provider value={popupEl}>
+            <PortalContainerContext value={popupEl}>
               {flush ? (
                 <div className="td-modal-head">
                   <div className="td-modal-head-title" ref={titleRef}>
@@ -97,7 +97,7 @@ export function Modal({ open, onClose, title, cover, corner, aside, children, wi
                   </div>
                 ) : null}
               </div>
-            </PortalContainerContext.Provider>
+            </PortalContainerContext>
           </BaseDialog.Popup>
         </BaseDialog.Viewport>
       </BaseDialog.Portal>
