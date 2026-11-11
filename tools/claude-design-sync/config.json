@@ -22,7 +22,7 @@
       "assets/fonts/": "src/client/design/fonts/",
       "assets/covers/": "src/client/design/covers/"
     },
-    "$assetFallbacks": "Binary kit assets aren't pulled; previews read the App's identical copies instead"
+    "$assetFallbacks": "Binary kit assets aren't pulled; previews read the App's identical copies instead. The App loads Inter-Variable.woff2; Inter-Variable.ttf stays in its fonts folder only for kit files that still ask for it, until the Design project holds the WOFF2 and its tokens/typography.css loads it"
   },
   "app": {
     "componentRoot": "src/client/design",
