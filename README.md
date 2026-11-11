@@ -200,7 +200,7 @@ Environment variables override `.env`:
 
 Production startup rejects invalid/missing configuration, development/example secrets, short secrets, non-HTTPS external URLs or enabled seeding. Development uses convenient defaults.
 
-Non-API GET deep links serve HTML; hashed `/assets/*` cache for a year, HTML revalidates. `SIGTERM`/`SIGINT` stop new connections and close the database pool, with a 10-second shutdown limit. Fault/refused-write logs carry the client's “ref …” `requestId`.
+Non-API GET deep links serve HTML; hashed `/assets/*` cache for a year, HTML revalidates. Every response carries baseline security headers (no MIME sniffing, same-origin framing and embedding, no referrer, HSTS for this host); there is no Content-Security-Policy yet. `SIGTERM`/`SIGINT` stop new connections and close the database pool, with a 10-second shutdown limit. Fault/refused-write logs carry the client's “ref …” `requestId`.
 
 **Docker (staging):** the `Dockerfile` builds with every dependency and ships a non-root `node:22-slim` image with production dependencies, `dist/`, `dist-server/` and `drizzle/`. It defaults `UPLOAD_DIR=/data/uploads` (mount a named volume at `/data`, one replica) and health-checks `/api/health`. On Dokploy set `DATABASE_URL`, `APP_URL`, `BETTER_AUTH_SECRET` and `MIGRATE_ON_START=true`, and keep Autodeploy off: the CI `deploy-staging` job deploys `main` through the Dokploy API once all checks pass (secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_STAGING_APP_ID`).
 

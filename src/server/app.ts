@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
+import { secureHeaders } from "hono/secure-headers";
 
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
@@ -16,6 +17,11 @@ import { notFound, onError } from "./errors";
 export const app = new Hono()
   .use(requestId())
   .use(logger())
+  // Browser hardening on every response, the built client included (index.ts serves it behind these):
+  // no MIME sniffing, no framing or embedding by other sites, no referrer, HTTPS only once seen over HTTPS.
+  // HSTS covers this host alone, since other subdomains aren't this app's to decide for. There is no
+  // Content-Security-Policy yet: index.html applies the stored theme with an inline script.
+  .use(secureHeaders({ strictTransportSecurity: "max-age=15552000" }))
   .basePath("/api")
   .get("/health", (c) => c.json({ ok: true }))
   // Better Auth owns /api/auth/*; everything after resolves the session first.
