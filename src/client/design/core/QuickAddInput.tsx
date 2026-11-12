@@ -6,7 +6,6 @@ import { useMemo, useState, type CSSProperties, type KeyboardEvent, type RefObje
 import { DueDatePill } from "../board/DueDatePill";
 import { LabelChip } from "../board/LabelChip";
 import { Avatar } from "./Avatar";
-import { formatDate } from "./dates";
 import { Icon, type IconName } from "./Icon";
 import { PRIORITY_COLORS } from "./priorities";
 import { parseQuickAdd, type QuickAddOptions, type QuickAddPriority, type QuickAddResult, type QuickAddToken } from "./quickAdd";
@@ -76,7 +75,7 @@ function TokenPreview({ t }: { t: QuickAddToken }) {
         {t.value}
       </>
     );
-  if (t.kind === "due") return <DueDatePill date={formatDate(t.value, { year: "auto" })} />;
+  if (t.kind === "due") return <DueDatePill date={t.value} />;
   return (
     <>
       <Icon name={(t.icon ?? "arrow-right") as IconName} size={14} />
