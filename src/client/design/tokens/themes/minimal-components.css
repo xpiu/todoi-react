@@ -572,8 +572,9 @@ html[data-theme="minimal"] .td-modal-corner .td-iconbtn:hover,html[data-theme="m
 html[data-theme="minimal"] .td-modal-aside .td-lp-value{gap:0}
 html[data-theme="minimal"] .td-modal-aside .td-lp-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
 html[data-theme="minimal"] .td-modal-aside .td-lp-value .td-label+.td-label::before{content:", "}
-html[data-theme="minimal"] .td-modal-aside .td-avstack{display:none}
-html[data-theme="minimal"] .td-modal-aside .td-avstack+.td-mp-value{margin-left:22px}
+/* Assignees: the avatar stack becomes one user glyph, so the row keeps its place in the glyph column */
+html[data-theme="minimal"] .td-modal-aside .td-avstack{display:inline-block!important;width:16px;height:16px;flex:none;background:var(--ink-900);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat}
+html[data-theme="minimal"] .td-modal-aside .td-avstack>*{display:none!important}
 html[data-theme="minimal"] .td-modal-aside .td-btn>svg{stroke:var(--ink-900)!important}
 html[data-theme="minimal"] .td-modal-aside .td-btn{font-weight:400}
 /* Section heads (Attachments, Relations, Activity): name in ink over a hairline; no leading icon, body flush left */
