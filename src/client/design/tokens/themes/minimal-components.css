@@ -1,4 +1,5 @@
 /* ═══ Minimal theme — "Ledger" component rules ═══ Scoped on the theme, never a mode; colors come from tokens (tokens/themes/minimal.css). Source: explorations/minimal-theme-board.html (B). Selectors carry the html prefix so they outrank component stylesheets (which load after this file). */
+/* One ink: --ink-600, --ink-400 and --chrome-text-dim resolve to --ink-900 in this theme (tokens/themes/minimal.css), so every rule below that names them — and every "grey" in these comments — now paints the plain ink. Hairlines (--border-divider), washes, placeholders and unavailable states (--ink-300) are the only subdued values. */
 /* Base */
 html[data-theme="minimal"]{-webkit-font-smoothing:antialiased}
 html[data-theme="minimal"] body{font:400 13px/1.45 var(--font-ui)}
@@ -29,7 +30,7 @@ html[data-theme="minimal"] .td-topnav .td-field-dark{height:24px!important;paddi
 html[data-theme="minimal"] .td-topnav .td-field-dark:focus{box-shadow:none;border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon{left:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-topnav .td-field-dark::placeholder{color:transparent}
+html[data-theme="minimal"] .td-topnav .td-field-dark::placeholder{color:transparent!important}
 html[data-theme="minimal"] .td-topnav-kbd{display:none}
 html[data-theme="minimal"] .td-topnav-create{margin:0}
 html[data-theme="minimal"] button.td-topnav-plus{width:20px;height:20px;border-radius:0;color:var(--ink-900)}
@@ -107,7 +108,7 @@ html[data-theme="minimal"] .td-card>img,html[data-theme="minimal"] .td-card>div:
 html[data-theme="minimal"] .td-card-body{padding:0!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:baseline;gap:2px 10px!important}
 html[data-theme="minimal"] .td-card-body>.td-card-title{width:100%;white-space:normal;margin-bottom:2px;font:400 12.5px/1.28 var(--font-ui)!important;color:var(--ink-900)!important;padding-right:0!important;order:-1}
 html[data-theme="minimal"] .td-card-title>svg{display:none!important}
-html[data-theme="minimal"] .td-card-title.is-done{color:var(--ink-400)!important}
+html[data-theme="minimal"] .td-card-title.is-done{color:var(--ink-900)!important;text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-card-labels,html[data-theme="minimal"] .td-card-badges{display:contents!important;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-card-badges.is-compact .td-meta-text{display:inline}
 html[data-theme="minimal"] .td-card-body>*,html[data-theme="minimal"] .td-card-labels>*,html[data-theme="minimal"] .td-card-badges>*{white-space:nowrap;flex:none}
@@ -256,13 +257,13 @@ html[data-theme="minimal"] .td-calchip{height:auto;padding:1px 0;background:none
 html[data-theme="minimal"] .td-calchip:hover{box-shadow:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-calchip:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:1px}
 html[data-theme="minimal"] .td-calchip-bars{display:none}
-html[data-theme="minimal"] .td-calchip.is-done{color:var(--ink-400)}
+html[data-theme="minimal"] .td-calchip.is-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-calchip.is-done>svg{display:none!important}
 html[data-theme="minimal"] .td-calchip>svg{width:11px;height:11px}
 html[data-theme="minimal"] .td-calchip-key{font-size:10px}
 html[data-theme="minimal"] .td-calspan{background:none;border:0;border-radius:0;margin:1px 0;padding:0;height:18px;box-shadow:inset 0 -1px 0 var(--ink-900);font:400 12px/1.35 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-calspan.is-l{padding-left:0}
-html[data-theme="minimal"] .td-calspan.is-done{color:var(--ink-400);box-shadow:inset 0 -1px 0 var(--ink-400)}
+html[data-theme="minimal"] .td-calspan.is-done{color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-calspan:hover{box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-400)}
 html[data-theme="minimal"] .td-calspan:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px;box-shadow:inset 0 -1px 0 var(--ink-900)}
 html[data-theme="minimal"] .td-calmore{padding:1px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
@@ -385,7 +386,7 @@ html[data-theme="minimal"] .td-set-navhead{font:400 11px/1.45 var(--font-ui);col
 html[data-theme="minimal"] .td-set-navhead:first-child{margin-top:0}
 html[data-theme="minimal"] .td-set-navrow{height:auto;padding:4px 0;gap:0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-set-navrow:hover,html[data-theme="minimal"] .td-set-navrow:active{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-navrow[aria-current="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-set-navrow[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em}
 html[data-theme="minimal"] .td-set-navrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] .td-set-navicon{display:none}
 html[data-theme="minimal"] .td-set-crumb{display:none}
@@ -447,7 +448,7 @@ html[data-theme="minimal"] .td-fm-scroll,html[data-theme="minimal"] .td-sm-scrol
 html[data-theme="minimal"] .td-fm-sec,html[data-theme="minimal"] .td-sm-sec,html[data-theme="minimal"] .td-mm-sec{padding:10px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-fm-row,html[data-theme="minimal"] .td-sm-row,html[data-theme="minimal"] .td-mm-row{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-fm-row:hover,html[data-theme="minimal"] .td-sm-row:hover,html[data-theme="minimal"] button.td-mm-row:hover:not(:disabled){background:var(--chrome-hover);color:var(--ink-900)}
-html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"],html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"] .td-mm-line{color:var(--ink-400)}
+html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"],html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"] .td-mm-line{color:var(--ink-300)}
 /* Checked rows stay bare paper: the checkbox or the check carries the state, so a hover fill never reads as "picked" */
 html[data-theme="minimal"] .td-fm-row[aria-checked="true"]:not(:hover),html[data-theme="minimal"] .td-sm-row[aria-checked="true"]:not(:hover){background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-fm-row .td-check{margin-right:2px}
@@ -523,7 +524,7 @@ html[data-theme="minimal"] .td-dialog-foot .td-btn-primary,html[data-theme="mini
 /* Toast: an ink bar, square, words only; the action is underlined paper, not blue */
 html[data-theme="minimal"] .td-toast{border-radius:0;box-shadow:none;padding:8px 8px 8px 16px;font:400 13px/1.45 var(--font-ui);color:var(--chrome-canvas)}
 html[data-theme="minimal"] .td-toast-act{color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);text-decoration:underline;text-underline-offset:3px;border-radius:0}
-html[data-theme="minimal"] .td-toast-act:hover,html[data-theme="minimal"] .td-toast-act:active{background:none;text-decoration-color:var(--ink-400)}
+html[data-theme="minimal"] .td-toast-act:hover,html[data-theme="minimal"] .td-toast-act:active{background:none;text-decoration-color:color-mix(in srgb,var(--chrome-canvas) 50%,transparent)}
 html[data-theme="minimal"] .td-toast-meta{font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-toast .td-iconbtn{border-radius:0}
 /* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash */
@@ -604,7 +605,7 @@ html[data-theme="minimal"] .td-clhead-actions .td-iconbtn:hover{background:none;
 html[data-theme="minimal"] .td-clrow{padding:10px 0;gap:10px;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
 html[data-theme="minimal"] .td-clrow:hover{background:none}
 html[data-theme="minimal"] .td-clrow-text{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-clrow-done{text-decoration:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-clrow-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-clline{left:0;right:0;height:1px;margin-top:0;border-radius:0;background:var(--ink-900)}
 html[data-theme="minimal"] .td-clline::before{display:none}
 html[data-theme="minimal"] .td-clrow-more .td-iconbtn,html[data-theme="minimal"] .td-clrow>.td-pop-anchor .td-iconbtn{border-radius:0;color:var(--ink-400)}
@@ -638,7 +639,7 @@ html[data-theme="minimal"] .td-rel-row:hover,html[data-theme="minimal"] .td-rel-
 html[data-theme="minimal"] .td-rel-open{font:400 13px/1.45 var(--font-ui);border-radius:0}
 html[data-theme="minimal"] .td-rel-open:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] .td-rel-key{font:400 11px/1.45 var(--font-mono)}
-html[data-theme="minimal"] .td-rel-title[data-done="true"]{text-decoration:none}
+html[data-theme="minimal"] .td-rel-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-rel-list{font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-rel-x .td-iconbtn,html[data-theme="minimal"] .td-rel-x{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-rel-types{background:none;padding:0;gap:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--border-divider)}
@@ -706,7 +707,7 @@ html[data-theme="minimal"] .td-prp-head{padding:4px 14px 8px;font:500 13px/1.45 
 html[data-theme="minimal"] .td-prp-row .td-menu-item-label>svg{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-prp-group,html[data-theme="minimal"] .td-ip-list-name,html[data-theme="minimal"] .td-mp-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-ip-key{font:400 11px/1.45 var(--font-mono)}
-html[data-theme="minimal"] .td-ip-title[data-done="true"]{text-decoration:none}
+html[data-theme="minimal"] .td-ip-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
 /* Labels: a 6px square of colour before the word; the edit form is hairline fields and square swatches ringed in ink when picked */
 html[data-theme="minimal"] .td-lp-bar,html[data-theme="minimal"] .td-cp-dot,html[data-theme="minimal"] .td-bulk-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
 html[data-theme="minimal"] .td-lp-form{padding:6px 14px 8px}
@@ -824,7 +825,7 @@ html[data-theme="minimal"] .td-skview-list-inner{gap:24px}
 html[data-theme="minimal"] .td-sk-row{height:40px;border-bottom:1px solid var(--border-divider)}
 /* Bulk action bar: an ink bar, square, words only — the same voice as the toast; its menus are the square sheet */
 html[data-theme="minimal"] .td-bulk{padding:6px 6px 6px 16px;gap:4px;border-radius:0;box-shadow:none;background:var(--ink-900);color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);animation:none}
-html[data-theme="minimal"] .td-bulk-count{font-weight:500;border-right-color:var(--ink-400)}
+html[data-theme="minimal"] .td-bulk-count{font-weight:500;border-right-color:color-mix(in srgb,var(--chrome-canvas) 40%,transparent)}
 html[data-theme="minimal"] .td-bulk-btn{height:28px;padding:0 8px;border-radius:0;color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);transition:none}
 html[data-theme="minimal"] .td-bulk-btn:hover,html[data-theme="minimal"] .td-bulk-btn:active,html[data-theme="minimal"] .td-bulk-btn[aria-expanded="true"]{background:none;text-decoration:underline;text-underline-offset:3px}
 html[data-theme="minimal"] .td-bulk-btn:focus-visible{box-shadow:inset 0 0 0 1px var(--chrome-canvas)}
@@ -856,7 +857,7 @@ html[data-theme="minimal"] .td-al-key,html[data-theme="minimal"] button.td-al-ke
 html[data-theme="minimal"] button.td-al-key:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] button.td-al-key:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] .td-al-time{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-al-kind{color:var(--ink-300)}
+html[data-theme="minimal"] .td-al-kind{color:var(--ink-900)}
 /* Archive and trash: no white card — rows over hairlines; the project lead loses its fill; the confirming row takes the paper-grey wash */
 html[data-theme="minimal"] .td-arc{padding:20px 24px 24px;gap:12px}
 html[data-theme="minimal"] .td-arc-cap{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
@@ -869,7 +870,7 @@ html[data-theme="minimal"] .td-arc-row[data-confirm="true"]{background:var(--blu
 html[data-theme="minimal"] .td-arc-lead{border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-arc-lead[data-kind="project"]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider)}
 html[data-theme="minimal"] .td-arc-title{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-arc-title[data-done="true"]{color:var(--ink-400)}
+html[data-theme="minimal"] .td-arc-title[data-done="true"]{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-arc-meta{font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-arc-meta b{font-weight:500;color:var(--ink-400)}
 html[data-theme="minimal"] .td-arc-key{font:400 11px/1.45 var(--font-mono)}
@@ -918,3 +919,8 @@ html[data-theme="minimal"][data-device="phone"] .td-topnav {
 html[data-theme="minimal"][data-device="phone"] .td-topnav-user {
   gap: var(--sp-2);
 }
+/* ── One ink (2026-11-12): glyphs follow their text. An icon given a token color by its component (list-name icons, status, priority flags, project tints, checks and chevrons in menus) paints currentColor here; danger stays red. Done reads as a 1px strike instead of grey (rules above). Placeholders are the one dimmed text, so a hint never reads as a typed value. */
+html[data-theme="minimal"] svg[stroke^="var(--"]:not([stroke^="var(--danger"]){stroke:currentColor}
+html[data-theme="minimal"] svg[style*="fill: var(--label"],html[data-theme="minimal"] svg[style*="fill:var(--label"]{fill:currentColor!important}
+html[data-theme="minimal"] ::placeholder{color:color-mix(in srgb,var(--ink-900) 55%,transparent)!important}
+html[data-theme="minimal"] .td-clgrip{color:var(--ink-900)}
