@@ -236,8 +236,13 @@
     gap: var(--sp-2);
     padding-inline: var(--sp-3);
   }
-  html[data-device="phone"] .td-topnav-title:empty {
+  html[data-device="phone"] span.td-topnav-title:empty {
     display: none;
+  }
+  html[data-device="phone"] input.td-topnav-title {
+    min-width: 0;
+    flex-basis: 120px;
+    margin-right: 0;
   }
   html[data-device="phone"] .td-topnav-spacer {
     margin: 0;

@@ -84,6 +84,7 @@ export function AppShell() {
   const save = useSaveState();
   useLeaveGuard(save.unsafeToLeave);
   const myRole = user ? project.data?.members.find((m) => m.userId === user.id)?.role : undefined;
+  const canManageProject = myRole === "owner" || myRole === "admin";
   // Project members can edit unless their role is Viewer; nonmembers read only.
   const readonly = !!projectId && !!project.data && (!myRole || myRole === "viewer");
   const guestReason: "public" | "viewer" | null = !readonly ? null : myRole === "viewer" ? "viewer" : "public";
@@ -313,7 +314,7 @@ export function AppShell() {
     <MembersMenu
       members={pd.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, image: x.image, color: avatarColorVar(x.avatarColor) }))}
       currentUserId={user?.id}
-      canManage={myRole === "owner" || myRole === "admin"}
+      canManage={canManageProject}
       visibility={pd.visibility}
       onVisibilityChange={(v) => pm.updateProject.mutate({ id: pd.id, visibility: v })}
       onChangeRole={(mem, r) => pm.setMember.mutate({ projectId: pd.id, userId: mem.id, role: r })}
@@ -349,7 +350,8 @@ export function AppShell() {
       </span>
       <TopNavbar
         title={title}
-        onTitleChange={projectId && !readonly ? (name) => pm.updateProject.mutate({ id: projectId, name }) : undefined}
+        titleKey={projectId ?? section}
+        onTitleChange={projectId && canManageProject ? (name) => pm.updateProject.mutate({ id: projectId, name }) : undefined}
         status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
         search
         searchSources={searchSources}

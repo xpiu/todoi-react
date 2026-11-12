@@ -33,6 +33,8 @@ export interface TopNavbarUser {
 
 export interface TopNavbarProps {
   title: string;
+  /** Stable identity of the screen/project; changing it discards the title draft. */
+  titleKey?: string;
   /** When set, the title is click-to-rename */
   onTitleChange?: (title: string) => void;
   search?: boolean;
@@ -88,8 +90,77 @@ function GuestAvatar({ size, tone }: { size: number; tone: "chrome" | "card" }) 
   );
 }
 
+// Keep the title draft scoped to its project without resetting search or the rest of the navbar.
+function NavbarTitle({ title, onTitleChange }: Pick<TopNavbarProps, "title" | "onTitleChange">) {
+  const [editing, setEditing] = useState(false);
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const restoreFocus = useRef(false);
+  useEffect(() => {
+    if (!editing && restoreFocus.current) {
+      restoreFocus.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [editing]);
+  const commitTitle = (value: string) => {
+    setEditing(false);
+    const v = value.trim();
+    if (v && v !== title) onTitleChange?.(v);
+  };
+  return editing ? (
+    <input
+      className="td-topnav-title"
+      defaultValue={title}
+      autoFocus
+      maxLength={120}
+      aria-label="Project name"
+      onFocus={(e) => {
+        e.target.setSelectionRange(0, e.target.value.length, "backward");
+        e.target.scrollLeft = 0;
+        sizeTitleLine(e.target);
+      }}
+      onChange={(e) => sizeTitleLine(e.target)}
+      onBlur={(e) => commitTitle(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.nativeEvent.isComposing) return;
+        if (e.key === "Enter" || e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.key === "Escape") e.currentTarget.value = title;
+          restoreFocus.current = true;
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  ) : onTitleChange ? (
+    <span
+      ref={triggerRef}
+      className="td-topnav-title"
+      data-editable="true"
+      title="Click to rename"
+      role="button"
+      tabIndex={0}
+      aria-label={`Rename project: ${title}`}
+      onClick={() => setEditing(true)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setEditing(true);
+        }
+      }}
+    >
+      <span className="td-topnav-title-txt">{title}</span>
+      <span className="td-topnav-title-pen" aria-hidden>
+        <Icon name="pencil" size={14} />
+      </span>
+    </span>
+  ) : (
+    <span className="td-topnav-title">{title}</span>
+  );
+}
+
 export function TopNavbar({
   title,
+  titleKey,
   onTitleChange,
   search,
   searchPlaceholder = "Search",
@@ -146,82 +217,6 @@ export function TopNavbar({
     onSearchSelect?.(type, id, entity);
   };
   const showKbd = !sFocus && !sOpen && !sQ;
-
-  // Title rename
-  const [editing, setEditing] = useState(false);
-  const [optimisticTitle, setOptimisticTitle] = useState<string | null>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const displayTitle = optimisticTitle ?? title;
-
-  useEffect(() => {
-    setOptimisticTitle(null);
-    setEditing(false);
-  }, [title]);
-
-  useEffect(() => {
-    if (editing && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.setSelectionRange(0, titleInputRef.current.value.length, "backward");
-      titleInputRef.current.scrollLeft = 0;
-      sizeTitleLine(titleInputRef.current);
-    }
-  }, [editing]);
-
-  const commitTitle = (value: string) => {
-    setEditing(false);
-    const v = value.trim();
-    if (v && v !== title) {
-      setOptimisticTitle(v);
-      onTitleChange?.(v);
-    }
-  };
-  const titleEl = editing ? (
-    <input
-      ref={titleInputRef}
-      className="td-topnav-title"
-      defaultValue={displayTitle}
-      autoFocus
-      aria-label="Project name"
-      onFocus={(e) => {
-        e.target.setSelectionRange(0, e.target.value.length, "backward");
-        e.target.scrollLeft = 0;
-        sizeTitleLine(e.target);
-      }}
-      onChange={(e) => sizeTitleLine(e.target)}
-      onBlur={(e) => commitTitle(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-        else if (e.key === "Escape") {
-          e.currentTarget.value = displayTitle;
-          e.currentTarget.blur();
-        }
-      }}
-    />
-  ) : onTitleChange ? (
-    <span
-      className="td-topnav-title"
-      data-editable="true"
-      title="Click to rename"
-      role="button"
-      tabIndex={0}
-      aria-label={`Rename project: ${displayTitle}`}
-      onClick={() => setEditing(true)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          setEditing(true);
-        }
-      }}
-    >
-      <span className="td-topnav-title-txt">{displayTitle}</span>
-      <span className="td-topnav-title-pen" aria-hidden>
-        <Icon name="pencil" size={14} />
-      </span>
-    </span>
-  ) : (
-    <span className="td-topnav-title">{displayTitle}</span>
-  );
-
   const toggleBtn = onToggleSidebar ? (
     <IconButton
       name={leftToggle ? "panel-left" : "panel-right"}
@@ -241,7 +236,7 @@ export function TopNavbar({
   return (
     <header className={["td-topnav", className ?? ""].join(" ").trim()} style={style} data-sidebar-side={side}>
       {leftToggle ? toggleBtn : null}
-      {titleEl}
+      <NavbarTitle key={`${titleKey ?? title}:${!!onTitleChange}`} title={title} onTitleChange={onTitleChange} />
       <div className="td-topnav-spacer" />
       {children ?? null}
       {status ? <div className="td-topnav-status">{status}</div> : null}
