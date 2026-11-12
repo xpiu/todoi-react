@@ -1,5 +1,6 @@
 // ListRow — one item as a flat row: circle checkbox, wrapping title, then right-pinned labels,
-// badges, due pill, repeat glyph, priority flag, avatar stack and the mono key (click copies).
+// badges, due pill, repeat glyph, priority flag and avatar stack (one group that may wrap), and
+// after it the mono key (click copies), which stays on the first line.
 // Subitems render beneath as indented rows. Spec: DESIGN.md › List view, Notifications.
 import type { CSSProperties, MouseEvent, SyntheticEvent } from "react";
 
@@ -68,7 +69,7 @@ function RowKey({ itemId }: { itemId: string }) {
     void doCopy(itemId);
   };
   return (
-    <button type="button" className={"td-lrow-key" + (copied !== "idle" ? " is-copied" : "")} title={copied === "failed" ? COPY_FAILED : `Click to copy ${itemId}`} aria-label={`Copy ${itemId}`} onClick={copy} onKeyDown={(e) => e.stopPropagation()}>
+    <button type="button" className={"td-lrow-key td-lrow-idkey" + (copied !== "idle" ? " is-copied" : "")} title={copied === "failed" ? COPY_FAILED : `Click to copy ${itemId}`} aria-label={`Copy ${itemId}`} onClick={copy} onKeyDown={(e) => e.stopPropagation()}>
       <span className="td-lrow-key-txt">{itemId}</span>
       <span className="td-lrow-key-ico" aria-hidden>
         <Icon name={copyIcon(copied, "copy")} size={12} />
@@ -234,8 +235,9 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
             <AboutKey about={about} />
           </span>
         ) : null}
-        {itemId && showId ? <RowKey itemId={itemId} /> : null}
       </span>
+      {/* A sibling of the meta group, not a member: the group may wrap under a long title, the key stays on the first line. */}
+      {itemId && showId ? <RowKey itemId={itemId} /> : null}
     </div>
   );
   if (!hasSubs) {

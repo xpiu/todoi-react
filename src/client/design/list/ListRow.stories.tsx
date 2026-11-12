@@ -85,7 +85,40 @@ export const Selected: Story = {
     await expect(canvas.getByText("Selected")).toBeInTheDocument();
   },
 };
-export const LongTitle: Story = { args: { title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment, maintenance, training, insurance, and payment terms for the customer", due: "Oct 20, 2026", labels: [{ color: "orange", text: "Sales" }] } };
+/** The key is a sibling of the meta group, so it stays on the first line while a long title wraps beside it. */
+export const LongTitle: Story = {
+  args: { title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment, maintenance, training, insurance, and payment terms for the customer", due: "Oct 20, 2026", labels: [{ color: "orange", text: "Sales" }] },
+  decorators: [(Story) => <div style={{ maxWidth: 560 }}><Story /></div>],
+  async play({ args, canvas, canvasElement }) {
+    const row = canvasElement.querySelector(".td-lrow")!;
+    const title = canvas.getByText(args.title).getBoundingClientRect();
+    const key = canvas.getByRole("button", { name: `Copy ${args.itemId}` });
+    const box = key.getBoundingClientRect();
+    await expect(key.parentElement).toBe(row);
+    await expect(title.height).toBeGreaterThan(30); // the title wrapped
+    await expect(box.bottom).toBeLessThan(title.top + 24); // the key did not
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+  },
+};
+/** A crowded meta group wraps inside its cap (60% of the row) instead of crushing the title or pushing the key off the first line. */
+export const LongTitleManyLabels: Story = {
+  args: {
+    title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment and payment terms",
+    due: "Oct 20, 2026", priority: "Urgent", attachments: 4, assignees: ["Flo Zuallaert", "Sam Verhoeven", "Ana Peeters"],
+    labels: [{ color: "red", text: "Compliance paperwork" }, { color: "teal", text: "Spare parts order" }, { color: "lime", text: "Operations" }, { color: "pink", text: "Finance review" }, { color: "yellow", text: "Legal sign-off" }],
+  },
+  decorators: [(Story) => <div style={{ maxWidth: 560 }}><Story /></div>],
+  async play({ args, canvas, canvasElement }) {
+    const row = canvasElement.querySelector(".td-lrow")!;
+    const width = row.getBoundingClientRect().width;
+    const title = canvas.getByText(args.title).getBoundingClientRect();
+    const key = canvas.getByRole("button", { name: `Copy ${args.itemId}` }).getBoundingClientRect();
+    await expect(canvasElement.querySelector(".td-lrow-end")!.getBoundingClientRect().width).toBeLessThanOrEqual(width * 0.6 + 1);
+    await expect(title.width).toBeGreaterThan(width * 0.2);
+    await expect(key.bottom).toBeLessThan(title.top + 24);
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+  },
+};
 export const HiddenKey: Story = { args: { showId: false } };
 export const Notification: Story = {
   args: {

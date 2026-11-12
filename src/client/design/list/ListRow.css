@@ -176,9 +176,10 @@
     white-space: normal;
     overflow-wrap: anywhere;
   }
+  /* No shrink: a long title wraps instead of squeezing the meta group, which wraps only past its max-width cap. */
   .td-lrow-end {
     display: flex;
-    flex: 0 0.8 auto;
+    flex: 0 0 auto;
     flex-wrap: wrap;
     justify-content: flex-end;
     align-items: center;
@@ -187,6 +188,7 @@
     margin-left: auto;
     min-height: 20px;
     min-width: 0;
+    max-width: 60%;
   }
   .td-lrow-end > * {
     height: 20px;
@@ -254,6 +256,12 @@
     border: 0;
     padding: 0;
     background: none;
+  }
+  /* The item key sits after .td-lrow-end on the row itself: 20px is the title line, 4px plus the row gap equals the meta gap. */
+  .td-lrow > .td-lrow-idkey {
+    flex: none;
+    height: 20px;
+    margin-left: var(--sp-1);
   }
   .td-lrow-key:hover {
     color: var(--ink-600);
