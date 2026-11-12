@@ -1,7 +1,8 @@
 // Icon — the one glyph API. Lucide through an explicit map (icons.ts), plus Todoi's own glyphs:
 // "circle-todo" (the To-do status: a dial at zero), Ledger variants for the Minimal theme, and
-// pixel-snapped panel / list / kanban / calendar glyphs for Rounded, where Lucide's 24-unit grid
-// would blur axis-aligned lines at 16–20px. Spec: DESIGN.md › Iconography.
+// pixel-snapped panel / list / kanban / calendar glyphs (Rounded's own shapes, and the Ledger view
+// glyphs for Minimal), where Lucide's 24-unit grid would blur axis-aligned lines at 16–20px.
+// Spec: DESIGN.md › Iconography.
 import type { CSSProperties } from "react";
 
 import { useAppearanceStore } from "./appearance";
@@ -65,27 +66,8 @@ const CUSTOM = {
   ],
 } satisfies Record<string, SvgNode[]>;
 
-/** Minimal theme: the exact glyphs from the Ledger prototype, vector stroke 1.75. */
+/** Minimal theme: the exact glyph from the Ledger prototype, vector stroke 1.75. */
 const LEDGER: Record<string, SvgNode[]> = {
-  list: [
-    ["path", { d: "M8 6h13" }],
-    ["path", { d: "M8 12h13" }],
-    ["path", { d: "M8 18h13" }],
-    ["path", { d: "M3 6h.01" }],
-    ["path", { d: "M3 12h.01" }],
-    ["path", { d: "M3 18h.01" }],
-  ],
-  kanban: [
-    ["path", { d: "M6 5v11" }],
-    ["path", { d: "M12 5v6" }],
-    ["path", { d: "M18 5v14" }],
-  ],
-  calendar: [
-    ["path", { d: "M8 2v4" }],
-    ["path", { d: "M16 2v4" }],
-    ["rect", { width: 18, height: 18, x: 3, y: 4, rx: 2 }],
-    ["path", { d: "M3 10h18" }],
-  ],
   "panel-right": [
     ["rect", { width: 18, height: 18, x: 3, y: 3, rx: 2 }],
     ["path", { d: "M15 3v18" }],
@@ -144,6 +126,39 @@ const SNAPPED: Record<string, (size: number, stroke: number) => SvgNode[]> = {
   },
 };
 
+/**
+ * Minimal theme, view glyphs (list · kanban · calendar): the Ledger shapes, drawn in device pixels with every rule centred
+ * on a pixel. As 24-unit vectors at 16px their 1.17px axis-aligned rules straddled two pixels and antialiased to grey, so
+ * List and Board read dimmer than Calendar and the Lucide glyphs beside them. The stroke keeps the themed weight.
+ */
+const LEDGER_SNAPPED: Record<string, (size: number) => SvgNode[]> = {
+  list: (s) => {
+    const u = s / 24;
+    const snap = (v: number) => Math.round(v * u - 0.5) + 0.5;
+    const out: SvgNode[] = [];
+    for (const v of [6, 12, 18]) {
+      const y = snap(v);
+      out.push(["path", { d: `M${Math.round(8 * u)} ${y}H${Math.round(21 * u)}` }]);
+      out.push(["path", { d: `M${snap(3)} ${y}h.01` }]);
+    }
+    return out;
+  },
+  kanban: (s) => {
+    const u = s / 24;
+    const snap = (v: number) => Math.round(v * u - 0.5) + 0.5;
+    const y = Math.round(5 * u);
+    return (
+      [
+        [6, 11],
+        [12, 6],
+        [18, 14],
+      ] as const
+    ).map(([x, h]) => ["path", { d: `M${snap(x)} ${y}v${Math.round(h * u)}` }]);
+  },
+  calendar: (s) => SNAPPED.calendar!(s, 1),
+};
+const LEDGER_STROKE = 1.75;
+
 export type IconName = LucideIconName | keyof typeof CUSTOM;
 
 export interface IconProps {
@@ -186,8 +201,14 @@ function RawSvg({ nodes, size, viewBox, stroke, color, style, className }: {
 
 export function Icon({ name, size = 16, strokeWidth = 2, color, style, className }: IconProps) {
   const minimal = useAppearanceStore((s) => s.theme) === "minimal";
+  const ledgerSnapped = minimal ? LEDGER_SNAPPED[name] : undefined;
+  if (ledgerSnapped) {
+    // The width also goes inline: the theme's `svg { stroke-width: 1.75 }` rules assume a 24-unit viewBox and would outrank the attribute.
+    const sw = (LEDGER_STROKE * size) / 24;
+    return <RawSvg nodes={ledgerSnapped(size)} size={size} viewBox={`0 0 ${size} ${size}`} stroke={sw} color={color} style={{ strokeWidth: sw, ...style }} className={className} />;
+  }
   const ledger = minimal ? LEDGER[name] : undefined;
-  if (ledger) return <RawSvg nodes={ledger} size={size} viewBox="0 0 24 24" stroke={1.75} color={color} style={style} className={className} />;
+  if (ledger) return <RawSvg nodes={ledger} size={size} viewBox="0 0 24 24" stroke={LEDGER_STROKE} color={color} style={style} className={className} />;
   const snapped = !minimal ? SNAPPED[name] : undefined;
   if (snapped) {
     const sw = (strokeWidth * size) / 24;

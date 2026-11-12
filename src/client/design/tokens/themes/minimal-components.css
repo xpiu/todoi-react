@@ -13,13 +13,15 @@ html[data-theme="minimal"] .td-topnav-spacer{margin:0}
 html[data-theme="minimal"] .td-topnav .td-subnav{column-gap:24px;row-gap:0;min-height:0;padding:0}
 html[data-theme="minimal"] .td-subnav-actions{gap:16px}
 html[data-theme="minimal"] .td-subnav-views{gap:16px;padding:0;background:none;border-radius:0}
-/* Standalone row (tablet, below desktop): 48px row, 24px side padding and a hairline matching the top bar; glyph spacing is identical to the docked row (16px between icons, 24px between groups) — the row's height does the vertical centring */
-html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav){box-sizing:border-box;min-height:48px;padding:0 24px;column-gap:24px;row-gap:0;align-items:center;border-bottom:1px solid var(--border-divider)}
+/* Standalone row (tablet, below desktop): 48px row, 24px side padding and a hairline matching the top bar; glyph spacing is identical to the docked row (16px between icons, 24px between groups) — the row's height does the vertical centring. content-box like the top bar (48px + the 1px hairline), so the 16px glyphs centre on whole pixels and the pixel-snapped view icons stay in full ink */
+html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav){box-sizing:content-box;min-height:48px;padding:0 24px;column-gap:24px;row-gap:0;align-items:center;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-actions,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-views{align-items:center}
 html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-style-wrap,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-share-wrap{align-items:center}
 html[data-theme="minimal"] .td-subnav-act,html[data-theme="minimal"] .td-subnav-seg{height:16px;width:auto;min-width:16px;padding:0;gap:0;font-size:0;line-height:0;color:var(--ink-900);background:none;border-radius:0}
 html[data-theme="minimal"] .td-subnav-act:hover,html[data-theme="minimal"] .td-subnav-act:active,html[data-theme="minimal"] .td-subnav-act[aria-expanded="true"],html[data-theme="minimal"] .td-subnav-seg:hover,html[data-theme="minimal"] .td-subnav-seg:active,html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-subnav-act:focus-visible,html[data-theme="minimal"] .td-subnav-seg:focus-visible{outline:1px solid var(--ink-900);outline-offset:3px}
+/* Current view: the 1px ink underline the theme uses for whatever is current (a background line — the pseudo-elements belong to the tooltip) */
+html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{box-sizing:content-box;padding-bottom:6px;margin-bottom:-6px;background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/100% 1px}
 /* View switcher: same ink as every other navbar element — text segments and the divider included */
 html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)){font:400 13px/1.45 var(--font-ui);height:auto;color:var(--ink-900)}
 html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)):hover,html[data-theme="minimal"] .td-subnav-seg:not(:has(svg))[aria-expanded="true"]{color:var(--ink-900)}
