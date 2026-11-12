@@ -24,7 +24,7 @@ describe("appearance defaults and migration", () => {
   it("starts new devices in Minimal light and resets to the same preferences", async () => {
     const { APPEARANCE_DEFAULTS, getAppearance, useAppearanceStore } = await import("./appearance");
     expect(getAppearance()).toEqual(APPEARANCE_DEFAULTS);
-    expect(getAppearance()).toMatchObject({ theme: "minimal", mode: "light", background: "#ffffff", foreground: null, colorizeColumns: false, suggestShortcuts: false });
+    expect(getAppearance()).toMatchObject({ theme: "minimal", mode: "light", background: "#ffffff", foreground: null, colorizeColumns: false, suggestShortcuts: false, rowDividers: true });
     useAppearanceStore.getState().set({ theme: "rounded", mode: "dark", background: "#111b32", sidebarLeft: true });
     useAppearanceStore.getState().reset();
     expect(getAppearance()).toEqual(APPEARANCE_DEFAULTS);
@@ -63,6 +63,23 @@ describe("appearance defaults and migration", () => {
     storage.set("td-sidebar-left-standard", "1");
     const { getAppearance } = await import("./appearance");
     expect(getAppearance()).toMatchObject({ theme: "rounded", mode: "light", background: "#7c9fff", sidebarLeft: true });
+  });
+
+  it("remembers Row dividers per theme, on by default, and imports the kit's key", async () => {
+    storage.set("td-theme", "minimal");
+    storage.set("td-row-dividers-minimal", "0");
+    const { getAppearance, useAppearanceStore } = await import("./appearance");
+    expect(getAppearance()).toMatchObject({ theme: "minimal", rowDividers: false });
+    useAppearanceStore.getState().set({ theme: "rounded" });
+    expect(getAppearance().rowDividers).toBe(true);
+    useAppearanceStore.getState().set({ theme: "minimal" });
+    expect(getAppearance().rowDividers).toBe(false);
+    useAppearanceStore.getState().set({ rowDividers: true });
+    expect(getAppearance().rowDividers).toBe(true);
+    expect(JSON.parse(storage.get(APPEARANCE_STORAGE_KEY)!).state.themePrefs).toEqual({ minimal: { rowDividers: true } });
+    useAppearanceStore.getState().set({ rowDividers: false });
+    useAppearanceStore.getState().reset();
+    expect(getAppearance().rowDividers).toBe(true);
   });
 
   it("rehydrates current Rounded preferences", async () => {

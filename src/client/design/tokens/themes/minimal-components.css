@@ -189,6 +189,14 @@ html[data-theme="minimal"] .td-lrow{min-height:0;padding:10px 0;gap:10px;font:40
 html[data-theme="minimal"] .td-lrow:hover{background:none}
 html[data-theme="minimal"] .td-lrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-lrow-subs .td-lrow{border-top:1px solid var(--border-divider)}
+/* Style menu › Row dividers off: no hairline under the list title, between rows or between subitems. Without rules to carry the rhythm the rows
+   close up (10px → 5px padding, a 30px pitch) and the title sits one row-gap above its first row, so the 24px gap between lists still reads as the break.
+   Borders stay 1px transparent: toggling never shifts by a sub-pixel, and the drop / selection outlines keep their box. */
+html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-head{padding-bottom:4px;border-bottom-color:transparent}
+html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-collapsed>.td-lsec-head{padding-bottom:0}
+html[data-theme="minimal"][data-row-dividers="false"] .td-lgroup{border-bottom-color:transparent}
+html[data-theme="minimal"][data-row-dividers="false"] .td-lrow-subs .td-lrow{border-top-color:transparent}
+html[data-theme="minimal"][data-row-dividers="false"] .td-lgroup .td-lrow,html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-addrow,html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-add{padding-top:5px;padding-bottom:5px}
 html[data-theme="minimal"] .td-lrow-sub{padding-left:26px}
 html[data-theme="minimal"] .td-lrow-title{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-lgroup .td-lrow:has(.td-check-box-on)>.td-lrow-title{color:var(--ink-900);text-decoration:line-through;text-decoration-color:var(--ink-400);text-decoration-thickness:1px}

@@ -179,6 +179,11 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
           <LabelChip color="teal" text="label" size="sm" />
         </span>
       </div>
+      {getTheme(ap.theme).ruledRows ? (
+        <div className="td-style-row">
+          <Checkbox checked={ap.rowDividers} onChange={(v) => ap.set({ rowDividers: v })} label="Row dividers" />
+        </div>
+      ) : null}
       <div className="td-style-row">
         <Checkbox checked={ap.sidebarLeft} onChange={(v) => ap.set({ sidebarLeft: v })} label="Sidebar on left side" />
         <span className="td-style-trail" aria-hidden>

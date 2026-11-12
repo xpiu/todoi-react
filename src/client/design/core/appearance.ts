@@ -2,11 +2,12 @@
 // and Settings › Appearance (spec: DESIGN.md › Appearance preferences). First Zustand use.
 //
 // Two axes from themes.ts: theme × mode. Background and Foreground picks are remembered PER
-// theme × mode slot; Colorize Board columns, Suggest shortcuts and Sidebar on left side are
-// remembered PER theme (Rounded ships Colorize + Suggest on, Minimal off; sidebar-left off in both).
-// Persisted under one localStorage key, `td-appearance`; the design-system kit's td-* keys migrate
-// on first read. DOM effects (<html data-theme data-mode data-colorize-columns data-sidebar-side>,
-// --chrome-canvas, the surface overrides and the tab favicon) are applied from here, before React mounts.
+// theme × mode slot; Colorize Board columns, Suggest shortcuts, Sidebar on left side and Row dividers
+// are remembered PER theme (Rounded ships Colorize + Suggest on, Minimal off; sidebar-left off and
+// row dividers on in both). Persisted under one localStorage key, `td-appearance`; the design-system
+// kit's td-* keys migrate on first read. DOM effects (<html data-theme data-mode data-colorize-columns
+// data-sidebar-side data-row-dividers>, --chrome-canvas, the surface overrides and the tab favicon)
+// are applied from here, before React mounts.
 import { useMemo } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -49,12 +50,22 @@ interface ThemePrefs {
   colorizeColumns: boolean;
   suggestShortcuts: boolean;
   sidebarLeft: boolean;
+  /** Hairlines between List-view rows. Only a theme that rules its rows (Minimal) draws them and offers the choice */
+  rowDividers: boolean;
 }
 
 const THEME_PREF_DEFAULTS: Record<ThemeId, ThemePrefs> = {
-  rounded: { colorizeColumns: true, suggestShortcuts: true, sidebarLeft: false },
-  minimal: { colorizeColumns: false, suggestShortcuts: false, sidebarLeft: false },
+  rounded: { colorizeColumns: true, suggestShortcuts: true, sidebarLeft: false, rowDividers: true },
+  minimal: { colorizeColumns: false, suggestShortcuts: false, sidebarLeft: false, rowDividers: true },
 };
+/** Each per-theme preference with the design-system kit's key stem (`<stem>-<theme>`), for the one-time import. */
+const THEME_PREF_KIT_KEYS: Record<keyof ThemePrefs, string> = {
+  colorizeColumns: "td-colorize-columns",
+  suggestShortcuts: "td-suggest-shortcuts",
+  sidebarLeft: "td-sidebar-left",
+  rowDividers: "td-row-dividers",
+};
+const THEME_PREF_KEYS = Object.keys(THEME_PREF_KIT_KEYS) as Array<keyof ThemePrefs>;
 
 /** What is persisted. Slot and per-theme maps are sparse: a missing entry means "default". */
 interface PersistedState {
@@ -173,12 +184,10 @@ function migrateLegacyKeys(): Partial<PersistedState> | null {
       if (background != null || foreground != null) out.slots![slotKey(t, m)] = { background, foreground };
     }
     const prefs: Partial<ThemePrefs> = {};
-    const c = bool(`td-colorize-columns-${legacyTheme}`);
-    const s = bool(`td-suggest-shortcuts-${legacyTheme}`);
-    const l = bool(`td-sidebar-left-${legacyTheme}`);
-    if (c !== undefined) prefs.colorizeColumns = c;
-    if (s !== undefined) prefs.suggestShortcuts = s;
-    if (l !== undefined) prefs.sidebarLeft = l;
+    for (const key of THEME_PREF_KEYS) {
+      const v = bool(`${THEME_PREF_KIT_KEYS[key]}-${legacyTheme}`);
+      if (v !== undefined) prefs[key] = v;
+    }
     if (Object.keys(prefs).length) out.themePrefs![t] = prefs;
   }
   // Strip undefined so the merge below keeps defaults.
@@ -190,7 +199,8 @@ export type AppearancePatch = Partial<Omit<AppearanceState, "theme" | "mode">> &
 
 interface AppearanceStore extends PersistedState {
   /** Patch one or more preferences. Background / Foreground write the current theme × mode slot;
-   *  Colorize / Suggest / Sidebar-left write the current theme; changing theme or mode brings that slot's picks back. */
+   *  the per-theme preferences (Colorize, Suggest, Sidebar-left, Row dividers) write the current theme; changing theme
+   *  or mode brings that slot's picks back. */
   set: (patch: AppearancePatch) => void;
   reset: () => void;
 }
@@ -217,9 +227,7 @@ export const useAppearanceStore = create<AppearanceStore>()(
           next.slots = { ...cur.slots, [key]: slot };
         }
         const themePrefPatch: Partial<ThemePrefs> = {};
-        if (patch.colorizeColumns !== undefined) themePrefPatch.colorizeColumns = patch.colorizeColumns;
-        if (patch.suggestShortcuts !== undefined) themePrefPatch.suggestShortcuts = patch.suggestShortcuts;
-        if (patch.sidebarLeft !== undefined) themePrefPatch.sidebarLeft = patch.sidebarLeft;
+        for (const key of THEME_PREF_KEYS) if (patch[key] !== undefined) themePrefPatch[key] = patch[key];
         if (Object.keys(themePrefPatch).length) {
           next.themePrefs = { ...cur.themePrefs, [theme]: { ...cur.themePrefs[theme], ...themePrefPatch } };
         }
@@ -284,6 +292,7 @@ export function applyAppearance(a: AppearanceState) {
   }
   el.setAttribute("data-colorize-columns", a.colorizeColumns ? "true" : "false");
   el.setAttribute("data-sidebar-side", a.sidebarLeft ? "left" : "right");
+  el.setAttribute("data-row-dividers", a.rowDividers ? "true" : "false");
   applyFavicon(a.theme, a.mode);
 }
 

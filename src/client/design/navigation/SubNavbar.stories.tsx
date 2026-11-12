@@ -156,6 +156,16 @@ export const StyleMenu: Story = {
     const before = useAppearanceStore.getState().showItemIds;
     await userEvent.click(ids);
     await expect(useAppearanceStore.getState().showItemIds).toBe(!before);
+    // Row dividers: offered only by a theme that rules its List rows (Minimal); it writes <html data-row-dividers>.
+    const dividers = dialog.queryByRole("checkbox", { name: "Row dividers" });
+    if (getTheme(globals.theme).ruledRows) {
+      const root = canvasElement.ownerDocument.documentElement;
+      await expect(dividers).toHaveAttribute("aria-checked", "true");
+      await expect(root).toHaveAttribute("data-row-dividers", "true");
+      await userEvent.click(dividers!);
+      await expect(root).toHaveAttribute("data-row-dividers", "false");
+      await expect(getAppearance().rowDividers).toBe(false);
+    } else await expect(dividers).not.toBeInTheDocument();
     await userEvent.click(dialog.getByRole("button", { name: "More options" }));
     await expect(args.onOpenAppearance).toHaveBeenCalledOnce();
     await waitFor(() => expect(page.queryByRole("dialog", { name: "Board style" })).not.toBeInTheDocument());
