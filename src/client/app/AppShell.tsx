@@ -349,6 +349,7 @@ export function AppShell() {
       </span>
       <TopNavbar
         title={title}
+        onTitleChange={projectId && !readonly ? (name) => pm.updateProject.mutate({ id: projectId, name }) : undefined}
         status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
         search
         searchSources={searchSources}

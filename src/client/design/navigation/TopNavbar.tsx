@@ -149,15 +149,37 @@ export function TopNavbar({
 
   // Title rename
   const [editing, setEditing] = useState(false);
+  const [optimisticTitle, setOptimisticTitle] = useState<string | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const displayTitle = optimisticTitle ?? title;
+
+  useEffect(() => {
+    setOptimisticTitle(null);
+    setEditing(false);
+  }, [title]);
+
+  useEffect(() => {
+    if (editing && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.setSelectionRange(0, titleInputRef.current.value.length, "backward");
+      titleInputRef.current.scrollLeft = 0;
+      sizeTitleLine(titleInputRef.current);
+    }
+  }, [editing]);
+
   const commitTitle = (value: string) => {
     setEditing(false);
     const v = value.trim();
-    if (v && v !== title) onTitleChange?.(v);
+    if (v && v !== title) {
+      setOptimisticTitle(v);
+      onTitleChange?.(v);
+    }
   };
   const titleEl = editing ? (
     <input
+      ref={titleInputRef}
       className="td-topnav-title"
-      defaultValue={title}
+      defaultValue={displayTitle}
       autoFocus
       aria-label="Project name"
       onFocus={(e) => {
@@ -170,7 +192,7 @@ export function TopNavbar({
       onKeyDown={(e) => {
         if (e.key === "Enter") e.currentTarget.blur();
         else if (e.key === "Escape") {
-          e.currentTarget.value = title;
+          e.currentTarget.value = displayTitle;
           e.currentTarget.blur();
         }
       }}
@@ -182,7 +204,7 @@ export function TopNavbar({
       title="Click to rename"
       role="button"
       tabIndex={0}
-      aria-label={`Rename project: ${title}`}
+      aria-label={`Rename project: ${displayTitle}`}
       onClick={() => setEditing(true)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -191,13 +213,13 @@ export function TopNavbar({
         }
       }}
     >
-      <span className="td-topnav-title-txt">{title}</span>
+      <span className="td-topnav-title-txt">{displayTitle}</span>
       <span className="td-topnav-title-pen" aria-hidden>
         <Icon name="pencil" size={14} />
       </span>
     </span>
   ) : (
-    <span className="td-topnav-title">{title}</span>
+    <span className="td-topnav-title">{displayTitle}</span>
   );
 
   const toggleBtn = onToggleSidebar ? (
