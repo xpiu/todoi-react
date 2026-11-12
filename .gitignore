@@ -23,13 +23,6 @@ CLAUDE.md
 
 # dependencies
 /node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
 
 # Security reports
 /docs/security-*
@@ -45,9 +38,6 @@ CLAUDE.md
 # Build output
 dist/
 dist-server/
-build/
-.next/
-out/
 
 # Logs
 logs/
@@ -66,33 +56,13 @@ logs/
 
 # debug
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-
-# prisma
-prisma/.env
-prisma/dev.db
-prisma/dev.db-journal
-prisma/*.db
-prisma/*.db-journal
-
-# Generated Prisma Client (keep out of version control due to query engine binaries)
-/generated/
 
 # storybook
 *storybook.log
 /storybook-static/
 
-# swc
-.swc
-
-# Server configuration
-.htaccess*
-/src/generated/prisma
 test-results/
 coverage/
