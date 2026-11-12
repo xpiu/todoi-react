@@ -19,7 +19,8 @@ test.describe("prefers-reduced-motion", () => {
     // Chromium reports the collapsed duration as "1e-05s" (0.01ms)
     const seconds = (d: string) => (d.endsWith("ms") ? parseFloat(d) / 1000 : parseFloat(d));
     for (const d of durations) expect(seconds(d)).toBeLessThan(0.001);
-    await page.getByRole("button", { name: /Style/ }).click();
+    // Rounded names the Style action "Appearance".
+    await page.getByRole("button", { name: "Appearance" }).click();
     await expect(page.getByRole("menu").or(page.getByRole("dialog")).first()).toBeVisible();
     const popDuration = await page.locator(".td-pop").first().evaluate((el) => getComputedStyle(el).transitionDuration);
     expect(seconds(popDuration)).toBeLessThan(0.001);

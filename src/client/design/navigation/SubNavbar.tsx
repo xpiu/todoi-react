@@ -15,7 +15,7 @@ import { Popover } from "../core/Popover";
 import { Segmented } from "../core/Segmented";
 import { hintKeysText } from "../core/ShortcutHint";
 import { SwatchGroup } from "../core/SwatchGroup";
-import { MODES, THEMES } from "../core/themes";
+import { MODES, THEMES, getTheme } from "../core/themes";
 import { LabelChip } from "../board/LabelChip";
 import "../core/text.css";
 import "./SubNavbar.css";
@@ -35,10 +35,11 @@ export const DEFAULT_VIEWS: SubNavbarView[] = [
   { id: "board", label: "Board", icon: "kanban" },
   { id: "calendar", label: "Cal.", icon: "calendar" },
 ];
+const STYLE_ACTION: SubNavbarAction = { id: "style", label: "Style", icon: "palette" };
 export const DEFAULT_ACTIONS: SubNavbarAction[] = [
   { id: "filter", label: "Filter", icon: "filter" },
   { id: "sort", label: "Sort", icon: "arrow-up-narrow-wide" },
-  { id: "style", label: "Style", icon: "palette" },
+  STYLE_ACTION,
 ];
 const VIS_ICONS: Record<string, IconName> = { Private: "lock", Shared: "users", Public: "globe" };
 const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; href: (u: string) => string }> = [
@@ -212,6 +213,8 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
         <div className="td-subnav-actions">
           {actions.map((a) => {
             if (a.id === "style") {
+              // The default action takes the theme's name for it (text, hint and accessible name); a host's own label stays.
+              const label = a.label === STYLE_ACTION.label ? getTheme(ap.theme).styleActionLabel : a.label;
               return (
                 <Popover
                   key={a.id}
@@ -222,9 +225,9 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   aria-label="Board style"
                   width={264}
                   trigger={
-                    <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-menu="style">
+                    <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={label} data-menu="style">
                       {a.icon ? <Icon name={a.icon} size={16} /> : null}
-                      {a.label}
+                      {label}
                     </button>
                   }
                 >

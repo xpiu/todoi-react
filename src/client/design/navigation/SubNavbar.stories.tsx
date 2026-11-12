@@ -3,6 +3,7 @@ import { useId, useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { getAppearance, useAppearanceStore } from "../core/appearance";
+import { getTheme } from "../core/themes";
 import { FilterMenu } from "./FilterMenu";
 import { MembersMenu } from "./MembersMenu";
 import { SavedViewTabs } from "./SavedViewTabs";
@@ -146,8 +147,9 @@ export const OneMenuAtATime: Story = {
   },
 };
 export const StyleMenu: Story = {
-  async play({ args, canvas, canvasElement, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Style" }));
+  async play({ args, canvas, canvasElement, globals, userEvent }) {
+    // The theme names the action: "Appearance" in Rounded, "Style" in Minimal.
+    await userEvent.click(await canvas.findByRole("button", { name: getTheme(globals.theme).styleActionLabel }));
     const page = within(canvasElement.ownerDocument.body);
     const dialog = within(await page.findByRole("dialog", { name: "Board style" }));
     const ids = dialog.getByRole("checkbox", { name: "Show item IDs" });
@@ -157,6 +159,18 @@ export const StyleMenu: Story = {
     await userEvent.click(dialog.getByRole("button", { name: "More options" }));
     await expect(args.onOpenAppearance).toHaveBeenCalledOnce();
     await waitFor(() => expect(page.queryByRole("dialog", { name: "Board style" })).not.toBeInTheDocument());
+  },
+};
+/** Rounded prints the trigger's text, so its Style action says what the menu holds; icon-only Minimal keeps "Style". */
+export const RoundedAppearanceAction: Story = {
+  globals: { theme: "rounded" },
+  async play({ canvas, canvasElement, userEvent }) {
+    const trigger = await canvas.findByRole("button", { name: "Appearance" });
+    await expect(trigger).toHaveAttribute("data-tip", "Appearance");
+    await expect(canvas.queryByRole("button", { name: "Style" })).not.toBeInTheDocument();
+    await userEvent.click(trigger);
+    await expect(await within(canvasElement.ownerDocument.body).findByRole("dialog", { name: "Board style" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
   },
 };
 export const ShareAndExport: Story = {

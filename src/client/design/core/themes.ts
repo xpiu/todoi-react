@@ -55,6 +55,8 @@ export interface ThemeDefinition {
   foregrounds: Record<ModeId, ReadonlyArray<ThemeForeground>>;
   /** Whether projects show their icon glyph (sidebar rename, search, project panel) and offer to change it */
   projectIcons: boolean;
+  /** What the toolbar's default Style action is called. Rounded prints the trigger's text, so it says what the menu holds; icon-only Minimal keeps the short name */
+  styleActionLabel: string;
 }
 
 // ── Rounded ──────────────────────────────────────────────────────────────────────
@@ -105,6 +107,7 @@ export const THEMES: ReadonlyArray<ThemeDefinition> = [
     backgrounds: { dark: ROUNDED_DARK_BACKGROUNDS, light: ROUNDED_LIGHT_BACKGROUNDS },
     foregrounds: { dark: ROUNDED_DARK_FOREGROUNDS, light: ROUNDED_LIGHT_FOREGROUNDS },
     projectIcons: true,
+    styleActionLabel: "Appearance",
   },
   {
     id: "minimal",
@@ -113,6 +116,7 @@ export const THEMES: ReadonlyArray<ThemeDefinition> = [
     backgrounds: { dark: MINIMAL_DARK_BACKGROUNDS, light: MINIMAL_LIGHT_BACKGROUNDS },
     foregrounds: { dark: MINIMAL_DARK_FOREGROUNDS, light: MINIMAL_LIGHT_FOREGROUNDS },
     projectIcons: false,
+    styleActionLabel: "Style",
   },
 ];
 
