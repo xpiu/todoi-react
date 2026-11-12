@@ -115,6 +115,7 @@ export const LongTitleManyLabels: Story = {
     const key = canvas.getByRole("button", { name: `Copy ${args.itemId}` }).getBoundingClientRect();
     await expect(canvasElement.querySelector(".td-lrow-end")!.getBoundingClientRect().width).toBeLessThanOrEqual(width * 0.6 + 1);
     await expect(title.width).toBeGreaterThan(width * 0.2);
+    await expect(canvasElement.querySelector('.td-lrow-badge[data-priority="urgent"]')).toHaveAttribute("title", "Priority: Urgent");
     await expect(key.bottom).toBeLessThan(title.top + 24);
     await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
   },

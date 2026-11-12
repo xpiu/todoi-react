@@ -124,6 +124,8 @@ html[data-theme="minimal"] .td-card-badge[title^="Subitems"]{order:3;color:var(-
 html[data-theme="minimal"] .td-card-badge[title^="Priority"]{order:4}
 html[data-theme="minimal"] .td-card-badge[title^="Repeats"],html[data-theme="minimal"] .td-card-badge[title^="Attachments"]{order:5}
 html[data-theme="minimal"] .td-prio-text{display:inline;text-transform:capitalize}
+/* Urgent is pinned to the plain ink and red stays with overdue. Under one ink every meta word already is ink, so this only holds the hierarchy if metadata is ever dimmed again */
+html[data-theme="minimal"] .td-card-badge[data-priority="urgent"],html[data-theme="minimal"] .td-lrow-badge[data-priority="urgent"]{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-card-id,html[data-theme="minimal"] .td-lrow-key,html[data-theme="minimal"] .td-calchip-key{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-id{order:10;margin-left:auto}
 html[data-theme="minimal"] .td-card-id:hover,html[data-theme="minimal"] .td-lrow-key:hover{color:var(--ink-900)}
@@ -142,7 +144,7 @@ html[data-theme="minimal"] .td-lrow-labels,html[data-theme="minimal"] .td-lrow-l
 html[data-theme="minimal"] .td-lrow-labels .td-lpill{max-width:100%!important;white-space:normal;overflow-wrap:anywhere}
 html[data-theme="minimal"] .td-card-avs,html[data-theme="minimal"] .td-lrow-avs{gap:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-avs .td-cav,html[data-theme="minimal"] .td-lrow-avs .td-lav{width:auto!important;height:auto!important;border-radius:0;box-shadow:none!important;margin:0!important;overflow:visible;transition:none}
-html[data-theme="minimal"] .td-card-avs .td-cav+.td-cav::before,html[data-theme="minimal"] .td-lrow-avs .td-lav+.td-lav::before{content:", ";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-avs .td-cav+.td-cav::before,html[data-theme="minimal"] .td-lrow-avs .td-lav+.td-lav::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-avs .td-avatar,html[data-theme="minimal"] .td-lrow-avs .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;display:inline!important}
 html[data-theme="minimal"] .td-card-avs img.td-avatar,html[data-theme="minimal"] .td-lrow-avs img.td-avatar{width:14px!important;height:14px!important;border-radius:50%!important;vertical-align:-3px}
 html[data-theme="minimal"] .td-lrow .td-lrow-avs:hover .td-lav+.td-lav{margin-left:0}

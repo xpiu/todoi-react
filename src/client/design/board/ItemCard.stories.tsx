@@ -54,5 +54,8 @@ export const CrowdedMetadata: Story = {
     }
     await expect(canvas.getByText("12 of 16")).toBeVisible();
     await expect(canvas.getByText("HE-115")).toBeVisible();
+    // A crowded row wraps instead of collapsing to glyphs, so the date keeps its text; the priority badge names its level for themes.
+    await expect(card.querySelector(".td-due .td-meta-text")).toBeVisible();
+    await expect(card.querySelector('.td-card-badge[data-priority="high"]')).toHaveAttribute("title", "Priority: High");
   },
 };

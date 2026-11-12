@@ -162,7 +162,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
               </span>
             ) : null}
             {priority ? (
-              <span className="td-card-badge" title={`Priority: ${priority}`}>
+              <span className="td-card-badge" data-priority={priority.toLowerCase()} title={`Priority: ${priority}`}>
                 <Icon name="flag" size={14} color={PRIORITY_COLORS[priority]} style={{ fill: PRIORITY_COLORS[priority] }} />
                 <span className="td-prio-text">{priority}</span>
               </span>

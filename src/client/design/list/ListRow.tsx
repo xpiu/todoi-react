@@ -202,7 +202,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
           </span>
         ) : null}
         {priority ? (
-          <span className="td-lrow-badge" title={`Priority: ${priority}`}>
+          <span className="td-lrow-badge" data-priority={priority.toLowerCase()} title={`Priority: ${priority}`}>
             <Icon name="flag" size={14} color={PRIORITY_COLORS[priority]} style={{ fill: PRIORITY_COLORS[priority] }} />
             <span className="td-prio-text">{priority}</span>
           </span>
