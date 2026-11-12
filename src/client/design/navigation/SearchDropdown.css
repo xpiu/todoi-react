@@ -98,8 +98,12 @@
     display: flex;
     gap: 14px;
     padding: 7px var(--sp-3);
-    font: var(--type-small);
+    font: var(--type-body);
     color: var(--ink-400);
+  }
+  .td-sd-foot .td-kbd {
+    font-size: var(--text-xs);
+    line-height: 18px;
   }
   @keyframes td-sd-in {
     from {

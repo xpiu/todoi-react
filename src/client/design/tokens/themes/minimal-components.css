@@ -537,11 +537,11 @@ html[data-theme="minimal"] .td-sd-row[aria-selected="true"]{background:var(--blu
 html[data-theme="minimal"] .td-sd-ico{width:16px;height:16px;border-radius:0;background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-sd-ico svg{stroke-width:1.75;stroke:var(--ink-900)!important}
 html[data-theme="minimal"] .td-sd-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-sd-title mark{color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
+html[data-theme="minimal"] .td-sd-title mark{background:none;color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
 html[data-theme="minimal"] .td-sd-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sd-empty{padding:16px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sd-foot{padding:10px 16px;gap:16px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sd-foot .td-kbd2{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sd-foot{padding:10px 16px;gap:16px;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sd-foot .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
 /* ── Item overlay: the same ledger inside the dialog — square card, 500-weight title, section names over hairlines, every list (subitems, attachments, relations, comments) as rows, no fills, no bubbles */
 html[data-theme="minimal"] .td-modal{border-radius:0}
 html[data-theme="minimal"] .td-modal-cover{border-radius:0}
