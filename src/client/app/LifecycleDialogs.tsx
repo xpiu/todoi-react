@@ -17,6 +17,7 @@ import { copyText } from "../design/core/clipboard";
 import { snapshotUndo } from "./snapshotUndo";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
+import { avatarColorVar } from "./items";
 import { useCurrentUser } from "./session";
 import { StateDialog } from "./StateDialog";
 
@@ -105,7 +106,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
     <ProjectPanel
       open={open}
       project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: projectUrl(p.id), role }}
-      members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, image: x.image, isAnonymous: x.isAnonymous, color: x.avatarColor ? `var(--label-${x.avatarColor})` : undefined }))}
+      members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, image: x.image, isAnonymous: x.isAnonymous, color: avatarColorVar(x.avatarColor) }))}
       invites={invites.data}
       invitesLoading={invites.isPending}
       invitesError={invites.isError ? `Couldn't load invites: ${errorMessage(invites.error)}` : undefined}
@@ -115,7 +116,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
         await m.transferOwnership.mutateAsync({ projectId, userId: member.id, quiet: true });
         notify({ message: `Transferred ${quote(p.name)} to ${member.name}. You’re now an admin.`, icon: "users" });
       }}
-      activity={(activity.data ?? []).map((a) => ({ id: a.id, type: a.type, actor: a.actor?.name ?? "Todoi", actorImage: a.actor?.image ?? undefined, actorColor: a.actor?.avatarColor ? `var(--label-${a.actor.avatarColor})` : undefined, text: a.text, key: a.itemKey ? `${p.keyPrefix}-${a.itemKey}` : null, time: a.createdAt }))}
+      activity={(activity.data ?? []).map((a) => ({ id: a.id, type: a.type, actor: a.actor?.name ?? "Todoi", actorImage: a.actor?.image ?? undefined, actorColor: avatarColorVar(a.actor?.avatarColor), text: a.text, key: a.itemKey ? `${p.keyPrefix}-${a.itemKey}` : null, time: a.createdAt }))}
       archivedCount={p.archivedCount}
       currentUserId={user.id}
       section={section}

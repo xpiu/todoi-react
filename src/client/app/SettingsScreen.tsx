@@ -43,7 +43,8 @@ import { copyAndNotify, notifyFailure, quote, useFeedback } from "./feedback";
 import { useLifecycle } from "./lifecycle";
 import { projectUrl } from "./links";
 import { usePrefs, type Prefs } from "./prefs";
-import { avatarColorVar, useCurrentUser } from "./session";
+import { avatarColorVar } from "./items";
+import { useCurrentUser } from "./session";
 
 const settingsRoute = getRouteApi("/app/settings");
 const accountRoute = getRouteApi("/app/account");

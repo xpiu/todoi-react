@@ -18,6 +18,9 @@ export interface Person {
   image?: string | null;
 }
 
+/** A person's avatar colour as the CSS variable components take; undefined leaves the Avatar to pick one from the name. */
+export const avatarColorVar = (c: string | null | undefined) => (c ? `var(--label-${c})` : undefined);
+
 /** Overdue against `today` (ISO, from `useToday`, so it turns over at midnight). */
 export function dueStateOf(item: Pick<Item, "dueDate" | "done">, today: string): DueState {
   if (item.done) return "complete";
@@ -80,7 +83,7 @@ export function itemRowMapper(opts: RowOptions) {
     dueState: dueStateOf(it, opts.today),
     repeat: it.repeatRule ? describeRepeat(it.repeatRule, it.dueDate) : undefined,
     priority: it.priority ? PRIORITY_LABEL[it.priority] : undefined,
-    assignees: it.assigneeIds.map((id) => personById.get(id)).filter((p): p is Person => !!p).map((p) => ({ name: p.name, src: p.image ?? undefined, color: p.avatarColor ? `var(--label-${p.avatarColor})` : undefined })),
+    assignees: it.assigneeIds.map((id) => personById.get(id)).filter((p): p is Person => !!p).map((p) => ({ name: p.name, src: p.image ?? undefined, color: avatarColorVar(p.avatarColor) })),
     subitems: [],
     attachments: it.attachmentCount || undefined,
     created: opts.withCreated ? formatDate(it.createdAt) : undefined,

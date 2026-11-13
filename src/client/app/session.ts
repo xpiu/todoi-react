@@ -17,8 +17,6 @@ export function useCurrentUser(): { user: SessionUser | null; pending: boolean }
   return { user, pending: s.isPending && !user };
 }
 
-export const avatarColorVar = (c: string | null | undefined) => (c ? `var(--label-${c})` : undefined);
-
 /** Where items live, as the shared actions and the overlay need it: a project, or the Inbox (`inboxContainer`). */
 export interface ItemContainer {
   keyPrefix: string;

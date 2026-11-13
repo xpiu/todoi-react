@@ -12,7 +12,8 @@ import { SignUpPage } from "../../design/auth/SignUpPage";
 import { AuthShell, AuthState } from "../../design/auth/AuthShell";
 import type { IconName } from "../../design/core/Icon";
 import { ViewSkeleton } from "../../design/core/Skeleton";
-import { avatarColorVar, useCurrentUser } from "../session";
+import { avatarColorVar } from "../items";
+import { useCurrentUser } from "../session";
 
 const loginRoute = getRouteApi("/login");
 const signupRoute = getRouteApi("/signup");
