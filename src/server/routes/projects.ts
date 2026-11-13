@@ -13,9 +13,8 @@ import { createProject, importProject, listsWithCounts, memberProjectIds, update
 import { changeMembership } from "../services/members";
 
 import { destroyItem, destroyProject, itemContainersLive, itemIsLive, setProjectLifecycle } from "../services/lifecycle";
-import { fail, validate } from "../errors";
+import { fail, idParam, validate } from "../errors";
 
-const idParam = validate("param", z.object({ id: idSchema }));
 const liveGroups = and(isNull(groups.archivedAt), isNull(groups.deletedAt));
 const liveProjects = and(isNull(projects.archivedAt), isNull(projects.deletedAt));
 

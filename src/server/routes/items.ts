@@ -13,9 +13,8 @@ import { logActivity, quote } from "../services/activity";
 import { itemContainersLive, itemIsLive, setItemLifecycle } from "../services/lifecycle";
 import { issueKeyNumber } from "../services/projects";
 import { deliver, notifyPeople } from "../services/notifications";
-import { fail, validate } from "../errors";
+import { fail, idParam, validate } from "../errors";
 
-const idParam = validate("param", z.object({ id: idSchema }));
 const listQuery = validate("query", z.object({ listId: idSchema.optional(), projectId: idSchema.optional() }));
 
 type ItemRow = typeof items.$inferSelect;

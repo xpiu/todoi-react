@@ -29,9 +29,8 @@ import { logActivity, quote } from "../services/activity";
 import { deliver, notifyComment, notifyPeople } from "../services/notifications";
 
 import { itemIsLive } from "../services/lifecycle";
-import { fail, validate } from "../errors";
+import { fail, idParam, validate } from "../errors";
 
-const idParam = validate("param", z.object({ id: idSchema }));
 const projectQuery = validate("query", z.object({ projectId: idSchema }));
 
 const INVERSE: Record<RelationType, RelationType> = { blocked_by: "blocks", blocks: "blocked_by", related: "related" };

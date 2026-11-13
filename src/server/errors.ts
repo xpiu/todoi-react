@@ -6,9 +6,10 @@ import { zValidator } from "@hono/zod-validator";
 import type { Context, ErrorHandler, NotFoundHandler, ValidationTargets } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 
 import { codeForStatus, type ErrorBody, type ErrorCode } from "../shared/errors";
+import { idSchema } from "../shared/items";
 
 const requestIdOf = (c: Context): string => (c.get("requestId") as string | undefined) ?? "";
 
@@ -37,6 +38,9 @@ export const validate = <Target extends keyof ValidationTargets, T extends ZodTy
     for (const issue of result.error.issues) fields[issue.path.join(".") || target] ??= issue.message;
     throw new ApiFailure(400, result.error.issues[0]?.message ?? "That request isn't valid", fields);
   });
+
+/** The `:id` path parameter of a route that addresses one record. */
+export const idParam = validate("param", z.object({ id: idSchema }));
 
 interface DbError {
   code?: string;

@@ -8,7 +8,6 @@ import { z } from "zod";
 import { LABEL_COLORS } from "../../shared/enums";
 import { MAX_AVATAR_BYTES } from "../../shared/avatars";
 import { itemsToCalendar } from "../../shared/calendarExport";
-import { idSchema } from "../../shared/items";
 import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
@@ -16,7 +15,7 @@ import { apiTokens, groups, invites, items, labels, lists, members, projects, us
 import { env } from "../env";
 import { logActivity } from "../services/activity";
 import { memberProjectIds } from "../services/projects";
-import { ApiFailure, fail, validate } from "../errors";
+import { ApiFailure, fail, idParam, validate } from "../errors";
 import { setAvatar } from "../services/avatars";
 import { attachmentHeaders } from "../services/attachmentResponse";
 import { openUpload } from "../services/uploads";
@@ -117,12 +116,12 @@ const inviteOut = async (code: string) => {
 };
 
 export const projectInvitesRoute = new Hono()
-  .get("/:id/invites", validate("param", z.object({ id: idSchema })), async (c) => {
+  .get("/:id/invites", idParam, async (c) => {
     viewerOf(c);
     const rows = await db.select().from(invites).where(and(eq(invites.projectId, c.req.valid("param").id), isNull(invites.acceptedAt), isNull(invites.revokedAt)));
     return c.json(rows.map((r) => ({ ...r, url: `${env.APP_URL}/i/${r.code}` })));
   })
-  .post("/:id/invites", validate("param", z.object({ id: idSchema })), validate("json", z.object({ email: z.email().optional(), role: z.enum(["admin", "editor", "viewer"]).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
+  .post("/:id/invites", idParam, validate("json", z.object({ email: z.email().optional(), role: z.enum(["admin", "editor", "viewer"]).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
     const v = viewerOf(c);
     const { id } = c.req.valid("param");
     const { email, role, days } = c.req.valid("json");
