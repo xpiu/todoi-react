@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "../db";
+import { nextPosition } from "../db/position";
 import { activity, attachments, comments, groups, invites, items, lists, savedViews, users } from "../db/schema";
 import { createProject } from "./projects";
 
@@ -25,14 +26,14 @@ export async function transferGuestWorkspace(guestId: string, userId: string) {
     const guestInbox = inboxes.find((l) => l.userId === guestId);
     const userInbox = inboxes.find((l) => l.userId === userId);
     if (guestInbox && userInbox) {
-      const [end] = await tx.select({ n: sql<number>`coalesce(max(${items.position}), -1) + 1` }).from(items).where(eq(items.listId, userInbox.id));
-      await tx.update(items).set({ position: sql`${items.position} + ${end!.n}` }).where(and(eq(items.listId, guestInbox.id), isNull(items.parentItemId)));
+      const inboxEnd = await nextPosition(tx, items, eq(items.listId, userInbox.id));
+      await tx.update(items).set({ position: sql`${items.position} + ${inboxEnd}` }).where(and(eq(items.listId, guestInbox.id), isNull(items.parentItemId)));
       await tx.update(items).set({ listId: userInbox.id }).where(eq(items.listId, guestInbox.id));
       await tx.delete(lists).where(eq(lists.id, guestInbox.id));
     }
     await tx.update(lists).set({ userId }).where(eq(lists.userId, guestId));
-    const [lastGroup] = await tx.select({ n: sql<number>`coalesce(max(${groups.position}), -1) + 1` }).from(groups).where(eq(groups.ownerId, userId));
-    await tx.update(groups).set({ ownerId: userId, position: sql`${groups.position} + ${lastGroup!.n}` }).where(eq(groups.ownerId, guestId));
+    const groupsEnd = await nextPosition(tx, groups, eq(groups.ownerId, userId));
+    await tx.update(groups).set({ ownerId: userId, position: sql`${groups.position} + ${groupsEnd}` }).where(eq(groups.ownerId, guestId));
 
     // Unique person/content pairs merge without dropping either person's existing references.
     await tx.execute(sql`insert into members (project_id, user_id, role)

@@ -5,8 +5,9 @@ import { env } from "../env";
 import * as schema from "./schema";
 
 const connection = drizzle(env.DATABASE_URL, { schema });
-type Transaction = Parameters<Parameters<typeof connection.transaction>[0]>[0];
-interface TransactionContext { transaction: Transaction; afterCommit: Array<() => Promise<unknown>> }
+/** A transaction handle, as `db.transaction` passes it to its callback */
+export type Tx = Parameters<Parameters<typeof connection.transaction>[0]>[0];
+interface TransactionContext { transaction: Tx; afterCommit: Array<() => Promise<unknown>> }
 const context = new AsyncLocalStorage<TransactionContext>();
 
 /** Existing services automatically use the request transaction; nested transactions remain savepoints. */
@@ -14,7 +15,7 @@ export const db: typeof connection = new Proxy(connection, {
   get(target, property) {
     const active = context.getStore();
     if (property === "transaction" && active) {
-      return (run: (tx: Transaction) => Promise<unknown>) => active.transaction.transaction((tx) =>
+      return (run: (tx: Tx) => Promise<unknown>) => active.transaction.transaction((tx) =>
         context.run({ ...active, transaction: tx }, () => run(tx)));
     }
     const source = active && property !== "$client" ? active.transaction : target;

@@ -4,7 +4,7 @@ import { inArray, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { ATTACHMENT_QUOTA_BYTES, MAX_ATTACHMENT_BYTES, MAX_FILES_PER_UPLOAD, quotaMessage, tooLargeMessage } from "../../shared/uploads";
-import { db } from "../db";
+import { db, type Tx } from "../db";
 import { attachments, uploadCleanup } from "../db/schema";
 import { logActivity, quote } from "./activity";
 import { drainUploadCleanup } from "./uploadCleanup";
@@ -19,7 +19,6 @@ export class UploadRejected extends Error {
   }
 }
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const usedBytes = async (tx: Tx | typeof db, userId: string) =>
   Number((await tx.select({ n: sql<string>`coalesce(sum(${attachments.size}), 0)` }).from(attachments).where(sql`${attachments.uploadedBy} = ${userId}`))[0]!.n);
 

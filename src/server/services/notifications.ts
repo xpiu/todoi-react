@@ -2,13 +2,14 @@
 // or a new comment on an item someone watches lands as an unread item in that person's Inbox, about
 // the project item. Never for the actor themselves, never for someone who can no longer read the item,
 // and never against the person's opt-outs (Settings › Notifications, stored in users.prefs).
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { prefsOf, type Prefs } from "../../shared/prefs";
 import { inboxFor } from "../auth";
 import { readableItemIds } from "../access";
-import { db, inRequestTransaction } from "../db";
+import { db, inRequestTransaction, type Tx } from "../db";
+import { nextPosition } from "../db/position";
 import { groups, items, itemWatchers, members, projects, users, type ItemNotification } from "../db/schema";
 
 type Kind = "assignment" | "mention" | "watch";
@@ -25,11 +26,10 @@ interface About {
 /** An @handle as the comment composer writes it: the nickname, else the first name (DESIGN.md › Mentions). */
 const handleOf = (u: { name: string; nickname: string | null }) => (u.nickname || u.name.split(/\s+/)[0] || u.name).toLowerCase();
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export async function createInboxNotification(source: typeof db | Tx, listId: string, actorId: string, message: { id?: string; title: string; description?: string | null; notification: ItemNotification }) {
-  const [last] = await source.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, listId));
-  await source.insert(items).values({ ...message, id: message.id ?? nanoid(), title: message.title.slice(0, 500), listId, unread: true, position: (last?.max ?? -1) + 1, createdBy: actorId }).onConflictDoNothing();
+  const position = await nextPosition(source, items, eq(items.listId, listId));
+  await source.insert(items).values({ ...message, id: message.id ?? nanoid(), title: message.title.slice(0, 500), listId, unread: true, position, createdBy: actorId }).onConflictDoNothing();
 }
 
 /** Deliver one notification to each recipient who may and wants to get it; returns who got one. */

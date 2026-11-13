@@ -23,6 +23,7 @@ import { idSchema } from "../../shared/items";
 import { readableItemIds } from "../access";
 import { viewerOf } from "../auth";
 import { db } from "../db";
+import { nextPosition } from "../db/position";
 import { activity, attachments, commentReactions, comments, itemAssignees, itemLabels, itemRelations, itemWatchers, items, labels, savedViews, users } from "../db/schema";
 import { logActivity, quote } from "../services/activity";
 import { deliver, notifyComment, notifyPeople } from "../services/notifications";
@@ -43,10 +44,10 @@ export const labelsRoute = new Hono()
   })
   .post("/", validate("json", createLabelSchema), async (c) => {
     const input = c.req.valid("json");
-    const max = (await db.select({ max: sql<number>`coalesce(max(${labels.position}), -1)` }).from(labels).where(eq(labels.projectId, input.projectId)))[0]?.max ?? -1;
+    const position = await nextPosition(db, labels, eq(labels.projectId, input.projectId));
     const [row] = await db
       .insert(labels)
-      .values({ ...input, position: max + 1 })
+      .values({ ...input, position })
       .returning();
     return c.json(row!, 201);
   })
@@ -220,10 +221,10 @@ export const savedViewsRoute = new Hono()
   .post("/", validate("json", createSavedViewSchema), async (c) => {
     const viewer = viewerOf(c);
     const input = c.req.valid("json");
-    const max = (await db.select({ max: sql<number>`coalesce(max(${savedViews.position}), -1)` }).from(savedViews).where(eq(savedViews.projectId, input.projectId)))[0]?.max ?? -1;
+    const position = await nextPosition(db, savedViews, eq(savedViews.projectId, input.projectId));
     const [row] = await db
       .insert(savedViews)
-      .values({ ...input, shared: input.shared ?? false, ownerId: viewer.userId, position: max + 1 })
+      .values({ ...input, shared: input.shared ?? false, ownerId: viewer.userId, position })
       .returning();
     return c.json(row!, 201);
   })

@@ -7,6 +7,7 @@ import { importProjectSchema } from "../../shared/import";
 import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
 import { viewerOf } from "../auth";
 import { db } from "../db";
+import { nextPosition } from "../db/position";
 import { groups, items, lists, members, projects, users } from "../db/schema";
 import { createProject, importProject, listsWithCounts, memberProjectIds, updateList } from "../services/projects";
 import { changeMembership } from "../services/members";
@@ -42,10 +43,10 @@ export const groupsRoute = new Hono()
   })
   .post("/", validate("json", createGroupSchema), async (c) => {
     const viewer = viewerOf(c);
-    const max = (await db.select({ max: sql<number>`coalesce(max(${groups.position}), -1)` }).from(groups).where(eq(groups.ownerId, viewer.userId)))[0]?.max ?? -1;
+    const position = await nextPosition(db, groups, eq(groups.ownerId, viewer.userId));
     const [row] = await db
       .insert(groups)
-      .values({ ...c.req.valid("json"), ownerId: viewer.userId, position: max + 1 })
+      .values({ ...c.req.valid("json"), ownerId: viewer.userId, position })
       .returning();
     return c.json(row!, 201);
   })
@@ -161,10 +162,10 @@ export const archiveRoute = new Hono()
 export const listsRoute = new Hono()
   .post("/", validate("json", createListSchema), async (c) => {
     const input = c.req.valid("json");
-    const max = (await db.select({ max: sql<number>`coalesce(max(${lists.position}), -1)` }).from(lists).where(eq(lists.projectId, input.projectId)))[0]?.max ?? -1;
+    const position = await nextPosition(db, lists, eq(lists.projectId, input.projectId));
     const [row] = await db
       .insert(lists)
-      .values({ ...input, position: max + 1 })
+      .values({ ...input, position })
       .returning();
     return c.json(row!, 201);
   })

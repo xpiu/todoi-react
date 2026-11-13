@@ -2,10 +2,8 @@
 import { nanoid } from "nanoid";
 
 import type { ActivityType } from "../../shared/enums";
-import { db } from "../db";
+import { db, type Tx } from "../db";
 import { activity } from "../db/schema";
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export interface LogEntry {
   projectId: string | null | undefined;

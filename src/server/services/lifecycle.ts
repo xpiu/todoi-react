@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 
-import { afterCommit, db } from "../db";
+import { afterCommit, db, type Tx } from "../db";
 import { items, projects, type Item } from "../db/schema";
 import { logActivity, quote } from "./activity";
 import { drainUploadCleanup } from "./uploadCleanup";
@@ -26,8 +26,6 @@ const timestamps = ({ archived, deleted }: LifecycleChange) => ({
   ...(archived === undefined ? {} : { archivedAt: archived ? new Date() : null }),
   ...(deleted === undefined ? {} : { deletedAt: deleted ? new Date() : null }),
 });
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** `outer`: run inside the caller's transaction (an item update that also archives or restores). */
 export async function setItemLifecycle(id: string, change: LifecycleChange, actorId: string, fields: Partial<Item> = {}, outer?: Tx) {

@@ -4,15 +4,14 @@ import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from "drizzle-
 import { nanoid } from "nanoid";
 
 import { dateRangeIssue, type MoveItemInput, type MoveRestore } from "../../shared/items";
-import { db } from "../db";
+import { db, type Tx } from "../db";
+import { nextPosition } from "../db/position";
 import { ApiFailure } from "../errors";
 import { attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type List, type Project } from "../db/schema";
 import { applyCompletion, statusChange, type Occurrence } from "../../shared/completion";
 import { logActivity, quote } from "./activity";
 import { itemIsLive, setItemLifecycle } from "./lifecycle";
 import { issueKeyNumbers } from "./projects";
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type ItemState = { done?: boolean; status?: Item["status"]; ifDue?: string };
 
@@ -339,7 +338,7 @@ export async function duplicateItem(sourceId: string, { id, listId }: { id: stri
     const placed: { position?: number } = {};
     const parentItemId = sameList ? root.parentItemId : null;
     if (parentItemId) {
-      placed.position = ((await tx.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.parentItemId, parentItemId)))[0]?.max ?? -1) + 1;
+      placed.position = await nextPosition(tx, items, eq(items.parentItemId, parentItemId));
     } else {
       const live = sameList ? await tx.select({ id: items.id }).from(items).where(and(eq(items.listId, dest.id), isNull(items.parentItemId), itemIsLive)).orderBy(asc(items.position), asc(items.createdAt)) : [];
       const at = live.findIndex((s) => s.id === root.id);

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createItemSchema, duplicateItemSchema, idSchema, moveItemSchema, updateItemSchema } from "../../shared/items";
 import { viewerOf } from "../auth";
 import { db, inRequestTransaction } from "../db";
+import { nextPosition } from "../db/position";
 import { attachments, groups, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
 import { statusChange } from "../../shared/completion";
 import { duplicateItem, moveItem, placeAmongSiblings, updateItem } from "../services/items";
@@ -72,7 +73,7 @@ export const itemsRoute = new Hono()
       // Additions to one list take turns, so simultaneous ones each get their own place.
       await tx.select({ id: lists.id }).from(lists).where(eq(lists.id, listId)).for("update");
       const placed: { position?: number } = {};
-      if (fields.parentItemId) placed.position = ((await tx.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, listId)))[0]?.max ?? -1) + 1;
+      if (fields.parentItemId) placed.position = await nextPosition(tx, items, eq(items.listId, listId));
       else await placeAmongSiblings(tx, fields.id, listId, where === "top" ? 0 : undefined, placed);
       // Items in a project get a key from the group's counter at once; Inbox items get one when filed.
       let keyNumber: number | null = null;

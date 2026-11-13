@@ -7,12 +7,11 @@ import { statusChange } from "../../shared/completion";
 import { LABEL_COLORS } from "../../shared/enums";
 import type { ImportProjectInput } from "../../shared/import";
 import type { CreateProjectInput, UpdateListInput } from "../../shared/projects";
-import { db } from "../db";
+import { db, type Tx } from "../db";
+import { nextPosition } from "../db/position";
 import { groups, itemLabels, items, labels, lists, members, projects, type List, type Project } from "../db/schema";
 import { itemIsLive } from "./lifecycle";
 import { logActivity } from "./activity";
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** The ids of every project the user is a member of (private projects are visible to members only). */
 export const memberProjectIds = async (userId: string): Promise<string[]> => (await db.select({ projectId: members.projectId }).from(members).where(eq(members.userId, userId))).map((m) => m.projectId);
@@ -32,7 +31,7 @@ export const issueKeyNumber = (tx: Tx | typeof db, groupId: string) => issueKeyN
 /** Create a project with its lists from a template or by copying another project's lists; the creator becomes owner. */
 export async function createProject(input: CreateProjectInput, userId: string, outer?: Tx): Promise<{ project: Project; lists: List[] }> {
   const run = async (tx: Tx) => {
-    const max = (await tx.select({ max: sql<number>`coalesce(max(${projects.position}), -1)` }).from(projects).where(eq(projects.groupId, input.groupId)))[0]?.max ?? -1;
+    const position = await nextPosition(tx, projects, eq(projects.groupId, input.groupId));
     let seed: Array<{ name: string; statusRole: List["statusRole"]; icon: string | null }> = (input.lists ?? []).map(([name, role]) => ({ name, statusRole: role ?? null, icon: null }));
     let copyFrom: Project | undefined;
     if (input.copyFrom) {
@@ -52,7 +51,7 @@ export async function createProject(input: CreateProjectInput, userId: string, o
         visibility: input.visibility ?? copyFrom?.visibility ?? "private",
         defaultView: copyFrom?.defaultView ?? "list",
         linkStatuses: copyFrom?.linkStatuses ?? true,
-        position: max + 1,
+        position,
       })
       .returning();
     const created = seed.length ? await tx.insert(lists).values(seed.map((l, i) => ({ id: nanoid(), projectId: project!.id, ...l, position: i }))).returning() : [];

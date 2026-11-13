@@ -12,6 +12,7 @@ import { DEV_USER } from "../shared/devUser";
 import { DEV_PASSWORD, inboxFor, LOCAL_USER_ID } from "./auth";
 import { hashPassword } from "better-auth/crypto";
 import { db } from "./db";
+import { nextPosition } from "./db/position";
 import { accounts, attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, labels, lists, members, projects, users, type Project } from "./db/schema";
 import { createProject } from "./services/projects";
 import { saveUpload } from "./services/uploads";
@@ -200,7 +201,7 @@ async function fillSamples(flo: string) {
 }
 
 async function insertSampleItem(project: Project, list: typeof lists.$inferSelect, it: SeedItem, labelRows: Array<typeof labels.$inferSelect>, flo: string) {
-  const position = ((await db.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, list.id)))[0]?.max ?? -1) + 1;
+  const position = await nextPosition(db, items, eq(items.listId, list.id));
   const id = nanoid();
   const cover = it.cover ? { sample: it.cover } : null;
   await db.insert(items).values({
@@ -257,7 +258,7 @@ async function ensureComments(itemId: string, list: SeedItem["comments"] & {}, f
 async function ensureInbox(flo: string, aboutOf: (key: number) => { aboutKey?: string; aboutItemId?: string }) {
   const listId = await inboxFor(flo);
   const present = new Set((await db.select({ title: items.title }).from(items).where(eq(items.listId, listId))).map((r) => r.title));
-  let position = ((await db.select({ max: sql<number>`coalesce(max(${items.position}), -1)` }).from(items).where(eq(items.listId, listId)))[0]?.max ?? -1) + 1;
+  let position = await nextPosition(db, items, eq(items.listId, listId));
   let added = 0;
   for (const it of INBOX) {
     if (present.has(it.title)) continue;
