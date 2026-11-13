@@ -22,7 +22,7 @@ const meta = {
   title: "Core/ProjectPicker",
   component: ProjectPicker,
   // Panel body only; TransferDialog (below) is the app's dialog around it.
-  decorators: [(Story) => <div className="td-pop" style={{ width: 340, position: "static" }}><Story /></div>],
+  decorators: [(Story) => <div className="td-popover" style={{ width: 340, position: "static" }}><Story /></div>],
   args: { projects: PROJECTS, current: "p4", onPick: fn(), loadLists: fn(async () => LOADED) },
   parameters: { docs: { description: { component: "Move or copy items to another project: pick the project (searchable, `current` excluded), then the destination list. Panel body only; TransferDialog wraps it in the Move/Copy dialog. Lists come from each project's `lists` or from the async loadLists(projectId). onPick(project, list) fires once and the caller performs the transfer and raises one toast." } } },
 } satisfies Meta<typeof ProjectPicker>;

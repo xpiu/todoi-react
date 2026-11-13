@@ -68,21 +68,21 @@ function Row({ row, q = "", hit }: { row: SettingsRow; q?: string; hit?: boolean
   const label = typeof row.label === "string" ? <Mark text={row.label} q={q} /> : row.label;
   return (
     <>
-      <div className="td-set-row" data-hit={hit || undefined} ref={hit ? scrollToHit : undefined}>
-        <div className="td-set-rowtext">
-          <span className="td-set-rowlabel" data-mono={row.mono ? "true" : undefined}>
-            {row.swatch ? <span className="td-set-bar" style={{ background: row.swatch }} aria-hidden /> : null}
+      <div className="td-settings-row" data-hit={hit || undefined} ref={hit ? scrollToHit : undefined}>
+        <div className="td-settings-rowtext">
+          <span className="td-settings-rowlabel" data-mono={row.mono ? "true" : undefined}>
+            {row.swatch ? <span className="td-settings-bar" style={{ background: row.swatch }} aria-hidden /> : null}
             <span>{label}</span>
           </span>
           {row.hint ? (
-            <span className="td-set-rowhint">
+            <span className="td-settings-rowhint">
               <Mark text={row.hint} q={q} />
             </span>
           ) : null}
         </div>
-        <div className="td-set-rowctl">{row.control}</div>
+        <div className="td-settings-row-control">{row.control}</div>
       </div>
-      {row.body ? <div className="td-set-body">{row.body}</div> : null}
+      {row.body ? <div className="td-settings-body">{row.body}</div> : null}
     </>
   );
 }
@@ -91,23 +91,23 @@ function Row({ row, q = "", hit }: { row: SettingsRow; q?: string; hit?: boolean
 export function SettingsCard({ group, crumb, q = "", hit, children }: { group: SettingsGroup; crumb?: { label: string; onOpen: () => void }; q?: string; hit?: string | null; children?: ReactNode }) {
   const headingId = `set-g-${group.id}`;
   return (
-    <section className="td-set-group" data-fields={group.fields || undefined} data-tone={group.tone} aria-labelledby={group.lead ? undefined : headingId} aria-label={group.lead ? group.title : undefined}>
+    <section className="td-settings-group" data-fields={group.fields || undefined} data-tone={group.tone} aria-labelledby={group.lead ? undefined : headingId} aria-label={group.lead ? group.title : undefined}>
       {group.lead ?? (
-        <div className="td-set-grouphead">
-          <h2 className="td-set-grouptitle" id={headingId}>
+        <div className="td-settings-grouphead">
+          <h2 className="td-settings-grouptitle" id={headingId}>
             <Mark text={group.title} q={q} />
           </h2>
           {crumb ? (
-            <button type="button" className="td-set-grouppath-btn" onClick={crumb.onOpen} aria-label={`Open ${crumb.label}`}>
+            <button type="button" className="td-settings-grouppath-btn" onClick={crumb.onOpen} aria-label={`Open ${crumb.label}`}>
               {crumb.label}
               <Icon name="arrow-right" size={12} />
             </button>
           ) : group.sub ? (
-            <span className="td-set-grouppath">{group.sub}</span>
+            <span className="td-settings-grouppath">{group.sub}</span>
           ) : null}
         </div>
       )}
-      {!group.rows.length && group.empty ? <p className="td-set-note">{group.empty}</p> : null}
+      {!group.rows.length && group.empty ? <p className="td-settings-note">{group.empty}</p> : null}
       {group.rows.map((r) => (
         <Row key={r.id} row={r} q={q} hit={hit === r.id} />
       ))}
@@ -119,12 +119,12 @@ export function SettingsCard({ group, crumb, q = "", hit, children }: { group: S
 /** The settings canvas and column without the page nav: a title, a line under it, then cards. */
 export function SettingsPageFrame({ title, crumb, children }: { title: string; crumb?: string; children?: ReactNode }) {
   return (
-    <div className="td-set">
-      <div className="td-set-inner" data-nav="false">
-        <div className="td-set-main">
+    <div className="td-settings">
+      <div className="td-settings-inner" data-nav="false">
+        <div className="td-settings-main">
           <div>
-            <h1 className="td-set-title">{title}</h1>
-            {crumb ? <p className="td-set-crumb">{crumb}</p> : null}
+            <h1 className="td-settings-title">{title}</h1>
+            {crumb ? <p className="td-settings-crumb">{crumb}</p> : null}
           </div>
           {children}
         </div>
@@ -167,10 +167,10 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
   const total = results?.reduce((n, x) => n + x.group.rows.length, 0) ?? 0;
   const matched = results ? `${count(total, "setting")} match “${q.trim()}”` : "";
   return (
-    <div className="td-set">
-      <div className="td-set-inner">
-        <nav className="td-set-nav" aria-label="Settings pages">
-          <div className="td-set-search" role="search">
+    <div className="td-settings">
+      <div className="td-settings-inner">
+        <nav className="td-settings-nav" aria-label="Settings pages">
+          <div className="td-settings-search" role="search">
             <TextField
               dark
               icon="search"
@@ -190,28 +190,28 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
               aria-label="Search settings"
             />
             {q ? (
-              <button type="button" className="td-set-clear" aria-label="Clear search" onClick={() => setQ("")}>
+              <button type="button" className="td-settings-clear" aria-label="Clear search" onClick={() => setQ("")}>
                 <Icon name="x" size={14} />
               </button>
             ) : null}
           </div>
-          <div className="td-set-navlist">
+          <div className="td-settings-navlist">
             {[cur, ...pages.filter((p) => p.id !== cur.id)].map((p) => (
-              <div key={p.id} className="td-set-navpage">
-                <div className="td-set-navhead">{p.title}</div>
+              <div key={p.id} className="td-settings-navpage">
+                <div className="td-settings-navhead">{p.title}</div>
                 {p.sections.map((s) => (
-                  <button key={s.id} type="button" className="td-set-navrow" aria-current={!query && p.id === cur.id && s.id === sec.id ? "true" : undefined} onClick={() => go(p.id, s.id)}>
-                    <span className="td-set-navicon">
+                  <button key={s.id} type="button" className="td-settings-navrow" aria-current={!query && p.id === cur.id && s.id === sec.id ? "true" : undefined} onClick={() => go(p.id, s.id)}>
+                    <span className="td-settings-navicon">
                       <Icon name={s.icon} size={16} />
                     </span>
-                    <span className="td-set-navlabel">{s.label}</span>
+                    <span className="td-settings-navlabel">{s.label}</span>
                   </button>
                 ))}
               </div>
             ))}
           </div>
         </nav>
-        <div className="td-set-main">
+        <div className="td-settings-main">
           {/* Always mounted (so a changed count is announced) and its own node (Minimal hides the crumb). */}
           <p className="td-sr-only" role="status">
             {results ? `${matched}${results.length ? ". Enter opens the first result" : ""}` : ""}
@@ -219,8 +219,8 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
           {results ? (
             <>
               <div>
-                <h1 className="td-set-title">Search</h1>
-                <p className="td-set-crumb">
+                <h1 className="td-settings-title">Search</h1>
+                <p className="td-settings-crumb">
                   {matched}
                   {results.length ? " · Enter opens the first result" : ""}
                 </p>
@@ -228,17 +228,17 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
               {results.length ? (
                 results.map((x) => <SettingsCard key={`${x.page.id}/${x.section.id}/${x.group.id}`} group={x.group} crumb={{ label: `${x.page.title} › ${x.section.label}`, onOpen: () => openResult(x) }} q={query} />)
               ) : (
-                <div className="td-set-group">
-                  <div className="td-set-empty">No settings match “{q.trim()}”</div>
+                <div className="td-settings-group">
+                  <div className="td-settings-empty">No settings match “{q.trim()}”</div>
                 </div>
               )}
             </>
           ) : (
             <>
               <div>
-                <h1 className="td-set-title">{cur.title}</h1>
+                <h1 className="td-settings-title">{cur.title}</h1>
                 {cur.sections.length > 1 ? (
-                  <p className="td-set-crumb">
+                  <p className="td-settings-crumb">
                     {sec.title ?? sec.label}
                     {sec.hint ? ` · ${sec.hint}` : ""}
                   </p>
@@ -257,8 +257,8 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
 
 export function StatusDot({ on, label }: { on?: boolean; label: string }) {
   return (
-    <span className="td-set-status" role="status">
-      <span className="td-set-dot" data-on={on ? "true" : undefined} aria-hidden />
+    <span className="td-settings-status" role="status">
+      <span className="td-settings-dot" data-on={on ? "true" : undefined} aria-hidden />
       {label}
     </span>
   );
@@ -266,7 +266,7 @@ export function StatusDot({ on, label }: { on?: boolean; label: string }) {
 
 export function SettingsLink({ href, label = "Open" }: { href: string; label?: string }) {
   return (
-    <a className="td-set-link" href={href} target="_blank" rel="noreferrer">
+    <a className="td-settings-link" href={href} target="_blank" rel="noreferrer">
       {label}
       <Icon name="external-link" size={14} />
     </a>
@@ -275,7 +275,7 @@ export function SettingsLink({ href, label = "Open" }: { href: string; label?: s
 
 export function MonoValue({ value }: { value: string }) {
   return (
-    <span className="td-set-mono" title={value}>
+    <span className="td-settings-mono" title={value}>
       {value}
     </span>
   );

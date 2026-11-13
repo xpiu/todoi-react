@@ -52,29 +52,29 @@
   }
 
   /* Account menu identity header (a MenuItem carrying the avatar + two lines) */
-  .td-usermenu-id {
+  .td-user-menu-id {
     min-height: 52px;
     padding: var(--sp-2) 10px;
   }
-  .td-usermenu-idrow {
+  .td-user-menu-idrow {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
   }
-  .td-usermenu-idtext {
+  .td-user-menu-idtext {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
-  .td-usermenu-name {
+  .td-user-menu-name {
     font: var(--weight-semibold) var(--text-sm) / var(--lh-sm) var(--font-ui);
     color: var(--ink-900);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-usermenu-email {
+  .td-user-menu-email {
     font: var(--type-small);
     color: var(--ink-400);
     overflow: hidden;
@@ -106,7 +106,7 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-topnav-title-txt {
+  .td-topnav-title-text {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

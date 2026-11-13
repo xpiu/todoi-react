@@ -39,12 +39,12 @@ export function FilterMenu({ sections, available, filters, counts = {}, onToggle
   const q = query.trim().toLowerCase();
   const groups = sections.map(([label, type]) => ({ label, rows: available.filter((f) => f.type === type && (!q || f.value.toLowerCase().includes(q) || label.toLowerCase().includes(q))) })).filter((s) => s.rows.length);
   return (
-    <div className="td-fm" role="group" aria-label="Filter options">
-      <div className="td-fm-head">
+    <div className="td-filter-menu" role="group" aria-label="Filter options">
+      <div className="td-filter-menu-head">
         <Icon name="search" size={16} />
         <input
           ref={inputRef}
-          className="td-fm-search"
+          className="td-filter-menu-search"
           type="text"
           value={query}
           autoFocus
@@ -60,19 +60,19 @@ export function FilterMenu({ sections, available, filters, counts = {}, onToggle
           aria-label="Search filter options"
         />
         {filters.length && onClear ? (
-          <Button variant="chrome" className="td-fm-clear" onClick={onClear}>
+          <Button variant="chrome" className="td-filter-menu-clear" onClick={onClear}>
             Clear all
           </Button>
         ) : null}
       </div>
-      <div className="td-fm-scroll">
+      <div className="td-filter-menu-scroll">
         {groups.map((s) => (
           <div key={s.label} role="group" aria-label={s.label}>
-            <div className="td-fm-sec">{s.label}</div>
+            <div className="td-filter-menu-section">{s.label}</div>
             {s.rows.map((f) => (
               <div
                 key={key(f)}
-                className="td-fm-row"
+                className="td-filter-menu-row"
                 role="checkbox"
                 tabIndex={0}
                 aria-label={f.value}
@@ -86,20 +86,20 @@ export function FilterMenu({ sections, available, filters, counts = {}, onToggle
                 }}
               >
                 {/* The row is the control; the Checkbox inside is only its visual */}
-                <span className="td-fm-check" inert aria-hidden>
+                <span className="td-filter-menu-check" inert aria-hidden>
                   <Checkbox checked={isActive(f)} aria-label={f.value} />
                 </span>
-                {f.type === "label" ? <span className="td-fm-dot" style={{ background: f.color }} /> : <Icon name={f.icon ?? "clock"} size={14} color={f.iconColor ?? "var(--ink-600)"} />}
-                <span className="td-fm-label">{f.value}</span>
-                <span className="td-fm-count">{counts[key(f)] ?? 0}</span>
+                {f.type === "label" ? <span className="td-filter-menu-dot" style={{ background: f.color }} /> : <Icon name={f.icon ?? "clock"} size={14} color={f.iconColor ?? "var(--ink-600)"} />}
+                <span className="td-filter-menu-label">{f.value}</span>
+                <span className="td-filter-menu-count">{counts[key(f)] ?? 0}</span>
               </div>
             ))}
           </div>
         ))}
-        {q && !groups.length ? <div className="td-fm-empty">No filters match “{query}”</div> : null}
+        {q && !groups.length ? <div className="td-filter-menu-empty">No filters match “{query}”</div> : null}
       </div>
       {suggestShortcuts ? (
-        <div className="td-fm-foot" aria-hidden="true">
+        <div className="td-filter-menu-foot" aria-hidden="true">
           <span>
             <kbd className="td-kbd">{hintKeysText("filter")}</kbd> opens this menu
           </span>

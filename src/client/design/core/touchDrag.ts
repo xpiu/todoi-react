@@ -6,7 +6,7 @@ import { useEffect, useRef, type RefObject } from "react";
 
 import "./touchDrag.css";
 
-const IGNORE = 'button,input,textarea,select,label,a[href],[contenteditable="true"],[role^="menu"],.td-pop';
+const IGNORE = 'button,input,textarea,select,label,a[href],[contenteditable="true"],[role^="menu"],.td-popover';
 
 export interface TouchDragOptions {
   /** @default "[data-drag-id]" */
@@ -81,7 +81,7 @@ export function attachTouchDrag(root: HTMLElement, opts: TouchDragOptions): () =
     }
     if (!e) {
       e = edges[k] = document.createElement("div");
-      e.className = "td-tdrag-edge";
+      e.className = "td-touch-drag-edge";
       e.setAttribute("aria-hidden", "true");
       document.body.appendChild(e);
     }
@@ -94,7 +94,7 @@ export function attachTouchDrag(root: HTMLElement, opts: TouchDragOptions): () =
   const cancelPress = () => {
     if (press) {
       clearTimeout(press.t);
-      press.el.classList.remove("td-tdrag-press");
+      press.el.classList.remove("td-touch-drag-press");
       press = null;
     }
   };
@@ -143,14 +143,14 @@ export function attachTouchDrag(root: HTMLElement, opts: TouchDragOptions): () =
     const p = press;
     if (!p) return;
     press = null;
-    p.el.classList.remove("td-tdrag-press");
+    p.el.classList.remove("td-touch-drag-press");
     if (o.onLift?.(p.el, { x: p.x, y: p.y }) === false) return;
     const r = p.el.getBoundingClientRect();
     let ghost: HTMLElement | null = null;
     if (o.ghost) {
       ghost = p.el.cloneNode(true) as HTMLElement;
-      ghost.classList.add("td-tdrag-ghost");
-      ghost.classList.remove("td-drag-src", "td-tdrag-press");
+      ghost.classList.add("td-touch-drag-ghost");
+      ghost.classList.remove("td-drag-src", "td-touch-drag-press");
       ghost.removeAttribute("id");
       Object.assign(ghost.style, { position: "fixed", top: `${r.top}px`, left: `${r.left}px`, width: `${r.width}px`, height: `${r.height}px`, margin: "0", pointerEvents: "none", boxSizing: "border-box" });
       document.body.appendChild(ghost);
@@ -158,7 +158,7 @@ export function attachTouchDrag(root: HTMLElement, opts: TouchDragOptions): () =
     drag = { el: p.el, id: p.id, dragId: p.el.getAttribute("data-drag-id"), ox: p.x, oy: p.y, x: p.x, y: p.y, ghost, target: null };
     p.el.classList.add("td-drag-src");
     root.classList.add("is-touch-dragging");
-    document.documentElement.classList.add("td-tdrag-active");
+    document.documentElement.classList.add("td-touch-drag-active");
     try {
       navigator.vibrate?.(8);
     } catch {
@@ -178,7 +178,7 @@ export function attachTouchDrag(root: HTMLElement, opts: TouchDragOptions): () =
     d.ghost?.remove();
     d.el.classList.remove("td-drag-src");
     root.classList.remove("is-touch-dragging");
-    document.documentElement.classList.remove("td-tdrag-active");
+    document.documentElement.classList.remove("td-touch-drag-active");
     try {
       d.el.releasePointerCapture(d.id);
     } catch {
@@ -201,7 +201,7 @@ export function attachTouchDrag(root: HTMLElement, opts: TouchDragOptions): () =
       if (n.matches?.(o.ignore)) return;
       n = n.parentElement;
     }
-    el.classList.add("td-tdrag-press");
+    el.classList.add("td-touch-drag-press");
     press = { el, id: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(lift, o.delay) };
   };
   const onMove = (e: PointerEvent) => {

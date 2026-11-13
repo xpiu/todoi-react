@@ -81,7 +81,7 @@ function ItemKey({ itemId }: { itemId?: string }) {
         void doCopy(itemId);
       }}
     >
-      <span className="td-card-id-pop" aria-hidden>
+      <span className="td-card-id-popover" aria-hidden>
         <Icon name={copyIcon(copy, "copy")} size={11} />
       </span>
       {itemId}
@@ -168,17 +168,17 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
               </span>
             ) : null}
             {assignees.length ? (
-              <span className="td-card-avs" title={assignees.map((a) => personOf(a).name).join(", ")}>
+              <span className="td-card-avatars" title={assignees.map((a) => personOf(a).name).join(", ")}>
                 {assignees.slice(0, 3).map((a, i) => {
                   const o = personOf(a);
                   return (
-                    <span key={i} className="td-cav" style={{ "--td-z": 3 - i } as CSSProperties}>
+                    <span key={i} className="td-card-avatar" style={{ "--td-z": 3 - i } as CSSProperties}>
                       <Avatar name={o.name} src={o.src} color={o.color} size={20} />
                     </span>
                   );
                 })}
                 {assignees.length > 3 ? (
-                  <span className="td-cav td-cav-n" aria-label={`${assignees.length - 3} more assignees`}>
+                  <span className="td-card-avatar td-card-avatar-more" aria-label={`${assignees.length - 3} more assignees`}>
                     +{assignees.length - 3}
                   </span>
                 ) : null}

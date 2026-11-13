@@ -101,20 +101,20 @@ export function ArchiveView({ entries, busy = false, tab: tabProp, onTabChange, 
     }
     if (tab === "trash" && e.at) {
       const d = daysLeft(e.at, t0, retentionDays);
-      parts.push(<span className={d != null && d <= 7 ? "td-arc-soon" : undefined}>{goneIn(d)}</span>);
+      parts.push(<span className={d != null && d <= 7 ? "td-archive-soon" : undefined}>{goneIn(d)}</span>);
     }
     return parts.filter((x) => x != null && x !== "").flatMap((p, i) => (i ? [" · ", p] : [p]));
   };
   const lead = (e: ArchiveEntry) => {
     if (e.kind === "project")
       return (
-        <span className="td-arc-lead" data-kind="project">
+        <span className="td-archive-lead" data-kind="project">
           <Icon name={e.icon ?? "kanban"} size={16} color={e.color ?? "var(--ink-600)"} />
         </span>
       );
     const g = e.done ? { icon: "circle-check" as IconName, color: "var(--success-icon)" } : listIconFor(e.listName ?? "");
     return (
-      <span className="td-arc-lead">
+      <span className="td-archive-lead">
         <Icon name={g.icon} size={16} color={g.color} />
       </span>
     );
@@ -123,16 +123,16 @@ export function ArchiveView({ entries, busy = false, tab: tabProp, onTabChange, 
     const on = confirm === e.id;
     const forever = tab === "trash";
     return (
-      <div className="td-arc-row" role="listitem" key={e.id} data-kind={e.kind} data-confirm={on || undefined}>
+      <div className="td-archive-row" role="listitem" key={e.id} data-kind={e.kind} data-confirm={on || undefined}>
         {lead(e)}
-        <span className="td-arc-text">
-          <span className="td-arc-title" data-done={e.done || undefined} title={e.title}>
+        <span className="td-archive-text">
+          <span className="td-archive-title" data-done={e.done || undefined} title={e.title}>
             {e.title}
           </span>
-          <span className="td-arc-meta">{on ? `Delete “${e.title}” forever?${e.kind === "project" ? " Everything in it goes too." : " This can't be undone."}` : meta(e).map((m, i) => <span key={i}>{m}</span>)}</span>
+          <span className="td-archive-meta">{on ? `Delete “${e.title}” forever?${e.kind === "project" ? " Everything in it goes too." : " This can't be undone."}` : meta(e).map((m, i) => <span key={i}>{m}</span>)}</span>
         </span>
-        {e.key && !on ? <span className="td-arc-key">{e.key}</span> : null}
-        <span className="td-arc-ctl">
+        {e.key && !on ? <span className="td-archive-key">{e.key}</span> : null}
+        <span className="td-archive-control">
           {on ? (
             <>
               <Button variant="ghost" onClick={() => setConfirm(null)}>
@@ -154,7 +154,7 @@ export function ArchiveView({ entries, busy = false, tab: tabProp, onTabChange, 
               <Button disabled={busy} icon="archive-restore" onClick={() => onRestore(e)}>
                 Restore
               </Button>
-              <MenuButton disabled={busy} label={`More for ${e.title}`} tooltip="More" triggerClassName="td-arc-more" placement="bottom-end" tier="detached" size={28} iconSize={16}>
+              <MenuButton disabled={busy} label={`More for ${e.title}`} tooltip="More" triggerClassName="td-archive-more" placement="bottom-end" tier="detached" size={28} iconSize={16}>
                 {onOpen ? (
                   <MenuItem icon={e.kind === "project" ? "kanban" : "square-arrow-out-up-right"} onSelect={() => onOpen(e)}>
                     Open
@@ -178,7 +178,7 @@ export function ArchiveView({ entries, busy = false, tab: tabProp, onTabChange, 
     );
   };
   const group = (label: string, n: number) => (
-    <div className="td-arc-group" key={`g-${label}`}>
+    <div className="td-archive-group" key={`g-${label}`}>
       {label} · {n}
     </div>
   );
@@ -186,26 +186,26 @@ export function ArchiveView({ entries, busy = false, tab: tabProp, onTabChange, 
     if (needle || pf) return <EmptyState surface="card" compact icon="search" title={`No matches${needle ? ` for “${q.trim()}”` : ""}`} hint={pf ? "In this project. Pick All projects to search everywhere." : undefined} secondary={{ label: "Clear search", onClick: () => {
       setQ("");
       setPf(null);
-    } }} className="td-arc-empty" />;
-    return tab === "trash" ? <EmptyState surface="card" compact icon="trash-2" title="Trash is empty" hint={`Deleted projects and items stay here for ${retentionDays} days, then they're gone.`} className="td-arc-empty" /> : <EmptyState surface="card" compact icon="archive" title="Nothing archived" hint={project ? "Items archived from this project show up here, ready to restore." : "Archived projects and items show up here, ready to restore."} className="td-arc-empty" />;
+    } }} className="td-archive-empty" />;
+    return tab === "trash" ? <EmptyState surface="card" compact icon="trash-2" title="Trash is empty" hint={`Deleted projects and items stay here for ${retentionDays} days, then they're gone.`} className="td-archive-empty" /> : <EmptyState surface="card" compact icon="archive" title="Nothing archived" hint={project ? "Items archived from this project show up here, ready to restore." : "Archived projects and items show up here, ready to restore."} className="td-archive-empty" />;
   };
   const cap = tab === "trash" ? `Deleted projects and items are kept for ${retentionDays} days, then removed for good. Restore puts them back where they were.` : "Archived projects and items are out of the way but not gone. Restore puts them back where they were.";
   return (
-    <div className={"td-arc" + (surface === "card" ? " td-arc-oncard" : "")} data-tab={tab}>
-      <div className="td-arc-bar">
+    <div className={"td-archive" + (surface === "card" ? " td-archive-oncard" : "")} data-tab={tab}>
+      <div className="td-archive-bar">
         <Segmented aria-label="Archive or trash" value={tab} onChange={setTab} options={[{ id: "archive", icon: "archive", label: `Archive${nArchive ? ` ${nArchive}` : ""}` }, { id: "trash", icon: "trash-2", label: `Trash${nTrash ? ` ${nTrash}` : ""}` }]} />
-        {emptyConfirm ? null : <TextField icon="search" className="td-arc-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "trash" ? "Search trash" : "Search archive"} aria-label={tab === "trash" ? "Search trash" : "Search archive"} onKeyDown={(e) => {
+        {emptyConfirm ? null : <TextField icon="search" className="td-archive-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "trash" ? "Search trash" : "Search archive"} aria-label={tab === "trash" ? "Search trash" : "Search archive"} onKeyDown={(e) => {
           if (e.key === "Escape" && q) {
             e.stopPropagation();
             setQ("");
           } else if (e.key.length === 1) e.stopPropagation();
         }} />}
         {!project && projects.length && !emptyConfirm ? <Select aria-label="Project" value={pf ?? "__all"} options={[{ value: "__all", label: "All projects", icon: "folders" as IconName }, ...projects.map((p) => ({ value: p.id, label: p.name, icon: p.icon ?? ("kanban" as IconName), iconColor: p.color }))]} onChange={(v) => setPf(v === "__all" ? null : v)} width={240} tier="detached" /> : null}
-        <span className="td-arc-spacer" />
+        <span className="td-archive-spacer" />
         {tab === "trash" && onEmptyTrash && inTab.length ? (
           emptyConfirm ? (
-            <span className="td-arc-confirm">
-              <span className="td-arc-cap td-arc-cap-strong">Delete {inTab.length === 1 ? "1 entry" : `${inTab.length} entries`} forever?</span>
+            <span className="td-archive-confirm">
+              <span className="td-archive-caption td-archive-caption-strong">Delete {inTab.length === 1 ? "1 entry" : `${inTab.length} entries`} forever?</span>
               <Button variant={surface === "card" ? "ghost" : "chrome-ghost"} onClick={() => setEmptyConfirm(false)}>
                 Cancel
               </Button>
@@ -227,9 +227,9 @@ export function ArchiveView({ entries, busy = false, tab: tabProp, onTabChange, 
           )
         ) : null}
       </div>
-      <p className="td-arc-cap">{cap}</p>
+      <p className="td-archive-caption">{cap}</p>
       {shown.length ? (
-        <div className="td-arc-list" role="list" aria-label={tab === "trash" ? "Trash" : "Archive"}>
+        <div className="td-archive-list" role="list" aria-label={tab === "trash" ? "Trash" : "Archive"}>
           {both ? group("Projects", projectsShown.length) : null}
           {projectsShown.map(row)}
           {both ? group("Items", itemsShown.length) : null}

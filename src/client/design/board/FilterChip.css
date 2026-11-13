@@ -1,5 +1,5 @@
 @layer components {
-  .td-fchip {
+  .td-filter-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -12,32 +12,32 @@
     white-space: nowrap;
     transition: background var(--duration-base) var(--ease-standard);
   }
-  .td-fchip-on {
+  .td-filter-chip-on {
     background: var(--chrome-selected);
     color: var(--chrome-selected-text);
     padding-right: 5px;
   }
-  .td-fchip-on:hover {
+  .td-filter-chip-on:hover {
     background: var(--btn-inverse-bg);
   }
-  .td-fchip-off {
+  .td-filter-chip-off {
     background: var(--chrome-hover);
     color: var(--chrome-text);
   }
-  .td-fchip-off:hover {
+  .td-filter-chip-off:hover {
     background: var(--chrome-active);
   }
-  .td-fchip-cat {
+  .td-filter-chip-category {
     font-weight: var(--weight-regular);
     opacity: 0.62;
   }
-  .td-fchip-dot {
+  .td-filter-chip-dot {
     width: 8px;
     height: 8px;
     border-radius: 2px;
     flex-shrink: 0;
   }
-  .td-fchip-x {
+  .td-filter-chip-remove {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -46,7 +46,7 @@
     border-radius: 4px;
     margin-left: 1px;
   }
-  .td-fchip-on:hover .td-fchip-x {
+  .td-filter-chip-on:hover .td-filter-chip-remove {
     background: var(--n-a06);
   }
 }

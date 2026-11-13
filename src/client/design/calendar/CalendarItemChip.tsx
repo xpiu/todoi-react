@@ -24,17 +24,17 @@ export interface CalendarItemChipProps {
 export function CalendarItemChip({ title, itemId, showId = true, labels = [], done, overdue, onClick, dragId, dragFrom, onDragStart, style }: CalendarItemChipProps) {
   const bars = labels.slice(0, 3).map((l) => l.color);
   return (
-    <button type="button" className={"td-calchip" + (done ? " is-done" : "")} title={title} draggable={dragId ? true : undefined} data-drag-id={dragId} data-drag-from={dragId ? dragFrom : undefined} onDragStart={onDragStart} onClick={onClick} style={style}>
-      {done ? <Icon name="circle-check" size={12} color="var(--success-icon)" className="td-calchip-ico" /> : !done && overdue ? <Icon name="clock" size={12} color="var(--danger)" className="td-calchip-ico" /> : null}
+    <button type="button" className={"td-calendar-chip" + (done ? " is-done" : "")} title={title} draggable={dragId ? true : undefined} data-drag-id={dragId} data-drag-from={dragId ? dragFrom : undefined} onDragStart={onDragStart} onClick={onClick} style={style}>
+      {done ? <Icon name="circle-check" size={12} color="var(--success-icon)" className="td-calendar-chip-icon" /> : !done && overdue ? <Icon name="clock" size={12} color="var(--danger)" className="td-calendar-chip-icon" /> : null}
       {bars.length ? (
-        <span className="td-calchip-bars" aria-hidden>
+        <span className="td-calendar-chip-bars" aria-hidden>
           {bars.map((c, i) => (
-            <span key={i} className="td-calchip-bar" style={{ background: `var(--label-${c})` }} />
+            <span key={i} className="td-calendar-chip-bar" style={{ background: `var(--label-${c})` }} />
           ))}
         </span>
       ) : null}
-      <span className="td-calchip-title">{title}</span>
-      {itemId && showId ? <span className="td-calchip-key">{itemId}</span> : null}
+      <span className="td-calendar-chip-title">{title}</span>
+      {itemId && showId ? <span className="td-calendar-chip-key">{itemId}</span> : null}
     </button>
   );
 }

@@ -19,7 +19,7 @@
   .td-avatar[data-initials]::after {
     content: attr(data-initials);
   }
-  .td-avstack-more[data-more]::after {
+  .td-avatar-stack-more[data-more]::after {
     content: attr(data-more);
   }
   .td-avatar[data-ink="light"] {
@@ -30,19 +30,19 @@
   }
 
   /* AvatarStack — overlapping avatars; each wears a 2px card-coloured ring. */
-  .td-avstack {
+  .td-avatar-stack {
     display: inline-flex;
     align-items: center;
     flex: none;
   }
-  .td-avstack > * {
+  .td-avatar-stack > * {
     box-shadow: 0 0 0 2px var(--surface-card);
     border-radius: var(--radius-full);
   }
-  .td-avstack > * + * {
+  .td-avatar-stack > * + * {
     margin-left: calc(var(--td-av-overlap, 6px) * -1);
   }
-  .td-avstack-more {
+  .td-avatar-stack-more {
     display: inline-flex;
     align-items: center;
     justify-content: center;

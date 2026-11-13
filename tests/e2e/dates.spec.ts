@@ -48,22 +48,22 @@ test("a calendar drag moves an item's whole range, and Undo restores both dates"
   const chip = await f.item("Same-day chip", { startDate: day(20), dueDate: day(20) });
   const span = await f.item("Three-day span", { startDate: day(8), dueDate: day(10) });
   await page.goto(`/p/${f.projectId}?v=calendar`);
-  const bar = page.locator(".td-calspan", { hasText: "Three-day span" }).first();
+  const bar = page.locator(".td-calendar-span", { hasText: "Three-day span" }).first();
   await expect(bar).toBeVisible();
 
   // A chip whose start is its due stays a one-day item.
-  await page.locator(".td-calchip", { hasText: "Same-day chip" }).dragTo(page.locator(`.td-calcell[data-iso="${day(22)}"]`));
+  await page.locator(".td-calendar-chip", { hasText: "Same-day chip" }).dragTo(page.locator(`.td-calendar-cell[data-iso="${day(22)}"]`));
   await expect.poll(() => datesOf(page, f, chip)).toBe(`${day(22)} → ${day(22)}`);
-  await expect(page.locator(".td-calspan", { hasText: "Same-day chip" })).toHaveCount(0);
+  await expect(page.locator(".td-calendar-span", { hasText: "Same-day chip" })).toHaveCount(0);
 
   // Grab the bar over its first day and drop it a week on: both ends move, the preview shows where.
-  const grab = (await page.locator(`.td-calcell[data-iso="${day(8)}"]`).boundingBox())!;
+  const grab = (await page.locator(`.td-calendar-cell[data-iso="${day(8)}"]`).boundingBox())!;
   const b = (await bar.boundingBox())!;
-  const target = (await page.locator(`.td-calcell[data-iso="${day(15)}"]`).boundingBox())!;
+  const target = (await page.locator(`.td-calendar-cell[data-iso="${day(15)}"]`).boundingBox())!;
   await page.mouse.move(grab.x + grab.width / 2, b.y + b.height / 2);
   await page.mouse.down();
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 8 });
-  await expect(page.locator(".td-calcell.is-drop")).toHaveCount(3);
+  await expect(page.locator(".td-calendar-cell.is-drop")).toHaveCount(3);
   await page.mouse.up();
   await expect.poll(() => datesOf(page, f, span)).toBe(`${day(15)} → ${day(17)}`);
   const toast = page.locator(".td-toast").last();
@@ -76,8 +76,8 @@ test("an open tab's today turns over at midnight", async ({ page, fixture: f }) 
   await f.item("Due on the 2nd", { dueDate: "2026-10-02" });
   await page.clock.install({ time: new Date("2026-10-02T23:59:00+02:00") });
   await page.goto(`/p/${f.projectId}?v=calendar`);
-  const today = page.locator('.td-calcell[aria-current="date"]');
-  const overdue = page.locator(".td-calchip", { hasText: "Due on the 2nd" }).locator(".td-calchip-ico");
+  const today = page.locator('.td-calendar-cell[aria-current="date"]');
+  const overdue = page.locator(".td-calendar-chip", { hasText: "Due on the 2nd" }).locator(".td-calendar-chip-icon");
   await expect(today).toHaveAttribute("data-iso", "2026-10-02");
   await expect(overdue).toHaveCount(0);
   await page.clock.runFor(2 * 60_000);
@@ -88,12 +88,12 @@ test("an open tab's today turns over at midnight", async ({ page, fixture: f }) 
 test("in the calendar a chip opens its item, and clicking an empty day adds one", async ({ page, fixture: f }) => {
   const chip = await f.item("Chip to open", { dueDate: day(9) });
   await page.goto(`/p/${f.projectId}?v=calendar`);
-  await page.locator(".td-calchip", { hasText: "Chip to open" }).click();
+  await page.locator(".td-calendar-chip", { hasText: "Chip to open" }).click();
   await expect(page.getByRole("dialog", { name: "Chip to open", exact: true })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`item=${chip}`));
   await page.keyboard.press("Escape");
   const count = async () => ((await (await page.request.get(`/api/items?projectId=${f.projectId}`)).json()) as Item[]).length;
   expect(await count()).toBe(1);
-  await page.locator(`.td-calcell[data-iso="${day(23)}"]`).click({ position: { x: 60, y: 80 } });
+  await page.locator(`.td-calendar-cell[data-iso="${day(23)}"]`).click({ position: { x: 60, y: 80 } });
   await expect.poll(count).toBe(2);
 });

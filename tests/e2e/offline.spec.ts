@@ -59,7 +59,7 @@ for (const scope of SCOPES) test(`durable offline recovery is readable and acces
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("html")).toHaveAttribute("data-device", "phone");
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await expect.poll(async () => (await page.locator(".td-set-main").boundingBox())?.width ?? 0).toBeGreaterThan(300);
+  await expect.poll(async () => (await page.locator(".td-settings-main").boundingBox())?.width ?? 0).toBeGreaterThan(300);
   await checkA11y(page, `${scope} durable offline mobile`);
   await page.screenshot({ path: `.tmp/shots/offline-${scope}-mobile.png`, animations: "disabled" });
   await page.getByRole("textbox", { name: "Saved change", exact: true }).scrollIntoViewIfNeeded();

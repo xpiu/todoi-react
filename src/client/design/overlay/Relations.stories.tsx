@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Blocked: Story = {
   async play({ args, canvas, userEvent }) {
-    await expect(canvas.getByText("Blocked", { selector: ".td-rel-blocked" })).toBeVisible();
+    await expect(canvas.getByText("Blocked", { selector: ".td-relations-blocked" })).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: /HE-120/ }));
     await expect(args.onOpen).toHaveBeenCalledWith("i4");
     const [removeFirst] = canvas.getAllByRole("button", { name: "Remove relation" });
@@ -46,7 +46,7 @@ export const Blocked: Story = {
 export const BlockerDone: Story = {
   args: { relations: [{ type: "blocked_by", item: training }] },
   async play({ canvas }) {
-    await expect(canvas.queryByText("Blocked", { selector: ".td-rel-blocked" })).not.toBeInTheDocument();
+    await expect(canvas.queryByText("Blocked", { selector: ".td-relations-blocked" })).not.toBeInTheDocument();
   },
 };
 export const AddRelation: Story = {

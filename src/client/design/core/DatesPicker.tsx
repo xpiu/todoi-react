@@ -143,17 +143,17 @@ export function DatesPicker({
     };
     return (
       <div
-        className="td-dp-field"
+        className="td-date-picker-field"
         data-active={active === k ? "true" : undefined}
         onMouseDown={(e) => {
           focusInput(e);
           setActive(k);
         }}
       >
-        <span className="td-dp-label">{label}</span>
+        <span className="td-date-picker-label">{label}</span>
         <input
           ref={k === "due" ? dueRef : undefined}
-          className="td-dp-input"
+          className="td-date-picker-input"
           placeholder={val ? formatDate(val, { year: "auto", today }) : ph}
           aria-label={`${label} date`}
           value={typed[k]}
@@ -163,13 +163,13 @@ export function DatesPicker({
           onKeyDown={onKeyDown}
         />
         {g ? (
-          <span className="td-dp-preview">{formatDate(g, { weekday: true, year: "auto", today })}</span>
+          <span className="td-date-picker-preview">{formatDate(g, { weekday: true, year: "auto", today })}</span>
         ) : typed[k].trim() ? (
-          <span className="td-dp-preview" data-invalid="true">
+          <span className="td-date-picker-preview" data-invalid="true">
             Not a date
           </span>
         ) : val ? (
-          <button type="button" className="td-dp-x" aria-label={`Clear ${label.toLowerCase()} date`} onClick={clear}>
+          <button type="button" className="td-date-picker-clear" aria-label={`Clear ${label.toLowerCase()} date`} onClick={clear}>
             <Icon name="x" size={12} />
           </button>
         ) : null}
@@ -185,15 +185,15 @@ export function DatesPicker({
 
   return (
     <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} width={248} role="dialog" aria-label={ariaLabel} block={block} initialFocus={dueRef} className={className}>
-      <div className="td-dp">
-        <div className="td-dp-fields">
+      <div className="td-date-picker">
+        <div className="td-date-picker-fields">
           {withStart && showStart ? field("start", "Start", S, "Add a start date") : null}
           {field("due", "Due", D, "Type a date: fri, 12 sep, in 3 days")}
           {withTime && D ? (
-            <div className="td-dp-field" data-active={active === "time" ? "true" : undefined} onMouseDown={focusInput}>
-              <span className="td-dp-label">Time</span>
+            <div className="td-date-picker-field" data-active={active === "time" ? "true" : undefined} onMouseDown={focusInput}>
+              <span className="td-date-picker-label">Time</span>
               <input
-                className="td-dp-input"
+                className="td-date-picker-input"
                 placeholder="Add a time: 14:30, 2pm"
                 aria-label="Due time"
                 value={typed.time}
@@ -216,11 +216,11 @@ export function DatesPicker({
                 }}
               />
               {typed.time && !timeGuess ? (
-                <span className="td-dp-preview" data-invalid="true">
+                <span className="td-date-picker-preview" data-invalid="true">
                   Not a time
                 </span>
               ) : time && !typed.time ? (
-                <button type="button" className="td-dp-x" aria-label="Clear time" onClick={() => emit({ time: null })}>
+                <button type="button" className="td-date-picker-clear" aria-label="Clear time" onClick={() => emit({ time: null })}>
                   <Icon name="x" size={12} />
                 </button>
               ) : null}
@@ -229,7 +229,7 @@ export function DatesPicker({
           {withStart && !showStart ? (
             <button
               type="button"
-              className="td-dp-addstart"
+              className="td-date-picker-addstart"
               onClick={() => {
                 setShowStart(true);
                 setActive("start");
@@ -240,7 +240,7 @@ export function DatesPicker({
             </button>
           ) : null}
         </div>
-        <div className="td-dp-quick">
+        <div className="td-date-picker-quick">
           {QUICK_PICKS.map(([l, k]) => (
             <Button key={k} onClick={() => pickDay(resolveDate(k, today))}>
               {l}
@@ -248,8 +248,8 @@ export function DatesPicker({
           ))}
         </div>
         <DateCalendar value={active === "start" ? S : D} range={S && D ? { start: S, end: D } : null} today={today} weekStartsOn={weekStartsOn} min={active === "due" && S ? S : undefined} onChange={(_iso, d) => pickDay(d)} />
-        <div className="td-dp-foot">
-          <span className="td-dp-cur">{D ? formatDate(D, { weekday: true }) + (time ? ` · ${formatTime(time)}` : "") : S ? "Start only" : "No date"}</span>
+        <div className="td-date-picker-foot">
+          <span className="td-date-picker-current">{D ? formatDate(D, { weekday: true }) + (time ? ` · ${formatTime(time)}` : "") : S ? "Start only" : "No date"}</span>
           {S || D ? (
             <Button
               variant="ghost"

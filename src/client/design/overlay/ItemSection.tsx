@@ -18,13 +18,13 @@ export interface ItemSectionProps {
 
 export function ItemSection({ icon, title, action, inset = true, children, style, className }: ItemSectionProps) {
   return (
-    <div className={["td-isec", className ?? ""].join(" ").trim()} style={style}>
-      <div className="td-isec-head">
-        {icon ? <Icon name={icon} size={16} /> : <span className="td-isec-spacer" />}
-        <span className="td-isec-title">{title}</span>
+    <div className={["td-item-section", className ?? ""].join(" ").trim()} style={style}>
+      <div className="td-item-section-head">
+        {icon ? <Icon name={icon} size={16} /> : <span className="td-item-section-spacer" />}
+        <span className="td-item-section-title">{title}</span>
         {action ?? null}
       </div>
-      {children ? <div className={"td-isec-body" + (inset ? " is-inset" : "")}>{children}</div> : null}
+      {children ? <div className={"td-item-section-body" + (inset ? " is-inset" : "")}>{children}</div> : null}
     </div>
   );
 }

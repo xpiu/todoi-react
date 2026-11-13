@@ -62,7 +62,7 @@
     gap: var(--sp-1);
     flex-wrap: wrap;
   }
-  .td-subnav-act {
+  .td-subnav-action {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -77,11 +77,11 @@
     white-space: nowrap;
     transition: background var(--duration-base) var(--ease-standard);
   }
-  .td-subnav-act:hover {
+  .td-subnav-action:hover {
     background: var(--chrome-hover);
   }
-  .td-subnav-act:active,
-  .td-subnav-act[aria-expanded="true"] {
+  .td-subnav-action:active,
+  .td-subnav-action[aria-expanded="true"] {
     background: var(--chrome-active);
   }
   /* Something is filtered / sorted: a 6px dot after the label (its own element; ::after is the tooltip's). */
@@ -93,7 +93,7 @@
     background: currentcolor;
     flex-shrink: 0;
   }
-  .td-share-vis {
+  .td-share-visibility {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
@@ -161,12 +161,12 @@
     margin-left: auto;
     display: inline-flex;
   }
-  .td-style-div {
+  .td-style-divider {
     height: 1px;
     margin: var(--sp-3) calc(var(--sp-2) * -1);
     background: var(--border-divider);
   }
-  .td-style-eg {
+  .td-style-example {
     margin-left: auto;
     font: var(--weight-regular) 11px / 16px var(--font-mono);
     color: var(--ink-400);

@@ -58,20 +58,20 @@ export function CoverPicker({ cover, images = [], onChange, onUpload, placeholde
       block={block}
       trigger={
         <Button variant="outline" icon={cover ? undefined : "image"} disabled={disabled} aria-label={labelWithValue(label, shown)} data-block={block ? "true" : undefined} className="td-aside-btn">
-          {cover ? cover.src ? <img className="td-cp-thumb" src={cover.src} alt="" /> : <span className="td-cp-dot" style={{ background: cover.color }} /> : null}
-          <span className="td-cp-value" data-placeholder={cover ? undefined : "true"}>
+          {cover ? cover.src ? <img className="td-cover-picker-thumb" src={cover.src} alt="" /> : <span className="td-cover-picker-dot" style={{ background: cover.color }} /> : null}
+          <span className="td-cover-picker-value" data-placeholder={cover ? undefined : "true"}>
             {shown}
           </span>
         </Button>
       }
     >
-      <div className="td-cp">
+      <div className="td-cover-picker">
         <div className="td-menu-heading">Color</div>
-        <div className="td-cp-swatches" role="radiogroup" aria-label="Cover color">
+        <div className="td-cover-picker-swatches" role="radiogroup" aria-label="Cover color">
           {SWATCHES.map((s) => {
             const on = !!(cover && !cover.src && cover.color === s.color);
             return (
-              <button key={s.key} type="button" className="td-cp-swatch" role="radio" aria-label={s.key} aria-checked={on} style={{ background: s.color }} onClick={() => pick({ color: s.color })}>
+              <button key={s.key} type="button" className="td-cover-picker-swatch" role="radio" aria-label={s.key} aria-checked={on} style={{ background: s.color }} onClick={() => pick({ color: s.color })}>
                 {on ? <Icon name="check" size={14} color={s.white ? "var(--text-inverse)" : "var(--label-text)"} /> : null}
               </button>
             );
@@ -80,17 +80,17 @@ export function CoverPicker({ cover, images = [], onChange, onUpload, placeholde
         {images.length || onUpload ? (
           <>
             <div className="td-menu-heading">Image</div>
-            <div className="td-cp-imgs">
+            <div className="td-cover-picker-images">
               {images.map((f) => {
                 const on = !!(cover?.src && (cover.attachmentId ? cover.attachmentId === f.id : cover.src === f.src));
                 return (
-                  <button key={f.id} type="button" className="td-cp-img" aria-label={f.name} aria-pressed={on} title={f.name} onClick={() => pick({ src: f.src, attachmentId: f.id })}>
+                  <button key={f.id} type="button" className="td-cover-picker-image" aria-label={f.name} aria-pressed={on} title={f.name} onClick={() => pick({ src: f.src, attachmentId: f.id })}>
                     <img src={f.src} alt="" />
                   </button>
                 );
               })}
               {onUpload ? (
-                <button type="button" className="td-cp-upload" onClick={() => inputRef.current?.click()}>
+                <button type="button" className="td-cover-picker-upload" onClick={() => inputRef.current?.click()}>
                   <Icon name="upload" size={14} />
                   Upload
                 </button>
@@ -101,7 +101,7 @@ export function CoverPicker({ cover, images = [], onChange, onUpload, placeholde
                 ref={inputRef}
                 type="file"
                 accept="image/*"
-                className="td-cp-file"
+                className="td-cover-picker-file"
                 aria-hidden
                 tabIndex={-1}
                 onChange={(e) => {
@@ -119,7 +119,7 @@ export function CoverPicker({ cover, images = [], onChange, onUpload, placeholde
         {cover ? (
           <>
             <div className="td-menu-divider" />
-            <button type="button" className="td-picker-row td-cp-remove" onClick={() => pick(null)}>
+            <button type="button" className="td-picker-row td-cover-picker-remove" onClick={() => pick(null)}>
               <Icon name="x" size={14} />
               Remove cover
             </button>

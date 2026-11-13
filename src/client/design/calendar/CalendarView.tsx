@@ -83,7 +83,7 @@ export function CalendarView({ items, period: periodProp, defaultPeriod = "month
       shift(1);
       return;
     }
-    if ((e.target as HTMLElement).closest('[role="gridcell"],.td-calweek,input,textarea,select,[contenteditable="true"]')) return;
+    if ((e.target as HTMLElement).closest('[role="gridcell"],.td-calendar-week,input,textarea,select,[contenteditable="true"]')) return;
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       shift(-1);
@@ -95,7 +95,7 @@ export function CalendarView({ items, period: periodProp, defaultPeriod = "month
   let body;
   if (period === "year")
     body = (
-      <div className="td-calyear">
+      <div className="td-calendar-year">
         {Array.from({ length: 12 }, (_, m) => (
           <CalendarMiniMonth
             key={m}
@@ -115,15 +115,15 @@ export function CalendarView({ items, period: periodProp, defaultPeriod = "month
     );
   else if (period === "day")
     body = (
-      <div className="td-calday">
+      <div className="td-calendar-day">
         <CalendarDayList date={cursor} items={items.filter((it) => coversDay(it, cursor))} onOpenItem={onOpenItem} onToggleDone={onToggleDone} onToggleSubitem={onToggleSubitem} onAddItem={onAddItem} showItemIds={showItemIds} showLabels={showLabels} />
       </div>
     );
-  else body = <CalendarGrid date={cursor} period={period} items={items} today={todayD} weekStartsOn={weekStartsOn} showItemIds={showItemIds} showLabels={showLabels} onOpenItem={onOpenItem} onAddItem={onAddItem} onShowMore={openDay} onReschedule={onReschedule} onNavigateDate={navigateDate} focusDate={focusIso} className="td-calview-grid" />;
+  else body = <CalendarGrid date={cursor} period={period} items={items} today={todayD} weekStartsOn={weekStartsOn} showItemIds={showItemIds} showLabels={showLabels} onOpenItem={onOpenItem} onAddItem={onAddItem} onShowMore={openDay} onReschedule={onReschedule} onNavigateDate={navigateDate} focusDate={focusIso} className="td-calendar-view-grid" />;
   return (
-    <div className={["td-calview", className ?? ""].join(" ").trim()} onKeyDown={onRootKey} style={style}>
+    <div className={["td-calendar-view", className ?? ""].join(" ").trim()} onKeyDown={onRootKey} style={style}>
       <CalendarHeader title={periodTitle(cursor, period, weekStartsOn)} period={period} onPeriodChange={setPeriod} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={goToday} />
-      <div className="td-calview-body">{body}</div>
+      <div className="td-calendar-view-body">{body}</div>
     </div>
   );
 }

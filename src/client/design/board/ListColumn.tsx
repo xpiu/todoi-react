@@ -47,14 +47,14 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
   // Effective role (set role, else the title suggestion) drives the Colorize-columns tint.
   const effRole = statusRole ?? suggestedRoleForTitle(name) ?? undefined;
   return (
-    <div className={"td-list" + (dropTarget ? " is-drop-target" : "")} data-status-role={effRole} data-list-name={name} data-list-id={listId} style={style} {...rootProps}>
-      <div className="td-list-head">
-        <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-iconbtn" size={16} />
-        {rename.renaming ? <input className="td-list-rename" {...rename.inputProps} /> : <span className="td-list-name">{name}</span>}
-        {!rename.renaming && count != null ? <span className="td-list-count">{count}</span> : null}
+    <div className={"td-list-column" + (dropTarget ? " is-drop-target" : "")} data-status-role={effRole} data-list-name={name} data-list-id={listId} style={style} {...rootProps}>
+      <div className="td-list-column-head">
+        <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-column-iconbtn" size={16} />
+        {rename.renaming ? <input className="td-list-column-rename" {...rename.inputProps} /> : <span className="td-list-column-name">{name}</span>}
+        {!rename.renaming && count != null ? <span className="td-list-column-count">{count}</span> : null}
         <ListActionsPopover
           label={`Actions for ${name}`}
-          trigger={<IconButton name="ellipsis" label={`List actions for ${name}`} tooltip="List actions" tooltipSide="bottom-end" size={28} className="td-list-more" />}
+          trigger={<IconButton name="ellipsis" label={`List actions for ${name}`} tooltip="List actions" tooltipSide="bottom-end" size={28} className="td-list-column-more" />}
           name={name}
           activeIcon={icon}
           statusRole={statusRole}
@@ -66,16 +66,16 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
           onHide={onHide}
         />
       </div>
-      <div className="td-list-cards" tabIndex={0} role="list" aria-label={`${name} cards`}>
+      <div className="td-list-column-cards" tabIndex={0} role="list" aria-label={`${name} cards`}>
         {children}
       </div>
       {adding ? (
-        <div className="td-list-composer">
+        <div className="td-list-column-composer">
           <QuickAddInput {...quickAdd} placeholder="Item title" aria-label={`New item in ${name}`} onSubmit={(p) => commitAdd(p, true)} onCancel={() => setAdding(false)} onBlur={(p) => commitAdd(p, false)} />
         </div>
       ) : (
-        <div className="td-list-foot">
-          <button type="button" className="td-list-add" data-add-item={name} onClick={() => setAdding(true)}>
+        <div className="td-list-column-foot">
+          <button type="button" className="td-list-column-add" data-add-item={name} onClick={() => setAdding(true)}>
             <Icon name="plus" size={16} />
             Add an item
             <AddItemKey />

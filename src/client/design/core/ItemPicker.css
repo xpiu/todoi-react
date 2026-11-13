@@ -1,10 +1,10 @@
 @layer components {
-  .td-ip {
+  .td-item-picker {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
-  .td-ip-search,
+  .td-item-picker-search,
   .td-picker-search {
     display: flex;
     align-items: center;
@@ -16,7 +16,7 @@
     background: var(--surface-list);
     color: var(--ink-400);
   }
-  .td-ip-input,
+  .td-item-picker-input,
   .td-picker-input {
     flex: 1;
     min-width: 0;
@@ -27,18 +27,18 @@
     font: var(--weight-regular) 13px / 18px var(--font-ui);
     color: var(--ink-900);
   }
-  .td-ip-input::placeholder,
+  .td-item-picker-input::placeholder,
   .td-picker-input::placeholder {
     color: var(--ink-400);
   }
-  .td-ip-list,
+  .td-item-picker-list,
   .td-picker-list {
     max-height: 280px;
     overflow-y: auto;
     margin: 0 calc(-1 * var(--sp-1));
     padding: 0 var(--sp-1);
   }
-  .td-ip-row,
+  .td-item-picker-row,
   .td-picker-row {
     display: flex;
     align-items: center;
@@ -51,8 +51,8 @@
     color: var(--ink-900);
     cursor: pointer;
   }
-  .td-ip-row[aria-selected="true"],
-  .td-ip-row:hover,
+  .td-item-picker-row[aria-selected="true"],
+  .td-item-picker-row:hover,
   .td-picker-row:hover,
   .td-picker-row[aria-checked="true"],
   .td-picker-row:focus-visible {
@@ -62,27 +62,27 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
   }
-  html[data-touch="true"] .td-ip-row,
+  html[data-touch="true"] .td-item-picker-row,
   html[data-touch="true"] .td-picker-row {
     min-height: 44px;
   }
-  .td-ip-key {
+  .td-item-picker-key {
     font: var(--weight-regular) 11px / 16px var(--font-mono);
     color: var(--ink-400);
     flex: none;
   }
-  .td-ip-title {
+  .td-item-picker-title {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-ip-title[data-done="true"] {
+  .td-item-picker-title[data-done="true"] {
     color: var(--ink-400);
     text-decoration: line-through;
   }
-  .td-ip-list-name {
+  .td-item-picker-list-name {
     font: var(--weight-regular) 11px / 16px var(--font-ui);
     color: var(--ink-400);
     flex: none;

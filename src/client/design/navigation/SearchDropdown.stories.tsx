@@ -37,7 +37,7 @@ export const Matches: Story = {
   async play({ args, canvas, globals, userEvent }) {
     await expect(canvas.getByRole("listbox", { name: "Search results" })).toHaveAttribute("id", "search-results");
     // Minimal shows no project glyphs: project and group rows lead with the name.
-    const glyph = canvas.getByRole("option", { name: /Helicopter sales/ }).querySelector(".td-sd-ico");
+    const glyph = canvas.getByRole("option", { name: /Helicopter sales/ }).querySelector(".td-search-dropdown-icon");
     if (globals.theme === "minimal") await expect(glyph).toBeNull();
     else await expect(glyph).not.toBeNull();
     await expect(canvas.getByRole("option", { name: /Helicopter sales/ })).toHaveAttribute("aria-selected", "true");

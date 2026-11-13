@@ -76,8 +76,8 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
   };
   const meta = [file.meta, file.size != null ? formatBytes(file.size) : null].filter(Boolean).join(" · ");
   return (
-    <div className="td-att-row" role="listitem" data-uploading={uploading ? "true" : undefined} data-failed={file.error ? "true" : undefined}>
-      <button type="button" className={"td-att-thumb" + (img ? " is-image" : "")} data-kind={img ? undefined : ext} aria-label={img ? `Preview ${file.name}` : file.name} tabIndex={img && onPreview && !pending ? 0 : -1} onClick={img && onPreview && !pending ? onPreview : undefined}>
+    <div className="td-attachments-row" role="listitem" data-uploading={uploading ? "true" : undefined} data-failed={file.error ? "true" : undefined}>
+      <button type="button" className={"td-attachments-thumb" + (img ? " is-image" : "")} data-kind={img ? undefined : ext} aria-label={img ? `Preview ${file.name}` : file.name} tabIndex={img && onPreview && !pending ? 0 : -1} onClick={img && onPreview && !pending ? onPreview : undefined}>
         {img ? (
           <img src={file.src ?? file.url} alt="" />
         ) : (
@@ -85,10 +85,10 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
           <Icon name={icon} size={20} />
         )}
       </button>
-      <div className="td-att-main">
+      <div className="td-attachments-main">
         {renaming ? (
           <input
-            className="td-att-rename"
+            className="td-attachments-rename"
             autoFocus
             value={name}
             aria-label="File name"
@@ -108,26 +108,26 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
             }}
           />
         ) : (
-          <div className="td-att-name" title={file.name}>
+          <div className="td-attachments-name" title={file.name}>
             {file.name}
           </div>
         )}
         {file.error ? (
-          <div className="td-att-meta td-att-error" role="alert">
+          <div className="td-attachments-meta td-attachments-error" role="alert">
             <Icon name="circle-alert" size={12} />
             <span title={file.error}>{file.error}</span>
           </div>
         ) : uploading ? (
-          <div className="td-att-progress">
-            <ProgressBar value={file.progress} height={4} color="var(--blue-500)" className="td-att-bar" aria-label={`Uploading ${file.name}`} />
-            <span className="td-att-meta">{Math.round(file.progress!)}%</span>
+          <div className="td-attachments-progress">
+            <ProgressBar value={file.progress} height={4} color="var(--blue-500)" className="td-attachments-bar" aria-label={`Uploading ${file.name}`} />
+            <span className="td-attachments-meta">{Math.round(file.progress!)}%</span>
           </div>
         ) : confirm ? (
-          <div className="td-att-confirm">
+          <div className="td-attachments-confirm">
             Delete this file?
             <Button
               variant="ghost"
-              className="td-att-danger"
+              className="td-attachments-danger"
               onClick={() => {
                 setConfirm(false);
                 onDelete?.();
@@ -140,10 +140,10 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
             </Button>
           </div>
         ) : (
-          <div className="td-att-meta">
+          <div className="td-attachments-meta">
             {meta ? <span>{meta}</span> : null}
             {file.isCover ? (
-              <span className="td-att-cover">
+              <span className="td-attachments-cover">
                 {meta ? "· " : null}
                 <Icon name="image" size={12} /> Cover
               </span>
@@ -152,7 +152,7 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
         )}
       </div>
       {pending ? (
-        <div className="td-att-actions is-visible">
+        <div className="td-attachments-actions is-visible">
           {file.error && file.retriable && onRetry ? (
             <Button variant="ghost" icon="refresh-cw" onClick={onRetry}>
               Retry
@@ -161,7 +161,7 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
           {onDismiss ? <IconButton name="x" label={file.error ? `Remove ${file.name}` : `Cancel uploading ${file.name}`} tooltip={file.error ? "Remove" : "Cancel upload"} size={28} iconSize={15} onClick={onDismiss} /> : null}
         </div>
       ) : !renaming && !confirm ? (
-        <div className="td-att-actions">
+        <div className="td-attachments-actions">
           {onOpen || file.url ? <IconButton name="external-link" label={`Open ${file.name}`} tooltip="Open" size={28} iconSize={15} onClick={() => (onOpen ? onOpen() : window.open(file.url, "_blank", "noopener"))} /> : null}
           <MenuButton label={`Actions for ${file.name}`} tier="detached" size={28} iconSize={15} width={184}>
             {onDownload || file.url ? (
@@ -225,7 +225,7 @@ export function AttachmentList({ files, onAdd, onOpen, onDownload, onMakeCover, 
   }, [pickerRef]);
   return (
     <>
-      <div className="td-att" role="list">
+      <div className="td-attachments" role="list">
         {files.map((f) => (
           <AttachmentRow key={f.id} file={f} onOpen={onOpen ? () => onOpen(f.id) : undefined} onDownload={onDownload ? () => onDownload(f.id) : undefined} onMakeCover={onMakeCover ? () => onMakeCover(f.id) : undefined} onRemoveCover={onRemoveCover ? () => onRemoveCover(f.id) : undefined} onRename={onRename ? (n) => onRename(f.id, n) : undefined} onDelete={onDelete ? () => onDelete(f.id) : undefined} onRetry={onRetry ? () => onRetry(f.id) : undefined} onDismiss={onDismiss ? () => onDismiss(f.id) : undefined} onPreview={() => setPreview(images.indexOf(f))} />
         ))}
@@ -236,7 +236,7 @@ export function AttachmentList({ files, onAdd, onOpen, onDownload, onMakeCover, 
           type="file"
           multiple
           accept={accept}
-          className="td-att-input"
+          className="td-attachments-input"
           aria-hidden
           tabIndex={-1}
           onChange={(e) => {

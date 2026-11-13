@@ -74,7 +74,7 @@ export const ShortcutFooter: Story = {
   async play({ canvasElement }) {
     const { set } = useAppearanceStore.getState();
     const before = getAppearance().suggestShortcuts;
-    const footer = () => canvasElement.querySelector(".td-fm-foot");
+    const footer = () => canvasElement.querySelector(".td-filter-menu-foot");
     try {
       set({ suggestShortcuts: true });
       await waitFor(() => expect(footer()).toHaveTextContent(/F opens this menu.*X clears filters.*esc close/));

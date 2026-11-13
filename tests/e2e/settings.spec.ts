@@ -46,7 +46,7 @@ test("week start, date and time format reach the calendar and rows, and follow t
   await expect(page.getByRole("columnheader").first()).toHaveText(/Sun/);
   await shot(page, "calendar-sunday");
   await page.goto(`/p/${projectId}?v=list`);
-  await expect(page.locator(".td-lrow", { hasText: title })).toContainText(/12\/09(\/2026)?/);
+  await expect(page.locator(".td-list-row", { hasText: title })).toContainText(/12\/09(\/2026)?/);
 
   // Another device of the same account picks the preferences up from the account.
   const other = await browser.newContext({ storageState: await page.context().storageState({ indexedDB: false }) });
@@ -72,7 +72,7 @@ test("smart dates off keeps the words; default priority applies; hidden complete
   await field.fill("Call the broker due fri");
   await field.press("Enter");
   await field.press("Escape");
-  const row = page.locator(".td-lrow", { hasText: "Call the broker due fri" });
+  const row = page.locator(".td-list-row", { hasText: "Call the broker due fri" });
   await expect(row).toBeVisible();
   const items = async () => (await (await page.request.get(`/api/items?projectId=${projectId}`)).json()) as Array<{ id: string; title: string; dueDate: string | null; priority: string | null; done: boolean }>;
   await expect.poll(async () => (await items()).find((it) => it.title === "Call the broker due fri")).toMatchObject({ dueDate: null, priority: "HIGH" });

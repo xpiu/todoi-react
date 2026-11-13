@@ -1,24 +1,24 @@
 @layer components {
-  .td-isec {
+  .td-item-section {
     margin-top: var(--sp-6);
   }
-  .td-isec-head {
+  .td-item-section-head {
     display: flex;
     align-items: center;
     gap: var(--sp-3);
     color: var(--ink-900);
   }
-  .td-isec-spacer {
+  .td-item-section-spacer {
     width: 16px;
   }
-  .td-isec-title {
+  .td-item-section-title {
     flex: 1;
     font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
   }
-  .td-isec-body {
+  .td-item-section-body {
     margin-top: var(--sp-2);
   }
-  .td-isec-body.is-inset {
+  .td-item-section-body.is-inset {
     margin-left: 28px;
   }
 }

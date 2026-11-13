@@ -54,7 +54,7 @@ export function SyncNotice({ tone = "danger", icon, message, detail, action, sec
         <Icon name={icon ?? TONE_ICON[tone]} size={16} />
       </span>
       <div className="td-notice-body">
-        {message ? <span className="td-notice-msg">{message}</span> : null}
+        {message ? <span className="td-notice-message">{message}</span> : null}
         {detail ? <span className="td-notice-detail">{detail}</span> : null}
       </div>
       <div className="td-notice-actions">

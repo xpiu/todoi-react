@@ -77,8 +77,8 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
   }, [proj, loadLists]);
   if (proj) {
     return (
-      <div className="td-prp">
-        <div className="td-prp-head">
+      <div className="td-project-picker">
+        <div className="td-project-picker-head">
           <IconButton
             name="arrow-left"
             label="Back"
@@ -90,7 +90,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
               listCursor.reset();
             }}
           />
-          <span className="td-prp-head-title">
+          <span className="td-project-picker-head-title">
             {verb} to {proj.name}
           </span>
         </div>
@@ -116,7 +116,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
               return (
                 <div key={l.id} className="td-picker-row" {...listCursor.optionProps(l, i)}>
                   <Icon name={l.icon ?? auto.icon} size={15} color={auto.color} />
-                  <span className="td-prp-name">{l.name}</span>
+                  <span className="td-project-picker-name">{l.name}</span>
                 </div>
               );
             })}
@@ -128,11 +128,11 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
     );
   }
   return (
-    <div className="td-prp">
+    <div className="td-project-picker">
       {onBack || showHeading ? (
-        <div className="td-prp-head">
+        <div className="td-project-picker-head">
           {onBack ? <IconButton name="arrow-left" label="Back" size={22} iconSize={13} onClick={onBack} /> : null}
-          <span className="td-prp-head-title">{title}</span>
+          <span className="td-project-picker-head-title">{title}</span>
         </div>
       ) : null}
       <div className="td-picker-search">
@@ -156,9 +156,9 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
           {list.map((p, i) => (
             <div key={p.id} className="td-picker-row" {...projCursor.optionProps(p, i)}>
               <Icon name={p.icon ?? "kanban"} size={15} color={p.color ?? "var(--ink-600)"} />
-              <span className="td-prp-name">{p.name}</span>
-              {p.group ? <span className="td-prp-group">{p.group}</span> : null}
-              <Icon name="chevron-right" size={13} className="td-prp-chev" />
+              <span className="td-project-picker-name">{p.name}</span>
+              {p.group ? <span className="td-project-picker-group">{p.group}</span> : null}
+              <Icon name="chevron-right" size={13} className="td-project-picker-chevron" />
             </div>
           ))}
         </div>

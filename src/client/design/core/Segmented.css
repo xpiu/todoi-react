@@ -1,6 +1,6 @@
 /* Segmented — one-of-N picker for 2–4 short options. The picked segment lifts to card white. */
 @layer components {
-  .td-seg {
+  .td-segmented {
     display: inline-flex;
     gap: 2px;
     padding: 3px;
@@ -8,14 +8,14 @@
     border-radius: var(--radius-md);
     box-sizing: border-box;
   }
-  .td-seg-stretch {
+  .td-segmented-stretch {
     display: flex;
     width: 100%;
   }
-  .td-seg-stretch .td-seg-btn {
+  .td-segmented-stretch .td-segmented-btn {
     flex: 1;
   }
-  .td-seg-btn {
+  .td-segmented-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -33,43 +33,43 @@
       background var(--duration-base) var(--ease-standard),
       color var(--duration-base) var(--ease-standard);
   }
-  .td-seg-sm .td-seg-btn {
+  .td-segmented-sm .td-segmented-btn {
     height: 24px;
     padding: 0 var(--sp-2);
     font-size: var(--text-xs);
     line-height: var(--lh-xs);
   }
-  .td-seg-btn:hover {
+  .td-segmented-btn:hover {
     color: var(--ink-900);
   }
-  .td-seg-btn[aria-pressed="true"] {
+  .td-segmented-btn[aria-pressed="true"] {
     background: var(--surface-card);
     color: var(--ink-900);
     box-shadow: var(--shadow-card);
   }
-  .td-seg-btn:focus-visible {
+  .td-segmented-btn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-seg-btn:disabled {
+  .td-segmented-btn:disabled {
     opacity: 0.5;
     cursor: default;
   }
-  .td-seg[data-disabled="true"] {
+  .td-segmented[data-disabled="true"] {
     opacity: 0.5;
   }
 }
 
 /* Minimal: no track, no fill — the segments sit on one hairline; the chosen one completes it into a 1px ink box. */
 @layer theme {
-  [data-theme="minimal"] .td-seg {
+  [data-theme="minimal"] .td-segmented {
     background: transparent;
     box-shadow: inset 0 -1px 0 var(--border-divider);
     padding: 0;
     gap: 0;
     border-radius: 0;
   }
-  [data-theme="minimal"] .td-seg-btn {
+  [data-theme="minimal"] .td-segmented-btn {
     border-radius: 0;
     color: var(--ink-900);
     font-weight: var(--weight-regular);
@@ -78,17 +78,17 @@
       color var(--duration-fast) var(--ease-standard),
       box-shadow var(--duration-fast) var(--ease-standard);
   }
-  [data-theme="minimal"] .td-seg-btn:hover {
+  [data-theme="minimal"] .td-segmented-btn:hover {
     background: none;
     color: var(--ink-900);
   }
-  [data-theme="minimal"] .td-seg-btn[aria-pressed="true"],
-  [data-theme="minimal"] .td-seg-btn[aria-pressed="true"]:hover {
+  [data-theme="minimal"] .td-segmented-btn[aria-pressed="true"],
+  [data-theme="minimal"] .td-segmented-btn[aria-pressed="true"]:hover {
     background: none;
     color: var(--ink-900);
     box-shadow: inset 0 0 0 1px var(--ink-900);
   }
-  [data-theme="minimal"] .td-seg-btn:focus-visible {
+  [data-theme="minimal"] .td-segmented-btn:focus-visible {
     outline: none;
     box-shadow:
       inset 0 0 0 1px var(--ink-900),

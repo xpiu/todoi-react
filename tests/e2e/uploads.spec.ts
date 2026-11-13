@@ -18,10 +18,10 @@ test("uploads report per-file outcomes and retry only the failed file", async ({
   try {
     await page.goto(`/p/${projectId}?item=${itemId}`);
     const dialog = page.getByRole("dialog");
-    const row = (name: string) => dialog.locator(".td-att-row", { hasText: name });
+    const row = (name: string) => dialog.locator(".td-attachments-row", { hasText: name });
     let posts = 0;
     await page.route("**/api/items/*/attachments", (route) => (route.request().method() === "POST" && ++posts === 2 ? route.abort("connectionreset") : route.continue()));
-    await dialog.locator(".td-att-input").setInputFiles([
+    await dialog.locator(".td-attachments-input").setInputFiles([
       { name: "kept.txt", mimeType: "text/plain", buffer: Buffer.from("kept") },
       { name: "flaky.txt", mimeType: "text/plain", buffer: Buffer.from("flaky") },
       { name: "huge.bin", mimeType: "application/octet-stream", buffer: Buffer.alloc(MAX_ATTACHMENT_BYTES + 1) },
@@ -29,14 +29,14 @@ test("uploads report per-file outcomes and retry only the failed file", async ({
     await expect(row("huge.bin")).toContainText("huge.bin is larger than 25 MB");
     await expect(row("huge.bin").getByRole("button", { name: "Retry" })).toHaveCount(0);
     await expect(row("flaky.txt")).toContainText("Couldn't reach Todoi");
-    await expect(dialog.locator('.td-att-row[data-uploading="true"]', { hasText: "kept.txt" })).toHaveCount(0);
+    await expect(dialog.locator('.td-attachments-row[data-uploading="true"]', { hasText: "kept.txt" })).toHaveCount(0);
     await expect(row("kept.txt")).toHaveCount(1);
     await expect(row("kept.txt")).toContainText("Added");
     expect(await names()).toEqual(["kept.txt"]);
     await expect(page.getByRole("status")).toContainText("Couldn't attach 2 files");
 
     await row("flaky.txt").getByRole("button", { name: "Retry" }).click();
-    await expect(dialog.locator('.td-att-row[data-uploading="true"]', { hasText: "flaky.txt" })).toHaveCount(0);
+    await expect(dialog.locator('.td-attachments-row[data-uploading="true"]', { hasText: "flaky.txt" })).toHaveCount(0);
     await expect(row("flaky.txt")).toHaveCount(1);
     await expect(row("flaky.txt")).toContainText("Added");
     expect(posts).toBe(3);

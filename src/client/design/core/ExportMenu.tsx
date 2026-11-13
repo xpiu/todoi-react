@@ -77,9 +77,9 @@ export function ExportMenu({ scope = "view", count, filtered, view, subitems, co
   // Drill view: Back is a menu row (arrow keys reach it) and the title names the group of export rows.
   return (
     <MenuGroup>
-      <div className="td-prp-head">
+      <div className="td-project-picker-head">
         <BaseMenu.Item nativeButton closeOnClick={false} onClick={onBack} render={<IconButton name="arrow-left" label="Back" size={22} iconSize={13} />} />
-        <BaseMenu.GroupLabel render={<span />} className="td-prp-head-title">
+        <BaseMenu.GroupLabel render={<span />} className="td-project-picker-head-title">
           {title}
         </BaseMenu.GroupLabel>
       </div>

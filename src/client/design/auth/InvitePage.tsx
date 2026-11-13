@@ -75,7 +75,7 @@ export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline,
       <span className="td-auth-tile">
         <Icon name={p.icon ?? "kanban"} size={20} color={p.color ?? "var(--ink-600)"} />
       </span>
-      <span className="td-auth-pname">
+      <span className="td-auth-project-name">
         <b>{p.name}</b>
         {meta ? <span>{meta}</span> : null}
       </span>
@@ -108,7 +108,7 @@ export function InvitePage({ invite, state, signedIn, user, onAccept, onDecline,
         as <b>{roleName}</b>
         {invite.expiresAt ? ` · invite valid until ${fmtDate(invite.expiresAt)}` : ""}
       </p>
-      {p.description ? <p className="td-auth-desc">{p.description}</p> : null}
+      {p.description ? <p className="td-auth-description">{p.description}</p> : null}
       {signedIn && user ? (
         <>
           <div className="td-auth-who">

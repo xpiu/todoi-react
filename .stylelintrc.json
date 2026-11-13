@@ -12,7 +12,7 @@
     "selector-class-pattern": [
       "^td-[a-z0-9-]+$|^(is|has)-[a-z0-9-]+$",
       {
-        "message": "Class names are td-<component>-<part> (or is-/has- state)."
+        "message": "Class names are td-<component>-<part> in whole words (or is-/has- state). See docs/design/css-class-names.md."
       }
     ],
     "custom-property-pattern": null,

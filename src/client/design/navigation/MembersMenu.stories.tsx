@@ -21,7 +21,7 @@ function MembersPopover(args: MembersMenuProps) {
   const pop = usePopover();
   const [visibility, setVisibility] = useState<ProjectVisibility>(args.visibility);
   return (
-    <Popover open={pop.open} onOpenChange={pop.setOpen} tier="toolbar" role="dialog" aria-label="Project members and sharing" width={320} className="td-pop-flush" trigger={<Button icon="users">Members</Button>}>
+    <Popover open={pop.open} onOpenChange={pop.setOpen} tier="toolbar" role="dialog" aria-label="Project members and sharing" width={320} className="td-popover-flush" trigger={<Button icon="users">Members</Button>}>
       <MembersMenu
         {...args}
         visibility={visibility}

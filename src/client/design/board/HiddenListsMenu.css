@@ -1,5 +1,5 @@
 @layer components {
-  .td-hiddenlists {
+  .td-hidden-lists {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -14,12 +14,12 @@
     cursor: pointer;
     transition: background var(--duration-base) var(--ease-standard);
   }
-  .td-hiddenlists:hover,
-  .td-hiddenlists[aria-expanded="true"] {
+  .td-hidden-lists:hover,
+  .td-hidden-lists[aria-expanded="true"] {
     background: var(--chrome-active);
     opacity: 1;
   }
-  .td-hiddenlists:focus-visible {
+  .td-hidden-lists:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--chrome-border);
   }

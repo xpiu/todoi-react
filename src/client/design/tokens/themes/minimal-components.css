@@ -5,7 +5,7 @@ html[data-theme="minimal"]{-webkit-font-smoothing:antialiased}
 html[data-theme="minimal"] body{font:400 13px/1.45 var(--font-ui)}
 /* ── Top bar: one 48px row, hairline below; title left, tools + views + account right; every element in ink, 16px line icons, stroke 1.75 */
 html[data-theme="minimal"] .td-topnav{height:48px;gap:24px;padding:0 24px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-topnav svg,html[data-theme="minimal"] .td-subnav svg,html[data-theme="minimal"] .td-sidebar svg,html[data-theme="minimal"] .td-list-head svg,html[data-theme="minimal"] .td-lsec-head svg,html[data-theme="minimal"] .td-calhead svg{stroke-width:1.75}
+html[data-theme="minimal"] .td-topnav svg,html[data-theme="minimal"] .td-subnav svg,html[data-theme="minimal"] .td-sidebar svg,html[data-theme="minimal"] .td-list-column-head svg,html[data-theme="minimal"] .td-list-section-head svg,html[data-theme="minimal"] .td-calendar-header svg{stroke-width:1.75}
 html[data-theme="minimal"] .td-topnav-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;margin:0}
 html[data-theme="minimal"] span.td-topnav-title[data-editable="true"]{padding:0;margin:0;gap:6px}
 html[data-theme="minimal"] input.td-topnav-title{background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/var(--td-title-line,100%) 1px;color:var(--ink-900);border:0;border-radius:0;padding:0 0 1px;margin:0;font:500 13px/1.45 var(--font-ui);margin-right:-24px}
@@ -18,9 +18,9 @@ html[data-theme="minimal"] .td-subnav-views{gap:16px;padding:0;background:none;b
 html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav){box-sizing:content-box;min-height:48px;padding:0 24px;column-gap:24px;row-gap:0;align-items:center;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-actions,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-views{align-items:center}
 html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-style-wrap,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-share-wrap{align-items:center}
-html[data-theme="minimal"] .td-subnav-act,html[data-theme="minimal"] .td-subnav-seg{height:16px;width:auto;min-width:16px;padding:0;gap:0;font-size:0;line-height:0;color:var(--ink-900);background:none;border-radius:0}
-html[data-theme="minimal"] .td-subnav-act:hover,html[data-theme="minimal"] .td-subnav-act:active,html[data-theme="minimal"] .td-subnav-act[aria-expanded="true"],html[data-theme="minimal"] .td-subnav-seg:hover,html[data-theme="minimal"] .td-subnav-seg:active,html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-subnav-act:focus-visible,html[data-theme="minimal"] .td-subnav-seg:focus-visible{outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-subnav-action,html[data-theme="minimal"] .td-subnav-seg{height:16px;width:auto;min-width:16px;padding:0;gap:0;font-size:0;line-height:0;color:var(--ink-900);background:none;border-radius:0}
+html[data-theme="minimal"] .td-subnav-action:hover,html[data-theme="minimal"] .td-subnav-action:active,html[data-theme="minimal"] .td-subnav-action[aria-expanded="true"],html[data-theme="minimal"] .td-subnav-seg:hover,html[data-theme="minimal"] .td-subnav-seg:active,html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-subnav-action:focus-visible,html[data-theme="minimal"] .td-subnav-seg:focus-visible{outline:1px solid var(--ink-900);outline-offset:3px}
 /* Current view: the 1px ink underline the theme uses for whatever is current (a background line — the pseudo-elements belong to the tooltip) */
 html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{box-sizing:content-box;padding-bottom:6px;margin-bottom:-6px;background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/100% 1px}
 /* View switcher: same ink as every other navbar element — text segments and the divider included */
@@ -46,7 +46,7 @@ html[data-theme="minimal"] .td-topnav-avatarbtn .td-avatar{width:16px!important;
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn{width:16px!important;height:16px!important;margin-left:0;border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn svg{width:16px;height:16px}
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:hover,html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:active{background:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-topnav-status .td-connstat,html[data-theme="minimal"] .td-topnav-status>*{color:var(--ink-900)}
+html[data-theme="minimal"] .td-topnav-status .td-connection-status,html[data-theme="minimal"] .td-topnav-status>*{color:var(--ink-900)}
 /* ── Sidebar: white, one vertical hairline, group header flush with rows (chevron trailing), plain rows without icons or dividers, all in ink (no grey rest state); the open row is bolder with a hairline */
 html[data-theme="minimal"] .td-sidebar:not([data-hidden="true"]){width:196px!important;background:var(--chrome-canvas)}
 html[data-theme="minimal"] .td-sidebar-right{border-left:1px solid var(--border-divider)}
@@ -59,7 +59,7 @@ html[data-theme="minimal"] .td-sidebar-head{height:auto;margin:0;padding:0 0 8px
 html[data-theme="minimal"] .td-sidebar-head:hover,html[data-theme="minimal"] .td-sidebar-head:has(.td-sidebar-headbtn:active){background:none}
 html[data-theme="minimal"] .td-sidebar-head>.td-iconbtn{display:none}
 html[data-theme="minimal"] .td-sidebar-headbtn{flex-direction:row-reverse;justify-content:space-between;padding:0;height:auto;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);border-radius:0}
-html[data-theme="minimal"] .td-sidebar-headbtn .td-sidebar-chev{width:14px;height:14px;stroke-width:1.5;color:var(--ink-900)}
+html[data-theme="minimal"] .td-sidebar-headbtn .td-sidebar-chevron{width:14px;height:14px;stroke-width:1.5;color:var(--ink-900)}
 html[data-theme="minimal"] .td-sidebar-row{height:auto;padding:10px 0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);background:none;gap:10px}
 html[data-theme="minimal"] .td-sidebar-row:hover,html[data-theme="minimal"] .td-sidebar-row:active,html[data-theme="minimal"] .td-sidebar-rowwrap[data-menu-open="true"] .td-sidebar-row:not([aria-current="true"]){background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-sidebar-row[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em;box-shadow:inset 0 -1px 0 var(--border-divider)}
@@ -79,29 +79,29 @@ html[data-theme="minimal"] .td-sidebar-rename{outline:none;border-bottom:1px sol
 html[data-theme="minimal"] .td-sidebar-drophint{width:196px!important;padding:8px 24px;color:var(--ink-400)}
 /* ── Board: columns in a 24px gutter, no list surface; the list name sits over the same hairline that ends every row */
 html[data-theme="minimal"] .td-board{gap:24px;padding:20px 24px 0}
-html[data-theme="minimal"] .td-list{background:none;border-radius:0;box-shadow:none;padding:0}
-html[data-theme="minimal"] .td-list.is-drop-target{box-shadow:none}
-html[data-theme="minimal"] .td-list.is-drop-target>.td-list-head{border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column{background:none;border-radius:0;box-shadow:none;padding:0}
+html[data-theme="minimal"] .td-list-column.is-drop-target{box-shadow:none}
+html[data-theme="minimal"] .td-list-column.is-drop-target>.td-list-column-head{border-bottom-color:var(--ink-900)}
 /* Colorize Board columns (off by default in Minimal): the column takes a faint status wash with 12px of inner air and the name's hairline turns the status hue; cards stay bare rows on the wash. BACKLOG has no role and stays paper. */
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role]{padding:10px 12px 8px;border-radius:var(--radius-lg)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role] .td-card,html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role] .td-card-more{background:none;box-shadow:none}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="NEW"]>.td-list-head{border-bottom-color:color-mix(in srgb,var(--status-new-hue) 60%,transparent)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="TODO"]>.td-list-head{border-bottom-color:color-mix(in srgb,var(--status-todo-hue) 60%,transparent)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="DOING"]>.td-list-head{border-bottom-color:color-mix(in srgb,var(--status-doing-hue) 60%,transparent)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list[data-status-role="DONE"]>.td-list-head{border-bottom-color:color-mix(in srgb,#21e389 60%,transparent)}
-html[data-theme="minimal"][data-mode="light"][data-colorize-columns="true"] .td-list[data-status-role="DONE"]>.td-list-head{border-bottom-color:color-mix(in srgb,#1a9c5e 60%,transparent)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list.is-drop-target[data-status-role]>.td-list-head{border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-head{padding:0 0 8px;gap:6px;align-items:baseline;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-list-head .td-pop-anchor:has(>.td-list-iconbtn){display:none!important}
-html[data-theme="minimal"] .td-list-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-count{display:none}
-html[data-theme="minimal"] .td-list-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-head .td-list-more-anchor{align-self:center;margin-left:auto}
-html[data-theme="minimal"] .td-list-head .td-list-more{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400);opacity:1}
-html[data-theme="minimal"] .td-list-head .td-list-more svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-list-head:hover .td-list-more,html[data-theme="minimal"] .td-list-head .td-list-more:focus-visible,html[data-theme="minimal"] .td-list-head .td-list-more[aria-expanded="true"]{opacity:1}
-html[data-theme="minimal"] .td-list-head .td-list-more:hover,html[data-theme="minimal"] .td-list-head .td-list-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-cards{gap:0;padding:0;scrollbar-width:thin;scrollbar-color:var(--border-divider) transparent}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]{padding:10px 12px 8px;border-radius:var(--radius-lg)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role] .td-card,html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role] .td-card-more{background:none;box-shadow:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="NEW"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--status-new-hue) 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="TODO"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--status-todo-hue) 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DOING"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--status-doing-hue) 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,#21e389 60%,transparent)}
+html[data-theme="minimal"][data-mode="light"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,#1a9c5e 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column.is-drop-target[data-status-role]>.td-list-column-head{border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-head{padding:0 0 8px;gap:6px;align-items:baseline;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-list-column-head .td-popover-anchor:has(>.td-list-column-iconbtn){display:none!important}
+html[data-theme="minimal"] .td-list-column-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-count{display:none}
+html[data-theme="minimal"] .td-list-column-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-head .td-list-column-more-anchor{align-self:center;margin-left:auto}
+html[data-theme="minimal"] .td-list-column-head .td-list-column-more{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400);opacity:1}
+html[data-theme="minimal"] .td-list-column-head .td-list-column-more svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-list-column-head:hover .td-list-column-more,html[data-theme="minimal"] .td-list-column-head .td-list-column-more:focus-visible,html[data-theme="minimal"] .td-list-column-head .td-list-column-more[aria-expanded="true"]{opacity:1}
+html[data-theme="minimal"] .td-list-column-head .td-list-column-more:hover,html[data-theme="minimal"] .td-list-column-head .td-list-column-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-cards{gap:0;padding:0;scrollbar-width:thin;scrollbar-color:var(--border-divider) transparent}
 /* Card → a row: title, then one grey line of words (labels, date, initials, count, priority, key at the end in mono); no fill, no shadow, hairline below; cover as a bare full-width strip */
 html[data-theme="minimal"] .td-card{background:none;border-radius:0;box-shadow:none;padding:10px 0;border-bottom:1px solid var(--border-divider);overflow:visible;transition:none}
 html[data-theme="minimal"] .td-card:hover{box-shadow:none}
@@ -120,16 +120,16 @@ html[data-theme="minimal"] .td-card-badges>.td-card-due{flex:none;overflow:visib
 html[data-theme="minimal"] .td-card-badge svg,html[data-theme="minimal"] .td-due svg{display:none!important}
 html[data-theme="minimal"] .td-card-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-card-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px;vertical-align:-2px}
 html[data-theme="minimal"] .td-card-badge[title^="This item has a description"]{display:none}
-html[data-theme="minimal"] .td-card-badges>.td-card-avs{order:2}
+html[data-theme="minimal"] .td-card-badges>.td-card-avatars{order:2}
 html[data-theme="minimal"] .td-card-badge[title^="Subitems"]{order:3;color:var(--ink-400)!important}
 html[data-theme="minimal"] .td-card-badge[title^="Priority"]{order:4}
 html[data-theme="minimal"] .td-card-badge[title^="Repeats"],html[data-theme="minimal"] .td-card-badge[title^="Attachments"]{order:5}
 html[data-theme="minimal"] .td-prio-text{display:inline;text-transform:capitalize}
 /* Urgent is pinned to the plain ink and red stays with overdue. Under one ink every meta word already is ink, so this only holds the hierarchy if metadata is ever dimmed again */
-html[data-theme="minimal"] .td-card-badge[data-priority="urgent"],html[data-theme="minimal"] .td-lrow-badge[data-priority="urgent"]{color:var(--ink-900)!important}
-html[data-theme="minimal"] .td-card-id,html[data-theme="minimal"] .td-lrow-key,html[data-theme="minimal"] .td-calchip-key{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-badge[data-priority="urgent"],html[data-theme="minimal"] .td-list-row-badge[data-priority="urgent"]{color:var(--ink-900)!important}
+html[data-theme="minimal"] .td-card-id,html[data-theme="minimal"] .td-list-row-key,html[data-theme="minimal"] .td-calendar-chip-key{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-id{order:10;margin-left:auto}
-html[data-theme="minimal"] .td-card-id:hover,html[data-theme="minimal"] .td-lrow-key:hover{color:var(--ink-900)}
+html[data-theme="minimal"] .td-card-id:hover,html[data-theme="minimal"] .td-list-row-key:hover{color:var(--ink-900)}
 html[data-theme="minimal"] .td-card-more{top:10px;right:0;width:16px;height:18px;border-radius:0;background:var(--chrome-canvas);box-shadow:-6px 0 4px -2px var(--chrome-canvas);color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-more:hover,html[data-theme="minimal"] .td-card-more[aria-expanded="true"]{color:var(--ink-900)}
 html[data-theme="minimal"] .td-card-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
@@ -137,200 +137,200 @@ html[data-theme="minimal"] .td-card-meta{padding:4px 0 0}
 html[data-theme="minimal"] .td-card.td-file-target{outline:1px dashed var(--ink-900);outline-offset:-1px;background:var(--blue-100);box-shadow:none}
 html[data-theme="minimal"] .td-card.td-file-target::after{border-radius:0;font:400 11px/16px var(--font-ui);right:0;bottom:10px}
 /* Labels are words; assignees are initials; both comma-separated, grey */
-html[data-theme="minimal"] .td-card-labels .td-label,html[data-theme="minimal"] .td-lrow-labels .td-lpill{display:inline!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important;overflow:visible!important;position:static!important;transition:none!important}
-html[data-theme="minimal"] .td-card-labels .td-label+.td-label::before,html[data-theme="minimal"] .td-lrow-labels .td-lpill+.td-lpill::before{content:", "}
+html[data-theme="minimal"] .td-card-labels .td-label,html[data-theme="minimal"] .td-list-row-labels .td-list-row-label{display:inline!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important;overflow:visible!important;position:static!important;transition:none!important}
+html[data-theme="minimal"] .td-card-labels .td-label+.td-label::before,html[data-theme="minimal"] .td-list-row-labels .td-list-row-label+.td-list-row-label::before{content:", "}
 html[data-theme="minimal"] .td-card-labels .td-label:not(:last-of-type){margin-right:-10px!important}
-html[data-theme="minimal"] .td-lrow-labels .td-lpill-n,html[data-theme="minimal"] .td-lrow-avs .td-lav-n,html[data-theme="minimal"] .td-card-avs .td-cav-n{display:none!important}
-html[data-theme="minimal"] .td-lrow-labels,html[data-theme="minimal"] .td-lrow-labels.is-float .td-lrow-labels-in{position:static;width:auto!important;height:auto;padding:0;overflow:visible;background:none!important;max-width:100%!important;flex-wrap:wrap}
-html[data-theme="minimal"] .td-lrow-labels .td-lpill{max-width:100%!important;white-space:normal;overflow-wrap:anywhere}
-html[data-theme="minimal"] .td-card-avs,html[data-theme="minimal"] .td-lrow-avs{gap:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-card-avs .td-cav,html[data-theme="minimal"] .td-lrow-avs .td-lav{width:auto!important;height:auto!important;border-radius:0;box-shadow:none!important;margin:0!important;overflow:visible;transition:none}
-html[data-theme="minimal"] .td-card-avs .td-cav+.td-cav::before,html[data-theme="minimal"] .td-lrow-avs .td-lav+.td-lav::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-card-avs .td-avatar,html[data-theme="minimal"] .td-lrow-avs .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;display:inline!important}
-html[data-theme="minimal"] .td-card-avs img.td-avatar,html[data-theme="minimal"] .td-lrow-avs img.td-avatar{width:14px!important;height:14px!important;border-radius:50%!important;vertical-align:-3px}
-html[data-theme="minimal"] .td-lrow .td-lrow-avs:hover .td-lav+.td-lav{margin-left:0}
-html[data-theme="minimal"] .td-lrow-avs .td-lav.td-lav-x{width:auto!important}
+html[data-theme="minimal"] .td-list-row-labels .td-list-row-label-more,html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar-more,html[data-theme="minimal"] .td-card-avatars .td-card-avatar-more{display:none!important}
+html[data-theme="minimal"] .td-list-row-labels,html[data-theme="minimal"] .td-list-row-labels.is-float .td-list-row-labels-in{position:static;width:auto!important;height:auto;padding:0;overflow:visible;background:none!important;max-width:100%!important;flex-wrap:wrap}
+html[data-theme="minimal"] .td-list-row-labels .td-list-row-label{max-width:100%!important;white-space:normal;overflow-wrap:anywhere}
+html[data-theme="minimal"] .td-card-avatars,html[data-theme="minimal"] .td-list-row-avatars{gap:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-avatars .td-card-avatar,html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar{width:auto!important;height:auto!important;border-radius:0;box-shadow:none!important;margin:0!important;overflow:visible;transition:none}
+html[data-theme="minimal"] .td-card-avatars .td-card-avatar+.td-card-avatar::before,html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar+.td-list-row-avatar::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-avatars .td-avatar,html[data-theme="minimal"] .td-list-row-avatars .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;display:inline!important}
+html[data-theme="minimal"] .td-card-avatars img.td-avatar,html[data-theme="minimal"] .td-list-row-avatars img.td-avatar{width:14px!important;height:14px!important;border-radius:50%!important;vertical-align:-3px}
+html[data-theme="minimal"] .td-list-row .td-list-row-avatars:hover .td-list-row-avatar+.td-list-row-avatar{margin-left:0}
+html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar.td-list-row-avatar-extra{width:auto!important}
 /* Dates: words, grey; overdue red at normal weight; done grey */
 html[data-theme="minimal"] .td-due{background:none!important;color:var(--ink-400)!important;height:auto!important;padding:0!important;border-radius:0!important;font:400 11px/1.45 var(--font-ui)!important}
 html[data-theme="minimal"] .td-due[data-state="overdue"]{color:var(--danger)!important}
 html[data-theme="minimal"] .td-status{color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;gap:3px}
 html[data-theme="minimal"] .td-status svg{width:11px;height:11px;stroke:var(--ink-400)}
 /* Add an item · Add another list · the quick-add composer, all as plain grey rows */
-html[data-theme="minimal"] .td-list-foot{padding-top:0}
-html[data-theme="minimal"] .td-list-add,html[data-theme="minimal"] .td-board-addlist,html[data-theme="minimal"] .td-listview-addlist,html[data-theme="minimal"] .td-lsec-add,html[data-theme="minimal"] .td-caldaylist-add{height:auto;padding:10px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
-html[data-theme="minimal"] .td-list-add svg,html[data-theme="minimal"] .td-board-addlist svg,html[data-theme="minimal"] .td-listview-addlist svg,html[data-theme="minimal"] .td-lsec-add svg,html[data-theme="minimal"] .td-caldaylist-add svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-lsec-add>span:first-child{width:14px}
-html[data-theme="minimal"] .td-list-add:hover,html[data-theme="minimal"] .td-board-addlist:hover,html[data-theme="minimal"] .td-listview-addlist:hover,html[data-theme="minimal"] .td-lsec-add:hover,html[data-theme="minimal"] .td-caldaylist-add:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-add:focus-visible,html[data-theme="minimal"] .td-board-addlist:focus-visible,html[data-theme="minimal"] .td-listview-addlist:focus-visible,html[data-theme="minimal"] .td-lsec-add:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-list-column-foot{padding-top:0}
+html[data-theme="minimal"] .td-list-column-add,html[data-theme="minimal"] .td-board-addlist,html[data-theme="minimal"] .td-list-view-addlist,html[data-theme="minimal"] .td-list-section-add,html[data-theme="minimal"] .td-calendar-day-list-add{height:auto;padding:10px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
+html[data-theme="minimal"] .td-list-column-add svg,html[data-theme="minimal"] .td-board-addlist svg,html[data-theme="minimal"] .td-list-view-addlist svg,html[data-theme="minimal"] .td-list-section-add svg,html[data-theme="minimal"] .td-calendar-day-list-add svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-list-section-add>span:first-child{width:14px}
+html[data-theme="minimal"] .td-list-column-add:hover,html[data-theme="minimal"] .td-board-addlist:hover,html[data-theme="minimal"] .td-list-view-addlist:hover,html[data-theme="minimal"] .td-list-section-add:hover,html[data-theme="minimal"] .td-calendar-day-list-add:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-add:focus-visible,html[data-theme="minimal"] .td-board-addlist:focus-visible,html[data-theme="minimal"] .td-list-view-addlist:focus-visible,html[data-theme="minimal"] .td-list-section-add:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-board-addlist{align-self:flex-start;padding:0 0 8px;height:auto;width:var(--size-list-width);justify-content:flex-start}
-/* List view: "Add another list" is a section-level action, so it takes the list-title weight and tracking (.td-lsec-name) rather than the item-row weight */
-html[data-theme="minimal"] .td-listview-addlist{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;padding:0;align-self:flex-start}
+/* List view: "Add another list" is a section-level action, so it takes the list-title weight and tracking (.td-list-section-name) rather than the item-row weight */
+html[data-theme="minimal"] .td-list-view-addlist{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;padding:0;align-self:flex-start}
 /* Hidden lists (after "Add another list" in Board and List): the same grey words as the add row, ink on hover or while its menu is open */
-html[data-theme="minimal"] .td-hiddenlists{height:auto;padding:0;border-radius:0;background:none;opacity:1;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
-html[data-theme="minimal"] .td-hiddenlists svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-hiddenlists:hover,html[data-theme="minimal"] .td-hiddenlists[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-hiddenlists:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-list-composer{margin:0;padding:10px 0;background:none;box-shadow:none;border-radius:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-hidden-lists{height:auto;padding:0;border-radius:0;background:none;opacity:1;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
+html[data-theme="minimal"] .td-hidden-lists svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-hidden-lists:hover,html[data-theme="minimal"] .td-hidden-lists[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-hidden-lists:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-list-column-composer{margin:0;padding:10px 0;background:none;box-shadow:none;border-radius:0;border-bottom:1px solid var(--border-divider)}
 /* ── List view: sections are the same ledger, one column wide */
-html[data-theme="minimal"] .td-listview{padding:20px 24px 24px}
-html[data-theme="minimal"] .td-listview-inner{gap:24px}
-html[data-theme="minimal"] .td-lsec{background:none;border-radius:0;box-shadow:none}
-html[data-theme="minimal"] .td-lsec-head{padding:0 0 8px;gap:6px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-lsec-collapsed>.td-lsec-head{padding-bottom:8px}
-html[data-theme="minimal"] .td-lsec-head .td-pop-anchor:has(>.td-lsec-iconbtn){display:none!important}
-html[data-theme="minimal"] .td-lsec-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900);white-space:nowrap;flex:1 1 auto}
-html[data-theme="minimal"] .td-lsec-count{display:none}
-html[data-theme="minimal"] .td-lsec-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-lsec-actions{gap:10px}
-html[data-theme="minimal"] .td-lsec-chev,html[data-theme="minimal"] .td-lsec-addbtn,html[data-theme="minimal"] .td-lsec-more{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-lsec-more{opacity:1}
-html[data-theme="minimal"] .td-lsec-chev svg,html[data-theme="minimal"] .td-lsec-addbtn svg,html[data-theme="minimal"] .td-lsec-more svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-lsec-chev:hover,html[data-theme="minimal"] .td-lsec-addbtn:hover,html[data-theme="minimal"] .td-lsec-addbtn[aria-pressed="true"],html[data-theme="minimal"] .td-lsec-more:hover,html[data-theme="minimal"] .td-lsec-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-lsec-chev:focus-visible,html[data-theme="minimal"] .td-lsec-addbtn:focus-visible,html[data-theme="minimal"] .td-lsec-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
-html[data-theme="minimal"] .td-lsec-body{padding-bottom:0!important}
-html[data-theme="minimal"] .td-lgroup{background:none;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-lgroup.is-selected{background:var(--blue-100);box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-lrow{min-height:0;padding:10px 0;gap:10px;font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-lrow:hover{background:none}
-html[data-theme="minimal"] .td-lrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-lrow-subs .td-lrow{border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-list-view{padding:20px 24px 24px}
+html[data-theme="minimal"] .td-list-view-inner{gap:24px}
+html[data-theme="minimal"] .td-list-section{background:none;border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-list-section-head{padding:0 0 8px;gap:6px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-list-section-collapsed>.td-list-section-head{padding-bottom:8px}
+html[data-theme="minimal"] .td-list-section-head .td-popover-anchor:has(>.td-list-section-iconbtn){display:none!important}
+html[data-theme="minimal"] .td-list-section-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900);white-space:nowrap;flex:1 1 auto}
+html[data-theme="minimal"] .td-list-section-count{display:none}
+html[data-theme="minimal"] .td-list-section-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-section-actions{gap:10px}
+html[data-theme="minimal"] .td-list-section-chevron,html[data-theme="minimal"] .td-list-section-addbtn,html[data-theme="minimal"] .td-list-section-more{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-list-section-more{opacity:1}
+html[data-theme="minimal"] .td-list-section-chevron svg,html[data-theme="minimal"] .td-list-section-addbtn svg,html[data-theme="minimal"] .td-list-section-more svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-list-section-chevron:hover,html[data-theme="minimal"] .td-list-section-addbtn:hover,html[data-theme="minimal"] .td-list-section-addbtn[aria-pressed="true"],html[data-theme="minimal"] .td-list-section-more:hover,html[data-theme="minimal"] .td-list-section-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-section-chevron:focus-visible,html[data-theme="minimal"] .td-list-section-addbtn:focus-visible,html[data-theme="minimal"] .td-list-section-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-list-section-body{padding-bottom:0!important}
+html[data-theme="minimal"] .td-list-row-group{background:none;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-list-row-group.is-selected{background:var(--blue-100);box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-list-row{min-height:0;padding:10px 0;gap:10px;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-list-row:hover{background:none}
+html[data-theme="minimal"] .td-list-row:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-list-row-subs .td-list-row{border-top:1px solid var(--border-divider)}
 /* Style menu › Row dividers off: no hairline under the list title, between rows or between subitems. Without rules to carry the rhythm the rows
    close up (10px → 5px padding, a 30px pitch) and the title sits one row-gap above its first row, so the 24px gap between lists still reads as the break.
    Borders stay 1px transparent: toggling never shifts by a sub-pixel, and the drop / selection outlines keep their box. */
-html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-head{padding-bottom:4px;border-bottom-color:transparent}
-html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-collapsed>.td-lsec-head{padding-bottom:0}
-html[data-theme="minimal"][data-row-dividers="false"] .td-lgroup{border-bottom-color:transparent}
-html[data-theme="minimal"][data-row-dividers="false"] .td-lrow-subs .td-lrow{border-top-color:transparent}
-html[data-theme="minimal"][data-row-dividers="false"] .td-lgroup .td-lrow,html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-addrow,html[data-theme="minimal"][data-row-dividers="false"] .td-lsec-add{padding-top:5px;padding-bottom:5px}
-html[data-theme="minimal"] .td-lrow-sub{padding-left:26px}
-html[data-theme="minimal"] .td-lrow-title{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-lgroup .td-lrow:has(.td-check-box-on)>.td-lrow-title{color:var(--ink-900);text-decoration:line-through;text-decoration-color:var(--ink-400);text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-lrow.is-unread{background:none;box-shadow:none}
-html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-title{font-weight:500}
-html[data-theme="minimal"] .td-lrow-end{gap:4px 10px;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-lrow-end>*{height:auto}
-html[data-theme="minimal"] .td-lrow-badge{color:var(--ink-400);font:400 11px/1.45 var(--font-ui);gap:0}
-html[data-theme="minimal"] .td-lrow-badge svg{display:none!important}
-html[data-theme="minimal"] .td-lrow-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-lrow-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px}
-html[data-theme="minimal"] .td-lrow-key.td-lrow-idkey{min-width:0}
+html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-head{padding-bottom:4px;border-bottom-color:transparent}
+html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-collapsed>.td-list-section-head{padding-bottom:0}
+html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-group{border-bottom-color:transparent}
+html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-subs .td-list-row{border-top-color:transparent}
+html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-group .td-list-row,html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-addrow,html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-add{padding-top:5px;padding-bottom:5px}
+html[data-theme="minimal"] .td-list-row-sub{padding-left:26px}
+html[data-theme="minimal"] .td-list-row-title{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-row-group .td-list-row:has(.td-check-box-on)>.td-list-row-title{color:var(--ink-900);text-decoration:line-through;text-decoration-color:var(--ink-400);text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-list-row.is-unread{background:none;box-shadow:none}
+html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-title{font-weight:500}
+html[data-theme="minimal"] .td-list-row-end{gap:4px 10px;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-list-row-end>*{height:auto}
+html[data-theme="minimal"] .td-list-row-badge{color:var(--ink-400);font:400 11px/1.45 var(--font-ui);gap:0}
+html[data-theme="minimal"] .td-list-row-badge svg{display:none!important}
+html[data-theme="minimal"] .td-list-row-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-list-row-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px}
+html[data-theme="minimal"] .td-list-row-key.td-list-row-idkey{min-width:0}
 /* The row key reads as one more meta label: same face, size and ink as the badges to its left (mono stays on cards and calendar chips) */
-html[data-theme="minimal"] .td-lrow>.td-lrow-idkey{height:auto;margin-left:0;font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-lrow.td-drop-before{box-shadow:inset 0 1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-lrow.td-drop-after{box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-lrow.td-drop-into{box-shadow:inset 0 0 0 1px var(--ink-900);background:var(--blue-100)}
-html[data-theme="minimal"] .td-lrow.td-file-target{outline:1px dashed var(--ink-900);background:var(--blue-100)}
-html[data-theme="minimal"] .td-lrow.td-file-target::after,html[data-theme="minimal"] .td-card.td-file-target::after{background:var(--ink-900);color:var(--chrome-canvas)}
-html[data-theme="minimal"] .td-lsec-addrow{min-height:0;padding:10px 0;gap:6px;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-lsec-addrow>span:first-child{width:14px;margin-top:2px}
-html[data-theme="minimal"] .td-lsec-addrow>span:first-child svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-lsec-addrow .td-qa-input{font-weight:400}
+html[data-theme="minimal"] .td-list-row>.td-list-row-idkey{height:auto;margin-left:0;font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-list-row.td-drop-before{box-shadow:inset 0 1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-list-row.td-drop-after{box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-list-row.td-drop-into{box-shadow:inset 0 0 0 1px var(--ink-900);background:var(--blue-100)}
+html[data-theme="minimal"] .td-list-row.td-file-target{outline:1px dashed var(--ink-900);background:var(--blue-100)}
+html[data-theme="minimal"] .td-list-row.td-file-target::after,html[data-theme="minimal"] .td-card.td-file-target::after{background:var(--ink-900);color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-list-section-addrow{min-height:0;padding:10px 0;gap:6px;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-list-section-addrow>span:first-child{width:14px;margin-top:2px}
+html[data-theme="minimal"] .td-list-section-addrow>span:first-child svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-list-section-addrow .td-quick-add-input{font-weight:400}
 /* Switches (Projects · Auto-assign statuses): same rule as checkboxes — hairline track when off, filled ink with a paper knob when on. Rounded maps the on-track to --action-primary, which in Minimal is the ink itself, so the white knob and check vanished */
-html[data-theme="minimal"] .td-pjs-sw,html[data-theme="minimal"] .td-pjs-sw:hover{background:none;box-shadow:inset 0 0 0 1px var(--ink-400)}
-html[data-theme="minimal"] .td-pjs-sw:hover{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"],html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"]:hover{background:var(--ink-900);box-shadow:none}
-html[data-theme="minimal"] .td-pjs-sw[aria-checked="false"] .td-pjs-sw-knob{background:var(--ink-400);box-shadow:none}
-html[data-theme="minimal"] .td-pjs-sw[aria-checked="false"]:hover .td-pjs-sw-knob{background:var(--ink-900)}
-html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"] .td-pjs-sw-knob{background:var(--chrome-canvas);box-shadow:none}
-html[data-theme="minimal"] .td-pjs-sw[aria-checked="true"] .td-pjs-sw-knob svg{color:var(--ink-900)}
-html[data-theme="minimal"] .td-pjs-sw[aria-checked="false"] .td-pjs-sw-knob svg{color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-projects-switch,html[data-theme="minimal"] .td-projects-switch:hover{background:none;box-shadow:inset 0 0 0 1px var(--ink-400)}
+html[data-theme="minimal"] .td-projects-switch:hover{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-projects-switch[aria-checked="true"],html[data-theme="minimal"] .td-projects-switch[aria-checked="true"]:hover{background:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-projects-switch[aria-checked="false"] .td-projects-switch-knob{background:var(--ink-400);box-shadow:none}
+html[data-theme="minimal"] .td-projects-switch[aria-checked="false"]:hover .td-projects-switch-knob{background:var(--ink-900)}
+html[data-theme="minimal"] .td-projects-switch[aria-checked="true"] .td-projects-switch-knob{background:var(--chrome-canvas);box-shadow:none}
+html[data-theme="minimal"] .td-projects-switch[aria-checked="true"] .td-projects-switch-knob svg{color:var(--ink-900)}
+html[data-theme="minimal"] .td-projects-switch[aria-checked="false"] .td-projects-switch-knob svg{color:var(--chrome-canvas)}
 /* Checkboxes: 16px hairline circle, filled ink when checked */
 html[data-theme="minimal"] .td-check-box{border-width:1px;border-color:var(--ink-400);background:none;border-radius:2px}
 html[data-theme="minimal"] .td-check-circle{width:16px;height:16px;border-color:var(--ink-400)}
 html[data-theme="minimal"] .td-check:hover .td-check-box{border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-check-box-on,html[data-theme="minimal"] .td-check-circle.td-check-box-on{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
 html[data-theme="minimal"] .td-check-circle:not(.td-check-box-on){color:var(--ink-900)}
-html[data-theme="minimal"] .td-lrow>span:first-child{margin-top:1px!important}
+html[data-theme="minimal"] .td-list-row>span:first-child{margin-top:1px!important}
 /* ── Calendar: a ruled month — horizontal hairlines only, no weekend tint, today in ink, chips as text */
-html[data-theme="minimal"] .td-calhead{padding:20px 24px 12px;gap:16px}
-html[data-theme="minimal"] .td-calhead+div{padding:0 24px 20px!important}
-html[data-theme="minimal"] .td-calhead-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
-html[data-theme="minimal"] .td-calhead .td-btn-chrome,html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome,html[data-theme="minimal"] .td-calhead .td-select-trigger{height:auto;padding:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);border-radius:0}
-html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome{width:16px!important;height:16px!important}
-html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome svg{width:16px;height:16px}
-html[data-theme="minimal"] .td-calhead .td-btn-chrome:hover,html[data-theme="minimal"] .td-calhead .td-btn-chrome:active,html[data-theme="minimal"] .td-calhead .td-btn-chrome[aria-expanded="true"],html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome:hover,html[data-theme="minimal"] .td-calhead .td-iconbtn-chrome:active{background:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-calhead .td-btn-chrome:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
-html[data-theme="minimal"] .td-calgrid{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-calgrid-wd>div{padding:6px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-calgrid-wd>div.is-wknd{background:none}
-html[data-theme="minimal"] .td-calgrid-wd>div.is-today{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-calgrid-wd>div.is-today>span{color:var(--ink-900);font-weight:500}
-html[data-theme="minimal"] .td-calweek{border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-calcell{border-right:0}
-html[data-theme="minimal"] .td-calcell.is-wknd{background:none}
-html[data-theme="minimal"] .td-calcell:hover{background:var(--n-a03)}
-html[data-theme="minimal"] .td-calcell:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-calcell.is-drop{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-calnum{top:6px;left:0;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-calnum.is-out{color:var(--ink-300)}
-html[data-theme="minimal"] .td-calnum.is-today,html[data-theme="minimal"] .td-caltoday{background:none;color:var(--ink-900);font-weight:500;min-width:0;height:auto;padding:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-calnum.is-today{top:6px;left:0}
-html[data-theme="minimal"] .td-calcell-add{top:4px;right:0;width:16px;height:16px;border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-calcell-add:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-calcell-add svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-calchips{padding:2px 0 6px;gap:2px;margin:0}
-html[data-theme="minimal"] .td-calchip{height:auto;padding:1px 0;background:none;box-shadow:none;border-radius:0;font:400 12px/1.35 var(--font-ui);color:var(--ink-900);gap:4px}
-html[data-theme="minimal"] .td-calchip:hover{box-shadow:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-calchip:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:1px}
-html[data-theme="minimal"] .td-calchip-bars{display:none}
-html[data-theme="minimal"] .td-calchip.is-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-calchip.is-done>svg{display:none!important}
-html[data-theme="minimal"] .td-calchip>svg{width:11px;height:11px}
-html[data-theme="minimal"] .td-calchip-key{font-size:10px}
-html[data-theme="minimal"] .td-calspan{background:none;border:0;border-radius:0;margin:1px 0;padding:0;height:18px;box-shadow:inset 0 -1px 0 var(--ink-900);font:400 12px/1.35 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-calspan.is-l{padding-left:0}
-html[data-theme="minimal"] .td-calspan.is-done{color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-calspan:hover{box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-400)}
-html[data-theme="minimal"] .td-calspan:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px;box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-calmore{padding:1px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-calmore:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-calmini{background:none;box-shadow:none;border-radius:0;border-top:1px solid var(--border-divider);padding:8px 0 0}
-html[data-theme="minimal"] .td-calmini:hover{box-shadow:none}
-html[data-theme="minimal"] .td-calmini:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
-html[data-theme="minimal"] .td-calmini-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-calmini-wd{font:400 9px/12px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-calmini-day{font:400 11px/14px var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-calmini-day.is-today .td-calmini-n{background:none;color:var(--ink-900);font-weight:500;box-shadow:inset 0 -1px 0 var(--ink-900);border-radius:0}
-html[data-theme="minimal"] .td-calmini-dot{background:var(--ink-900)}
-html[data-theme="minimal"] .td-caldaylist{gap:0}
-html[data-theme="minimal"] .td-caldaylist-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-caldaylist-block{background:none;border-radius:0;box-shadow:none}
-html[data-theme="minimal"] .td-caldaylist-block>*+*{border-top:0}
-html[data-theme="minimal"] .td-caldaylist-empty{padding:16px 0;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-header{padding:20px 24px 12px;gap:16px}
+html[data-theme="minimal"] .td-calendar-header+div{padding:0 24px 20px!important}
+html[data-theme="minimal"] .td-calendar-header-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-header .td-btn-chrome,html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome,html[data-theme="minimal"] .td-calendar-header .td-select-trigger{height:auto;padding:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome{width:16px!important;height:16px!important}
+html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome svg{width:16px;height:16px}
+html[data-theme="minimal"] .td-calendar-header .td-btn-chrome:hover,html[data-theme="minimal"] .td-calendar-header .td-btn-chrome:active,html[data-theme="minimal"] .td-calendar-header .td-btn-chrome[aria-expanded="true"],html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome:hover,html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome:active{background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-header .td-btn-chrome:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-calendar-grid{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-grid-weekday>div{padding:6px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-grid-weekday>div.is-wknd{background:none}
+html[data-theme="minimal"] .td-calendar-grid-weekday>div.is-today{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-grid-weekday>div.is-today>span{color:var(--ink-900);font-weight:500}
+html[data-theme="minimal"] .td-calendar-week{border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-cell{border-right:0}
+html[data-theme="minimal"] .td-calendar-cell.is-wknd{background:none}
+html[data-theme="minimal"] .td-calendar-cell:hover{background:var(--n-a03)}
+html[data-theme="minimal"] .td-calendar-cell:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-cell.is-drop{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-day-number{top:6px;left:0;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-day-number.is-out{color:var(--ink-300)}
+html[data-theme="minimal"] .td-calendar-day-number.is-today,html[data-theme="minimal"] .td-calendar-today{background:none;color:var(--ink-900);font-weight:500;min-width:0;height:auto;padding:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-day-number.is-today{top:6px;left:0}
+html[data-theme="minimal"] .td-calendar-cell-add{top:4px;right:0;width:16px;height:16px;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-cell-add:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-cell-add svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-calendar-chips{padding:2px 0 6px;gap:2px;margin:0}
+html[data-theme="minimal"] .td-calendar-chip{height:auto;padding:1px 0;background:none;box-shadow:none;border-radius:0;font:400 12px/1.35 var(--font-ui);color:var(--ink-900);gap:4px}
+html[data-theme="minimal"] .td-calendar-chip:hover{box-shadow:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-chip:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:1px}
+html[data-theme="minimal"] .td-calendar-chip-bars{display:none}
+html[data-theme="minimal"] .td-calendar-chip.is-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-calendar-chip.is-done>svg{display:none!important}
+html[data-theme="minimal"] .td-calendar-chip>svg{width:11px;height:11px}
+html[data-theme="minimal"] .td-calendar-chip-key{font-size:10px}
+html[data-theme="minimal"] .td-calendar-span{background:none;border:0;border-radius:0;margin:1px 0;padding:0;height:18px;box-shadow:inset 0 -1px 0 var(--ink-900);font:400 12px/1.35 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-span.is-l{padding-left:0}
+html[data-theme="minimal"] .td-calendar-span.is-done{color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-calendar-span:hover{box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-span:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-more{padding:1px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-more:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-mini{background:none;box-shadow:none;border-radius:0;border-top:1px solid var(--border-divider);padding:8px 0 0}
+html[data-theme="minimal"] .td-calendar-mini:hover{box-shadow:none}
+html[data-theme="minimal"] .td-calendar-mini:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-mini-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-mini-weekday{font:400 9px/12px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-mini-day{font:400 11px/14px var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-mini-day.is-today .td-calendar-mini-number{background:none;color:var(--ink-900);font-weight:500;box-shadow:inset 0 -1px 0 var(--ink-900);border-radius:0}
+html[data-theme="minimal"] .td-calendar-mini-dot{background:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-day-list{gap:0}
+html[data-theme="minimal"] .td-calendar-day-list-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-day-list-block{background:none;border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-calendar-day-list-block>*+*{border-top:0}
+html[data-theme="minimal"] .td-calendar-day-list-empty{padding:16px 0;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
 /* ── Chrome rows under the toolbar (filter · sort · saved views) and their chips: outlined ink instead of white pills */
-html[data-theme="minimal"] .td-fchip{height:24px;padding:0 8px;border-radius:2px;font:400 12px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-fchip-on{background:none;color:var(--ink-900);box-shadow:inset 0 0 0 1px var(--ink-900);padding-right:4px}
-html[data-theme="minimal"] .td-fchip-on:hover{background:var(--n-a03)}
-html[data-theme="minimal"] .td-fchip-off{background:none;color:var(--ink-400);box-shadow:inset 0 0 0 1px var(--border-divider)}
-html[data-theme="minimal"] .td-fchip-off:hover{background:none;color:var(--ink-900);box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-fchip-dot{width:6px;height:6px;border-radius:1px}
+html[data-theme="minimal"] .td-filter-chip{height:24px;padding:0 8px;border-radius:2px;font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-filter-chip-on{background:none;color:var(--ink-900);box-shadow:inset 0 0 0 1px var(--ink-900);padding-right:4px}
+html[data-theme="minimal"] .td-filter-chip-on:hover{background:var(--n-a03)}
+html[data-theme="minimal"] .td-filter-chip-off{background:none;color:var(--ink-400);box-shadow:inset 0 0 0 1px var(--border-divider)}
+html[data-theme="minimal"] .td-filter-chip-off:hover{background:none;color:var(--ink-900);box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-filter-chip-dot{width:6px;height:6px;border-radius:1px}
 html[data-theme="minimal"] .td-btn-chrome,html[data-theme="minimal"] .td-btn-chrome-ghost{background:none;color:var(--ink-400);font-weight:400}
 html[data-theme="minimal"] .td-btn-chrome:hover,html[data-theme="minimal"] .td-btn-chrome:active,html[data-theme="minimal"] .td-btn-chrome-ghost:hover,html[data-theme="minimal"] .td-btn-chrome-ghost:active{background:none;color:var(--ink-900)}
 /* Row actions (Reset filters · Reset sorting · Hide): grey words at the chip size, no pill, no padding; the icon shrinks to the text; hover inks the word */
-html[data-theme="minimal"] .td-btn.td-bar-act{height:24px;padding:0 2px;gap:5px;border-radius:2px;background:none;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-btn.td-bar-act.td-btn-chrome{color:var(--ink-900)}
-html[data-theme="minimal"] .td-btn.td-bar-act svg{width:12px;height:12px}
-html[data-theme="minimal"] .td-btn.td-bar-act:hover,html[data-theme="minimal"] .td-btn.td-bar-act:active{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-btn.td-bar-act:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px}
+html[data-theme="minimal"] .td-btn.td-bar-action{height:24px;padding:0 2px;gap:5px;border-radius:2px;background:none;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-btn.td-bar-action.td-btn-chrome{color:var(--ink-900)}
+html[data-theme="minimal"] .td-btn.td-bar-action svg{width:12px;height:12px}
+html[data-theme="minimal"] .td-btn.td-bar-action:hover,html[data-theme="minimal"] .td-btn.td-bar-action:active{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-btn.td-bar-action:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px}
 /* The rail's "…" pager: grey word + chevron, no pill */
-html[data-theme="minimal"] .td-btn.td-chiprail-page{height:24px;padding:0 2px;background:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-btn.td-chiprail-page:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-btn.td-chip-rail-page{height:24px;padding:0 2px;background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-btn.td-chip-rail-page:hover{background:none;color:var(--ink-900)}
 /* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
-html[data-theme="minimal"] nav.td-cbar .td-chiprail{gap:16px}
-html[data-theme="minimal"] .td-sv-tab,html[data-theme="minimal"] .td-sv-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast) var(--ease-standard)}
-html[data-theme="minimal"] .td-sv-tab:hover,html[data-theme="minimal"] .td-sv-save:hover,html[data-theme="minimal"] .td-sv-save[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-sv-tab[aria-current="true"],html[data-theme="minimal"] .td-sv-tab[aria-current="true"]:hover{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-sv-tab.has-menu{padding-right:0}
-html[data-theme="minimal"] .td-sv-tab:focus-visible,html[data-theme="minimal"] .td-sv-save:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
-html[data-theme="minimal"] .td-sv-dot{width:5px;height:5px;border-radius:0;background:var(--ink-900)}
-html[data-theme="minimal"] .td-sv-tab[aria-current="true"] .td-sv-dot{background:var(--ink-900)}
-html[data-theme="minimal"] .td-sv-wrap{align-items:center;gap:4px}
-html[data-theme="minimal"] .td-sv-more{position:static;transform:none;opacity:1}
-html[data-theme="minimal"] .td-sv-more .td-iconbtn,html[data-theme="minimal"] .td-sv-wrap[data-selected="true"] .td-sv-more .td-iconbtn{border-radius:0;background:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-sv-more .td-iconbtn:hover,html[data-theme="minimal"] .td-sv-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-sv-pop{padding:8px 14px 10px}
-html[data-theme="minimal"] .td-sv-pop-title{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-sv-summary{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sv-summary code{padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] nav.td-chip-bar .td-chip-rail{gap:16px}
+html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast) var(--ease-standard)}
+html[data-theme="minimal"] .td-saved-view-tab:hover,html[data-theme="minimal"] .td-saved-view-save:hover,html[data-theme="minimal"] .td-saved-view-save[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-saved-view-tab[aria-current="true"],html[data-theme="minimal"] .td-saved-view-tab[aria-current="true"]:hover{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-saved-view-tab.has-menu{padding-right:0}
+html[data-theme="minimal"] .td-saved-view-tab:focus-visible,html[data-theme="minimal"] .td-saved-view-save:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-saved-view-dot{width:5px;height:5px;border-radius:0;background:var(--ink-900)}
+html[data-theme="minimal"] .td-saved-view-tab[aria-current="true"] .td-saved-view-dot{background:var(--ink-900)}
+html[data-theme="minimal"] .td-saved-view-wrap{align-items:center;gap:4px}
+html[data-theme="minimal"] .td-saved-view-more{position:static;transform:none;opacity:1}
+html[data-theme="minimal"] .td-saved-view-more .td-iconbtn,html[data-theme="minimal"] .td-saved-view-wrap[data-selected="true"] .td-saved-view-more .td-iconbtn{border-radius:0;background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-saved-view-more .td-iconbtn:hover,html[data-theme="minimal"] .td-saved-view-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-saved-view-popover{padding:8px 14px 10px}
+html[data-theme="minimal"] .td-saved-view-popover-title{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-saved-view-summary{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-saved-view-summary code{padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-900)}
 /* ── Shared controls: buttons, icon buttons, segmented and menus drop their fills for hairlines */
 html[data-theme="minimal"] .td-btn{font-weight:500;font-size:13px}
 html[data-theme="minimal"] .td-btn-outline{box-shadow:none;border-color:var(--border-divider)}
@@ -343,90 +343,90 @@ html[data-theme="minimal"] .td-iconbtn{border-radius:2px}
 html[data-theme="minimal"] .td-field{box-shadow:none;font-size:13px}
 html[data-theme="minimal"] .td-field:focus{box-shadow:none;border-color:var(--ink-900)}
 /* Tooltips: the same ink pill at the theme's 12px, no medium weight, square corners. Labeled toolbar controls lose their text here (icon-only 48px row), so their hints turn on */
-html[data-theme="minimal"] .td-tip-popup,html[data-theme="minimal"] .td-tip[data-tip]::after{font:400 12px/1.45 var(--font-ui);letter-spacing:0;padding:3px 7px;border-radius:2px}
-html[data-theme="minimal"] .td-subnav-act.td-tip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-act.td-tip-labeled[data-tip]::before,html[data-theme="minimal"] .td-subnav-seg.td-tip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-seg.td-tip-labeled[data-tip]::before{display:block}
-html[data-theme="minimal"] .td-subnav-act.td-tip-labeled[data-tip][data-tip-kbd]::after,html[data-theme="minimal"] .td-subnav-seg.td-tip-labeled[data-tip][data-tip-kbd]::after{content:attr(data-tip) "\2003" attr(data-tip-kbd);font-family:var(--font-ui);font-size:12px}
+html[data-theme="minimal"] .td-tooltip-popup,html[data-theme="minimal"] .td-tooltip[data-tip]::after{font:400 12px/1.45 var(--font-ui);letter-spacing:0;padding:3px 7px;border-radius:2px}
+html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip]::before,html[data-theme="minimal"] .td-subnav-seg.td-tooltip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-seg.td-tooltip-labeled[data-tip]::before{display:block}
+html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip][data-tip-kbd]::after,html[data-theme="minimal"] .td-subnav-seg.td-tooltip-labeled[data-tip][data-tip-kbd]::after{content:attr(data-tip) "\2003" attr(data-tip-kbd);font-family:var(--font-ui);font-size:12px}
 /* ── Account pages (Projects · Project groups · Settings): the same 24px gutter as the board; page title is a plain 500-weight line; no white card — the table is rows over hairlines, column heads in grey over one ink hairline */
-html[data-theme="minimal"] .td-pjs,html[data-theme="minimal"] .td-set,html[data-theme="minimal"] .td-ib{padding:20px 24px 24px!important}
-html[data-theme="minimal"] .td-ib-inner{gap:16px!important}
-html[data-theme="minimal"] .td-ib-title{font:500 15px/1.45 var(--font-ui)!important;color:var(--ink-900)!important;margin:0!important}
-html[data-theme="minimal"] .td-ib-readall{height:auto;padding:0;background:none;border:0;box-shadow:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-ib-readall:hover,html[data-theme="minimal"] .td-ib-readall:active{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-ib-readall svg{display:none}
-html[data-theme="minimal"] .td-pjs-inner{gap:16px}
-html[data-theme="minimal"] .td-pjs-title,html[data-theme="minimal"] .td-set-title{font:500 15px/1.45 var(--font-ui);color:var(--ink-900);margin:0}
-html[data-theme="minimal"] .td-pjs-card{background:none;border-radius:0;box-shadow:none;padding:0}
-html[data-theme="minimal"] .td-pjs-table th{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0 12px 8px 0;border-bottom:1px solid var(--ink-900)}
-html[data-theme="minimal"] .td-pjs-table th:last-child{padding-right:0}
-html[data-theme="minimal"] .td-pjs-table td{font:400 13px/1.45 var(--font-ui);padding:10px 12px 10px 0;border-bottom:1px solid var(--border-divider);border-radius:0!important}
-html[data-theme="minimal"] .td-pjs-table td:last-child{padding-right:0}
-html[data-theme="minimal"] .td-pjs-table td.td-pjs-name{font-weight:400}
-html[data-theme="minimal"] .td-pjs-row:hover td{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-pjs-row:hover td.td-pjs-name{text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-400)}
-html[data-theme="minimal"] .td-pjs-row:focus-visible td{background:none;box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-pjs-ic{width:28px}
-html[data-theme="minimal"] .td-pjs-ic svg{width:16px;height:16px;stroke:var(--ink-900)!important;color:var(--ink-900)!important;stroke-width:1.75}
-html[data-theme="minimal"] .td-pjs-num,html[data-theme="minimal"] .td-pjs-dim{color:var(--ink-400);font-variant-numeric:tabular-nums}
-html[data-theme="minimal"] .td-pjs-ic{width:auto;padding-right:10px!important}
-html[data-theme="minimal"] .td-pjs-lead .td-avatar{display:none!important}
-html[data-theme="minimal"] .td-pjs-lead{gap:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-pjs-table .td-iconbtn{color:var(--ink-400);border-radius:0}
-html[data-theme="minimal"] .td-pjs-table .td-iconbtn:hover,html[data-theme="minimal"] .td-pjs-table .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-projects,html[data-theme="minimal"] .td-settings,html[data-theme="minimal"] .td-inbox{padding:20px 24px 24px!important}
+html[data-theme="minimal"] .td-inbox-inner{gap:16px!important}
+html[data-theme="minimal"] .td-inbox-title{font:500 15px/1.45 var(--font-ui)!important;color:var(--ink-900)!important;margin:0!important}
+html[data-theme="minimal"] .td-inbox-readall{height:auto;padding:0;background:none;border:0;box-shadow:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-inbox-readall:hover,html[data-theme="minimal"] .td-inbox-readall:active{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-inbox-readall svg{display:none}
+html[data-theme="minimal"] .td-projects-inner{gap:16px}
+html[data-theme="minimal"] .td-projects-title,html[data-theme="minimal"] .td-settings-title{font:500 15px/1.45 var(--font-ui);color:var(--ink-900);margin:0}
+html[data-theme="minimal"] .td-projects-card{background:none;border-radius:0;box-shadow:none;padding:0}
+html[data-theme="minimal"] .td-projects-table th{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0 12px 8px 0;border-bottom:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-projects-table th:last-child{padding-right:0}
+html[data-theme="minimal"] .td-projects-table td{font:400 13px/1.45 var(--font-ui);padding:10px 12px 10px 0;border-bottom:1px solid var(--border-divider);border-radius:0!important}
+html[data-theme="minimal"] .td-projects-table td:last-child{padding-right:0}
+html[data-theme="minimal"] .td-projects-table td.td-projects-name{font-weight:400}
+html[data-theme="minimal"] .td-projects-row:hover td{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-projects-row:hover td.td-projects-name{text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-400)}
+html[data-theme="minimal"] .td-projects-row:focus-visible td{background:none;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-projects-icon{width:28px}
+html[data-theme="minimal"] .td-projects-icon svg{width:16px;height:16px;stroke:var(--ink-900)!important;color:var(--ink-900)!important;stroke-width:1.75}
+html[data-theme="minimal"] .td-projects-number,html[data-theme="minimal"] .td-projects-dim{color:var(--ink-400);font-variant-numeric:tabular-nums}
+html[data-theme="minimal"] .td-projects-icon{width:auto;padding-right:10px!important}
+html[data-theme="minimal"] .td-projects-lead .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-projects-lead{gap:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-projects-table .td-iconbtn{color:var(--ink-400);border-radius:0}
+html[data-theme="minimal"] .td-projects-table .td-iconbtn:hover,html[data-theme="minimal"] .td-projects-table .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
 /* Group abbreviations: mono like every key in the theme; the edit affordance is a hairline under the text, not a box */
-html[data-theme="minimal"] .td-gps-abbr{font:400 12px/1.45 var(--font-mono);color:var(--ink-400);border-radius:0;box-shadow:none}
-html[data-theme="minimal"] .td-gps-abbr:hover{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
-html[data-theme="minimal"] .td-gps-abbr:focus-visible{box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-gps-input{font:400 12px/1.45 var(--font-mono);color:var(--ink-900);background:none;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-gps-edit{border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-gps-edit:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-groups-abbr{font:400 12px/1.45 var(--font-mono);color:var(--ink-400);border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-groups-abbr:hover{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-groups-abbr:focus-visible{box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-groups-input{font:400 12px/1.45 var(--font-mono);color:var(--ink-900);background:none;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-groups-edit{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-groups-edit:hover{background:none;color:var(--ink-900)}
 /* Settings: the left nav is the sidebar's vocabulary — grey words, ink when current, no pill; the search a hairline; groups are ledgers with the group name in 500 over an ink hairline */
-html[data-theme="minimal"] .td-set-inner{grid-template-columns:172px minmax(0,1fr);gap:40px}
-html[data-theme="minimal"] .td-set-inner[data-nav="false"]{grid-template-columns:minmax(0,1fr)}
-html[data-theme="minimal"] .td-set-search .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-set-search .td-field::placeholder{color:var(--ink-400)}
-html[data-theme="minimal"] .td-set-search svg{width:16px;height:16px;stroke-width:1.75;color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-search .td-field-icon{left:0}
+html[data-theme="minimal"] .td-settings-inner{grid-template-columns:172px minmax(0,1fr);gap:40px}
+html[data-theme="minimal"] .td-settings-inner[data-nav="false"]{grid-template-columns:minmax(0,1fr)}
+html[data-theme="minimal"] .td-settings-search .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-settings-search .td-field::placeholder{color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-search svg{width:16px;height:16px;stroke-width:1.75;color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-search .td-field-icon{left:0}
 /* Inbox: the page title is the same plain 500 line as the other account pages; “Mark all read” is a word, not a pill; a notification's source is a grey glyph, never a colored disc; unread rows carry an ink dot under the checkbox instead of a tint */
-html[data-theme="minimal"] .td-lrow-from .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:transparent!important;font-size:0!important;position:relative}
-html[data-theme="minimal"] .td-lrow-from .td-avatar::after{content:attr(data-initials);font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-lrow-from .td-nmark{background:none;border-radius:0;color:var(--ink-400);width:auto!important;height:auto!important}
-html[data-theme="minimal"] .td-lrow-from .td-nmark svg{width:14px;height:14px;stroke-width:1.75}
-html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-title{font-weight:500;letter-spacing:-.005em}
-html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-from{position:relative}
-html[data-theme="minimal"] .td-lrow.is-unread .td-lrow-from::after{content:"";position:absolute;right:-6px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--ink-900)}
-html[data-theme="minimal"] .td-set-search{margin-bottom:20px}
-html[data-theme="minimal"] .td-set-clear{border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-set-clear:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-navhead{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:16px 0 6px}
-html[data-theme="minimal"] .td-set-navhead:first-child{margin-top:0}
-html[data-theme="minimal"] .td-set-navrow{height:auto;padding:4px 0;gap:0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-set-navrow:hover,html[data-theme="minimal"] .td-set-navrow:active{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-navrow[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em}
-html[data-theme="minimal"] .td-set-navrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
-html[data-theme="minimal"] .td-set-navicon{display:none}
-html[data-theme="minimal"] .td-set-crumb{display:none}
-html[data-theme="minimal"] .td-set-main{gap:32px;max-width:640px}
-html[data-theme="minimal"] .td-set-group{background:none;border-radius:0;box-shadow:none;overflow:visible}
-html[data-theme="minimal"] .td-set-grouphead{padding:0 0 8px;border-bottom:1px solid var(--ink-900)}
-html[data-theme="minimal"] .td-set-grouptitle{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-grouppath,html[data-theme="minimal"] .td-set-grouppath-btn{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-set-row{padding:10px 0;min-height:0;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-set-row+.td-set-row,html[data-theme="minimal"] .td-set-body+.td-set-row{border-top:0}
-html[data-theme="minimal"] .td-set-group[data-fields="true"] .td-set-row{padding:6px 0}
-html[data-theme="minimal"] .td-set-group[data-fields="true"] .td-set-row:last-child{padding-bottom:6px}
-html[data-theme="minimal"] .td-set-rowlabel{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-set-rowhint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-set-mark{font-weight:500;text-decoration-color:var(--ink-900)}
-@keyframes td-set-hit-minimal{0%,40%{background:var(--n-a06)}100%{background:transparent}}
-html[data-theme="minimal"] .td-set-row[data-hit="true"]{animation-name:td-set-hit-minimal}
+html[data-theme="minimal"] .td-list-row-from .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:transparent!important;font-size:0!important;position:relative}
+html[data-theme="minimal"] .td-list-row-from .td-avatar::after{content:attr(data-initials);font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-list-row-from .td-notification-mark{background:none;border-radius:0;color:var(--ink-400);width:auto!important;height:auto!important}
+html[data-theme="minimal"] .td-list-row-from .td-notification-mark svg{width:14px;height:14px;stroke-width:1.75}
+html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-title{font-weight:500;letter-spacing:-.005em}
+html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from{position:relative}
+html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from::after{content:"";position:absolute;right:-6px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-search{margin-bottom:20px}
+html[data-theme="minimal"] .td-settings-clear{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-clear:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-navhead{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:16px 0 6px}
+html[data-theme="minimal"] .td-settings-navhead:first-child{margin-top:0}
+html[data-theme="minimal"] .td-settings-navrow{height:auto;padding:4px 0;gap:0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-navrow:hover,html[data-theme="minimal"] .td-settings-navrow:active{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-navrow[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em}
+html[data-theme="minimal"] .td-settings-navrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-settings-navicon{display:none}
+html[data-theme="minimal"] .td-settings-crumb{display:none}
+html[data-theme="minimal"] .td-settings-main{gap:32px;max-width:640px}
+html[data-theme="minimal"] .td-settings-group{background:none;border-radius:0;box-shadow:none;overflow:visible}
+html[data-theme="minimal"] .td-settings-grouphead{padding:0 0 8px;border-bottom:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-settings-grouptitle{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-grouppath,html[data-theme="minimal"] .td-settings-grouppath-btn{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-row{padding:10px 0;min-height:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-settings-row+.td-settings-row,html[data-theme="minimal"] .td-settings-body+.td-settings-row{border-top:0}
+html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row{padding:6px 0}
+html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row:last-child{padding-bottom:6px}
+html[data-theme="minimal"] .td-settings-rowlabel{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-settings-rowhint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-mark{font-weight:500;text-decoration-color:var(--ink-900)}
+@keyframes td-settings-hit-minimal{0%,40%{background:var(--n-a06)}100%{background:transparent}}
+html[data-theme="minimal"] .td-settings-row[data-hit="true"]{animation-name:td-settings-hit-minimal}
 /* Row controls: the native select is a word with a chevron over a hairline; keyboard keys in mono, no chip */
-html[data-theme="minimal"] .td-set-select{height:24px;padding:0 20px 0 0;background-color:transparent;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);background-position:right 0 center}
-html[data-theme="minimal"] .td-set-select:hover{background-color:transparent;border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-select:focus-visible{box-shadow:none;border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-rowctl .td-field{height:24px;padding:3px 0!important;background:none;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-set-rowctl .td-field:focus{border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-kbd{background:none;border-radius:0;padding:0;min-width:0;height:auto;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
-html[data-theme="minimal"] .td-set-keys{gap:6px}
+html[data-theme="minimal"] .td-settings-select{height:24px;padding:0 20px 0 0;background-color:transparent;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);background-position:right 0 center}
+html[data-theme="minimal"] .td-settings-select:hover{background-color:transparent;border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-select:focus-visible{box-shadow:none;border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-row-control .td-field{height:24px;padding:3px 0!important;background:none;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-settings-row-control .td-field:focus{border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-kbd{background:none;border-radius:0;padding:0;min-width:0;height:auto;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-keys{gap:6px}
 /* Switch (core): hairline track off, ink track on, paper knob; the same rule as the Projects toggle */
 html[data-theme="minimal"] .td-switch-track,html[data-theme="minimal"] .td-switch:hover .td-switch-track{background:none;box-shadow:inset 0 0 0 1px var(--ink-400)}
 html[data-theme="minimal"] .td-switch:hover .td-switch-track{box-shadow:inset 0 0 0 1px var(--ink-900)}
@@ -436,54 +436,54 @@ html[data-theme="minimal"] .td-switch:hover .td-switch-thumb{background:var(--in
 html[data-theme="minimal"] .td-switch-on .td-switch-thumb,html[data-theme="minimal"] .td-switch-on:hover .td-switch-thumb{background:var(--chrome-canvas)}
 html[data-theme="minimal"] .td-switch:focus-visible .td-switch-track{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 2px var(--chrome-canvas),0 0 0 3px var(--ink-900)}
 /* ── Floating layers (popovers, menus, the account menu, dialogs): paper with a hairline ring, square corners; menu rows read in normal ink, hover is a faint wash */
-html[data-theme="minimal"] .td-pop,html[data-theme="minimal"] .td-usermenu,html[data-theme="minimal"] .td-createmenu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
-html[data-theme="minimal"] .td-pop{padding:6px 0}
-html[data-theme="minimal"] .td-pop.td-pop-flush:not([data-sheet]){padding:0}
-html[data-theme="minimal"] .td-pop.td-style-menu{padding:12px}
+html[data-theme="minimal"] .td-popover,html[data-theme="minimal"] .td-user-menu,html[data-theme="minimal"] .td-create-menu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
+html[data-theme="minimal"] .td-popover{padding:6px 0}
+html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){padding:0}
+html[data-theme="minimal"] .td-popover.td-style-menu{padding:12px}
 html[data-theme="minimal"] .td-menu{gap:0}
-html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-usermenu-item,html[data-theme="minimal"] .td-usermenu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-usermenu-item:hover,html[data-theme="minimal"] .td-usermenu-item:focus-visible,html[data-theme="minimal"] button.td-usermenu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
-html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-usermenu-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
+html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-user-menu-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
 html[data-theme="minimal"] .td-menu-item[aria-checked="true"],html[data-theme="minimal"] .td-menu-item[aria-pressed="true"]{color:var(--ink-900)}
-html[data-theme="minimal"] .td-menu-item-icon,html[data-theme="minimal"] .td-usermenu-ico,html[data-theme="minimal"] .td-menu-item-check{color:inherit}
-html[data-theme="minimal"] .td-menu-item svg,html[data-theme="minimal"] .td-usermenu-item svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-menu-item-icon,html[data-theme="minimal"] .td-user-menu-icon,html[data-theme="minimal"] .td-menu-item-check{color:inherit}
+html[data-theme="minimal"] .td-menu-item svg,html[data-theme="minimal"] .td-user-menu-item svg{width:16px;height:16px;stroke-width:1.75}
 html[data-theme="minimal"] .td-menu-item[data-danger="true"]{color:var(--danger)}
 html[data-theme="minimal"] .td-menu-item-trail{color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-menu-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-menu-divider,html[data-theme="minimal"] .td-usermenu-sep{margin:6px 0;background:var(--border-divider)}
+html[data-theme="minimal"] .td-menu-divider,html[data-theme="minimal"] .td-user-menu-separator{margin:6px 0;background:var(--border-divider)}
 html[data-theme="minimal"] .td-menu-heading{padding:8px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-usermenu{width:240px;padding:6px 0}
-html[data-theme="minimal"] .td-createmenu{width:200px;padding:6px 0;top:calc(100% + 12px)}
+html[data-theme="minimal"] .td-user-menu{width:240px;padding:6px 0}
+html[data-theme="minimal"] .td-create-menu{width:200px;padding:6px 0;top:calc(100% + 12px)}
 /* Toolbar menus (Filter · Sort · Members): the same square sheet as every floating layer; section names are plain grey words, rows are normal ink with a faint hover wash, the checked row a paper-grey wash; label swatches shrink to a 6px square so color stays a hint */
-html[data-theme="minimal"] .td-fm,html[data-theme="minimal"] .td-sm,html[data-theme="minimal"] .td-mm{border-radius:0}
-html[data-theme="minimal"] .td-fm-head,html[data-theme="minimal"] .td-sm-head,html[data-theme="minimal"] .td-mm-head{padding:10px 14px;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-fm-head svg{stroke:var(--ink-900)!important}
-html[data-theme="minimal"] .td-fm-scroll,html[data-theme="minimal"] .td-sm-scroll,html[data-theme="minimal"] .td-mm-scroll{padding:6px 0}
-html[data-theme="minimal"] .td-fm-sec,html[data-theme="minimal"] .td-sm-sec,html[data-theme="minimal"] .td-mm-sec{padding:10px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-fm-row,html[data-theme="minimal"] .td-sm-row,html[data-theme="minimal"] .td-mm-row{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-fm-row:hover,html[data-theme="minimal"] .td-sm-row:hover,html[data-theme="minimal"] button.td-mm-row:hover:not(:disabled){background:var(--chrome-hover);color:var(--ink-900)}
-html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"],html[data-theme="minimal"] button.td-mm-row:disabled[aria-checked="false"] .td-mm-line{color:var(--ink-300)}
+html[data-theme="minimal"] .td-filter-menu,html[data-theme="minimal"] .td-sort-menu,html[data-theme="minimal"] .td-members-menu{border-radius:0}
+html[data-theme="minimal"] .td-filter-menu-head,html[data-theme="minimal"] .td-sort-menu-head,html[data-theme="minimal"] .td-members-menu-head{padding:10px 14px;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-filter-menu-head svg{stroke:var(--ink-900)!important}
+html[data-theme="minimal"] .td-filter-menu-scroll,html[data-theme="minimal"] .td-sort-menu-scroll,html[data-theme="minimal"] .td-members-menu-scroll{padding:6px 0}
+html[data-theme="minimal"] .td-filter-menu-section,html[data-theme="minimal"] .td-sort-menu-section,html[data-theme="minimal"] .td-members-menu-section{padding:10px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-filter-menu-row,html[data-theme="minimal"] .td-sort-menu-row,html[data-theme="minimal"] .td-members-menu-row{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-filter-menu-row:hover,html[data-theme="minimal"] .td-sort-menu-row:hover,html[data-theme="minimal"] button.td-members-menu-row:hover:not(:disabled){background:var(--chrome-hover);color:var(--ink-900)}
+html[data-theme="minimal"] button.td-members-menu-row:disabled[aria-checked="false"],html[data-theme="minimal"] button.td-members-menu-row:disabled[aria-checked="false"] .td-members-menu-line{color:var(--ink-300)}
 /* Checked rows stay bare paper: the checkbox or the check carries the state, so a hover fill never reads as "picked" */
-html[data-theme="minimal"] .td-fm-row[aria-checked="true"]:not(:hover),html[data-theme="minimal"] .td-sm-row[aria-checked="true"]:not(:hover){background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-fm-row .td-check{margin-right:2px}
-html[data-theme="minimal"] .td-fm-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
-html[data-theme="minimal"] .td-fm-row>svg{stroke:currentColor!important;width:14px;height:14px;stroke-width:1.75}
+html[data-theme="minimal"] .td-filter-menu-row[aria-checked="true"]:not(:hover),html[data-theme="minimal"] .td-sort-menu-row[aria-checked="true"]:not(:hover){background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-filter-menu-row .td-check{margin-right:2px}
+html[data-theme="minimal"] .td-filter-menu-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
+html[data-theme="minimal"] .td-filter-menu-row>svg{stroke:currentColor!important;width:14px;height:14px;stroke-width:1.75}
 /* The Filter / Sort count reads as a plain mono figure beside the glyph (no white pill: invisible on light paper, loud on dark) */
 /* No trigger marker in Minimal: the chip rows under the toolbar are the indicator */
 html[data-theme="minimal"] .td-subnav-dot{display:none}
-html[data-theme="minimal"] .td-fm-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sm-hint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sm-dir{font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-mm-title{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-mm-vis{height:auto;padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-mm-row .td-avatar{display:none!important}
-html[data-theme="minimal"] .td-mm-line{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-mm-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-mm-role,html[data-theme="minimal"] .td-mm-rolepick .td-select-trigger{height:auto;padding:0;border-radius:0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-mm-role:hover,html[data-theme="minimal"] .td-mm-rolepick .td-select-trigger:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-mm-link{margin:6px 14px 8px;padding:4px 0;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;background:none}
-html[data-theme="minimal"] .td-mm-url{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-filter-menu-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sort-menu-hint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sort-menu-direction{font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-members-menu-title{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-members-menu-visibility{height:auto;padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-members-menu-row .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-members-menu-line{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-members-menu-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-members-menu-role,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger{height:auto;padding:0;border-radius:0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-members-menu-role:hover,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-members-menu-link{margin:6px 14px 8px;padding:4px 0;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;background:none}
+html[data-theme="minimal"] .td-members-menu-url{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
 /* Auth pages (Log in · Invite · Reset): the wordmark in 500, no card — a plain column on paper; provider buttons and the primary are squares, links are grey words that go ink */
 html[data-theme="minimal"] .td-auth-mark{font:500 20px/1.35 var(--font-ui);letter-spacing:-.01em;margin-bottom:32px}
 html[data-theme="minimal"] .td-auth-card{width:360px;padding:0;background:none;border-radius:0;box-shadow:none}
@@ -506,27 +506,27 @@ html[data-theme="minimal"] .td-auth-who-text b{font:500 13px/1.45 var(--font-ui)
 html[data-theme="minimal"] .td-auth-who-text span{font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-auth-tile{width:auto;height:auto;border-radius:0;background:none}
 html[data-theme="minimal"] .td-auth-tile svg{stroke:var(--ink-900)!important;width:16px;height:16px;stroke-width:1.75}
-html[data-theme="minimal"] .td-auth-pname b{font:500 15px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-auth-pname span{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-auth-desc{padding:0 0 0 12px;border-left:1px solid var(--ink-900);font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-auth-project-name b{font:500 15px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-project-name span{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-description{padding:0 0 0 12px;border-left:1px solid var(--ink-900);font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-auth-foot{font:400 11px/1.45 var(--font-ui)}
 /* Command palette (Ctrl+K): a square sheet with a hairline ring; the query sits on an ink hairline, results are rows, the highlight a paper-grey wash, keys in bare mono */
-html[data-theme="minimal"] .td-pal{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);width:520px}
-html[data-theme="minimal"] .td-pal-input{padding:14px 20px 10px;gap:12px;border-bottom:1px solid var(--ink-900);color:var(--ink-900)}
-html[data-theme="minimal"] .td-pal-input svg{width:16px;height:16px;stroke-width:1.75}
-html[data-theme="minimal"] .td-pal-input input{font:400 15px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-pal-list{padding:6px 0}
-html[data-theme="minimal"] .td-pal-row{padding:8px 20px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-pal-row[aria-selected="true"]{background:var(--blue-100)}
-html[data-theme="minimal"] .td-pal-list-name{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-pal-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-pal-empty{padding:20px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-pal-foot{padding:10px 20px;gap:16px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);width:520px}
+html[data-theme="minimal"] .td-command-palette-input{padding:14px 20px 10px;gap:12px;border-bottom:1px solid var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-command-palette-input svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-command-palette-input input{font:400 15px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-command-palette-list{padding:6px 0}
+html[data-theme="minimal"] .td-command-palette-row{padding:8px 20px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-command-palette-row[aria-selected="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-command-palette-list-name{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-empty{padding:20px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-foot{padding:10px 20px;gap:16px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-usermenu-id{padding:8px 14px 10px;gap:0}
-html[data-theme="minimal"] .td-usermenu-id .td-avatar{display:none!important}
-html[data-theme="minimal"] .td-usermenu-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-usermenu-email{display:none}
+html[data-theme="minimal"] .td-user-menu-id{padding:8px 14px 10px;gap:0}
+html[data-theme="minimal"] .td-user-menu-id .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-user-menu-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-user-menu-email{display:none}
 html[data-theme="minimal"] .td-select-search{border-radius:0;background:none;border-bottom:1px solid var(--border-divider);margin:0 14px 6px;padding:0}
 /* Dialogs: title in 500 over a hairline, footer buttons as words with the primary filled ink */
 html[data-theme="minimal"] .td-dialog-head{padding:16px 16px 12px 24px;border-bottom:1px solid var(--border-divider)}
@@ -538,25 +538,25 @@ html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-
 html[data-theme="minimal"] .td-dialog-foot .td-btn-primary,html[data-theme="minimal"] .td-dialog-foot .td-btn-danger{border-radius:2px;font-weight:500}
 /* Toast: an ink bar, square, words only; the action is underlined paper, not blue */
 html[data-theme="minimal"] .td-toast{border-radius:0;box-shadow:none;padding:8px 8px 8px 16px;font:400 13px/1.45 var(--font-ui);color:var(--chrome-canvas)}
-html[data-theme="minimal"] .td-toast-act{color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);text-decoration:underline;text-underline-offset:3px;border-radius:0}
-html[data-theme="minimal"] .td-toast-act:hover,html[data-theme="minimal"] .td-toast-act:active{background:none;text-decoration-color:color-mix(in srgb,var(--chrome-canvas) 50%,transparent)}
+html[data-theme="minimal"] .td-toast-action{color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);text-decoration:underline;text-underline-offset:3px;border-radius:0}
+html[data-theme="minimal"] .td-toast-action:hover,html[data-theme="minimal"] .td-toast-action:active{background:none;text-decoration-color:color-mix(in srgb,var(--chrome-canvas) 50%,transparent)}
 html[data-theme="minimal"] .td-toast-meta{font:400 11px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-toast .td-iconbtn{border-radius:0}
 /* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash */
-html[data-theme="minimal"] .td-sd{border-radius:0;top:calc(100% + 8px)}
-html[data-theme="minimal"] .td-sd-scroll{padding:0 16px}
-html[data-theme="minimal"] .td-sd-head{padding:12px 0 8px;font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-sd-row{width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
-html[data-theme="minimal"] .td-sd-scroll>.td-sd-row:last-child{box-shadow:none}
-html[data-theme="minimal"] .td-sd-row[aria-selected="true"]{background:var(--blue-100)}
-html[data-theme="minimal"] .td-sd-ico{width:16px;height:16px;border-radius:0;background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-sd-ico svg{stroke-width:1.75;stroke:var(--ink-900)!important}
-html[data-theme="minimal"] .td-sd-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-sd-title mark{background:none;color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
-html[data-theme="minimal"] .td-sd-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sd-empty{padding:16px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sd-foot{padding:10px 16px;gap:16px;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sd-foot .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown{border-radius:0;top:calc(100% + 8px)}
+html[data-theme="minimal"] .td-search-dropdown-scroll{padding:0 16px}
+html[data-theme="minimal"] .td-search-dropdown-head{padding:12px 0 8px;font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-row{width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-scroll>.td-search-dropdown-row:last-child{box-shadow:none}
+html[data-theme="minimal"] .td-search-dropdown-row[aria-selected="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-search-dropdown-icon{width:16px;height:16px;border-radius:0;background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-search-dropdown-icon svg{stroke-width:1.75;stroke:var(--ink-900)!important}
+html[data-theme="minimal"] .td-search-dropdown-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-title mark{background:none;color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
+html[data-theme="minimal"] .td-search-dropdown-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-empty{padding:16px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-foot{padding:10px 16px;gap:16px;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-foot .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
 /* ── Item overlay: the same ledger inside the dialog — square card, 500-weight title, section names over hairlines, every list (subitems, attachments, relations, comments) as rows, no fills, no bubbles */
 html[data-theme="minimal"] .td-modal{border-radius:0}
 html[data-theme="minimal"] .td-modal-cover{border-radius:0}
@@ -570,19 +570,19 @@ html[data-theme="minimal"] .td-modal-key:hover{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-modal-corner .td-iconbtn{border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-modal-corner .td-iconbtn:hover,html[data-theme="minimal"] .td-modal-corner .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-400)}
 /* Aside field values: labels as comma-separated words in ink, like everywhere else in the theme */
-html[data-theme="minimal"] .td-modal-aside .td-lp-value{gap:0}
-html[data-theme="minimal"] .td-modal-aside .td-lp-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
-html[data-theme="minimal"] .td-modal-aside .td-lp-value .td-label+.td-label::before{content:", "}
+html[data-theme="minimal"] .td-modal-aside .td-label-picker-value{gap:0}
+html[data-theme="minimal"] .td-modal-aside .td-label-picker-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+html[data-theme="minimal"] .td-modal-aside .td-label-picker-value .td-label+.td-label::before{content:", "}
 /* Assignees: the avatar stack becomes one user glyph, so the row keeps its place in the glyph column */
-html[data-theme="minimal"] .td-modal-aside .td-avstack{display:inline-block!important;width:16px;height:16px;flex:none;background:var(--ink-900);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat}
-html[data-theme="minimal"] .td-modal-aside .td-avstack>*{display:none!important}
+html[data-theme="minimal"] .td-modal-aside .td-avatar-stack{display:inline-block!important;width:16px;height:16px;flex:none;background:var(--ink-900);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat}
+html[data-theme="minimal"] .td-modal-aside .td-avatar-stack>*{display:none!important}
 html[data-theme="minimal"] .td-modal-aside .td-btn>svg{stroke:var(--ink-900)!important}
 html[data-theme="minimal"] .td-modal-aside .td-btn{font-weight:400}
 /* Section heads (Attachments, Relations, Activity): name in ink over a hairline; no leading icon, body flush left */
-html[data-theme="minimal"] .td-isec-head,html[data-theme="minimal"] .td-activity-head{gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-isec-head>svg,html[data-theme="minimal"] .td-isec-head>span:first-child:empty,html[data-theme="minimal"] .td-activity-head>svg{display:none}
-html[data-theme="minimal"] .td-isec-title,html[data-theme="minimal"] .td-activity-title{font:500 13px/1.45 var(--font-ui)!important;letter-spacing:-.005em;color:var(--ink-900)}
-html[data-theme="minimal"] .td-isec-body{margin:0!important}
+html[data-theme="minimal"] .td-item-section-head,html[data-theme="minimal"] .td-activity-head{gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-item-section-head>svg,html[data-theme="minimal"] .td-item-section-head>span:first-child:empty,html[data-theme="minimal"] .td-activity-head>svg{display:none}
+html[data-theme="minimal"] .td-item-section-title,html[data-theme="minimal"] .td-activity-title{font:500 13px/1.45 var(--font-ui)!important;letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-item-section-body{margin:0!important}
 html[data-theme="minimal"] .td-activity-head{margin-bottom:0}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn:hover,html[data-theme="minimal"] .td-activity-head .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
@@ -593,83 +593,83 @@ html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-b
 html[data-theme="minimal"] .td-modal-main .td-btn-primary,html[data-theme="minimal"] .td-modal-main .td-btn-danger{height:28px;padding:0 10px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-modal-main .td-btn:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px;box-shadow:none}
 /* Description: bare text; the editor is a hairline-bottomed area, no ring */
-html[data-theme="minimal"] .td-desc-view{margin:0;padding:0;border-radius:0}
-html[data-theme="minimal"] .td-desc-view:hover{background:none}
-html[data-theme="minimal"] .td-desc-view:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:4px}
-html[data-theme="minimal"] .td-desc-empty{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-desc-ta{padding:8px 0;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-desc-ta.is-mono{font:400 12px/1.5 var(--font-mono)}
-html[data-theme="minimal"] .td-desc-bar .td-iconbtn{border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-desc-bar .td-iconbtn:hover,html[data-theme="minimal"] .td-desc-bar .td-iconbtn[aria-pressed="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-md{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-md h1{font:500 16px/1.35 var(--font-ui)}
-html[data-theme="minimal"] .td-md h2{font:500 14px/1.4 var(--font-ui)}
-html[data-theme="minimal"] .td-md h3{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-md a,html[data-theme="minimal"] .td-md .td-md-mention{color:var(--ink-900);font-weight:400;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
-html[data-theme="minimal"] .td-md .td-md-key:hover{color:var(--ink-900)}
-html[data-theme="minimal"] .td-md code{border-radius:2px;font-size:11.5px}
-html[data-theme="minimal"] .td-md pre{border-radius:0;background:none;padding:8px 0 8px 12px;border-left:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-md blockquote{border-left-color:var(--ink-900)}
-html[data-theme="minimal"] .td-md-box{border-width:1px;border-color:var(--ink-400);border-radius:2px}
-html[data-theme="minimal"] .td-md-box[data-on="true"]{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-description-view{margin:0;padding:0;border-radius:0}
+html[data-theme="minimal"] .td-description-view:hover{background:none}
+html[data-theme="minimal"] .td-description-view:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:4px}
+html[data-theme="minimal"] .td-description-empty{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-description-textarea{padding:8px 0;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-description-textarea.is-mono{font:400 12px/1.5 var(--font-mono)}
+html[data-theme="minimal"] .td-description-bar .td-iconbtn{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-description-bar .td-iconbtn:hover,html[data-theme="minimal"] .td-description-bar .td-iconbtn[aria-pressed="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-markdown{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-markdown h1{font:500 16px/1.35 var(--font-ui)}
+html[data-theme="minimal"] .td-markdown h2{font:500 14px/1.4 var(--font-ui)}
+html[data-theme="minimal"] .td-markdown h3{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-markdown a,html[data-theme="minimal"] .td-markdown .td-markdown-mention{color:var(--ink-900);font-weight:400;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
+html[data-theme="minimal"] .td-markdown .td-markdown-key:hover{color:var(--ink-900)}
+html[data-theme="minimal"] .td-markdown code{border-radius:2px;font-size:11.5px}
+html[data-theme="minimal"] .td-markdown pre{border-radius:0;background:none;padding:8px 0 8px 12px;border-left:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-markdown blockquote{border-left-color:var(--ink-900)}
+html[data-theme="minimal"] .td-markdown-box{border-width:1px;border-color:var(--ink-400);border-radius:2px}
+html[data-theme="minimal"] .td-markdown-box[data-on="true"]{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
 /* Subitems: count in mono over a hairline, rows with a hairline below, done in grey without the strike, the drag line in ink */
-html[data-theme="minimal"] .td-clhead{padding:0 0 8px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-clhead-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-clhead [role="progressbar"],html[data-theme="minimal"] .td-clhead [role="progressbar"]>div{border-radius:0!important;height:2px!important}
-html[data-theme="minimal"] .td-clhead-actions .td-iconbtn{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-clhead-actions .td-iconbtn:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-clrow{padding:10px 0;gap:10px;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
-html[data-theme="minimal"] .td-clrow:hover{background:none}
-html[data-theme="minimal"] .td-clrow-text{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-clrow-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-clline{left:0;right:0;height:1px;margin-top:0;border-radius:0;background:var(--ink-900)}
-html[data-theme="minimal"] .td-clline::before{display:none}
-html[data-theme="minimal"] .td-clrow-more .td-iconbtn,html[data-theme="minimal"] .td-clrow>.td-pop-anchor .td-iconbtn{border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-clrow-more .td-iconbtn:hover,html[data-theme="minimal"] .td-clrow-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-cladd{padding:10px 0;gap:6px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
-html[data-theme="minimal"] .td-cladd svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-cladd:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-cladd:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-cladd.is-editing{border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-cladd-input{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-checklist-head{padding:0 0 8px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-checklist-head-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-checklist-head [role="progressbar"],html[data-theme="minimal"] .td-checklist-head [role="progressbar"]>div{border-radius:0!important;height:2px!important}
+html[data-theme="minimal"] .td-checklist-head-actions .td-iconbtn{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-checklist-head-actions .td-iconbtn:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-checklist-row{padding:10px 0;gap:10px;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-checklist-row:hover{background:none}
+html[data-theme="minimal"] .td-checklist-row-text{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-checklist-row-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-checklist-line{left:0;right:0;height:1px;margin-top:0;border-radius:0;background:var(--ink-900)}
+html[data-theme="minimal"] .td-checklist-line::before{display:none}
+html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn,html[data-theme="minimal"] .td-checklist-row>.td-popover-anchor .td-iconbtn{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn:hover,html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-checklist-add{padding:10px 0;gap:6px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
+html[data-theme="minimal"] .td-checklist-add svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-checklist-add:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-checklist-add:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-checklist-add.is-editing{border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-checklist-add-input{font:400 13px/1.45 var(--font-ui)}
 /* Attachments and relations: rows, hairline below, square thumbs, 500-weight names, grey meta */
-html[data-theme="minimal"] .td-att{gap:0}
-html[data-theme="minimal"] .td-att-row{margin:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
-html[data-theme="minimal"] .td-att-row:hover,html[data-theme="minimal"] .td-att-row:focus-within{background:none}
-html[data-theme="minimal"] .td-att-thumb{width:56px;height:40px;border-radius:0}
-html[data-theme="minimal"] .td-att-thumb[data-kind]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 9px/10px var(--font-mono);letter-spacing:0;text-transform:none}
-html[data-theme="minimal"] .td-att-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-att-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-att-actions .td-iconbtn{border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-att-actions .td-iconbtn:hover,html[data-theme="minimal"] .td-att-actions .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-att-rename{margin:0;padding:0;height:auto;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-att-confirm{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-attachments{gap:0}
+html[data-theme="minimal"] .td-attachments-row{margin:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-attachments-row:hover,html[data-theme="minimal"] .td-attachments-row:focus-within{background:none}
+html[data-theme="minimal"] .td-attachments-thumb{width:56px;height:40px;border-radius:0}
+html[data-theme="minimal"] .td-attachments-thumb[data-kind]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 9px/10px var(--font-mono);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-attachments-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-attachments-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-attachments-actions .td-iconbtn{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-attachments-actions .td-iconbtn:hover,html[data-theme="minimal"] .td-attachments-actions .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-attachments-rename{margin:0;padding:0;height:auto;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-attachments-confirm{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-drop-inner{border:1px dashed var(--ink-900);border-radius:0;font:500 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-drop-inner small{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-rel{gap:16px}
-html[data-theme="minimal"] .td-rel-group{gap:0}
-html[data-theme="minimal"] .td-rel-head{padding:0 0 6px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-rel-head svg{display:none}
-html[data-theme="minimal"] .td-rel-row{margin:0;min-height:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
-html[data-theme="minimal"] .td-rel-row:hover,html[data-theme="minimal"] .td-rel-row:focus-within{background:none}
-html[data-theme="minimal"] .td-rel-open{font:400 13px/1.45 var(--font-ui);border-radius:0}
-html[data-theme="minimal"] .td-rel-open:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
-html[data-theme="minimal"] .td-rel-key{font:400 11px/1.45 var(--font-mono)}
-html[data-theme="minimal"] .td-rel-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-rel-list{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-rel-x .td-iconbtn,html[data-theme="minimal"] .td-rel-x{border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-rel-types{background:none;padding:0;gap:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--border-divider)}
-html[data-theme="minimal"] .td-rel-types button{border-radius:0;color:var(--ink-400);font:400 12px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-rel-types button[aria-pressed="true"]{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-relations{gap:16px}
+html[data-theme="minimal"] .td-relations-group{gap:0}
+html[data-theme="minimal"] .td-relations-head{padding:0 0 6px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-relations-head svg{display:none}
+html[data-theme="minimal"] .td-relations-row{margin:0;min-height:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-relations-row:hover,html[data-theme="minimal"] .td-relations-row:focus-within{background:none}
+html[data-theme="minimal"] .td-relations-open{font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-relations-open:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-relations-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-relations-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-relations-list{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-relations-remove .td-iconbtn,html[data-theme="minimal"] .td-relations-remove{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-relations-types{background:none;padding:0;gap:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-relations-types button{border-radius:0;color:var(--ink-400);font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-relations-types button[aria-pressed="true"]{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
 /* Activity: the composer is a hairline-bottomed field; comments are rows without avatars or bubbles, author in 500, meta grey; reactions as hairline chips */
 html[data-theme="minimal"] .td-composer{padding:12px 0 8px}
-html[data-theme="minimal"] .td-mf-ta{padding:6px 0;background:none;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui);transition:border-color var(--duration-base,150ms) var(--ease-standard,ease)}
-html[data-theme="minimal"] .td-mf-ta:focus{border-color:var(--ink-900);box-shadow:none}
-html[data-theme="minimal"] .td-mf-list{border-radius:0;padding:0 8px}
-html[data-theme="minimal"] .td-mf-opt{border-radius:0;font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 var(--border-divider)}
-html[data-theme="minimal"] .td-mf-opt:last-child{box-shadow:none}
-html[data-theme="minimal"] .td-mf-opt[aria-selected="true"],html[data-theme="minimal"] .td-mf-opt:hover{background:var(--blue-100)}
-html[data-theme="minimal"] .td-mf-opt .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-mention-field-textarea{padding:6px 0;background:none;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui);transition:border-color var(--duration-base,150ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-mention-field-textarea:focus{border-color:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-mention-field-list{border-radius:0;padding:0 8px}
+html[data-theme="minimal"] .td-mention-field-option{border-radius:0;font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-mention-field-option:last-child{box-shadow:none}
+html[data-theme="minimal"] .td-mention-field-option[aria-selected="true"],html[data-theme="minimal"] .td-mention-field-option:hover{background:var(--blue-100)}
+html[data-theme="minimal"] .td-mention-field-option .td-avatar{display:none!important}
 html[data-theme="minimal"] .td-composer-foot .td-btn-primary{height:28px;padding:0 10px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-composer-hint,html[data-theme="minimal"] .td-composer-reply{font-size:11px;color:var(--ink-400)}
 html[data-theme="minimal"] .td-comment{margin:0;gap:0;padding:10px 0;border-bottom:1px solid var(--border-divider)}
@@ -683,14 +683,14 @@ html[data-theme="minimal"] .td-comment-actions{margin-top:6px;gap:8px;font:400 1
 html[data-theme="minimal"] .td-comment-actions a{color:var(--ink-400)}
 html[data-theme="minimal"] .td-comment-actions a:hover{color:var(--ink-900);text-decoration:none}
 html[data-theme="minimal"] .td-comment-edit-foot .td-btn{height:28px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-react{height:22px;padding:0 6px;border-radius:2px;border-color:var(--border-divider);background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
-html[data-theme="minimal"] .td-react:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
-html[data-theme="minimal"] .td-react[aria-pressed="true"]{background:none;border-color:var(--ink-900);color:var(--ink-900)}
-html[data-theme="minimal"] .td-react-add{width:22px;height:22px;border-radius:2px;border-color:var(--border-divider)}
-html[data-theme="minimal"] .td-react-add:hover{border-color:var(--ink-900)}
-html[data-theme="minimal"] .td-react-grid{padding:0}
-html[data-theme="minimal"] .td-react-pick{border-radius:0}
-html[data-theme="minimal"] .td-react-pick:hover{background:var(--blue-100)}
+html[data-theme="minimal"] .td-reaction{height:22px;padding:0 6px;border-radius:2px;border-color:var(--border-divider);background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
+html[data-theme="minimal"] .td-reaction:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-reaction[aria-pressed="true"]{background:none;border-color:var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-reaction-add{width:22px;height:22px;border-radius:2px;border-color:var(--border-divider)}
+html[data-theme="minimal"] .td-reaction-add:hover{border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-reaction-grid{padding:0}
+html[data-theme="minimal"] .td-reaction-pick{border-radius:0}
+html[data-theme="minimal"] .td-reaction-pick:hover{background:var(--blue-100)}
 /* ═══ Minimal coverage · the surfaces that only had a Rounded specimen (pickers, dialogs, states, project lifecycle, archive, saved views, guests, bulk bar). Same four rules as everywhere above: square, hairlines instead of fills and shadows, 500 instead of 600, colour only as a 6px square or overdue red; people are initials in mono */
 /* Buttons: the default (subtle) variant is a hairline box, ghost is a grey word; primary and danger are filled with 2px corners; no rounded icon buttons */
 html[data-theme="minimal"] .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse){background:none;box-shadow:inset 0 0 0 1px var(--border-divider);border-radius:2px;font-weight:400}
@@ -704,117 +704,117 @@ html[data-theme="minimal"] .td-btn-inverse:hover,html[data-theme="minimal"] .td-
 html[data-theme="minimal"] .td-btn:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] .td-iconbtn:not(.td-iconbtn-round){border-radius:0}
 /* Avatars: wherever a disc would sit beside a name, the initials in mono instead (images stay, 14px) */
-html[data-theme="minimal"] .td-mp-row span.td-avatar,html[data-theme="minimal"] .td-pp-member span.td-avatar,html[data-theme="minimal"] .td-pp-head span.td-avatar,html[data-theme="minimal"] .td-al-row span.td-avatar,html[data-theme="minimal"] .td-arc-row span.td-avatar,html[data-theme="minimal"] .td-avstack span.td-avatar,html[data-theme="minimal"] .td-ip-row span.td-avatar,html[data-theme="minimal"] .td-mp-value span.td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-mono)!important;box-shadow:none!important}
-html[data-theme="minimal"] .td-mp-row img.td-avatar,html[data-theme="minimal"] .td-pp-member img.td-avatar,html[data-theme="minimal"] .td-al-row img.td-avatar,html[data-theme="minimal"] .td-arc-row img.td-avatar,html[data-theme="minimal"] .td-avstack img.td-avatar{width:14px!important;height:14px!important;box-shadow:none!important}
-html[data-theme="minimal"] .td-avstack>*{box-shadow:none;border-radius:0}
-html[data-theme="minimal"] .td-avstack>*+*{margin-left:0}
-html[data-theme="minimal"] .td-avstack>*+*::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-avstack-more{width:auto!important;height:auto!important;background:none;color:var(--ink-400);font:400 11px/1.45 var(--font-mono)}
-html[data-theme="minimal"] .td-btn .td-avstack{display:none}
-html[data-theme="minimal"] .td-lp-value{gap:0}
-html[data-theme="minimal"] .td-lp-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
-html[data-theme="minimal"] .td-lp-value .td-label+.td-label::before{content:", "}
+html[data-theme="minimal"] .td-member-picker-row span.td-avatar,html[data-theme="minimal"] .td-project-panel-member span.td-avatar,html[data-theme="minimal"] .td-project-panel-head span.td-avatar,html[data-theme="minimal"] .td-activity-log-row span.td-avatar,html[data-theme="minimal"] .td-archive-row span.td-avatar,html[data-theme="minimal"] .td-avatar-stack span.td-avatar,html[data-theme="minimal"] .td-item-picker-row span.td-avatar,html[data-theme="minimal"] .td-member-picker-value span.td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-mono)!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-member-picker-row img.td-avatar,html[data-theme="minimal"] .td-project-panel-member img.td-avatar,html[data-theme="minimal"] .td-activity-log-row img.td-avatar,html[data-theme="minimal"] .td-archive-row img.td-avatar,html[data-theme="minimal"] .td-avatar-stack img.td-avatar{width:14px!important;height:14px!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-avatar-stack>*{box-shadow:none;border-radius:0}
+html[data-theme="minimal"] .td-avatar-stack>*+*{margin-left:0}
+html[data-theme="minimal"] .td-avatar-stack>*+*::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-avatar-stack-more{width:auto!important;height:auto!important;background:none;color:var(--ink-400);font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-btn .td-avatar-stack{display:none}
+html[data-theme="minimal"] .td-label-picker-value{gap:0}
+html[data-theme="minimal"] .td-label-picker-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+html[data-theme="minimal"] .td-label-picker-value .td-label+.td-label::before{content:", "}
 /* Picker search fields (Members · Labels · Project · Item · Icon · typed date): a hairline, not a filled bar; lists flush with the sheet */
-html[data-theme="minimal"] .td-lp-search,html[data-theme="minimal"] .td-mp-search,html[data-theme="minimal"] .td-prp-search,html[data-theme="minimal"] .td-ip-search,html[data-theme="minimal"] .td-dp-type,html[data-theme="minimal"] .td-ipk-search{margin:0 14px 6px;padding:0;height:28px;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);color:var(--ink-400)}
-html[data-theme="minimal"] .td-lp-search:focus-within,html[data-theme="minimal"] .td-mp-search:focus-within,html[data-theme="minimal"] .td-prp-search:focus-within,html[data-theme="minimal"] .td-ip-search:focus-within,html[data-theme="minimal"] .td-dp-type:focus-within,html[data-theme="minimal"] .td-ipk-search:focus-within{box-shadow:none;border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-lp-input,html[data-theme="minimal"] .td-mp-input,html[data-theme="minimal"] .td-prp-input,html[data-theme="minimal"] .td-ip-input,html[data-theme="minimal"] .td-dp-input,html[data-theme="minimal"] .td-ipk-search input,html[data-theme="minimal"] .td-dts-input{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-lp-list,html[data-theme="minimal"] .td-mp-list,html[data-theme="minimal"] .td-prp-list,html[data-theme="minimal"] .td-ip-list,html[data-theme="minimal"] .td-select-list{margin:0;padding:0}
-html[data-theme="minimal"] .td-prp-head{padding:4px 14px 8px;font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-prp-row .td-menu-item-label>svg{color:var(--ink-900)!important}
-html[data-theme="minimal"] .td-prp-group,html[data-theme="minimal"] .td-ip-list-name,html[data-theme="minimal"] .td-mp-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-ip-key{font:400 11px/1.45 var(--font-mono)}
-html[data-theme="minimal"] .td-ip-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-label-picker-search,html[data-theme="minimal"] .td-member-picker-search,html[data-theme="minimal"] .td-project-picker-search,html[data-theme="minimal"] .td-item-picker-search,html[data-theme="minimal"] .td-date-picker-type,html[data-theme="minimal"] .td-icon-picker-search{margin:0 14px 6px;padding:0;height:28px;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);color:var(--ink-400)}
+html[data-theme="minimal"] .td-label-picker-search:focus-within,html[data-theme="minimal"] .td-member-picker-search:focus-within,html[data-theme="minimal"] .td-project-picker-search:focus-within,html[data-theme="minimal"] .td-item-picker-search:focus-within,html[data-theme="minimal"] .td-date-picker-type:focus-within,html[data-theme="minimal"] .td-icon-picker-search:focus-within{box-shadow:none;border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-label-picker-input,html[data-theme="minimal"] .td-member-picker-input,html[data-theme="minimal"] .td-project-picker-input,html[data-theme="minimal"] .td-item-picker-input,html[data-theme="minimal"] .td-date-picker-input,html[data-theme="minimal"] .td-icon-picker-search input,html[data-theme="minimal"] .td-dates-picker-input{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-label-picker-list,html[data-theme="minimal"] .td-member-picker-list,html[data-theme="minimal"] .td-project-picker-list,html[data-theme="minimal"] .td-item-picker-list,html[data-theme="minimal"] .td-select-list{margin:0;padding:0}
+html[data-theme="minimal"] .td-project-picker-head{padding:4px 14px 8px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-picker-row .td-menu-item-label>svg{color:var(--ink-900)!important}
+html[data-theme="minimal"] .td-project-picker-group,html[data-theme="minimal"] .td-item-picker-list-name,html[data-theme="minimal"] .td-member-picker-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-item-picker-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-item-picker-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
 /* Labels: a 6px square of colour before the word; the edit form is hairline fields and square swatches ringed in ink when picked */
-html[data-theme="minimal"] .td-lp-bar,html[data-theme="minimal"] .td-cp-dot,html[data-theme="minimal"] .td-bulk-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
-html[data-theme="minimal"] .td-lp-form{padding:6px 14px 8px}
-html[data-theme="minimal"] .td-lp-form-head{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-lp-name,html[data-theme="minimal"] .td-rp-num,html[data-theme="minimal"] .td-rp-inline,html[data-theme="minimal"] .td-sv-input{padding-left:0;padding-right:0;border:0;border-bottom:1px solid var(--border-input);border-radius:0;background:none;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-lp-name:focus,html[data-theme="minimal"] .td-rp-num:focus,html[data-theme="minimal"] .td-rp-inline:focus,html[data-theme="minimal"] .td-sv-input:focus{border-color:var(--ink-900);box-shadow:none}
-html[data-theme="minimal"] .td-rp-num{text-align:left;width:32px}
-html[data-theme="minimal"] .td-lp-swatch,html[data-theme="minimal"] .td-cp-swatch,html[data-theme="minimal"] .td-cp-img,html[data-theme="minimal"] .td-cp-upload,html[data-theme="minimal"] .td-pip-swatch{border-radius:0}
-html[data-theme="minimal"] .td-lp-swatch{height:20px}
-html[data-theme="minimal"] .td-pip-swatch{width:20px;height:20px;box-shadow:none}
-html[data-theme="minimal"] .td-lp-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cp-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cp-img[aria-pressed="true"],html[data-theme="minimal"] .td-pip-swatch[aria-pressed="true"]{box-shadow:0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas)}
-html[data-theme="minimal"] .td-lp-swatch:focus-visible,html[data-theme="minimal"] .td-cp-swatch:focus-visible,html[data-theme="minimal"] .td-cp-img:focus-visible,html[data-theme="minimal"] .td-pip-swatch:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
-html[data-theme="minimal"] .td-cp-swatches,html[data-theme="minimal"] .td-cp-imgs{padding:0 14px 4px}
-html[data-theme="minimal"] .td-cp-upload{border-color:var(--ink-400);color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-cp-upload:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
-html[data-theme="minimal"] .td-lp-foot,html[data-theme="minimal"] .td-dp-foot,html[data-theme="minimal"] .td-dts-foot,html[data-theme="minimal"] .td-rp-foot{padding:8px 14px 2px;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-lp-foot .td-btn,html[data-theme="minimal"] .td-dp-foot .td-btn,html[data-theme="minimal"] .td-dts-foot .td-btn,html[data-theme="minimal"] .td-rp-foot .td-btn,html[data-theme="minimal"] .td-dp-quick .td-btn,html[data-theme="minimal"] .td-dts-quick .td-btn{font:400 12px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-dp-cur,html[data-theme="minimal"] .td-dts-cur,html[data-theme="minimal"] .td-rp-sum,html[data-theme="minimal"] .td-dp-preview,html[data-theme="minimal"] .td-dts-preview{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-label-picker-bar,html[data-theme="minimal"] .td-cover-picker-dot,html[data-theme="minimal"] .td-bulk-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
+html[data-theme="minimal"] .td-label-picker-form{padding:6px 14px 8px}
+html[data-theme="minimal"] .td-label-picker-form-head{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-label-picker-name,html[data-theme="minimal"] .td-repeat-picker-number,html[data-theme="minimal"] .td-repeat-picker-inline,html[data-theme="minimal"] .td-saved-view-input{padding-left:0;padding-right:0;border:0;border-bottom:1px solid var(--border-input);border-radius:0;background:none;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-label-picker-name:focus,html[data-theme="minimal"] .td-repeat-picker-number:focus,html[data-theme="minimal"] .td-repeat-picker-inline:focus,html[data-theme="minimal"] .td-saved-view-input:focus{border-color:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-repeat-picker-number{text-align:left;width:32px}
+html[data-theme="minimal"] .td-label-picker-swatch,html[data-theme="minimal"] .td-cover-picker-swatch,html[data-theme="minimal"] .td-cover-picker-image,html[data-theme="minimal"] .td-cover-picker-upload,html[data-theme="minimal"] .td-project-icon-picker-swatch{border-radius:0}
+html[data-theme="minimal"] .td-label-picker-swatch{height:20px}
+html[data-theme="minimal"] .td-project-icon-picker-swatch{width:20px;height:20px;box-shadow:none}
+html[data-theme="minimal"] .td-label-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-image[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-swatch[aria-pressed="true"]{box-shadow:0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas)}
+html[data-theme="minimal"] .td-label-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-image:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-swatch:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+html[data-theme="minimal"] .td-cover-picker-swatches,html[data-theme="minimal"] .td-cover-picker-images{padding:0 14px 4px}
+html[data-theme="minimal"] .td-cover-picker-upload{border-color:var(--ink-400);color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-cover-picker-upload:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
+html[data-theme="minimal"] .td-label-picker-foot,html[data-theme="minimal"] .td-date-picker-foot,html[data-theme="minimal"] .td-dates-picker-foot,html[data-theme="minimal"] .td-repeat-picker-foot{padding:8px 14px 2px;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-label-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-foot .td-btn,html[data-theme="minimal"] .td-dates-picker-foot .td-btn,html[data-theme="minimal"] .td-repeat-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-quick .td-btn,html[data-theme="minimal"] .td-dates-picker-quick .td-btn{font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-date-picker-current,html[data-theme="minimal"] .td-dates-picker-current,html[data-theme="minimal"] .td-repeat-picker-summary,html[data-theme="minimal"] .td-date-picker-preview,html[data-theme="minimal"] .td-dates-picker-preview{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
 /* Dates: the fields are hairlines with a mono label, the month a ruled grid — square days, today ringed grey, the picked day in ink, the span a paper-grey wash */
-html[data-theme="minimal"] .td-dp,html[data-theme="minimal"] .td-dts,html[data-theme="minimal"] .td-rp{padding:4px 0 0}
-html[data-theme="minimal"] .td-dts-fields{padding:0 14px}
-html[data-theme="minimal"] .td-dts-field{padding:0;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);transition:border-color var(--duration-fast,100ms) var(--ease-standard,ease)}
-html[data-theme="minimal"] .td-dts-field[data-active="true"]{box-shadow:none;border-bottom-color:var(--ink-900);color:var(--ink-400)}
-html[data-theme="minimal"] .td-dts-label{font:400 11px/1.45 var(--font-mono);letter-spacing:0;text-transform:none}
-html[data-theme="minimal"] .td-dts-addstart{margin-left:14px;padding:0;border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-dts-addstart:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-dp-quick,html[data-theme="minimal"] .td-dts-quick,html[data-theme="minimal"] .td-cal{padding:0 14px}
-html[data-theme="minimal"] .td-cal{width:auto}
-html[data-theme="minimal"] .td-cal-title{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-cal-wd{font:400 11px/20px var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-cal-grid{border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-cal-day{border-radius:0;font:400 13px/1.45 var(--font-ui);transition:none}
-html[data-theme="minimal"] .td-cal-day:hover{background:var(--n-a06)}
-html[data-theme="minimal"] .td-cal-day:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-cal-day[data-today="true"]{font-weight:500;box-shadow:inset 0 0 0 1px var(--ink-400)}
-html[data-theme="minimal"] .td-cal-day[aria-pressed="true"],html[data-theme="minimal"] .td-cal-day[aria-pressed="true"]:hover{background:var(--ink-900);color:var(--chrome-canvas);font-weight:500;box-shadow:none}
-html[data-theme="minimal"] .td-cal-day[data-in-range="true"]{background:var(--blue-100)}
-html[data-theme="minimal"] .td-cal-day[data-range-edge="start"],html[data-theme="minimal"] .td-cal-day[data-range-edge="end"]{border-radius:0}
+html[data-theme="minimal"] .td-date-picker,html[data-theme="minimal"] .td-dates-picker,html[data-theme="minimal"] .td-repeat-picker{padding:4px 0 0}
+html[data-theme="minimal"] .td-dates-picker-fields{padding:0 14px}
+html[data-theme="minimal"] .td-dates-picker-field{padding:0;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);transition:border-color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-dates-picker-field[data-active="true"]{box-shadow:none;border-bottom-color:var(--ink-900);color:var(--ink-400)}
+html[data-theme="minimal"] .td-dates-picker-label{font:400 11px/1.45 var(--font-mono);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-dates-picker-addstart{margin-left:14px;padding:0;border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-dates-picker-addstart:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-date-picker-quick,html[data-theme="minimal"] .td-dates-picker-quick,html[data-theme="minimal"] .td-date-calendar{padding:0 14px}
+html[data-theme="minimal"] .td-date-calendar{width:auto}
+html[data-theme="minimal"] .td-date-calendar-title{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-date-calendar-weekday{font:400 11px/20px var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-date-calendar-grid{border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-date-calendar-day{border-radius:0;font:400 13px/1.45 var(--font-ui);transition:none}
+html[data-theme="minimal"] .td-date-calendar-day:hover{background:var(--n-a06)}
+html[data-theme="minimal"] .td-date-calendar-day:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-date-calendar-day[data-today="true"]{font-weight:500;box-shadow:inset 0 0 0 1px var(--ink-400)}
+html[data-theme="minimal"] .td-date-calendar-day[aria-pressed="true"],html[data-theme="minimal"] .td-date-calendar-day[aria-pressed="true"]:hover{background:var(--ink-900);color:var(--chrome-canvas);font-weight:500;box-shadow:none}
+html[data-theme="minimal"] .td-date-calendar-day[data-in-range="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-date-calendar-day[data-range-edge="start"],html[data-theme="minimal"] .td-date-calendar-day[data-range-edge="end"]{border-radius:0}
 /* Repeat: the unit segment and weekday discs follow Segmented — no track, hairline below, ink when chosen; radios are hairline rings */
-html[data-theme="minimal"] .td-rp-head{padding:0 14px;font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-rp-row,html[data-theme="minimal"] .td-rp-days,html[data-theme="minimal"] .td-rp-inline{margin:0 14px}
-html[data-theme="minimal"] .td-rp-row .td-rp-inline{margin:0}
-html[data-theme="minimal"] .td-rp-seg{padding:0;gap:0;border-radius:0;background:none;box-shadow:inset 0 -1px 0 var(--border-divider)}
-html[data-theme="minimal"] .td-rp-seg button{border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-rp-seg button[aria-pressed="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-rp-seg button:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas),inset 0 0 0 3px var(--ink-900)}
-html[data-theme="minimal"] .td-rp-days{gap:2px}
-html[data-theme="minimal"] .td-rp-day{height:26px;border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-rp-day[aria-pressed="true"]{background:var(--ink-900);color:var(--chrome-canvas);box-shadow:none}
-html[data-theme="minimal"] .td-rp-day:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
-html[data-theme="minimal"] .td-rp-opt{padding:0 14px;border-radius:0;font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-rp-opt:hover{background:var(--chrome-hover)}
-html[data-theme="minimal"] .td-rp-radio{border:1px solid var(--ink-400)}
-html[data-theme="minimal"] .td-rp-opt[aria-checked="true"] .td-rp-radio{border:4px solid var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-head{padding:0 14px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-repeat-picker-row,html[data-theme="minimal"] .td-repeat-picker-days,html[data-theme="minimal"] .td-repeat-picker-inline{margin:0 14px}
+html[data-theme="minimal"] .td-repeat-picker-row .td-repeat-picker-inline{margin:0}
+html[data-theme="minimal"] .td-repeat-picker-seg{padding:0;gap:0;border-radius:0;background:none;box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-repeat-picker-seg button{border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-seg button[aria-pressed="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-seg button:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas),inset 0 0 0 3px var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-days{gap:2px}
+html[data-theme="minimal"] .td-repeat-picker-day{height:26px;border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-day[aria-pressed="true"]{background:var(--ink-900);color:var(--chrome-canvas);box-shadow:none}
+html[data-theme="minimal"] .td-repeat-picker-day:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-option{padding:0 14px;border-radius:0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-repeat-picker-option:hover{background:var(--chrome-hover)}
+html[data-theme="minimal"] .td-repeat-picker-radio{border:1px solid var(--ink-400)}
+html[data-theme="minimal"] .td-repeat-picker-option[aria-checked="true"] .td-repeat-picker-radio{border:4px solid var(--ink-900)}
 /* Icon picker: square cells, the chosen one on the paper-grey wash in ink */
-html[data-theme="minimal"] .td-ipk-opt,html[data-theme="minimal"] .td-ipk-auto,html[data-theme="minimal"] .td-pip-opt{border-radius:0;transition:none}
-html[data-theme="minimal"] .td-ipk-opt:hover,html[data-theme="minimal"] .td-ipk-auto:hover,html[data-theme="minimal"] .td-ipk-auto:focus-visible,html[data-theme="minimal"] .td-pip-opt:hover{background:var(--chrome-hover);color:var(--ink-900)}
-html[data-theme="minimal"] .td-ipk-opt[aria-pressed="true"],html[data-theme="minimal"] .td-pip-opt[aria-pressed="true"]{background:var(--blue-100);color:var(--ink-900)}
-html[data-theme="minimal"] .td-ipk-opt:focus-visible,html[data-theme="minimal"] .td-pip-opt:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-ipk-search{margin:2px 14px 6px}
-html[data-theme="minimal"] .td-ipk-empty{text-align:left;padding:8px 14px 12px;font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-icon-picker-option,html[data-theme="minimal"] .td-icon-picker-auto,html[data-theme="minimal"] .td-project-icon-picker-option{border-radius:0;transition:none}
+html[data-theme="minimal"] .td-icon-picker-option:hover,html[data-theme="minimal"] .td-icon-picker-auto:hover,html[data-theme="minimal"] .td-icon-picker-auto:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-option:hover{background:var(--chrome-hover);color:var(--ink-900)}
+html[data-theme="minimal"] .td-icon-picker-option[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-option[aria-pressed="true"]{background:var(--blue-100);color:var(--ink-900)}
+html[data-theme="minimal"] .td-icon-picker-option:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-option:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-icon-picker-search{margin:2px 14px 6px}
+html[data-theme="minimal"] .td-icon-picker-empty{text-align:left;padding:8px 14px 12px;font:400 12px/1.45 var(--font-ui)}
 /* Project tile (New project · Project settings head): no fill behind the glyph; a hairline box that goes ink on hover */
-html[data-theme="minimal"] .td-pip-tile{border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);transition:none}
-html[data-theme="minimal"] .td-pip-tile:hover,html[data-theme="minimal"] .td-pip-tile[aria-expanded="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-pip-tile:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
-html[data-theme="minimal"] .td-pip-glyph{border-radius:0;background:none}
-html[data-theme="minimal"] .td-pip-captioned{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-pip-panel{padding:4px 14px 8px}
+html[data-theme="minimal"] .td-project-icon-picker-tile{border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);transition:none}
+html[data-theme="minimal"] .td-project-icon-picker-tile:hover,html[data-theme="minimal"] .td-project-icon-picker-tile[aria-expanded="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-project-icon-picker-tile:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+html[data-theme="minimal"] .td-project-icon-picker-glyph{border-radius:0;background:none}
+html[data-theme="minimal"] .td-project-icon-picker-captioned{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-icon-picker-panel{padding:4px 14px 8px}
 /* New project dialog: template rows are plain rows, the chosen one on the paper-grey wash with an ink check; the prefix in bare mono */
-html[data-theme="minimal"] .td-pd-label,html[data-theme="minimal"] .td-pd-tplhead,html[data-theme="minimal"] .td-pp-label{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-pd-hint,html[data-theme="minimal"] .td-pp-hint,html[data-theme="minimal"] .td-pp-crumb,html[data-theme="minimal"] .td-pp-cap{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-pd-tplrow{border-radius:0;padding:4px 0;font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-pd-tplrow:hover{background:var(--chrome-hover)}
-html[data-theme="minimal"] .td-pd-tplrow[aria-checked="true"]{background:var(--blue-100);box-shadow:inset 2px 0 0 var(--ink-900);padding-left:8px}
-html[data-theme="minimal"] .td-pd-tplrow:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-pd-tplrow[aria-checked="true"]:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900),inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-pd-tplname b{font-weight:500}
-html[data-theme="minimal"] .td-pd-tplname span{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-pd-tplcheck{color:var(--ink-900)}
-html[data-theme="minimal"] .td-pd-copyrow{padding-left:26px}
-html[data-theme="minimal"] .td-pd-mono,html[data-theme="minimal"] .td-pp-mono{font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-pd-name .td-field{font-size:15px}
+html[data-theme="minimal"] .td-project-dialog-label,html[data-theme="minimal"] .td-project-dialog-template-head,html[data-theme="minimal"] .td-project-panel-label{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-dialog-hint,html[data-theme="minimal"] .td-project-panel-hint,html[data-theme="minimal"] .td-project-panel-crumb,html[data-theme="minimal"] .td-project-panel-caption{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-project-dialog-template-row{border-radius:0;padding:4px 0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-dialog-template-row:hover{background:var(--chrome-hover)}
+html[data-theme="minimal"] .td-project-dialog-template-row[aria-checked="true"]{background:var(--blue-100);box-shadow:inset 2px 0 0 var(--ink-900);padding-left:8px}
+html[data-theme="minimal"] .td-project-dialog-template-row:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-project-dialog-template-row[aria-checked="true"]:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900),inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-project-dialog-template-name b{font-weight:500}
+html[data-theme="minimal"] .td-project-dialog-template-name span{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-dialog-template-check{color:var(--ink-900)}
+html[data-theme="minimal"] .td-project-dialog-copyrow{padding-left:26px}
+html[data-theme="minimal"] .td-project-dialog-mono,html[data-theme="minimal"] .td-project-panel-mono{font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-project-dialog-name .td-field{font-size:15px}
 /* Project settings: 500-weight name and section titles, links as underlined words, member rows with initials */
-html[data-theme="minimal"] .td-pp-name{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-pp-sectitle{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-pp-mname b{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-pp-mname span,html[data-theme="minimal"] .td-pp-mrole{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-pp-linkbtn{border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:3px}
-html[data-theme="minimal"] .td-pp-linkbtn:hover{text-decoration-color:var(--ink-900)}
-html[data-theme="minimal"] .td-pp-linkbtn.td-pp-danger{color:var(--danger);text-decoration-color:var(--danger)}
-html[data-theme="minimal"] .td-pp-linkbtn:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-project-panel-name{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-project-panel-section-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-project-panel-member-name b{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-panel-member-name span,html[data-theme="minimal"] .td-project-panel-member-role{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-project-panel-linkbtn{border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:3px}
+html[data-theme="minimal"] .td-project-panel-linkbtn:hover{text-decoration-color:var(--ink-900)}
+html[data-theme="minimal"] .td-project-panel-linkbtn.td-project-panel-danger{color:var(--danger);text-decoration-color:var(--danger)}
+html[data-theme="minimal"] .td-project-panel-linkbtn:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
 /* Empty, loading and error states: 500-weight title, the primary action filled ink, the key hint in bare mono; skeletons are square bars on no surface, laid out as the ledger */
 html[data-theme="minimal"] .td-empty-title{font:500 14px/1.45 var(--font-ui);letter-spacing:-.005em}
 html[data-theme="minimal"] .td-empty-hint{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
@@ -825,20 +825,20 @@ html[data-theme="minimal"] .td-empty-kbd{padding:0;border:0;border-radius:0;opac
 html[data-theme="minimal"] .td-btn-inverse .td-empty-kbd{color:var(--chrome-canvas);opacity:.7}
 html[data-theme="minimal"] .td-notice{margin:12px 24px 0;padding:6px 6px 6px 14px;border-radius:0;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 13px/1.45 var(--font-ui);animation:none}
 html[data-theme="minimal"] .td-notice-fixed{margin:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
-html[data-theme="minimal"] .td-notice-msg{font-weight:500}
+html[data-theme="minimal"] .td-notice-message{font-weight:500}
 html[data-theme="minimal"] .td-notice-detail{color:var(--ink-400)}
 html[data-theme="minimal"] .td-notice-icon svg{stroke-width:1.75}
-html[data-theme="minimal"] .td-sk,html[data-theme="minimal"] .td-sk-round{border-radius:0}
-html[data-theme="minimal"] .td-skview-board{gap:24px;padding:20px 24px 0}
-html[data-theme="minimal"] .td-sk-col,html[data-theme="minimal"] .td-sk-card,html[data-theme="minimal"] .td-sk-sec{background:none;border-radius:0;box-shadow:none;padding:0}
-html[data-theme="minimal"] .td-sk-col{gap:0}
-html[data-theme="minimal"] .td-sk-colhead,html[data-theme="minimal"] .td-sk-sechead{height:auto;padding:0 0 8px;margin:0;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-sk-colhead>.td-sk-round,html[data-theme="minimal"] .td-sk-sechead>.td-sk-round{display:none}
-html[data-theme="minimal"] .td-sk-card{padding:12px 0;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-sk-colfoot{height:28px}
-html[data-theme="minimal"] .td-skview-list{padding:20px 24px 24px}
-html[data-theme="minimal"] .td-skview-list-inner{gap:24px}
-html[data-theme="minimal"] .td-sk-row{height:40px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-skeleton,html[data-theme="minimal"] .td-skeleton-round{border-radius:0}
+html[data-theme="minimal"] .td-skeleton-view-board{gap:24px;padding:20px 24px 0}
+html[data-theme="minimal"] .td-skeleton-col,html[data-theme="minimal"] .td-skeleton-card,html[data-theme="minimal"] .td-skeleton-section{background:none;border-radius:0;box-shadow:none;padding:0}
+html[data-theme="minimal"] .td-skeleton-col{gap:0}
+html[data-theme="minimal"] .td-skeleton-colhead,html[data-theme="minimal"] .td-skeleton-section-head{height:auto;padding:0 0 8px;margin:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-skeleton-colhead>.td-skeleton-round,html[data-theme="minimal"] .td-skeleton-section-head>.td-skeleton-round{display:none}
+html[data-theme="minimal"] .td-skeleton-card{padding:12px 0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-skeleton-colfoot{height:28px}
+html[data-theme="minimal"] .td-skeleton-view-list{padding:20px 24px 24px}
+html[data-theme="minimal"] .td-skeleton-view-list-inner{gap:24px}
+html[data-theme="minimal"] .td-skeleton-row{height:40px;border-bottom:1px solid var(--border-divider)}
 /* Bulk action bar: an ink bar, square, words only — the same voice as the toast; its menus are the square sheet */
 html[data-theme="minimal"] .td-bulk{padding:6px 6px 6px 16px;gap:4px;border-radius:0;box-shadow:none;background:var(--ink-900);color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);animation:none}
 html[data-theme="minimal"] .td-bulk-count{font-weight:500;border-right-color:color-mix(in srgb,var(--chrome-canvas) 40%,transparent)}
@@ -852,9 +852,9 @@ html[data-theme="minimal"] .td-bulk-item{padding:6px 14px;border-radius:0;font:4
 html[data-theme="minimal"] .td-bulk-item:hover{background:var(--chrome-hover)}
 html[data-theme="minimal"] .td-bulk-item[aria-checked="true"]{background:var(--blue-100)}
 html[data-theme="minimal"] .td-bulk-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
-html[data-theme="minimal"] .td-bulk-div{margin:6px 0}
+html[data-theme="minimal"] .td-bulk-divider{margin:6px 0}
 /* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
-html[data-theme="minimal"] .td-sv-tab,html[data-theme="minimal"] .td-sv-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
 /* Guest bar: the same 48px hairline row as the top bar, words in ink */
 html[data-theme="minimal"] .td-guest{min-height:40px;padding:0 24px;gap:12px;border-bottom-color:var(--border-divider)}
 html[data-theme="minimal"] .td-guest-icon{color:var(--ink-900)}
@@ -863,66 +863,66 @@ html[data-theme="minimal"] .td-guest-text{font:400 13px/1.45 var(--font-ui)}
 html[data-theme="minimal"] .td-guest-text b{font-weight:500}
 html[data-theme="minimal"] .td-guest-text span{color:var(--ink-400)}
 /* Project activity log: day headings are grey words over a hairline, rows with a hairline below, the key in bare mono */
-html[data-theme="minimal"] .td-al-count{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-al-day{padding:16px 0 6px;border-bottom:1px solid var(--border-divider);font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none}
-html[data-theme="minimal"] .td-al-row{padding:10px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-al-row+.td-al-row{border-top:0}
-html[data-theme="minimal"] .td-al-text{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-al-text b{font-weight:500}
-html[data-theme="minimal"] .td-al-key,html[data-theme="minimal"] button.td-al-key{padding:0;margin-left:6px;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] button.td-al-key:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] button.td-al-key:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
-html[data-theme="minimal"] .td-al-time{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-al-kind{color:var(--ink-900)}
+html[data-theme="minimal"] .td-activity-log-count{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-activity-log-day{padding:16px 0 6px;border-bottom:1px solid var(--border-divider);font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-activity-log-row{padding:10px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-activity-log-row+.td-activity-log-row{border-top:0}
+html[data-theme="minimal"] .td-activity-log-text{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-activity-log-text b{font-weight:500}
+html[data-theme="minimal"] .td-activity-log-key,html[data-theme="minimal"] button.td-activity-log-key{padding:0;margin-left:6px;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] button.td-activity-log-key:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] button.td-activity-log-key:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+html[data-theme="minimal"] .td-activity-log-time{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-activity-log-kind{color:var(--ink-900)}
 /* Archive and trash: no white card — rows over hairlines; the project lead loses its fill; the confirming row takes the paper-grey wash */
-html[data-theme="minimal"] .td-arc{padding:20px 24px 24px;gap:12px}
-html[data-theme="minimal"] .td-arc-cap{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-arc-list,html[data-theme="minimal"] .td-arc-empty{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-arc-group{padding:12px 0 4px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-arc-row{padding:8px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-arc-row+.td-arc-row{border-top:0}
-html[data-theme="minimal"] .td-arc-row:hover,html[data-theme="minimal"] .td-arc-row:focus-within{background:none}
-html[data-theme="minimal"] .td-arc-row[data-confirm="true"]{background:var(--blue-100)}
-html[data-theme="minimal"] .td-arc-lead{border-radius:0;color:var(--ink-900)}
-html[data-theme="minimal"] .td-arc-lead[data-kind="project"]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider)}
-html[data-theme="minimal"] .td-arc-title{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-arc-title[data-done="true"]{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-arc-meta{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-arc-meta b{font-weight:500;color:var(--ink-400)}
-html[data-theme="minimal"] .td-arc-key{font:400 11px/1.45 var(--font-mono)}
-html[data-theme="minimal"] .td-arc-bar .td-field{height:28px}
+html[data-theme="minimal"] .td-archive{padding:20px 24px 24px;gap:12px}
+html[data-theme="minimal"] .td-archive-caption{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-archive-list,html[data-theme="minimal"] .td-archive-empty{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-archive-group{padding:12px 0 4px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-archive-row{padding:8px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-archive-row+.td-archive-row{border-top:0}
+html[data-theme="minimal"] .td-archive-row:hover,html[data-theme="minimal"] .td-archive-row:focus-within{background:none}
+html[data-theme="minimal"] .td-archive-row[data-confirm="true"]{background:var(--blue-100)}
+html[data-theme="minimal"] .td-archive-lead{border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-archive-lead[data-kind="project"]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider)}
+html[data-theme="minimal"] .td-archive-title{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-archive-title[data-done="true"]{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
+html[data-theme="minimal"] .td-archive-meta{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-archive-meta b{font-weight:500;color:var(--ink-400)}
+html[data-theme="minimal"] .td-archive-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-archive-bar .td-field{height:28px}
 /* Status role review · Keyboard shortcuts: the square sheet; keys in bare mono, section names plain grey words */
 html[data-theme="minimal"] .td-rolereview{padding:20px 24px;border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);animation:none}
 html[data-theme="minimal"] .td-rolereview-title{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
 html[data-theme="minimal"] .td-rolereview-body{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-scd-sec h3{font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400);padding-bottom:4px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-scd-kbd{padding:0;border:0;border-radius:0;background:none;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
-html[data-theme="minimal"] .td-scd-sep{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-scd-desc{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-scd-note{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-shortcuts-dialog-section h3{font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400);padding-bottom:4px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-shortcuts-dialog-kbd{padding:0;border:0;border-radius:0;background:none;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-shortcuts-dialog-separator{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-shortcuts-dialog-description{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-shortcuts-dialog-note{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
 /* Connection status: a word with a glyph on the top bar, no pill; the Settings variant a hairline box */
-html[data-theme="minimal"] .td-conn{height:auto;padding:0;border-radius:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);animation:none;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
-html[data-theme="minimal"] .td-conn:hover,html[data-theme="minimal"] .td-conn:active,html[data-theme="minimal"] .td-conn[aria-expanded="true"]{background:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-conn:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
-html[data-theme="minimal"] .td-conn-ico svg{width:16px;height:16px;stroke-width:1.75}
-html[data-theme="minimal"] .td-conn-n{color:var(--ink-400)}
-html[data-theme="minimal"] .td-conn-card,html[data-theme="minimal"] .td-conn-card:hover,html[data-theme="minimal"] .td-conn-card[aria-expanded="true"]{height:28px;padding:0 10px;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);color:var(--ink-900)}
-html[data-theme="minimal"] .td-conn-card:hover,html[data-theme="minimal"] .td-conn-card[aria-expanded="true"]{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-conn-menu-head{padding:6px 14px 2px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-connection{height:auto;padding:0;border-radius:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);animation:none;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-connection:hover,html[data-theme="minimal"] .td-connection:active,html[data-theme="minimal"] .td-connection[aria-expanded="true"]{background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-connection:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-connection-icon svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-connection-count{color:var(--ink-400)}
+html[data-theme="minimal"] .td-connection-card,html[data-theme="minimal"] .td-connection-card:hover,html[data-theme="minimal"] .td-connection-card[aria-expanded="true"]{height:28px;padding:0 10px;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);color:var(--ink-900)}
+html[data-theme="minimal"] .td-connection-card:hover,html[data-theme="minimal"] .td-connection-card[aria-expanded="true"]{box-shadow:inset 0 0 0 1px var(--ink-900)}
+html[data-theme="minimal"] .td-connection-menu-head{padding:6px 14px 2px;font:500 13px/1.45 var(--font-ui)}
 /* Password field hint */
-html[data-theme="minimal"] .td-pwf-hint{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-password-field-hint{font:400 11px/1.45 var(--font-ui)}
 
 /* Narrow settings retain the ledger styling while sharing the shell's single-column layout. */
 @container (max-width: 640px) {
-  html[data-theme="minimal"] .td-set-inner {
+  html[data-theme="minimal"] .td-settings-inner {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-6);
   }
-  html[data-theme="minimal"] .td-set-navhead {
+  html[data-theme="minimal"] .td-settings-navhead {
     margin: 0 var(--sp-1) 0 0;
     height: 34px;
   }
-  html[data-theme="minimal"] .td-set-navrow {
+  html[data-theme="minimal"] .td-settings-navrow {
     height: 34px;
     padding: 0 var(--sp-2);
     background: none;
@@ -939,4 +939,4 @@ html[data-theme="minimal"][data-device="phone"] .td-topnav-user {
 html[data-theme="minimal"] svg[stroke^="var(--"]:not([stroke^="var(--danger"]){stroke:currentColor}
 html[data-theme="minimal"] svg[style*="fill: var(--label"],html[data-theme="minimal"] svg[style*="fill:var(--label"]{fill:currentColor!important}
 html[data-theme="minimal"] ::placeholder{color:color-mix(in srgb,var(--ink-900) 55%,transparent)!important}
-html[data-theme="minimal"] .td-clgrip{color:var(--ink-900)}
+html[data-theme="minimal"] .td-checklist-grip{color:var(--ink-900)}

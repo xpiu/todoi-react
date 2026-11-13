@@ -50,7 +50,7 @@ export function Checkbox({ checked, onChange, shape = "square", label, recurring
       }}
     >
       <span className={boxCls}>
-        <Icon name="check" size={shape === "circle" ? 12 : 11} strokeWidth={3.5} className="td-check-ic" />
+        <Icon name="check" size={shape === "circle" ? 12 : 11} strokeWidth={3.5} className="td-check-icon" />
       </span>
       {label ? <span>{label}</span> : null}
     </button>

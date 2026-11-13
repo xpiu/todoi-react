@@ -102,7 +102,7 @@ export const Default: Story = {
     await waitFor(() => expect(dialog).toBeVisible());
     await expect(within(dialog).getByRole("heading", { level: 2, name: "Prepare the helicopter quote" })).toBeVisible();
     await expect(within(dialog).getByRole("button", { name: "Watching" })).toHaveAttribute("aria-pressed", "true");
-    await expect(within(dialog).getByText("Blocked", { selector: ".td-rel-blocked" })).toBeVisible();
+    await expect(within(dialog).getByText("Blocked", { selector: ".td-relations-blocked" })).toBeVisible();
   },
 };
 export const DetailsLoading: Story = {

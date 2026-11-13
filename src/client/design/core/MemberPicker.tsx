@@ -71,7 +71,7 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
       trigger={
         <Button variant="outline" disabled={disabled} aria-label={labelWithValue(label, shownValue)} data-block={block ? "true" : undefined} className="td-aside-btn">
           {picked.length ? <AvatarStack people={picked} size={20} max={3} /> : <Icon name={icon} size={16} />}
-          <span className="td-mp-value" data-placeholder={picked.length ? undefined : "true"}>
+          <span className="td-member-picker-value" data-placeholder={picked.length ? undefined : "true"}>
             {shownValue}
           </span>
         </Button>
@@ -92,7 +92,7 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
               toggle(ordered[0]);
             } else if (e.key === "ArrowDown") {
               e.preventDefault();
-              (e.currentTarget.closest(".td-pop")?.querySelector('[role="checkbox"]') as HTMLElement | null)?.focus();
+              (e.currentTarget.closest(".td-popover")?.querySelector('[role="checkbox"]') as HTMLElement | null)?.focus();
             } else if (e.key.length === 1) e.stopPropagation();
           }}
         />
@@ -122,16 +122,16 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
             }}
           >
             <Avatar name={m.name} src={m.src} color={m.color} size={22} decorative />
-            <span className="td-mp-name">{m.name}</span>
-            {m.nickname || m.email ? <span className="td-mp-sub">{m.nickname ? `@${m.nickname}` : m.email}</span> : null}
-            {sel.has(m.id) ? <Icon name="check" size={14} className="td-mp-check" /> : null}
+            <span className="td-member-picker-name">{m.name}</span>
+            {m.nickname || m.email ? <span className="td-member-picker-sub">{m.nickname ? `@${m.nickname}` : m.email}</span> : null}
+            {sel.has(m.id) ? <Icon name="check" size={14} className="td-member-picker-check" /> : null}
           </div>
         ))}
         {!ordered.length ? <div className="td-menu-note">{ql ? "No one matches" : "No members in this project"}</div> : null}
         {picked.length ? (
           <>
             <div className="td-menu-divider" />
-            <button type="button" className="td-picker-row td-mp-action" onClick={() => onChange([])}>
+            <button type="button" className="td-picker-row td-member-picker-action" onClick={() => onChange([])}>
               <Icon name="user-x" size={14} />
               {clearLabel}
             </button>

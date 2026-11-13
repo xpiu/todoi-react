@@ -32,14 +32,14 @@ export function Segmented<T extends string>({ options, value, onChange, size = "
       role="group"
       aria-label={rest["aria-label"]}
       data-disabled={disabled ? "true" : undefined}
-      className={["td-seg", size === "sm" ? "td-seg-sm" : "", stretch ? "td-seg-stretch" : "", className ?? ""].filter(Boolean).join(" ")}
+      className={["td-segmented", size === "sm" ? "td-segmented-sm" : "", stretch ? "td-segmented-stretch" : "", className ?? ""].filter(Boolean).join(" ")}
       style={style}
     >
       {options.map((o) => (
         <button
           key={o.id}
           type="button"
-          className="td-seg-btn"
+          className="td-segmented-btn"
           aria-pressed={o.id === value}
           aria-label={o.label ? undefined : o.title}
           disabled={disabled || o.disabled}

@@ -207,7 +207,7 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
     const current = it.id === activeId;
     const hasAdd = !!(it.addable && onNavAdd);
     const btn = (
-      <button type="button" className={"td-sidebar-row" + (it.tip ? " td-tip" : "")} tabIndex={collapsed ? -1 : undefined} data-tip={it.tip} aria-label={it.tooltip || it.unread ? [it.count != null ? `${it.label} ${it.count}` : it.label, it.unread ? `${it.unread} unread` : null, it.tooltip].filter(Boolean).join(" — ") : undefined} aria-current={current ? "true" : undefined} onClick={() => onSelect?.(it.id)}>
+      <button type="button" className={"td-sidebar-row" + (it.tip ? " td-tooltip" : "")} tabIndex={collapsed ? -1 : undefined} data-tip={it.tip} aria-label={it.tooltip || it.unread ? [it.count != null ? `${it.label} ${it.count}` : it.label, it.unread ? `${it.unread} unread` : null, it.tooltip].filter(Boolean).join(" — ") : undefined} aria-current={current ? "true" : undefined} onClick={() => onSelect?.(it.id)}>
         <span className="td-sidebar-iconwrap" data-unread={it.unread ? "true" : undefined}>
           <Icon name={it.icon} size={16} />
           {it.unread ? <span className="td-sidebar-dot" aria-hidden="true" /> : null}
@@ -256,7 +256,7 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
                 onDragLeave={onItemDrop ? clearDwell : undefined}
               >
                 <button type="button" className="td-sidebar-headbtn" aria-expanded={open} tabIndex={collapsed ? -1 : undefined} onClick={() => setClosedGroups((o) => ({ ...o, [g.id]: open }))}>
-                  <Icon name="chevron-down" size={16} className="td-sidebar-chev" data-open={String(open)} />
+                  <Icon name="chevron-down" size={16} className="td-sidebar-chevron" data-open={String(open)} />
                   <span className="td-sidebar-label">{g.name}</span>
                 </button>
                 {onAdd ? <IconButton name="plus" label={`Add a project to ${g.name}`} tooltip="New project here" tooltipSide="bottom-end" size={24} iconSize={16} variant="chrome" tabIndex={collapsed ? -1 : undefined} onClick={() => onAdd(g.id)} /> : null}

@@ -12,7 +12,7 @@ for (const scope of SCOPES) test(`item creation latency in ${scope}`, async ({ p
   await useScope(page, scope);
   const fixture = await guestItem(page);
   await page.goto(`/p/${fixture.projectId}?v=board`);
-  const list = page.locator(`.td-list[data-list-id="${fixture.listId}"]`);
+  const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await expect(list.getByText("Sync fixture", { exact: true })).toBeVisible();
   await page.waitForLoadState("networkidle");
   const requests: string[] = [];
@@ -74,7 +74,7 @@ for (const scope of SCOPES) test(`item creation latency in ${scope}`, async ({ p
 test("a pending item keeps its place while typing the next item", async ({ page }, testInfo) => {
   const fixture = await guestItem(page);
   await page.goto(`/p/${fixture.projectId}?v=board`);
-  const list = page.locator(`.td-list[data-list-id="${fixture.listId}"]`);
+  const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await expect(list.getByText("Sync fixture", { exact: true })).toBeVisible();
   let release!: () => void;
   const held = new Promise<void>((resolve) => { release = resolve; });
@@ -133,7 +133,7 @@ test("acknowledging a new item skips unchanged cards on a large board", async ({
   for (let batch = 0; batch < 10; batch++) await Promise.all(Array.from({ length: 10 }, (_, i) =>
     page.request.post("/api/items", { data: { id: nanoid(), title: `Existing item ${batch * 10 + i}`, listId: fixture.listId } }).then((response) => expect(response.status()).toBe(201))));
   await page.goto(`/p/${fixture.projectId}?v=board`);
-  const list = page.locator(`.td-list[data-list-id="${fixture.listId}"]`);
+  const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await expect(list.locator(".td-card")).toHaveCount(101);
   await page.waitForLoadState("networkidle");
   expect(await page.evaluate(() => (window as any).cardRenders.length)).toBeGreaterThanOrEqual(101);
@@ -175,7 +175,7 @@ test("a queued create cannot write under a different account", async ({ page, co
   const fixture = await guestItem(page);
   const reconnect = await apiOffline(context);
   await page.goto(`/p/${fixture.projectId}?v=board`);
-  const list = page.locator(`.td-list[data-list-id="${fixture.listId}"]`);
+  const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await list.getByRole("button", { name: "Add an item", exact: true }).click();
   const input = list.getByRole("textbox", { name: /^New item in / });
   await input.fill("Original account's saved item");
@@ -214,7 +214,7 @@ for (const scope of SCOPES) test(`pending ID stays stable on a phone in ${scope}
   const fixture = await guestItem(page);
   await page.goto(`/p/${fixture.projectId}?v=board`);
   const reconnect = await apiOffline(context);
-  const list = page.locator(`.td-list[data-list-id="${fixture.listId}"]`);
+  const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await list.scrollIntoViewIfNeeded();
   await list.getByRole("button", { name: "Add an item", exact: true }).click();
   const input = list.getByRole("textbox", { name: /^New item in / });

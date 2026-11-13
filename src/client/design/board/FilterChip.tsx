@@ -25,12 +25,12 @@ export interface FilterChipProps {
 export function FilterChip({ value, category, color, icon, selected = true, onClick, onRemove, style, className }: FilterChipProps) {
   const act = selected ? (onRemove ?? onClick) : (onClick ?? onRemove);
   return (
-    <button type="button" className={["td-fchip", selected ? "td-fchip-on" : "td-fchip-off", className ?? ""].filter(Boolean).join(" ")} aria-pressed={selected} title={selected ? "Remove filter" : "Add filter"} onClick={act} style={style}>
-      {color ? <span className="td-fchip-dot" style={{ background: color }} /> : icon ? <Icon name={icon} size={14} /> : null}
-      {category ? <span className="td-fchip-cat">{category}:</span> : null}
+    <button type="button" className={["td-filter-chip", selected ? "td-filter-chip-on" : "td-filter-chip-off", className ?? ""].filter(Boolean).join(" ")} aria-pressed={selected} title={selected ? "Remove filter" : "Add filter"} onClick={act} style={style}>
+      {color ? <span className="td-filter-chip-dot" style={{ background: color }} /> : icon ? <Icon name={icon} size={14} /> : null}
+      {category ? <span className="td-filter-chip-category">{category}:</span> : null}
       {value}
       {selected ? (
-        <span className="td-fchip-x" aria-hidden>
+        <span className="td-filter-chip-remove" aria-hidden>
           <Icon name="x" size={12} />
         </span>
       ) : null}

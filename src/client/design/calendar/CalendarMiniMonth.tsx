@@ -28,20 +28,20 @@ export function CalendarMiniMonth({ year, month, dates, today, weekStartsOn = da
   const cells: Array<Date | null> = [...Array.from({ length: lead }, () => null), ...Array.from({ length: daysIn }, (_, i) => new Date(year, month, i + 1))];
   return (
     // Named from its content ("October 2026"): the visible month, the year for assistive tech; the grid is a picture.
-    <button type="button" className="td-calmini" style={style} onClick={onOpen}>
-      <span className="td-calmini-name">{name}</span>
+    <button type="button" className="td-calendar-mini" style={style} onClick={onOpen}>
+      <span className="td-calendar-mini-name">{name}</span>
       <span className="td-sr-only"> {year}</span>
-      <span className="td-calmini-grid" aria-hidden>
+      <span className="td-calendar-mini-grid" aria-hidden>
         {wd.map((c, i) => (
-          <span key={`w${i}`} className="td-calmini-wd">
+          <span key={`w${i}`} className="td-calendar-mini-weekday">
             {c}
           </span>
         ))}
         {cells.map((d, i) =>
           d ? (
-            <span key={i} className={"td-calmini-day" + (sameDay(d, todayD) ? " is-today" : "")}>
-              <span className="td-calmini-n">{d.getDate()}</span>
-              {dates?.has(toISO(d)!) ? <span className="td-calmini-dot" /> : null}
+            <span key={i} className={"td-calendar-mini-day" + (sameDay(d, todayD) ? " is-today" : "")}>
+              <span className="td-calendar-mini-number">{d.getDate()}</span>
+              {dates?.has(toISO(d)!) ? <span className="td-calendar-mini-dot" /> : null}
             </span>
           ) : (
             <span key={i} />

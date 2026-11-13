@@ -1,5 +1,5 @@
 @layer components {
-  .td-calgrid {
+  .td-calendar-grid {
     --td-cal-numrow: 24px;
     --td-cal-lane: 20px;
     display: flex;
@@ -10,12 +10,12 @@
     overflow: hidden;
     min-height: 0;
   }
-  .td-calgrid-wd {
+  .td-calendar-grid-weekday {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     flex-shrink: 0;
   }
-  .td-calgrid-wd > div {
+  .td-calendar-grid-weekday > div {
     padding: 6px var(--sp-2) var(--sp-1);
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
     color: var(--ink-400);
@@ -24,34 +24,34 @@
     gap: 5px;
     min-width: 0;
   }
-  .td-calgrid-wd > div.is-wknd {
+  .td-calendar-grid-weekday > div.is-wknd {
     background: var(--n-a03);
   }
-  .td-calgrid-wd > div.is-today {
+  .td-calendar-grid-weekday > div.is-today {
     background: var(--blue-500);
     color: var(--text-inverse);
   }
-  .td-calgrid-wdnum {
+  .td-calendar-grid-weekday-number {
     color: var(--ink-900);
     font-weight: var(--weight-semibold);
   }
-  .td-calgrid-wd > div.is-today .td-calgrid-wdnum {
+  .td-calendar-grid-weekday > div.is-today .td-calendar-grid-weekday-number {
     color: var(--text-inverse);
   }
-  .td-calweeks {
+  .td-calendar-weeks {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
   }
-  .td-calweek {
+  .td-calendar-week {
     flex: 1;
     min-height: 0;
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     border-top: 1px solid var(--border-divider);
   }
-  .td-calcell {
+  .td-calendar-cell {
     position: relative;
     grid-row: 1 / -1;
     display: grid;
@@ -61,24 +61,24 @@
     transition: background var(--duration-fast) var(--ease-standard);
   }
   /* The seventh day: cells come first in a week row, before its span bars. */
-  .td-calcell:nth-child(7) {
+  .td-calendar-cell:nth-child(7) {
     border-right: none;
   }
-  .td-calcell.is-wknd {
+  .td-calendar-cell.is-wknd {
     background: var(--n-a03);
   }
-  .td-calcell:hover {
+  .td-calendar-cell:hover {
     background: var(--n-a06);
   }
-  .td-calcell:focus-visible {
+  .td-calendar-cell:focus-visible {
     outline: none;
     box-shadow: inset 0 0 0 2px var(--focus-ring);
   }
-  .td-calcell.is-drop {
+  .td-calendar-cell.is-drop {
     background: var(--n-a06);
     box-shadow: inset 0 0 0 2px var(--blue-500);
   }
-  .td-calnum {
+  .td-calendar-day-number {
     position: absolute;
     top: 5px;
     left: 7px;
@@ -87,10 +87,10 @@
     pointer-events: none;
     white-space: nowrap;
   }
-  .td-calnum.is-out {
+  .td-calendar-day-number.is-out {
     color: var(--ink-300);
   }
-  .td-calnum.is-today {
+  .td-calendar-day-number.is-today {
     top: 3px;
     left: 4px;
     display: inline-flex;
@@ -105,7 +105,7 @@
     font-weight: var(--weight-semibold);
     box-sizing: border-box;
   }
-  .td-calcell-add {
+  .td-calendar-cell-add {
     display: none;
     position: absolute;
     top: 3px;
@@ -121,26 +121,26 @@
     color: var(--ink-400);
     cursor: pointer;
   }
-  .td-calcell:hover .td-calcell-add,
-  .td-calcell:focus-visible .td-calcell-add,
-  .td-calcell-add:focus-visible {
+  .td-calendar-cell:hover .td-calendar-cell-add,
+  .td-calendar-cell:focus-visible .td-calendar-cell-add,
+  .td-calendar-cell-add:focus-visible {
     display: inline-flex;
   }
-  .td-calcell-add:hover {
+  .td-calendar-cell-add:hover {
     background: var(--n-a06);
     color: var(--ink-900);
   }
-  .td-calcell-add:focus-visible {
+  .td-calendar-cell-add:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-calspan-cell {
+  .td-calendar-span-cell {
     position: relative;
     z-index: var(--z-raised);
     display: flex;
     min-width: 0;
   }
-  .td-calspan {
+  .td-calendar-span {
     --td-span: var(--ink-400);
     flex: 1 1 auto;
     display: flex;
@@ -162,36 +162,36 @@
     min-width: 0;
     transition: box-shadow var(--duration-fast) var(--ease-standard);
   }
-  .td-calspan:hover {
+  .td-calendar-span:hover {
     box-shadow: 0 0 0 2px var(--blue-500);
   }
-  .td-calspan:focus-visible {
+  .td-calendar-span:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-calspan.is-l {
+  .td-calendar-span.is-l {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     margin-left: 0;
     border-left-width: 0;
     padding-left: var(--sp-2);
   }
-  .td-calspan.is-r {
+  .td-calendar-span.is-r {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
     margin-right: 0;
   }
-  .td-calspan.is-done {
+  .td-calendar-span.is-done {
     --td-span: var(--ink-300);
     color: var(--ink-600);
   }
-  .td-calspan-title {
+  .td-calendar-span-title {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .td-calchips {
+  .td-calendar-chips {
     grid-row: -2 / -1;
     position: relative;
     z-index: var(--z-raised);
@@ -204,10 +204,10 @@
     overflow: hidden;
     pointer-events: none;
   }
-  .td-calchips > * {
+  .td-calendar-chips > * {
     pointer-events: auto;
   }
-  .td-calmore {
+  .td-calendar-more {
     align-self: flex-start;
     border: 0;
     background: none;
@@ -218,11 +218,11 @@
     color: var(--ink-400);
     cursor: pointer;
   }
-  .td-calmore:hover {
+  .td-calendar-more:hover {
     color: var(--ink-600);
     background: var(--n-a06);
   }
-  .td-calmore:focus-visible {
+  .td-calendar-more:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }

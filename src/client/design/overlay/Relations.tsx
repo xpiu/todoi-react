@@ -36,8 +36,8 @@ export const isBlocked = (relations: ReadonlyArray<Relation>) => relations.some(
 export function RelationPicker({ items, exclude = [], type: initial = "blocked_by", onAdd, onClose }: { items: PickableItem[]; exclude?: string[]; type?: RelationType; onAdd: (type: RelationType, item: PickableItem) => void; onClose?: () => void }) {
   const [type, setType] = useState<RelationType>(initial);
   return (
-    <div className="td-rel-pick">
-      <div className="td-rel-types" role="radiogroup" aria-label="Relation type">
+    <div className="td-relations-pick">
+      <div className="td-relations-types" role="radiogroup" aria-label="Relation type">
         {RELATION_TYPE_DEFS.map((t) => (
           <button key={t.id} type="button" role="radio" aria-checked={type === t.id} onClick={() => setType(t.id)}>
             <Icon name={t.icon} size={13} color={type === t.id ? t.color : undefined} />
@@ -90,38 +90,38 @@ export function RelationsSection({ relations, items, excludeIds = [], onAdd, onR
   const blocked = isBlocked(relations);
   if (!groups.length && !onAdd) return null;
   return (
-    <div className="td-rel-section">
-      <div className="td-rel-section-head">
+    <div className="td-relations-section">
+      <div className="td-relations-section-head">
         <Icon name="link-2" size={16} />
-        <span className="td-rel-section-title">Relations</span>
+        <span className="td-relations-section-title">Relations</span>
         {blocked ? (
-          <span className="td-rel-blocked">
+          <span className="td-relations-blocked">
             <Icon name="ban" size={13} />
             Blocked
           </span>
         ) : null}
         {onAdd ? <RelationButton items={items} exclude={[...excludeIds, ...relations.map((r) => r.item.id)]} onAdd={onAdd} iconOnly tier="detached" placement="bottom-end" label="Add relation" /> : null}
       </div>
-      <div className="td-rel">
+      <div className="td-relations">
         {groups.map(({ t, rows }) => (
-          <div key={t.id} className="td-rel-group">
-            <div className="td-rel-head" data-tone={t.id === "blocked_by" && blocked ? "danger" : undefined}>
+          <div key={t.id} className="td-relations-group">
+            <div className="td-relations-head" data-tone={t.id === "blocked_by" && blocked ? "danger" : undefined}>
               <Icon name={t.icon} size={12} />
               {t.label}
             </div>
             {rows.map((r) => {
               const g = statusGlyph(r.item);
               return (
-                <div key={`${r.item.id}-${t.id}`} className="td-rel-row">
-                  <button type="button" className="td-rel-open" onClick={() => onOpen?.(r.item.id)} title={r.item.title}>
+                <div key={`${r.item.id}-${t.id}`} className="td-relations-row">
+                  <button type="button" className="td-relations-open" onClick={() => onOpen?.(r.item.id)} title={r.item.title}>
                     <Icon name={g.icon} size={15} color={g.color} />
-                    {r.item.itemId ? <span className="td-rel-key">{r.item.itemId}</span> : null}
-                    <span className="td-rel-title" data-done={r.item.done ? "true" : undefined}>
+                    {r.item.itemId ? <span className="td-relations-key">{r.item.itemId}</span> : null}
+                    <span className="td-relations-title" data-done={r.item.done ? "true" : undefined}>
                       {r.item.title}
                     </span>
-                    {r.item.listName ? <span className="td-rel-list">{r.item.listName}</span> : null}
+                    {r.item.listName ? <span className="td-relations-list">{r.item.listName}</span> : null}
                   </button>
-                  {onRemove ? <IconButton name="x" label="Remove relation" tooltip="Remove" size={24} iconSize={13} className="td-rel-x" onClick={() => onRemove(t.id, r.item.id)} /> : null}
+                  {onRemove ? <IconButton name="x" label="Remove relation" tooltip="Remove" size={24} iconSize={13} className="td-relations-remove" onClick={() => onRemove(t.id, r.item.id)} /> : null}
                 </div>
               );
             })}

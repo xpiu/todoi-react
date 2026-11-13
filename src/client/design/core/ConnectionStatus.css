@@ -1,6 +1,6 @@
 /* ConnectionStatus — the top-bar pill for offline work; nothing while synced. */
 @layer components {
-  .td-conn {
+  .td-connection {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -14,44 +14,44 @@
     white-space: nowrap;
     cursor: pointer;
     transition: background var(--duration-fast) var(--ease-standard);
-    animation: td-conn-in var(--duration-base) var(--ease-standard);
+    animation: td-connection-in var(--duration-base) var(--ease-standard);
   }
-  .td-conn:hover,
-  .td-conn[aria-expanded="true"] {
+  .td-connection:hover,
+  .td-connection[aria-expanded="true"] {
     background: var(--chrome-active);
   }
-  .td-conn:active {
+  .td-connection:active {
     background: var(--chrome-pressed);
   }
-  .td-conn-static {
+  .td-connection-static {
     cursor: default;
   }
-  .td-conn:focus-visible {
+  .td-connection:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-conn-ico {
+  .td-connection-icon {
     display: inline-flex;
     flex-shrink: 0;
   }
-  .td-conn-ico.is-spinning {
-    animation: td-conn-spin 1s linear infinite;
+  .td-connection-icon.is-spinning {
+    animation: td-connection-spin 1s linear infinite;
   }
-  .td-conn-n {
+  .td-connection-count {
     color: var(--chrome-text-dim);
   }
-  .td-conn-card {
+  .td-connection-card {
     background: var(--action-subtle);
     color: var(--ink-900);
   }
-  .td-conn-card:hover,
-  .td-conn-card[aria-expanded="true"] {
+  .td-connection-card:hover,
+  .td-connection-card[aria-expanded="true"] {
     background: var(--action-subtle-hover);
   }
-  .td-conn-card .td-conn-n {
+  .td-connection-card .td-connection-count {
     color: var(--ink-600);
   }
-  .td-conn-menu-head {
+  .td-connection-menu-head {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -59,13 +59,13 @@
     font: var(--weight-semibold) 13px / 18px var(--font-ui);
     color: var(--ink-900);
   }
-  .td-conn-menu-head-warn {
+  .td-connection-menu-head-warn {
     color: var(--warning);
   }
-  .td-conn-menu-head-info {
+  .td-connection-menu-head-info {
     color: var(--blue-500);
   }
-  @keyframes td-conn-in {
+  @keyframes td-connection-in {
     from {
       opacity: 0;
     }
@@ -73,7 +73,7 @@
       opacity: 1;
     }
   }
-  @keyframes td-conn-spin {
+  @keyframes td-connection-spin {
     to {
       transform: rotate(360deg);
     }

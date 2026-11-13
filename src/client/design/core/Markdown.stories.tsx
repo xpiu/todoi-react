@@ -20,7 +20,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Description: Story = {
-  // link-in-text-block: .td-md a has no underline and only 2.48:1 contrast against body text in Rounded Light.
+  // link-in-text-block: .td-markdown a has no underline and only 2.48:1 contrast against body text in Rounded Light.
   parameters: { a11y: { test: "todo" } },
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByRole("heading", { level: 1, name: "Launch plan" })).toBeVisible();
@@ -34,7 +34,7 @@ export const Description: Story = {
   },
 };
 export const Lists: Story = {
-  // link-in-text-block: .td-md a has no underline and only 2.48:1 contrast against body text in Rounded Light.
+  // link-in-text-block: .td-markdown a has no underline and only 2.48:1 contrast against body text in Rounded Light.
   parameters: { a11y: { test: "todo" } },
   args: { text: "## Before launch\n1. Price list\n2. Stock check\n3) Photos\n\n- loose bullet\n* another one\n\nA paragraph with a single\nline break and a bare link https://todoi.com/p/helicopters." },
   async play({ canvas }) {
@@ -48,7 +48,7 @@ export const CodeBlock: Story = {
 export const UnknownMention: Story = {
   args: { text: "@flo and @sam can review; @nobody is not a member, so it stays plain text." },
   async play({ canvasElement }) {
-    const mentions = [...canvasElement.querySelectorAll(".td-md-mention")].map((el) => el.textContent);
+    const mentions = [...canvasElement.querySelectorAll(".td-markdown-mention")].map((el) => el.textContent);
     await expect(mentions).toEqual(["@flo", "@sam"]);
   },
 };

@@ -77,7 +77,7 @@ function inline(text: string, o: MarkdownOptions, keyBase: string): ReactNode[] 
     } else if (t.startsWith("@")) {
       out.push(
         isKnownMember(t.slice(1), o.members) ? (
-          <span key={k} className="td-md-mention">
+          <span key={k} className="td-markdown-mention">
             {t}
           </span>
         ) : (
@@ -89,7 +89,7 @@ function inline(text: string, o: MarkdownOptions, keyBase: string): ReactNode[] 
       out.push(
         <span
           key={k}
-          className="td-md-key"
+          className="td-markdown-key"
           role={open ? "link" : undefined}
           tabIndex={open ? 0 : undefined}
           onClick={open ? () => open(t) : undefined}
@@ -154,11 +154,11 @@ export function renderMarkdown(src: string | null | undefined, o: MarkdownOption
         if (task) {
           const on = task[1] !== " ";
           items.push(
-            <li key={items.length} className="td-md-task">
-              <span className="td-md-box" data-on={on ? "true" : "false"} aria-hidden>
+            <li key={items.length} className="td-markdown-task">
+              <span className="td-markdown-box" data-on={on ? "true" : "false"} aria-hidden>
                 {on ? <Icon name="check" size={9} strokeWidth={3.5} /> : null}
               </span>
-              <span className={on ? "td-md-task-done" : undefined}>{inline(task[2]!, o, `t${b}${items.length}`)}</span>
+              <span className={on ? "td-markdown-task-done" : undefined}>{inline(task[2]!, o, `t${b}${items.length}`)}</span>
             </li>,
           );
         } else items.push(<li key={items.length}>{inline(t, o, `l${b}${items.length}`)}</li>);
@@ -186,5 +186,5 @@ export interface MarkdownProps extends MarkdownOptions {
 }
 
 export function Markdown({ text, members, onOpenKey, className }: MarkdownProps) {
-  return <div className={["td-md", className ?? ""].join(" ").trim()}>{renderMarkdown(text, { members, onOpenKey })}</div>;
+  return <div className={["td-markdown", className ?? ""].join(" ").trim()}>{renderMarkdown(text, { members, onOpenKey })}</div>;
 }

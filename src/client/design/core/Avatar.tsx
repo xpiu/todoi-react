@@ -86,7 +86,7 @@ export function AvatarStack({ people = [], size = 24, max = 3, overlap, style, c
   const names = list.map((p) => p.name).join(", ");
   return (
     <span
-      className={["td-avstack", className ?? ""].join(" ").trim()}
+      className={["td-avatar-stack", className ?? ""].join(" ").trim()}
       style={{ "--td-av-overlap": `${overlap ?? Math.round(size / 4)}px`, ...style } as CSSProperties}
       title={names}
       {...(names ? { role: "img", "aria-label": names } : null)}
@@ -95,7 +95,7 @@ export function AvatarStack({ people = [], size = 24, max = 3, overlap, style, c
         <Avatar key={p.id ?? p.name ?? i} name={p.name} src={p.src} color={p.color} size={size} decorative />
       ))}
       {rest > 0 ? (
-        <span className="td-avstack-more" data-more={`+${rest}`} aria-hidden style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.4)) }} />
+        <span className="td-avatar-stack-more" data-more={`+${rest}`} aria-hidden style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.4)) }} />
       ) : null}
     </span>
   );

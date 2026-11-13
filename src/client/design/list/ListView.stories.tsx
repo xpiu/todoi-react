@@ -79,7 +79,7 @@ export const Empty: Story = {
 };
 export const KeyboardNavigation: Story = {
   async play({ args, canvas, userEvent }) {
-    const row = (title: string) => canvas.getByText(title).closest<HTMLElement>(".td-lrow")!;
+    const row = (title: string) => canvas.getByText(title).closest<HTMLElement>(".td-list-row")!;
     row("Order spare rotor blades").focus();
     // ↓ crosses into the next section, and through subitem rows.
     await userEvent.keyboard("{ArrowDown}");

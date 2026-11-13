@@ -37,8 +37,8 @@ export function CommandPalette({ open, onClose, ...body }: CommandPaletteProps) 
   return (
     <BaseDialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <BaseDialog.Portal>
-        <BaseDialog.Backdrop className="td-pal-backdrop" />
-        <BaseDialog.Viewport className="td-pal-viewport">
+        <BaseDialog.Backdrop className="td-command-palette-backdrop" />
+        <BaseDialog.Viewport className="td-command-palette-viewport">
           {/* The popup unmounts on close, so the query and cursor start fresh every time */}
           <PaletteBody open={open} onClose={onClose} {...body} />
         </BaseDialog.Viewport>
@@ -74,8 +74,8 @@ function PaletteBody({ open, items, onSelect, onClose, onQueryChange, status, em
     onClose();
   };
   return (
-    <BaseDialog.Popup ref={setPopupEl} className="td-pal" aria-label="Jump to item" initialFocus={inputRef}>
-            <div className="td-pal-input">
+    <BaseDialog.Popup ref={setPopupEl} className="td-command-palette" aria-label="Jump to item" initialFocus={inputRef}>
+            <div className="td-command-palette-input">
               <Icon name="search" size={18} />
               <input
                 ref={inputRef}
@@ -108,23 +108,23 @@ function PaletteBody({ open, items, onSelect, onClose, onQueryChange, status, em
               />
             </div>
             {hits.length ? (
-              <div className="td-pal-list" ref={listRef} id={listId} role="listbox" aria-label="Items">
+              <div className="td-command-palette-list" ref={listRef} id={listId} role="listbox" aria-label="Items">
                 {hits.map((it, i) => (
-                  <button key={it.id} id={`${listId}-opt-${i}`} type="button" className="td-pal-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(it)}>
-                    <span className="td-pal-title" data-done={it.done ? "true" : undefined}>
+                  <button key={it.id} id={`${listId}-opt-${i}`} type="button" className="td-command-palette-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(it)}>
+                    <span className="td-command-palette-title" data-done={it.done ? "true" : undefined}>
                       {it.title}
                     </span>
-                    {it.listName ? <span className="td-pal-list-name">{it.listName}</span> : null}
-                    {it.itemId ? <span className="td-pal-id">{it.itemId}</span> : null}
+                    {it.listName ? <span className="td-command-palette-list-name">{it.listName}</span> : null}
+                    {it.itemId ? <span className="td-command-palette-id">{it.itemId}</span> : null}
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="td-pal-empty" aria-live="polite" data-tone={needle && (status === "error" || status === "offline") ? "error" : undefined}>
+              <div className="td-command-palette-empty" aria-live="polite" data-tone={needle && (status === "error" || status === "offline") ? "error" : undefined}>
                 {!needle ? (emptyHint ?? "No items yet") : status === "loading" ? "Searching…" : status === "offline" ? "You’re offline. Item search needs a connection." : status === "error" ? "Couldn’t search items. Try again in a moment." : `No items match “${q.trim()}”`}
               </div>
             )}
-            <div className="td-pal-foot">
+            <div className="td-command-palette-foot">
               <span>
                 <kbd className="td-kbd">↑↓</kbd> navigate
               </span>

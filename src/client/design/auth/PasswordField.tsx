@@ -36,7 +36,7 @@ export function PasswordField({ id, label = "Password", value, onChange, autoCom
       </div>
       <input ref={inputRef} id={uid} className="td-field" type={show ? "text" : "password"} autoComplete={autoComplete} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} autoFocus={autoFocus} aria-invalid={!!error || undefined} aria-describedby={line ? `${uid}-hint` : undefined} />
       {line ? (
-        <p id={`${uid}-hint`} className="td-pwf-hint" data-ok={!error && ok ? "true" : undefined} data-error={error ? "true" : undefined} role={error ? "alert" : undefined}>
+        <p id={`${uid}-hint`} className="td-password-field-hint" data-ok={!error && ok ? "true" : undefined} data-error={error ? "true" : undefined} role={error ? "alert" : undefined}>
           {line}
         </p>
       ) : null}

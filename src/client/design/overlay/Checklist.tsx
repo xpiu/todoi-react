@@ -42,14 +42,14 @@ export function ChecklistAddRow({ open, label = "Add a subitem", placeholder = "
   };
   if (!adding)
     return (
-      <button type="button" className="td-cladd" onClick={() => setAdding(true)}>
+      <button type="button" className="td-checklist-add" onClick={() => setAdding(true)}>
         <Icon name="plus" size={16} />
         {label}
       </button>
     );
   return (
     <div
-      className="td-cladd is-editing"
+      className="td-checklist-add is-editing"
       onMouseDown={(e) => {
         if (e.target !== inputRef.current) {
           e.preventDefault();
@@ -60,7 +60,7 @@ export function ChecklistAddRow({ open, label = "Add a subitem", placeholder = "
       <Icon name="plus" size={16} />
       <input
         ref={inputRef}
-        className="td-cladd-input"
+        className="td-checklist-add-input"
         value={draft}
         placeholder={placeholder}
         aria-label="New subitem"
@@ -141,7 +141,7 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
     clear();
   };
   useTouchDrag(listRef, {
-    selector: ".td-clrow[data-id]",
+    selector: ".td-checklist-row[data-id]",
     disabled: !onReorder,
     onLift: (el) => setFrom(el.dataset.id ?? null),
     onMove: (p, d) => {
@@ -160,19 +160,19 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
   };
   return (
     <div className={"td-checklist" + (dragging ? " is-dragging" : "")} role="group" aria-label="Subitems">
-      <div className="td-clhead">
-        <span className="td-clhead-count">
+      <div className="td-checklist-head">
+        <span className="td-checklist-head-count">
           {done}/{total}
         </span>
-        <ProgressBar value={pct} height={4} color={pct === 100 ? "var(--success-icon)" : "var(--blue-500)"} className="td-clhead-bar" aria-label={`${done} of ${total} subitems done`} />
-        <div className="td-clhead-actions">
+        <ProgressBar value={pct} height={4} color={pct === 100 ? "var(--success-icon)" : "var(--blue-500)"} className="td-checklist-head-bar" aria-label={`${done} of ${total} subitems done`} />
+        <div className="td-checklist-head-actions">
           {done > 0 ? <IconButton name={hideChecked ? "eye" : "eye-off"} size={24} iconSize={14} label={hideChecked ? "Show checked items" : "Hide checked items"} tooltip={hideChecked ? "Show checked items" : "Hide checked items"} onClick={() => setHideChecked((h) => !h)} /> : null}
           {onDelete ? <IconButton name="trash-2" size={24} iconSize={14} label="Delete subitems" tooltip="Delete subitems" onClick={onDelete} /> : null}
         </div>
       </div>
       <div
         ref={listRef}
-        className="td-cllist"
+        className="td-checklist-list"
         onDragOver={onReorder ? onDragOver : undefined}
         onDragLeave={onReorder ? (e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setIns(null);
@@ -190,7 +190,7 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
             <div
               key={it.id}
               data-id={it.id}
-              className={"td-clrow" + (onReorder ? " is-draggable" : "") + (from === it.id ? " td-drag-src" : "")}
+              className={"td-checklist-row" + (onReorder ? " is-draggable" : "") + (from === it.id ? " td-drag-src" : "")}
               draggable={onReorder ? true : undefined}
               onDragStart={onReorder ? (e) => {
                 e.dataTransfer.effectAllowed = "move";
@@ -202,17 +202,17 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
               } : undefined}
               onDragEnd={onReorder ? clear : undefined}
             >
-              {before ? <span className="td-clline is-before" aria-hidden /> : null}
-              {after ? <span className="td-clline is-after" aria-hidden /> : null}
+              {before ? <span className="td-checklist-line is-before" aria-hidden /> : null}
+              {after ? <span className="td-checklist-line is-after" aria-hidden /> : null}
               {onReorder ? (
-                <span className="td-clgrip" aria-hidden>
+                <span className="td-checklist-grip" aria-hidden>
                   <Icon name="grip-vertical" size={12} />
                 </span>
               ) : null}
               <Checkbox checked={it.done} aria-label={it.text} onChange={(v) => onToggle?.(it.id, v)} />
-              <span className={"td-clrow-text" + (it.done ? " td-clrow-done" : "")}>{it.text}</span>
+              <span className={"td-checklist-row-text" + (it.done ? " td-checklist-row-done" : "")}>{it.text}</span>
               {rowMenu ? (
-                <MenuButton label={`Actions for ${it.text}`} tier="detached" size={24} iconSize={14} triggerClassName="td-clrow-more" width={200}>
+                <MenuButton label={`Actions for ${it.text}`} tier="detached" size={24} iconSize={14} triggerClassName="td-checklist-row-more" width={200}>
                   {onOpenItem && it.itemId ? (
                     <MenuItem icon="square-arrow-out-up-right" trailing={it.itemId} onSelect={() => onOpenItem(it.id)}>
                       Open

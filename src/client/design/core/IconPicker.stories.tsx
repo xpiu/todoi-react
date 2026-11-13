@@ -15,7 +15,7 @@ const meta = {
   component: IconPicker,
   render: (args) => <ControlledIconPicker key={String(args.value)} {...args} />,
   // The picker is panel content; the app mounts it inside a Popover or the list-actions menu.
-  decorators: [(Story) => <div className="td-pop" style={{ width: 260, position: "static" }}><Story /></div>],
+  decorators: [(Story) => <div className="td-popover" style={{ width: 260, position: "static" }}><Story /></div>],
   args: { value: null, autoIcon: "circle-dot", onChange: fn() },
   parameters: { docs: { description: { component: "The list-icon chooser: a basic status set, a “…” tile that expands into the searchable grouped catalogue, and an Automatic row that drops the override. Panel content only: mount it in a Popover or a menu sub-view. The caller owns the override (`value`, null = automatic) and receives onChange(icon | null); arrow keys rove the tiles and typing starts a search." } } },
 } satisfies Meta<typeof IconPicker>;

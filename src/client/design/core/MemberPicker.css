@@ -1,26 +1,26 @@
 @layer components {
-  .td-mp-name {
+  .td-member-picker-name {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .td-mp-sub {
+  .td-member-picker-sub {
     font: var(--weight-regular) 11px / 16px var(--font-ui);
     color: var(--ink-400);
     white-space: nowrap;
   }
-  .td-mp-check {
+  .td-member-picker-check {
     color: var(--ink-600);
   }
-  .td-mp-action {
+  .td-member-picker-action {
     width: 100%;
     border: 0;
     background: none;
     text-align: left;
     color: var(--ink-900);
   }
-  .td-mp-value {
+  .td-member-picker-value {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;

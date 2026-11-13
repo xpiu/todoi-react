@@ -84,16 +84,16 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
       role="dialog"
       aria-label="Save view"
       trigger={
-        <button type="button" className="td-sv-save" title={active ? "Save these filters as a new view" : "Save the current filters and sort as a view"}>
+        <button type="button" className="td-saved-view-save" title={active ? "Save these filters as a new view" : "Save the current filters and sort as a view"}>
           <Icon name="bookmark-plus" size={15} />
           {active && dirty ? "Save as new" : "Save view"}
         </button>
       }
     >
-      <div className="td-sv-pop">
-        <div className="td-sv-pop-title">Save as a view</div>
+      <div className="td-saved-view-popover">
+        <div className="td-saved-view-popover-title">Save as a view</div>
         <input
-          className="td-sv-input"
+          className="td-saved-view-input"
           value={name}
           autoFocus
           placeholder="Name, e.g. Bugs this sprint"
@@ -105,7 +105,7 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
           }}
         />
         {summary.length ? (
-          <div className="td-sv-summary">
+          <div className="td-saved-view-summary">
             {summary.map((s, i) => (
               <code key={i}>{s}</code>
             ))}
@@ -113,7 +113,7 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
         ) : null}
         <Checkbox checked={shared} onChange={setShared} label="Share with the project" />
         <InlineError message={saveError} />
-        <div className="td-sv-row">
+        <div className="td-saved-view-row">
           <Button variant="subtle" onClick={save.close}>
             Cancel
           </Button>
@@ -126,16 +126,16 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
   ) : null;
   return (
     <ChipBar as="nav" id={rowId} label="Views" icon="bookmark" aria-label="Saved views" moreLabel="More views" backLabel="Previous views" after={saveButton} actions={onHide ? <ChipBarAction icon="eye-off" onClick={onHide}>Hide</ChipBarAction> : null}>
-      <button type="button" className="td-sv-tab" aria-current={!activeId ? "true" : undefined} onClick={() => onSelect(null)}>
+      <button type="button" className="td-saved-view-tab" aria-current={!activeId ? "true" : undefined} onClick={() => onSelect(null)}>
         {allLabel}
       </button>
       {views.map((v) => {
         const isA = v.id === activeId;
         return (
-          <div key={v.id} className="td-sv-wrap" data-selected={isA ? "true" : undefined}>
+          <div key={v.id} className="td-saved-view-wrap" data-selected={isA ? "true" : undefined}>
             {renaming === v.id ? (
               <input
-                className="td-sv-input td-sv-renaming"
+                className="td-saved-view-input td-saved-view-renaming"
                 value={draft}
                 autoFocus
                 aria-label="View name"
@@ -151,19 +151,19 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
             ) : (
               // The ⋯ menu sits beside the tab (never inside it: a button can't hold a button).
               <>
-                <button type="button" className="td-sv-tab has-menu" aria-current={isA ? "true" : undefined} aria-describedby={isA && dirty ? driftId : undefined} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
-                  {v.shared ? <Icon name="users" size={13} className="td-sv-shared" /> : null}
+                <button type="button" className="td-saved-view-tab has-menu" aria-current={isA ? "true" : undefined} aria-describedby={isA && dirty ? driftId : undefined} title={v.shared ? `${v.name} — shared with the project` : `${v.name} — only you`} onClick={() => onSelect(v.id)}>
+                  {v.shared ? <Icon name="users" size={13} className="td-saved-view-shared" /> : null}
                   {v.name}
                   {/* The drift is the tab's description, not part of its name (hidden text still describes). */}
                   {isA && dirty ? (
-                    <span className="td-sv-dot" title="Filters changed since this view was saved">
+                    <span className="td-saved-view-dot" title="Filters changed since this view was saved">
                       <span id={driftId} hidden>
                         Unsaved changes
                       </span>
                     </span>
                   ) : null}
                 </button>
-                <span className="td-sv-more">
+                <span className="td-saved-view-more">
                   <MenuButton label={`Actions for ${v.name}`} tier="toolbar" placement="bottom-start" minWidth={200} size={18} iconSize={12} variant="chrome">
                     <MenuItem icon="link" onSelect={() => onAction(v.id, "copy-link")}>
                       Copy link

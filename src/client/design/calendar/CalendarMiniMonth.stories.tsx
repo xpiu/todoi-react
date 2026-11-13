@@ -16,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 
 export const WithItems: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    await expect(canvasElement.querySelectorAll(".td-calmini-dot")).toHaveLength(6);
+    await expect(canvasElement.querySelectorAll(".td-calendar-mini-dot")).toHaveLength(6);
     await expect(canvasElement.querySelector(".is-today")).toHaveTextContent("7");
     await userEvent.click(canvas.getByRole("button", { name: "October 2026" }));
     await expect(args.onOpen).toHaveBeenCalledOnce();
@@ -26,6 +26,6 @@ export const Empty: Story = { args: { month: 1, dates: new Set() } };
 export const SundayStart: Story = {
   args: { weekStartsOn: 0 },
   async play({ canvasElement }) {
-    await expect(canvasElement.querySelector(".td-calmini-wd")).toHaveTextContent("S");
+    await expect(canvasElement.querySelector(".td-calendar-mini-weekday")).toHaveTextContent("S");
   },
 };

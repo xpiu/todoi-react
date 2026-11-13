@@ -1,5 +1,5 @@
 @layer components {
-  .td-calchip {
+  .td-calendar-chip {
     display: flex;
     align-items: center;
     gap: 5px;
@@ -18,40 +18,40 @@
     flex-shrink: 0;
     transition: box-shadow var(--duration-fast) var(--ease-standard);
   }
-  .td-calchip:hover {
+  .td-calendar-chip:hover {
     box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
   }
-  .td-calchip:focus-visible {
+  .td-calendar-chip:focus-visible {
     outline: none;
     box-shadow: var(--shadow-card), 0 0 0 2px var(--focus-ring);
   }
-  .td-calchip[draggable="true"] {
+  .td-calendar-chip[draggable="true"] {
     cursor: grab;
   }
-  .td-calchip.td-drag-src {
+  .td-calendar-chip.td-drag-src {
     opacity: 0.4;
   }
-  .td-calchip-ico {
+  .td-calendar-chip-icon {
     flex-shrink: 0;
   }
-  .td-calchip-bars {
+  .td-calendar-chip-bars {
     display: inline-flex;
     gap: 2px;
     flex-shrink: 0;
   }
-  .td-calchip-bar {
+  .td-calendar-chip-bar {
     width: 4px;
     height: 12px;
     border-radius: 2px;
   }
-  .td-calchip-title {
+  .td-calendar-chip-title {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-calchip-key {
+  .td-calendar-chip-key {
     flex-shrink: 0;
     font: var(--weight-medium) 10px / 14px var(--font-mono);
     text-transform: uppercase;

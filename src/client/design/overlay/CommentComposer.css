@@ -1,9 +1,9 @@
 @layer components {
-  .td-mf {
+  .td-mention-field {
     position: relative;
     width: 100%;
   }
-  .td-mf-ta {
+  .td-mention-field-textarea {
     display: block;
     width: 100%;
     box-sizing: border-box;
@@ -20,15 +20,15 @@
       border-color var(--duration-base) var(--ease-standard),
       box-shadow var(--duration-base) var(--ease-standard);
   }
-  .td-mf-ta:focus {
+  .td-mention-field-textarea:focus {
     outline: none;
     border-color: var(--focus-ring);
     box-shadow: 0 0 0 1px var(--focus-ring);
   }
-  .td-mf-ta::placeholder {
+  .td-mention-field-textarea::placeholder {
     color: var(--ink-400);
   }
-  .td-mf-list {
+  .td-mention-field-list {
     position: absolute;
     left: 0;
     bottom: calc(100% + 4px);
@@ -40,11 +40,11 @@
     box-shadow: var(--shadow-overlay);
     z-index: var(--z-menu);
   }
-  .td-mf-list[data-below="true"] {
+  .td-mention-field-list[data-below="true"] {
     bottom: auto;
     top: calc(100% + 4px);
   }
-  .td-mf-opt {
+  .td-mention-field-option {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -59,11 +59,11 @@
     cursor: pointer;
     text-align: left;
   }
-  .td-mf-opt[aria-selected="true"],
-  .td-mf-opt:hover {
+  .td-mention-field-option[aria-selected="true"],
+  .td-mention-field-option:hover {
     background: var(--action-subtle);
   }
-  .td-mf-sub {
+  .td-mention-field-sub {
     margin-left: auto;
     font: var(--weight-regular) 11px / 16px var(--font-ui);
     color: var(--ink-400);

@@ -20,7 +20,7 @@
     font: var(--weight-bold) var(--text-sm) / var(--lh-sm) var(--font-ui);
     color: var(--ink-900);
   }
-  .td-comment-meta-act {
+  .td-comment-meta-action {
     margin-top: 2px;
   }
   .td-comment-bubble {
@@ -39,7 +39,7 @@
     font: var(--type-small);
     color: var(--ink-600);
   }
-  .td-comment-act {
+  .td-comment-action {
     border: 0;
     background: none;
     padding: 0;
@@ -47,11 +47,11 @@
     color: var(--ink-600);
     cursor: pointer;
   }
-  .td-comment-act:hover {
+  .td-comment-action:hover {
     color: var(--ink-900);
     text-decoration: underline;
   }
-  .td-comment-act.is-danger {
+  .td-comment-action.is-danger {
     color: var(--danger);
   }
   .td-comment-body {
@@ -82,14 +82,14 @@
     font: var(--weight-regular) 11px / 16px var(--font-mono);
     color: var(--ink-400);
   }
-  .td-react-row {
+  .td-reaction-row {
     display: flex;
     align-items: center;
     gap: var(--sp-1);
     flex-wrap: wrap;
     margin-top: 6px;
   }
-  .td-react {
+  .td-reaction {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
@@ -105,15 +105,15 @@
       background var(--duration-fast) var(--ease-standard),
       border-color var(--duration-fast) var(--ease-standard);
   }
-  .td-react:hover {
+  .td-reaction:hover {
     background: var(--surface-panel);
   }
-  .td-react[aria-pressed="true"] {
+  .td-reaction[aria-pressed="true"] {
     border-color: var(--blue-500);
     background: var(--blue-100);
     color: var(--ink-900);
   }
-  .td-react-add {
+  .td-reaction-add {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -125,17 +125,17 @@
     color: var(--ink-400);
     cursor: pointer;
   }
-  .td-react-add:hover {
+  .td-reaction-add:hover {
     color: var(--ink-900);
     border-color: var(--ink-300);
   }
-  .td-react-grid {
+  .td-reaction-grid {
     display: grid;
     grid-template-columns: repeat(4, 32px);
     gap: 2px;
     padding: 2px;
   }
-  .td-react-pick {
+  .td-reaction-pick {
     width: 32px;
     height: 32px;
     border: 0;
@@ -145,7 +145,7 @@
     line-height: 1;
     cursor: pointer;
   }
-  .td-react-pick:hover {
+  .td-reaction-pick:hover {
     background: var(--action-subtle);
   }
 }

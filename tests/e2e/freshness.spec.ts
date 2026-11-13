@@ -21,26 +21,26 @@ test("another tab's Projects counts and Archive follow edits made in this tab", 
   const other = await context.newPage();
   await other.goto("/projects");
   const row = other.getByRole("row", { name: `Open ${f.name}` });
-  await expect(row.locator(".td-tbl-num")).toHaveText(["2", "0%"]);
+  await expect(row.locator(".td-table-number")).toHaveText(["2", "0%"]);
 
   await page.goto(`/p/${f.projectId}?v=list`);
   await page.locator(`[data-drag-id="${f.first}"]`).getByRole("checkbox", { name: "Mark done" }).click();
-  await expect(row.locator(".td-tbl-num")).toHaveText(["2", "50%"], { timeout: 5_000 });
+  await expect(row.locator(".td-table-number")).toHaveText(["2", "50%"], { timeout: 5_000 });
 
   await page.goto(`/p/${f.projectId}?v=list&item=${f.second}`);
   await page.getByRole("button", { name: "Item options", exact: true }).click();
   await page.getByRole("menuitem", { name: "Archive", exact: true }).click();
-  await expect(row.locator(".td-tbl-num")).toHaveText(["1", "100%"], { timeout: 5_000 });
+  await expect(row.locator(".td-table-number")).toHaveText(["1", "100%"], { timeout: 5_000 });
   await other.screenshot({ path: ".tmp/test-results/freshness-other-tab.png" });
 
   // In this tab, the Archive and the Projects table agree with what just happened, with no reload.
   await page.getByRole("button", { name: "Projects — All projects across groups" }).click();
-  await expect(page.getByRole("row", { name: `Open ${f.name}` }).locator(".td-tbl-num")).toHaveText(["1", "100%"]);
+  await expect(page.getByRole("row", { name: `Open ${f.name}` }).locator(".td-table-number")).toHaveText(["1", "100%"]);
   await other.goto(`/archive?project=${f.projectId}`);
   const archive = other.getByRole("list", { name: "Archive", exact: true });
   await expect(archive.getByRole("listitem")).toHaveCount(1);
   await archive.getByRole("button", { name: "Restore", exact: true }).click();
-  await expect(page.getByRole("row", { name: `Open ${f.name}` }).locator(".td-tbl-num")).toHaveText(["2", "50%"], { timeout: 5_000 });
+  await expect(page.getByRole("row", { name: `Open ${f.name}` }).locator(".td-table-number")).toHaveText(["2", "50%"], { timeout: 5_000 });
 });
 
 test("another person's change appears within the 30-second poll", async ({ page, fixture: f }) => {

@@ -64,7 +64,7 @@ function ActionPopover({ label, trigger, children, width = 296, open, onOpenChan
       role="dialog"
       aria-label={label}
       width={width}
-      className="td-pop-flush"
+      className="td-popover-flush"
       trigger={trigger}
     >
       {children}
@@ -166,10 +166,10 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
           <SwatchGroup aria-label="Foreground color" options={ap.foregrounds.map((o) => ({ value: o.id, label: o.label, title: o.title, swatch: `linear-gradient(90deg, ${o.list} 50%, ${o.card} 50%)`, ink: o.ink }))} value={ap.foreground} onChange={(id) => ap.set({ foreground: id })} />
         </>
       ) : null}
-      <div className="td-style-div" aria-hidden />
+      <div className="td-style-divider" aria-hidden />
       <div className="td-style-row">
         <Checkbox checked={ap.showItemIds} onChange={(v) => ap.set({ showItemIds: v })} label="Show item IDs" />
-        <span className="td-style-eg" aria-hidden>
+        <span className="td-style-example" aria-hidden>
           TD-102
         </span>
       </div>
@@ -230,7 +230,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   aria-label="Board style"
                   width={264}
                   trigger={
-                    <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={label} data-menu="style">
+                    <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={label} data-menu="style">
                       {a.icon ? <Icon name={a.icon} size={16} /> : null}
                       {label}
                     </button>
@@ -244,7 +244,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             const marked = a.id === "filter" ? filterActive : a.id === "sort" ? sortActive : false;
             // The active marker is its own element: the trigger's ::after belongs to the tooltip.
             const button = (
-              <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip={a.label} data-tip-kbd={a.id === "filter" ? tipKeys("filter") : undefined} data-menu={menu ? a.id : undefined} data-active={marked ? "true" : undefined} onClick={menu ? undefined : () => onAction?.(a.id)}>
+              <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={a.label} data-tip-kbd={a.id === "filter" ? tipKeys("filter") : undefined} data-menu={menu ? a.id : undefined} data-active={marked ? "true" : undefined} onClick={menu ? undefined : () => onAction?.(a.id)}>
                 {a.icon ? <Icon name={a.icon} size={16} /> : null}
                 {a.label}
                 {marked ? (
@@ -269,7 +269,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
               width={320}
               {...menuState("members")}
               trigger={
-                <button type="button" className="td-subnav-act td-tip td-tip-labeled" data-tip="Members" data-menu="members">
+                <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip="Members" data-menu="members">
                   <Icon name="users" size={16} />
                   Members
                 </button>
@@ -286,12 +286,12 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
               placement="bottom-end"
               minWidth={296}
               trigger={
-                <button type="button" className="td-subnav-act td-tip" aria-label="Share" data-tip="Share" data-menu="share">
+                <button type="button" className="td-subnav-action td-tooltip" aria-label="Share" data-tip="Share" data-menu="share">
                   <Icon name="share-2" size={16} />
                 </button>
               }
             >
-              <MenuItem icon={copyIcon(copied, "link")} onSelect={copyUrl} closeOnSelect={false} trailing={<span className="td-share-vis"><Icon name={VIS_ICONS[visibility] ?? "lock"} size={12} />{visibility}</span>}>
+              <MenuItem icon={copyIcon(copied, "link")} onSelect={copyUrl} closeOnSelect={false} trailing={<span className="td-share-visibility"><Icon name={VIS_ICONS[visibility] ?? "lock"} size={12} />{visibility}</span>}>
                 {copied === "copied" ? "Link copied!" : copied === "failed" ? "Couldn't copy. Use the address bar." : "Copy project URL"}
               </MenuItem>
               <MenuNote title={shareUrl}>{shareUrl}</MenuNote>
@@ -317,7 +317,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       {views.length ? (
         <div className="td-subnav-views" role="group" aria-label="View">
           {views.map((v) => (
-            <button key={v.id} type="button" className="td-subnav-seg td-tip td-tip-labeled" data-tip={v.label === "Cal." ? "Calendar" : v.label} data-tip-kbd={tipKeys(`view-${v.id}`)} aria-label={v.label === "Cal." ? "Cal. (Calendar)" : undefined} aria-pressed={v.id === active} onClick={() => onViewChange?.(v.id)}>
+            <button key={v.id} type="button" className="td-subnav-seg td-tooltip td-tooltip-labeled" data-tip={v.label === "Cal." ? "Calendar" : v.label} data-tip-kbd={tipKeys(`view-${v.id}`)} aria-label={v.label === "Cal." ? "Cal. (Calendar)" : undefined} aria-pressed={v.id === active} onClick={() => onViewChange?.(v.id)}>
               {v.icon ? <Icon name={v.icon} size={16} /> : null}
               {v.label}
             </button>

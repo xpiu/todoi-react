@@ -6,7 +6,7 @@ import { signIn, trackAccounts } from "./helpers";
 // capture, open and edit, file into a chosen list, undo, delete and restore — by keyboard and pointer.
 trackAccounts(test);
 
-const inboxRow = (page: Page, title: string) => page.locator(".td-lrow", { hasText: title });
+const inboxRow = (page: Page, title: string) => page.locator(".td-list-row", { hasText: title });
 const toast = (page: Page) => page.getByRole("status").filter({ hasText: /./ }).last();
 const shot = (page: Page, name: string) => page.screenshot({ path: `.tmp/shots/inbox-${name}.png` });
 
@@ -103,7 +103,7 @@ test("a notification's key opens the item it is about and reads it", async ({ pa
   test.skip(!note, "no unread notification about an item in the seed");
   try {
     await page.goto("/inbox");
-    const about = page.locator(`[data-drag-id="${note!.id}"] .td-lrow-about`);
+    const about = page.locator(`[data-drag-id="${note!.id}"] .td-list-row-about`);
     await expect(about).toHaveText(note!.notification!.aboutKey!);
     await about.click();
     await expect(page).toHaveURL(/\/p\/[^?]+\?item=/);

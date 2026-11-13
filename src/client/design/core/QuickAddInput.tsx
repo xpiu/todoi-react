@@ -58,7 +58,7 @@ function TokenPreview({ t }: { t: QuickAddToken }) {
     return (
       <>
         <LabelChip color={t.color} text={t.value} size="sm" />
-        {t.isNew ? <span className="td-qa-new">new label</span> : null}
+        {t.isNew ? <span className="td-quick-add-new">new label</span> : null}
       </>
     );
   if (t.kind === "assignee")
@@ -93,10 +93,10 @@ export function QuickAddInput({ defaultValue = "", placeholder = "Item title", l
     setText("");
   };
   return (
-    <div className={["td-qa", className ?? ""].join(" ").trim()} style={style}>
+    <div className={["td-quick-add", className ?? ""].join(" ").trim()} style={style}>
       <input
         ref={inputRef}
-        className="td-qa-input"
+        className="td-quick-add-input"
         value={text}
         autoFocus={autoFocus}
         placeholder={placeholder}
@@ -117,9 +117,9 @@ export function QuickAddInput({ defaultValue = "", placeholder = "Item title", l
         }}
       />
       {parsed.tokens.length ? (
-        <div className="td-qa-chips" aria-live="polite">
+        <div className="td-quick-add-chips" aria-live="polite">
           {parsed.tokens.map((t, i) => (
-            <span key={i} className={"td-qa-chip" + (t.isNew ? " is-new" : "")} title={t.raw}>
+            <span key={i} className={"td-quick-add-chip" + (t.isNew ? " is-new" : "")} title={t.raw}>
               <TokenPreview t={t} />
             </span>
           ))}

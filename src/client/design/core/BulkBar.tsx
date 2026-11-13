@@ -53,7 +53,7 @@ export function BulkBar({ count, noun = "item", actions, onAction, onClear, clea
           <Toolbar.Button className={"td-bulk-btn" + (a.danger ? " is-danger" : "")} onClick={a.options ? undefined : () => onAction(a.id)}>
             {a.icon ? <Icon name={a.icon} size={15} /> : null}
             {a.label}
-            {a.options ? <Icon name="chevron-up" size={13} className="td-bulk-chev" /> : null}
+            {a.options ? <Icon name="chevron-up" size={13} className="td-bulk-chevron" /> : null}
           </Toolbar.Button>
         );
         if (!a.options) return <span key={a.id}>{btn}</span>;

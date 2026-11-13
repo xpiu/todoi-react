@@ -339,7 +339,7 @@ function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: Ite
 
 function ProjectList(props: ViewProps) {
   const root = useRef<HTMLDivElement | null>(null);
-  const v = useProjectView(props, root, { listSelector: ".td-lsec", itemSelector: ".td-lrow[data-drag-id]", cardsSelector: ".td-lsec-body" });
+  const v = useProjectView(props, root, { listSelector: ".td-list-section", itemSelector: ".td-list-row[data-drag-id]", cardsSelector: ".td-list-section-body" });
   const { actions } = v;
   if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
@@ -412,7 +412,7 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
 
 function ProjectBoard(props: ViewProps) {
   const root = useRef<HTMLDivElement | null>(null);
-  const v = useProjectView(props, root, { listSelector: ".td-list", itemSelector: ".td-card[data-drag-id]", cardsSelector: ".td-list-cards" });
+  const v = useProjectView(props, root, { listSelector: ".td-list-column", itemSelector: ".td-card[data-drag-id]", cardsSelector: ".td-list-column-cards" });
   const { actions } = v;
   if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;

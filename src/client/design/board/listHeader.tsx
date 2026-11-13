@@ -47,7 +47,7 @@ export interface ListIconButtonProps {
   icon?: IconName | null;
   iconColor?: string;
   onIconChange?: (icon: IconName | null) => void;
-  /** The header's own class for the button (td-tip is added) */
+  /** The header's own class for the button (td-tooltip is added) */
   className: string;
   size: number;
 }
@@ -58,7 +58,7 @@ export function ListIconButton({ name, icon, iconColor, onIconChange, className,
   const pop = usePopover();
   const override = icon ?? null;
   return (
-    <Popover open={pop.open} onOpenChange={pop.setOpen} placement="bottom-start" offset={2} minWidth={0} role="dialog" aria-label={`Icon for ${name}`} trigger={<button type="button" className={`${className} td-tip`} data-tip="Change icon" aria-label={`Change icon for ${name}`}><Icon name={override ?? auto.icon} size={size} color={iconColor ?? auto.color} /></button>}>
+    <Popover open={pop.open} onOpenChange={pop.setOpen} placement="bottom-start" offset={2} minWidth={0} role="dialog" aria-label={`Icon for ${name}`} trigger={<button type="button" className={`${className} td-tooltip`} data-tip="Change icon" aria-label={`Change icon for ${name}`}><Icon name={override ?? auto.icon} size={size} color={iconColor ?? auto.color} /></button>}>
       <IconPicker
         value={override}
         autoIcon={auto.icon}

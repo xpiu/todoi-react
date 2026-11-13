@@ -190,10 +190,10 @@
     font: var(--type-body);
     text-align: left;
   }
-  .td-sidebar-chev {
+  .td-sidebar-chevron {
     transition: transform var(--duration-base) var(--ease-standard);
   }
-  .td-sidebar-chev[data-open="false"] {
+  .td-sidebar-chevron[data-open="false"] {
     transform: rotate(-90deg);
   }
   .td-sidebar-head .td-iconbtn {

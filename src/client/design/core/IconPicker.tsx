@@ -25,7 +25,7 @@ const LABELS: Record<string, string> = { circle: "None", "circle-dashed": "New",
 /** Human label for a tile ("circle-dashed" → "New", "book-open" → "Book open"). */
 export const iconLabel = (n: string) => LABELS[n] ?? (n.charAt(0).toUpperCase() + n.slice(1)).replace(/-/g, " ");
 
-const TILE_SEL = "button.td-ipk-opt";
+const TILE_SEL = "button.td-icon-picker-option";
 
 export interface IconPickerProps {
   /** The explicit override, or null when the list uses its automatic icon */
@@ -106,7 +106,7 @@ export function IconPicker({ value, autoIcon = "circle", autoLabel, onChange, ex
   };
   const tile = (n: IconName) => (
     <Tooltip key={n} text={iconLabel(n)} portal>
-      <button type="button" className="td-ipk-opt" aria-label={iconLabel(n)} aria-pressed={n === current} onClick={() => onChange?.(n)}>
+      <button type="button" className="td-icon-picker-option" aria-label={iconLabel(n)} aria-pressed={n === current} onClick={() => onChange?.(n)}>
         <Icon name={n} size={16} />
       </button>
     </Tooltip>
@@ -116,10 +116,10 @@ export function IconPicker({ value, autoIcon = "circle", autoLabel, onChange, ex
   let body;
   if (!expanded) {
     body = (
-      <div className="td-ipk-grid" role="group" aria-label="Basic icons">
+      <div className="td-icon-picker-grid" role="group" aria-label="Basic icons">
         {LIST_ICON_BASIC.map(tile)}
         <Tooltip text="More icons" portal>
-          <button type="button" className="td-ipk-opt td-ipk-more" aria-label="More icons" onClick={() => setExpanded(true)}>
+          <button type="button" className="td-icon-picker-option td-icon-picker-more" aria-label="More icons" onClick={() => setExpanded(true)}>
             <Icon name="ellipsis" size={16} />
           </button>
         </Tooltip>
@@ -135,19 +135,19 @@ export function IconPicker({ value, autoIcon = "circle", autoLabel, onChange, ex
               {g}
             </div>
           )}
-          <div className="td-ipk-grid" role="group" aria-label={g}>
+          <div className="td-icon-picker-grid" role="group" aria-label={g}>
             {names.map(tile)}
           </div>
         </div>
       ))
     ) : (
-      <div className="td-ipk-empty">No icons match “{query.trim()}”</div>
+      <div className="td-icon-picker-empty">No icons match “{query.trim()}”</div>
     );
   }
   return (
-    <div className={["td-ipk", className ?? ""].join(" ").trim()} data-expanded={expanded ? "true" : "false"} role="group" aria-label="List icon" style={style} onKeyDown={onKeyDown}>
+    <div className={["td-icon-picker", className ?? ""].join(" ").trim()} data-expanded={expanded ? "true" : "false"} role="group" aria-label="List icon" style={style} onKeyDown={onKeyDown}>
       {expanded ? (
-        <label className="td-ipk-search">
+        <label className="td-icon-picker-search">
           <Icon name="search" size={14} />
           <input
             ref={inputRef}
@@ -164,16 +164,16 @@ export function IconPicker({ value, autoIcon = "circle", autoLabel, onChange, ex
           />
         </label>
       ) : null}
-      <div ref={bodyRef} className={expanded ? "td-ipk-body" : undefined}>
+      <div ref={bodyRef} className={expanded ? "td-icon-picker-body" : undefined}>
         {body}
       </div>
       <div className="td-menu-divider" role="separator" />
-      <button type="button" className="td-ipk-auto" aria-pressed={!value} onClick={() => onChange?.(null)}>
+      <button type="button" className="td-icon-picker-auto" aria-pressed={!value} onClick={() => onChange?.(null)}>
         <span>
           <Icon name={autoIcon} size={15} />
         </span>
-        <span className="td-ipk-auto-label">Automatic</span>
-        {value ? <span className="td-ipk-auto-trail">{autoLabel ?? iconLabel(autoIcon)}</span> : <Icon name="check" size={14} className="td-ipk-auto-check" />}
+        <span className="td-icon-picker-auto-label">Automatic</span>
+        {value ? <span className="td-icon-picker-auto-trail">{autoLabel ?? iconLabel(autoIcon)}</span> : <Icon name="check" size={14} className="td-icon-picker-auto-check" />}
       </button>
     </div>
   );

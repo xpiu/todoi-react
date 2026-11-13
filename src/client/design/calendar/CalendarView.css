@@ -1,23 +1,23 @@
 @layer components {
-  .td-calview {
+  .td-calendar-view {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
     background: var(--chrome-canvas);
   }
-  .td-calview-body {
+  .td-calendar-view-body {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
     padding: 0 var(--sp-4) var(--sp-4);
   }
-  .td-calview-grid {
+  .td-calendar-view-grid {
     flex: 1;
     min-height: 0;
   }
-  .td-calyear {
+  .td-calendar-year {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -26,13 +26,13 @@
     gap: var(--sp-3);
     align-content: start;
   }
-  .td-calday {
+  .td-calendar-day {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     padding-bottom: var(--sp-2);
   }
-  html[data-device="phone"] .td-calview-body {
+  html[data-device="phone"] .td-calendar-view-body {
     padding: 0 var(--sp-2) var(--sp-2);
   }
 }

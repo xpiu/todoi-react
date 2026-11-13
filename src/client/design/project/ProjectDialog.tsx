@@ -97,10 +97,10 @@ function ProjectForm({ nameRef, kind, groups, defaultGroupId, projects, onCreate
     } else if (e.key.length === 1) e.stopPropagation();
   };
   const row = (label: string, hint: string | null, ctl: React.ReactNode) => (
-    <div className="td-pd-row">
-      <div className="td-pd-rowtext">
-        <span className="td-pd-label">{label}</span>
-        {hint ? <span className="td-pd-hint">{hint}</span> : null}
+    <div className="td-project-dialog-row">
+      <div className="td-project-dialog-rowtext">
+        <span className="td-project-dialog-label">{label}</span>
+        {hint ? <span className="td-project-dialog-hint">{hint}</span> : null}
       </div>
       {ctl}
     </div>
@@ -109,9 +109,9 @@ function ProjectForm({ nameRef, kind, groups, defaultGroupId, projects, onCreate
   const visOpt = PROJECT_VISIBILITY.find((v) => v.value === vis);
   return (
     <>
-      <div className="td-pd-name">
+      <div className="td-project-dialog-name">
         {isGroup ? (
-          <span className="td-pip-tile td-pd-grouptile" aria-hidden>
+          <span className="td-project-icon-picker-tile td-project-dialog-grouptile" aria-hidden>
             <Icon name="folders" size={18} color="var(--ink-600)" />
           </span>
         ) : (
@@ -120,11 +120,11 @@ function ProjectForm({ nameRef, kind, groups, defaultGroupId, projects, onCreate
             setColor(v.color);
           }} />
         )}
-        <TextField ref={nameRef} className="td-pd-namefield" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onKey} placeholder={isGroup ? "Group name" : "Project name"} aria-label={isGroup ? "Group name" : "Project name"} />
+        <TextField ref={nameRef} className="td-project-dialog-namefield" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onKey} placeholder={isGroup ? "Group name" : "Project name"} aria-label={isGroup ? "Group name" : "Project name"} />
       </div>
       {isGroup ? (
         <>
-          {row("Item ID prefix", `Items in this group get keys like ${finalAbbr || "ABC"}-1. 2–5 letters or digits.`, <input className="td-field td-pd-mono" value={finalAbbr} maxLength={5} aria-label="Item ID prefix" onChange={(e) => {
+          {row("Item ID prefix", `Items in this group get keys like ${finalAbbr || "ABC"}-1. 2–5 letters or digits.`, <input className="td-field td-project-dialog-mono" value={finalAbbr} maxLength={5} aria-label="Item ID prefix" onChange={(e) => {
             setAbbrTouched(true);
             setAbbr(e.target.value.replace(/[^A-Za-z0-9]/g, ""));
           }} onKeyDown={onKey} />)}
@@ -137,21 +137,21 @@ function ProjectForm({ nameRef, kind, groups, defaultGroupId, projects, onCreate
             setColor(v.color);
           }} />)}
           {groups.length ? row("Project group", null, <Select aria-label="Project group" value={groupId} options={groups.map((g) => ({ value: g.id, label: g.name, icon: "folders" as IconName }))} onChange={(v) => setGroupId(v)} placement="bottom-end" tier="detached" width={220} />) : null}
-          <div className="td-pd-tpl">
-            <div className="td-pd-tplhead">Start from</div>
-            <div className="td-pd-tpllist" role="radiogroup" aria-label="Template">
+          <div className="td-project-dialog-template">
+            <div className="td-project-dialog-template-head">Start from</div>
+            <div className="td-project-dialog-template-list" role="radiogroup" aria-label="Template">
               {tplRows.map((t) => (
                 <div key={t.id}>
-                  <button type="button" className="td-pd-tplrow" role="radio" aria-checked={tpl === t.id} onClick={() => setTpl(t.id)} onKeyDown={onKey}>
+                  <button type="button" className="td-project-dialog-template-row" role="radio" aria-checked={tpl === t.id} onClick={() => setTpl(t.id)} onKeyDown={onKey}>
                     <Icon name={t.icon} size={16} color="var(--ink-600)" />
-                    <span className="td-pd-tplname">
+                    <span className="td-project-dialog-template-name">
                       <b>{t.name}</b>
                       {t.hint ? <span>{t.hint}</span> : null}
                     </span>
-                    <span className="td-pd-tplcheck">{tpl === t.id ? <Icon name="check" size={16} /> : null}</span>
+                    <span className="td-project-dialog-template-check">{tpl === t.id ? <Icon name="check" size={16} /> : null}</span>
                   </button>
                   {t.id === "copy" && tpl === "copy" ? (
-                    <div className="td-pd-copyrow">
+                    <div className="td-project-dialog-copyrow">
                       <Select aria-label="Project to copy" value={copyFrom} options={projects.map((p) => ({ value: p.id, label: p.name, icon: p.icon ?? "kanban", iconColor: p.color ? `var(--label-${p.color})` : undefined }))} onChange={(v) => setCopyFrom(v)} tier="detached" width={260} />
                     </div>
                   ) : null}
@@ -162,8 +162,8 @@ function ProjectForm({ nameRef, kind, groups, defaultGroupId, projects, onCreate
           {row("Visibility", visOpt?.hint ?? null, <Select aria-label="Visibility" value={vis} options={PROJECT_VISIBILITY.map((v) => ({ value: v.value, label: v.label, icon: v.icon }))} onChange={(v) => setVis(v)} placement="bottom-end" tier="detached" width={200} />)}
         </>
       )}
-      <InlineError message={error} className="td-pd-error" />
-      <div className="td-pd-foot">
+      <InlineError message={error} className="td-project-dialog-error" />
+      <div className="td-project-dialog-foot">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>

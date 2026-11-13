@@ -15,7 +15,7 @@ const meta = {
   title: "Core/ItemPicker",
   component: ItemPicker,
   // Panel body only; the app mounts it inside a Popover or a Dialog.
-  decorators: [(Story) => <div className="td-pop" style={{ width: 340, position: "static" }}><Story /></div>],
+  decorators: [(Story) => <div className="td-popover" style={{ width: 340, position: "static" }}><Story /></div>],
   args: { items: ITEMS, exclude: ["i5"], onPick: fn(), placeholder: "Search by key or title…" },
   parameters: { docs: { description: { component: "Search-and-pick one item by key, title or list name. Panel body only: mount it in a Popover or a Dialog (relations, subitems). The caller passes the candidate items and ids to exclude, and handles onPick(item); Enter picks the highlighted match and ↑↓ move the highlight from the field." } } },
 } satisfies Meta<typeof ItemPicker>;

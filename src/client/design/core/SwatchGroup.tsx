@@ -66,7 +66,7 @@ export function SwatchGroup({ options, value, onChange, size = 26, shape = "circ
           <button
             key={o.value}
             type="button"
-            className="td-swatch td-tip"
+            className="td-swatch td-tooltip"
             data-tip={o.title ?? o.label}
             aria-label={o.label}
             aria-pressed={on}

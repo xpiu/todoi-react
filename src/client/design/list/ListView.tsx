@@ -8,10 +8,10 @@ export type ListViewProps = ListsViewProps;
 
 export function ListView({ children, onAddList, showAddList, after, rootProps, className, ...nav }: ListViewProps) {
   return (
-    <KeyNav {...nav} className={["td-listview", className ?? ""].join(" ").trim()} itemSelector=".td-lrow" sectionSelector=".td-lsec" {...rootProps}>
-      <div className="td-listview-inner">
+    <KeyNav {...nav} className={["td-list-view", className ?? ""].join(" ").trim()} itemSelector=".td-list-row" sectionSelector=".td-list-section" {...rootProps}>
+      <div className="td-list-view-inner">
         {children}
-        <AddListTail className="td-listview-tail" buttonClassName="td-listview-addlist" onAddList={onAddList} showAddList={showAddList} after={after} />
+        <AddListTail className="td-list-view-tail" buttonClassName="td-list-view-addlist" onAddList={onAddList} showAddList={showAddList} after={after} />
       </div>
     </KeyNav>
   );

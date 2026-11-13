@@ -57,10 +57,10 @@ export function Toast({ message, icon, actionLabel, onAction, shortcutHint, meta
   return (
     <div className="td-toast" role={live ? "status" : undefined} onMouseEnter={clear} onMouseLeave={arm} style={style}>
       {icon ? <Icon name={icon} size={16} className="td-toast-icon" /> : null}
-      <span className="td-toast-msg">{message}</span>
+      <span className="td-toast-message">{message}</span>
       {meta ? <span className="td-toast-meta">{meta}</span> : null}
       {actionLabel ? (
-        <button type="button" className="td-toast-act" onClick={onAction}>
+        <button type="button" className="td-toast-action" onClick={onAction}>
           {actionLabel}
           {shortcutHint ? <span className="td-toast-kbd">{shortcutHint}</span> : null}
         </button>

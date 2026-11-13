@@ -148,7 +148,7 @@ function NavbarTitle({ title, onTitleChange }: Pick<TopNavbarProps, "title" | "o
         }
       }}
     >
-      <span className="td-topnav-title-txt">{title}</span>
+      <span className="td-topnav-title-text">{title}</span>
       <span className="td-topnav-title-pen" aria-hidden>
         <Icon name="pencil" size={14} />
       </span>
@@ -284,7 +284,7 @@ export function TopNavbar({
             placement="bottom-end"
             minWidth={212}
             trigger={
-              <button type="button" className="td-topnav-plus td-tip" aria-label="Create" data-tip="Create">
+              <button type="button" className="td-topnav-plus td-tooltip" aria-label="Create" data-tip="Create">
                 <Icon name="plus" size={20} />
               </button>
             }
@@ -307,27 +307,27 @@ export function TopNavbar({
                 placement="bottom-end"
                 minWidth={264}
                 trigger={
-                  <button type="button" className="td-topnav-avatarbtn td-tip" data-tip="Account" data-tip-side="bottom-end" aria-label={signedIn ? `Account: ${user.name}` : "Account (not signed in)"}>
+                  <button type="button" className="td-topnav-avatarbtn td-tooltip" data-tip="Account" data-tip-side="bottom-end" aria-label={signedIn ? `Account: ${user.name}` : "Account (not signed in)"}>
                     {avatarEl}
                   </button>
                 }
               >
                 {signedIn ? (
-                  <MenuItem className="td-usermenu-id" onSelect={() => (onOpenAccount ?? onOpenSettings ?? onLogout)?.()}>
-                    <span className="td-usermenu-idrow">
+                  <MenuItem className="td-user-menu-id" onSelect={() => (onOpenAccount ?? onOpenSettings ?? onLogout)?.()}>
+                    <span className="td-user-menu-idrow">
                       <Avatar name={user.name} src={user.src} color={user.avatarColor} size={36} decorative />
-                      <span className="td-usermenu-idtext">
-                        <span className="td-usermenu-name">{user.nickname ?? user.name}</span>
-                        {user.email ? <span className="td-usermenu-email">{user.email}</span> : null}
+                      <span className="td-user-menu-idtext">
+                        <span className="td-user-menu-name">{user.nickname ?? user.name}</span>
+                        {user.email ? <span className="td-user-menu-email">{user.email}</span> : null}
                       </span>
                     </span>
                   </MenuItem>
                 ) : (
-                  <div className="td-usermenu-id td-usermenu-idrow">
+                  <div className="td-user-menu-id td-user-menu-idrow">
                     <GuestAvatar size={36} tone="card" />
-                    <span className="td-usermenu-idtext">
-                      <span className="td-usermenu-name">Not signed in</span>
-                      <span className="td-usermenu-email">Log in to sync your work</span>
+                    <span className="td-user-menu-idtext">
+                      <span className="td-user-menu-name">Not signed in</span>
+                      <span className="td-user-menu-email">Log in to sync your work</span>
                     </span>
                   </div>
                 )}

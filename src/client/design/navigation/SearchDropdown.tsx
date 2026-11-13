@@ -148,42 +148,42 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
   const note = !needle ? null : status === "loading" ? "Searching items…" : status === "offline" ? "You’re offline. Item search needs a connection." : status === "error" ? "Couldn’t search items. Try again in a moment." : null;
   // Only options and their section groups sit in the listbox; the status line and key hints are its siblings.
   return (
-    <div className={["td-sd", className ?? ""].join(" ").trim()} style={style} onMouseDown={(e) => e.preventDefault()}>
+    <div className={["td-search-dropdown", className ?? ""].join(" ").trim()} style={style} onMouseDown={(e) => e.preventDefault()}>
       {flat.length ? (
-        <div className="td-sd-scroll" aria-busy={status === "loading" || undefined}>
+        <div className="td-search-dropdown-scroll" aria-busy={status === "loading" || undefined}>
           <div role="listbox" id={listId} aria-label="Search results">
             {sections.map((s, si) => (
               <div key={s.label} role="group" aria-labelledby={`${listId}-sec-${si}`}>
-                <div className="td-sd-head" id={`${listId}-sec-${si}`}>{s.label}</div>
+                <div className="td-search-dropdown-head" id={`${listId}-sec-${si}`}>{s.label}</div>
                 {s.rows.map((r) => {
                   idx++;
                   const i = idx;
                   return (
-                    <button key={r.type + r.id} id={optId(i)} type="button" className="td-sd-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(r)}>
+                    <button key={r.type + r.id} id={optId(i)} type="button" className="td-search-dropdown-row" role="option" aria-selected={i === sel} onMouseEnter={() => setCur(i)} onClick={() => pick(r)}>
                       {r.itemId ? (
-                        <span className="td-sd-id">{r.itemId}</span>
+                        <span className="td-search-dropdown-id">{r.itemId}</span>
                       ) : !projectIcons && (r.type === "project" || r.type === "group") ? null : (
-                        <span className="td-sd-ico">
+                        <span className="td-search-dropdown-icon">
                           <Icon name={r.icon ?? "kanban"} size={14} color={r.iconColor} />
                         </span>
                       )}
-                      <span className="td-sd-title" data-done={r.done ? "true" : undefined}>
+                      <span className="td-search-dropdown-title" data-done={r.done ? "true" : undefined}>
                         <Mark text={r.title} q={needle} />
                       </span>
-                      {r.meta ? <span className="td-sd-meta">{r.meta}</span> : null}
+                      {r.meta ? <span className="td-search-dropdown-meta">{r.meta}</span> : null}
                     </button>
                   );
                 })}
               </div>
             ))}
           </div>
-          {note ? <div className="td-sd-note" role="status" data-tone={status}>{note}</div> : null}
+          {note ? <div className="td-search-dropdown-note" role="status" data-tone={status}>{note}</div> : null}
         </div>
       ) : (
-        <div className="td-sd-empty" role="status" data-tone={note ? status : undefined}>{note ?? `No projects or items match “${query.trim()}”`}</div>
+        <div className="td-search-dropdown-empty" role="status" data-tone={note ? status : undefined}>{note ?? `No projects or items match “${query.trim()}”`}</div>
       )}
       {suggestShortcuts ? (
-        <div className="td-sd-foot">
+        <div className="td-search-dropdown-foot">
           <span>
             <kbd className="td-kbd">↑↓</kbd> navigate
           </span>

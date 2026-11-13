@@ -1,40 +1,40 @@
 /* RepeatPicker — the rule as a sentence; presets, Custom… (interval · unit · weekdays · ends), "Doesn't repeat". */
 @layer components {
-  .td-rp {
+  .td-repeat-picker {
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 6px;
     width: 236px;
   }
-  .td-rp-list {
+  .td-repeat-picker-list {
     display: flex;
     flex-direction: column;
     gap: 1px;
     outline: none;
   }
-  .td-rp-head {
+  .td-repeat-picker-head {
     display: flex;
     align-items: center;
     gap: 6px;
     font: var(--weight-semibold) 13px / 18px var(--font-ui);
     color: var(--ink-900);
   }
-  .td-rp-head .td-btn {
+  .td-repeat-picker-head .td-btn {
     height: 24px;
     padding: 0 var(--sp-1);
   }
-  .td-rp-row {
+  .td-repeat-picker-row {
     display: flex;
     align-items: center;
     gap: 6px;
     font: var(--weight-regular) 13px / 18px var(--font-ui);
     color: var(--ink-900);
   }
-  .td-rp-unit {
+  .td-repeat-picker-unit {
     color: var(--ink-600);
   }
-  .td-rp-num {
+  .td-repeat-picker-number {
     width: 44px;
     height: 28px;
     padding: 0 6px;
@@ -47,19 +47,19 @@
     text-align: center;
     box-shadow: var(--shadow-input);
   }
-  .td-rp-num:focus {
+  .td-repeat-picker-number:focus {
     border-color: var(--focus-ring);
     box-shadow: 0 0 0 1px var(--focus-ring);
   }
-  .td-rp-num-sm {
+  .td-repeat-picker-number-sm {
     height: 26px;
   }
-  .td-rp-days {
+  .td-repeat-picker-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: var(--sp-1);
   }
-  .td-rp-day {
+  .td-repeat-picker-day {
     height: 28px;
     border: 0;
     border-radius: var(--radius-full);
@@ -68,20 +68,20 @@
     color: var(--ink-600);
     cursor: pointer;
   }
-  .td-rp-day[aria-pressed="true"] {
+  .td-repeat-picker-day[aria-pressed="true"] {
     background: var(--action-primary);
     color: var(--text-inverse);
   }
-  .td-rp-day:focus-visible {
+  .td-repeat-picker-day:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--focus-ring);
   }
-  .td-rp-ends {
+  .td-repeat-picker-ends {
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
-  .td-rp-opt {
+  .td-repeat-picker-option {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -92,14 +92,14 @@
     color: var(--ink-900);
     cursor: pointer;
   }
-  .td-rp-opt:hover {
+  .td-repeat-picker-option:hover {
     background: var(--action-subtle);
   }
-  .td-rp-opt:focus-visible {
+  .td-repeat-picker-option:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
   }
-  .td-rp-radio {
+  .td-repeat-picker-radio {
     width: 14px;
     height: 14px;
     border-radius: var(--radius-full);
@@ -107,11 +107,11 @@
     box-sizing: border-box;
     flex: none;
   }
-  .td-rp-opt[aria-checked="true"] .td-rp-radio {
+  .td-repeat-picker-option[aria-checked="true"] .td-repeat-picker-radio {
     border-color: var(--blue-500);
     border-width: 4px;
   }
-  .td-rp-inline {
+  .td-repeat-picker-inline {
     flex: 1;
     min-width: 0;
     height: 26px;
@@ -123,15 +123,15 @@
     color: var(--ink-900);
     outline: none;
   }
-  .td-rp-inline:focus {
+  .td-repeat-picker-inline:focus {
     border-color: var(--focus-ring);
   }
-  .td-rp-preview {
+  .td-repeat-picker-preview {
     font: var(--weight-regular) 11px / 16px var(--font-ui);
     color: var(--ink-400);
     white-space: nowrap;
   }
-  .td-rp-foot {
+  .td-repeat-picker-foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -139,12 +139,12 @@
     padding-top: 6px;
     border-top: 1px solid var(--border-divider);
   }
-  .td-rp-foot .td-btn {
+  .td-repeat-picker-foot .td-btn {
     height: 28px;
     padding: 0 10px;
     font: var(--weight-medium) 13px / 18px var(--font-ui);
   }
-  .td-rp-sum {
+  .td-repeat-picker-summary {
     font: var(--type-small);
     color: var(--ink-600);
     min-width: 0;
@@ -152,14 +152,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-rp-value {
+  .td-repeat-picker-value {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
   }
-  .td-rp-value[data-placeholder="true"] {
+  .td-repeat-picker-value[data-placeholder="true"] {
     color: var(--ink-600);
     font-weight: var(--weight-regular);
   }

@@ -9,7 +9,7 @@ export function InlineError({ message, className, style }: { message?: string | 
   if (!message) return null;
   return (
     <div className={["td-inline-error", className ?? ""].join(" ").trim()} role="alert" style={style}>
-      <Icon name="circle-alert" size={14} className="td-inline-error-ico" />
+      <Icon name="circle-alert" size={14} className="td-inline-error-icon" />
       <span>{message}</span>
     </div>
   );

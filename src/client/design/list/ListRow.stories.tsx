@@ -90,7 +90,7 @@ export const LongTitle: Story = {
   args: { title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment, maintenance, training, insurance, and payment terms for the customer", due: "Oct 20, 2026", labels: [{ color: "orange", text: "Sales" }] },
   decorators: [(Story) => <div style={{ maxWidth: 560 }}><Story /></div>],
   async play({ args, canvas, canvasElement }) {
-    const row = canvasElement.querySelector(".td-lrow")!;
+    const row = canvasElement.querySelector(".td-list-row")!;
     const title = canvas.getByText(args.title).getBoundingClientRect();
     const key = canvas.getByRole("button", { name: `Copy ${args.itemId}` });
     const box = key.getBoundingClientRect();
@@ -109,13 +109,13 @@ export const LongTitleManyLabels: Story = {
   },
   decorators: [(Story) => <div style={{ maxWidth: 560 }}><Story /></div>],
   async play({ args, canvas, canvasElement }) {
-    const row = canvasElement.querySelector(".td-lrow")!;
+    const row = canvasElement.querySelector(".td-list-row")!;
     const width = row.getBoundingClientRect().width;
     const title = canvas.getByText(args.title).getBoundingClientRect();
     const key = canvas.getByRole("button", { name: `Copy ${args.itemId}` }).getBoundingClientRect();
-    await expect(canvasElement.querySelector(".td-lrow-end")!.getBoundingClientRect().width).toBeLessThanOrEqual(width * 0.6 + 1);
+    await expect(canvasElement.querySelector(".td-list-row-end")!.getBoundingClientRect().width).toBeLessThanOrEqual(width * 0.6 + 1);
     await expect(title.width).toBeGreaterThan(width * 0.2);
-    await expect(canvasElement.querySelector('.td-lrow-badge[data-priority="urgent"]')).toHaveAttribute("title", "Priority: Urgent");
+    await expect(canvasElement.querySelector('.td-list-row-badge[data-priority="urgent"]')).toHaveAttribute("title", "Priority: Urgent");
     await expect(key.bottom).toBeLessThan(title.top + 24);
     await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
   },

@@ -1,12 +1,12 @@
 @layer components {
-  .td-qa {
+  .td-quick-add {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
     min-width: 0;
     flex: 1;
   }
-  .td-qa-input {
+  .td-quick-add-input {
     width: 100%;
     min-width: 0;
     border: 0;
@@ -17,10 +17,10 @@
     font: var(--type-body);
     color: var(--ink-900);
   }
-  .td-qa-input::placeholder {
+  .td-quick-add-input::placeholder {
     color: var(--ink-400);
   }
-  .td-qa-chips {
+  .td-quick-add-chips {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -30,17 +30,17 @@
     color: var(--ink-400);
     font: var(--weight-regular) var(--text-xs) / 20px var(--font-ui);
   }
-  .td-qa-chip {
+  .td-quick-add-chip {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
     white-space: nowrap;
     max-width: 100%;
   }
-  .td-qa-chip.is-new {
+  .td-quick-add-chip.is-new {
     color: var(--ink-400);
   }
-  .td-qa-new {
+  .td-quick-add-new {
     color: var(--ink-300);
     font-size: 11px;
   }

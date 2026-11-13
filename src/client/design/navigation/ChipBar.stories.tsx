@@ -29,7 +29,7 @@ export const Toolbar: Story = {
   },
 };
 export const Navigation: Story = {
-  args: { as: "nav", label: "Views", icon: "bookmark", "aria-label": "Saved views", children: ["All items", "Bugs this sprint", "My work"].map((v) => <button key={v} type="button" className="td-sv-tab">{v}</button>) },
+  args: { as: "nav", label: "Views", icon: "bookmark", "aria-label": "Saved views", children: ["All items", "Bugs this sprint", "My work"].map((v) => <button key={v} type="button" className="td-saved-view-tab">{v}</button>) },
   async play({ canvas }) {
     await expect(canvas.getByRole("navigation", { name: "Saved views" })).toBeVisible();
   },

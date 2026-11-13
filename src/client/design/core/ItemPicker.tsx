@@ -79,12 +79,12 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
   const list = items.filter((it) => !ex.has(it.id) && (!ql || [it.itemId, it.title, it.listName].filter(Boolean).some((s) => String(s).toLowerCase().includes(ql)))).slice(0, limit);
   const cursor = usePickerCursor(list, (it) => it.id, onPick);
   return (
-    <div className="td-ip">
-      <div className="td-ip-search">
+    <div className="td-item-picker">
+      <div className="td-item-picker-search">
         <Icon name="search" size={14} />
         <input
           ref={inputRef}
-          className="td-ip-input"
+          className="td-item-picker-input"
           autoFocus={autoFocus}
           placeholder={placeholder}
           aria-label={placeholder}
@@ -97,17 +97,17 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
         />
       </div>
       {list.length ? (
-        <div className="td-ip-list" {...cursor.listboxProps} aria-label={rest["aria-label"] ?? "Items"}>
+        <div className="td-item-picker-list" {...cursor.listboxProps} aria-label={rest["aria-label"] ?? "Items"}>
           {list.map((it, i) => {
             const g = statusGlyph(it);
             return (
-              <div key={it.id} className="td-ip-row" {...cursor.optionProps(it, i)}>
+              <div key={it.id} className="td-item-picker-row" {...cursor.optionProps(it, i)}>
                 <Icon name={g.icon} size={15} color={g.color} />
-                {it.itemId ? <span className="td-ip-key">{it.itemId}</span> : null}
-                <span className="td-ip-title" data-done={it.done ? "true" : undefined}>
+                {it.itemId ? <span className="td-item-picker-key">{it.itemId}</span> : null}
+                <span className="td-item-picker-title" data-done={it.done ? "true" : undefined}>
                   {it.title}
                 </span>
-                {it.listName ? <span className="td-ip-list-name">{it.listName}</span> : null}
+                {it.listName ? <span className="td-item-picker-list-name">{it.listName}</span> : null}
               </div>
             );
           })}

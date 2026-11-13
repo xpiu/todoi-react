@@ -94,25 +94,25 @@ export function DateCalendar({ value, onChange, today, weekStartsOn = dateConven
   };
   const title = view.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   return (
-    <div className={["td-cal", className ?? ""].join(" ").trim()} style={style}>
-      <div className="td-cal-head">
+    <div className={["td-date-calendar", className ?? ""].join(" ").trim()} style={style}>
+      <div className="td-date-calendar-head">
         <IconButton name="chevron-left" label="Previous month" size={28} iconSize={16} onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1))} />
-        <span className="td-cal-title" aria-live="polite">
+        <span className="td-date-calendar-title" aria-live="polite">
           {title}
         </span>
         <IconButton name="chevron-right" label="Next month" size={28} iconSize={16} onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1))} />
       </div>
-      <div ref={gridRef} className="td-cal-body" role="grid" aria-label={title} onKeyDown={onKeyDown}>
-        <div className="td-cal-week" role="row">
+      <div ref={gridRef} className="td-date-calendar-body" role="grid" aria-label={title} onKeyDown={onKeyDown}>
+        <div className="td-date-calendar-week" role="row">
           {weeks[0]!.map((d) => (
-            <span key={d.getDay()} className="td-cal-wd" role="columnheader" aria-label={d.toLocaleDateString("en-US", { weekday: "long" })}>
+            <span key={d.getDay()} className="td-date-calendar-weekday" role="columnheader" aria-label={d.toLocaleDateString("en-US", { weekday: "long" })}>
               {WD[d.getDay()]}
             </span>
           ))}
         </div>
-        <div className="td-cal-grid" role="rowgroup">
+        <div className="td-date-calendar-grid" role="rowgroup">
           {weeks.map((week) => (
-            <div key={toISO(week[0]!)} className="td-cal-row" role="row">
+            <div key={toISO(week[0]!)} className="td-date-calendar-row" role="row">
               {week.map((d) => {
                 const iso = toISO(d)!;
                 const out = d.getMonth() !== view.getMonth();
@@ -122,10 +122,10 @@ export function DateCalendar({ value, onChange, today, weekStartsOn = dateConven
                 const inR = !!rs && !!re && d > rs && d < re;
                 const edge = rs && re && !sameDay(rs, re) ? (sameDay(d, rs) ? "start" : sameDay(d, re) ? "end" : undefined) : undefined;
                 return (
-                  <div key={iso} className="td-cal-cell" role="gridcell">
+                  <div key={iso} className="td-date-calendar-cell" role="gridcell">
                     <button
                       type="button"
-                      className="td-cal-day"
+                      className="td-date-calendar-day"
                       data-date={iso}
                       data-outside={out ? "true" : undefined}
                       data-today={isToday ? "true" : undefined}

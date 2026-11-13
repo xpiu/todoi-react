@@ -157,8 +157,8 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
   const cellH = wh > 0 ? wh / weeks.length : 110;
   const wdNames = weeks[0]!.map((d) => d.toLocaleDateString("en-US", { weekday: "short" }));
   return (
-    <div className={["td-calgrid", className ?? ""].join(" ").trim()} role="grid" aria-label="Calendar" style={style}>
-      <div className="td-calgrid-wd" role="row">
+    <div className={["td-calendar-grid", className ?? ""].join(" ").trim()} role="grid" aria-label="Calendar" style={style}>
+      <div className="td-calendar-grid-weekday" role="row">
         {wdNames.map((n, i) => {
           const d = weeks[0]![i]!;
           const isT = period === "week" && sameDay(d, todayD);
@@ -166,17 +166,17 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
           return (
             <div key={i} role="columnheader" className={(isT ? "is-today" : "") + (wk && !isT ? " is-wknd" : "")}>
               {n}
-              {period === "week" ? <span className="td-calgrid-wdnum">{d.getDate()}</span> : null}
+              {period === "week" ? <span className="td-calendar-grid-weekday-number">{d.getDate()}</span> : null}
             </div>
           );
         })}
       </div>
-      <div className="td-calweeks" ref={wrapRef}>
+      <div className="td-calendar-weeks" ref={wrapRef}>
         {weeks.map((days, wi) => {
           const L = lanes[wi]!;
           const slots = Math.max(0, Math.floor((cellH - CELL_PAD - L * LANE) / CHIP_PITCH));
           return (
-            <div key={wi} className="td-calweek" role="row" style={{ "--td-lanes": L, gridTemplateRows: `var(--td-cal-numrow) ${"var(--td-cal-lane) ".repeat(L)}minmax(0, 1fr)` } as CSSProperties}>
+            <div key={wi} className="td-calendar-week" role="row" style={{ "--td-lanes": L, gridTemplateRows: `var(--td-cal-numrow) ${"var(--td-cal-lane) ".repeat(L)}minmax(0, 1fr)` } as CSSProperties}>
               {days.map((d, di) => {
                 const dIso = toISO(d)!;
                 const dayChips = chips.get(dIso) ?? [];
@@ -195,7 +195,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     role="gridcell"
                     data-iso={dIso}
                     style={{ gridColumn: di + 1 }}
-                    className={"td-calcell" + (wk ? " is-wknd" : "") + (dropDays.has(dIso) || dropIso === dIso ? " is-drop" : "")}
+                    className={"td-calendar-cell" + (wk ? " is-wknd" : "") + (dropDays.has(dIso) || dropIso === dIso ? " is-drop" : "")}
                     ref={(el) => {
                       cellRefs.current[dIso] = el;
                     }}
@@ -222,11 +222,11 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     {/* Named from its content: the full date and count first, then the day's chips and "+n more" —
                         so everything the cell shows is part of its name. The number and the pointer-only + repeat it. */}
                     <span className="td-sr-only">{label}</span>
-                    {period === "month" ? <span className={"td-calnum" + (isT ? " is-today" : out ? " is-out" : "")} aria-hidden="true">{d.getDate() === 1 ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : d.getDate()}</span> : null}
+                    {period === "month" ? <span className={"td-calendar-day-number" + (isT ? " is-today" : out ? " is-out" : "")} aria-hidden="true">{d.getDate() === 1 ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : d.getDate()}</span> : null}
                     {onAddItem ? (
                       <button
                         type="button"
-                        className="td-calcell-add td-tip"
+                        className="td-calendar-cell-add td-tooltip"
                         tabIndex={-1}
                         aria-hidden="true"
                         data-tip="Add an item"
@@ -237,7 +237,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                         <Icon name="plus" size={14} />
                       </button>
                     ) : null}
-                    <div className="td-calchips">
+                    <div className="td-calendar-chips">
                       {dayChips.slice(0, visible).map((it) => {
                         const due = parseDateValue(it.due)!;
                         return (
@@ -257,7 +257,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                         );
                       })}
                       {hidden > 0 ? (
-                        <button type="button" className="td-calmore" tabIndex={-1} onClick={() => onShowMore?.(dIso)}>
+                        <button type="button" className="td-calendar-more" tabIndex={-1} onClick={() => onShowMore?.(dIso)}>
                           +{hidden} more
                         </button>
                       ) : null}
@@ -269,10 +269,10 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                 const first = s.it.labels?.[0];
                 // A cell spanning its days (the week row holds only cells), with the bar's button inside.
                 return (
-                  <div key={`${s.it.id}-${si}`} role="gridcell" aria-colspan={s.c2 - s.c1 + 1} className="td-calspan-cell" style={{ gridColumn: `${s.c1 + 1} / ${s.c2 + 2}`, gridRow: 2 + s.lane }}>
+                  <div key={`${s.it.id}-${si}`} role="gridcell" aria-colspan={s.c2 - s.c1 + 1} className="td-calendar-span-cell" style={{ gridColumn: `${s.c1 + 1} / ${s.c2 + 2}`, gridRow: 2 + s.lane }}>
                     <button
                       type="button"
-                      className={"td-calspan" + (s.contL ? " is-l" : "") + (s.contR ? " is-r" : "") + (s.it.done ? " is-done" : "")}
+                      className={"td-calendar-span" + (s.contL ? " is-l" : "") + (s.contR ? " is-r" : "") + (s.it.done ? " is-done" : "")}
                       style={first && !s.it.done ? ({ "--td-span": `var(--label-${first.color})` } as CSSProperties) : undefined}
                       title={s.it.title}
                       draggable={onReschedule ? true : undefined}
@@ -283,8 +283,8 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                         onOpenItem?.(s.it.id);
                       }}
                     >
-                      {s.it.done ? <Icon name="circle-check" size={12} className="td-calchip-ico" /> : null}
-                      <span className="td-calspan-title">{s.it.title}</span>
+                      {s.it.done ? <Icon name="circle-check" size={12} className="td-calendar-chip-icon" /> : null}
+                      <span className="td-calendar-span-title">{s.it.title}</span>
                     </button>
                   </div>
                 );

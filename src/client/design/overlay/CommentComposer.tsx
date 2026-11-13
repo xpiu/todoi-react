@@ -86,21 +86,21 @@ export function MentionField({ value, onChange, members = [], placeholder, rows 
   // but not the combobox role or aria-expanded; the listbox is rendered only while it has matches.
   const cursor = usePickerCursor(matches, (m) => m.id, insert);
   return (
-    <div className={["td-mf", className ?? ""].join(" ").trim()} style={style}>
+    <div className={["td-mention-field", className ?? ""].join(" ").trim()} style={style}>
       {matches.length ? (
-        <div className="td-mf-list" {...cursor.listboxProps} aria-label="People" data-below={listBelow ? "true" : undefined}>
+        <div className="td-mention-field-list" {...cursor.listboxProps} aria-label="People" data-below={listBelow ? "true" : undefined}>
           {matches.map((m, i) => (
-            <button key={m.id} type="button" className="td-mf-opt" {...cursor.optionProps(m, i)} onMouseDown={(e) => e.preventDefault()}>
+            <button key={m.id} type="button" className="td-mention-field-option" {...cursor.optionProps(m, i)} onMouseDown={(e) => e.preventDefault()}>
               <Avatar name={m.name} src={m.src} color={m.color} size={20} />
               {m.name}
-              <span className="td-mf-sub">@{mentionHandle(m)}</span>
+              <span className="td-mention-field-sub">@{mentionHandle(m)}</span>
             </button>
           ))}
         </div>
       ) : null}
       <textarea
         ref={ref}
-        className="td-mf-ta"
+        className="td-mention-field-textarea"
         rows={rows}
         value={value}
         placeholder={placeholder}

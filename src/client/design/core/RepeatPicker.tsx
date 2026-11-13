@@ -69,7 +69,7 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
   };
   const radio = (checked: boolean, pick: () => void, children: ReactNode) => (
     <div
-      className="td-rp-opt"
+      className="td-repeat-picker-option"
       role="radio"
       aria-checked={checked}
       tabIndex={0}
@@ -81,7 +81,7 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
         }
       }}
     >
-      <span className="td-rp-radio" />
+      <span className="td-repeat-picker-radio" />
       {children}
     </div>
   );
@@ -89,24 +89,24 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
     if (e.key.length === 1) e.stopPropagation();
   };
   return (
-    <div className="td-rp">
-      <div className="td-rp-head">
+    <div className="td-repeat-picker">
+      <div className="td-repeat-picker-head">
         <Button variant="ghost" icon="arrow-left" aria-label="Back" onClick={onBack} />
         Custom repeat
       </div>
-      <div className="td-rp-row">
+      <div className="td-repeat-picker-row">
         Every
-        <CountInput className="td-rp-num" max={99} value={r.interval} aria-label="Interval" onChange={(interval) => set({ interval })} onKeyDown={stopTyping} />
-        <span className="td-rp-unit">{UNITS[r.freq][r.interval === 1 ? 0 : 1]}</span>
+        <CountInput className="td-repeat-picker-number" max={99} value={r.interval} aria-label="Interval" onChange={(interval) => set({ interval })} onKeyDown={stopTyping} />
+        <span className="td-repeat-picker-unit">{UNITS[r.freq][r.interval === 1 ? 0 : 1]}</span>
       </div>
       <Segmented size="sm" stretch aria-label="Unit" options={UNIT_OPTIONS} value={r.freq} onChange={(f) => set({ freq: f })} />
       {r.freq === "weekly" ? (
-        <div className="td-rp-days" role="group" aria-label="Weekdays">
+        <div className="td-repeat-picker-days" role="group" aria-label="Weekdays">
           {[1, 2, 3, 4, 5, 6, 0].map((d) => (
             <button
               key={d}
               type="button"
-              className="td-rp-day"
+              className="td-repeat-picker-day"
               aria-label={WD[d]}
               aria-pressed={r.byWeekday.includes(d)}
               onClick={() => {
@@ -119,7 +119,7 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
           ))}
         </div>
       ) : null}
-      <div role="radiogroup" aria-label="Ends" className="td-rp-ends">
+      <div role="radiogroup" aria-label="Ends" className="td-repeat-picker-ends">
         {radio(r.ends.type === "never", () => set({ ends: { type: "never" } }), "Never ends")}
         {radio(
           !!endsOn,
@@ -128,7 +128,7 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
             Until
             {endsOn ? (
               <input
-                className="td-rp-inline"
+                className="td-repeat-picker-inline"
                 autoFocus
                 placeholder="31 dec, in 6 weeks…"
                 aria-label="Until date"
@@ -142,7 +142,7 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
                 onKeyDown={stopTyping}
               />
             ) : null}
-            {endsOn && untilGuess ? <span className="td-rp-preview">{formatDate(untilGuess, { year: "auto", today })}</span> : null}
+            {endsOn && untilGuess ? <span className="td-repeat-picker-preview">{formatDate(untilGuess, { year: "auto", today })}</span> : null}
           </>,
         )}
         {radio(
@@ -151,14 +151,14 @@ function CustomForm({ rule, anchor, today, onDone, onBack }: { rule?: RepeatRule
           <>
             After
             {endsAfter ? (
-              <CountInput className="td-rp-num td-rp-num-sm" max={999} value={endsAfter.count} aria-label="Number of times" onChange={(count) => set({ ends: { type: "after", count } })} onKeyDown={stopTyping} />
+              <CountInput className="td-repeat-picker-number td-repeat-picker-number-sm" max={999} value={endsAfter.count} aria-label="Number of times" onChange={(count) => set({ ends: { type: "after", count } })} onKeyDown={stopTyping} />
             ) : null}
             {endsAfter ? "times" : " a number of times"}
           </>,
         )}
       </div>
-      <div className="td-rp-foot">
-        <span className="td-rp-sum">{describeRepeat(r, anchor)}</span>
+      <div className="td-repeat-picker-foot">
+        <span className="td-repeat-picker-summary">{describeRepeat(r, anchor)}</span>
         <Button variant="primary" disabled={!!endsOn && !endsOn.date} onClick={commit}>
           Done
         </Button>
@@ -217,8 +217,8 @@ export function RepeatPicker({ value, onChange, anchor, today, placeholder = "Re
   const trig = trigger ? (
     <span>{trigger(pop.open, value)}</span>
   ) : (
-    <Button variant={variant} icon="repeat" disabled={disabled} className="td-dp-trigger" data-block={block ? "true" : undefined} aria-label={labelWithValue(ariaLabel, label || placeholder)} title={title} style={style}>
-      <span className="td-rp-value" data-placeholder={label ? undefined : "true"}>
+    <Button variant={variant} icon="repeat" disabled={disabled} className="td-date-picker-trigger" data-block={block ? "true" : undefined} aria-label={labelWithValue(ariaLabel, label || placeholder)} title={title} style={style}>
+      <span className="td-repeat-picker-value" data-placeholder={label ? undefined : "true"}>
         {label || placeholder}
       </span>
     </Button>
@@ -265,7 +265,7 @@ export function RepeatPicker({ value, onChange, anchor, today, placeholder = "Re
       {custom ? (
         <CustomForm rule={value} anchor={anchor} today={today} onBack={() => setCustom(false)} onDone={pick} />
       ) : (
-        <div ref={listRef} className="td-rp-list" role="radiogroup" aria-label={ariaLabel} onKeyDown={onListKey}>
+        <div ref={listRef} className="td-repeat-picker-list" role="radiogroup" aria-label={ariaLabel} onKeyDown={onListKey}>
           {row(!value, () => pick(null), "Doesn't repeat", "circle-off")}
           <div className="td-menu-divider" role="separator" />
           {presets.map((p) => (

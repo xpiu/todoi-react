@@ -23,9 +23,9 @@ for (const scope of SCOPES) test(`avatar upload, propagation, replacement and re
   await file.setInputFiles({ name: "profile.png", mimeType: "image/png", buffer: png });
   await expect(page.getByRole("button", { name: "Change image", exact: true })).toBeEnabled();
   const image = (await (await page.request.get("/api/me")).json()).image as string;
-  await expect(page.locator('.td-set-id img')).toHaveAttribute("src", image);
+  await expect(page.locator('.td-settings-id img')).toHaveAttribute("src", image);
   await expect(page.locator('.td-topnav-avatarbtn img')).toHaveAttribute("src", image);
-  await expect.poll(() => page.locator('.td-set-id img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1);
+  await expect.poll(() => page.locator('.td-settings-id img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1);
   const served = await page.request.get(image);
   expect(served.headers()["content-type"]).toBe("image/png");
   expect(served.headers()["x-content-type-options"]).toBe("nosniff");
@@ -33,7 +33,7 @@ for (const scope of SCOPES) test(`avatar upload, propagation, replacement and re
   await checkA11y(page, `${scope} avatar profile`);
   await page.screenshot({ path: `.tmp/avatar/${scope}-profile.png` });
   await page.reload();
-  await expect(page.locator('.td-set-id img')).toHaveAttribute("src", image);
+  await expect(page.locator('.td-settings-id img')).toHaveAttribute("src", image);
   // The same URL reaches members, row assignees and comments rather than only the settings preview.
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`/p/${f.projectId}?v=list`);
@@ -50,7 +50,7 @@ for (const scope of SCOPES) test(`avatar upload, propagation, replacement and re
   expect((await page.request.get(image)).status()).toBe(404);
   await page.getByRole("button", { name: "Remove image", exact: true }).click();
   await expect(page.getByRole("button", { name: "Upload image", exact: true })).toBeEnabled();
-  await expect(page.locator('.td-set-id img')).toHaveCount(0);
+  await expect(page.locator('.td-settings-id img')).toHaveCount(0);
   await expect(page.locator('.td-topnav-avatarbtn img')).toHaveCount(0);
   expect((await (await page.request.get("/api/me")).json()).image).toBeNull();
 });

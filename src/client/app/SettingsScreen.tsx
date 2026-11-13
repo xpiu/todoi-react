@@ -479,11 +479,11 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             id: "identity",
             title: "Profile",
             lead: (
-              <div className="td-set-id">
+              <div className="td-settings-id">
                 <Avatar name={name || "?"} src={m?.image ?? undefined} color={avatarColorVar(m?.avatarColor)} size={40} decorative />
-                <div className="td-set-idtext">
-                  <div className="td-set-idname">{name}</div>
-                  <div className="td-set-idmail">{m?.email ?? user?.email}</div>
+                <div className="td-settings-idtext">
+                  <div className="td-settings-idname">{name}</div>
+                  <div className="td-settings-idmail">{m?.email ?? user?.email}</div>
                 </div>
               </div>
             ),
@@ -641,7 +641,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
               { id: "archive", label: "Archive and trash", hint: `${count(archived, "entry", "entries")} waiting to be restored or removed for good`, control: <Button icon="archive" onClick={() => navigate({ to: "/archive", search: {} })}>Open</Button> },
             ],
           },
-          { id: "danger", title: "Delete account", tone: "danger", rows: [{ id: "deleteAccount", label: "Delete my account", hint: "Removes your profile and every project you own — contact support to run this until self-service deletion ships", control: <Button icon="trash-2" className="td-set-danger" disabled>Delete</Button> }] },
+          { id: "danger", title: "Delete account", tone: "danger", rows: [{ id: "deleteAccount", label: "Delete my account", hint: "Removes your profile and every project you own — contact support to run this until self-service deletion ships", control: <Button icon="trash-2" className="td-settings-danger" disabled>Delete</Button> }] },
         ],
       },
       { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How Todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> }))] }] },

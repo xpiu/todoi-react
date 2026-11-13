@@ -1,6 +1,6 @@
 // Popover — the one anchored floating surface every dropdown, picker and panel sits on. Base UI owns
 // outside-press close, Escape (nested first), collision flip, focus return and the portal; this file
-// owns the look (td-pop), the z-tier, and the phone bottom sheet. Menus use MenuButton (Base UI Menu);
+// owns the look (td-popover), the z-tier, and the phone bottom sheet. Menus use MenuButton (Base UI Menu);
 // reach for Popover directly only for a custom panel (Share, Style, Save view, pickers).
 // Spec: DESIGN.md › Inline editing primitives · Responsive › Popover → bottom sheet.
 import { Popover as BasePopover } from "@base-ui/react/popover";
@@ -141,7 +141,7 @@ export function Popover({
 
   // A bottom sheet spans the screen: the anchored width would leave it short of the right edge.
   const popupStyle: CSSProperties = { ...(width != null && !isSheet ? { width } : null), ...(minWidth != null && !isSheet ? { minWidth } : null), ...style };
-  const popupCls = ["td-pop", dragging ? "is-dragging" : "", className ?? ""].filter(Boolean).join(" ");
+  const popupCls = ["td-popover", dragging ? "is-dragging" : "", className ?? ""].filter(Boolean).join(" ");
 
   return (
     <BasePopover.Root open={open} onOpenChange={handleOpenChange} modal={isSheet}>
@@ -149,7 +149,7 @@ export function Popover({
       <BasePopover.Portal container={container ?? undefined}>
         {isSheet ? <BasePopover.Backdrop className="td-sheet-backdrop" /> : null}
         <BasePopover.Positioner
-          className="td-pop-positioner"
+          className="td-popover-positioner"
           data-tier={tier}
           data-sheet={isSheet ? "true" : undefined}
           anchor={anchorRef}

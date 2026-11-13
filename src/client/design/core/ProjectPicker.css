@@ -1,10 +1,10 @@
 @layer components {
-  .td-prp {
+  .td-project-picker {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
-  .td-prp-head {
+  .td-project-picker-head {
     display: flex;
     align-items: center;
     gap: var(--sp-1);
@@ -13,20 +13,20 @@
     color: var(--ink-900);
     min-width: 0;
   }
-  .td-prp-head-title {
+  .td-project-picker-head-title {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-prp-name {
+  .td-project-picker-name {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .td-prp-group {
+  .td-project-picker-group {
     font: var(--weight-regular) 11px / 16px var(--font-ui);
     color: var(--ink-400);
     flex: none;
@@ -34,18 +34,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .td-prp-chev {
+  .td-project-picker-chevron {
     color: var(--ink-400);
   }
   /* The highlighted option (aria-activedescendant), marked as a hovered row; with the lists listbox
      focused from the keyboard it also carries the row focus ring. */
-  .td-prp .td-picker-row[aria-selected="true"] {
+  .td-project-picker .td-picker-row[aria-selected="true"] {
     background: var(--action-subtle);
   }
-  .td-prp .td-picker-list:focus-visible {
+  .td-project-picker .td-picker-list:focus-visible {
     outline: none;
   }
-  .td-prp .td-picker-list:focus-visible .td-picker-row[aria-selected="true"] {
+  .td-project-picker .td-picker-list:focus-visible .td-picker-row[aria-selected="true"] {
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
   }
 }

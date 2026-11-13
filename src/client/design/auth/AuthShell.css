@@ -201,23 +201,23 @@
     border-radius: var(--radius-md);
     background: var(--action-subtle);
   }
-  .td-auth-pname {
+  .td-auth-project-name {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
-  .td-auth-pname b {
+  .td-auth-project-name b {
     font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
     color: var(--ink-900);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-auth-pname span {
+  .td-auth-project-name span {
     font: var(--type-small);
     color: var(--ink-400);
   }
-  .td-auth-desc {
+  .td-auth-description {
     margin: var(--sp-3) 0 0;
     padding: var(--sp-2) var(--sp-3);
     border-left: 2px solid var(--border-input);
@@ -245,15 +245,15 @@
   .td-auth-check {
     padding: 2px 0 var(--sp-1);
   }
-  .td-pwf-hint {
+  .td-password-field-hint {
     margin: var(--sp-1) 0 0;
     font: var(--type-small);
     color: var(--ink-400);
   }
-  .td-pwf-hint[data-ok="true"] {
+  .td-password-field-hint[data-ok="true"] {
     color: var(--success-icon);
   }
-  .td-pwf-hint[data-error="true"] {
+  .td-password-field-hint[data-error="true"] {
     color: var(--danger);
   }
 }

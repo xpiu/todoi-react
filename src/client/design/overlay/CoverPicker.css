@@ -1,17 +1,17 @@
 @layer components {
-  .td-cp {
+  .td-cover-picker {
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding: 2px;
   }
-  .td-cp-swatches {
+  .td-cover-picker-swatches {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 6px;
     padding: 0 6px var(--sp-1);
   }
-  .td-cp-swatch {
+  .td-cover-picker-swatch {
     height: 32px;
     border: 0;
     padding: 0;
@@ -21,24 +21,24 @@
     align-items: center;
     justify-content: center;
   }
-  .td-cp-swatch:focus-visible {
+  .td-cover-picker-swatch:focus-visible {
     outline: none;
     box-shadow:
       0 0 0 2px var(--surface-card),
       0 0 0 4px var(--focus-ring);
   }
-  .td-cp-swatch[aria-checked="true"] {
+  .td-cover-picker-swatch[aria-checked="true"] {
     box-shadow:
       0 0 0 2px var(--surface-card),
       0 0 0 4px var(--ink-900);
   }
-  .td-cp-imgs {
+  .td-cover-picker-images {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
     padding: 0 6px var(--sp-1);
   }
-  .td-cp-img {
+  .td-cover-picker-image {
     position: relative;
     height: 44px;
     border: 0;
@@ -48,24 +48,24 @@
     background: var(--surface-cover);
     cursor: pointer;
   }
-  .td-cp-img img {
+  .td-cover-picker-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
   }
-  .td-cp-img[aria-pressed="true"] {
+  .td-cover-picker-image[aria-pressed="true"] {
     box-shadow:
       0 0 0 2px var(--surface-card),
       0 0 0 4px var(--ink-900);
   }
-  .td-cp-img:focus-visible {
+  .td-cover-picker-image:focus-visible {
     outline: none;
     box-shadow:
       0 0 0 2px var(--surface-card),
       0 0 0 4px var(--focus-ring);
   }
-  .td-cp-upload {
+  .td-cover-picker-upload {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -79,14 +79,14 @@
     font: var(--weight-medium) 11px / 14px var(--font-ui);
     cursor: pointer;
   }
-  .td-cp-upload:hover {
+  .td-cover-picker-upload:hover {
     background: var(--action-subtle);
     color: var(--ink-900);
   }
-  .td-cp-file {
+  .td-cover-picker-file {
     display: none;
   }
-  .td-cp-value {
+  .td-cover-picker-value {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -94,20 +94,20 @@
     text-align: left;
     white-space: nowrap;
   }
-  .td-cp-dot {
+  .td-cover-picker-dot {
     width: 12px;
     height: 12px;
     border-radius: 3px;
     flex: none;
   }
-  .td-cp-thumb {
+  .td-cover-picker-thumb {
     width: 16px;
     height: 12px;
     object-fit: cover;
     border-radius: 2px;
     flex: none;
   }
-  .td-cp-remove {
+  .td-cover-picker-remove {
     width: 100%;
     border: 0;
     background: none;

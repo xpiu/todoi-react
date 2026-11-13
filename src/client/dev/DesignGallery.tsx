@@ -52,9 +52,9 @@ const MANY = Array.from({ length: 12 }, (_, i) => ({ value: `tz${i}`, label: `Eu
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="td-gal-section" data-section={title}>
-      <h2 className="td-gal-h">{title}</h2>
-      <div className="td-gal-row">{children}</div>
+    <section className="td-gallery-section" data-section={title}>
+      <h2 className="td-gallery-heading">{title}</h2>
+      <div className="td-gallery-row">{children}</div>
     </section>
   );
 }
@@ -79,12 +79,12 @@ export function DesignGallery() {
   const panel = usePopover();
 
   return (
-    <div className="td-gal">
-      <header className="td-gal-top">
+    <div className="td-gallery">
+      <header className="td-gallery-top">
         <strong>Todoi design primitives</strong>
         <Segmented aria-label="Theme" value={ap.theme} onChange={(t) => ap.set({ theme: t })} options={THEMES.map((t) => ({ id: t.id, label: t.label }))} />
         <Segmented aria-label="Mode" value={ap.mode} onChange={(m) => ap.set({ mode: m })} options={MODES.map((m) => ({ id: m.id, label: m.label, icon: m.icon }))} />
-        <span className="td-gal-meta">
+        <span className="td-gallery-meta">
           {vp.device} · touch {String(vp.touch)}
         </span>
       </header>
@@ -103,7 +103,7 @@ export function DesignGallery() {
           Large
         </Button>
         <Button disabled>Disabled</Button>
-        <span className="td-gal-chrome">
+        <span className="td-gallery-chrome">
           <Button variant="chrome" icon="filter">
             Filter
           </Button>
@@ -129,7 +129,7 @@ export function DesignGallery() {
         <Segmented size="sm" aria-label="Time format" value="24" options={[{ id: "24", label: "24-hour" }, { id: "12", label: "12-hour" }]} />
         <TextField placeholder="Write a comment…" aria-label="Comment" style={{ width: 220 }} />
         <TextField icon="search" placeholder="Search" aria-label="Search" style={{ width: 200 }} />
-        <span className="td-gal-chrome">
+        <span className="td-gallery-chrome">
           <TextField dark icon="search" placeholder="Search" aria-label="Search the project" style={{ width: 200 }} />
         </span>
         <TextField multiline placeholder="Add a more detailed description…" aria-label="Description" style={{ width: 260 }} />
@@ -152,7 +152,7 @@ export function DesignGallery() {
           <StatusChip key={s.id} status={s.id} />
         ))}
         <StatusChip status="DONE" iconOnly />
-        <span className="td-gal-icons">
+        <span className="td-gallery-icons">
           {(["clock", "square-check-big", "align-left", "paperclip", "user-plus", "tag", "message-square", "circle-check", "circle-todo", "circle-dashed", "circle-dot", "archive", "kanban", "list", "calendar", "panel-left", "panel-right", "github"] as const).map((n) => (
             <Icon key={n} name={n} size={16} />
           ))}
@@ -190,7 +190,7 @@ export function DesignGallery() {
             </Button>
           }
         >
-          <div className="td-gal-panel">
+          <div className="td-gallery-panel">
             <strong>Share project</strong>
             <TextField value="https://todoi.com/p/helicopters" readOnly aria-label="Project URL" />
             <Button variant="primary" onClick={panel.close}>
@@ -220,7 +220,7 @@ export function DesignGallery() {
             </>
           }
         >
-          <div className="td-gal-stack">
+          <div className="td-gallery-stack">
             <TextField placeholder="Project name" aria-label="Project name" />
             <Select aria-label="Project group" options={[{ value: "mkt", label: "Marketing & PR" }, { value: "sales", label: "Sales" }]} value="mkt" block />
           </div>
@@ -236,11 +236,11 @@ export function DesignGallery() {
       </Section>
 
       <Section title="States">
-        <div className="td-gal-wide">
+        <div className="td-gallery-wide">
           <EmptyState icon="list" title="No lists in this project yet" hint="Add a list to start collecting items, or begin with the usual three." action={{ label: "Add a list", icon: "plus", shortcut: "shift N" }} secondary={{ label: "To-do · Doing · Done" }} />
           <EmptyState surface="card" compact icon="inbox" title="Your inbox is empty" hint="Items you capture here can be dragged onto a project later." />
           <EmptyState tone="danger" icon="cloud-off" title="Couldn't load this project" hint="Nothing is cached on this device yet." action={{ label: "Retry", icon: "refresh-cw" }} secondary={{ label: "Details" }} />
-          <div className="td-gal-skeletons">
+          <div className="td-gallery-skeletons">
             <Skeleton width={120} />
             <Skeleton width={16} height={16} round />
             <ViewSkeleton view="list" lists={1} delay={0} style={{ height: 180 }} />
@@ -252,7 +252,7 @@ export function DesignGallery() {
               Show notice again
             </Button>
           )}
-          <span className="td-gal-chrome">
+          <span className="td-gallery-chrome">
             <ConnectionStatus online={false} pending={3} lastSynced="2026-08-25T10:00:00Z" onSyncNow={() => {}} onOpenSettings={() => {}} />
             <ConnectionStatus syncing pending={3} />
             <ConnectionStatus showWhenIdle />
@@ -261,7 +261,7 @@ export function DesignGallery() {
       </Section>
 
       <Section title="Markdown">
-        <div className="td-gal-wide">
+        <div className="td-gallery-wide">
           <Markdown
             members={MEMBERS}
             onOpenKey={() => {}}

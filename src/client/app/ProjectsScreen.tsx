@@ -40,16 +40,16 @@ export function ProjectsScreen() {
     if (v && v !== p.name) m.updateProject.mutate({ id: p.id, name: v });
   };
   return (
-    <div className="td-tbl-page">
-      <div className="td-tbl-inner">
-        <div className="td-tbl-head">
-          <h1 className="td-tbl-title">Projects</h1>
+    <div className="td-table-page">
+      <div className="td-table-inner">
+        <div className="td-table-head">
+          <h1 className="td-table-title">Projects</h1>
           <Button variant="inverse" icon="plus" onClick={() => openNewProject()}>
             New project
           </Button>
         </div>
-        <div className="td-tbl-card">
-          <table className="td-tbl">
+        <div className="td-table-card">
+          <table className="td-table">
             <thead>
               <tr>
                 <th>
@@ -57,9 +57,9 @@ export function ProjectsScreen() {
                 </th>
                 <th>Project</th>
                 <th>Lead</th>
-                <th className="td-tbl-num">Items</th>
-                <th className="td-tbl-num">Completed</th>
-                <th className="td-tbl-link" title="Link lists with statuses: when on, an item created in or moved to a list with a Status role takes that Status.">
+                <th className="td-table-number">Items</th>
+                <th className="td-table-number">Completed</th>
+                <th className="td-table-link" title="Link lists with statuses: when on, an item created in or moved to a list with a Status role takes that Status.">
                   Auto-assign statuses to lists
                 </th>
                 <th>
@@ -74,7 +74,7 @@ export function ProjectsScreen() {
                 return (
                   <tr
                     key={p.id}
-                    className="td-tbl-row"
+                    className="td-table-row"
                     tabIndex={0}
                     aria-label={`Open ${p.name}`}
                     onClick={() => !renaming && go(p.id)}
@@ -85,39 +85,39 @@ export function ProjectsScreen() {
                       }
                     }}
                   >
-                    <td className="td-tbl-ic">
+                    <td className="td-table-icon">
                       <Icon name={(p.icon as IconName | null) ?? "kanban"} size={16} color={projectColorVar(p.color)} />
                     </td>
-                    <td className="td-tbl-name" onClick={renaming ? (e) => e.stopPropagation() : undefined} onKeyDown={renaming ? (e) => e.stopPropagation() : undefined}>
+                    <td className="td-table-name" onClick={renaming ? (e) => e.stopPropagation() : undefined} onKeyDown={renaming ? (e) => e.stopPropagation() : undefined}>
                       {renaming ? (
-                        <input className="td-tbl-rename" autoFocus value={draft} aria-label={`Rename ${p.name}`} onChange={(e) => setDraft(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => commitRename(p)} onKeyDown={(e) => {
+                        <input className="td-table-rename" autoFocus value={draft} aria-label={`Rename ${p.name}`} onChange={(e) => setDraft(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => commitRename(p)} onKeyDown={(e) => {
                           if (e.key === "Enter") commitRename(p);
                           else if (e.key === "Escape") setRenamingId(null);
                         }} />
                       ) : (
                         <>
                           {p.name}
-                          <span className="td-tbl-sub">{p.groupName}</span>
+                          <span className="td-table-sub">{p.groupName}</span>
                         </>
                       )}
                     </td>
                     <td>
                       {p.lead ? (
-                        <span className="td-tbl-lead" title={p.lead}>
+                        <span className="td-table-lead" title={p.lead}>
                           <Avatar name={p.lead} size={22} decorative />
-                          <span className="td-tbl-leadname">{p.lead}</span>
+                          <span className="td-table-leadname">{p.lead}</span>
                         </span>
                       ) : (
-                        <span className="td-tbl-dim">—</span>
+                        <span className="td-table-dim">—</span>
                       )}
                     </td>
-                    <td className="td-tbl-num">{p.itemCount}</td>
-                    <td className="td-tbl-num">{pct != null ? `${pct}%` : <span className="td-tbl-dim">—</span>}</td>
-                    <td className="td-tbl-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                    <td className="td-table-number">{p.itemCount}</td>
+                    <td className="td-table-number">{pct != null ? `${pct}%` : <span className="td-table-dim">—</span>}</td>
+                    <td className="td-table-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <Switch checked={p.linkStatuses} aria-label={`Linked statuses for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, linkStatuses: v })} />
                     </td>
-                    <td className="td-tbl-set" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      <span className="td-tbl-tools">
+                    <td className="td-table-set" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      <span className="td-table-tools">
                         <ProjectIconPicker icon={p.icon as IconName | null} color={p.color as LabelColor | null} size={28} iconSize={15} placement="bottom-end" onChange={(v) => m.updateProject.mutate({ id: p.id, icon: v.icon, color: v.color })} />
                         <MenuButton label={`Settings for ${p.name}`} tooltip="Project settings" placement="bottom-end" tier="detached" size={28} iconSize={16}>
                           <MenuItem icon="settings" onSelect={() => openSettings(p.id)}>

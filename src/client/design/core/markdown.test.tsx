@@ -15,9 +15,9 @@ describe("renderMarkdown", () => {
     expect(html("- a\n- b")).toBe("<ul><li>a</li><li>b</li></ul>");
     expect(html("1. a\n2) b")).toBe("<ol><li>a</li><li>b</li></ol>");
     const task = html("- [ ] open\n- [x] done");
-    expect(task).toContain('class="td-md-task"');
+    expect(task).toContain('class="td-markdown-task"');
     expect(task).toContain('data-on="false"');
-    expect(task).toContain('class="td-md-task-done"');
+    expect(task).toContain('class="td-markdown-task-done"');
   });
   it("renders quotes and fenced code without touching inline syntax inside the fence", () => {
     expect(html("> a\n> b")).toBe("<blockquote>a b</blockquote>");
@@ -37,8 +37,8 @@ describe("renderMarkdown", () => {
   });
   it("highlights only known mentions and marks item keys", () => {
     const members = [{ name: "Flo Zuallaert", nickname: "flo" }];
-    expect(html("hi @flo and @nobody", { members })).toBe('<p>hi <span class="td-md-mention">@flo</span> and @nobody</p>');
-    expect(html("see MP-112 now")).toBe('<p>see <span class="td-md-key">MP-112</span> now</p>');
+    expect(html("hi @flo and @nobody", { members })).toBe('<p>hi <span class="td-markdown-mention">@flo</span> and @nobody</p>');
+    expect(html("see MP-112 now")).toBe('<p>see <span class="td-markdown-key">MP-112</span> now</p>');
     expect(html("see MP-112 now", { onOpenKey: () => {} })).toContain('role="link"');
   });
   it("never emits raw HTML", () => {

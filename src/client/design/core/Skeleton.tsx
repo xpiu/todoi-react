@@ -17,7 +17,7 @@ export interface SkeletonProps {
 }
 
 export function Skeleton({ width = "100%", height = 12, round, style, className }: SkeletonProps) {
-  return <span className={["td-sk", round ? "td-sk-round" : "", className ?? ""].filter(Boolean).join(" ")} aria-hidden style={{ width, height, ...style }} />;
+  return <span className={["td-skeleton", round ? "td-skeleton-round" : "", className ?? ""].filter(Boolean).join(" ")} aria-hidden style={{ width, height, ...style }} />;
 }
 
 // Deterministic shapes so the placeholder is stable across renders (no randomness, no layout jump).
@@ -29,26 +29,26 @@ const SECTION_WIDTHS = [110, 84, 132];
 
 function BoardSkeleton({ lists }: { lists: number }) {
   return (
-    <div className="td-skview-board">
+    <div className="td-skeleton-view-board">
       {Array.from({ length: lists }, (_, c) => {
         const cards = BOARD[c % BOARD.length]!;
         return (
-          <div key={c} className="td-sk-col">
-            <div className="td-sk-colhead">
+          <div key={c} className="td-skeleton-col">
+            <div className="td-skeleton-colhead">
               <Skeleton width={16} height={16} round />
               <Skeleton width={HEAD_WIDTHS[c % 3]} height={12} />
             </div>
             {cards.map((lines, i) => (
-              <div key={i} className="td-sk-card">
+              <div key={i} className="td-skeleton-card">
                 <Skeleton width={lines > 1 ? "92%" : TITLE_WIDTHS[i % 3]} height={12} />
                 {lines > 1 ? <Skeleton width="48%" height={12} /> : null}
-                <div className="td-sk-cardmeta">
+                <div className="td-skeleton-cardmeta">
                   <Skeleton width={44} height={10} />
                   <Skeleton width={20} height={10} />
                 </div>
               </div>
             ))}
-            <div className="td-sk-colfoot" />
+            <div className="td-skeleton-colfoot" />
           </div>
         );
       })}
@@ -58,23 +58,23 @@ function BoardSkeleton({ lists }: { lists: number }) {
 
 function ListSkeleton({ lists, header = true, rows }: { lists: number; header?: boolean; rows?: number[] }) {
   return (
-    <div className="td-skview-list">
-      <div className="td-skview-list-inner">
+    <div className="td-skeleton-view-list">
+      <div className="td-skeleton-view-list-inner">
         {Array.from({ length: lists }, (_, s) => {
           const ws = rows ?? ROWS[s % ROWS.length]!;
           return (
-            <div key={s} className="td-sk-sec">
+            <div key={s} className="td-skeleton-section">
               {header ? (
-                <div className="td-sk-sechead">
+                <div className="td-skeleton-section-head">
                   <Skeleton width={18} height={18} round />
                   <Skeleton width={SECTION_WIDTHS[s % 3]} height={12} />
                 </div>
               ) : null}
               {ws.map((w, i) => (
-                <div key={i} className="td-sk-row">
+                <div key={i} className="td-skeleton-row">
                   <Skeleton width={16} height={16} round />
                   <Skeleton width={`${w}%`} height={12} />
-                  <Skeleton width={i % 2 ? 48 : 28} height={10} className="td-sk-end" />
+                  <Skeleton width={i % 2 ? 48 : 28} height={10} className="td-skeleton-end" />
                 </div>
               ))}
             </div>
@@ -110,7 +110,7 @@ export function ViewSkeleton({ view = "board", lists = 3, delay = SKELETON_DELAY
     return () => clearTimeout(t);
   }, [delay]);
   return (
-    <div className={["td-skview", className ?? ""].join(" ").trim()} role="status" aria-busy="true" aria-live="polite" style={style}>
+    <div className={["td-skeleton-view", className ?? ""].join(" ").trim()} role="status" aria-busy="true" aria-live="polite" style={style}>
       <span className="td-sr-only">{label}</span>
       {!show ? null : view === "board" ? <BoardSkeleton lists={lists} /> : view === "inbox" ? <ListSkeleton lists={1} header={false} rows={[64, 48, 72, 40]} /> : <ListSkeleton lists={lists} />}
     </div>

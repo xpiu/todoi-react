@@ -69,9 +69,9 @@ function RowKey({ itemId }: { itemId: string }) {
     void doCopy(itemId);
   };
   return (
-    <button type="button" className={"td-lrow-key td-lrow-idkey" + (copied !== "idle" ? " is-copied" : "")} title={copied === "failed" ? COPY_FAILED : `Click to copy ${itemId}`} aria-label={`Copy ${itemId}`} onClick={copy} onKeyDown={(e) => e.stopPropagation()}>
-      <span className="td-lrow-key-txt">{itemId}</span>
-      <span className="td-lrow-key-ico" aria-hidden>
+    <button type="button" className={"td-list-row-key td-list-row-idkey" + (copied !== "idle" ? " is-copied" : "")} title={copied === "failed" ? COPY_FAILED : `Click to copy ${itemId}`} aria-label={`Copy ${itemId}`} onClick={copy} onKeyDown={(e) => e.stopPropagation()}>
+      <span className="td-list-row-key-text">{itemId}</span>
+      <span className="td-list-row-key-icon" aria-hidden>
         <Icon name={copyIcon(copied, "copy")} size={12} />
       </span>
     </button>
@@ -82,7 +82,7 @@ function AboutKey({ about }: { about: NonNullable<ListRowProps["about"]> }) {
   return (
     <button
       type="button"
-      className="td-lrow-key td-lrow-about"
+      className="td-list-row-key td-list-row-about"
       title={`Open ${about.key}${about.title ? `: ${about.title}` : ""}`}
       aria-label={`Open ${about.key}`}
       onClick={(e) => {
@@ -91,8 +91,8 @@ function AboutKey({ about }: { about: NonNullable<ListRowProps["about"]> }) {
       }}
       onKeyDown={(e) => e.stopPropagation()}
     >
-      <span className="td-lrow-key-txt">{about.key}</span>
-      <span className="td-lrow-key-ico" aria-hidden>
+      <span className="td-list-row-key-text">{about.key}</span>
+      <span className="td-list-row-key-icon" aria-hidden>
         <Icon name="arrow-up-right" size={12} />
       </span>
     </button>
@@ -103,9 +103,9 @@ function RowLabels({ labels, title }: { labels: RowLabel[]; title: string }) {
   const { open, setOpen } = usePopover();
   const values = labels.map((l) => (typeof l === "string" ? { color: l, text: l } : l));
   return (
-    <span className="td-lrow-labels" title={values.map((l) => l.text ?? l.color).join(", ")} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+    <span className="td-list-row-labels" title={values.map((l) => l.text ?? l.color).join(", ")} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
       {values.map((l, i) => (
-        <LabelChip key={i} color={l.color} text={l.text ?? l.color} size="sm" className={"td-lpill" + (i >= 3 ? " td-lpill-x" : "")} style={stack(values.length - i + 1)} />
+        <LabelChip key={i} color={l.color} text={l.text ?? l.color} size="sm" className={"td-list-row-label" + (i >= 3 ? " td-list-row-label-extra" : "")} style={stack(values.length - i + 1)} />
       ))}
       {values.length > 3 ? (
         <Popover
@@ -115,7 +115,7 @@ function RowLabels({ labels, title }: { labels: RowLabel[]; title: string }) {
           aria-label={`Labels for ${title}`}
           tier="detached"
           width={280}
-          trigger={<button type="button" className="td-lpill td-lpill-n" aria-label={`${values.length - 3} more labels`}>+{values.length - 3}</button>}
+          trigger={<button type="button" className="td-list-row-label td-list-row-label-more" aria-label={`${values.length - 3} more labels`}>+{values.length - 3}</button>}
         >
           <div className="td-row-label-panel">
             <div className="td-row-label-head">
@@ -139,7 +139,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
   const stop = (e: SyntheticEvent) => e.stopPropagation();
   const row = (
     <div
-      className={"td-lrow" + (sub ? " td-lrow-sub" : "") + (unread && !sub ? " is-unread" : "")}
+      className={"td-list-row" + (sub ? " td-list-row-sub" : "") + (unread && !sub ? " is-unread" : "")}
       // The list / listitem pattern: the row is a focusable list item (roving tabindex via KeyNav) whose
       // controls — checkbox, key, ⋯ — stay real buttons; a widget role here would nest interactives.
       role={hasSubs ? undefined : "listitem"}
@@ -157,77 +157,77 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
       style={sub ? style : undefined}
     >
       {selected ? <span className="td-sr-only">Selected</span> : null}
-      <span className="td-lrow-check" onClick={stop}>
+      <span className="td-list-row-check" onClick={stop}>
         <Checkbox checked={!!done} onChange={(v) => onDone?.(v)} shape="circle" recurring={recurring} aria-label={done ? "Mark not done" : "Mark done"} />
       </span>
       {from ? (
-        <span className="td-lrow-from" title={from.name ? `From ${from.name}` : "From Todoi"}>
+        <span className="td-list-row-from" title={from.name ? `From ${from.name}` : "From Todoi"}>
           {from.name ? (
             <Avatar name={from.name} src={from.src} color={from.color} size={20} />
           ) : (
-            <span className="td-lrow-apptile">
+            <span className="td-list-row-apptile">
               <Icon name="sparkle" size={12} />
             </span>
           )}
         </span>
       ) : null}
-      <span className="td-lrow-title">{title}</span>
-      <span className="td-lrow-end">
+      <span className="td-list-row-title">{title}</span>
+      <span className="td-list-row-end">
         {status ? (
-          <span className="td-lrow-cell">
+          <span className="td-list-row-cell">
             <StatusChip status={status} />
           </span>
         ) : null}
         {labels.length ? <RowLabels labels={labels} title={title} /> : null}
         {attachments ? (
-          <span className="td-lrow-badge" title="Attachments">
+          <span className="td-list-row-badge" title="Attachments">
             <Icon name="paperclip" size={14} />
             {attachments}
           </span>
         ) : null}
         {created && !about?.key ? (
-          <span className="td-lrow-badge" title={`Created ${created}`}>
+          <span className="td-list-row-badge" title={`Created ${created}`}>
             <Icon name="calendar-plus" size={14} />
             {created}
           </span>
         ) : null}
         {due ? (
-          <span className="td-lrow-cell">
+          <span className="td-list-row-cell">
             <DueDatePill date={due} state={dueState} />
           </span>
         ) : null}
         {repeat ? (
-          <span className="td-lrow-badge" title={`Repeats: ${repeat}`}>
+          <span className="td-list-row-badge" title={`Repeats: ${repeat}`}>
             <Icon name="repeat" size={14} />
           </span>
         ) : null}
         {priority ? (
-          <span className="td-lrow-badge" data-priority={priority.toLowerCase()} title={`Priority: ${priority}`}>
+          <span className="td-list-row-badge" data-priority={priority.toLowerCase()} title={`Priority: ${priority}`}>
             <Icon name="flag" size={14} color={PRIORITY_COLORS[priority]} style={{ fill: PRIORITY_COLORS[priority] }} />
             <span className="td-prio-text">{priority}</span>
           </span>
         ) : null}
         {assignees.length ? (
-          <span className="td-lrow-avs" title={assignees.map((a) => personOf(a).name).join(", ")}>
+          <span className="td-list-row-avatars" title={assignees.map((a) => personOf(a).name).join(", ")}>
             {assignees.slice(0, 3).map((a, i) => {
               const o = personOf(a);
               return (
-                <span key={i} className="td-lav" style={stack(assignees.length - i + 1)}>
+                <span key={i} className="td-list-row-avatar" style={stack(assignees.length - i + 1)}>
                   <Avatar name={o.name} src={o.src} color={o.color} size={20} />
                 </span>
               );
             })}
             {assignees.length > 3 ? (
-              <span className="td-lav td-lav-n" aria-label={`${assignees.length - 3} more assignees`}>
+              <span className="td-list-row-avatar td-list-row-avatar-more" aria-label={`${assignees.length - 3} more assignees`}>
                 +{assignees.length - 3}
               </span>
             ) : null}
           </span>
         ) : null}
         {about?.key ? (
-          <span className="td-lrow-cell td-lrow-aboutcell">
+          <span className="td-list-row-cell td-list-row-aboutcell">
             {created ? (
-              <span className="td-lrow-badge" title={`Created ${created}`}>
+              <span className="td-list-row-badge" title={`Created ${created}`}>
                 <Icon name="calendar-plus" size={14} />
                 {created}
               </span>
@@ -244,15 +244,15 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
     return sub ? (
       row
     ) : (
-      <div className={"td-lgroup" + (selected ? " is-selected" : "")} style={style}>
+      <div className={"td-list-row-group" + (selected ? " is-selected" : "")} style={style}>
         {row}
       </div>
     );
   }
   return (
-    <div className={"td-lgroup" + (selected ? " is-selected" : "")} role="listitem" style={style}>
+    <div className={"td-list-row-group" + (selected ? " is-selected" : "")} role="listitem" style={style}>
       {row}
-      <div className="td-lrow-subs" role="list" aria-label={`Subitems of ${title}`}>
+      <div className="td-list-row-subs" role="list" aria-label={`Subitems of ${title}`}>
         {subitems!.map((s, i) => (
           <ListRow key={s.itemId ?? i} {...s} sub showId={s.showId ?? showId} />
         ))}

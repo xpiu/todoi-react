@@ -39,35 +39,35 @@
     flex: none;
   }
   /* The read-only contract */
-  [data-readonly="true"] .td-list-foot,
-  [data-readonly="true"] .td-list-add,
-  [data-readonly="true"] .td-lsec-add,
-  [data-readonly="true"] .td-lsec-addbtn,
-  [data-readonly="true"] .td-lsec-more,
+  [data-readonly="true"] .td-list-column-foot,
+  [data-readonly="true"] .td-list-column-add,
+  [data-readonly="true"] .td-list-section-add,
+  [data-readonly="true"] .td-list-section-addbtn,
+  [data-readonly="true"] .td-list-section-more,
   [data-readonly="true"] .td-board-addlist,
-  [data-readonly="true"] .td-listview-addlist,
-  [data-readonly="true"] .td-calcell-add,
-  [data-readonly="true"] .td-caldaylist-add,
-  [data-readonly="true"] .td-cladd,
-  [data-readonly="true"] .td-list-more,
+  [data-readonly="true"] .td-list-view-addlist,
+  [data-readonly="true"] .td-calendar-cell-add,
+  [data-readonly="true"] .td-calendar-day-list-add,
+  [data-readonly="true"] .td-checklist-add,
+  [data-readonly="true"] .td-list-column-more,
   [data-readonly="true"] .td-card-more-anchor,
   [data-readonly="true"] .td-bulk,
   [data-readonly="true"] .td-composer {
     display: none !important;
   }
   [data-readonly="true"] .td-check,
-  [data-readonly="true"] .td-lrow-check,
-  [data-readonly="true"] .td-list-name,
-  [data-readonly="true"] .td-lsec-name,
-  [data-readonly="true"] .td-list-iconbtn,
-  [data-readonly="true"] .td-lsec-iconbtn,
+  [data-readonly="true"] .td-list-row-check,
+  [data-readonly="true"] .td-list-column-name,
+  [data-readonly="true"] .td-list-section-name,
+  [data-readonly="true"] .td-list-column-iconbtn,
+  [data-readonly="true"] .td-list-section-iconbtn,
   [data-readonly="true"] .td-modal-aside,
   [data-readonly="true"] .td-modal-title {
     pointer-events: none;
   }
   [data-readonly="true"] .td-card[draggable],
-  [data-readonly="true"] .td-lrow[draggable],
-  [data-readonly="true"] .td-calchip[draggable] {
+  [data-readonly="true"] .td-list-row[draggable],
+  [data-readonly="true"] .td-calendar-chip[draggable] {
     cursor: pointer;
   }
 }

@@ -41,7 +41,7 @@ export function InboxScreen() {
   // Inbox capture parses dates and priority only: labels, people and lists belong to a project.
   const inboxQuickAdd = useMemo(() => ({ dates: actions.quickAdd.dates }), [actions.quickAdd.dates]);
   const root = useRef<HTMLDivElement | null>(null);
-  const dnd = useItemDnd(root, { listSelector: ".td-lsec", itemSelector: ".td-lrow[data-drag-id]", cardsSelector: ".td-lsec-body", onDrop: actions.move });
+  const dnd = useItemDnd(root, { listSelector: ".td-list-section", itemSelector: ".td-list-row[data-drag-id]", cardsSelector: ".td-list-section-body", onDrop: actions.move });
   const markAllRead = useMutation({
     mutationFn: () => api.api.inbox["mark-all-read"].$post().then((r) => unwrap<{ marked: number }>(r)),
     onSettled: () => {

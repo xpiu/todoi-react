@@ -1,36 +1,36 @@
 @layer components {
-  .td-rel-section {
+  .td-relations-section {
     margin-top: var(--sp-6);
   }
-  .td-rel-section-head {
+  .td-relations-section-head {
     display: flex;
     align-items: center;
     gap: var(--sp-3);
     color: var(--ink-900);
   }
-  .td-rel-section-title {
+  .td-relations-section-title {
     flex: 1;
     font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
   }
-  .td-rel-blocked {
+  .td-relations-blocked {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
     color: var(--danger);
   }
-  .td-rel {
+  .td-relations {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
     margin: var(--sp-2) 0 0 28px;
   }
-  .td-rel-group {
+  .td-relations-group {
     display: flex;
     flex-direction: column;
     gap: 1px;
   }
-  .td-rel-head {
+  .td-relations-head {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -40,10 +40,10 @@
     text-transform: uppercase;
     color: var(--ink-400);
   }
-  .td-rel-head[data-tone="danger"] {
+  .td-relations-head[data-tone="danger"] {
     color: var(--danger);
   }
-  .td-rel-row {
+  .td-relations-row {
     position: relative;
     display: flex;
     align-items: center;
@@ -54,11 +54,11 @@
     border-radius: var(--radius-md);
     transition: background var(--duration-fast) var(--ease-standard);
   }
-  .td-rel-row:hover,
-  .td-rel-row:focus-within {
+  .td-relations-row:hover,
+  .td-relations-row:focus-within {
     background: var(--n-a06);
   }
-  .td-rel-open {
+  .td-relations-open {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -73,27 +73,27 @@
     cursor: pointer;
     border-radius: var(--radius-xs);
   }
-  .td-rel-open:focus-visible {
+  .td-relations-open:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-rel-key {
+  .td-relations-key {
     font: var(--weight-regular) var(--text-xs) / var(--lh-xs) var(--font-mono);
     color: var(--ink-400);
     flex: none;
   }
-  .td-rel-title {
+  .td-relations-title {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-rel-title[data-done="true"] {
+  .td-relations-title[data-done="true"] {
     color: var(--ink-400);
     text-decoration: line-through;
   }
-  .td-rel-list {
+  .td-relations-list {
     font: var(--type-small);
     color: var(--ink-400);
     flex: none;
@@ -102,28 +102,28 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-rel-x {
+  .td-relations-remove {
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-standard);
   }
-  .td-rel-row:hover .td-rel-x,
-  .td-rel-row:focus-within .td-rel-x {
+  .td-relations-row:hover .td-relations-remove,
+  .td-relations-row:focus-within .td-relations-remove {
     opacity: 1;
   }
-  .td-rel-pick {
+  .td-relations-pick {
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding: 2px;
   }
-  .td-rel-types {
+  .td-relations-types {
     display: flex;
     gap: 2px;
     padding: 2px;
     border-radius: var(--radius-md);
     background: var(--surface-list);
   }
-  .td-rel-types button {
+  .td-relations-types button {
     flex: 1;
     height: 26px;
     padding: 0 6px;
@@ -139,12 +139,12 @@
     gap: var(--sp-1);
     white-space: nowrap;
   }
-  .td-rel-types button[aria-checked="true"] {
+  .td-relations-types button[aria-checked="true"] {
     background: var(--surface-card);
     color: var(--ink-900);
     box-shadow: var(--shadow-card);
   }
-  .td-rel-types button:focus-visible {
+  .td-relations-types button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }

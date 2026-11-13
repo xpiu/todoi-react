@@ -5,7 +5,7 @@
     gap: var(--sp-1);
     align-items: stretch;
   }
-  .td-aside-div {
+  .td-aside-divider {
     height: 1px;
     margin: var(--sp-1) var(--sp-2);
     background: var(--border-divider);
@@ -18,10 +18,10 @@
     color: var(--ink-900);
     gap: var(--sp-2);
   }
-  .td-isec-hidden {
+  .td-item-section-hidden {
     display: none;
   }
-  .td-overlay-desc {
+  .td-overlay-description {
     margin-top: var(--sp-3);
   }
   .td-overlay-addsub {

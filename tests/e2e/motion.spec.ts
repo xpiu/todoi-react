@@ -22,7 +22,7 @@ test.describe("prefers-reduced-motion", () => {
     // Rounded names the Style action "Appearance".
     await page.getByRole("button", { name: "Appearance" }).click();
     await expect(page.getByRole("menu").or(page.getByRole("dialog")).first()).toBeVisible();
-    const popDuration = await page.locator(".td-pop").first().evaluate((el) => getComputedStyle(el).transitionDuration);
+    const popDuration = await page.locator(".td-popover").first().evaluate((el) => getComputedStyle(el).transitionDuration);
     expect(seconds(popDuration)).toBeLessThan(0.001);
   });
 });

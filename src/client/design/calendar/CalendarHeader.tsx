@@ -27,9 +27,9 @@ export interface CalendarHeaderProps {
 
 export function CalendarHeader({ title, period, onPeriodChange, onPrev, onNext, onToday, extra, style }: CalendarHeaderProps) {
   return (
-    <div className="td-calhead" style={style}>
-      <h2 className="td-calhead-title">{title}</h2>
-      <div className="td-calhead-spacer" />
+    <div className="td-calendar-header" style={style}>
+      <h2 className="td-calendar-header-title">{title}</h2>
+      <div className="td-calendar-header-spacer" />
       {extra}
       {onToday ? (
         <Button variant="chrome" onClick={onToday}>

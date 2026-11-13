@@ -6,7 +6,7 @@
     flex-wrap: wrap;
     gap: var(--sp-1);
   }
-  .td-keys-sep {
+  .td-keys-separator {
     color: var(--ink-400);
     font: var(--weight-regular) 11px / 16px var(--font-ui);
   }

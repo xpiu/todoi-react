@@ -67,7 +67,7 @@ export function useAppShortcuts(h: AppShortcutHandlers) {
       } else if (SHORTCUTS.is("new-item", e)) {
         // N opens quick-add in the focused item's list, else the first visible add trigger.
         e.preventDefault();
-        const focused = document.activeElement?.closest?.(".td-lsec, .td-list");
+        const focused = document.activeElement?.closest?.(".td-list-section, .td-list-column");
         const btn = (focused ?? document).querySelector<HTMLButtonElement>("[data-add-item]");
         btn?.click();
       } else if (SHORTCUTS.is("new-list", e)) {

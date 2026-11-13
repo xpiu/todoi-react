@@ -62,7 +62,7 @@ export function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, p
     content: initialDraft ?? value,
     contentType: "markdown",
     autofocus: "end",
-    editorProps: { attributes: { class: "td-desc-ta", "aria-label": "Description", "data-placeholder": placeholder } },
+    editorProps: { attributes: { class: "td-description-textarea", "aria-label": "Description", "data-placeholder": placeholder } },
     onUpdate: ({ editor: e }) => {
       const md = e.getMarkdown().replace(/\s+$/, "");
       // Against the saved value as this editor serialises it, so valid Markdown in another spelling
@@ -81,7 +81,7 @@ export function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, p
   useEffect(() => () => editor?.destroy(), [editor]);
   return (
     <div
-      className="td-desc-edit"
+      className="td-description-edit"
       style={style}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
@@ -94,11 +94,11 @@ export function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, p
         } else if (e.key.length === 1) e.stopPropagation();
       }}
     >
-      <div className="td-desc-bar" role="toolbar" aria-label="Formatting">
-        {TOOLS.map((t, i) => (t ? <IconButton key={t[0]} name={t[0]} label={t[1] + (t[2] ? ` (${t[2]})` : "")} title={t[1] + (t[2] ? ` · ${t[2]}` : "")} size={26} iconSize={15} aria-pressed={editor && t[4] ? t[4](editor) : undefined} onClick={() => editor && t[3](editor)} /> : <span key={`d${i}`} className="td-desc-bar-div" />))}
+      <div className="td-description-bar" role="toolbar" aria-label="Formatting">
+        {TOOLS.map((t, i) => (t ? <IconButton key={t[0]} name={t[0]} label={t[1] + (t[2] ? ` (${t[2]})` : "")} title={t[1] + (t[2] ? ` · ${t[2]}` : "")} size={26} iconSize={15} aria-pressed={editor && t[4] ? t[4](editor) : undefined} onClick={() => editor && t[3](editor)} /> : <span key={`d${i}`} className="td-description-bar-divider" />))}
       </div>
-      <EditorContent editor={editor} className="td-desc-editor" />
-      <div className="td-desc-actions">
+      <EditorContent editor={editor} className="td-description-editor" />
+      <div className="td-description-actions">
         <Button
           variant="primary"
           disabled={pending}
@@ -119,9 +119,9 @@ export function DescriptionEdit({ value, initialDraft, placeholder, saveLabel, p
         >
           {dirty ? "Discard" : "Cancel"}
         </Button>
-        {dirty ? <span className="td-desc-unsaved">Unsaved</span> : null}
+        {dirty ? <span className="td-description-unsaved">Unsaved</span> : null}
       </div>
-      <InlineError message={error} className="td-desc-error" />
+      <InlineError message={error} className="td-description-error" />
     </div>
   );
 }

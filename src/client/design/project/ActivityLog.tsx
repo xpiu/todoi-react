@@ -77,26 +77,26 @@ export function groupActivityByDay<T extends { time: string }>(entries: T[], now
 export function ActivityRow({ entry, now, onOpenKey, showKind = true }: { entry: ActivityEntryView; now: number; onOpenKey?: (key: string) => void; showKind?: boolean }) {
   const kind = ACTIVITY_KINDS.find((k) => k.value === entry.type);
   return (
-    <div className="td-al-row" role="listitem">
+    <div className="td-activity-log-row" role="listitem">
       <Avatar name={entry.actor} src={entry.actorImage} color={entry.actorColor} size={20} decorative />
-      <span className="td-al-text">
+      <span className="td-activity-log-text">
         <b>{entry.actor}</b> {entry.text}
         {entry.key ? (
           onOpenKey ? (
-            <button type="button" className="td-al-key" onClick={() => onOpenKey(entry.key!)} title={`Open ${entry.key}`}>
+            <button type="button" className="td-activity-log-key" onClick={() => onOpenKey(entry.key!)} title={`Open ${entry.key}`}>
               {entry.key}
             </button>
           ) : (
-            <span className="td-al-key">{entry.key}</span>
+            <span className="td-activity-log-key">{entry.key}</span>
           )
         ) : null}
       </span>
       {showKind && kind ? (
-        <span className="td-al-kind" title={kind.label}>
+        <span className="td-activity-log-kind" title={kind.label}>
           <Icon name={kind.icon} size={13} />
         </span>
       ) : null}
-      <time className="td-al-time" dateTime={entry.time} title={new Date(entry.time).toLocaleString()}>
+      <time className="td-activity-log-time" dateTime={entry.time} title={new Date(entry.time).toLocaleString()}>
         {relativeTime(entry.time, now)}
       </time>
     </div>
@@ -124,10 +124,10 @@ export function ActivityLog({ entries, now, onOpenKey, pageSize = 30, filters = 
   const groups = groupActivityByDay(list.slice(0, shown), at);
   const filtered = !!(kind || who);
   return (
-    <div className="td-al">
+    <div className="td-activity-log">
       {filters ? (
-        <div className="td-al-head">
-          <span className="td-al-count">
+        <div className="td-activity-log-head">
+          <span className="td-activity-log-count">
             {list.length} {list.length === 1 ? "entry" : "entries"}
             {filtered ? " · filtered" : ""}
           </span>
@@ -144,7 +144,7 @@ export function ActivityLog({ entries, now, onOpenKey, pageSize = 30, filters = 
         <div role="list" aria-label="Activity">
           {groups.map((g) => (
             <div key={g.key}>
-              <div className="td-al-day">{g.label}</div>
+              <div className="td-activity-log-day">{g.label}</div>
               {g.entries.map((e) => (
                 <ActivityRow key={e.id} entry={e} now={at} onOpenKey={onOpenKey} />
               ))}
@@ -153,7 +153,7 @@ export function ActivityLog({ entries, now, onOpenKey, pageSize = 30, filters = 
         </div>
       )}
       {list.length > shown ? (
-        <div className="td-al-more">
+        <div className="td-activity-log-more">
           <Button variant="ghost" icon="chevron-down" onClick={() => setShown((s) => s + pageSize)}>
             Show older
           </Button>

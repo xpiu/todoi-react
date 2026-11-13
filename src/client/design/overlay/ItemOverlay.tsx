@@ -395,7 +395,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
           )}
           <Select block tier="detached" aria-label="Status" title="Status" value={status} options={statusOpts} width={200} onChange={(v) => p.onSetStatus(v === NO_STATUS ? null : (v as ItemStatus))} footer={<div className="td-menu-note" title="A list can carry a Status role. Editing Status directly never moves the item.">Status is set here or by a linked list move. Editing it never moves the item.</div>} />
           <Select block tier="detached" aria-label="Priority" title="Priority" placeholder="Priority" icon="flag" value={item.priority ?? NO_PRIORITY} width={184} options={[...PRIORITIES.map((pr) => ({ value: pr.value as string, label: pr.label, icon: "flag" as IconName, iconColor: pr.color })), { value: NO_PRIORITY, label: "No priority", icon: "flag-off" as IconName }]} renderValue={(o) => (o && o.value !== NO_PRIORITY ? o.label : "Priority")} onChange={(v) => p.onSetPriority(v === NO_PRIORITY ? null : (v as ItemPriority))} />
-          <div className="td-aside-div" />
+          <div className="td-aside-divider" />
           <DatesPicker block tier="detached" start={item.start} due={item.due} time={item.dueTime} state={item.dueState ?? (item.done ? "complete" : undefined)} today={p.today} onChange={p.onSetDates} />
           <RepeatPicker block tier="detached" value={item.repeat ?? null} anchor={item.due} today={p.today} onChange={p.onSetRepeat} />
           {p.inbox ? null : (
@@ -404,7 +404,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
               <MemberPicker block tier="detached" members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
             </>
           )}
-          <div className="td-aside-div" />
+          <div className="td-aside-divider" />
           <Button variant="outline" icon="paperclip" className="td-aside-btn" disabled={!p.onAddFiles} onClick={() => pickerRef.current?.()}>
             Attachment
           </Button>
@@ -412,7 +412,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
           <RelationButton block tier="detached" items={others} exclude={p.relations.map((r) => r.item.id)} onAdd={p.onAddRelation} />
           {p.onToggleWatch ? (
             <>
-              <div className="td-aside-div" />
+              <div className="td-aside-divider" />
               <Button variant="outline" icon={item.watching ? "eye" : "eye-off"} aria-pressed={!!item.watching} title={item.watching ? "You get notified about changes to this item" : "Get notified about changes to this item"} className="td-aside-btn" onClick={() => p.onToggleWatch?.(!item.watching)}>
                 {item.watching ? "Watching" : "Watch"}
               </Button>
@@ -423,7 +423,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
     >
       <DropOverlay active={dragging} hint="Images can become the cover" />
       <div className="td-overlay-main">
-        <div className="td-overlay-desc">
+        <div className="td-overlay-description">
           <DescriptionEditor value={item.description ?? ""} members={members} onOpenKey={p.onOpenKey} onChange={p.onSetDescription} onDraft={(description) => updateDrafts({ description })} initialDraft={p.drafts?.description} saveRef={saveDescription} onSuggestShortcut={p.onSuggestShortcut} />
         </div>
         {item.subitems.length ? (
@@ -450,7 +450,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
           </div>
         ) : null}
         {files.length || p.onAddFiles ? (
-          <ItemSection icon="paperclip" title="Attachments" className={files.length ? undefined : "td-isec-hidden"} action={p.onAddFiles ? <Button onClick={() => pickerRef.current?.()}>Add</Button> : null}>
+          <ItemSection icon="paperclip" title="Attachments" className={files.length ? undefined : "td-item-section-hidden"} action={p.onAddFiles ? <Button onClick={() => pickerRef.current?.()}>Add</Button> : null}>
             <AttachmentList
               files={files}
               pickerRef={pickerRef}

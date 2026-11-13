@@ -136,7 +136,7 @@ export function Select<V extends SelectValue = SelectValue>({
       <Combobox.Portal container={container ?? undefined}>
         {isSheet ? <Combobox.Backdrop className="td-sheet-backdrop" /> : null}
         <Combobox.Positioner
-          className="td-pop-positioner"
+          className="td-popover-positioner"
           data-tier={tier}
           data-sheet={isSheet ? "true" : undefined}
           side={side}
@@ -145,7 +145,7 @@ export function Select<V extends SelectValue = SelectValue>({
           collisionPadding={8}
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >
-          <Combobox.Popup className={["td-pop", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} aria-label={listName} style={{ width }}>
+          <Combobox.Popup className={["td-popover", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} aria-label={listName} style={{ width }}>
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
             {search ? (
               <div className="td-select-search">

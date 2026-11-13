@@ -1,57 +1,57 @@
 @layer components {
-  .td-lp-row {
+  .td-label-picker-row {
     position: relative;
   }
-  .td-lp-bar {
+  .td-label-picker-bar {
     display: inline-block;
     width: 24px;
     height: 8px;
     border-radius: 3px;
     flex: none;
   }
-  .td-lp-name-text {
+  .td-label-picker-name-text {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-lp-check {
+  .td-label-picker-check {
     color: var(--ink-600);
     margin-right: 24px;
   }
-  .td-lp-edit {
+  .td-label-picker-edit {
     position: absolute;
     right: 4px;
     top: 3px;
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-standard);
   }
-  .td-lp-row:hover .td-lp-edit,
-  .td-lp-row:focus-within .td-lp-edit {
+  .td-label-picker-row:hover .td-label-picker-edit,
+  .td-label-picker-row:focus-within .td-label-picker-edit {
     opacity: 1;
   }
-  .td-lp-action {
+  .td-label-picker-action {
     width: 100%;
     border: 0;
     background: none;
     text-align: left;
     color: var(--ink-900);
   }
-  .td-lp-form {
+  .td-label-picker-form {
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 6px;
   }
-  .td-lp-form-head {
+  .td-label-picker-form-head {
     display: flex;
     align-items: center;
     gap: 6px;
     font: var(--weight-semibold) 13px / 18px var(--font-ui);
     color: var(--ink-900);
   }
-  .td-lp-name {
+  .td-label-picker-name {
     height: 30px;
     padding: 0 var(--sp-2);
     border-radius: var(--radius-md);
@@ -62,16 +62,16 @@
     outline: none;
     box-shadow: var(--shadow-input);
   }
-  .td-lp-name:focus {
+  .td-label-picker-name:focus {
     border-color: var(--focus-ring);
     box-shadow: 0 0 0 1px var(--focus-ring);
   }
-  .td-lp-swatches {
+  .td-label-picker-swatches {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     gap: 6px;
   }
-  .td-lp-swatch {
+  .td-label-picker-swatch {
     height: 24px;
     border: 0;
     padding: 0;
@@ -81,50 +81,50 @@
     align-items: center;
     justify-content: center;
   }
-  .td-lp-swatch:focus-visible {
+  .td-label-picker-swatch:focus-visible {
     outline: none;
     box-shadow:
       0 0 0 2px var(--surface-card),
       0 0 0 4px var(--focus-ring);
   }
-  .td-lp-swatch[aria-checked="true"] {
+  .td-label-picker-swatch[aria-checked="true"] {
     box-shadow:
       0 0 0 2px var(--surface-card),
       0 0 0 4px var(--ink-900);
   }
-  .td-lp-preview {
+  .td-label-picker-preview {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
   }
-  .td-lp-dup {
+  .td-label-picker-duplicate {
     font: var(--weight-regular) 11px / 15px var(--font-ui);
     color: var(--danger);
   }
-  .td-lp-foot {
+  .td-label-picker-foot {
     display: flex;
     align-items: center;
     gap: 6px;
     padding-top: 6px;
     border-top: 1px solid var(--border-divider);
   }
-  .td-lp-foot .td-btn {
+  .td-label-picker-foot .td-btn {
     height: 28px;
     padding: 0 10px;
     font: var(--weight-medium) 13px / 18px var(--font-ui);
   }
-  .td-lp-confirm {
+  .td-label-picker-confirm {
     margin-left: auto;
     font: var(--type-small);
     color: var(--ink-600);
   }
-  .td-lp-danger {
+  .td-label-picker-danger {
     color: var(--danger);
   }
-  .td-lp-push {
+  .td-label-picker-push {
     margin-left: auto;
   }
-  .td-lp-value {
+  .td-label-picker-value {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -134,9 +134,9 @@
     gap: var(--sp-1);
     flex-wrap: wrap;
   }
-  .td-lp-value[data-placeholder="true"],
-  .td-mp-value[data-placeholder="true"],
-  .td-cp-value[data-placeholder="true"] {
+  .td-label-picker-value[data-placeholder="true"],
+  .td-member-picker-value[data-placeholder="true"],
+  .td-cover-picker-value[data-placeholder="true"] {
     color: var(--ink-600);
     font-weight: var(--weight-regular);
   }

@@ -41,12 +41,12 @@ export const WithItems: Story = {
     await expect(within(rows).getAllByRole("listitem").filter((li) => li.parentElement?.closest('[role="list"]') === rows)).toHaveLength(3);
     await expect(rows).not.toContainElement(canvas.getByRole("button", { name: "Add an item" }));
     // Done rows sort last.
-    const titles = [...canvasElement.querySelectorAll(".td-lgroup > .td-lrow .td-lrow-title")].map((n) => n.textContent);
+    const titles = [...canvasElement.querySelectorAll(".td-list-row-group > .td-list-row .td-list-row-title")].map((n) => n.textContent);
     await expect(titles.at(-1)).toBe("Hire a second mechanic");
-    const roster = canvas.getByText("Send the pilot roster").closest<HTMLElement>(".td-lrow")!;
+    const roster = canvas.getByText("Send the pilot roster").closest<HTMLElement>(".td-list-row")!;
     await userEvent.click(roster.querySelector<HTMLElement>('[role="checkbox"]')!);
     await expect(args.onToggleDone).toHaveBeenCalledWith("c4", true);
-    const sub = canvas.getByText("Share it with the ops desk").closest<HTMLElement>(".td-lrow")!;
+    const sub = canvas.getByText("Share it with the ops desk").closest<HTMLElement>(".td-list-row")!;
     await userEvent.click(sub.querySelector<HTMLElement>('[role="checkbox"]')!);
     await expect(args.onToggleSubitem).toHaveBeenCalledWith("c4", "s2", true);
     await userEvent.click(canvas.getByText("Annual maintenance window"));

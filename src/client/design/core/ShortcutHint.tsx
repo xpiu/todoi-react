@@ -55,7 +55,7 @@ export function Keys({ keys, className }: { keys: ReadonlyArray<string>; classNa
     <span className={["td-keys", className ?? ""].join(" ").trim()}>
       {keys.map((k, j) =>
         SEPS.has(k) ? (
-          <span key={j} className="td-keys-sep">
+          <span key={j} className="td-keys-separator">
             {k}
           </span>
         ) : (

@@ -17,13 +17,13 @@ export const QUICK_REACTIONS = ["👍", "❤️", "🎉", "👀", "✅", "🚀",
 function ReactionAdd({ onPick }: { onPick: (emoji: string) => void }) {
   const pop = usePopover();
   return (
-    <Popover open={pop.open} onOpenChange={pop.setOpen} tier="detached" role="dialog" aria-label="Reactions" minWidth={0} trigger={<button type="button" className="td-react-add td-tip" aria-label="Add reaction" data-tip="Add reaction"><Icon name="smile-plus" size={14} /></button>}>
-      <div className="td-react-grid">
+    <Popover open={pop.open} onOpenChange={pop.setOpen} tier="detached" role="dialog" aria-label="Reactions" minWidth={0} trigger={<button type="button" className="td-reaction-add td-tooltip" aria-label="Add reaction" data-tip="Add reaction"><Icon name="smile-plus" size={14} /></button>}>
+      <div className="td-reaction-grid">
         {QUICK_REACTIONS.map((e) => (
           <button
             key={e}
             type="button"
-            className="td-react-pick"
+            className="td-reaction-pick"
             aria-label={`React ${e}`}
             onClick={() => {
               pop.close();
@@ -96,7 +96,7 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
     }
   };
   const act = (f: () => void, label: string, cls?: string) => (
-    <button type="button" className={"td-comment-act" + (cls ? ` ${cls}` : "")} onClick={f}>
+    <button type="button" className={"td-comment-action" + (cls ? ` ${cls}` : "")} onClick={f}>
       {label}
     </button>
   );
@@ -146,9 +146,9 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
               <div className="td-comment-bubble">{body != null ? <Markdown text={body} members={members} onOpenKey={onOpenKey} /> : children}</div>
             )}
             {!editing && (reactions.length || onReact) ? (
-              <div className="td-react-row">
+              <div className="td-reaction-row">
                 {reactions.map((r) => (
-                  <button key={r.emoji} type="button" className="td-react" aria-pressed={!!r.mine} aria-label={`${r.emoji} ${r.count}${r.by?.length ? ` — ${r.by.join(", ")}` : ""}`} title={r.by?.length ? r.by.join(", ") : undefined} onClick={() => onReact?.(r.emoji)}>
+                  <button key={r.emoji} type="button" className="td-reaction" aria-pressed={!!r.mine} aria-label={`${r.emoji} ${r.count}${r.by?.length ? ` — ${r.by.join(", ")}` : ""}`} title={r.by?.length ? r.by.join(", ") : undefined} onClick={() => onReact?.(r.emoji)}>
                     {r.emoji}
                     <span>{r.count}</span>
                   </button>
@@ -192,7 +192,7 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
             <div className="td-comment-body">
               <b>{author}</b> {body ?? children}
             </div>
-            <div className="td-comment-meta td-comment-meta-act">
+            <div className="td-comment-meta td-comment-meta-action">
               <span>{meta}</span>
             </div>
           </>

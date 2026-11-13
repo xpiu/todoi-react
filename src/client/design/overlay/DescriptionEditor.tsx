@@ -118,19 +118,19 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
     return (
       // Pointer: a click anywhere on the view edits, except on its own links and item keys. Keyboard:
       // the visually hidden Edit button, whose focus ring the view draws; links and keys stay separate stops.
-      <div className="td-desc-view" title="Click to edit description" style={style} onClick={(e) => !(e.target as Element).closest("a, button, [role=link]") && beginEdit()}>
-        {value.trim() ? <Markdown text={value} members={members} onOpenKey={onOpenKey} /> : <div className="td-desc-empty" aria-hidden>{placeholder}</div>}
-        <button type="button" className="td-desc-editbtn td-sr-only" aria-label={value.trim() ? "Edit description" : placeholder} onClick={beginEdit} />
+      <div className="td-description-view" title="Click to edit description" style={style} onClick={(e) => !(e.target as Element).closest("a, button, [role=link]") && beginEdit()}>
+        {value.trim() ? <Markdown text={value} members={members} onOpenKey={onOpenKey} /> : <div className="td-description-empty" aria-hidden>{placeholder}</div>}
+        <button type="button" className="td-description-editbtn td-sr-only" aria-label={value.trim() ? "Edit description" : placeholder} onClick={beginEdit} />
       </div>
     );
   if (!Edit) return (
-    <div className="td-desc-edit" style={style} aria-busy={!loadError} onKeyDown={(event) => {
+    <div className="td-description-edit" style={style} aria-busy={!loadError} onKeyDown={(event) => {
       if (event.key === "Escape") { event.stopPropagation(); close(); }
       else if (event.key.length === 1) event.stopPropagation();
     }}>
       {!loadError ? <div role="status"><span className="td-sr-only">Loading editor…</span>{loadingShown ? <Skeleton width="70%" height={32} /> : null}</div> : null}
-      <InlineError message={loadError} className="td-desc-load-error" />
-      <div className="td-desc-actions">
+      <InlineError message={loadError} className="td-description-load-error" />
+      <div className="td-description-actions">
         {loadError ? <Button variant="primary" onClick={() => window.location.reload()}>Reload</Button> : null}
         <Button variant="ghost" autoFocus onClick={close}>{initialDraft != null ? "Discard" : "Cancel"}</Button>
       </div>

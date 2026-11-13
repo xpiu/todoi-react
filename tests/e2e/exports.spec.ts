@@ -43,10 +43,10 @@ for (const scope of SCOPES) test(`exports preserve visible items, sorting and co
     const titles = ["Alpha item", "Zulu amber", "Zulu zebra"];
     for (const view of ["list", "board"] as const) {
       await page.goto(`/p/${project.projectId}?v=${view}&f=priority:High&s=lists.name.asc,items.title.asc`);
-      const roots = page.locator(view === "list" ? '.td-lrow[data-drag-id]:not(.td-lrow-sub)' : '.td-card[data-drag-id]');
+      const roots = page.locator(view === "list" ? '.td-list-row[data-drag-id]:not(.td-list-row-sub)' : '.td-card[data-drag-id]');
       await expect(page.getByText("Zulu amber", { exact: true }).first()).toBeVisible();
       // Top-level rows and the downloaded rows follow the same list and item order.
-      const rootTitles = await roots.locator(view === "list" ? ".td-lrow-title" : ".td-card-title").allTextContents();
+      const rootTitles = await roots.locator(view === "list" ? ".td-list-row-title" : ".td-card-title").allTextContents();
       expect(rootTitles).toEqual(titles);
       const csv = await download(page, "CSV", 3);
       expect(csv.trim().split("\n").slice(1).map((row) => row.split(",")[0])).toEqual(titles);
@@ -62,7 +62,7 @@ for (const scope of SCOPES) test(`exports preserve visible items, sorting and co
     const savedId = nanoid();
     expect((await page.request.post("/api/saved-views", { data: { id: savedId, projectId: project.projectId, name: "High priority", shared: false, definition: { view: "list", filters: [{ type: "priority", value: "High" }], sort: { lists: { key: "count", dir: "desc" }, items: { key: "title", dir: "desc" } } } } })).ok()).toBeTruthy();
     await page.goto(`/p/${project.projectId}?view=${savedId}`);
-    await expect(page.locator(`.td-lsec[data-list-id="${zulu!.id}"]`)).toBeVisible();
+    await expect(page.locator(`.td-list-section[data-list-id="${zulu!.id}"]`)).toBeVisible();
     expect((await download(page, "CSV", 3)).trim().split("\n").slice(1).map((row) => row.split(",")[0])).toEqual(["Zulu zebra", "Zulu amber", "Alpha item"]);
   } finally {
     await project.cleanup();

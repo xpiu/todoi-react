@@ -1,5 +1,5 @@
 @layer components {
-  .td-caldaylist {
+  .td-calendar-day-list {
     width: 100%;
     max-width: 720px;
     margin: 0 auto;
@@ -8,21 +8,21 @@
     gap: var(--sp-2);
     min-width: 0;
   }
-  .td-caldaylist-meta {
+  .td-calendar-day-list-meta {
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
     color: var(--chrome-text-dim);
   }
-  .td-caldaylist-block {
+  .td-calendar-day-list-block {
     background: var(--surface-card);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
     overflow: hidden;
   }
-  .td-caldaylist-block > * + *,
-  .td-caldaylist-rows > * + * {
+  .td-calendar-day-list-block > * + *,
+  .td-calendar-day-list-rows > * + * {
     border-top: 1px solid var(--border-divider);
   }
-  .td-caldaylist-add {
+  .td-calendar-day-list-add {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -37,14 +37,14 @@
     box-sizing: border-box;
     transition: background var(--duration-fast) var(--ease-standard);
   }
-  .td-caldaylist-add:hover {
+  .td-calendar-day-list-add:hover {
     background: var(--action-subtle);
   }
-  .td-caldaylist-add:focus-visible {
+  .td-calendar-day-list-add:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
   }
-  .td-caldaylist-empty {
+  .td-calendar-day-list-empty {
     padding: var(--sp-6) var(--sp-4);
     text-align: center;
     font: var(--type-body);

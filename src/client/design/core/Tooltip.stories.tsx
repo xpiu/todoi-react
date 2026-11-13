@@ -19,7 +19,7 @@ export const Bottom: Story = {
   async play({ canvas, userEvent }) {
     const button = canvas.getByRole("button", { name: "Copy" });
     await expect(button).toHaveAttribute("data-tip", "Copy link");
-    await expect(button).toHaveClass("td-btn", "td-tip");
+    await expect(button).toHaveClass("td-btn", "td-tooltip");
     await userEvent.tab();
     await expect(button).toHaveFocus();
     await expect(getComputedStyle(button, "::after").content).toBe("\"Copy link\"");

@@ -43,38 +43,38 @@ export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, s
       minWidth={0}
       trigger={
         caption ? (
-          <button type="button" className="td-pip-tile td-pip-captioned" style={{ height: size, ...style }} aria-label={label} disabled={disabled}>
-            <span className="td-pip-glyph" style={{ width: size - 10, height: size - 10 }}>
+          <button type="button" className="td-project-icon-picker-tile td-project-icon-picker-captioned" style={{ height: size, ...style }} aria-label={label} disabled={disabled}>
+            <span className="td-project-icon-picker-glyph" style={{ width: size - 10, height: size - 10 }}>
               {glyph}
             </span>
-            <span className="td-pip-caption">{caption}</span>
-            <span className="td-pip-chev">
+            <span className="td-project-icon-picker-caption">{caption}</span>
+            <span className="td-project-icon-picker-chevron">
               <Icon name="chevron-down" size={14} />
             </span>
           </button>
         ) : (
-          <button type="button" {...tipProps(disabled ? undefined : label)} className="td-pip-tile td-tip" style={{ width: size, height: size, ...style }} aria-label={label} disabled={disabled}>
+          <button type="button" {...tipProps(disabled ? undefined : label)} className="td-project-icon-picker-tile td-tooltip" style={{ width: size, height: size, ...style }} aria-label={label} disabled={disabled}>
             {glyph}
           </button>
         )
       }
     >
-      <div className="td-pip-panel">
-        <div className="td-pip-colors" role="radiogroup" aria-label="Color">
+      <div className="td-project-icon-picker-panel">
+        <div className="td-project-icon-picker-colors" role="radiogroup" aria-label="Color">
           {LABEL_COLORS.map((c) => (
             <Tooltip key={c} text={c.charAt(0).toUpperCase() + c.slice(1)} portal>
-              <button type="button" role="radio" className="td-pip-swatch" style={{ background: `var(--label-${c})` }} aria-label={c} aria-checked={c === cur.color} onClick={() => onChange({ icon: cur.icon, color: c })} />
+              <button type="button" role="radio" className="td-project-icon-picker-swatch" style={{ background: `var(--label-${c})` }} aria-label={c} aria-checked={c === cur.color} onClick={() => onChange({ icon: cur.icon, color: c })} />
             </Tooltip>
           ))}
         </div>
-        <div className="td-pip-div" />
-        <div className="td-pip-grid" role="radiogroup" aria-label="Icon">
+        <div className="td-project-icon-picker-divider" />
+        <div className="td-project-icon-picker-grid" role="radiogroup" aria-label="Icon">
           {PROJECT_ICONS.map((n) => (
             <Tooltip key={n} text={iconLabel(n)} portal>
               <button
                 type="button"
                 role="radio"
-                className="td-pip-opt"
+                className="td-project-icon-picker-option"
                 aria-label={n}
                 aria-checked={n === cur.icon}
                 onClick={() => {

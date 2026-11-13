@@ -8,7 +8,7 @@ export type BoardViewProps = ListsViewProps;
 
 export function BoardView({ children, onAddList, showAddList, after, rootProps, className, ...nav }: BoardViewProps) {
   return (
-    <KeyNav {...nav} className={["td-board", className ?? ""].join(" ").trim()} itemSelector=".td-card" columnSelector=".td-list" {...rootProps}>
+    <KeyNav {...nav} className={["td-board", className ?? ""].join(" ").trim()} itemSelector=".td-card" columnSelector=".td-list-column" {...rootProps}>
       {children}
       <AddListTail className="td-board-tail" buttonClassName="td-board-addlist" onAddList={onAddList} showAddList={showAddList} after={after} />
     </KeyNav>

@@ -133,12 +133,12 @@ function PanelTitle({ project, onChange }: InnerProps) {
   // Minimal shows no project glyphs: no icon tile in the header.
   const projectIcons = useProjectIcons();
   return (
-    <span className="td-pp-head">
+    <span className="td-project-panel-head">
       {projectIcons ? <ProjectIconPicker icon={project.icon} color={project.color} size={32} onChange={(v) => onChange({ icon: v.icon, color: v.color })} disabled={!isAdmin} /> : null}
-      <span className="td-pp-title">
-        <span className="td-pp-name">{project.name}</span>
+      <span className="td-project-panel-title">
+        <span className="td-project-panel-name">{project.name}</span>
         {project.groupName ? (
-          <span className="td-pp-crumb">
+          <span className="td-project-panel-crumb">
             <Icon name="folders" size={12} />
             {project.groupName}
           </span>
@@ -188,12 +188,12 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
     else setNameDraft(project.name);
   };
   const row = (id: string, label: ReactNode, hint: ReactNode, ctl: ReactNode) => (
-    <div className="td-pp-row" key={id} data-setting={id}>
-      <div className="td-pp-rowtext">
-        <span className="td-pp-label">{label}</span>
-        {hint ? <span className="td-pp-hint">{hint}</span> : null}
+    <div className="td-project-panel-row" key={id} data-setting={id}>
+      <div className="td-project-panel-rowtext">
+        <span className="td-project-panel-label">{label}</span>
+        {hint ? <span className="td-project-panel-hint">{hint}</span> : null}
       </div>
-      <div className="td-pp-ctl">{ctl}</div>
+      <div className="td-project-panel-control">{ctl}</div>
     </div>
   );
   // Destructive rows: the control swaps to "Do it · Cancel" and the hint asks the question.
@@ -219,15 +219,15 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
           </Button>
         </>
       ) : (
-        <Button icon={id === "leave" ? "log-out" : id === "archive" ? "archive" : "trash-2"} disabled={disabled} className={danger && !disabled ? "td-pp-danger" : undefined} onClick={() => setConfirm(id)}>
+        <Button icon={id === "leave" ? "log-out" : id === "archive" ? "archive" : "trash-2"} disabled={disabled} className={danger && !disabled ? "td-project-panel-danger" : undefined} onClick={() => setConfirm(id)}>
           {verb}
         </Button>
       ),
     );
   };
   const sec = (id: string, title: string | null, children: ReactNode) => (
-    <section className="td-pp-sec" aria-label={title?.replace(/ · .*$/, "") ?? "About"} data-section={id}>
-      {title ? <h3 className="td-pp-sectitle">{title}</h3> : null}
+    <section className="td-project-panel-section" aria-label={title?.replace(/ · .*$/, "") ?? "About"} data-section={id}>
+      {title ? <h3 className="td-project-panel-section-title">{title}</h3> : null}
       {children}
     </section>
   );
@@ -250,7 +250,7 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
   };
   return (
     <div ref={bodyRef}>
-      {sec("about", null, row("name", "Name", null, <input className="td-field td-pp-namefield" value={nameDraft} aria-label="Project name" disabled={!isAdmin} onChange={(e) => setNameDraft(e.target.value)} onKeyDown={(e) => {
+      {sec("about", null, row("name", "Name", null, <input className="td-field td-project-panel-namefield" value={nameDraft} aria-label="Project name" disabled={!isAdmin} onChange={(e) => setNameDraft(e.target.value)} onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           commitName();
@@ -265,23 +265,23 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
         <>
           <div role="list" aria-label="Members">
             {members.map((m) => (
-              <div className="td-pp-member" role="listitem" key={m.id}>
+              <div className="td-project-panel-member" role="listitem" key={m.id}>
                 <Avatar name={m.name} src={m.image ?? undefined} color={m.color} size={28} decorative />
-                <span className="td-pp-mname">
+                <span className="td-project-panel-member-name">
                   <b>
                     {m.name}
                     {m.id === currentUserId ? " (you)" : ""}
                   </b>
                   {m.email ? <span>{m.email}</span> : null}
                 </span>
-                {m.role === "owner" || !isAdmin || !onChangeRole ? <span className="td-pp-mrole">{roleName(m.role)}</span> : <Select aria-label={`Role for ${m.name}`} value={m.role} options={PROJECT_ROLES} onChange={(v) => onChangeRole(m, v)} placement="bottom-end" tier="detached" width={160} />}
+                {m.role === "owner" || !isAdmin || !onChangeRole ? <span className="td-project-panel-member-role">{roleName(m.role)}</span> : <Select aria-label={`Role for ${m.name}`} value={m.role} options={PROJECT_ROLES} onChange={(v) => onChangeRole(m, v)} placement="bottom-end" tier="detached" width={160} />}
                 {isAdmin && onRemoveMember && m.role !== "owner" ? <IconButton name="x" label={`Remove ${m.name}`} tooltip="Remove" size={28} iconSize={15} onClick={() => onRemoveMember(m)} /> : null}
               </div>
             ))}
           </div>
           {isAdmin && onInvite ? (
-            <div className="td-pp-invite">
-              <TextField type="email" icon="user-plus" value={inviteMail} aria-label="Invite by email" placeholder="name@company.com" className="td-pp-invitefield" onChange={(e) => setInviteMail(e.target.value)} onKeyDown={(e) => {
+            <div className="td-project-panel-invite">
+              <TextField type="email" icon="user-plus" value={inviteMail} aria-label="Invite by email" placeholder="name@company.com" className="td-project-panel-invitefield" onChange={(e) => setInviteMail(e.target.value)} onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   void invite();
@@ -293,36 +293,36 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
               </Button>
             </div>
           ) : null}
-          <InlineError message={inviteError} className="td-pp-inviteerror" />
+          <InlineError message={inviteError} className="td-project-panel-inviteerror" />
           {isAdmin && onRevokeInvite ? (
             <section aria-label="Pending invites">
-              <h4 className="td-pp-cap">Pending invites</h4>
-              {invitesLoading ? <p className="td-pp-cap" role="status">Loading invites…</p> : invitesError ? <><InlineError message={invitesError} /><Button onClick={onRetryInvites}>Retry</Button></> : invites.length ? invites.map((i) => <InviteRow key={i.code} invite={i} onRevoke={onRevokeInvite} />) : <p className="td-pp-cap">No pending invites.</p>}
+              <h4 className="td-project-panel-caption">Pending invites</h4>
+              {invitesLoading ? <p className="td-project-panel-caption" role="status">Loading invites…</p> : invitesError ? <><InlineError message={invitesError} /><Button onClick={onRetryInvites}>Retry</Button></> : invites.length ? invites.map((i) => <InviteRow key={i.code} invite={i} onRevoke={onRevokeInvite} />) : <p className="td-project-panel-caption">No pending invites.</p>}
             </section>
           ) : null}
-          {!isAdmin ? <div className="td-pp-cap">Only admins can invite people or change roles.</div> : null}
+          {!isAdmin ? <div className="td-project-panel-caption">Only admins can invite people or change roles.</div> : null}
         </>
       ))}
       {sec("defaults", "Defaults", (
         <>
           {row("view", "Default view", "What the project opens in for people who haven't picked a view", <Select aria-label="Default view" value={project.defaultView} options={VIEW_OPTS} onChange={(v) => onChange({ defaultView: v })} placement="bottom-end" tier="detached" width={180} disabled={!isAdmin} />)}
           {row("linkStatuses", "Link lists with statuses", "An item created in or moved to a list with a Status role takes that Status", <Switch aria-label="Link lists with statuses" checked={project.linkStatuses} disabled={!isAdmin} onChange={(v) => onChange({ linkStatuses: v })} />)}
-          {project.keyPrefix ? row("abbr", <button type="button" className="td-pp-linkbtn" onClick={() => onAction("open-group-settings")}>Change the Item ID prefix set at Group level</button>, null, <span className="td-pp-mono">{project.keyPrefix}-</span>) : null}
+          {project.keyPrefix ? row("abbr", <button type="button" className="td-project-panel-linkbtn" onClick={() => onAction("open-group-settings")}>Change the Item ID prefix set at Group level</button>, null, <span className="td-project-panel-mono">{project.keyPrefix}-</span>) : null}
         </>
       ))}
       {sec("appearance", "Appearance", (
         <>
           {projectIcons ? row("icon", "Icon and color", null, <ProjectIconPicker icon={project.icon} color={project.color} placement="bottom-end" onChange={(v) => onChange({ icon: v.icon, color: v.color })} disabled={!isAdmin} />) : null}
-          <div className="td-pp-field" data-setting="description">
-            <div className="td-pp-rowtext td-pp-fieldlabel">
-              <span className="td-pp-label">Description</span>
+          <div className="td-project-panel-field" data-setting="description">
+            <div className="td-project-panel-rowtext td-project-panel-fieldlabel">
+              <span className="td-project-panel-label">Description</span>
             </div>
             <TextField multiline rows={2} value={desc} aria-label="Description" placeholder="Add a short description…" onChange={(e) => setDesc(e.target.value)} onKeyDown={(e) => {
               if (e.key === "Escape") e.stopPropagation();
               else if (e.key.length === 1) e.stopPropagation();
             }} />
             {desc !== (project.description ?? "") ? (
-              <div className="td-pp-fieldfoot">
+              <div className="td-project-panel-fieldfoot">
                 <Button variant="ghost" onClick={() => setDesc(project.description ?? "")}>
                   Cancel
                 </Button>
@@ -368,9 +368,9 @@ function InviteRow({ invite, onRevoke }: { invite: PanelInvite; onRevoke: (invit
     finally { setBusy(false); }
   };
   return <div>
-    <div className="td-pp-row td-pp-inviteentry">
-      <div className="td-pp-rowtext"><span className="td-pp-label">{invite.email ?? "Anyone with the link"}</span><span className="td-pp-hint">{roleName(invite.role)} · {expired ? "Expired" : "Expires"} {formatDate(invite.expiresAt)}</span></div>
-      <div className="td-pp-ctl"><Button icon={copyIcon(copied, "copy")} disabled={expired} onClick={() => void copy(invite.url)}>{copied === "copied" ? "Copied" : "Copy link"}</Button><Button disabled={busy} onClick={() => void revoke()}>{busy ? "Revoking…" : "Revoke"}</Button></div>
+    <div className="td-project-panel-row td-project-panel-inviteentry">
+      <div className="td-project-panel-rowtext"><span className="td-project-panel-label">{invite.email ?? "Anyone with the link"}</span><span className="td-project-panel-hint">{roleName(invite.role)} · {expired ? "Expired" : "Expires"} {formatDate(invite.expiresAt)}</span></div>
+      <div className="td-project-panel-control"><Button icon={copyIcon(copied, "copy")} disabled={expired} onClick={() => void copy(invite.url)}>{copied === "copied" ? "Copied" : "Copy link"}</Button><Button disabled={busy} onClick={() => void revoke()}>{busy ? "Revoking…" : "Revoke"}</Button></div>
     </div>
     <InlineError message={error ?? (copied === "failed" ? COPY_FAILED : null)} />
   </div>;

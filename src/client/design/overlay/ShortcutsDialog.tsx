@@ -15,22 +15,22 @@ export interface ShortcutsDialogProps {
 export function ShortcutsDialog({ open, onClose, sections = SHORTCUTS.sections, note }: ShortcutsDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} title="Keyboard shortcuts" width={720}>
-      <div className="td-scd-grid">
+      <div className="td-shortcuts-dialog-grid">
         {sections.map((sec) => (
-          <section key={sec.title} className="td-scd-sec">
+          <section key={sec.title} className="td-shortcuts-dialog-section">
             <h3>{sec.title}</h3>
-            <div className="td-scd-rows">
+            <div className="td-shortcuts-dialog-rows">
               {sec.rows.map((r, i) => (
-                <div key={i} className="td-scd-row">
+                <div key={i} className="td-shortcuts-dialog-row">
                   <Keys keys={r[0]} />
-                  <span className="td-scd-desc">{r[1]}</span>
+                  <span className="td-shortcuts-dialog-description">{r[1]}</span>
                 </div>
               ))}
             </div>
           </section>
         ))}
       </div>
-      <div className="td-scd-note">{note ?? (SHORTCUTS.isMac ? "⌘ is Ctrl on Windows and Linux. " : "Cmd substitutes for Ctrl on macOS. ") + "Shortcuts pause while you’re typing in a field."}</div>
+      <div className="td-shortcuts-dialog-note">{note ?? (SHORTCUTS.isMac ? "⌘ is Ctrl on Windows and Linux. " : "Cmd substitutes for Ctrl on macOS. ") + "Shortcuts pause while you’re typing in a field."}</div>
     </Dialog>
   );
 }

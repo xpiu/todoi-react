@@ -65,39 +65,39 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
     if (!keep) setAdding(false);
   };
   const addRow = (
-    <div className="td-lsec-addrow">
-      <span className="td-lsec-plus">
+    <div className="td-list-section-addrow">
+      <span className="td-list-section-plus">
         <Icon name="plus" size={18} />
       </span>
       <QuickAddInput {...quickAdd} placeholder="Add an item" aria-label={`New item in ${name}`} onSubmit={(p) => commitAdd(p, true)} onCancel={() => setAdding(false)} onBlur={(p) => commitAdd(p, false)} />
     </div>
   );
   return (
-    <section className={collapsed && showHeader ? "td-lsec td-lsec-collapsed" : "td-lsec"} data-list-name={name} data-list-id={listId} style={style}>
+    <section className={collapsed && showHeader ? "td-list-section td-list-section-collapsed" : "td-list-section"} data-list-name={name} data-list-id={listId} style={style}>
       {showHeader ? (
-        <div className="td-lsec-head">
-          <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-lsec-iconbtn" size={18} />
-          {rename.renaming ? <input className="td-lsec-rename" {...rename.inputProps} /> : <span className="td-lsec-name">{name}</span>}
-          {!rename.renaming && count != null ? <span className="td-lsec-count">{count}</span> : null}
+        <div className="td-list-section-head">
+          <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-section-iconbtn" size={18} />
+          {rename.renaming ? <input className="td-list-section-rename" {...rename.inputProps} /> : <span className="td-list-section-name">{name}</span>}
+          {!rename.renaming && count != null ? <span className="td-list-section-count">{count}</span> : null}
           {actions ? (
-            <div className="td-lsec-extra" onClick={(e) => e.stopPropagation()}>
+            <div className="td-list-section-extra" onClick={(e) => e.stopPropagation()}>
               {actions}
             </div>
           ) : null}
-          <div className="td-lsec-actions">
+          <div className="td-list-section-actions">
             {collapsible ? (
-              <button type="button" className="td-lsec-chev" aria-expanded={!collapsed} aria-label={collapsed ? `Expand ${name}` : `Collapse ${name}`} onClick={() => setCollapsed((c) => !c)}>
+              <button type="button" className="td-list-section-chevron" aria-expanded={!collapsed} aria-label={collapsed ? `Expand ${name}` : `Collapse ${name}`} onClick={() => setCollapsed((c) => !c)}>
                 <Icon name="chevron-down" size={16} />
               </button>
             ) : null}
             {/* A toggle with one name: aria-pressed says whether the top add row is open. */}
-            <button type="button" className="td-lsec-addbtn td-tip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
+            <button type="button" className="td-list-section-addbtn td-tooltip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
               <Icon name="plus" size={16} />
             </button>
             {menu ? (
               <ListActionsPopover
                 label={`List actions for ${name}`}
-                trigger={<button type="button" className="td-lsec-more td-tip" data-tip="List actions" data-tip-side="bottom-end" aria-label={`List actions for ${name}`}><Icon name="ellipsis" size={16} /></button>}
+                trigger={<button type="button" className="td-list-section-more td-tooltip" data-tip="List actions" data-tip-side="bottom-end" aria-label={`List actions for ${name}`}><Icon name="ellipsis" size={16} /></button>}
                 name={name}
                 activeIcon={icon}
                 statusRole={statusRole}
@@ -112,18 +112,18 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
           </div>
         </div>
       ) : null}
-      <div className="td-lsec-fold" data-collapsed={collapsed && showHeader ? "true" : "false"} aria-hidden={collapsed && showHeader} inert={collapsed && showHeader ? true : undefined}>
-        <div className="td-lsec-fold-in">
-          <div className="td-lsec-body" data-flush={showHeader ? undefined : "true"}>
+      <div className="td-list-section-fold" data-collapsed={collapsed && showHeader ? "true" : "false"} aria-hidden={collapsed && showHeader} inert={collapsed && showHeader ? true : undefined}>
+        <div className="td-list-section-fold-in">
+          <div className="td-list-section-body" data-flush={showHeader ? undefined : "true"}>
             {adding === "top" ? addRow : null}
-            <div className="td-lsec-rows" role="list" aria-label={`${name} items`}>
+            <div className="td-list-section-rows" role="list" aria-label={`${name} items`}>
               {children}
             </div>
             {!showAddRow ? null : adding === "bottom" ? (
               addRow
             ) : (
-              <button type="button" className="td-lsec-add" data-add-item={name} onClick={() => startAdd("bottom")}>
-                <span className="td-lsec-plus">
+              <button type="button" className="td-list-section-add" data-add-item={name} onClick={() => startAdd("bottom")}>
+                <span className="td-list-section-plus">
                   <Icon name="plus" size={18} />
                 </span>
                 Add an item

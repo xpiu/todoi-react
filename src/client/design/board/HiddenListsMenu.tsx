@@ -21,7 +21,7 @@ export function HiddenListsMenu({ lists, onShow }: HiddenListsMenuProps) {
       placement="bottom-start"
       minWidth={240}
       trigger={
-        <button type="button" className="td-hiddenlists">
+        <button type="button" className="td-hidden-lists">
           <Icon name="eye-off" size={16} />
           {label}
         </button>

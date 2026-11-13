@@ -1,22 +1,22 @@
 @layer components {
-  .td-pd-name {
+  .td-project-dialog-name {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
     margin: 2px 0 14px;
   }
-  .td-pd-namefield {
+  .td-project-dialog-namefield {
     height: 36px;
     padding-top: 0;
     padding-bottom: 0;
     font-size: var(--text-md);
   }
-  .td-pd-grouptile {
+  .td-project-dialog-grouptile {
     width: 36px;
     height: 36px;
     cursor: default;
   }
-  .td-pd-row {
+  .td-project-dialog-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -24,39 +24,39 @@
     min-height: 44px;
     padding: 6px 0;
   }
-  .td-pd-row + .td-pd-row,
-  .td-pd-tpl + .td-pd-row {
+  .td-project-dialog-row + .td-project-dialog-row,
+  .td-project-dialog-template + .td-project-dialog-row {
     border-top: 1px solid var(--border-divider);
   }
-  .td-pd-rowtext {
+  .td-project-dialog-rowtext {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
   }
-  .td-pd-label {
+  .td-project-dialog-label {
     font: var(--type-body);
     color: var(--ink-900);
   }
-  .td-pd-hint {
+  .td-project-dialog-hint {
     font: var(--type-small);
     color: var(--ink-400);
   }
-  .td-pd-tpl {
+  .td-project-dialog-template {
     padding: var(--sp-2) 0 10px;
     border-top: 1px solid var(--border-divider);
   }
-  .td-pd-tplhead {
+  .td-project-dialog-template-head {
     font: var(--type-body);
     color: var(--ink-900);
     padding: var(--sp-1) 0 6px;
   }
-  .td-pd-tpllist {
+  .td-project-dialog-template-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
-  .td-pd-tplrow {
+  .td-project-dialog-template-row {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -72,38 +72,38 @@
     color: var(--ink-900);
     font: var(--weight-regular) 13px / 18px var(--font-ui);
   }
-  .td-pd-tplrow:hover {
+  .td-project-dialog-template-row:hover {
     background: var(--action-subtle);
   }
-  .td-pd-tplrow:focus-visible {
+  .td-project-dialog-template-row:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
   }
-  .td-pd-tplrow[aria-checked="true"] {
+  .td-project-dialog-template-row[aria-checked="true"] {
     background: var(--blue-100);
   }
-  .td-pd-tplname {
+  .td-project-dialog-template-name {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
   }
-  .td-pd-tplname b {
+  .td-project-dialog-template-name b {
     font-weight: var(--weight-medium);
   }
-  .td-pd-tplname span {
+  .td-project-dialog-template-name span {
     font: var(--type-small);
     color: var(--ink-400);
   }
-  .td-pd-tplcheck {
+  .td-project-dialog-template-check {
     flex: none;
     color: var(--blue-500);
     width: 16px;
   }
-  .td-pd-copyrow {
+  .td-project-dialog-copyrow {
     padding: 6px var(--sp-2) 2px 34px;
   }
-  .td-pd-mono {
+  .td-project-dialog-mono {
     font: var(--weight-medium) 13px / 18px var(--font-mono);
     color: var(--ink-900);
     text-transform: uppercase;
@@ -113,10 +113,10 @@
     padding: 0 10px;
     box-shadow: none;
   }
-  .td-pd-error {
+  .td-project-dialog-error {
     padding-top: var(--sp-3);
   }
-  .td-pd-foot {
+  .td-project-dialog-foot {
     display: flex;
     justify-content: flex-end;
     gap: var(--sp-2);

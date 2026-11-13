@@ -72,7 +72,7 @@ export const Stack: Story = {
     // Five people, three faces, then the overflow disc; each stack is one image named by everyone in it.
     await expect(canvas.getAllByRole("img", { name: "Flo Zuallaert, Sam Verhoeven, Marit Olsen, Jonas Berg, Ana Lopes" })).toHaveLength(2);
     await expect(canvas.getByRole("img", { name: "Flo Zuallaert, Sam Verhoeven" })).toBeVisible();
-    const more = (n: number) => canvasElement.querySelector(`.td-avstack-more[data-more="+${n}"]`)!;
+    const more = (n: number) => canvasElement.querySelector(`.td-avatar-stack-more[data-more="+${n}"]`)!;
     await expect(more(2)).toBeVisible();
     await expect(getComputedStyle(more(3), "::after").content).toBe('"+3"');
   },

@@ -1,10 +1,10 @@
 @layer components {
-  .td-att {
+  .td-attachments {
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
-  .td-att-row {
+  .td-attachments-row {
     position: relative;
     display: flex;
     align-items: center;
@@ -14,15 +14,15 @@
     border-radius: var(--radius-md);
     transition: background var(--duration-fast) var(--ease-standard);
   }
-  .td-att-row:hover,
-  .td-att-row:focus-within {
+  .td-attachments-row:hover,
+  .td-attachments-row:focus-within {
     background: var(--n-a06);
   }
-  .td-att-main {
+  .td-attachments-main {
     flex: 1;
     min-width: 0;
   }
-  .td-att-thumb {
+  .td-attachments-thumb {
     width: 64px;
     height: 48px;
     border-radius: var(--radius-md);
@@ -37,23 +37,23 @@
     padding: 0;
     cursor: default;
   }
-  .td-att-thumb img {
+  .td-attachments-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
   }
-  .td-att-thumb.is-image {
+  .td-attachments-thumb.is-image {
     cursor: zoom-in;
   }
-  .td-att-thumb:focus-visible {
+  .td-attachments-thumb:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
-  .td-att-thumb[data-kind]::after {
+  .td-attachments-thumb[data-kind]::after {
     content: attr(data-kind);
   }
-  .td-att-thumb[data-kind] {
+  .td-attachments-thumb[data-kind] {
     background: var(--surface-list);
     color: var(--ink-400);
     flex-direction: column;
@@ -62,14 +62,14 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
-  .td-att-name {
+  .td-attachments-name {
     font: var(--weight-semibold) var(--text-sm) / var(--lh-sm) var(--font-ui);
     color: var(--ink-900);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-att-meta {
+  .td-attachments-meta {
     font: var(--type-small);
     color: var(--ink-600);
     display: flex;
@@ -78,53 +78,53 @@
     white-space: nowrap;
     overflow: hidden;
   }
-  .td-att-cover {
+  .td-attachments-cover {
     display: inline-flex;
     align-items: center;
     gap: 3px;
   }
-  .td-att-progress {
+  .td-attachments-progress {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
     margin-top: var(--sp-1);
   }
-  .td-att-bar {
+  .td-attachments-bar {
     flex: 1;
   }
-  .td-att-actions {
+  .td-attachments-actions {
     display: flex;
     gap: 2px;
     flex: none;
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-standard);
   }
-  .td-att-row:hover .td-att-actions,
-  .td-att-row:focus-within .td-att-actions,
-  .td-att-actions:has([aria-expanded="true"]) {
+  .td-attachments-row:hover .td-attachments-actions,
+  .td-attachments-row:focus-within .td-attachments-actions,
+  .td-attachments-actions:has([aria-expanded="true"]) {
     opacity: 1;
   }
-  html[data-touch="true"] .td-att-actions,
-  .td-att-actions.is-visible {
+  html[data-touch="true"] .td-attachments-actions,
+  .td-attachments-actions.is-visible {
     opacity: 1;
   }
-  .td-att-actions .td-btn {
+  .td-attachments-actions .td-btn {
     height: 28px;
   }
-  .td-att-error {
+  .td-attachments-error {
     color: var(--danger);
   }
-  .td-att-error span {
+  .td-attachments-error span {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .td-att-row[data-failed] .td-att-name {
+  .td-attachments-row[data-failed] .td-attachments-name {
     color: var(--ink-600);
   }
-  html[data-touch="true"] .td-att-row {
+  html[data-touch="true"] .td-attachments-row {
     padding: var(--sp-2);
   }
-  .td-att-rename {
+  .td-attachments-rename {
     width: 100%;
     box-sizing: border-box;
     height: 24px;
@@ -138,22 +138,22 @@
     color: var(--ink-900);
     outline: none;
   }
-  .td-att-confirm {
+  .td-attachments-confirm {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
     font: var(--type-small);
     color: var(--ink-600);
   }
-  .td-att-confirm .td-btn {
+  .td-attachments-confirm .td-btn {
     height: 24px;
     padding: 0 var(--sp-2);
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
   }
-  .td-att-danger {
+  .td-attachments-danger {
     color: var(--danger);
   }
-  .td-att-input {
+  .td-attachments-input {
     display: none;
   }
   .td-drop {
@@ -234,7 +234,7 @@
   }
   /* File drop onto a card or row: dashed action-blue ring */
   .td-card.td-file-target,
-  .td-lrow.td-file-target {
+  .td-list-row.td-file-target {
     outline: 2px dashed var(--blue-500);
     outline-offset: -2px;
   }

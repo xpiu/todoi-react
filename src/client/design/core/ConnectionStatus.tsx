@@ -125,14 +125,14 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
   }, [idle, settledFor]);
   if (idle && !settled && !showWhenIdle) return null;
   const c = connectionCopy({ online: live, pending, syncing, lastSynced, failed, transientPending, storageError });
-  const cls = ["td-conn", variant === "card" ? "td-conn-card" : "", className ?? ""].filter(Boolean).join(" ");
+  const cls = ["td-connection", variant === "card" ? "td-connection-card" : "", className ?? ""].filter(Boolean).join(" ");
   const content = (
     <>
-      <span className={"td-conn-ico" + (syncing && live ? " is-spinning" : "")} aria-hidden>
+      <span className={"td-connection-icon" + (syncing && live ? " is-spinning" : "")} aria-hidden>
         <Icon name={c.icon} size={15} />
       </span>
       <span>{c.label}</span>
-      {c.count ? <span className="td-conn-n">· {c.count}</span> : null}
+      {c.count ? <span className="td-connection-count">· {c.count}</span> : null}
     </>
   );
   // The full condition is announced through one polite status region beside the pill, never on the button. The
@@ -146,7 +146,7 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
   if (!onSyncNow && !onOpenSettings && !onClearFailed)
     return (
       <>
-        <span {...tipProps(c.message, "bottom-end")} className={cls + " td-conn-static td-tip"} aria-hidden style={style}>
+        <span {...tipProps(c.message, "bottom-end")} className={cls + " td-connection-static td-tooltip"} aria-hidden style={style}>
           {content}
         </span>
         {status}
@@ -154,15 +154,15 @@ export function ConnectionStatus({ online, pending = 0, syncing = false, lastSyn
     );
   const pill = (
     // Named by what it shows, then the full condition ("2 need review: 2 edits couldn't sync").
-    <button {...tipProps(c.message, "bottom-end")} type="button" className={cls + " td-tip"} aria-label={labelWithValue(c.count ? `${c.label} · ${c.count}` : c.label, c.message)} style={style}>
+    <button {...tipProps(c.message, "bottom-end")} type="button" className={cls + " td-tooltip"} aria-label={labelWithValue(c.count ? `${c.label} · ${c.count}` : c.label, c.message)} style={style}>
       {content}
     </button>
   );
   return (
     <>
       <MenuPopover label="Connection" tier="nav" placement="bottom-end" width={264} trigger={pill}>
-        <div className="td-conn-menu-head">
-          <Icon name={c.icon} size={15} className={c.tone === "warn" ? "td-conn-menu-head-warn" : "td-conn-menu-head-info"} />
+        <div className="td-connection-menu-head">
+          <Icon name={c.icon} size={15} className={c.tone === "warn" ? "td-connection-menu-head-warn" : "td-connection-menu-head-info"} />
           {c.message}
         </div>
         <MenuNote>{c.detail}</MenuNote>

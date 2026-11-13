@@ -31,7 +31,7 @@ for (const scope of SCOPES) test(`cold editor preserves focus, formatting and ke
     expect(requests).toBe(0);
     await dialog.getByRole("button", { name: "Edit description" }).focus();
     await page.keyboard.press("Enter");
-    await expect(dialog.locator(".td-desc-edit .td-sk")).toBeVisible();
+    await expect(dialog.locator(".td-description-edit .td-skeleton")).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
     await page.keyboard.press("ControlOrMeta+Enter");
     await expect(dialog).toBeVisible();
@@ -51,11 +51,11 @@ for (const scope of SCOPES) test(`cold editor preserves focus, formatting and ke
     await checkA11y(page, `${scope} editor editing`);
     await page.screenshot({ path: `.tmp/quick-wins/shots/${scope}-editor-editing.png` });
     await dialog.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(dialog.locator(".td-desc-view strong")).toContainText("A formatted description n f g ?");
+    await expect(dialog.locator(".td-description-view strong")).toContainText("A formatted description n f g ?");
     await dialog.getByTitle("Click to edit description").click();
     await expect(editor).toBeFocused();
     await editor.press("Escape");
-    await expect(dialog.locator(".td-desc-view strong")).toBeVisible();
+    await expect(dialog.locator(".td-description-view strong")).toBeVisible();
     expect(requests).toBe(1);
   } finally { release(); }
 });
@@ -70,7 +70,7 @@ test("a failed editor load recovers on the same item without losing its saved co
   const dialog = page.getByRole("dialog");
   await dialog.getByTitle("Click to edit description").click();
   await expect(dialog.getByRole("alert")).toContainText("Couldn't load the editor");
-  expect((await new AxeBuilder({ page }).include(".td-desc-load-error").withRules(["color-contrast"]).analyze()).violations).toEqual([]);
+  expect((await new AxeBuilder({ page }).include(".td-description-load-error").withRules(["color-contrast"]).analyze()).violations).toEqual([]);
   await page.keyboard.press("ControlOrMeta+Enter");
   await expect(dialog).toBeVisible();
   await page.screenshot({ path: ".tmp/quick-wins/shots/minimal-light-editor-failed-phone.png" });

@@ -157,7 +157,7 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
       <BaseMenu.Portal container={container ?? undefined}>
         {isSheet ? <BaseMenu.Backdrop className="td-sheet-backdrop" /> : null}
         <BaseMenu.Positioner
-          className="td-pop-positioner"
+          className="td-popover-positioner"
           data-tier={tier}
           data-sheet={isSheet ? "true" : undefined}
           side={side}
@@ -168,7 +168,7 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
         >
           <BaseMenu.Popup
             ref={setPopupEl}
-            className={["td-pop", "td-menu", className ?? ""].filter(Boolean).join(" ")}
+            className={["td-popover", "td-menu", className ?? ""].filter(Boolean).join(" ")}
             data-sheet={isSheet ? "true" : undefined}
             // Base UI names the popup after its trigger; the caller's label is the menu's own name.
             aria-label={label}

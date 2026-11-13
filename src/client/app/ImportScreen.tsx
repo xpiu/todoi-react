@@ -113,7 +113,7 @@ export function ImportScreen() {
               hint: fileName ?? "Pick a file, or paste its contents below",
               control: (
                 <>
-                  <input ref={fileRef} type="file" accept={src.accept} className="td-imp-file" aria-hidden tabIndex={-1} onChange={async (e) => {
+                  <input ref={fileRef} type="file" accept={src.accept} className="td-import-file" aria-hidden tabIndex={-1} onChange={async (e) => {
                     const f = e.target.files?.[0];
                     if (!f) return;
                     const t = await f.text();
@@ -131,9 +131,9 @@ export function ImportScreen() {
           ],
         }}
       >
-        <div className="td-imp-paste">
+        <div className="td-import-paste">
           <TextField multiline rows={6} value={text} aria-label={`${src.label} contents`} placeholder={src.placeholder} onChange={(e) => setText(e.target.value)} />
-          <div className="td-imp-paste-foot">
+          <div className="td-import-paste-foot">
             <Button variant="primary" icon="file-search" disabled={!text.trim()} onClick={() => review(text)}>
               Review import
             </Button>
@@ -153,9 +153,9 @@ export function ImportScreen() {
             ],
           }}
         >
-          <div className="td-imp-body">
-            <div className="td-imp-head">Lists that will be created</div>
-            <ul className="td-imp-list">
+          <div className="td-import-body">
+            <div className="td-import-head">Lists that will be created</div>
+            <ul className="td-import-list">
               {plan.lists.map((l) => (
                 <li key={l.name}>
                   {l.name} · {count(l.items.length, "item")}
@@ -164,8 +164,8 @@ export function ImportScreen() {
               ))}
               {!plan.lists.length ? <li>No lists found</li> : null}
             </ul>
-            <div className="td-imp-head">How {src.label} fields map</div>
-            <table className="td-imp-table">
+            <div className="td-import-head">How {src.label} fields map</div>
+            <table className="td-import-table">
               <thead>
                 <tr>
                   <th>{src.label}</th>
@@ -176,7 +176,7 @@ export function ImportScreen() {
               <tbody>
                 {src.mapping.map((r) => (
                   <tr key={r[0]}>
-                    <td className="td-imp-strong">{r[0]}</td>
+                    <td className="td-import-strong">{r[0]}</td>
                     <td>{r[1]}</td>
                     <td>{r[2]}</td>
                   </tr>
@@ -185,9 +185,9 @@ export function ImportScreen() {
             </table>
             {plan.warnings.length ? (
               <>
-                <div className="td-imp-head">Warnings</div>
+                <div className="td-import-head">Warnings</div>
                 {plan.warnings.map((w) => (
-                  <div key={w} className="td-imp-warn">
+                  <div key={w} className="td-import-warn">
                     <Icon name="circle-alert" size={14} />
                     {w}
                   </div>

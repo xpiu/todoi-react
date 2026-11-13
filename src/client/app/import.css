@@ -1,62 +1,62 @@
 /* Import: the blocks composed into SettingsCards (paste area, review body); the page and cards are the settings shell's. */
 @layer components {
-  .td-imp-file {
+  .td-import-file {
     display: none;
   }
-  .td-imp-paste {
+  .td-import-paste {
     padding: var(--sp-2) var(--sp-5) 14px;
     border-top: 1px solid var(--border-divider);
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
   }
-  .td-imp-paste .td-field {
+  .td-import-paste .td-field {
     font: var(--weight-regular) 13px / 18px var(--font-mono);
   }
-  .td-imp-paste-foot {
+  .td-import-paste-foot {
     display: flex;
     justify-content: flex-end;
   }
-  .td-imp-body {
+  .td-import-body {
     padding: var(--sp-2) var(--sp-5) var(--sp-3);
     border-top: 1px solid var(--border-divider);
     font: var(--type-body);
     color: var(--ink-600);
   }
-  .td-imp-head {
+  .td-import-head {
     font: var(--weight-semibold) var(--text-xs) / var(--lh-xs) var(--font-ui);
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--ink-400);
     margin: var(--sp-3) 0 6px;
   }
-  .td-imp-list {
+  .td-import-list {
     margin: 0;
     padding-left: 18px;
     color: var(--ink-900);
   }
-  .td-imp-table {
+  .td-import-table {
     width: 100%;
     border-collapse: collapse;
     font: var(--type-small);
     color: var(--ink-600);
   }
-  .td-imp-table th {
+  .td-import-table th {
     text-align: left;
     font-weight: var(--weight-medium);
     color: var(--ink-400);
     padding: 6px var(--sp-2);
     border-bottom: 1px solid var(--border-divider);
   }
-  .td-imp-table td {
+  .td-import-table td {
     padding: var(--sp-2);
     border-bottom: 1px solid var(--border-divider);
     vertical-align: top;
   }
-  .td-imp-strong {
+  .td-import-strong {
     color: var(--ink-900);
   }
-  .td-imp-warn {
+  .td-import-warn {
     display: flex;
     align-items: center;
     gap: var(--sp-2);

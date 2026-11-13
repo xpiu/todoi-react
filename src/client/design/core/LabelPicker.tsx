@@ -39,13 +39,13 @@ function LabelForm({ initial, labels, onSave, onCancel, onDelete }: { initial: {
   const dup = labels.some((l) => norm(l.name) === norm(name) && l.id !== initial.label?.id);
   const ok = !!name.trim() && !dup;
   return (
-    <div className="td-lp-form">
-      <div className="td-lp-form-head">
+    <div className="td-label-picker-form">
+      <div className="td-label-picker-form-head">
         <IconButton name="arrow-left" label="Back to labels" size={24} iconSize={14} onClick={onCancel} />
         {initial.label ? "Edit label" : "New label"}
       </div>
       <input
-        className="td-lp-name"
+        className="td-label-picker-name"
         autoFocus
         value={name}
         placeholder="Label name"
@@ -58,18 +58,18 @@ function LabelForm({ initial, labels, onSave, onCancel, onDelete }: { initial: {
           } else if (e.key.length === 1) e.stopPropagation();
         }}
       />
-      <div className="td-lp-swatches" role="radiogroup" aria-label="Label color">
+      <div className="td-label-picker-swatches" role="radiogroup" aria-label="Label color">
         {LABEL_COLORS.map((c) => (
-          <button key={c} type="button" className="td-lp-swatch" role="radio" aria-label={c} aria-checked={c === color} style={{ background: `var(--label-${c})` }} onClick={() => setColor(c)}>
+          <button key={c} type="button" className="td-label-picker-swatch" role="radio" aria-label={c} aria-checked={c === color} style={{ background: `var(--label-${c})` }} onClick={() => setColor(c)}>
             {c === color ? <Icon name="check" size={14} color={WHITE_INK.has(c) ? "var(--text-inverse)" : "var(--label-text)"} /> : null}
           </button>
         ))}
       </div>
-      <div className="td-lp-preview">
+      <div className="td-label-picker-preview">
         <LabelChip color={color} text={name.trim() || "Preview"} size="sm" />
-        {dup ? <span className="td-lp-dup">A label with this name exists</span> : null}
+        {dup ? <span className="td-label-picker-duplicate">A label with this name exists</span> : null}
       </div>
-      <div className="td-lp-foot">
+      <div className="td-label-picker-foot">
         <Button variant="primary" disabled={!ok} onClick={() => onSave({ name: name.trim(), color })}>
           Save
         </Button>
@@ -79,13 +79,13 @@ function LabelForm({ initial, labels, onSave, onCancel, onDelete }: { initial: {
         {initial.label && onDelete ? (
           confirm ? (
             <>
-              <span className="td-lp-confirm">Remove from all items?</span>
-              <Button variant="ghost" className="td-lp-danger" onClick={() => onDelete(initial.label!)}>
+              <span className="td-label-picker-confirm">Remove from all items?</span>
+              <Button variant="ghost" className="td-label-picker-danger" onClick={() => onDelete(initial.label!)}>
                 Delete
               </Button>
             </>
           ) : (
-            <Button variant="ghost" icon="trash-2" className="td-lp-danger td-lp-push" onClick={() => setConfirm(true)}>
+            <Button variant="ghost" icon="trash-2" className="td-label-picker-danger td-label-picker-push" onClick={() => setConfirm(true)}>
               Delete
             </Button>
           )
@@ -154,7 +154,7 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
       block={block}
       trigger={
         <Button variant="outline" icon="tag" disabled={disabled} aria-label={labelWithValue(label, picked.length ? picked.map((l) => l.name).join(", ") : placeholder)} data-block={block ? "true" : undefined} className="td-aside-btn">
-          <span className="td-lp-value" data-placeholder={picked.length ? undefined : "true"}>
+          <span className="td-label-picker-value" data-placeholder={picked.length ? undefined : "true"}>
             {/* The spaces keep the names apart as text (the flex row drops them visually). */}
             {picked.length
               ? picked.map((l, i) => (
@@ -207,14 +207,14 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
                   else if (ql && onCreateLabel) void create({ name: q.trim(), color: nextLabelColor(labels) });
                 } else if (e.key === "ArrowDown") {
                   e.preventDefault();
-                  (e.currentTarget.closest(".td-pop")?.querySelector('[role="checkbox"]') as HTMLElement | null)?.focus();
+                  (e.currentTarget.closest(".td-popover")?.querySelector('[role="checkbox"]') as HTMLElement | null)?.focus();
                 } else if (e.key.length === 1) e.stopPropagation();
               }}
             />
           </div>
           <div className="td-picker-list">
             {list.map((l) => (
-              <div key={l.id} className="td-lp-row">
+              <div key={l.id} className="td-label-picker-row">
                 <div
                   className="td-picker-row"
                   role="checkbox"
@@ -229,18 +229,18 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
                     }
                   }}
                 >
-                  <span className="td-lp-bar" style={{ background: `var(--label-${l.color})` }} />
-                  <span className="td-lp-name-text">{l.name}</span>
-                  {sel.has(l.id) ? <Icon name="check" size={14} className="td-lp-check" /> : null}
+                  <span className="td-label-picker-bar" style={{ background: `var(--label-${l.color})` }} />
+                  <span className="td-label-picker-name-text">{l.name}</span>
+                  {sel.has(l.id) ? <Icon name="check" size={14} className="td-label-picker-check" /> : null}
                 </div>
-                {onEditLabel ? <IconButton name="pencil" label={`Edit ${l.name}`} size={24} iconSize={13} className="td-lp-edit" onClick={() => setEdit({ label: l })} /> : null}
+                {onEditLabel ? <IconButton name="pencil" label={`Edit ${l.name}`} size={24} iconSize={13} className="td-label-picker-edit" onClick={() => setEdit({ label: l })} /> : null}
               </div>
             ))}
             {!list.length && !ql ? <div className="td-menu-note">No labels in this project yet</div> : null}
             {ql && !exact && onCreateLabel ? (
               <>
                 {list.length ? <div className="td-menu-divider" /> : null}
-                <button type="button" className="td-picker-row td-lp-action" onClick={() => setEdit({ draftName: q.trim() })}>
+                <button type="button" className="td-picker-row td-label-picker-action" onClick={() => setEdit({ draftName: q.trim() })}>
                   <Icon name="plus" size={14} />
                   Create “{q.trim()}”
                 </button>
@@ -249,7 +249,7 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
             {!ql && onCreateLabel ? (
               <>
                 {list.length ? <div className="td-menu-divider" /> : null}
-                <button type="button" className="td-picker-row td-lp-action" onClick={() => setEdit({})}>
+                <button type="button" className="td-picker-row td-label-picker-action" onClick={() => setEdit({})}>
                   <Icon name="plus" size={14} />
                   New label
                 </button>

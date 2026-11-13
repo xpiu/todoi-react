@@ -38,26 +38,26 @@ export function GroupsScreen() {
     if (v && v !== g.name) m.updateGroup.mutate({ id: g.id, name: v });
   };
   return (
-    <div className="td-tbl-page">
-      <div className="td-tbl-inner">
-        <div className="td-tbl-head">
-          <h1 className="td-tbl-title">Project groups</h1>
+    <div className="td-table-page">
+      <div className="td-table-inner">
+        <div className="td-table-head">
+          <h1 className="td-table-title">Project groups</h1>
           <Button variant="inverse" icon="plus" onClick={openNewGroup}>
             New group
           </Button>
         </div>
-        <div className="td-tbl-card">
-          <table className="td-tbl">
+        <div className="td-table-card">
+          <table className="td-table">
             <thead>
               <tr>
                 <th>
                   <span className="td-sr-only">Icon</span>
                 </th>
                 <th>Project group</th>
-                <th className="td-tbl-center">Item ID</th>
-                <th className="td-tbl-num">Projects</th>
-                <th className="td-tbl-num">Items</th>
-                <th className="td-tbl-num">Completed</th>
+                <th className="td-table-center">Item ID</th>
+                <th className="td-table-number">Projects</th>
+                <th className="td-table-number">Items</th>
+                <th className="td-table-number">Completed</th>
                 <th>
                   <span className="td-sr-only">Settings</span>
                 </th>
@@ -72,7 +72,7 @@ export function GroupsScreen() {
                 return (
                   <tr
                     key={g.id}
-                    className="td-tbl-row"
+                    className="td-table-row"
                     tabIndex={0}
                     aria-label={`Open ${g.name}`}
                     onClick={() => !renaming && first && navigate({ to: "/p/$projectId", params: { projectId: first.id }, search: {} })}
@@ -83,12 +83,12 @@ export function GroupsScreen() {
                       }
                     }}
                   >
-                    <td className="td-tbl-ic">
+                    <td className="td-table-icon">
                       <Icon name="folders" size={16} color="var(--ink-600)" />
                     </td>
-                    <td className="td-tbl-name" onClick={renaming ? (e) => e.stopPropagation() : undefined} onKeyDown={renaming ? (e) => e.stopPropagation() : undefined}>
+                    <td className="td-table-name" onClick={renaming ? (e) => e.stopPropagation() : undefined} onKeyDown={renaming ? (e) => e.stopPropagation() : undefined}>
                       {renaming ? (
-                        <input className="td-tbl-rename" autoFocus value={nameDraft} aria-label={`Rename ${g.name}`} onChange={(e) => setNameDraft(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => commitRename(g)} onKeyDown={(e) => {
+                        <input className="td-table-rename" autoFocus value={nameDraft} aria-label={`Rename ${g.name}`} onChange={(e) => setNameDraft(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => commitRename(g)} onKeyDown={(e) => {
                           if (e.key === "Enter") commitRename(g);
                           else if (e.key === "Escape") setRenamingId(null);
                         }} />
@@ -97,14 +97,14 @@ export function GroupsScreen() {
                       )}
                     </td>
                     <td onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      <div className="td-tbl-idcell">
+                      <div className="td-table-idcell">
                         {editing === g.id ? (
-                          <input className="td-tbl-idinput" value={draft} autoFocus maxLength={5} aria-label={`Item ID prefix for ${g.name}`} onChange={(e) => setDraft(e.target.value.replace(/[^A-Za-z0-9]/g, ""))} onFocus={(e) => e.target.select()} onBlur={() => commitAbbr(g.id)} onKeyDown={(e) => {
+                          <input className="td-table-idinput" value={draft} autoFocus maxLength={5} aria-label={`Item ID prefix for ${g.name}`} onChange={(e) => setDraft(e.target.value.replace(/[^A-Za-z0-9]/g, ""))} onFocus={(e) => e.target.select()} onBlur={() => commitAbbr(g.id)} onKeyDown={(e) => {
                             if (e.key === "Enter") commitAbbr(g.id);
                             else if (e.key === "Escape") setEditing(null);
                           }} />
                         ) : (
-                          <span className="td-tbl-abbr" role="button" tabIndex={0} aria-label={`Edit item ID prefix ${g.keyPrefix} for ${g.name}`} onClick={() => {
+                          <span className="td-table-abbr" role="button" tabIndex={0} aria-label={`Edit item ID prefix ${g.keyPrefix} for ${g.name}`} onClick={() => {
                             setEditing(g.id);
                             setDraft(g.keyPrefix);
                           }} onKeyDown={(e) => {
@@ -117,16 +117,16 @@ export function GroupsScreen() {
                             {g.keyPrefix}
                           </span>
                         )}
-                        {editing === g.id ? null : <IconButton className="td-tbl-idedit" name="pencil" label={`Edit item ID prefix for ${g.name}`} tooltip="Edit item ID prefix" size={22} iconSize={13} onClick={() => {
+                        {editing === g.id ? null : <IconButton className="td-table-idedit" name="pencil" label={`Edit item ID prefix for ${g.name}`} tooltip="Edit item ID prefix" size={22} iconSize={13} onClick={() => {
                           setEditing(g.id);
                           setDraft(g.keyPrefix);
                         }} />}
                       </div>
                     </td>
-                    <td className="td-tbl-num">{g.projects.length}</td>
-                    <td className="td-tbl-num">{items}</td>
-                    <td className="td-tbl-num">{items ? `${Math.round((done / items) * 100)}%` : <span className="td-tbl-dim">—</span>}</td>
-                    <td className="td-tbl-set" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                    <td className="td-table-number">{g.projects.length}</td>
+                    <td className="td-table-number">{items}</td>
+                    <td className="td-table-number">{items ? `${Math.round((done / items) * 100)}%` : <span className="td-table-dim">—</span>}</td>
+                    <td className="td-table-set" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <MenuButton label={`Settings for ${g.name}`} tooltip="Group settings" placement="bottom-end" tier="detached" size={28} iconSize={16}>
                         <MenuItem
                           icon="pencil"

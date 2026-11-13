@@ -115,10 +115,10 @@ export function AppShell() {
       const t = e.target as HTMLElement | null;
       if (!t?.closest) return;
       if (t.closest("[data-add-item]")) suggest("add-item");
-      else if (t.closest(".td-listview-addlist, .td-board-addlist")) suggest("add-list");
+      else if (t.closest(".td-list-view-addlist, .td-board-addlist")) suggest("add-list");
     };
     const onDrop = (e: DragEvent) => {
-      if ((e.target as HTMLElement | null)?.closest?.(".td-board, .td-listview")) suggest("move-item");
+      if ((e.target as HTMLElement | null)?.closest?.(".td-board, .td-list-view")) suggest("move-item");
     };
     document.addEventListener("click", onClick);
     document.addEventListener("drop", onDrop);

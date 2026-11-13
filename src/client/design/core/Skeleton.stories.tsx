@@ -31,7 +31,7 @@ export const DelayedPaint: Story = {
   async play({ canvas, canvasElement }) {
     const status = canvas.getByRole("status");
     await expect(status).toHaveTextContent("Loading project…");
-    await expect(canvasElement.querySelector(".td-skview-list")).toBeNull();
-    await waitFor(() => expect(canvasElement.querySelector(".td-skview-list")).not.toBeNull());
+    await expect(canvasElement.querySelector(".td-skeleton-view-list")).toBeNull();
+    await waitFor(() => expect(canvasElement.querySelector(".td-skeleton-view-list")).not.toBeNull());
   },
 };

@@ -23,11 +23,11 @@ export function CalendarDayList({ date, items, onOpenItem, onToggleDone, onToggl
   const iso = toISO(date)!;
   const sorted = [...items].sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0));
   return (
-    <div className="td-caldaylist" style={style}>
-      <div className="td-caldaylist-meta">{items.length ? `${items.length} item${items.length > 1 ? "s" : ""}` : "No items"}</div>
-      <div className="td-caldaylist-block">
+    <div className="td-calendar-day-list" style={style}>
+      <div className="td-calendar-day-list-meta">{items.length ? `${items.length} item${items.length > 1 ? "s" : ""}` : "No items"}</div>
+      <div className="td-calendar-day-list-block">
         {sorted.length ? (
-          <div className="td-caldaylist-rows" role="list" aria-label="Items on this day">
+          <div className="td-calendar-day-list-rows" role="list" aria-label="Items on this day">
             {sorted.map((it) => (
               <ListRow
                 key={it.id}
@@ -49,10 +49,10 @@ export function CalendarDayList({ date, items, onOpenItem, onToggleDone, onToggl
             ))}
           </div>
         ) : (
-          <div className="td-caldaylist-empty">Nothing lands on this day.</div>
+          <div className="td-calendar-day-list-empty">Nothing lands on this day.</div>
         )}
         {onAddItem ? (
-          <button type="button" className="td-caldaylist-add" data-add-item={iso} onClick={() => onAddItem(iso)}>
+          <button type="button" className="td-calendar-day-list-add" data-add-item={iso} onClick={() => onAddItem(iso)}>
             <Icon name="plus" size={16} />
             Add an item
           </button>

@@ -31,7 +31,7 @@ export function ChipBar({ label, icon, as = "toolbar", id, moreLabel = "More opt
   const { desktop } = useViewport();
   const body = (
     <>
-      <span className="td-cbar-label">
+      <span className="td-chip-bar-label">
         <Icon name={icon} size={16} />
         {label}
       </span>
@@ -39,10 +39,10 @@ export function ChipBar({ label, icon, as = "toolbar", id, moreLabel = "More opt
         {children}
       </ChipRail>
       {after}
-      {actions ? <div className="td-cbar-actions">{actions}</div> : null}
+      {actions ? <div className="td-chip-bar-actions">{actions}</div> : null}
     </>
   );
-  const props = { id, className: "td-cbar", "data-desktop": desktop ? "true" : undefined, "aria-label": rest["aria-label"] };
+  const props = { id, className: "td-chip-bar", "data-desktop": desktop ? "true" : undefined, "aria-label": rest["aria-label"] };
   return as === "nav" ? (
     <nav {...props}>{body}</nav>
   ) : (
@@ -55,7 +55,7 @@ export function ChipBar({ label, icon, as = "toolbar", id, moreLabel = "More opt
 /** A trailing word button on a ChipBar: "Reset filters" (filled while something is active), "Hide". */
 export function ChipBarAction({ icon, active = false, onClick, children }: { icon: IconName; active?: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <Button variant={active ? "chrome" : "chrome-ghost"} icon={icon} className="td-bar-act" onClick={onClick}>
+    <Button variant={active ? "chrome" : "chrome-ghost"} icon={icon} className="td-bar-action" onClick={onClick}>
       {children}
     </Button>
   );
@@ -127,14 +127,14 @@ function ChipRail({ desktop, moreLabel, backLabel, children }: { desktop: boolea
     }
   };
   const pager = (dir: 1 | -1, label: string) => (
-    <Button variant="chrome" className="td-chiprail-page" aria-label={label} title={label} icon={dir < 0 ? "chevron-left" : undefined} iconAfter={dir > 0 ? "chevron-right" : undefined} onClick={() => page(dir)}>
+    <Button variant="chrome" className="td-chip-rail-page" aria-label={label} title={label} icon={dir < 0 ? "chevron-left" : undefined} iconAfter={dir > 0 ? "chevron-right" : undefined} onClick={() => page(dir)}>
       …
     </Button>
   );
   return (
     <>
       {ov.l ? pager(-1, backLabel) : null}
-      <div ref={ref} className="td-chiprail" data-overflow-left={ov.l ? "true" : "false"} data-overflow-right={ov.r ? "true" : "false"} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={end} onPointerCancel={end} onClickCapture={onClickCapture}>
+      <div ref={ref} className="td-chip-rail" data-overflow-left={ov.l ? "true" : "false"} data-overflow-right={ov.r ? "true" : "false"} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={end} onPointerCancel={end} onClickCapture={onClickCapture}>
         {children}
       </div>
       {ov.r ? pager(1, moreLabel) : null}

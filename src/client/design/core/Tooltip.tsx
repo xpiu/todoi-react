@@ -21,7 +21,7 @@ export interface TipAttributes {
 export function tipProps(text?: string, side?: TooltipSide, labeled?: boolean): TipAttributes {
   if (!text) return { className: "" };
   return {
-    className: "td-tip" + (labeled ? " td-tip-labeled" : ""),
+    className: "td-tooltip" + (labeled ? " td-tooltip-labeled" : ""),
     "data-tip": text,
     "data-tip-side": side && side !== "bottom" ? side : undefined,
   };
@@ -46,7 +46,7 @@ export function Tooltip({ text, side, off, portal, children }: TooltipProps) {
   if (portal) return <FloatingTooltip text={text} side={side} off={off}>{child}</FloatingTooltip>;
   const props = child.props as { className?: string };
   return cloneElement(child, {
-    className: [props.className ?? "", "td-tip"].join(" ").trim(),
+    className: [props.className ?? "", "td-tooltip"].join(" ").trim(),
     "data-tip": text,
     "data-tip-side": side && side !== "bottom" ? side : undefined,
     "data-tip-off": off ? "true" : undefined,
@@ -61,9 +61,9 @@ function FloatingTooltip({ text, side = "bottom", off, children }: TooltipProps)
     <BaseTooltip.Root disabled={disabled}>
       <BaseTooltip.Trigger render={children} delay={400} />
       <BaseTooltip.Portal container={container ?? undefined}>
-        <BaseTooltip.Positioner className="td-tip-positioner" positionMethod="fixed" side={edge} align={align} sideOffset={6} collisionPadding={8}>
-          <BaseTooltip.Popup className="td-tip-popup">
-            <BaseTooltip.Arrow className="td-tip-arrow" />
+        <BaseTooltip.Positioner className="td-tooltip-positioner" positionMethod="fixed" side={edge} align={align} sideOffset={6} collisionPadding={8}>
+          <BaseTooltip.Popup className="td-tooltip-popup">
+            <BaseTooltip.Arrow className="td-tooltip-arrow" />
             {text}
           </BaseTooltip.Popup>
         </BaseTooltip.Positioner>
