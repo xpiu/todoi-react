@@ -26,8 +26,7 @@ export async function updateItem(id: string, state: ItemState, fields: Partial<I
     const [cur] = await tx.select().from(items).where(eq(items.id, id)).for("update");
     if (!cur) return null;
     const next = { ...cur, ...fields };
-    const stale = state.done === true && !!next.repeatRule && state.ifDue !== undefined && next.dueDate !== state.ifDue;
-    const { patch, occurrence } = stale ? { patch: {}, occurrence: null } : applyCompletion(next, state);
+    const { patch, occurrence } = applyCompletion(next, state);
     const changes = { ...fields, ...patch };
     // A time belongs to a due: clearing the due drops it.
     if (fields.dueDate === null && fields.dueTime === undefined && cur.dueTime) changes.dueTime = null;

@@ -55,6 +55,9 @@ export function statusChange(cur: StatusFields, status: ItemStatus | null): Stat
   return { status, done: false, priorStatus: null };
 }
 
+/** A new item's status fields: not done, nothing to reopen to, in the given Status. */
+export const initialStatus = (status: ItemStatus | null): StatusFields => statusChange({ status: null, done: false, priorStatus: null }, status);
+
 /** Unchecking: back to the remembered Status. */
 export const reopen = (cur: StatusFields): StatusFields => ({ status: cur.priorStatus === "DONE" ? null : cur.priorStatus, done: false, priorStatus: null });
 
@@ -84,8 +87,11 @@ export function complete(cur: CompletionFields): { patch: Partial<CompletionFiel
 /**
  * A done / Status request applied to an item — the same function behind the API and the optimistic patch.
  * `done: true` completes (a recurring item moves on); a Status, Done included, is set as given.
+ * `ifDue` is the due the request was made for: when a recurring item has already moved on from it,
+ * the completion was applied before (a retry) and changes nothing.
  */
-export function applyCompletion(cur: CompletionFields, { done, status }: { done?: boolean; status?: ItemStatus | null }): { patch: Partial<CompletionFields>; occurrence: Occurrence | null } {
+export function applyCompletion(cur: CompletionFields, { done, status, ifDue }: { done?: boolean; status?: ItemStatus | null; ifDue?: string }): { patch: Partial<CompletionFields>; occurrence: Occurrence | null } {
+  if (done === true && cur.repeatRule && ifDue !== undefined && cur.dueDate !== ifDue) return { patch: {}, occurrence: null };
   if (done === true) return complete(cur);
   if (done === false) return { patch: status === undefined ? reopen(cur) : statusChange(cur, status), occurrence: null };
   return { patch: status === undefined ? {} : statusChange(cur, status), occurrence: null };

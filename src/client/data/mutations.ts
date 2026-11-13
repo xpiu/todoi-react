@@ -86,8 +86,7 @@ export function useUpdateItem(scope: ItemsScope) {
       items.map((it) => {
         if (it.id !== id) return it;
         const next = { ...it, ...changes };
-        const stale = done === true && !!next.repeatRule && ifDue !== undefined && next.dueDate !== ifDue;
-        return stale ? next : { ...next, ...applyCompletion(next, { done, status }).patch };
+        return { ...next, ...applyCompletion(next, { done, status, ifDue }).patch };
       }),
   );
 }

@@ -7,7 +7,7 @@ import { viewerOf } from "../auth";
 import { db, inRequestTransaction } from "../db";
 import { nextPosition } from "../db/position";
 import { attachments, groups, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
-import { statusChange } from "../../shared/completion";
+import { initialStatus } from "../../shared/completion";
 import { duplicateItem, moveItem, placeAmongSiblings, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
 import { itemContainersLive, itemIsLive, setItemLifecycle } from "../services/lifecycle";
@@ -67,7 +67,7 @@ export const itemsRoute = new Hono()
     if (!list) return fail(c, 404, "List not found");
     const { labelIds = [], assigneeIds = [], position: where = "bottom", ...fields } = input;
     // Created in a Done list (or as Done) means done, by the same rule as every other path.
-    const state = statusChange({ status: null, done: false, priorStatus: null }, fields.status === undefined ? (list.statusRole ?? null) : fields.status);
+    const state = initialStatus(fields.status === undefined ? (list.statusRole ?? null) : fields.status);
     const row = await db.transaction(async (tx) => {
       // Additions to one list take turns, so simultaneous ones each get their own place.
       await tx.select({ id: lists.id }).from(lists).where(eq(lists.id, listId)).for("update");

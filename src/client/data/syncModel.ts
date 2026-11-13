@@ -228,8 +228,7 @@ export function reconcileSnapshot(path: string, snapshot: unknown, workspace: Lo
             if (row.id !== itemId) return row;
             const { done, status, ifDue, archived, deleted, ...patch } = body as UpdateItemInput;
             const next = { ...row, ...patch };
-            const stale = done === true && !!next.repeatRule && ifDue !== undefined && next.dueDate !== ifDue;
-            return { ...next, ...(stale ? {} : applyCompletion(next, { done, status }).patch), ...(archived ? { archivedAt: op.createdAt } : {}), ...(deleted ? { deletedAt: op.createdAt } : {}) };
+            return { ...next, ...applyCompletion(next, { done, status, ifDue }).patch, ...(archived ? { archivedAt: op.createdAt } : {}), ...(deleted ? { deletedAt: op.createdAt } : {}) };
           }).filter((row) => !row.archivedAt && !row.deletedAt && (!(body.archived || body.deleted) || row.parentItemId !== itemId));
         } else if (op.path.endsWith("/labels")) rows = rows.map((row) => row.id === itemId ? { ...row, labelIds: body.labelIds as string[] } : row);
         else if (op.path.endsWith("/assignees")) rows = rows.map((row) => row.id === itemId ? { ...row, assigneeIds: body.userIds as string[] } : row);

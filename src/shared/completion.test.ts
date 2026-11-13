@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyCompletion, complete, reopen, statusChange, type CompletionFields } from "./completion";
+import { applyCompletion, complete, initialStatus, reopen, statusChange, type CompletionFields } from "./completion";
 
 const open = (over: Partial<CompletionFields> = {}): CompletionFields => ({ status: "DOING", priorStatus: null, done: false, dueDate: null, repeatRule: null, repeatCount: 0, ...over });
 
@@ -38,6 +38,14 @@ describe("completing a recurring item", () => {
   });
 });
 
+describe("initialStatus", () => {
+  it("starts an item in its list's Status, done only in a Done list", () => {
+    expect(initialStatus("TODO")).toEqual({ status: "TODO", done: false, priorStatus: null });
+    expect(initialStatus(null)).toEqual({ status: null, done: false, priorStatus: null });
+    expect(initialStatus("DONE")).toEqual({ status: "DONE", done: true, priorStatus: null });
+  });
+});
+
 describe("applyCompletion", () => {
   const daily = { freq: "daily" as const };
   it("done: true completes; a Done Status is literal", () => {
@@ -49,6 +57,13 @@ describe("applyCompletion", () => {
     expect(applyCompletion(done, { done: false }).patch).toEqual({ status: "TODO", done: false, priorStatus: null });
     expect(applyCompletion(done, { done: false, status: "BACKLOG" }).patch).toEqual({ status: "BACKLOG", done: false, priorStatus: null });
     expect(applyCompletion(done, {}).patch).toEqual({});
+  });
+  it("a retried completion of an occurrence the item has moved on from changes nothing", () => {
+    const moved = open({ dueDate: "2026-09-13", repeatRule: daily, repeatCount: 1 });
+    expect(applyCompletion(moved, { done: true, ifDue: "2026-09-12" })).toEqual({ patch: {}, occurrence: null });
+    expect(applyCompletion(moved, { done: true, ifDue: "2026-09-13" }).patch).toEqual({ dueDate: "2026-09-14", repeatCount: 2 });
+    // only recurring items carry occurrences: a plain item is completed whatever due the request names
+    expect(applyCompletion(open({ dueDate: "2026-09-13" }), { done: true, ifDue: "2026-09-12" }).patch).toMatchObject({ done: true });
   });
 });
 

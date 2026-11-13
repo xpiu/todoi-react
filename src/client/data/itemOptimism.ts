@@ -1,5 +1,5 @@
 import type { CreateItemInput } from "../../shared/items";
-import { statusChange } from "../../shared/completion";
+import { initialStatus } from "../../shared/completion";
 import type { ItemStatus } from "../../shared/item-status";
 import type { Item } from "./api";
 
@@ -10,7 +10,7 @@ import type { Item } from "./api";
  */
 export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: { listId: string; projectId: string | null; statusRole: ItemStatus | null }): Item[] {
   const now = new Date().toISOString();
-  const state = statusChange({ status: null, done: false, priorStatus: null }, vars.status === undefined ? dest.statusRole : vars.status);
+  const state = initialStatus(vars.status === undefined ? dest.statusRole : vars.status);
   const item: Item = {
     version: 0,
     id: vars.id,

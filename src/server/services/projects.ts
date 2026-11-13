@@ -3,7 +3,7 @@
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-import { statusChange } from "../../shared/completion";
+import { initialStatus, statusChange } from "../../shared/completion";
 import { LABEL_COLORS } from "../../shared/enums";
 import type { ImportProjectInput } from "../../shared/import";
 import type { CreateProjectInput, UpdateListInput } from "../../shared/projects";
@@ -78,7 +78,7 @@ export async function importProject({ id, groupId, name, plan }: ImportProjectIn
       l.items.forEach((it, position) => {
         const itemId = nanoid();
         // The list's role is the Status; a done item remembers it for reopening (the shared invariant).
-        const state = (done: boolean) => statusChange(statusChange({ status: null, done: false, priorStatus: null }, l.statusRole ?? null), done ? "DONE" : (l.statusRole ?? null));
+        const state = (done: boolean) => statusChange(initialStatus(l.statusRole ?? null), done ? "DONE" : (l.statusRole ?? null));
         rows.push({ id: itemId, listId: lid, projectId: project.id, title: it.title, description: it.description ?? null, dueDate: it.due ?? null, priority: it.priority ?? null, ...state(it.done), keyNumber: key++, position, createdBy: userId });
         for (const n of it.labels) {
           const lab = labelId.get(n.toLowerCase());
