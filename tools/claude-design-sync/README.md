@@ -294,6 +294,8 @@ The last three are how the AI harness checks kit work before you upload it.
   - `haiku` is a moving model alias, rather than a pin to Haiku 4.5. Supported effort levels depend on the resolved model; see [Claude Code's model configuration](https://code.claude.com/docs/en/model-config);
   - `implementModel`: App and kit ports (empty = Claude Code's default).
 
+`class-names.json`, beside `config.json`, lists the class names the two sides spell differently (kit → App: `td-lrow` → `td-list-row`). Token CSS is rewritten into the target side's spelling before a merge, and port briefs point the agent at the same list. A name that is not listed is the same on both sides. The App's naming pattern is in `docs/design/css-class-names.md`.
+
 Environment overrides, used by the tests:
 
 - `CDS_REPO`, `CDS_STATE`, `CDS_CONFIG`, `CDS_PORT`.
