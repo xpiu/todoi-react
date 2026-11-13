@@ -2,7 +2,6 @@
 // paste, review what will be created (counts, lists, field mapping, warnings), then create a new
 // project in a group. Nothing is written before Create; the server lands the whole plan in one
 // transaction. Spec: DESIGN.md › Storage & sync › Import.
-import { useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 
 import type { ImportPlan } from "../../shared/import";
@@ -19,6 +18,7 @@ import { SettingsCard, SettingsPageFrame } from "../design/settings/SettingsShel
 import { quote, useFeedback } from "./feedback";
 import { parseCsv, parseMarkdown, parseTrello, planCounts } from "./importData";
 import "./import.css";
+import { useOpenProject } from "./useOpenProject";
 
 type Source = "md" | "trello" | "csv";
 interface SourceSpec {
@@ -73,7 +73,7 @@ export function ImportScreen() {
   const groups = useGroups();
   const pm = useProjectMutations();
   const notify = useFeedback((s) => s.notify);
-  const navigate = useNavigate();
+  const openProject = useOpenProject();
   const src = SOURCES[source];
   const busy = pm.importProject.isPending;
   const review = (t: string) => {
@@ -90,7 +90,7 @@ export function ImportScreen() {
       {
         onSuccess: (made) => {
           notify({ message: `Imported ${quote(name.trim())} — ${count(made.items, "item")} in ${count(plan.lists.length, "list")}`, icon: "upload" });
-          void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
+          openProject(id);
         },
       },
     );

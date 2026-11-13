@@ -1,5 +1,4 @@
 // Project groups — groups with their Item ID prefix (edit inline), item totals and completion, a ⋯ with Rename / Delete.
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { useProjectMutations } from "../data/projects";
@@ -14,12 +13,13 @@ import { useLifecycle } from "./lifecycle";
 import { LoadFailed } from "./LoadFailed";
 import "../design/core/text.css";
 import "./tables.css";
+import { useOpenProject } from "./useOpenProject";
 
 export function GroupsScreen() {
   const groups = useGroups();
   const m = useProjectMutations();
   const notify = useFeedback((s) => s.notify);
-  const navigate = useNavigate();
+  const openProject = useOpenProject();
   const openNewGroup = useLifecycle((s) => s.openNewGroup);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -75,11 +75,11 @@ export function GroupsScreen() {
                     className="td-table-row"
                     tabIndex={0}
                     aria-label={`Open ${g.name}`}
-                    onClick={() => !renaming && first && navigate({ to: "/p/$projectId", params: { projectId: first.id }, search: {} })}
+                    onClick={() => !renaming && first && openProject(first.id)}
                     onKeyDown={(e) => {
                       if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget && first) {
                         e.preventDefault();
-                        void navigate({ to: "/p/$projectId", params: { projectId: first.id }, search: {} });
+                        openProject(first.id);
                       }
                     }}
                   >

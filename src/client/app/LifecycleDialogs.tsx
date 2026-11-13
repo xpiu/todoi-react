@@ -20,6 +20,7 @@ import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { avatarColorVar } from "./items";
 import { useCurrentUser } from "./session";
 import { StateDialog } from "./StateDialog";
+import { useOpenProject } from "./useOpenProject";
 
 export function LifecycleDialogs() {
   const dialog = useLifecycle((s) => s.dialog);
@@ -27,7 +28,7 @@ export function LifecycleDialogs() {
   const groups = useGroups();
   const m = useProjectMutations();
   const notify = useFeedback((s) => s.notify);
-  const navigate = useNavigate();
+  const openProject = useOpenProject();
   const projects = (groups.data ?? []).flatMap((g) => g.projects);
   // The dialog stays open with the values until the server has the project; a failure shows in the dialog.
   const createProject = async (p: NewProject) => {
@@ -37,7 +38,7 @@ export function LifecycleDialogs() {
     const lists = made.lists.map((l) => l.name);
     close();
     notify({ message: `Created ${quote(p.name)} in ${g?.name ?? "the group"}${lists.length ? ` with ${lists.join(" · ")}` : ""}`, icon: "folder-plus" });
-    void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
+    openProject(id);
   };
   const createGroup = async (g: NewGroup) => {
     await m.createGroup.mutateAsync({ id: newId(), name: g.name, keyPrefix: g.keyPrefix, quiet: true }).catch(explain);

@@ -324,7 +324,6 @@ export function AppShell() {
   ) : undefined;
   const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={setOpenMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} membersMenu={membersMenu} /> : null;
 
-  const openProject = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const sidebarGroups = (groups.data ?? []).map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as "kanban", color: p.color ? `var(--label-${p.color})` : undefined })) }));
   const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: inboxBadge ? (unread.data?.unread ?? 0) : 0 } : n));
   const prefix = project.data?.keyPrefix ?? "";
@@ -417,7 +416,7 @@ export function AppShell() {
           }}
           onSelect={(id) => {
             if (id === "inbox" || id === "projects" || id === "groups") void navigate({ to: `/${id}` });
-            else openProject(id);
+            else openResult.project(id);
             if (!vp.desktop) setSidebarOpen(false);
           }}
         />

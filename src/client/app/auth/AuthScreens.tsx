@@ -14,6 +14,7 @@ import type { IconName } from "../../design/core/Icon";
 import { ViewSkeleton } from "../../design/core/Skeleton";
 import { avatarColorVar } from "../items";
 import { useCurrentUser } from "../session";
+import { useOpenProject } from "../useOpenProject";
 
 const loginRoute = getRouteApi("/login");
 const signupRoute = getRouteApi("/signup");
@@ -106,6 +107,7 @@ export function ResetScreen() {
 export function InviteScreen() {
   const { code } = inviteRoute.useParams();
   const navigate = useNavigate();
+  const openProject = useOpenProject();
   const { user } = useCurrentUser();
   const invite = useQuery({ queryKey: ["invite", code], queryFn: () => api.api.invites[":code"].$get({ param: { code } }).then((r) => unwrap<InviteDetail>(r)) });
   const [accepted, setAccepted] = useState(false);
@@ -120,7 +122,6 @@ export function InviteScreen() {
   if (!invite.data) return <ViewSkeleton view="inbox" />;
   const d = invite.data;
   const state: InviteState = accepted ? "accepted" : (d.state as InviteState);
-  const openProject = () => navigate({ to: "/p/$projectId", params: { projectId: d.project.id }, search: {} });
   return (
     <InvitePage
       key={code}
@@ -139,7 +140,7 @@ export function InviteScreen() {
         forgetBrowserSession();
         return invite.refetch();
       })}
-      onOpenProject={openProject}
+      onOpenProject={() => openProject(d.project.id)}
       requested={d.requested}
       onRequestInvite={() => api.api.invites[":code"].request.$post({ param: { code } }).then((r) => unwrap(r)).catch(explain)}
     />

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import type { SearchHit } from "../data/api";
 import { searchQuery } from "../data/queries";
+import { useOpenProject } from "./useOpenProject";
 
 export type SearchStatus = "idle" | "loading" | "offline" | "error" | "ready";
 
@@ -41,9 +42,10 @@ export function hitContext(h: SearchHit, currentProjectId?: string): string {
 /** Open search results by id: projects, groups, project items (in the overlay) and Inbox items. */
 export function useOpenResult() {
   const navigate = useNavigate();
+  const openProject = useOpenProject();
   const match = useMatch({ from: "/app/p/$projectId", shouldThrow: false });
   return {
-    project: (projectId: string) => void navigate({ to: "/p/$projectId", params: { projectId }, search: {} }),
+    project: openProject,
     groups: () => void navigate({ to: "/groups" }),
     item: (it: { id: string; projectId: string | null }) => {
       if (!it.projectId) return void navigate({ to: "/inbox", search: { item: it.id } });

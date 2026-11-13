@@ -14,6 +14,7 @@ import { ArchiveView, type ArchiveEntry } from "../design/project/ArchiveView";
 import { projectColorVar } from "../design/project/ProjectIconPicker";
 import { notifyFailure, quote, useFeedback } from "./feedback";
 import { LoadFailed } from "./LoadFailed";
+import { useOpenProject } from "./useOpenProject";
 
 const route = getRouteApi("/app/archive");
 
@@ -26,6 +27,7 @@ export function ArchiveScreen() {
   const updateItem = useUpdateItem(scope);
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
+  const openProject = useOpenProject();
   const [busy, setBusy] = useState(false);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -78,7 +80,7 @@ export function ArchiveScreen() {
         notify({ message: `Deleted ${removed} of ${es.length} entries forever`, meta: removed < es.length ? `${es.length - removed} could not be deleted. Try again.` : undefined, icon: removed < es.length ? "circle-alert" : "trash-2" });
       })}
       onOpen={(e) => {
-        if (e.kind === "project") void navigate({ to: "/p/$projectId", params: { projectId: e.id }, search: {} });
+        if (e.kind === "project") openProject(e.id);
         else if (e.projectId) void navigate({ to: "/p/$projectId", params: { projectId: e.projectId }, search: { item: e.id } });
       }}
     />

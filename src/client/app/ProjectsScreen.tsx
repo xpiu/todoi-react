@@ -1,6 +1,5 @@
 // Projects — every project across groups in one table: icon, name (rename inline), lead, items,
 // completed %, the per-project "Link lists with statuses" switch, and a ⋯ with the lifecycle rows.
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import type { LabelColor } from "../../shared/enums";
@@ -19,13 +18,14 @@ import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LoadFailed } from "./LoadFailed";
 import "../design/core/text.css";
 import "./tables.css";
+import { useOpenProject } from "./useOpenProject";
 
 export function ProjectsScreen() {
   const groups = useGroups();
   const m = useProjectMutations();
   const removeProject = useRemoveProject();
   const notify = useFeedback((s) => s.notify);
-  const navigate = useNavigate();
+  const go = useOpenProject();
   const openNewProject = useLifecycle((s) => s.openNewProject);
   const openSettings = useLifecycle((s) => s.openSettings);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -33,7 +33,6 @@ export function ProjectsScreen() {
   if (groups.isError) return <LoadFailed what="the projects" error={groups.error} onRetry={() => void groups.refetch()} />;
   if (!groups.data) return <ViewSkeleton view="list" lists={1} />;
   const projects = projectsOf(groups.data);
-  const go = (id: string) => void navigate({ to: "/p/$projectId", params: { projectId: id }, search: {} });
   const commitRename = (p: { id: string; name: string }) => {
     const v = draft.trim();
     setRenamingId(null);

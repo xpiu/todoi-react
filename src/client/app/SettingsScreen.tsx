@@ -45,6 +45,7 @@ import { projectUrl } from "./links";
 import { usePrefs, type Prefs } from "./prefs";
 import { avatarColorVar } from "./items";
 import { useCurrentUser } from "./session";
+import { useOpenProject } from "./useOpenProject";
 
 const settingsRoute = getRouteApi("/app/settings");
 const accountRoute = getRouteApi("/app/account");
@@ -331,6 +332,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
   const ops = useLabelMutations(cur?.id ?? "");
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
+  const openProject = useOpenProject();
   const [edit, setEdit] = useState<LabelDraft | null>(null);
   const [merging, setMerging] = useState<string | null>(null);
   // Items per label, one pass over the project's items.
@@ -419,7 +421,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
       title: "Project",
       rows: [
         { id: "lbProject", label: "Project", hint: "Labels are per project", control: <Select aria-label="Project" value={cur?.id ?? null} options={projects.map((p) => ({ value: p.id, label: p.name, icon: (p.icon as IconName | null) ?? "kanban", iconColor: p.color ? `var(--label-${p.color})` : undefined }))} onChange={(v) => v && setProject(v)} placement="bottom-end" tier="detached" width={240} /> },
-        { id: "lbOpen", label: "Open project", hint: `Leave settings and go to “${cur?.name ?? ""}”`, control: <Button icon="arrow-right" onClick={() => cur && navigate({ to: "/p/$projectId", params: { projectId: cur.id }, search: {} })}>Open</Button> },
+        { id: "lbOpen", label: "Open project", hint: `Leave settings and go to “${cur?.name ?? ""}”`, control: <Button icon="arrow-right" onClick={() => cur && openProject(cur.id)}>Open</Button> },
       ],
     },
     {
