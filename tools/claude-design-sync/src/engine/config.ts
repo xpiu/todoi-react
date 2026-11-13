@@ -1,9 +1,11 @@
 // Loads config.json and resolves the tool's paths. Every module takes a Ctx so tests can point the
 // engine at fixture trees instead of the real repo and state folder.
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { loadClassNames, type ClassNames } from "./classNames";
 
 export interface MapEntry {
   design: string;
@@ -33,6 +35,8 @@ export interface Ctx {
   config: Config;
   /** Where `config` was read from, so the GUI can save a new target project (unset in tests that build a Ctx by hand) */
   configFile?: string;
+  /** Class names the two sides spell differently (class-names.json beside the config); unset when both sides share every name */
+  classNames?: ClassNames;
 }
 
 export const TOOL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -68,7 +72,8 @@ export function defaultCtx(): Ctx {
   const repo = process.env.CDS_REPO ? resolve(process.env.CDS_REPO) : resolve(TOOL_DIR, "../..");
   const state = process.env.CDS_STATE ? resolve(process.env.CDS_STATE) : join(TOOL_DIR, ".state");
   const configFile = process.env.CDS_CONFIG ? resolve(process.env.CDS_CONFIG) : join(TOOL_DIR, "config.json");
-  return { repo, state, config: loadConfig(configFile), configFile };
+  const classNamesFile = join(dirname(configFile), "class-names.json");
+  return { repo, state, config: loadConfig(configFile), configFile, classNames: existsSync(classNamesFile) ? loadClassNames(classNamesFile) : undefined };
 }
 
 /** Write the config back where it came from (same 2-space JSON the file is kept in) */

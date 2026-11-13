@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import type { Ctx } from "./config";
 import { ADAPTATION_BRIEF } from "./adaptation";
+import { renameClasses } from "./classNames";
 import { mergeCss } from "./css";
 import { hash, listFiles, readText } from "./fsutil";
 import { createTag, diffNoIndex, diffSince, head, resolveRev, showAt, syncTags } from "./git";
@@ -147,7 +148,9 @@ export function cssMergeFor(ctx: Ctx, cmp: Comparison, unit: Unit, target: "app"
   const designBase = baseSnap ? readText(join(baseSnap, designPath)) ?? "" : designNow;
   const appNow = readText(join(ctx.repo, appPath)) ?? "";
   const appBase = showAt(ctx.repo, base.rev, appPath) ?? "";
-  const r = target === "app" ? mergeCss(designBase, designNow, appNow) : mergeCss(appBase, appNow, designNow);
+  // each side keeps its own spelling of the class names: the source is rewritten into the target's before the merge
+  const inTargetNames = (css: string) => renameClasses(css, ctx.classNames, target === "app" ? "app" : "kit");
+  const r = target === "app" ? mergeCss(inTargetNames(designBase), inTargetNames(designNow), appNow) : mergeCss(inTargetNames(appBase), inTargetNames(appNow), designNow);
   const bits = [r.added && `${r.added} added`, r.updated && `${r.updated} updated`, r.removed && `${r.removed} removed`].filter(Boolean).join(", ") || "nothing to apply";
   return { text: r.text, summary: `${unit.name}: ${bits}${r.conflicts.length ? ` · ${r.conflicts.length} left as the target has them` : ""}` };
 }
@@ -296,6 +299,7 @@ const KIT_RULES = `Kit conventions (Claude Design project, files under the stagi
 - Preview cards: components/<area>/<name>.card.html, first line \`<!-- @dsCard group="Components" viewport="WxH" name="…" subtitle="…" -->\`, the same <head> scripts as existing cards (React 18 UMD, Babel standalone, lucide, ../../_ds_bundle.js), and a text/babel script that destructures components from window.FlowboardDesignSystem_13419b.
 - Don't write or edit Minimal twins (*-minimal.card.html): when you finish, the tool replays your card edits onto each twin (keeping its Minimal tweaks) and writes the twin of a new card.
 - A new component ships its Minimal rules in tokens/themes/minimal-components.css (html[data-theme="minimal"] .td-…): grey words that go ink on hover, square corners, hairline rings, no fills.
+- The kit keeps its own short class names (td-lrow, td-set-…); the App spells them out (td-list-row, td-settings-…). tools/claude-design-sync/class-names.json lists every pair (kit → App): write the kit's name for each App class you port, and keep App-only names as they are.
 - Update readme.md (the long spec) where the behaviour is specified, and add new components to its components/<area>/ file map.
 - Change files on top of what is there; never rewrite a file wholesale or drop content Design added.
 - Check your work: \`npm run design-sync -- bundle STAGE\` then \`npm run design-sync -- check-cards STAGE <cards…>\` must show no errors.`;
@@ -306,6 +310,7 @@ const APP_RULES = `App conventions (this repo, React 19 + TypeScript; read CLAUD
 - Colocated .stories.ts/.stories.tsx and .mdx/.md/.prompt.md belong to their component. Maintain relevant stories when behavior changes, using the actual component with props/providers/mocks in development tooling. Keep Storybook code outside the production import graph. Do not downgrade React 19 APIs or replace Base UI behavior to match the Design kit.
 - Components live in src/client/design/<area>/<Name>.tsx with a co-located <Name>.css (td-* classes, tokens only: no hex, no bare z-index, no @media in components). Behaviour comes from Base UI (@base-ui/react) where the kit has Popover/Menu/Select/Dialog. Icons via the explicit map in src/client/design/core/icons.ts (lucide-react).
 - The kit's .d.ts is the prop contract; translate its React-18 UMD idioms (React.createElement, injected css strings, window globals) into typed React 19 components and plain CSS. Reuse existing helpers (core/text.tsx, ShortcutHint Keys, usePersistedFlag…) instead of duplicating.
+- Class names follow docs/design/css-class-names.md: td-<component>-<part> in whole words (ListRow.css → .td-list-row-title). The kit abbreviates some of them (td-lrow-title); tools/claude-design-sync/class-names.json lists every pair (kit → App), so write the App's name for each kit class you port.
 - Minimal theme rules go in src/client/design/tokens/themes/minimal-components.css.
 - DESIGN.md is the spec; update the matching section when behaviour changes.
 - Run \`npm run check\` until it passes; when files changed, commit with a conventional message (feat:/fix:/style:) ending with the Co-Authored-By line your harness uses.`;

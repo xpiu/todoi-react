@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, wri
 import { dirname, join } from "node:path";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
+import { loadClassNames, renameClasses, type ClassNames } from "../src/engine/classNames";
 import { compare } from "../src/engine/compare";
 import { mergeCss, parseCss, ruleDelta } from "../src/engine/css";
 import { checkUpload, findProject, getFiles, NEEDS_APPROVAL, projectStatus, pullable, pullIfChanged, pullSnapshot, uploadRequest, verifyUpload, type Runner } from "../src/engine/designsync";
@@ -16,7 +17,7 @@ import { deriveSnapshot, getSnapshot, importExport, latestSnapshot, listSyncPoin
 import type { Comparison } from "../src/engine/types";
 import { Jobs } from "../src/server/jobs";
 import { laneOf, laneRules, LANE_ORDER } from "../src/engine/lanes";
-import { pairingProblems } from "../src/engine/config";
+import { pairingProblems, TOOL_DIR } from "../src/engine/config";
 import { baseUiParts, reviewDraft, reviewFile } from "../src/engine/fidelity";
 import { draftUsage, plannedDrafts, syncTwins, writeDrafts } from "../src/engine/kitDraft";
 import { componentFor, storybook } from "../src/engine/storybook";
@@ -57,6 +58,27 @@ describe("mergeCss", () => {
   it("parses nested at-rules as one statement", () => {
     expect(parseCss("@media (x){a{b:c}}\nd{e:f}").map((s) => s.key)).toEqual(["@media (x)", "d"]);
     expect(ruleDelta("a{b:c}", "a{b:d}\ne{f:g}")).toEqual({ added: 1, removed: 0, changed: 1 });
+  });
+});
+
+describe("renameClasses", () => {
+  const names: ClassNames = { toApp: new Map([["td-lrow", "td-list-row"], ["td-lrow-key", "td-list-row-key"]]), toKit: new Map([["td-list-row", "td-lrow"], ["td-list-row-key", "td-lrow-key"]]) };
+  it("rewrites whole class names and leaves everything else alone", () => {
+    const kit = ".td-lrow .td-lrow-key,.td-lrows,.td-card{z-index:var(--td-lrow)}";
+    const app = ".td-list-row .td-list-row-key,.td-lrows,.td-card{z-index:var(--td-lrow)}";
+    expect(renameClasses(kit, names, "app")).toBe(app);
+    expect(renameClasses(app, names, "kit")).toBe(kit);
+    expect(renameClasses(kit, undefined, "app")).toBe(kit);
+  });
+  it("lets a kit edit land on the App's spelling of the rule", () => {
+    const toApp = (css: string) => renameClasses(css, names, "app");
+    const r = mergeCss(toApp(".td-lrow{top:0}"), toApp(".td-lrow{top:1px}\n.td-lrow-key{left:0}"), ".td-list-row{top:0}\n");
+    expect(r.text).toBe(".td-list-row{top:1px}\n.td-list-row-key{left:0}\n");
+    expect(r.conflicts).toEqual([]);
+  });
+  it("pairs every kit name in class-names.json with one App name", () => {
+    const real = loadClassNames(join(TOOL_DIR, "class-names.json"));
+    expect(real.toKit.size).toBe(real.toApp.size);
   });
 });
 
