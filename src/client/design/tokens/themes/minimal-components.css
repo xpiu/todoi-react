@@ -197,7 +197,7 @@ html[data-theme="minimal"] .td-list-column-add svg,html[data-theme="minimal"] .t
 html[data-theme="minimal"] .td-list-column-add{gap:10px}
 html[data-theme="minimal"] .td-list-column-add>svg{flex:none;margin:0 1px}
 /* Pixel-snapped plus in full ink: a 13px glyph on whole-pixel x/y with a 1px stroke (24/13 viewBox units) puts each bar on exactly one pixel row/column, so it renders solid white in dark mode instead of a 1.17px bar smeared across two half-lit rows. Still sits in the 16px box, 10px to the label */
-html[data-theme="minimal"] .td-list-column-add>svg,html[data-theme="minimal"] .td-list-view-addlist>svg,html[data-theme="minimal"] .td-list-composer-plus svg{width:13px!important;height:13px!important;stroke-width:1.8462;stroke-linecap:butt;shape-rendering:crispEdges;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-add>svg,html[data-theme="minimal"] .td-list-view-addlist>svg,html[data-theme="minimal"] .td-list-column-composer-plus svg{width:13px!important;height:13px!important;stroke-width:1.8462;stroke-linecap:butt;shape-rendering:crispEdges;color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-column-add>svg{align-self:flex-start;margin:4px 2px 0 1px}
 html[data-theme="minimal"] .td-board-addlist>svg{display:none!important}
 html[data-theme="minimal"] .td-list-view-addlist>svg{flex:none;align-self:flex-start;margin:4px 1px 0 0}
@@ -220,7 +220,7 @@ html[data-theme="minimal"] .td-list-column-composer .td-quick-add-input{font:400
 /* The composer keeps the add row's plus, so the caret lands where the label was */
 html[data-theme="minimal"] .td-list-column-composer{display:flex;align-items:flex-start;gap:10px}
 html[data-theme="minimal"] .td-list-column-composer>.td-quick-add{flex:1;min-width:0}
-html[data-theme="minimal"] .td-list-composer-plus{display:inline-flex;justify-content:flex-start;width:16px;flex:none;margin-top:4px;padding-left:1px;box-sizing:border-box}
+html[data-theme="minimal"] .td-list-column-composer-plus{display:inline-flex;justify-content:flex-start;width:16px;flex:none;margin-top:4px;padding-left:1px;box-sizing:border-box}
 /* ⋯ › Add an item: the composer opens as the column's first row, under the name's hairline and closed by its own */
 html[data-theme="minimal"] .td-list-column-composer.is-top{border-top:0;border-bottom:1px solid var(--border-divider)}
 /* ── List view: sections are the same ledger, one column wide */
@@ -360,10 +360,10 @@ html[data-theme="minimal"] .td-calendar-span:hover{box-shadow:inset 0 -1px 0 var
 html[data-theme="minimal"] .td-calendar-span:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px;box-shadow:inset 0 -1px 0 var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-more{padding:1px 0;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 /* Week period: titles wrap on the 18px line with the key on the first baseline, 8px between items so a wrapped title reads as one item; the + sits 6px above the foot of the day column */
-html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chips{gap:8px}
-html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip{min-height:18px;padding:0;align-items:baseline}
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chips{gap:8px;padding-bottom:28px}
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip{height:auto;min-height:18px;padding:0;align-items:baseline}
 html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip>svg,html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip-key{margin-top:0}
-html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-cell-add{bottom:6px}
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-cell-add{top:auto;bottom:6px}
 /* The first item sits 8px under the last bar's rule, the same 8px as between items (was 2px, so a bar read as that item's heading) */
 html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-week:has(>.td-calendar-span-cell) .td-calendar-chips{padding-top:7px}
 /* Day columns under 80px: single-line items back on the 20px lane grid */
