@@ -102,7 +102,7 @@ export interface SubNavbarProps {
   visibility?: "Private" | "Shared" | "Public";
   /** "More options" footer in the Style menu → Settings › Appearance */
   onOpenAppearance?: () => void;
-  /** Adds the icon-less "Views" segment that toggles the saved-views row */
+  /** Adds the icon-less "Views" segment, first in the view group (left of List / Board / Cal.), that toggles the saved-views row */
   savedViewsToggle?: boolean;
   savedViewsOpen?: boolean;
   onSavedViewsToggle?: (open: boolean) => void;
@@ -175,7 +175,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       </div>
       <div className="td-style-row">
         <Checkbox checked={ap.showLabels} onChange={(v) => ap.set({ showLabels: v })} label="Show labels" />
-        <span className="td-style-trail" aria-hidden>
+        <span className="td-style-trail td-style-example-label" aria-hidden>
           <LabelChip color="teal" text="label" size="sm" />
         </span>
       </div>
@@ -316,20 +316,20 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       ) : null}
       {views.length ? (
         <div className="td-subnav-views" role="group" aria-label="View">
+          {savedViewsToggle ? (
+            <>
+              <button type="button" className="td-subnav-seg" aria-expanded={!!savedViewsOpen} aria-controls={savedViewsId} aria-label={savedViewsOpen ? "Hide saved views" : "Show saved views"} onClick={() => onSavedViewsToggle?.(!savedViewsOpen)}>
+                Views
+              </button>
+              <span className="td-subnav-vdiv" aria-hidden />
+            </>
+          ) : null}
           {views.map((v) => (
             <button key={v.id} type="button" className="td-subnav-seg td-tooltip td-tooltip-labeled" data-tip={v.label === "Cal." ? "Calendar" : v.label} data-tip-kbd={tipKeys(`view-${v.id}`)} aria-label={v.label === "Cal." ? "Cal. (Calendar)" : undefined} aria-pressed={v.id === active} onClick={() => onViewChange?.(v.id)}>
               {v.icon ? <Icon name={v.icon} size={16} /> : null}
               {v.label}
             </button>
           ))}
-          {savedViewsToggle ? (
-            <>
-              <span className="td-subnav-vdiv" aria-hidden />
-              <button type="button" className="td-subnav-seg" aria-expanded={!!savedViewsOpen} aria-controls={savedViewsId} aria-label={savedViewsOpen ? "Hide saved views" : "Show saved views"} onClick={() => onSavedViewsToggle?.(!savedViewsOpen)}>
-                Views
-              </button>
-            </>
-          ) : null}
         </div>
       ) : null}
     </div>

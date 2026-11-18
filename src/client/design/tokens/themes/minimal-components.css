@@ -27,6 +27,8 @@ html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{box-sizing:conten
 html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)){font:400 13px/1.45 var(--font-ui);height:auto;color:var(--ink-900)}
 html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)):hover,html[data-theme="minimal"] .td-subnav-seg:not(:has(svg))[aria-expanded="true"]{color:var(--ink-900)}
 html[data-theme="minimal"] .td-subnav-vdiv{display:none}
+/* Views leads the view group: it follows the last action at the in-group 16px, not the 24px group gap */
+html[data-theme="minimal"] .td-subnav-actions+.td-subnav-views:has(>.td-subnav-seg[aria-controls]:first-child){margin-left:-8px}
 /* Search → a search glyph over a hairline (132px), the + create glyph, a user glyph instead of the avatar, the sidebar toggle at the far right */
 html[data-theme="minimal"] .td-topnav>div:has(>.td-field-wrap){width:132px!important;margin-left:0}
 html[data-theme="minimal"] .td-topnav .td-field-dark{height:24px!important;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
@@ -195,14 +197,11 @@ html[data-theme="minimal"] .td-list-row{min-height:0;padding:10px 0;gap:10px;fon
 html[data-theme="minimal"] .td-list-row:hover{background:none}
 html[data-theme="minimal"] .td-list-row:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-list-row-subs .td-list-row{border-top:1px solid var(--border-divider)}
-/* Style menu › Row dividers off: no hairline under the list title, between rows or between subitems. Without rules to carry the rhythm the rows
-   close up (10px → 5px padding, a 30px pitch) and the title sits one row-gap above its first row, so the 24px gap between lists still reads as the break.
-   Borders stay 1px transparent: toggling never shifts by a sub-pixel, and the drop / selection outlines keep their box. */
-html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-head{padding-bottom:4px;border-bottom-color:transparent}
-html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-collapsed>.td-list-section-head{padding-bottom:0}
+/* Style menu › Row dividers off: no hairline under the list title, between rows or between subitems. Only the colour changes — borders stay
+   1px transparent and every padding is untouched, so titles and rows keep exactly the height they have with dividers on. */
+html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-head{border-bottom-color:transparent}
 html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-group{border-bottom-color:transparent}
 html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-subs .td-list-row{border-top-color:transparent}
-html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-group .td-list-row,html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-addrow,html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-add{padding-top:5px;padding-bottom:5px}
 html[data-theme="minimal"] .td-list-row-sub{padding-left:26px}
 html[data-theme="minimal"] .td-list-row-title{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-row-group .td-list-row:has(.td-check-box-on)>.td-list-row-title{color:var(--ink-900);text-decoration:line-through;text-decoration-color:var(--ink-400);text-decoration-thickness:1px}
@@ -213,6 +212,9 @@ html[data-theme="minimal"] .td-list-row-end>*{height:auto}
 html[data-theme="minimal"] .td-list-row-badge{color:var(--ink-400);font:400 11px/1.45 var(--font-ui);gap:0}
 html[data-theme="minimal"] .td-list-row-badge svg{display:none!important}
 html[data-theme="minimal"] .td-list-row-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-list-row-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px}
+/* Attachments keep the paperclip, and sit where they sit on a card: last in the meta line, right before the key (a notification row's "about" key stays the closing cell) */
+html[data-theme="minimal"] .td-list-row-end>.td-list-row-badge[title^="Attachments"]{order:1}
+html[data-theme="minimal"] .td-list-row-end>.td-list-row-cell:has(>.td-list-row-about){order:2}
 html[data-theme="minimal"] .td-list-row-key.td-list-row-idkey{min-width:0}
 /* The row key reads as one more meta label: same face, size and ink as the badges to its left (mono stays on cards and calendar chips) */
 html[data-theme="minimal"] .td-list-row>.td-list-row-idkey{height:auto;margin-left:0;font:400 11px/1.45 var(--font-ui)}
@@ -939,5 +941,8 @@ html[data-theme="minimal"][data-device="phone"] .td-topnav-user {
 /* ── One ink (2026-11-12): glyphs follow their text. An icon given a token color by its component (list-name icons, status, priority flags, project tints, checks and chevrons in menus) paints currentColor here; danger stays red. Done reads as a 1px strike instead of grey (rules above). Placeholders are the one dimmed text, so a hint never reads as a typed value. */
 html[data-theme="minimal"] svg[stroke^="var(--"]:not([stroke^="var(--danger"]){stroke:currentColor}
 html[data-theme="minimal"] svg[style*="fill: var(--label"],html[data-theme="minimal"] svg[style*="fill:var(--label"]{fill:currentColor!important}
+/* Style menu: the "Show labels" sample is what the switch turns on in this theme — the word, in the same box as the key sample above it */
+html[data-theme="minimal"] .td-style-example-label{font:400 11px/16px var(--font-ui);color:var(--ink-900);padding:1px 6px;border-radius:4px;background:var(--surface-list)}
+html[data-theme="minimal"] .td-style-example-label .td-label{display:inline!important;background:none!important;color:inherit!important;font:inherit!important;padding:0!important;border-radius:0!important;max-width:none!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
 html[data-theme="minimal"] ::placeholder{color:color-mix(in srgb,var(--ink-900) 55%,transparent)!important}
 html[data-theme="minimal"] .td-checklist-grip{color:var(--ink-900)}
