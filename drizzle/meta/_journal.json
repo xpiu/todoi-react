@@ -99,6 +99,13 @@
       "when": 1794404750207,
       "tag": "0013_operation_receipts_created_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795028487358,
+      "tag": "0014_checked_move",
+      "breakpoints": true
     }
   ]
 }

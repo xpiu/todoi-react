@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyCompletion, complete, initialStatus, reopen, statusChange, type CompletionFields } from "./completion";
+import { applyCompletion, checkedMoveTarget, complete, initialStatus, movesOnCheck, reopen, statusChange, type CheckedMoveProject, type CompletionFields } from "./completion";
 
 const open = (over: Partial<CompletionFields> = {}): CompletionFields => ({ status: "DOING", priorStatus: null, done: false, dueDate: null, repeatRule: null, repeatCount: 0, ...over });
 
@@ -71,5 +71,38 @@ describe("a recurring range", () => {
   it("moves its start with its due, keeping the occurrence's length", () => {
     const r = complete(open({ startDate: "2026-09-10", dueDate: "2026-09-12", repeatRule: { freq: "weekly" } }));
     expect(r.patch).toEqual({ dueDate: "2026-09-19", startDate: "2026-09-17", repeatCount: 1 });
+  });
+});
+
+describe("checked items move to Done", () => {
+  const project = (over: Partial<CheckedMoveProject> = {}): CheckedMoveProject => ({
+    checkedMove: null,
+    linkStatuses: true,
+    lists: [{ id: "todo", statusRole: "TODO", hidden: false }, { id: "done", statusRole: "DONE", hidden: false }, { id: "later", statusRole: null, hidden: false }],
+    ...over,
+  });
+  const item = { listId: "todo", parentItemId: null, priorListId: null, done: false };
+
+  it("follows Link lists with statuses until it is set", () => {
+    expect(movesOnCheck({ checkedMove: null, linkStatuses: true })).toBe(true);
+    expect(movesOnCheck({ checkedMove: null, linkStatuses: false })).toBe(false);
+    expect(movesOnCheck({ checkedMove: true, linkStatuses: false })).toBe(true);
+    expect(movesOnCheck({ checkedMove: false, linkStatuses: true })).toBe(false);
+  });
+  it("moves a checked item to the first visible Done list, and back on uncheck", () => {
+    expect(checkedMoveTarget(item, true, project())).toBe("done");
+    expect(checkedMoveTarget({ ...item, listId: "done", priorListId: "todo", done: true }, false, project())).toBe("todo");
+    expect(checkedMoveTarget(item, true, project({ lists: [{ id: "todo", statusRole: "TODO", hidden: false }, { id: "done", statusRole: "DONE", hidden: true }] }))).toBeNull();
+  });
+  it("leaves subitems, unchanged done states, Inbox items and switched-off projects alone", () => {
+    expect(checkedMoveTarget({ ...item, parentItemId: "p" }, true, project())).toBeNull();
+    expect(checkedMoveTarget(item, false, project())).toBeNull();
+    expect(checkedMoveTarget(item, true, null)).toBeNull();
+    expect(checkedMoveTarget(item, true, project({ checkedMove: false }))).toBeNull();
+    expect(checkedMoveTarget({ ...item, listId: "done" }, true, project())).toBeNull();
+  });
+  it("only sends an item back from a Done list to a list that still exists", () => {
+    expect(checkedMoveTarget({ ...item, listId: "later", priorListId: "todo", done: true }, false, project())).toBeNull();
+    expect(checkedMoveTarget({ ...item, listId: "done", priorListId: "gone", done: true }, false, project())).toBeNull();
   });
 });

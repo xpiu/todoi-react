@@ -175,6 +175,8 @@ export const projects = pgTable(
     defaultView: projectViewEnum("default_view").notNull().default("list"),
     /** "Link lists with statuses": an item moved to a list with a role takes that Status */
     linkStatuses: boolean("link_statuses").notNull().default(true),
+    /** "Checked items move to Done": checking an item also moves it to the list with the Done role. Null follows linkStatuses */
+    checkedMove: boolean("checked_move"),
     position: integer("position").notNull().default(0),
     ...lifecycle,
     version: integer("version").notNull().default(1),
@@ -242,6 +244,8 @@ export const items = pgTable(
     /** Remembered when the checkbox sets Done; restored on uncheck */
     priorStatus: itemStatusEnum("prior_status"),
     done: boolean("done").notNull().default(false),
+    /** The list a check moved the item out of ("Checked items move to Done"); unchecking sends it back. Cleared by any other move */
+    priorListId: text("prior_list_id").references((): AnyPgColumn => lists.id, { onDelete: "set null" }),
     priority: itemPriorityEnum("priority"),
     startDate: date("start_date"),
     dueDate: date("due_date"),

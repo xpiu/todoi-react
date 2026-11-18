@@ -45,7 +45,8 @@ describe("completion on the server", () => {
     await updateItem(f.recurring, { done: false }, { repeatCount: 1 }, {}, f.userId);
     expect(state(await row(f.recurring))).toEqual({ status: "DOING", priorStatus: null, done: false, dueDate: "2026-09-19", repeatCount: 1 });
     const log = await db.select({ text: activity.text }).from(activity).where(eq(activity.itemId, f.recurring));
-    expect(log.map((l) => l.text).sort()).toEqual(["completed “Weekly check”", "completed “Weekly check” — it repeats", "reopened “Weekly check”"]);
+    // The last occurrence is a real completion, so "Checked items move to Done" takes it to the Done list and back.
+    expect(log.map((l) => l.text).sort()).toEqual(["completed “Weekly check” — it repeats", "completed “Weekly check” — moved from To-do to Done", "reopened “Weekly check” — moved back to To-do"]);
   });
 
   it("serializes concurrent completions of one occurrence", async () => {
@@ -96,6 +97,66 @@ describe("completion on the server", () => {
     expect(state(by("In Done"))).toMatchObject({ status: "DONE", priorStatus: null, done: true });
     await updateItem(by("Finished").id, { done: false }, {}, {}, f.userId);
     expect(state(await row(by("Finished").id))).toMatchObject({ status: "DOING", done: false });
+  });
+});
+
+describe("checked items move to Done", () => {
+  const place = async (id: string) => (({ listId, priorListId, status, done }) => ({ listId, priorListId, status, done }))(await row(id));
+  const logOf = async (id: string) => (await db.select({ text: activity.text }).from(activity).where(eq(activity.itemId, id))).map((l) => l.text).sort();
+
+  it("moves a checked item to the Done list in a linked project and back when unchecked", async () => {
+    const f = await fixture();
+    const sub = nanoid();
+    await db.insert(items).values({ id: sub, projectId: f.projectId, listId: f.todo, parentItemId: f.plain, title: "Sub" });
+    await updateItem(f.plain, { done: true }, {}, {}, f.userId);
+    expect(await place(f.plain)).toEqual({ listId: f.doneList, priorListId: f.todo, status: "DONE", done: true });
+    // Subitems follow their item's list.
+    expect((await row(sub)).listId).toBe(f.doneList);
+    await updateItem(f.plain, { done: false }, {}, {}, f.userId);
+    expect(await place(f.plain)).toEqual({ listId: f.todo, priorListId: null, status: "DOING", done: false });
+    expect((await row(sub)).listId).toBe(f.todo);
+    expect(await logOf(f.plain)).toEqual(["completed “Plain” — moved from To-do to Done", "reopened “Plain” — moved back to To-do"]);
+  });
+
+  it("checks a subitem in place and never moves a Status edit", async () => {
+    const f = await fixture();
+    const sub = nanoid();
+    await db.insert(items).values({ id: sub, projectId: f.projectId, listId: f.todo, parentItemId: f.plain, title: "Sub" });
+    await updateItem(sub, { done: true }, {}, {}, f.userId);
+    expect(await place(sub)).toMatchObject({ listId: f.todo, done: true });
+    await updateItem(f.plain, { status: "DONE" }, {}, {}, f.userId);
+    expect(await place(f.plain)).toMatchObject({ listId: f.todo, status: "DONE", done: true });
+  });
+
+  it("follows Link lists with statuses until it is set, and an explicit setting overrides it", async () => {
+    const f = await fixture();
+    await db.update(projects).set({ linkStatuses: false }).where(eq(projects.id, f.projectId));
+    await updateItem(f.plain, { done: true }, {}, {}, f.userId);
+    expect(await place(f.plain)).toMatchObject({ listId: f.todo, done: true });
+    await updateItem(f.plain, { done: false }, {}, {}, f.userId);
+    await db.update(projects).set({ checkedMove: true }).where(eq(projects.id, f.projectId));
+    await updateItem(f.plain, { done: true }, {}, {}, f.userId);
+    expect(await place(f.plain)).toMatchObject({ listId: f.doneList, done: true });
+    await db.update(projects).set({ linkStatuses: true, checkedMove: false }).where(eq(projects.id, f.projectId));
+    // Off: unchecking leaves it in Done.
+    await updateItem(f.plain, { done: false }, {}, {}, f.userId);
+    expect(await place(f.plain)).toMatchObject({ listId: f.doneList, done: false });
+  });
+
+  it("keeps a recurring item that rolls on, skips a hidden Done list, and forgets the way back after another move", async () => {
+    const f = await fixture();
+    await updateItem(f.recurring, { done: true, ifDue: "2026-09-12" }, {}, {}, f.userId);
+    expect(await place(f.recurring)).toMatchObject({ listId: f.todo, done: false });
+    await db.update(lists).set({ hidden: true }).where(eq(lists.id, f.doneList));
+    await updateItem(f.plain, { done: true }, {}, {}, f.userId);
+    expect(await place(f.plain)).toMatchObject({ listId: f.todo, done: true });
+    await updateItem(f.plain, { done: false }, {}, {}, f.userId);
+    await db.update(lists).set({ hidden: false }).where(eq(lists.id, f.doneList));
+    await updateItem(f.plain, { done: true }, {}, {}, f.userId);
+    await moveItem(f.plain, { listId: f.doneList, position: 0 }, f.userId);
+    expect(await place(f.plain)).toMatchObject({ listId: f.doneList, priorListId: null });
+    await updateItem(f.plain, { done: false }, {}, {}, f.userId);
+    expect(await place(f.plain)).toMatchObject({ listId: f.doneList, done: false });
   });
 });
 

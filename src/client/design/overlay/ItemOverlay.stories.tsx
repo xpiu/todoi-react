@@ -178,3 +178,27 @@ export const InboxItem: Story = {
     await expect(within(dialog).queryByRole("combobox", { name: "Move to list" })).not.toBeInTheDocument();
   },
 };
+/** "Link lists with statuses" on and every list carries its own role: Status stands in for the List field, and a pick moves the item. */
+export const LinkedProject: Story = {
+  args: { linkStatuses: true, onManageLinks: fn(), lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Done", statusRole: "DONE" }] },
+  async play({ args, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
+    await expect(within(dialog).queryByRole("combobox", { name: "Move to list" })).not.toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("combobox", { name: "Status" }));
+    const note = await page.findByText("Lists are linked to Status here. Picking a Status moves the item to its list.");
+    await waitFor(() => expect(note).toBeVisible());
+    await userEvent.click(await page.findByRole("option", { name: "Done" }));
+    await expect(args.onMoveToList).toHaveBeenCalledWith("l3");
+    await expect(args.onSetStatus).not.toHaveBeenCalled();
+  },
+};
+/** Two lists share a role, so Status cannot name every list: List and Status both show, as in an unlinked project. */
+export const LinkedProjectSharedRole: Story = {
+  args: { linkStatuses: true, lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Also doing", statusRole: "DOING" }] },
+  async play({ canvasElement }) {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
+    await expect(within(dialog).getByRole("combobox", { name: "Move to list" })).toBeVisible();
+  },
+};

@@ -5,8 +5,7 @@ import { nanoid } from "nanoid";
 
 import type { CreateItemInput, DuplicateItemInput, MoveItemInput, UpdateItemInput } from "../../shared/items";
 import type { CreateListInput, UpdateListInput } from "../../shared/projects";
-import { applyCompletion } from "../../shared/completion";
-import { optimisticCreate } from "./itemOptimism";
+import { optimisticCreate, optimisticUpdate } from "./itemOptimism";
 export { optimisticCreate } from "./itemOptimism";
 import { api, ApiError, unwrap, type DuplicateResult, type Item, type MoveResult, type ProjectDetail, type UpdatedItem } from "./api";
 import { keys } from "./queries";
@@ -78,16 +77,15 @@ export function useCreateItem(scope: ItemsScope) {
 }
 
 export function useUpdateItem(scope: ItemsScope) {
+  const qc = useQueryClient();
   return useOptimistic(
     scope,
     ({ quiet: _quiet, ...vars }: { id: string } & Quiet & UpdateItemInput) => api.api.items[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap<UpdatedItem>(r)),
-    // The API's own completion rules predict the result (a recurring item moves to its next due).
-    (items, { id, quiet: _quiet, done, status, ifDue, ...changes }) =>
-      items.map((it) => {
-        if (it.id !== id) return it;
-        const next = { ...it, ...changes };
-        return { ...next, ...applyCompletion(next, { done, status, ifDue }).patch };
-      }),
+    // The API's own rules predict the result: a recurring item moves to its next due, a checked item to the Done list.
+    (items, { id, quiet: _quiet, done, status, ifDue, ...changes }) => {
+      const projectId = items.find((it) => it.id === id)?.projectId;
+      return optimisticUpdate(items, id, changes as Partial<Item>, { done, status, ifDue }, projectId ? qc.getQueryData<ProjectDetail>(keys.project(projectId)) : null);
+    },
   );
 }
 

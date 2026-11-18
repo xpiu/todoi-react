@@ -243,6 +243,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
               { id: "apLabels", label: "Show labels", hint: "Label chips on cards and rows", control: <Switch aria-label="Show labels" checked={ap.showLabels} onChange={(v) => ap.set({ showLabels: v })} /> },
               { id: "apStatus", label: "Status on cards", hint: "When the Status chip appears on a card", control: sel("Status on cards", ap.statusDisplay, STATUS_DISPLAYS, (v) => ap.set({ statusDisplay: v })) },
               { id: "apColorize", label: "Colorize Board columns", hint: "Tint columns and cards by their list's Status role", control: <Switch aria-label="Colorize Board columns" checked={ap.colorizeColumns} onChange={(v) => ap.set({ colorizeColumns: v })} /> },
+              // A project setting, shared with its members: this row only leads to where it is set.
+              { id: "apCheckedMove", label: "Checked items move to Done", hint: "A project setting, shared with its members. Set it per project on the Projects page", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/projects" })}>Projects</Button> },
             ],
           },
           {

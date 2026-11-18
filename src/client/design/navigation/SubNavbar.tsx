@@ -102,6 +102,11 @@ export interface SubNavbarProps {
   visibility?: "Private" | "Shared" | "Public";
   /** "More options" footer in the Style menu → Settings › Appearance */
   onOpenAppearance?: () => void;
+  /** Style-menu "Checked items move to Done" row, below Colorize Board columns: a shortcut, not a toggle. The setting
+   * belongs to the project (ProjectPanel › Defaults, the Projects page); the box shows `checkedMove` and a click on it
+   * or its label calls onOpenCheckedMove (the menu closes first). Rendered only when onOpenCheckedMove is given */
+  checkedMove?: boolean;
+  onOpenCheckedMove?: () => void;
   /** Adds the icon-less "Views" segment, first in the view group (left of List / Board / Cal.), that toggles the saved-views row */
   savedViewsToggle?: boolean;
   savedViewsOpen?: boolean;
@@ -112,7 +117,7 @@ export interface SubNavbarProps {
   className?: string;
 }
 
-export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, filterActive = false, sortActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, savedViewsId, style, className }: SubNavbarProps) {
+export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, filterActive = false, sortActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, checkedMove = false, onOpenCheckedMove, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, savedViewsId, style, className }: SubNavbarProps) {
   const ap = useAppearance();
   // Suggest shortcuts puts each view's and Filter's key in its hint (the key alone while the label shows).
   const tipKeys = (hintId: string) => (ap.suggestShortcuts ? hintKeysText(hintId) : undefined);
@@ -196,6 +201,19 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       <div className="td-style-row">
         <Checkbox checked={ap.colorizeColumns} onChange={(v) => ap.set({ colorizeColumns: v })} label="Colorize Board columns" />
       </div>
+      {onOpenCheckedMove ? (
+        // A project setting, not a device preference: the box shows the project's value and a click opens where it is set.
+        <div className="td-style-row td-style-goto" title="A project setting. Opens the Projects page, where it is set.">
+          <Checkbox
+            checked={checkedMove}
+            onChange={() => {
+              closeMenu();
+              onOpenCheckedMove();
+            }}
+            label="Checked items move to Done"
+          />
+        </div>
+      ) : null}
       {onOpenAppearance ? (
         <button
           type="button"

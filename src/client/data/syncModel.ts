@@ -1,7 +1,6 @@
 import type { CreateItemInput, UpdateItemInput } from "../../shared/items";
-import { applyCompletion } from "../../shared/completion";
 import type { Item, ProjectDetail } from "./api";
-import { optimisticCreate } from "./itemOptimism";
+import { optimisticCreate, optimisticUpdate } from "./itemOptimism";
 import type { LocalWorkspace, SyncOperation } from "./syncStorage";
 
 type Row = Record<string, unknown>;
@@ -224,11 +223,13 @@ export function reconcileSnapshot(path: string, snapshot: unknown, workspace: Lo
       if (itemId) {
         if (op.method === "DELETE" && op.path === `/api/items/${itemId}`) rows = rows.filter((row) => row.id !== itemId && row.parentItemId !== itemId);
         else if (op.method === "PATCH" && op.path === `/api/items/${itemId}`) {
-          rows = rows.map((row) => {
+          const { done, status, ifDue, archived, deleted, ...patch } = body as UpdateItemInput;
+          const itemProjectId = rows.find((row) => row.id === itemId)?.projectId;
+          const project = itemProjectId ? rowFor(workspace, `projects/${itemProjectId}`) as ProjectDetail | undefined : undefined;
+          // The same prediction as the live mutation, so a queued check lands in the Done list offline too.
+          rows = optimisticUpdate(rows, itemId, patch as Partial<Item>, { done, status, ifDue }, Array.isArray(project?.lists) ? project : null).map((row) => {
             if (row.id !== itemId) return row;
-            const { done, status, ifDue, archived, deleted, ...patch } = body as UpdateItemInput;
-            const next = { ...row, ...patch };
-            return { ...next, ...applyCompletion(next, { done, status, ifDue }).patch, ...(archived ? { archivedAt: op.createdAt } : {}), ...(deleted ? { deletedAt: op.createdAt } : {}) };
+            return { ...row, ...(archived ? { archivedAt: op.createdAt } : {}), ...(deleted ? { deletedAt: op.createdAt } : {}) };
           }).filter((row) => !row.archivedAt && !row.deletedAt && (!(body.archived || body.deleted) || row.parentItemId !== itemId));
         } else if (op.path.endsWith("/labels")) rows = rows.map((row) => row.id === itemId ? { ...row, labelIds: body.labelIds as string[] } : row);
         else if (op.path.endsWith("/assignees")) rows = rows.map((row) => row.id === itemId ? { ...row, assigneeIds: body.userIds as string[] } : row);

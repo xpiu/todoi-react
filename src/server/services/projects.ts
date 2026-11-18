@@ -51,6 +51,7 @@ export async function createProject(input: CreateProjectInput, userId: string, o
         visibility: input.visibility ?? copyFrom?.visibility ?? "private",
         defaultView: copyFrom?.defaultView ?? "list",
         linkStatuses: copyFrom?.linkStatuses ?? true,
+        checkedMove: copyFrom?.checkedMove ?? null,
         position,
       })
       .returning();

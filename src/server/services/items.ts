@@ -8,7 +8,7 @@ import { db, type Tx } from "../db";
 import { nextPosition } from "../db/position";
 import { ApiFailure } from "../errors";
 import { attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, itemWatchers, labels, lists, members, projects, type Item, type List, type Project } from "../db/schema";
-import { applyCompletion, statusChange, type Occurrence } from "../../shared/completion";
+import { applyCompletion, checkedMoveTarget, statusChange, type Occurrence } from "../../shared/completion";
 import { logActivity, quote } from "./activity";
 import { itemIsLive, setItemLifecycle } from "./lifecycle";
 import { issueKeyNumbers } from "./projects";
@@ -27,7 +27,10 @@ export async function updateItem(id: string, state: ItemState, fields: Partial<I
     if (!cur) return null;
     const next = { ...cur, ...fields };
     const { patch, occurrence } = applyCompletion(next, state);
-    const changes = { ...fields, ...patch };
+    const changes: Partial<Item> = { ...fields, ...patch };
+    // Any other change of list forgets where a check moved the item from.
+    if (fields.listId !== undefined && fields.listId !== cur.listId) changes.priorListId = null;
+    const moved = state.done === undefined ? null : await checkedMove(tx, cur, changes.done ?? cur.done, changes);
     // A time belongs to a due: clearing the due drops it.
     if (fields.dueDate === null && fields.dueTime === undefined && cur.dueTime) changes.dueTime = null;
     if ("startDate" in fields || "dueDate" in fields || "dueTime" in fields) {
@@ -39,13 +42,35 @@ export async function updateItem(id: string, state: ItemState, fields: Partial<I
     if (!Object.keys(changes).length && lifecycle.archived === undefined && lifecycle.deleted === undefined) return { item: cur, occurrence: null };
     const row = await setItemLifecycle(id, lifecycle, actorId, changes, tx);
     if (!row) return null;
+    // Subitems follow their parent's list.
+    if (moved) await tx.update(items).set({ listId: row.listId }).where(eq(items.parentItemId, id));
     if (row.done !== cur.done || occurrence) {
       const verb = occurrence || row.done ? "completed" : "reopened";
       const repeats = occurrence && !occurrence.ended ? " — it repeats" : "";
-      await logActivity(tx, { projectId: row.projectId, actorId, type: "item", text: `${verb} ${quote(row.title)}${repeats}`, itemId: row.id, itemKey: keyOf(row) });
+      const where = !moved ? "" : row.done ? ` — moved from ${moved.from} to ${moved.to}` : ` — moved back to ${moved.to}`;
+      await logActivity(tx, { projectId: row.projectId, actorId, type: "item", text: `${verb} ${quote(row.title)}${repeats}${where}`, itemId: row.id, itemKey: keyOf(row) });
     }
     return { item: row, occurrence };
   });
+}
+
+/**
+ * "Checked items move to Done" (DESIGN.md › Lists & Status linking): a check also moves a top-level project item
+ * to the Done-role list, at its end, and remembers the list it left; an uncheck there sends it back. Writes the
+ * list and position into `changes`; returns the two list names for the activity row, or null when it stays.
+ */
+async function checkedMove(tx: Tx, cur: Item, done: boolean, changes: Partial<Item>): Promise<{ from: string; to: string } | null> {
+  if (!cur.projectId || cur.parentItemId || done === cur.done) return null;
+  const [project] = await tx.select({ checkedMove: projects.checkedMove, linkStatuses: projects.linkStatuses }).from(projects).where(eq(projects.id, cur.projectId));
+  if (!project) return null;
+  const projectLists = await tx.select({ id: lists.id, name: lists.name, statusRole: lists.statusRole, hidden: lists.hidden }).from(lists).where(eq(lists.projectId, cur.projectId)).orderBy(asc(lists.position), asc(lists.createdAt));
+  const target = checkedMoveTarget(cur, done, { ...project, lists: projectLists });
+  if (!target) return null;
+  changes.listId = target;
+  changes.priorListId = done ? cur.listId : null;
+  await placeAmongSiblings(tx, cur.id, target, undefined, changes);
+  const nameOf = (id: string) => projectLists.find((l) => l.id === id)?.name ?? "the list";
+  return { from: nameOf(cur.listId), to: nameOf(target) };
 }
 
 /** "MP-112" from a row, when it has a key (the prefix is looked up by the caller when needed). */
@@ -233,7 +258,8 @@ export async function moveItem(id: string, { listId, position, restore }: MoveIt
     const destProject = dest.projectId ? (await tx.select().from(projects).where(eq(projects.id, dest.projectId)))[0] ?? null : null;
     const crossProject = dest.projectId !== cur.projectId || (!dest.projectId && dest.id !== cur.listId);
 
-    const patch: Partial<Item> = { listId: dest.id, projectId: dest.projectId };
+    // A move forgets the list a check took the item from ("Checked items move to Done").
+    const patch: Partial<Item> = { listId: dest.id, projectId: dest.projectId, priorListId: null };
     const changed: MoveResult["changed"] = { list: dest.id !== cur.listId, project: crossProject, status: null, key: null, subitems: 0, labelsCreated: [], labelsRemoved: 0, assigneesRemoved: 0, watchersRemoved: 0, relationsRemoved: 0 };
     // Placing an item in a Done list is a literal Status change: it is done there, not a recurring occurrence.
     const role = arrivingRole(dest, destProject, cur);

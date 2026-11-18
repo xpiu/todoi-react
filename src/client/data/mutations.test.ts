@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item } from "./api";
+import { optimisticUpdate } from "./itemOptimism";
 import { optimisticCreate } from "./mutations";
 
 const item = (id: string, over: Partial<Item> = {}): Item => ({ id, projectId: "p", listId: "l1", parentItemId: null, keyNumber: 1, title: id, description: null, status: null, priorStatus: null, done: false, priority: null, startDate: null, dueDate: null, dueTime: null, repeatRule: null, repeatCount: 0, cover: null, notification: null, unread: false, position: 0, createdBy: null, archivedAt: null, deletedAt: null, createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "", labelIds: [], assigneeIds: [], attachmentCount: 0, ...over }) as Item;
@@ -43,5 +44,24 @@ describe("optimisticCreate", () => {
     expect(top[1]).not.toBe(records[1]);
     expect(top[2]).toBe(records[2]);
     expect(records.map((record) => record.position)).toEqual([0, 1, 0]);
+  });
+});
+
+describe("optimisticUpdate", () => {
+  const project = { checkedMove: null, linkStatuses: true, lists: [{ id: "l1", statusRole: "TODO" as const, hidden: false }, { id: "l2", statusRole: "DONE" as const, hidden: false }] };
+  const items = [item("a", { status: "TODO" }), item("x", { listId: "l2", position: 3 }), item("sub", { parentItemId: "a", position: 0 })];
+
+  it("predicts a check taking the item and its subitems to the end of the Done list, and the uncheck back", () => {
+    const checked = optimisticUpdate(items, "a", {}, { done: true }, project);
+    expect(checked.find((i) => i.id === "a")).toMatchObject({ listId: "l2", priorListId: "l1", position: 4, status: "DONE", done: true });
+    expect(checked.find((i) => i.id === "sub")).toMatchObject({ listId: "l2" });
+    const back = optimisticUpdate(checked, "a", {}, { done: false }, project);
+    expect(back.find((i) => i.id === "a")).toMatchObject({ listId: "l1", priorListId: null, status: "TODO", done: false });
+  });
+
+  it("moves nothing without the project, with the setting off, or for a Status edit", () => {
+    expect(optimisticUpdate(items, "a", {}, { done: true }, null).find((i) => i.id === "a")).toMatchObject({ listId: "l1", done: true });
+    expect(optimisticUpdate(items, "a", {}, { done: true }, { ...project, checkedMove: false }).find((i) => i.id === "a")).toMatchObject({ listId: "l1", done: true });
+    expect(optimisticUpdate(items, "a", {}, { status: "DONE" }, project).find((i) => i.id === "a")).toMatchObject({ listId: "l1", done: true });
   });
 });

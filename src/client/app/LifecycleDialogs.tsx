@@ -106,7 +106,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   return (
     <ProjectPanel
       open={open}
-      project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: projectUrl(p.id), role }}
+      project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, checkedMove: p.checkedMove, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: projectUrl(p.id), role }}
       members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, image: x.image, isAnonymous: x.isAnonymous, color: avatarColorVar(x.avatarColor) }))}
       invites={invites.data}
       invitesLoading={invites.isPending}

@@ -41,6 +41,8 @@ export const updateProjectSchema = z
     visibility: z.enum(PROJECT_VISIBILITIES),
     defaultView: z.enum(PROJECT_VIEWS),
     linkStatuses: z.boolean(),
+    /** "Checked items move to Done"; null follows linkStatuses */
+    checkedMove: z.boolean().nullable(),
     groupId: idSchema,
     position: z.number().int().min(0),
   })

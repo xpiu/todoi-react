@@ -1,5 +1,5 @@
 import type { CreateItemInput } from "../../shared/items";
-import { initialStatus } from "../../shared/completion";
+import { applyCompletion, checkedMoveTarget, initialStatus, type CheckedMoveProject } from "../../shared/completion";
 import type { ItemStatus } from "../../shared/item-status";
 import type { Item } from "./api";
 
@@ -30,6 +30,7 @@ export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: { l
     cover: null,
     notification: null,
     unread: false,
+    priorListId: null,
     position: 0,
     createdBy: null,
     archivedAt: null,
@@ -45,4 +46,20 @@ export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: { l
   const at = vars.position === "top" ? 0 : siblings.length;
   const renumbered = new Map(siblings.map((it, i) => [it.id, i < at ? i : i + 1]));
   return [...items.map((it) => (renumbered.has(it.id) && it.position !== renumbered.get(it.id) ? { ...it, position: renumbered.get(it.id)! } : it)), { ...item, position: at }];
+}
+
+/**
+ * An update predicted by the API's rules: the fields, then done / Status by the shared completion rules, and —
+ * "Checked items move to Done" — a check that takes the item (and its subitems) to the end of the Done list,
+ * or an uncheck that sends it back. `project` is the cached project detail; without it nothing moves.
+ */
+export function optimisticUpdate(items: Item[], id: string, changes: Partial<Item>, request: { done?: boolean; status?: ItemStatus | null; ifDue?: string }, project: CheckedMoveProject | null | undefined): Item[] {
+  const cur = items.find((it) => it.id === id);
+  if (!cur) return items;
+  const next = { ...cur, ...changes };
+  const updated: Item = { ...next, ...applyCompletion(next, request).patch };
+  const to = request.done === undefined ? null : checkedMoveTarget(cur, updated.done, project);
+  if (!to) return items.map((it) => (it.id === id ? updated : it));
+  const end = Math.max(-1, ...items.filter((it) => it.listId === to && !it.parentItemId && it.id !== id).map((it) => it.position)) + 1;
+  return items.map((it) => (it.id === id ? { ...updated, listId: to, priorListId: updated.done ? cur.listId : null, position: end } : it.parentItemId === id ? { ...it, listId: to } : it));
 }

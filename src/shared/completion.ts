@@ -96,3 +96,34 @@ export function applyCompletion(cur: CompletionFields, { done, status, ifDue }: 
   if (done === false) return { patch: status === undefined ? reopen(cur) : statusChange(cur, status), occurrence: null };
   return { patch: status === undefined ? {} : statusChange(cur, status), occurrence: null };
 }
+
+/** What "Checked items move to Done" reads from a project: the setting, the one it follows, and the lists. */
+export interface CheckedMoveProject {
+  checkedMove: boolean | null;
+  linkStatuses: boolean;
+  /** In board order */
+  lists: ReadonlyArray<{ id: string; statusRole: ItemStatus | null; hidden: boolean }>;
+}
+/** The setting's effective value: unset, it follows "Link lists with statuses". */
+export const movesOnCheck = (project: Pick<CheckedMoveProject, "checkedMove" | "linkStatuses">) => project.checkedMove ?? project.linkStatuses;
+
+/**
+ * Where a check or uncheck takes a project item when "Checked items move to Done" is on, or null when it stays.
+ * Checked: to the first visible list with the Done role. Unchecked in a Done-role list: back to the list the check
+ * moved it out of, while that list exists. Subitems stay with their item; an Inbox item has no project.
+ * `item` is the state before; `done` whether the request left the item done (a recurring item that rolls on stays open).
+ */
+export function checkedMoveTarget(
+  item: { listId: string; parentItemId: string | null; priorListId?: string | null; done: boolean },
+  done: boolean,
+  project: CheckedMoveProject | null | undefined,
+): string | null {
+  if (!project || item.parentItemId || done === item.done || !movesOnCheck(project)) return null;
+  const roleOf = (id: string) => project.lists.find((l) => l.id === id)?.statusRole ?? null;
+  if (done) {
+    const dest = project.lists.find((l) => l.statusRole === "DONE" && !l.hidden);
+    return dest && dest.id !== item.listId ? dest.id : null;
+  }
+  const back = item.priorListId;
+  return back && back !== item.listId && roleOf(item.listId) === "DONE" && project.lists.some((l) => l.id === back) ? back : null;
+}

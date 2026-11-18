@@ -1,11 +1,12 @@
 // ItemOverlayScreen — the item overlay on real data: the item from the project's items, its details
 // (comments, relations, watching), the project's activity filtered to it, and every edit as a mutation.
 // Undoable outcomes (archive, delete, duplicate) raise the one Toast. Spec: DESIGN.md › Item overlay.
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { errorMessage, explain, type Item, type Label } from "../data/api";
 import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
-import { newId, scopeOf, useCreateItem, useMoveItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
+import { newId, scopeOf, useCreateItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
 import { attachmentUrl, useAttachmentMutations } from "../data/attachments";
 import { downloadText, fileSlug, itemToMarkdown, itemsToCsv } from "./exportData";
@@ -52,7 +53,6 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
   const activity = useActivity(projectId ?? "");
   const scope = useMemo(() => scopeOf(projectId), [projectId]);
   const updateItem = useUpdateItem(scope);
-  const moveItem = useMoveItem(scope);
   const createItem = useCreateItem(scope);
   const setLabels = useSetItemLabels(scope);
   const setAssignees = useSetItemAssignees(scope);
@@ -67,6 +67,7 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
   const files = useAttachmentMutations(itemId, projectId);
   const uploads = usePendingUploads(itemId);
   const actions = useProjectActions(projectId, project, items, labels);
+  const navigate = useNavigate();
   const picker = useProjectPicker(projectId ?? "");
   const notify = useFeedback((s) => s.notify);
   const [now] = useState(() => new Date());
@@ -148,8 +149,12 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       inbox={!projectId}
       onClose={onClose}
       onRename={(title) => saving(updateItem.mutateAsync({ id: item.id, title, quiet: true }))}
-      onMoveToList={(listId) => moveItem.mutate({ id: item.id, listId })}
-      onSetStatus={(status) => (status === "DONE" ? actions.setDone(item.id, true) : patch({ status }))}
+      linkStatuses={!!projectId && project.linkStatuses}
+      onManageLinks={projectId ? () => void navigate({ to: "/projects" }) : undefined}
+      // To the end of the list, with the undoable toast a board move raises ("— Status set to Doing").
+      onMoveToList={(listId) => actions.move(item.id, { listId, position: items.filter((it) => it.listId === listId && !it.parentItemId).length })}
+      // Done on a recurring item completes its occurrence; any other Status is set as given and never moves the item.
+      onSetStatus={(status) => (status === "DONE" && item.repeatRule && item.dueDate ? actions.setDone(item.id, true) : patch({ status }))}
       onSetPriority={(priority) => patch({ priority })}
       onSetDates={(v) => patch({ startDate: v.start, dueDate: v.due, dueTime: v.time })}
       onSetRepeat={(rule) => patch({ repeatRule: rule })}

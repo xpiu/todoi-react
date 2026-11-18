@@ -157,6 +157,10 @@
   .td-style-row:first-of-type {
     margin-top: 0;
   }
+  .td-style-goto .td-check:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
   .td-style-trail {
     margin-left: auto;
     display: inline-flex;

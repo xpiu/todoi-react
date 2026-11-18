@@ -2,6 +2,7 @@
 // completed %, the per-project "Link lists with statuses" switch, and a ⋯ with the lifecycle rows.
 import { useState } from "react";
 
+import { movesOnCheck } from "../../shared/completion";
 import type { LabelColor } from "../../shared/enums";
 import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
@@ -58,8 +59,11 @@ export function ProjectsScreen() {
                 <th>Lead</th>
                 <th className="td-table-number">Items</th>
                 <th className="td-table-number">Completed</th>
-                <th className="td-table-link" title="Link lists with statuses: when on, an item created in or moved to a list with a Status role takes that Status.">
-                  Auto-assign statuses to lists
+                <th className="td-table-link" title="Link lists with statuses: when on, an item created in or moved to a list with a Status role takes that Status. The item window then shows Status alone, and picking a Status there moves the item to its list.">
+                  Link Lists to Status
+                </th>
+                <th className="td-table-link" title="When on, checking an item also moves it to the list with the Done role, and unchecking sends it back. Follows Link Lists to Status until it is set. Subitems stay with their item.">
+                  Checked items move to Done
                 </th>
                 <th>
                   <span className="td-sr-only">Settings</span>
@@ -114,6 +118,9 @@ export function ProjectsScreen() {
                     <td className="td-table-number">{pct != null ? `${pct}%` : <span className="td-table-dim">—</span>}</td>
                     <td className="td-table-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <Switch checked={p.linkStatuses} aria-label={`Linked statuses for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, linkStatuses: v })} />
+                    </td>
+                    <td className="td-table-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      <Switch checked={movesOnCheck(p)} aria-label={`Checked items move to Done for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, checkedMove: v })} />
                     </td>
                     <td className="td-table-set" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <span className="td-table-tools">
