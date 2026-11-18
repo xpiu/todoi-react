@@ -26,7 +26,7 @@ const meta = {
     onSearchSelect: fn(),
     onSearchChange: fn(),
     onCreate: fn(),
-    user: { name: "Flo Zuallaert", email: "flo@todoi.com", avatarColor: "var(--label-teal)" },
+    user: { name: "Todoi", email: "info@todoi.org", avatarColor: "var(--label-teal)" },
     onOpenSettings: fn(),
     onOpenAccount: fn(),
     onLogout: fn(),
@@ -108,7 +108,7 @@ export const CreateMenu: Story = {
 };
 export const AccountMenu: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Account: Flo Zuallaert" });
+    const trigger = canvas.getByRole("button", { name: "Account: Todoi" });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: "Log out" }));

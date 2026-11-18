@@ -31,7 +31,7 @@ export const Detailed: Story = {
     repeat: "Every month on the 2nd",
     priority: "High",
     attachments: 3,
-    assignees: ["Flo Zuallaert", "Sam Verhoeven"],
+    assignees: ["Todoi", "Sam Verhoeven"],
     status: "DOING",
   },
 };
@@ -39,7 +39,7 @@ export const Done: Story = { args: { done: true, due: "Sep 28, 2026", dueState: 
 export const ManyLabelsAndAssignees: Story = {
   args: {
     labels: [{ color: "red", text: "Urgent" }, { color: "teal", text: "Parts" }, { color: "lime", text: "Ops" }, { color: "pink", text: "Finance" }, { color: "yellow", text: "Legal" }],
-    assignees: ["Flo Zuallaert", "Sam Verhoeven", "Ana Peeters", "Jonas Claes", "Mia Janssens"],
+    assignees: ["Todoi", "Sam Verhoeven", "Ana Peeters", "Jonas Claes", "Mia Janssens"],
   },
   async play({ args, canvas, canvasElement, userEvent, globals }) {
     await expect(canvas.getByLabelText("3 more assignees")).toHaveTextContent("+3");
@@ -127,7 +127,7 @@ export const LongTitle: Story = {
 export const LongTitleManyLabels: Story = {
   args: {
     title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment and payment terms",
-    due: "Oct 20, 2026", priority: "Urgent", attachments: 4, assignees: ["Flo Zuallaert", "Sam Verhoeven", "Ana Peeters"],
+    due: "Oct 20, 2026", priority: "Urgent", attachments: 4, assignees: ["Todoi", "Sam Verhoeven", "Ana Peeters"],
     labels: [{ color: "red", text: "Compliance paperwork" }, { color: "teal", text: "Spare parts order" }, { color: "lime", text: "Operations" }, { color: "pink", text: "Finance review" }, { color: "yellow", text: "Legal sign-off" }],
   },
   decorators: [(Story) => <div style={{ maxWidth: 560 }}><Story /></div>],

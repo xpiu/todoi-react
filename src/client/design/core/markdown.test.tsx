@@ -36,8 +36,8 @@ describe("renderMarkdown", () => {
     expect(html("https://en.wikipedia.org/wiki/Bell_(helicopter), or")).toBe(`<p>${a("https://en.wikipedia.org/wiki/Bell_(helicopter)", "en.wikipedia.org/wiki/Bell_(helicopter)")}, or</p>`);
   });
   it("highlights only known mentions and marks item keys", () => {
-    const members = [{ name: "Flo Zuallaert", nickname: "flo" }];
-    expect(html("hi @flo and @nobody", { members })).toBe('<p>hi <span class="td-markdown-mention">@flo</span> and @nobody</p>');
+    const members = [{ name: "Todoi", nickname: "todoi" }];
+    expect(html("hi @todoi and @nobody", { members })).toBe('<p>hi <span class="td-markdown-mention">@todoi</span> and @nobody</p>');
     expect(html("see MP-112 now")).toBe('<p>see <span class="td-markdown-key">MP-112</span> now</p>');
     expect(html("see MP-112 now", { onOpenKey: () => {} })).toContain('role="link"');
   });

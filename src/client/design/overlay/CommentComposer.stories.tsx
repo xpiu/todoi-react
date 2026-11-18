@@ -5,7 +5,7 @@ import { expect, fn } from "storybook/test";
 import { CommentComposer, type CommentComposerProps } from "./CommentComposer";
 
 const MEMBERS = [
-  { id: "u1", name: "Flo Zuallaert", color: "var(--label-blue)" },
+  { id: "u1", name: "Todoi", color: "var(--label-blue)" },
   { id: "u2", name: "Sam Verhoeven", nickname: "sam", color: "var(--label-teal)" },
   { id: "u3", name: "Sara Peeters", color: "var(--label-pink)" },
 ];

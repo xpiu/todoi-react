@@ -50,13 +50,13 @@ const meta = {
     lists: [{ id: "l1", name: "To do" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Done" }],
     labels: [{ id: "lb1", name: "Sales", color: "blue" }, { id: "lb2", name: "Customer", color: "teal" }],
     members: [
-      { id: "u1", name: "Flo Zuallaert", color: "var(--label-blue)" },
+      { id: "u1", name: "Todoi", color: "var(--label-blue)" },
       { id: "u2", name: "Sam Verhoeven", nickname: "sam", color: "var(--label-teal)" },
     ],
     currentUserId: "u1",
     comments: [
-      { id: "c1", author: "Sam Verhoeven", authorId: "u2", color: "var(--label-teal)", meta: "2 hours ago", text: "Booked the hangar for **Thursday**. See HE-116.", reactions: [{ emoji: "👍", count: 1, mine: true, by: ["Flo Zuallaert"] }] },
-      { id: "c2", author: "Flo Zuallaert", authorId: "u1", color: "var(--label-blue)", meta: "1 hour ago", text: "@sam can you check the delivery dates?", reactions: [] },
+      { id: "c1", author: "Sam Verhoeven", authorId: "u2", color: "var(--label-teal)", meta: "2 hours ago", text: "Booked the hangar for **Thursday**. See HE-116.", reactions: [{ emoji: "👍", count: 1, mine: true, by: ["Todoi"] }] },
+      { id: "c2", author: "Todoi", authorId: "u1", color: "var(--label-blue)", meta: "1 hour ago", text: "@sam can you check the delivery dates?", reactions: [] },
     ],
     activity: [{ id: "a1", author: "Sam Verhoeven", meta: "yesterday", text: "moved this item from To do to Doing" }],
     relations: [{ type: "blocked_by", item: PROJECT_ITEMS[3]! }],

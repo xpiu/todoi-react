@@ -9,7 +9,7 @@ import type { PanelMember } from "../project/ProjectPanel";
 import { MembersMenu, type MembersMenuProps } from "./MembersMenu";
 
 const MEMBERS: PanelMember[] = [
-  { id: "u1", name: "Flo Zuallaert", email: "flo@todoi.com", color: "var(--label-teal)", role: "owner" },
+  { id: "u1", name: "Todoi", email: "info@todoi.org", color: "var(--label-teal)", role: "owner" },
   { id: "u2", name: "Sam Verhoeven", email: "sam@todoi.com", color: "var(--label-orange)", role: "admin" },
   { id: "u3", name: "Noor El Amrani", email: "noor@todoi.com", color: "var(--label-pink)", role: "editor" },
   { id: "u4", name: "Jan De Smet", color: "var(--label-blue)", role: "viewer" },
@@ -55,7 +55,7 @@ const openMenu = async (canvasElement: HTMLElement, userEvent: { click: (el: Ele
 export const Admin: Story = {
   async play({ args, canvasElement, userEvent }) {
     const { dialog, page } = await openMenu(canvasElement, userEvent);
-    await expect(dialog.getByText("Flo Zuallaert (you)")).toBeVisible();
+    await expect(dialog.getByText("Todoi (you)")).toBeVisible();
     await userEvent.click(dialog.getByRole("radio", { name: /Shared/ }));
     await expect(args.onVisibilityChange).toHaveBeenCalledWith("shared");
     await expect(dialog.getByRole("radio", { name: /Shared/ })).toHaveAttribute("aria-checked", "true");

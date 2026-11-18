@@ -12,9 +12,9 @@ const meta = {
   args: { name: "Doing", count: 3, listId: "doing", onAddItem: fn(), onRename: fn(), onIconChange: fn(), onStatusRoleChange: fn(), onManageLinks: fn(), onSelectAll: fn(), onHide: fn() },
   render: (args) => (
     <ListColumn {...args}>
-      <ItemCard dragId="i1" itemId="HE-112" title="Confirm the hangar slot for October" labels={[{ color: "blue", text: "Ops" }]} due="Oct 9, 2026" assignees={["Flo Zuallaert"]} />
+      <ItemCard dragId="i1" itemId="HE-112" title="Confirm the hangar slot for October" labels={[{ color: "blue", text: "Ops" }]} due="Oct 9, 2026" assignees={["Todoi"]} />
       <ItemCard dragId="i2" itemId="HE-115" title="Prepare the helicopter quote" labels={[{ color: "orange", text: "Sales" }]} due="Oct 2, 2026" dueState="overdue" priority="High" badges={{ checklist: { done: 2, total: 5 } }} />
-      <ItemCard dragId="i3" itemId="HE-118" title="Send the pilot roster" badges={{ description: true, attachments: 2 }} assignees={["Sam Verhoeven", "Flo Zuallaert"]} />
+      <ItemCard dragId="i3" itemId="HE-118" title="Send the pilot roster" badges={{ description: true, attachments: 2 }} assignees={["Sam Verhoeven", "Todoi"]} />
     </ListColumn>
   ),
   parameters: { docs: { description: { component: "One board list: header with icon picker, name, count and ⋯ list actions, the card stack (a named list for ItemCards), and the \"Add an item\" quick-add composer. Compose it inside BoardView. Rename, icon, status role and new items are reported through callbacks; the caller persists them and re-renders." } } },

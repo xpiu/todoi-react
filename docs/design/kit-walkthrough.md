@@ -24,7 +24,7 @@ sync notice (Dealers & stock), the phone item sheet (390px) and the tablet two-r
 - The default view is List; the item overlay opens from a row or a card; the phone sheet stacks
   the aside above the content; the tablet breakpoint moves the SubNavbar to its own row.
 - Seed data: project "Helicopters Europe website" (group Marketing & PR, prefix `MP`), with lists
-  New / To-do / Doing / Done / Backlog, two members (Flo Zuallaert, Sam Verhoeven), labels
+  New / To-do / Doing / Done / Backlog, two members (Todoi, Sam Verhoeven), labels
   note · shop · design · photos · broken · paperwork, a few covers, a recurring item (MP-137),
   relations, and an Inbox with notification items. This is the seed for Phase 3.
 

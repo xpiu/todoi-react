@@ -12,7 +12,7 @@ const meta = {
       groupName: "Sales",
       itemCount: 42,
       memberCount: 6,
-      inviter: "Flo Zuallaert",
+      inviter: "Todoi",
       role: "editor",
       email: "sam@helicopters.eu",
       expiresAt: "2026-10-21T12:00:00.000Z",
@@ -37,7 +37,7 @@ type Story = StoryObj<typeof meta>;
 
 export const SignedIn: Story = {
   async play({ args, canvas, userEvent }) {
-    await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Flo Zuallaert invited you to join");
+    await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Todoi invited you to join");
     await userEvent.click(canvas.getByRole("button", { name: "Accept invite" }));
     await expect(args.onAccept).toHaveBeenCalledOnce();
     await userEvent.click(canvas.getByRole("button", { name: "Not you?" }));
@@ -69,4 +69,4 @@ export const AlreadyMember: Story = {
     await expect(args.onOpenProject).toHaveBeenCalledOnce();
   },
 };
-export const Accepted: Story = { args: { state: "accepted", invite: { project: { name: "Helicopters Europe" }, role: "viewer", inviter: "Flo Zuallaert" } } };
+export const Accepted: Story = { args: { state: "accepted", invite: { project: { name: "Helicopters Europe" }, role: "viewer", inviter: "Todoi" } } };

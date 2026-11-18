@@ -23,14 +23,14 @@ describe("hosting", () => {
 
   it("refuses to serve beyond loopback without a login, or with half of one", () => {
     expect(() => hostingFromEnv({ CDS_HOST: "0.0.0.0" })).toThrow(/needs CDS_BASIC_AUTH_USER/);
-    expect(() => hostingFromEnv({ CDS_BASIC_AUTH_USER: "flo" })).toThrow(/both/);
-    expect(hostingFromEnv({ CDS_HOST: "0.0.0.0", CDS_PORT: "8080", CDS_BASIC_AUTH_USER: "flo", CDS_BASIC_AUTH_PASS: "pw", CDS_PUSH_AFTER_MERGE: "1" }))
-      .toEqual({ host: "0.0.0.0", port: 8080, auth: { username: "flo", password: "pw" }, pushAfterMerge: true });
+    expect(() => hostingFromEnv({ CDS_BASIC_AUTH_USER: "admin" })).toThrow(/both/);
+    expect(hostingFromEnv({ CDS_HOST: "0.0.0.0", CDS_PORT: "8080", CDS_BASIC_AUTH_USER: "admin", CDS_BASIC_AUTH_PASS: "pw", CDS_PUSH_AFTER_MERGE: "1" }))
+      .toEqual({ host: "0.0.0.0", port: 8080, auth: { username: "admin", password: "pw" }, pushAfterMerge: true });
   });
 
   it("asks for the login everywhere but the health check", async () => {
     fx = makeFixture();
-    const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir }, hosting: { auth: { username: "flo", password: "pw" }, pushAfterMerge: false } });
+    const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir }, hosting: { auth: { username: "admin", password: "pw" }, pushAfterMerge: false } });
     expect((await app.request("/healthz")).status).toBe(200);
     expect((await app.request("/api/state")).status).toBe(401);
     expect((await app.request("/api/state", { headers: { authorization: "Basic " + Buffer.from("flo:wrong").toString("base64") } })).status).toBe(401);

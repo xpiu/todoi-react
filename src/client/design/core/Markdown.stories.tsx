@@ -3,7 +3,7 @@ import { expect, fn } from "storybook/test";
 
 import { Markdown } from "./Markdown";
 
-const MEMBERS = [{ name: "Flo Zuallaert", nickname: "flo" }, { name: "Sam Verhoeven" }];
+const MEMBERS = [{ name: "Todoi", nickname: "todoi" }, { name: "Sam Verhoeven" }];
 
 const meta = {
   title: "Core/Markdown",
@@ -12,7 +12,7 @@ const meta = {
   args: {
     members: MEMBERS,
     onOpenKey: fn(),
-    text: "# Launch plan\nEverything before the shop goes live. @flo takes the pages, see MP-112.\n\n- [x] Get the list from both dealers\n- [ ] Decide which models we sell **online**\n\n> Both dealers want the price hidden on the new models.\n\n`npm run dev` · ~~old~~ · [Todoi](https://todoi.com)",
+    text: "# Launch plan\nEverything before the shop goes live. @todoi takes the pages, see MP-112.\n\n- [x] Get the list from both dealers\n- [ ] Decide which models we sell **online**\n\n> Both dealers want the price hidden on the new models.\n\n`npm run dev` · ~~old~~ · [Todoi](https://todoi.com)",
   },
   parameters: { docs: { description: { component: "Read-only renderer for item descriptions and comments: the Markdown subset the GitHub / Embridge sync writes (headings, lists, tasks, quotes, fences, inline emphasis, links, @mentions and item keys); no raw HTML, images or tables. Pass members so only real @names render as mentions, and onOpenKey to make item keys like MP-112 open the item. Use renderMarkdown when you need the blocks without the wrapper." } } },
 } satisfies Meta<typeof Markdown>;
@@ -46,10 +46,10 @@ export const CodeBlock: Story = {
   args: { text: "### Repro\n```\nnpm run dev\ncurl localhost:3000/api/health\n```\nEscaped \\*stars\\* stay literal." },
 };
 export const UnknownMention: Story = {
-  args: { text: "@flo and @sam can review; @nobody is not a member, so it stays plain text." },
+  args: { text: "@todoi and @sam can review; @nobody is not a member, so it stays plain text." },
   async play({ canvasElement }) {
     const mentions = [...canvasElement.querySelectorAll(".td-markdown-mention")].map((el) => el.textContent);
-    await expect(mentions).toEqual(["@flo", "@sam"]);
+    await expect(mentions).toEqual(["@todoi", "@sam"]);
   },
 };
 export const StaticItemKeys: Story = {

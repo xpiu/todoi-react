@@ -6,7 +6,7 @@ import { SavedViewTabs, type SavedViewTab, type SavedViewTabsProps } from "./Sav
 
 const VIEWS: SavedViewTab[] = [
   { id: "v1", name: "Bugs this sprint", shared: true, definition: { view: "board", filters: [{ type: "label", value: "Bug" }] } },
-  { id: "v2", name: "My work", shared: false, definition: { view: "list", filters: [{ type: "assignee", value: "Flo Zuallaert" }], sort: { items: { key: "due", dir: "asc" } } } },
+  { id: "v2", name: "My work", shared: false, definition: { view: "list", filters: [{ type: "assignee", value: "Todoi" }], sort: { items: { key: "due", dir: "asc" } } } },
   { id: "v3", name: "Overdue", shared: true, definition: { filters: [{ type: "due", value: "Overdue" }] } },
 ];
 

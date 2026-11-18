@@ -19,25 +19,25 @@ export const Request: Story = {
   async play({ args, canvas, userEvent }) {
     const submit = canvas.getByRole("button", { name: "Send reset link" });
     await expect(submit).toBeDisabled();
-    await userEvent.type(canvas.getByLabelText("Email"), "flo@todoi.com");
+    await userEvent.type(canvas.getByLabelText("Email"), "info@todoi.org");
     await userEvent.click(submit);
-    await expect(args.onSend).toHaveBeenCalledWith("flo@todoi.com");
+    await expect(args.onSend).toHaveBeenCalledWith("info@todoi.org");
     await userEvent.click(canvas.getByRole("button", { name: "Back to log in" }));
     await expect(args.onBackToLogin).toHaveBeenCalledOnce();
   },
 };
-export const RequestFailed: Story = { args: { email: "flo@todoi.com", error: "Couldn't send the link. Try again in a moment." } };
+export const RequestFailed: Story = { args: { email: "info@todoi.org", error: "Couldn't send the link. Try again in a moment." } };
 export const Sent: Story = {
-  args: { stage: "sent", email: "flo@todoi.com" },
+  args: { stage: "sent", email: "info@todoi.org" },
   async play({ args, canvas, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Send it again" }));
-    await expect(args.onSend).toHaveBeenCalledWith("flo@todoi.com");
+    await expect(args.onSend).toHaveBeenCalledWith("info@todoi.org");
     await userEvent.click(canvas.getByRole("button", { name: "Use a different email" }));
     await expect(args.onRequestAgain).toHaveBeenCalledOnce();
   },
 };
 export const NewPassword: Story = {
-  args: { stage: "new", email: "flo@todoi.com" },
+  args: { stage: "new", email: "info@todoi.org" },
   async play({ args, canvas, userEvent }) {
     const save = canvas.getByRole("button", { name: "Save password and log in" });
     await expect(save).toBeDisabled();
@@ -47,8 +47,8 @@ export const NewPassword: Story = {
     await expect(args.onSave).toHaveBeenCalledWith({ password: "a much longer phrase", signOutOthers: false });
   },
 };
-export const NewPasswordRejected: Story = { args: { stage: "new", email: "flo@todoi.com", error: "That password is too common." } };
-export const Saving: Story = { args: { stage: "new", email: "flo@todoi.com", busy: true } };
+export const NewPasswordRejected: Story = { args: { stage: "new", email: "info@todoi.org", error: "That password is too common." } };
+export const Saving: Story = { args: { stage: "new", email: "info@todoi.org", busy: true } };
 export const Done: Story = {
   args: { stage: "done" },
   async play({ args, canvas, userEvent }) {

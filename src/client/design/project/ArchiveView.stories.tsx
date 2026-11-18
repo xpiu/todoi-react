@@ -5,10 +5,10 @@ import { ArchiveView, type ArchiveEntry } from "./ArchiveView";
 
 const NOW = new Date("2026-10-07T15:00:00").getTime();
 const ENTRIES: ArchiveEntry[] = [
-  { id: "p9", kind: "project", removed: "archived", title: "Trade fair 2025", icon: "tent", color: "var(--label-green)", by: "Flo Zuallaert", at: "2026-09-30T10:00:00", groupName: "Helicopters Europe", itemCount: 14 },
+  { id: "p9", kind: "project", removed: "archived", title: "Trade fair 2025", icon: "tent", color: "var(--label-green)", by: "Todoi", at: "2026-09-30T10:00:00", groupName: "Helicopters Europe", itemCount: 14 },
   { id: "i1", kind: "item", removed: "archived", title: "Prepare the helicopter quote", key: "HE-115", by: "Sam Verhoeven", at: "2026-10-06T09:00:00", projectId: "p1", projectName: "Helicopter sales", listName: "Doing" },
   { id: "i2", kind: "item", removed: "archived", title: "Send the brochure", key: "HE-98", done: true, at: "2026-10-01T09:00:00", projectId: "p1", projectName: "Helicopter sales", listName: "Done" },
-  { id: "i3", kind: "item", removed: "deleted", title: "Old pricing draft", key: "IN-4", by: "Flo Zuallaert", at: "2026-07-12T09:00:00", projectId: "p2", projectName: "Marketing site", listName: "To-do" },
+  { id: "i3", kind: "item", removed: "deleted", title: "Old pricing draft", key: "IN-4", by: "Todoi", at: "2026-07-12T09:00:00", projectId: "p2", projectName: "Marketing site", listName: "To-do" },
   { id: "p8", kind: "project", removed: "deleted", title: "Test project", icon: "flag", color: "var(--label-red)", at: "2026-10-05T12:00:00", itemCount: 2 },
 ];
 const PROJECTS = [{ id: "p1", name: "Helicopter sales", icon: "rocket" as const, color: "var(--label-orange)" }, { id: "p2", name: "Marketing site", icon: "globe" as const, color: "var(--label-blue)" }];

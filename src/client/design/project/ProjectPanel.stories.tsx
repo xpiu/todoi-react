@@ -20,14 +20,14 @@ const PROJECT: PanelProject = {
   role: "owner",
 };
 const MEMBERS: PanelMember[] = [
-  { id: "u1", name: "Flo Zuallaert", email: "flo@todoi.com", color: "var(--label-teal)", role: "owner" },
+  { id: "u1", name: "Todoi", email: "info@todoi.org", color: "var(--label-teal)", role: "owner" },
   { id: "u2", name: "Sam Verhoeven", email: "sam@todoi.com", color: "var(--label-orange)", role: "admin" },
   { id: "u3", name: "Jan De Smet", color: "var(--label-blue)", role: "viewer" },
 ];
 // ProjectPanel does not pass `now` to its ActivityLog, so entries are relative to the story's load time.
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
 const ACTIVITY: ActivityEntryView[] = [
-  { id: "a1", type: "item", actor: "Flo Zuallaert", actorColor: "var(--label-teal)", text: "moved the quote to Doing", key: "HE-115", time: ago(5) },
+  { id: "a1", type: "item", actor: "Todoi", actorColor: "var(--label-teal)", text: "moved the quote to Doing", key: "HE-115", time: ago(5) },
   { id: "a2", type: "member", actor: "Sam Verhoeven", actorColor: "var(--label-orange)", text: "invited jan@todoi.com as a viewer", time: ago(60 * 30) },
 ];
 

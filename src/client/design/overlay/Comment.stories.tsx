@@ -4,7 +4,7 @@ import { expect, fn, waitFor, within } from "storybook/test";
 import { Comment } from "./Comment";
 
 const MEMBERS = [
-  { id: "u1", name: "Flo Zuallaert", color: "var(--label-blue)" },
+  { id: "u1", name: "Todoi", color: "var(--label-blue)" },
   { id: "u2", name: "Sam Verhoeven", nickname: "sam", color: "var(--label-teal)" },
 ];
 
@@ -13,12 +13,12 @@ const meta = {
   component: Comment,
   decorators: [(Story) => <div style={{ maxWidth: 520 }}><Story /></div>],
   args: {
-    author: "Flo Zuallaert",
+    author: "Todoi",
     color: "var(--label-blue)",
     meta: "2 hours ago",
     text: "@sam can you check the **delivery dates** against HE-120 before Friday?",
     members: MEMBERS,
-    reactions: [{ emoji: "👍", count: 2, mine: true, by: ["Flo Zuallaert", "Sam Verhoeven"] }],
+    reactions: [{ emoji: "👍", count: 2, mine: true, by: ["Todoi", "Sam Verhoeven"] }],
     mine: true,
     onReact: fn(),
     onEdit: fn(),

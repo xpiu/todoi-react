@@ -12,7 +12,7 @@ const meta = {
     autoFocus: false,
     today: "2026-10-07",
     labels: [{ text: "bug", color: "red" }, { text: "sales", color: "blue" }],
-    members: [{ name: "Flo Zuallaert", nickname: "flo" }, "Sam Verhoeven"],
+    members: [{ name: "Todoi", nickname: "todoi" }, "Sam Verhoeven"],
     lists: ["To-do", "Doing", "Done"],
     onSubmit: fn(),
     onCancel: fn(),
@@ -24,17 +24,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Empty: Story = {};
-export const ParsedTokens: Story = { args: { defaultValue: "Fix login bug #bug @flo !high due fri >Doing" } };
+export const ParsedTokens: Story = { args: { defaultValue: "Fix login bug #bug @todoi !high due fri >Doing" } };
 export const UnknownTokens: Story = { args: { defaultValue: "Call the dealer #pricing @marit" } };
 export const SmartDatesOff: Story = { args: { dates: false, defaultValue: "Plan the review due fri" } };
 export const SubmitThenCancel: Story = {
   async play({ args, canvas, userEvent }) {
     const field = canvas.getByRole("textbox", { name: "New item in To-do" });
     await userEvent.click(field);
-    await userEvent.type(field, "Fix login bug #bug @flo !high due fri >Doing{Enter}");
+    await userEvent.type(field, "Fix login bug #bug @todoi !high due fri >Doing{Enter}");
     await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Fix login bug", assignee: "Flo Zuallaert", priority: "High", due: "2026-10-09", list: "Doing", labels: [{ text: "bug", color: "red", isNew: false }] }),
-      "Fix login bug #bug @flo !high due fri >Doing",
+      expect.objectContaining({ title: "Fix login bug", assignee: "Todoi", priority: "High", due: "2026-10-09", list: "Doing", labels: [{ text: "bug", color: "red", isNew: false }] }),
+      "Fix login bug #bug @todoi !high due fri >Doing",
     );
     await expect(field).toHaveValue("");
     await expect(field).toHaveFocus();

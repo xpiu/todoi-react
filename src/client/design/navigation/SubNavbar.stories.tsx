@@ -29,7 +29,7 @@ const sortMenu = (
 );
 const membersMenu = (
   <MembersMenu
-    members={[{ id: "u1", name: "Flo Zuallaert", email: "flo@todoi.com", color: "var(--label-teal)", role: "owner" }, { id: "u2", name: "Sam Verhoeven", color: "var(--label-orange)", role: "editor" }]}
+    members={[{ id: "u1", name: "Todoi", email: "info@todoi.org", color: "var(--label-teal)", role: "owner" }, { id: "u2", name: "Sam Verhoeven", color: "var(--label-orange)", role: "editor" }]}
     currentUserId="u1"
     canManage
     visibility="shared"

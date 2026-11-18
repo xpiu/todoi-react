@@ -7,7 +7,7 @@ import { FilterBar, type FilterBarOption, type FilterBarProps } from "./FilterBa
 const AVAILABLE: FilterBarOption[] = [
   { type: "label", value: "Sales", color: "var(--label-blue)" },
   { type: "label", value: "Urgent", color: "var(--label-red)" },
-  { type: "assignee", value: "Flo Zuallaert", icon: "user" },
+  { type: "assignee", value: "Todoi", icon: "user" },
   { type: "due", value: "Overdue", icon: "clock" },
   { type: "priority", value: "High", icon: "flag" },
 ];

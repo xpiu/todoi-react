@@ -19,36 +19,36 @@ export const Empty: Story = {
   async play({ args, canvas, userEvent }) {
     const submit = canvas.getByRole("button", { name: "Log in" });
     await expect(submit).toBeDisabled();
-    await userEvent.type(canvas.getByLabelText("Email"), "  flo@todoi.com ");
+    await userEvent.type(canvas.getByLabelText("Email"), "  info@todoi.org ");
     const password = canvas.getByLabelText(/^Password/);
     // Forgot? sits beside the label, not in it.
     await expect(password).toHaveAccessibleName("Password");
     await userEvent.type(password, "correct horse");
     await expect(submit).toBeEnabled();
     await userEvent.keyboard("{Enter}");
-    await expect(args.onSignIn).toHaveBeenCalledWith({ email: "flo@todoi.com", password: "correct horse" });
+    await expect(args.onSignIn).toHaveBeenCalledWith({ email: "info@todoi.org", password: "correct horse" });
   },
 };
 export const ContinueWhereYouLeftOff: Story = {
-  args: { context: "Log in to continue where you left off.", defaultEmail: "flo@todoi.com" },
+  args: { context: "Log in to continue where you left off.", defaultEmail: "info@todoi.org" },
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByLabelText(/^Password/)).toHaveFocus();
     canvas.getByRole("button", { name: "Forgot?" }).focus();
     await userEvent.keyboard(" ");
-    await expect(args.onForgotPassword).toHaveBeenCalledWith("flo@todoi.com");
+    await expect(args.onForgotPassword).toHaveBeenCalledWith("info@todoi.org");
     await expect(args.onSignIn).not.toHaveBeenCalled();
     await userEvent.click(canvas.getByRole("button", { name: "Create an account" }));
     await expect(args.onCreateAccount).toHaveBeenCalledOnce();
   },
 };
 export const WrongPassword: Story = {
-  args: { defaultEmail: "flo@todoi.com", error: "That email and password don't match." },
+  args: { defaultEmail: "info@todoi.org", error: "That email and password don't match." },
   async play({ canvas }) {
     await expect(canvas.getByRole("alert")).toHaveTextContent("don't match");
   },
 };
 export const Busy: Story = {
-  args: { defaultEmail: "flo@todoi.com", busy: true },
+  args: { defaultEmail: "info@todoi.org", busy: true },
   async play({ canvas }) {
     await expect(canvas.getByRole("button", { name: "Logging in…" })).toBeDisabled();
   },

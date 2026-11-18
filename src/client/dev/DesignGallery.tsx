@@ -37,7 +37,7 @@ import "./DesignGallery.css";
 
 const TODAY = "2026-08-25";
 const MEMBERS = [
-  { name: "Flo Zuallaert", nickname: "flo" },
+  { name: "Todoi", nickname: "todoi" },
   { name: "Sam Verhoeven", nickname: "sam" },
   { name: "Marit Olsen" },
   { name: "Jonas Berg" },
@@ -141,7 +141,7 @@ export function DesignGallery() {
       </Section>
 
       <Section title="Avatars, progress, status">
-        <Avatar name="Flo Zuallaert" />
+        <Avatar name="Todoi" />
         <Avatar name="Sam Verhoeven" size={20} />
         <Avatar name="Marit Olsen" color="var(--label-teal)" size={28} />
         <AvatarStack people={MEMBERS} size={24} />
@@ -265,7 +265,7 @@ export function DesignGallery() {
           <Markdown
             members={MEMBERS}
             onOpenKey={() => {}}
-            text={"# Launch plan\nEverything before the shop goes live. @flo takes the pages, see MP-112.\n\n- [x] Get the list from both dealers\n- [ ] Decide which models we sell **online**\n\n> Both dealers want the price hidden on the new models.\n\n`npm run dev` · ~~old~~ · [Todoi](https://todoi.com)"}
+            text={"# Launch plan\nEverything before the shop goes live. @todoi takes the pages, see MP-112.\n\n- [x] Get the list from both dealers\n- [ ] Decide which models we sell **online**\n\n> Both dealers want the price hidden on the new models.\n\n`npm run dev` · ~~old~~ · [Todoi](https://todoi.com)"}
           />
         </div>
       </Section>

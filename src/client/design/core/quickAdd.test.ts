@@ -5,7 +5,7 @@ import { parseQuickAdd, stripToken } from "./quickAdd";
 const TODAY = "2026-08-25"; // Tuesday
 const ctx = {
   labels: [{ text: "design", color: "pink" }, "shop"],
-  members: [{ name: "Flo Zuallaert", nickname: "flo" }, { name: "Sam Verhoeven" }],
+  members: [{ name: "Todoi", nickname: "todoi" }, { name: "Sam Verhoeven" }],
   lists: ["New", "To-do", { name: "Doing", icon: "circle-dot" as const }, "Done"],
   today: TODAY,
 };
@@ -31,7 +31,7 @@ describe("parseQuickAdd", () => {
     expect(r.title).toBe("Call back !9 >Nowhere");
   });
   it("matches members by nickname, first name and prefix; lists by prefix", () => {
-    expect(parseQuickAdd("x @flo", ctx).assignee).toBe("Flo Zuallaert");
+    expect(parseQuickAdd("x @todoi", ctx).assignee).toBe("Todoi");
     expect(parseQuickAdd("x @Sam", ctx).assignee).toBe("Sam Verhoeven");
     expect(parseQuickAdd("x @sa", ctx).assignee).toBe("Sam Verhoeven");
     expect(parseQuickAdd("x >to", ctx).list).toBe("To-do");

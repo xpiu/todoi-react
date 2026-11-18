@@ -9,12 +9,12 @@ const SECTIONS: ReadonlyArray<[string, string]> = [["Labels", "label"], ["Assign
 const AVAILABLE: FilterMenuOption[] = [
   { type: "label", value: "Sales", color: "var(--label-blue)" },
   { type: "label", value: "Urgent", color: "var(--label-red)" },
-  { type: "assignee", value: "Flo Zuallaert", icon: "user" },
+  { type: "assignee", value: "Todoi", icon: "user" },
   { type: "assignee", value: "Unassigned", icon: "user-x" },
   { type: "due", value: "Overdue", icon: "clock" },
   { type: "priority", value: "High", icon: "flag", iconColor: "var(--label-orange)" },
 ];
-const COUNTS = { "label:Sales": 12, "label:Urgent": 3, "assignee:Flo Zuallaert": 8, "assignee:Unassigned": 5, "due:Overdue": 2, "priority:High": 4 };
+const COUNTS = { "label:Sales": 12, "label:Urgent": 3, "assignee:Todoi": 8, "assignee:Unassigned": 5, "due:Overdue": 2, "priority:High": 4 };
 
 // Story state models the host; in the app this body sits in the SubNavbar's Filter Popover.
 function ControlledFilterMenu(args: FilterMenuProps) {
