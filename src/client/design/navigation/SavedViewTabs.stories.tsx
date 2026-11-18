@@ -46,8 +46,15 @@ export const AllItems: Story = {
     await expect(args.onHide).toHaveBeenCalledOnce();
   },
 };
+export const ShowingBoard: Story = {
+  // The glyph before "Views" is the view type that is showing; the tabs never change it.
+  args: { view: "board" },
+  async play({ canvasElement }) {
+    await expect(canvasElement.querySelector(".td-chip-bar-label svg")).toBeTruthy();
+  },
+};
 export const ActiveAndDirty: Story = {
-  args: { activeId: "v1", dirty: true, canSave: true, currentDef: { view: "board", filters: [{ type: "label", value: "Bug" }, { type: "priority", value: "High" }] } },
+  args: { activeId: "v1", dirty: true, canSave: true, currentDef: { filters: [{ type: "label", value: "Bug" }, { type: "priority", value: "High" }] } },
   async play({ args, canvas, canvasElement, userEvent }) {
     // The drift dot describes the tab; the name stays the view's own.
     const tab = canvas.getByRole("button", { name: "Bugs this sprint" });

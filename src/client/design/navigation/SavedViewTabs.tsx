@@ -1,9 +1,12 @@
-// SavedViewTabs — the "Views" row under the toolbar: named, shareable tabs that capture a project's view
-// type + filters + sort — "All items" plus one tab per saved view (shared ones carry a users glyph), a
-// dot while the live state drifts from the active view, a per-tab ⋯ menu, Save view and Hide.
+// SavedViewTabs — the "Views" row under the toolbar: named, shareable tabs that capture a project's
+// filters + sort (never the view type: a tab filters whichever of List / Board / Calendar is showing) —
+// "All items" plus one tab per saved view (shared ones carry a users glyph), a dot while the live state
+// drifts from the active view, a per-tab ⋯ menu, Save view and Hide.
 // ARIA: a navigation of buttons with aria-current (not a tablist — there are no tab panels, and the
 // per-tab ⋯ and Save view sit in the same row). Spec: DESIGN.md › Saved views.
 import { useId, useState } from "react";
+
+import type { ProjectView } from "../../../shared/enums";
 
 import { Button } from "../core/Button";
 import { Checkbox } from "../core/Checkbox";
@@ -40,9 +43,13 @@ export interface SavedViewTabsProps {
   onHide?: () => void;
   /** Target of the Views toggle's aria-controls */
   id?: string;
+  /** The view type that is showing: its glyph (list / kanban / calendar) leads the "Views" label; a bookmark when omitted */
+  view?: ProjectView;
 }
 
-export function SavedViewTabs({ views, activeId = null, dirty = false, canSave = false, currentDef, allLabel = "All items", onSelect, onSave, onAction, onHide, id: rowId }: SavedViewTabsProps) {
+const VIEW_ICONS = { list: "list", board: "kanban", calendar: "calendar" } as const satisfies Record<ProjectView, string>;
+
+export function SavedViewTabs({ views, activeId = null, dirty = false, canSave = false, currentDef, allLabel = "All items", onSelect, onSave, onAction, onHide, id: rowId, view }: SavedViewTabsProps) {
   const save = usePopover();
   const driftId = useId();
   const [name, setName] = useState("");
@@ -125,7 +132,7 @@ export function SavedViewTabs({ views, activeId = null, dirty = false, canSave =
     </Popover>
   ) : null;
   return (
-    <ChipBar as="nav" id={rowId} label="Views" icon="bookmark" aria-label="Saved views" moreLabel="More views" backLabel="Previous views" after={saveButton} actions={onHide ? <ChipBarAction icon="eye-off" onClick={onHide}>Hide</ChipBarAction> : null}>
+    <ChipBar as="nav" id={rowId} label="Views" icon={view ? VIEW_ICONS[view] : "bookmark"} aria-label="Saved views" moreLabel="More views" backLabel="Previous views" after={saveButton} actions={onHide ? <ChipBarAction icon="eye-off" onClick={onHide}>Hide</ChipBarAction> : null}>
       <button type="button" className="td-saved-view-tab" aria-current={!activeId ? "true" : undefined} onClick={() => onSelect(null)}>
         {allLabel}
       </button>

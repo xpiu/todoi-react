@@ -71,3 +71,45 @@ function FloatingTooltip({ text, side = "bottom", off, children }: TooltipProps)
     </BaseTooltip.Root>
   );
 }
+
+// Press-to-dismiss (Tooltip.css `[data-tip-pressed]`): one set of delegated listeners per document. Pressing a
+// hinted control (pointer, Enter, Space) hides its hint immediately; it stays hidden until the pointer leaves and
+// focus has moved on. Focus that lands on a control without Tab / arrow navigation (a menu handing focus back) counts
+// as pressed too. CSS-only hints have no React handler to hook, so the document listens once.
+const PRESSED = "data-tip-pressed";
+const dismissInstalled = new WeakSet<Document>();
+const tipOf = (t: EventTarget | null) => (t instanceof Element ? t.closest<HTMLElement>(".td-tooltip[data-tip]") : null);
+
+export function installTipDismiss(doc: Document): void {
+  if (dismissInstalled.has(doc)) return;
+  dismissInstalled.add(doc);
+  let nav = false;
+  const press = (el: HTMLElement | null) => el?.setAttribute(PRESSED, "");
+  doc.addEventListener("pointerdown", (e) => {
+    nav = false;
+    const el = tipOf(e.target);
+    doc.querySelectorAll(`[${PRESSED}]`).forEach((o) => o !== el && o.removeAttribute(PRESSED));
+    press(el);
+  }, true);
+  doc.addEventListener("keydown", (e) => {
+    nav = e.key === "Tab" || e.key.startsWith("Arrow");
+    if (e.key === "Enter" || e.key === " ") press(tipOf(e.target));
+  }, true);
+  doc.addEventListener("focusin", (e) => { if (!nav) press(tipOf(e.target)); }, true);
+  doc.addEventListener("focusout", (e) => {
+    const el = tipOf(e.target);
+    if (el && !el.contains(e.relatedTarget as Node | null) && !el.matches(":hover")) el.removeAttribute(PRESSED);
+  }, true);
+  doc.addEventListener("pointerout", (e) => {
+    if (e.pointerType === "touch") return;
+    const el = tipOf(e.target);
+    if (el && !el.contains(e.relatedTarget as Node | null) && !el.contains(doc.activeElement)) el.removeAttribute(PRESSED);
+  }, true);
+  doc.addEventListener("pointerover", (e) => {
+    if (e.pointerType === "touch") return;
+    const el = tipOf(e.target);
+    if (el?.hasAttribute(PRESSED) && !el.contains(e.relatedTarget as Node | null)) el.removeAttribute(PRESSED);
+  }, true);
+}
+
+if (typeof document !== "undefined") installTipDismiss(document);

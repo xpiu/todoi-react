@@ -61,6 +61,10 @@
   .td-list-section-addbtn[aria-pressed="true"] {
     opacity: 1;
   }
+  /* addVisible (Inbox): the header + shows without hover */
+  .td-list-section[data-add-visible="true"] .td-list-section-addbtn {
+    opacity: 1;
+  }
   .td-list-section-chevron[aria-expanded="false"] {
     transform: rotate(-90deg);
   }

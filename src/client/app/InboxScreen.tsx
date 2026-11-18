@@ -110,6 +110,7 @@ export function InboxScreen() {
           iconColor="var(--ink-600)"
           menu={false}
           collapsible={false}
+          addVisible
           actions={
             unread ? (
               <Button variant="ghost" icon="check-check" onClick={() => markAllRead.mutate()}>

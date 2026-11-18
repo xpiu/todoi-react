@@ -10,6 +10,7 @@ import { AddItemKey } from "../core/ShortcutHint";
 import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
 import { QuickAddInput } from "../core/QuickAddInput";
 import { suggestedRoleForTitle } from "../core/statuses";
+import type { AddPosition } from "../list/ListSection";
 import { ListActionsPopover, ListIconButton, useListRename } from "./listHeader";
 import "./ListColumn.css";
 
@@ -22,7 +23,8 @@ export interface ListColumnProps {
   onStatusRoleChange?: (role: ItemStatus | null) => void;
   onManageLinks?: () => void;
   children?: ReactNode;
-  onAddItem?: (title: string, parsed: QuickAddResult) => void;
+  /** The foot "Add an item" appends (position "bottom"); ⋯ › Add an item opens the composer above the first card and the item lands first ("top") */
+  onAddItem?: (title: string, parsed: QuickAddResult, position: AddPosition) => void;
   quickAdd?: QuickAddOptions;
   onRename?: (name: string) => void;
   onIconChange?: (icon: IconName | null) => void;
@@ -39,11 +41,21 @@ export interface ListColumnProps {
 
 export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onRename, onIconChange, onSelectAll, onHide, dropTarget, rootProps, listId, style }: ListColumnProps) {
   const rename = useListRename(name, onRename);
-  const [adding, setAdding] = useState(false);
+  // adding: "top" (⋯ › Add an item, new items land first) | "bottom" (foot "Add an item", new items append)
+  const [adding, setAdding] = useState<AddPosition | false>(false);
   const commitAdd = (parsed: QuickAddResult, keep: boolean) => {
-    if (parsed.title) onAddItem?.(parsed.title, parsed);
+    if (parsed.title) onAddItem?.(parsed.title, parsed, adding || "bottom");
     if (!keep) setAdding(false);
   };
+  // The plus leads the composer like the add row it replaces (shown in Minimal, where the composer is a plain row)
+  const composer = (where: AddPosition) => (
+    <div className={"td-list-column-composer" + (where === "top" ? " is-top" : "")}>
+      <span className="td-list-column-composer-plus" aria-hidden="true">
+        <Icon name="plus" size={16} />
+      </span>
+      <QuickAddInput {...quickAdd} placeholder="Item title" aria-label={where === "top" ? `New first item in ${name}` : `New item in ${name}`} onSubmit={(p) => commitAdd(p, true)} onCancel={() => setAdding(false)} onBlur={(p) => commitAdd(p, false)} />
+    </div>
+  );
   // Effective role (set role, else the title suggestion) drives the Colorize-columns tint.
   const effRole = statusRole ?? suggestedRoleForTitle(name) ?? undefined;
   return (
@@ -64,18 +76,18 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
           onIconChange={onIconChange}
           onSelectAll={onSelectAll}
           onHide={onHide}
+          onAddItem={onAddItem ? () => setAdding("top") : undefined}
         />
       </div>
+      {adding === "top" ? composer("top") : null}
       <div className="td-list-column-cards" tabIndex={0} role="list" aria-label={`${name} cards`}>
         {children}
       </div>
-      {adding ? (
-        <div className="td-list-column-composer">
-          <QuickAddInput {...quickAdd} placeholder="Item title" aria-label={`New item in ${name}`} onSubmit={(p) => commitAdd(p, true)} onCancel={() => setAdding(false)} onBlur={(p) => commitAdd(p, false)} />
-        </div>
+      {adding === "bottom" ? (
+        composer("bottom")
       ) : (
         <div className="td-list-column-foot">
-          <button type="button" className="td-list-column-add" data-add-item={name} onClick={() => setAdding(true)}>
+          <button type="button" className="td-list-column-add" data-add-item={name} onClick={() => setAdding("bottom")}>
             <Icon name="plus" size={16} />
             Add an item
             <AddItemKey />

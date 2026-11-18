@@ -50,7 +50,7 @@ const meta = {
   ),
   parameters: {
     layout: "fullscreen",
-    docs: { description: { component: "The assembled board canvas: ListColumns of ItemCards, horizontal scroll, and \"Add another list\". The whole board is one Tab stop through KeyNav; cards need dragId so keyboard moves, item keys and selection report their ids. Pass the HiddenListsMenu as `after` and drag-and-drop handlers through rootProps." } },
+    docs: { description: { component: "The assembled board canvas: ListColumns of ItemCards, horizontal scroll, and \"Add list\". The whole board is one Tab stop through KeyNav; cards need dragId so keyboard moves, item keys and selection report their ids. Pass the HiddenListsMenu as `after` and drag-and-drop handlers through rootProps." } },
   },
 } satisfies Meta<typeof BoardView>;
 export default meta;
@@ -63,7 +63,7 @@ export const WithHiddenLists: Story = {
 export const Empty: Story = {
   render: (args) => <BoardView {...args} />,
   async play({ args, canvas, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Add another list" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Add list" }));
     await expect(args.onAddList).toHaveBeenCalledOnce();
   },
 };

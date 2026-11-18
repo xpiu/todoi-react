@@ -23,9 +23,11 @@ export interface ListActionsMenuProps {
   onIconChange?: (icon: IconName | null) => void;
   onSelectAll?: () => void;
   onHide?: () => void;
+  /** The menu opens on "Add an item" when the host can add: it opens the header's composer and the new item lands first */
+  onAddItem?: () => void;
 }
 
-export function ListActionsMenu({ name, activeIcon, statusRole, onStatusRoleChange, onManageLinks, onClose, onStartRename, onIconChange, onSelectAll, onHide }: ListActionsMenuProps) {
+export function ListActionsMenu({ name, activeIcon, statusRole, onStatusRoleChange, onManageLinks, onClose, onStartRename, onIconChange, onSelectAll, onHide, onAddItem }: ListActionsMenuProps) {
   const [view, setView] = useState<"icon" | "role" | null>(null);
   const auto = listIconFor(name);
   const role = statusRole ? statusById(statusRole) : null;
@@ -62,6 +64,14 @@ export function ListActionsMenu({ name, activeIcon, statusRole, onStatusRoleChan
   }
   return (
     <>
+      {onAddItem ? (
+        <>
+          <MenuItem icon="plus" onSelect={onAddItem}>
+            Add an item
+          </MenuItem>
+          <MenuDivider />
+        </>
+      ) : null}
       <MenuItem icon="pencil" onSelect={() => onStartRename?.()}>
         Rename
       </MenuItem>

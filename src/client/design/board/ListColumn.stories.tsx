@@ -34,12 +34,25 @@ export const AddItem: Story = {
     const field = canvas.getByRole("textbox", { name: "New item in Doing" });
     await expect(field).toHaveFocus();
     await userEvent.type(field, "Book the fuel truck{Enter}");
-    await expect(args.onAddItem).toHaveBeenCalledWith("Book the fuel truck", expect.objectContaining({ title: "Book the fuel truck" }));
+    await expect(args.onAddItem).toHaveBeenCalledWith("Book the fuel truck", expect.objectContaining({ title: "Book the fuel truck" }), "bottom");
     // The composer stays open for the next item; Escape on an empty field closes it.
     await expect(field).toHaveValue("");
     await userEvent.keyboard("{Escape}");
     await expect(canvas.queryByRole("textbox", { name: "New item in Doing" })).not.toBeInTheDocument();
     await expect(canvas.getByRole("button", { name: "Add an item" })).toBeVisible();
+  },
+};
+export const AddItemFromMenu: Story = {
+  async play({ args, canvas, canvasElement, userEvent }) {
+    // ⋯ › Add an item opens the composer above the first card; the item lands first.
+    await userEvent.click(canvas.getByRole("button", { name: "List actions for Doing" }));
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await page.findByRole("menuitem", { name: "Add an item" }));
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+    const field = await canvas.findByRole("textbox", { name: "New first item in Doing" });
+    await waitFor(() => expect(field).toHaveFocus());
+    await userEvent.type(field, "Check the tyres{Enter}");
+    await expect(args.onAddItem).toHaveBeenCalledWith("Check the tyres", expect.objectContaining({ title: "Check the tyres" }), "top");
   },
 };
 export const Rename: Story = {

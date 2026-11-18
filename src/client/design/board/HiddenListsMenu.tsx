@@ -1,4 +1,4 @@
-// HiddenListsMenu — the way back to hidden lists, after "Add another list" in the Board and List views:
+// HiddenListsMenu — the way back to hidden lists, after "Add list" in the Board and List views:
 // a quiet "2 hidden lists" button opening a menu of the lists (with their item counts) to show again, and
 // Show all. Hiding is project-wide, so the menu says so. Spec: DESIGN.md › Lists & Status linking.
 import { Icon } from "../core/Icon";

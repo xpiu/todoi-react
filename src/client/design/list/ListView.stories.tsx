@@ -60,7 +60,7 @@ const meta = {
   ),
   parameters: {
     layout: "fullscreen",
-    docs: { description: { component: "The assembled List view: ListSections of ListRows centred at 900px, ending in \"Add another list\". The view is one Tab stop through KeyNav; rows need dragId so keyboard moves, item keys and selection report their ids (subitem ids contain a \"/\" and are not moved or selected). Pass the HiddenListsMenu as `after` and drag-and-drop handlers through rootProps." } },
+    docs: { description: { component: "The assembled List view: ListSections of ListRows centred at 900px, ending in \"Add list\". The view is one Tab stop through KeyNav; rows need dragId so keyboard moves, item keys and selection report their ids (subitem ids contain a \"/\" and are not moved or selected). Pass the HiddenListsMenu as `after` and drag-and-drop handlers through rootProps." } },
   },
 } satisfies Meta<typeof ListView>;
 export default meta;
@@ -73,7 +73,7 @@ export const WithHiddenLists: Story = {
 export const Empty: Story = {
   render: (args) => <ListView {...args} />,
   async play({ args, canvas, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Add another list" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Add list" }));
     await expect(args.onAddList).toHaveBeenCalledOnce();
   },
 };

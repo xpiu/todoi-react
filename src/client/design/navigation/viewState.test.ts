@@ -14,7 +14,7 @@ describe("view state ↔ URL", () => {
     expect(back.sort).toEqual({ lists: null, items: { key: "due", dir: "asc" } });
   });
   it("a saved view id replaces the ad-hoc keys", () => {
-    expect(encodeViewState({ view: "list", filters: [{ type: "label", value: "x" }], savedView: "sv1" })).toEqual({ view: "sv1" });
+    expect(encodeViewState({ view: "list", filters: [{ type: "label", value: "x" }], savedView: "sv1" })).toEqual({ view: "sv1", v: "list" });
     expect(decodeViewState({ view: "sv1" }).savedView).toBe("sv1");
   });
   it("escapes values with separators and ignores junk", () => {
@@ -28,6 +28,7 @@ describe("view state ↔ URL", () => {
   it("summarises and compares definitions", () => {
     expect(summarizeView({ view: "list", filters: [{ type: "label", value: "design" }], sort: { items: { key: "due", dir: "desc" } } })).toEqual(["List", "design", "Items by due ↓"]);
     expect(sameDefinition({ view: "list", filters: [] }, { view: "list" })).toBe(true);
-    expect(sameDefinition({ view: "list" }, { view: "board" })).toBe(false);
+    expect(sameDefinition({ view: "list" }, { view: "board" })).toBe(true);
+    expect(sameDefinition({ filters: [{ type: "label", value: "a" }] }, {})).toBe(false);
   });
 });

@@ -166,4 +166,11 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-card);
   }
+  /* ⋯ › Add an item: the same white composer card, opened above the first card (2px card inset, 6px + the 2px scroller pad = the 8px card gap) */
+  .td-list-column-composer.is-top {
+    margin: 2px 2px 6px;
+  }
+  .td-list-column-composer-plus {
+    display: none;
+  }
 }

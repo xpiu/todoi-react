@@ -1,6 +1,7 @@
-// View state ↔ URL query: the same {view, filters, sort} definition a saved view stores, so a copied
-// link reproduces filters, sort and view. The project lives in the path (/p/:id); the query keeps the
-// spec's keys: `view` (a saved view id), `v`, `f` (type:value,…), `s` (lists.key.dir,items.key.dir).
+// View state ↔ URL query. A saved view stores {filters, sort} only; the view type travels in the URL as
+// `v`, also beside a saved view (`view=<id>&v=board`), so picking a saved view never switches List / Board /
+// Calendar. The project lives in the path (/p/:id); the query keeps the spec's keys: `view` (a saved view
+// id), `v`, `f` (type:value,…), `s` (lists.key.dir,items.key.dir).
 // Spec: DESIGN.md › Saved views.
 import type { ProjectView } from "../../../shared/enums";
 
@@ -13,6 +14,7 @@ export interface SortSpec {
   dir: "asc" | "desc";
 }
 export interface ViewDefinition {
+  /** URL state only: a saved view's definition leaves it out (older rows may still carry one) */
   view?: ProjectView;
   filters?: ViewFilter[];
   sort?: { lists?: SortSpec | null; items?: SortSpec | null };
@@ -38,7 +40,7 @@ const isView = (v: unknown): v is ProjectView => v === "list" || v === "board" |
 
 export function encodeViewState({ view, filters = [], sort = {}, savedView, item, edit }: ViewState): ViewSearch {
   const extra: ViewSearch = item ? { item, ...(edit ? { edit: true } : {}) } : {};
-  if (savedView) return { view: savedView, ...extra };
+  if (savedView) return { view: savedView, ...(view ? { v: view } : {}), ...extra };
   const out: ViewSearch = { ...extra };
   if (view) out.v = view;
   if (filters.length) out.f = filters.map((f) => `${encodeURIComponent(f.type)}:${encodeURIComponent(f.value)}`).join(",");
@@ -87,7 +89,7 @@ export function viewStateToQuery(state: ViewState): string {
   return parts.length ? `?${parts.join("&")}` : "";
 }
 
-/** Human chips for a definition: view name, filter values, "Items by due ↑". */
+/** Human chips for a definition: filter values, "Items by due ↑" (plus the view name when `def.view` is set). */
 export function summarizeView(def: ViewDefinition, viewLabels: Record<string, string> = { list: "List", board: "Board", calendar: "Calendar" }): string[] {
   const parts: string[] = [];
   if (def.view) parts.push(viewLabels[def.view] ?? def.view);
@@ -99,4 +101,5 @@ export function summarizeView(def: ViewDefinition, viewLabels: Record<string, st
   return parts;
 }
 
-export const sameDefinition = (a: ViewDefinition, b: ViewDefinition) => viewStateToQuery(a) === viewStateToQuery(b);
+/** Same filters and sort. The view type is not part of a saved view, so it never counts as a difference. */
+export const sameDefinition = (a: ViewDefinition, b: ViewDefinition) => viewStateToQuery({ ...a, view: undefined }) === viewStateToQuery({ ...b, view: undefined });

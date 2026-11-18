@@ -150,4 +150,12 @@
     font-family: var(--font-mono);
     font-size: var(--text-xs);
   }
+  /* Press-to-dismiss: a tap, click or Enter/Space on the control drops its hint at once (no fade), so the menu or view change it triggers never appears under a lingering pill. Tooltip.tsx sets data-tip-pressed; it clears when the pointer leaves or focus moves on, and focus returning from a closed menu does not bring the hint back. */
+  .td-tooltip[data-tip]:active::after,
+  .td-tooltip[data-tip]:active::before,
+  .td-tooltip[data-tip][data-tip-pressed]::after,
+  .td-tooltip[data-tip][data-tip-pressed]::before {
+    opacity: 0 !important;
+    transition: none !important;
+  }
 }

@@ -42,12 +42,14 @@ export interface ListSectionProps {
   menu?: boolean;
   /** @default true */
   collapsible?: boolean;
+  /** Keep the header + visible without hover. Set for a lone list like the Inbox @default false */
+  addVisible?: boolean;
   defaultCollapsed?: boolean;
   children?: ReactNode;
   style?: CSSProperties;
 }
 
-export function ListSection({ listId, name, count, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onAddItem, quickAdd, showAddRow = true, showHeader = true, defaultCollapsed = false, onRename, onIconChange, onSelectAll, onHide, actions, menu = true, collapsible = true, children, style }: ListSectionProps) {
+export function ListSection({ listId, name, count, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onAddItem, quickAdd, showAddRow = true, showHeader = true, defaultCollapsed = false, onRename, onIconChange, onSelectAll, onHide, actions, menu = true, collapsible = true, addVisible = false, children, style }: ListSectionProps) {
   const rename = useListRename(name, onRename);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [adding, setAdding] = useState<AddPosition | false>(false);
@@ -73,7 +75,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
     </div>
   );
   return (
-    <section className={collapsed && showHeader ? "td-list-section td-list-section-collapsed" : "td-list-section"} data-list-name={name} data-list-id={listId} style={style}>
+    <section className={collapsed && showHeader ? "td-list-section td-list-section-collapsed" : "td-list-section"} data-list-name={name} data-list-id={listId} data-add-visible={addVisible ? "true" : undefined} style={style}>
       {showHeader ? (
         <div className="td-list-section-head">
           <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-section-iconbtn" size={18} />
@@ -91,7 +93,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
               </button>
             ) : null}
             {/* A toggle with one name: aria-pressed says whether the top add row is open. */}
-            <button type="button" className="td-list-section-addbtn td-tooltip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
+            <button type="button" className="td-list-section-addbtn td-tooltip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-side={menu ? undefined : "bottom-end"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
               <Icon name="plus" size={16} />
             </button>
             {menu ? (
@@ -107,6 +109,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
                 onIconChange={onIconChange}
                 onSelectAll={onSelectAll}
                 onHide={onHide}
+                onAddItem={onAddItem ? () => startAdd("top") : undefined}
               />
             ) : null}
           </div>

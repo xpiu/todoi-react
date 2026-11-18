@@ -157,17 +157,17 @@ export function AppShell() {
   const [lastSaved, setLastSaved] = useState<{ projectId: string; id: string } | null>(null);
   const activeSavedId = resolved.raw.savedView ?? (lastSaved && lastSaved.projectId === projectId ? lastSaved.id : null);
   const activeSaved = resolved.savedViews.find((v) => v.id === activeSavedId) ?? null;
-  const currentDef: ViewDefinition = { view, filters: state?.filters ?? [], sort: state?.sort ?? {} };
+  const currentDef: ViewDefinition = { filters: state?.filters ?? [], sort: state?.sort ?? {} };
   const svDirty = !!activeSaved && !sameDefinition(activeSaved.definition, currentDef);
   const goSaved = (id: string | null) => {
     if (!projectId) return;
     setLastSaved(id ? { projectId, id } : null);
-    void navigate({ to: "/p/$projectId", params: { projectId }, search: id ? { view: id, item: state?.item } : { item: state?.item } });
+    void navigate({ to: "/p/$projectId", params: { projectId }, search: id ? { view: id, v: view, item: state?.item } : { item: state?.item } });
   };
   const setView = (v: string) => {
     if (!projectId || !state) return;
     suggest(`view-${v}`);
-    void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, view: v as typeof view, savedView: undefined }) });
+    void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, view: v as typeof view }) });
   };
   const setViewState = (patch: Partial<typeof state & object>) => {
     if (!projectId || !state) return;
@@ -233,6 +233,7 @@ export function AppShell() {
     projectId && savedViewsOpen ? (
       <SavedViewTabs
         id={savedViewsId}
+        view={view}
         onHide={() => setSavedViewsOpen(false)}
         views={resolved.savedViews}
         activeId={activeSavedId}

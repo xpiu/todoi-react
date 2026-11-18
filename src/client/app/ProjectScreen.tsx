@@ -423,7 +423,7 @@ function ProjectBoard(props: ViewProps) {
         {v.lists.map((list) => {
           const rows = v.rowsOf(list.id);
           return (
-            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed) => actions.addItem(list.id, title, parsed)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
+            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
               {rows.map((r) => {
                 const it = v.itemsById.get(r.id)!;
                 return (

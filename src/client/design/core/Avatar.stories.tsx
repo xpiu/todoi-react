@@ -26,9 +26,9 @@ export const Initials: Story = {
   async play({ canvas }) {
     // Screen readers hear the name; the initials are drawn as part of the picture, never as text.
     const avatar = canvas.getByRole("img", { name: "Todoi" });
-    await expect(avatar).toHaveAttribute("data-initials", "FZ");
+    await expect(avatar).toHaveAttribute("data-initials", "T");
     await expect(avatar).toHaveTextContent("");
-    await expect(getComputedStyle(avatar, "::after").content).toBe('"FZ"');
+    await expect(getComputedStyle(avatar, "::after").content).toBe('"T"');
   },
 };
 export const Photo: Story = {

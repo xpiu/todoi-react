@@ -88,7 +88,7 @@ export const SHORTCUT_SECTIONS: ReadonlyArray<ShortcutSection> = [
     title: "Create",
     rows: [
       [["N"], "Add an item to the current list — opens the quick-add field"],
-      [["shift", "+", "N"], "Add another list"],
+      [["shift", "+", "N"], "Add list"],
     ],
   },
   {

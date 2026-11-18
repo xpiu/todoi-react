@@ -1,4 +1,4 @@
-// BoardView — the assembled Board: ListColumns on the canvas, horizontal scroll, "Add another list".
+// BoardView — the assembled Board: ListColumns on the canvas, horizontal scroll, "Add list".
 // One Tab stop through KeyNav (arrows move across cards and columns). Spec: DESIGN.md › Views › Board.
 import { KeyNav } from "../core/KeyNav";
 import { AddListTail, type ListsViewProps } from "./listsView";
