@@ -65,12 +65,9 @@ export function ListActionsMenu({ name, activeIcon, statusRole, onStatusRoleChan
   return (
     <>
       {onAddItem ? (
-        <>
-          <MenuItem icon="plus" onSelect={onAddItem}>
-            Add an item
-          </MenuItem>
-          <MenuDivider />
-        </>
+        <MenuItem icon="plus" onSelect={onAddItem}>
+          Add an item
+        </MenuItem>
       ) : null}
       <MenuItem icon="pencil" onSelect={() => onStartRename?.()}>
         Rename
