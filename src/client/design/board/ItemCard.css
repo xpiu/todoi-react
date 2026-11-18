@@ -77,9 +77,11 @@
   .td-card-badge[data-complete="true"] {
     color: var(--success-icon);
   }
+  /* Assignees sit side by side (2px gap, no ring, no overlap) so no initials are clipped: two faces, then "+n". The third face stays in the DOM for Minimal, which prints names. */
   .td-card-avatars {
     display: inline-flex;
     align-items: center;
+    gap: 2px;
   }
   .td-card-avatars .td-card-avatar {
     display: inline-flex;
@@ -89,20 +91,14 @@
     border-radius: var(--radius-full);
     overflow: hidden;
     flex-shrink: 0;
-    box-shadow: 0 0 0 2px var(--surface-card);
-    position: relative;
-    z-index: var(--td-z, 0);
   }
-  .td-card.is-selected .td-card-avatars .td-card-avatar {
-    box-shadow: 0 0 0 2px var(--blue-100);
-  }
-  .td-card-avatars .td-card-avatar + .td-card-avatar {
-    margin-left: -6px;
+  .td-card-avatars .td-card-avatar-extra {
+    display: none;
   }
   .td-card-avatars .td-card-avatar-more {
     align-items: center;
     justify-content: center;
-    background: var(--action-subtle);
+    background: var(--action-subtle-hover);
     color: var(--ink-600);
     font: var(--weight-semibold) 9px / 1 var(--font-ui);
   }

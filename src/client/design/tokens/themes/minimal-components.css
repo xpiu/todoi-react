@@ -150,6 +150,7 @@ html[data-theme="minimal"] .td-card-avatars .td-avatar,html[data-theme="minimal"
 html[data-theme="minimal"] .td-card-avatars img.td-avatar,html[data-theme="minimal"] .td-list-row-avatars img.td-avatar{width:14px!important;height:14px!important;border-radius:50%!important;vertical-align:-3px}
 html[data-theme="minimal"] .td-list-row .td-list-row-avatars:hover .td-list-row-avatar+.td-list-row-avatar{margin-left:0}
 html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar.td-list-row-avatar-extra{width:auto!important}
+html[data-theme="minimal"] .td-card-avatars .td-card-avatar-extra{display:inline-flex}
 /* Dates: words, grey; overdue red at normal weight; done grey */
 html[data-theme="minimal"] .td-due{background:none!important;color:var(--ink-400)!important;height:auto!important;padding:0!important;border-radius:0!important;font:400 11px/1.45 var(--font-ui)!important}
 html[data-theme="minimal"] .td-due[data-state="overdue"]{color:var(--danger)!important}

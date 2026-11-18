@@ -1,5 +1,5 @@
 // ListRow — one item as a flat row: circle checkbox, wrapping title, then right-pinned labels,
-// badges, due pill, repeat glyph, priority flag and avatar stack (one group that may wrap), and
+// badges, due pill, repeat glyph, priority flag and side-by-side avatars (one group that may wrap), and
 // after it the mono key (click copies), which stays on the first line.
 // Subitems render beneath as indented rows. Spec: DESIGN.md › List view, Notifications.
 import type { CSSProperties, MouseEvent, SyntheticEvent } from "react";
@@ -209,17 +209,17 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
         ) : null}
         {assignees.length ? (
           <span className="td-list-row-avatars" title={assignees.map((a) => personOf(a).name).join(", ")}>
-            {assignees.slice(0, 3).map((a, i) => {
+            {assignees.map((a, i) => {
               const o = personOf(a);
               return (
-                <span key={i} className="td-list-row-avatar" style={stack(assignees.length - i + 1)}>
+                <span key={i} className={"td-list-row-avatar" + (i >= 2 ? " td-list-row-avatar-extra" : "")}>
                   <Avatar name={o.name} src={o.src} color={o.color} size={20} />
                 </span>
               );
             })}
-            {assignees.length > 3 ? (
-              <span className="td-list-row-avatar td-list-row-avatar-more" aria-label={`${assignees.length - 3} more assignees`}>
-                +{assignees.length - 3}
+            {assignees.length > 2 ? (
+              <span className="td-list-row-avatar td-list-row-avatar-more" aria-label={`${assignees.length - 2} more assignees`}>
+                +{assignees.length - 2}
               </span>
             ) : null}
           </span>

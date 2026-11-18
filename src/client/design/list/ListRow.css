@@ -214,7 +214,6 @@
   }
   .td-list-row-avatars .td-list-row-avatar {
     position: relative;
-    z-index: var(--td-z, 0);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -224,25 +223,31 @@
     border-radius: var(--radius-full);
     overflow: hidden;
     flex-shrink: 0;
-    box-shadow: 0 0 0 2px var(--td-row-bg);
     transition:
-      margin var(--duration-base) var(--ease-standard),
-      box-shadow var(--duration-fast) var(--ease-standard);
+      width var(--duration-base) var(--ease-standard),
+      margin var(--duration-base) var(--ease-standard);
   }
   .td-list-row-avatars .td-list-row-avatar + .td-list-row-avatar {
-    margin-left: -6px;
+    margin-left: 2px;
+  }
+  .td-list-row-avatars .td-list-row-avatar.td-list-row-avatar-extra {
+    width: 0;
+    margin-left: 0;
   }
   .td-list-row-avatars .td-list-row-avatar.td-list-row-avatar-more {
-    z-index: var(--z-raised);
-    background: var(--action-subtle);
+    background: var(--action-subtle-hover);
     color: var(--ink-600);
     font: var(--weight-semibold) 9px / 1 var(--font-ui);
   }
   .td-list-row .td-list-row-avatars:hover .td-list-row-avatar {
-    box-shadow: none;
+    width: 20px;
   }
   .td-list-row .td-list-row-avatars:hover .td-list-row-avatar + .td-list-row-avatar {
-    margin-left: 3px;
+    margin-left: 2px;
+  }
+  .td-list-row .td-list-row-avatars:hover .td-list-row-avatar.td-list-row-avatar-more {
+    width: 0;
+    margin-left: 0;
   }
   .td-list-row-key {
     position: relative;

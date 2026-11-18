@@ -42,7 +42,7 @@ export const ManyLabelsAndAssignees: Story = {
     assignees: ["Flo Zuallaert", "Sam Verhoeven", "Ana Peeters", "Jonas Claes", "Mia Janssens"],
   },
   async play({ args, canvas, canvasElement, userEvent, globals }) {
-    await expect(canvas.getByLabelText("2 more assignees")).toHaveTextContent("+2");
+    await expect(canvas.getByLabelText("3 more assignees")).toHaveTextContent("+3");
     if (globals.theme === "minimal") {
       // Minimal prints every name inline rather than hiding them behind a count.
       await expect(canvas.getByText("Finance")).toBeVisible();

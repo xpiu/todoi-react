@@ -172,14 +172,14 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
                 {assignees.slice(0, 3).map((a, i) => {
                   const o = personOf(a);
                   return (
-                    <span key={i} className="td-card-avatar" style={{ "--td-z": 3 - i } as CSSProperties}>
+                    <span key={i} className={"td-card-avatar" + (i >= 2 ? " td-card-avatar-extra" : "")}>
                       <Avatar name={o.name} src={o.src} color={o.color} size={20} />
                     </span>
                   );
                 })}
-                {assignees.length > 3 ? (
-                  <span className="td-card-avatar td-card-avatar-more" aria-label={`${assignees.length - 3} more assignees`}>
-                    +{assignees.length - 3}
+                {assignees.length > 2 ? (
+                  <span className="td-card-avatar td-card-avatar-more" aria-label={`${assignees.length - 2} more assignees`}>
+                    +{assignees.length - 2}
                   </span>
                 ) : null}
               </span>
