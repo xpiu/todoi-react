@@ -34,8 +34,8 @@ export interface CalendarGridProps {
   className?: string;
 }
 
-/** Cell geometry (px) the CSS also uses: number row, lane height, chip pitch. */
-const LANE = 20, CHIP_PITCH = 25, CELL_PAD = 26 + 4;
+/** Cell geometry (px) the CSS also uses: lane height and the number row plus padding. The chip pitch comes from the theme (--size-cal-chip-pitch). */
+const LANE = 20, CELL_PAD = 26 + 4, DEFAULT_PITCH = 25;
 
 export function CalendarGrid({ date, period = "month", items, today, weekStartsOn = dateConventions().weekStart, showItemIds = true, showLabels = true, onOpenItem, onAddItem, onShowMore, onReschedule, onNavigateDate, focusDate, style, className }: CalendarGridProps) {
   const [now] = useState(() => parseDateValue(new Date())!);
@@ -58,16 +58,47 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
   spans.sort((a, b) => a.st.getTime() - b.st.getTime() || b.due.getTime() - b.st.getTime() - (a.due.getTime() - a.st.getTime()));
   const weekSpans = weeks.map((days) => placeSpans(spans, days));
 
-  // Cell height drives how many chips fit before "+N more".
+  // Cell height drives how many chips fit before "+N more". It is measured on mount as well as by the observer, so the first paint already has whole-pixel weeks.
+  // sbw: the weeks' scrollbar width (the weekday row is padded by it so the columns stay aligned). pitch: one chip row in px, from the theme token.
   const wrapRef = useRef<HTMLDivElement>(null);
   const [wh, setWh] = useState(0);
+  const [sbw, setSbw] = useState(0);
+  const [pitch, setPitch] = useState(DEFAULT_PITCH);
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const read = () => {
+      const p = parseFloat(getComputedStyle(el).getPropertyValue("--size-cal-chip-pitch"));
+      setPitch(p > 0 ? p : DEFAULT_PITCH);
+      setSbw(el.offsetWidth - el.clientWidth);
+      setWh(el.getBoundingClientRect().height);
+    };
+    read();
+    const mo = typeof MutationObserver === "undefined" ? null : new MutationObserver(read);
+    mo?.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(read);
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      mo?.disconnect();
+    };
+  }, []);
+  // The week period grows with its chips, so the scrollbar can appear without the wrapper resizing: watch the week rows too (re-attached when the shown weeks change).
   useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((es) => setWh(es[0]?.contentRect.height ?? 0));
-    ro.observe(el);
+    const sync = () => {
+      const w = el.offsetWidth - el.clientWidth;
+      setSbw((s) => (s === w ? s : w));
+    };
+    const ro = new ResizeObserver(sync);
+    weeks.forEach((_, i) => {
+      const week = el.children[i];
+      if (week) ro.observe(week);
+    });
+    sync();
     return () => ro.disconnect();
-  }, []);
+  }, [weeks]);
 
   // Roving focus among day cells.
   const cellRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -154,11 +185,22 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
 
   const monthOf = date.getMonth();
   const lanes = weekSpans.map((ws) => (ws.length ? Math.max(...ws.map((s) => s.lane)) + 1 : 0));
-  const cellH = wh > 0 ? wh / weeks.length : 110;
+  // Week period: one row a whole day-column tall: no number row (the date is in the weekday header), every chip shown with its title wrapped, and the row grows (the weeks scroll) rather than cutting to "+n more".
+  const isWeek = period === "week";
+  // Whole-pixel week heights: the measured height split evenly, the remainder handed out 1px at a time from the top; a week never gets less than its lanes plus one chip row.
+  const whI = Math.floor(wh);
+  const baseH = whI > 0 ? Math.floor(whI / weeks.length) : 110;
+  const remH = whI > 0 ? whI - baseH * weeks.length : 0;
+  const weekStyle = (L: number, h: number): CSSProperties => ({
+    ...({ "--td-lanes": L } as CSSProperties),
+    gridTemplateRows: `${isWeek ? "6px" : "var(--td-cal-numrow)"} ${"var(--td-cal-lane) ".repeat(L)}minmax(0, 1fr)`,
+    ...(whI > 0 ? (isWeek ? { flex: "none", minHeight: h } : { flex: "none", height: h }) : null),
+  });
+  const weekH = lanes.map((L, i) => Math.max(baseH + (i < remH ? 1 : 0), 30 + L * LANE + pitch));
   const wdNames = weeks[0]!.map((d) => d.toLocaleDateString("en-US", { weekday: "short" }));
   return (
-    <div className={["td-calendar-grid", className ?? ""].join(" ").trim()} role="grid" aria-label="Calendar" style={style}>
-      <div className="td-calendar-grid-weekday" role="row">
+    <div className={["td-calendar-grid", className ?? ""].join(" ").trim()} role="grid" aria-label="Calendar" data-period={period} style={style}>
+      <div className="td-calendar-grid-weekday" role="row" style={sbw > 0 ? { paddingRight: sbw } : undefined}>
         {wdNames.map((n, i) => {
           const d = weeks[0]![i]!;
           const isT = period === "week" && sameDay(d, todayD);
@@ -174,15 +216,15 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
       <div className="td-calendar-weeks" ref={wrapRef}>
         {weeks.map((days, wi) => {
           const L = lanes[wi]!;
-          const slots = Math.max(0, Math.floor((cellH - CELL_PAD - L * LANE) / CHIP_PITCH));
+          const slots = Math.max(0, Math.floor((weekH[wi]! - CELL_PAD - L * LANE) / pitch));
           return (
-            <div key={wi} className="td-calendar-week" role="row" style={{ "--td-lanes": L, gridTemplateRows: `var(--td-cal-numrow) ${"var(--td-cal-lane) ".repeat(L)}minmax(0, 1fr)` } as CSSProperties}>
+            <div key={wi} className="td-calendar-week" role="row" style={weekStyle(L, weekH[wi]!)}>
               {days.map((d, di) => {
                 const dIso = toISO(d)!;
                 const dayChips = chips.get(dIso) ?? [];
                 const spanCount = weekSpans[wi]!.filter((s) => di >= s.c1 && di <= s.c2).length;
                 const total = dayChips.length + spanCount;
-                const visible = dayChips.length <= slots ? dayChips.length : Math.max(0, slots - 1);
+                const visible = isWeek || dayChips.length <= slots ? dayChips.length : Math.max(0, slots - 1);
                 const hidden = dayChips.length - visible;
                 const out = period === "month" && d.getMonth() !== monthOf;
                 const isT = sameDay(d, todayD);
@@ -230,7 +272,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                         tabIndex={-1}
                         aria-hidden="true"
                         data-tip="Add an item"
-                        data-tip-side="bottom-end"
+                        data-tip-side={isWeek ? "left" : "bottom-end"}
                         aria-label={`Add an item on ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}
                         onClick={() => onAddItem(dIso)}
                       >

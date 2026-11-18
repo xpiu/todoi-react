@@ -4,7 +4,7 @@
 // Spec: DESIGN.md › Top navbar, Responsive.
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { useThemePreference } from "../core/appearance";
+import { useAppearanceStore, useThemePreference } from "../core/appearance";
 import { Avatar } from "../core/Avatar";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
@@ -217,6 +217,8 @@ export function TopNavbar({
     onSearchSelect?.(type, id, entity);
   };
   const showKbd = !sFocus && !sOpen && !sQ;
+  // Minimal shows the right-hand toggle at 16px (CSS). The pixel-snapped glyph must be drawn at that size: drawn for 20px and scaled down, its rules land between pixels and antialias to grey.
+  const minimalRightToggle = useAppearanceStore((s) => s.theme) === "minimal" && !leftToggle;
   const toggleBtn = onToggleSidebar ? (
     <IconButton
       name={leftToggle ? "panel-left" : "panel-right"}
@@ -225,6 +227,7 @@ export function TopNavbar({
       tooltipSide={leftToggle ? "bottom-start" : "bottom-end"}
       variant="chrome"
       className={leftToggle ? "td-topnav-sbtoggle-left" : undefined}
+      iconSize={minimalRightToggle ? 16 : undefined}
       aria-expanded={sidebarOpen}
       onClick={() => onToggleSidebar(!sidebarOpen)}
     />

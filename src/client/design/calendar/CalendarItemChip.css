@@ -58,4 +58,50 @@
     color: var(--ink-400);
     letter-spacing: 0.04em;
   }
+  /* Week period: the column is a whole day tall, so a title wraps to three lines instead of being cut after a word; icon, label bars and key stay on the first line. In a column under 160px the key gives its room to the title */
+  .td-calendar-grid[data-period="week"] .td-calendar-chip {
+    height: auto;
+    min-height: 22px;
+    padding: 3px 6px;
+    align-items: flex-start;
+  }
+  .td-calendar-grid[data-period="week"] .td-calendar-chip > svg,
+  .td-calendar-grid[data-period="week"] .td-calendar-chip-bars {
+    margin-top: 2px;
+  }
+  .td-calendar-grid[data-period="week"] .td-calendar-chip-key {
+    margin-top: 1px;
+  }
+  .td-calendar-grid[data-period="week"] .td-calendar-chip-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    hyphenate-limit-chars: 10 4 4;
+  }
+  @container td-calendar-day (max-width: 150px) {
+    .td-calendar-grid[data-period="week"] .td-calendar-chip-key {
+      display: none;
+    }
+  }
+  /* Under 80px a wrapped title breaks inside every word, so the chip is the month's: one line, cut with an ellipsis */
+  @container td-calendar-day (max-width: 80px) {
+    .td-calendar-grid[data-period="week"] .td-calendar-chip {
+      height: 22px;
+      min-height: 0;
+      padding: 0 4px;
+      align-items: center;
+    }
+    .td-calendar-grid[data-period="week"] .td-calendar-chip > svg,
+    .td-calendar-grid[data-period="week"] .td-calendar-chip-bars {
+      margin-top: 0;
+    }
+    .td-calendar-grid[data-period="week"] .td-calendar-chip-title {
+      display: block;
+      white-space: nowrap;
+      overflow-wrap: normal;
+    }
+  }
 }

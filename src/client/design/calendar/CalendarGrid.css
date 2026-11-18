@@ -9,10 +9,13 @@
     box-shadow: var(--shadow-card);
     overflow: hidden;
     min-height: 0;
+    container: td-calendar-grid / inline-size;
   }
+  /* Columns start on whole pixels: six equal tracks rounded down, the seventh takes the remainder (the 1fr line is the fallback). The .01px keeps a width that divides by 7 from landing a hair under the integer and losing a pixel per track */
   .td-calendar-grid-weekday {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(6, round(down, calc(100% / 7 + 0.01px), 1px)) minmax(0, 1fr);
     flex-shrink: 0;
   }
   .td-calendar-grid-weekday > div {
@@ -38,17 +41,21 @@
   .td-calendar-grid-weekday > div.is-today .td-calendar-grid-weekday-number {
     color: var(--text-inverse);
   }
+  /* Week heights are whole pixels set by CalendarGrid (never less than its lanes plus one chip row), so a crowded month scrolls here instead of spilling over the next week */
   .td-calendar-weeks {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
   }
   .td-calendar-week {
     flex: 1;
     min-height: 0;
+    box-sizing: border-box;
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(6, round(down, calc(100% / 7 + 0.01px), 1px)) minmax(0, 1fr);
     border-top: 1px solid var(--border-divider);
   }
   .td-calendar-cell {
@@ -120,6 +127,10 @@
     border-radius: var(--radius-xs);
     color: var(--ink-400);
     cursor: pointer;
+  }
+  /* The tooltip rule (.td-tooltip[data-tip] { position: relative }) would otherwise pull the button into the flow, onto the day number */
+  .td-calendar-cell > .td-calendar-cell-add.td-tooltip {
+    position: absolute;
   }
   .td-calendar-cell:hover .td-calendar-cell-add,
   .td-calendar-cell:focus-visible .td-calendar-cell-add,
@@ -225,5 +236,26 @@
   .td-calendar-more:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  /* Week period: the date is in the weekday header, so the 24px number row is a 6px inset (set by CalendarGrid) and the hover + moves to the foot of the day column, clear of the bars and chips; the chips leave it 28px */
+  .td-calendar-grid[data-period="week"] .td-calendar-cell-add {
+    top: auto;
+    bottom: 3px;
+  }
+  .td-calendar-grid[data-period="week"] .td-calendar-chips {
+    padding-bottom: 28px;
+    container: td-calendar-day / inline-size;
+  }
+  /* Bars and chips are two kinds of row: the first chip sits 4px under the last bar (was 1px, tighter than the 3px between chips) */
+  .td-calendar-grid[data-period="week"] .td-calendar-week:has(> .td-calendar-span-cell) .td-calendar-chips {
+    padding-top: 5px;
+  }
+  /* Day columns under 80px (a phone): "Mon 24" no longer fits one line, so the weekday sits above its number */
+  @container td-calendar-grid (max-width: 560px) {
+    .td-calendar-grid[data-period="week"] .td-calendar-grid-weekday > div {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
   }
 }

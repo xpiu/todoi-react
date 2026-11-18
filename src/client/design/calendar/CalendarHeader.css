@@ -1,8 +1,9 @@
 @layer components {
   .td-calendar-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--sp-2);
+    gap: var(--sp-1) var(--sp-2);
     padding: var(--sp-2) var(--sp-4) 10px;
     flex-shrink: 0;
   }
@@ -15,8 +16,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .td-calendar-header-spacer {
-    flex: 1;
+  .td-calendar-header-controls {
+    display: flex;
+    align-items: center;
+    gap: inherit;
+    margin-left: auto;
+    min-width: 0;
   }
   .td-calendar-header .td-btn-chrome:focus-visible {
     outline: none;

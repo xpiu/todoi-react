@@ -66,14 +66,6 @@ const CUSTOM = {
   ],
 } satisfies Record<string, SvgNode[]>;
 
-/** Minimal theme: the exact glyph from the Ledger prototype, vector stroke 1.75. */
-const LEDGER: Record<string, SvgNode[]> = {
-  "panel-right": [
-    ["rect", { width: 18, height: 18, x: 3, y: 3, rx: 2 }],
-    ["path", { d: "M15 3v18" }],
-  ],
-};
-
 /** Rounded theme: glyphs made only of axis-aligned lines, drawn in device pixels with an integer stroke. */
 const SNAPPED: Record<string, (size: number, stroke: number) => SvgNode[]> = {
   list: (s, w) => {
@@ -156,6 +148,10 @@ const LEDGER_SNAPPED: Record<string, (size: number) => SvgNode[]> = {
     ).map(([x, h]) => ["path", { d: `M${snap(x)} ${y}v${Math.round(h * u)}` }]);
   },
   calendar: (s) => SNAPPED.calendar!(s, 1),
+  // Sidebar toggles: as 24-unit vectors at 16px the frame's edges and the divider fell between pixels (2px, 14px, 10px
+  // lines with a 1.17px stroke) and antialiased to grey. Drawn on pixel centres, the frame is one full pixel of ink.
+  "panel-right": (s) => SNAPPED["panel-right"]!(s, 1),
+  "panel-left": (s) => SNAPPED["panel-left"]!(s, 1),
 };
 const LEDGER_STROKE = 1.75;
 
@@ -207,8 +203,6 @@ export function Icon({ name, size = 16, strokeWidth = 2, color, style, className
     const sw = (LEDGER_STROKE * size) / 24;
     return <RawSvg nodes={ledgerSnapped(size)} size={size} viewBox={`0 0 ${size} ${size}`} stroke={sw} color={color} style={{ strokeWidth: sw, ...style }} className={className} />;
   }
-  const ledger = minimal ? LEDGER[name] : undefined;
-  if (ledger) return <RawSvg nodes={ledger} size={size} viewBox="0 0 24 24" stroke={LEDGER_STROKE} color={color} style={style} className={className} />;
   const snapped = !minimal ? SNAPPED[name] : undefined;
   if (snapped) {
     const sw = (strokeWidth * size) / 24;

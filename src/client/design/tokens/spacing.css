@@ -2,4 +2,6 @@
 --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;--sp-10:40px;
 /* Fixed dimensions */
 --size-list-width:275px;--size-topbar:56px;--size-boardbar:48px;--size-control:32px;--size-control-lg:40px;--size-overlay-width:880px;--size-overlay-aside:max-content;
+/* One item row in a Calendar day (chip + gap); CalendarGrid reads it to count how many items fit */
+--size-cal-chip-pitch:25px;
 }

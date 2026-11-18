@@ -102,7 +102,7 @@ export function InboxScreen() {
   };
   return (
     <>
-      <ListView ref={root} showAddList={false} onItemKey={onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
+      <ListView ref={root} className="td-inbox" showAddList={false} onItemKey={onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
         <ListSection
           listId={listId}
           name="Inbox"
@@ -113,7 +113,7 @@ export function InboxScreen() {
           addVisible
           actions={
             unread ? (
-              <Button variant="ghost" icon="check-check" onClick={() => markAllRead.mutate()}>
+              <Button variant="ghost" icon="check-check" className="td-inbox-readall" onClick={() => markAllRead.mutate()}>
                 Mark all read
               </Button>
             ) : null

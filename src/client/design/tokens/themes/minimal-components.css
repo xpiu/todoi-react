@@ -2,13 +2,13 @@
 /* One ink: --ink-600, --ink-400 and --chrome-text-dim resolve to --ink-900 in this theme (tokens/themes/minimal.css), so every rule below that names them — and every "grey" in these comments — now paints the plain ink. Hairlines (--border-divider), washes, placeholders and unavailable states (--ink-300) are the only subdued values. */
 /* Base */
 html[data-theme="minimal"]{-webkit-font-smoothing:antialiased}
-html[data-theme="minimal"] body{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] body{font:400 13px/20px var(--font-ui)}
 /* ── Top bar: one 48px row, hairline below; title left, tools + views + account right; every element in ink, 16px line icons, stroke 1.75 */
 html[data-theme="minimal"] .td-topnav{height:48px;gap:24px;padding:0 24px;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-topnav svg,html[data-theme="minimal"] .td-subnav svg,html[data-theme="minimal"] .td-sidebar svg,html[data-theme="minimal"] .td-list-column-head svg,html[data-theme="minimal"] .td-list-section-head svg,html[data-theme="minimal"] .td-calendar-header svg{stroke-width:1.75}
-html[data-theme="minimal"] .td-topnav-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;margin:0}
+html[data-theme="minimal"] .td-topnav-title{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;margin:0}
 html[data-theme="minimal"] span.td-topnav-title[data-editable="true"]{padding:0;margin:0;gap:6px}
-html[data-theme="minimal"] input.td-topnav-title{background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/var(--td-title-line,100%) 1px;color:var(--ink-900);border:0;border-radius:0;padding:0 0 1px;margin:0;font:500 13px/1.45 var(--font-ui);margin-right:-24px}
+html[data-theme="minimal"] input.td-topnav-title{background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/var(--td-title-line,100%) 1px;color:var(--ink-900);border:0;border-radius:0;padding:0 0 1px;margin:0;font:500 13px/20px var(--font-ui);margin-right:-24px}
 html[data-theme="minimal"][data-device="phone"] input.td-topnav-title{margin-right:0}
 html[data-theme="minimal"] .td-topnav-spacer{margin:0}
 html[data-theme="minimal"] .td-topnav .td-subnav{column-gap:24px;row-gap:0;min-height:0;padding:0}
@@ -24,14 +24,15 @@ html[data-theme="minimal"] .td-subnav-action:focus-visible,html[data-theme="mini
 /* Current view: the 1px ink underline the theme uses for whatever is current (a background line — the pseudo-elements belong to the tooltip) */
 html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{box-sizing:content-box;padding-bottom:6px;margin-bottom:-6px;background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/100% 1px}
 /* View switcher: same ink as every other navbar element — text segments and the divider included */
-html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)){font:400 13px/1.45 var(--font-ui);height:auto;color:var(--ink-900)}
+html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)){font:400 13px/20px var(--font-ui);height:auto;color:var(--ink-900)}
 html[data-theme="minimal"] .td-subnav-seg:not(:has(svg)):hover,html[data-theme="minimal"] .td-subnav-seg:not(:has(svg))[aria-expanded="true"]{color:var(--ink-900)}
 html[data-theme="minimal"] .td-subnav-vdiv{display:none}
 /* Views leads the view group: it follows the last action at the in-group 16px, not the 24px group gap */
 html[data-theme="minimal"] .td-subnav-actions+.td-subnav-views:has(>.td-subnav-seg[aria-controls]:first-child){margin-left:-8px}
 /* Search → a search glyph over a hairline (132px), the + create glyph, a user glyph instead of the avatar, the sidebar toggle at the far right */
 html[data-theme="minimal"] .td-topnav>div:has(>.td-field-wrap){width:132px!important;margin-left:0}
-html[data-theme="minimal"] .td-topnav .td-field-dark{height:24px!important;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+/* 28px field: its hairline sits 13px below the bar's centre line, the same row as the current-view underline (16px glyph + 6px). Text and glyph stay where they were */
+html[data-theme="minimal"] .td-topnav .td-field-dark{height:28px!important;padding:5px 0 5px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-topnav .td-field-dark:focus{box-shadow:none;border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon{left:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon svg{width:14px;height:14px}
@@ -39,7 +40,8 @@ html[data-theme="minimal"] .td-topnav .td-field-dark::placeholder{color:transpar
 html[data-theme="minimal"] .td-topnav-kbd{display:none}
 html[data-theme="minimal"] .td-topnav-create{margin:0}
 html[data-theme="minimal"] button.td-topnav-plus{width:20px;height:20px;border-radius:0;color:var(--ink-900)}
-html[data-theme="minimal"] button.td-topnav-plus svg{stroke-width:1.5}
+/* The 20px plus has its arms on the 10px line, between two pixel rows, so the 1.25px stroke antialiased to ~60% ink (grey on dark). Half a pixel down-right puts each arm on a full pixel, like the 16px glyphs beside it */
+html[data-theme="minimal"] button.td-topnav-plus svg{stroke-width:1.5;transform:translate(.5px,.5px)}
 html[data-theme="minimal"] button.td-topnav-plus:hover,html[data-theme="minimal"] button.td-topnav-plus[aria-expanded="true"],html[data-theme="minimal"] button.td-topnav-plus:active{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav-user{gap:24px}
 html[data-theme="minimal"] .td-topnav-avatarbtn{border-radius:0;box-shadow:none}
@@ -60,27 +62,28 @@ html[data-theme="minimal"] .td-sidebar-nav,html[data-theme="minimal"] .td-sideba
 html[data-theme="minimal"] .td-sidebar-head{height:auto;margin:0;padding:0 0 8px;border-radius:0}
 html[data-theme="minimal"] .td-sidebar-head:hover,html[data-theme="minimal"] .td-sidebar-head:has(.td-sidebar-headbtn:active){background:none}
 html[data-theme="minimal"] .td-sidebar-head>.td-iconbtn{display:none}
-html[data-theme="minimal"] .td-sidebar-headbtn{flex-direction:row-reverse;justify-content:space-between;padding:0;height:auto;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-sidebar-headbtn{flex-direction:row-reverse;justify-content:space-between;padding:0;height:auto;color:var(--ink-900);font:400 13px/20px var(--font-ui);border-radius:0}
 html[data-theme="minimal"] .td-sidebar-headbtn .td-sidebar-chevron{width:14px;height:14px;stroke-width:1.5;color:var(--ink-900)}
-html[data-theme="minimal"] .td-sidebar-row{height:auto;padding:10px 0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);background:none;gap:10px}
+html[data-theme="minimal"] .td-sidebar-row{height:auto;padding:10px 0;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900);background:none;gap:10px}
 html[data-theme="minimal"] .td-sidebar-row:hover,html[data-theme="minimal"] .td-sidebar-row:active,html[data-theme="minimal"] .td-sidebar-rowwrap[data-menu-open="true"] .td-sidebar-row:not([aria-current="true"]){background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-sidebar-row[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em;box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-sidebar-row[aria-current="true"]{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-sidebar-row:focus-visible{outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-sidebar-iconwrap{display:none!important}
 /* Keep the unread indicator visible when Minimal hides navigation icons. */
 html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"]{display:inline-flex!important;order:1;width:7px;height:7px;margin-left:auto}
 html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"] svg{display:none!important}
 html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"] .td-sidebar-dot{position:static;display:block;flex-shrink:0}
-html[data-theme="minimal"] .td-sidebar-count,html[data-theme="minimal"] .td-sidebar-row[aria-current="true"] .td-sidebar-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sidebar-count,html[data-theme="minimal"] .td-sidebar-row[aria-current="true"] .td-sidebar-count{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more,html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add{right:0;top:11px;transform:none;width:16px!important;height:16px!important;border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more svg,html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-more:is(:hover,:active,[aria-expanded="true"]),html[data-theme="minimal"] .td-sidebar-rowwrap .td-sidebar-add:is(:hover,:active),html[data-theme="minimal"] .td-sidebar-rowwrap[data-current="true"] .td-sidebar-more:is(:hover,:active,[aria-expanded="true"]),html[data-theme="minimal"] .td-sidebar-rowwrap[data-current="true"] .td-sidebar-add:is(:hover,:active){background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-sidebar-row[data-droptarget="true"]{box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-sidebar-row[data-drop="true"]{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900);color:var(--ink-900)}
-html[data-theme="minimal"] .td-sidebar-rename{outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-sidebar-rename{outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-sidebar-drophint{width:196px!important;padding:8px 24px;color:var(--ink-400)}
 /* ── Board: columns in a 24px gutter, no list surface; the list name sits over the same hairline that ends every row */
-html[data-theme="minimal"] .td-board{gap:24px;padding:20px 24px 0}
+/* 16px under the columns so the last row clears the horizontal scrollbar, which is thin like the column ones */
+html[data-theme="minimal"] .td-board{gap:24px;padding:20px 24px 16px;scrollbar-width:thin;scrollbar-color:var(--border-divider) transparent}
 html[data-theme="minimal"] .td-list-column{background:none;border-radius:0;box-shadow:none;padding:0}
 html[data-theme="minimal"] .td-list-column.is-drop-target{box-shadow:none}
 html[data-theme="minimal"] .td-list-column.is-drop-target>.td-list-column-head{border-bottom-color:var(--ink-900)}
@@ -93,34 +96,55 @@ html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-st
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,#21e389 60%,transparent)}
 html[data-theme="minimal"][data-mode="light"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,#1a9c5e 60%,transparent)}
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column.is-drop-target[data-status-role]>.td-list-column-head{border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-column-head{padding:0 0 8px;gap:6px;align-items:baseline;border-bottom:1px solid var(--border-divider)}
+/* 9px under the 20px name line and 10px over the 18px title line put the same 12.5px of air on both sides of the hairline */
+html[data-theme="minimal"] .td-list-column-head{padding:0 0 9px;gap:6px;align-items:baseline;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-list-column-head .td-popover-anchor:has(>.td-list-column-iconbtn){display:none!important}
-html[data-theme="minimal"] .td-list-column-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-name{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-column-count{display:none}
-html[data-theme="minimal"] .td-list-column-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-column-head .td-list-column-more-anchor{align-self:center;margin-left:auto}
 html[data-theme="minimal"] .td-list-column-head .td-list-column-more{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400);opacity:1}
 html[data-theme="minimal"] .td-list-column-head .td-list-column-more svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-list-column-head:hover .td-list-column-more,html[data-theme="minimal"] .td-list-column-head .td-list-column-more:focus-visible,html[data-theme="minimal"] .td-list-column-head .td-list-column-more[aria-expanded="true"]{opacity:1}
 html[data-theme="minimal"] .td-list-column-head .td-list-column-more:hover,html[data-theme="minimal"] .td-list-column-head .td-list-column-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-column-cards{gap:0;padding:0;scrollbar-width:thin;scrollbar-color:var(--border-divider) transparent}
+/* The scroller reaches into the column gap on both sides: 6px for the selection frame, then 10px on the right for its scrollbar, which sits beside the rows instead of on the keys; rows keep the column width whether or not a scrollbar takes space */
+html[data-theme="minimal"] .td-list-column-cards{gap:0;padding:0 16px 0 6px;margin:0 -16px 0 -6px;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border-divider) transparent}
+html[data-theme="minimal"] .td-list-column-cards>.td-list-cue{left:6px!important;right:16px!important}
+html[data-theme="minimal"] .td-list-column-cards>.td-card{width:var(--size-list-width);box-sizing:border-box}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role] .td-list-column-cards>.td-card{width:calc(var(--size-list-width) - 24px)}
+/* On a wash the scroller stays inside the column's 12px of inner air, so the frame takes 4px a side */
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role] .td-list-column-cards{padding:0 12px 0 4px;margin:0 -12px 0 -4px}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role] .td-list-column-cards>.td-list-cue{left:4px!important;right:12px!important}
+/* The footer draws the line that closes the column, so an overflowing list ends on a hairline too; the last row gives up its own. "Last" is the card with no card after it, so a drop cue rendered after the cards does not hand the border back mid-drag */
+html[data-theme="minimal"] .td-list-column:has(>.td-list-column-foot,>.td-list-column-composer) .td-list-column-cards>.td-card:not(:has(~.td-card)){border-bottom:0}
+html[data-theme="minimal"] [data-readonly="true"] .td-list-column .td-list-column-cards>.td-card:not(:has(~.td-card)){border-bottom:1px solid var(--border-divider)}
 /* Card → a row: title, then one grey line of words (labels, date, initials, count, priority, key at the end in mono); no fill, no shadow, hairline below; cover as a bare full-width strip */
 html[data-theme="minimal"] .td-card{background:none;border-radius:0;box-shadow:none;padding:10px 0;border-bottom:1px solid var(--border-divider);overflow:visible;transition:none}
 html[data-theme="minimal"] .td-card:hover{box-shadow:none}
-html[data-theme="minimal"] .td-card:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-card.is-selected,html[data-theme="minimal"] .td-card.is-selected:hover{background:var(--blue-100);box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-card>img,html[data-theme="minimal"] .td-card>div:first-child:not(.td-card-body){height:96px!important;max-height:96px;margin-bottom:8px;border-radius:0}
-html[data-theme="minimal"] .td-card-body{padding:0!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:baseline;gap:2px 10px!important}
-html[data-theme="minimal"] .td-card-body>.td-card-title{width:100%;white-space:normal;margin-bottom:2px;font:400 12.5px/1.28 var(--font-ui)!important;color:var(--ink-900)!important;padding-right:0!important;order:-1}
+/* Focus, selection and the file-drop target frame the row 6px outside the text on both sides (the frame sat on the first letter and the key); the text does not move */
+html[data-theme="minimal"] .td-card:focus-visible{box-shadow:none;outline:none;isolation:isolate}
+html[data-theme="minimal"] .td-card.is-selected,html[data-theme="minimal"] .td-card.is-selected:hover{background:var(--blue-100);box-shadow:none;outline:none;isolation:isolate}
+/* The frame is one box behind the row's content (the row isolates, so -1 stays above its own fill); selection and the drop target fill it */
+html[data-theme="minimal"] .td-card:focus-visible::before,html[data-theme="minimal"] .td-card.is-selected::before,html[data-theme="minimal"] .td-card.td-file-target::before{content:"";position:absolute;z-index:-1;inset:0 -6px -1px;border:1px solid var(--ink-900);pointer-events:none}
+html[data-theme="minimal"] .td-card.is-selected::before,html[data-theme="minimal"] .td-card.td-file-target::before{background:var(--blue-100)}
+html[data-theme="minimal"] .td-card.td-file-target::before{border-style:dashed}
+html[data-theme="minimal"] .td-list-column:has(>.td-list-column-foot,>.td-list-column-composer) .td-list-column-cards>.td-card:not(:has(~.td-card))::before{bottom:0}
+html[data-theme="minimal"] [data-readonly="true"] .td-list-column .td-list-column-cards>.td-card:not(:has(~.td-card))::before{bottom:-1px}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role] .td-card::before{left:-4px;right:-4px}
+html[data-theme="minimal"] .td-card>img,html[data-theme="minimal"] .td-card>div:first-child:not(.td-card-body){height:96px!important;max-height:96px;margin-bottom:10px;border-radius:0;object-position:left top}
+html[data-theme="minimal"] .td-card-body{padding:0!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:baseline;gap:0 10px!important}
+html[data-theme="minimal"] .td-card-body>.td-card-title{width:100%;white-space:normal;margin-bottom:4px;font:400 13px/18px var(--font-ui)!important;color:var(--ink-900)!important;padding-right:0!important;order:-1}
 html[data-theme="minimal"] .td-card-title>svg{display:none!important}
 html[data-theme="minimal"] .td-card-title.is-done{color:var(--ink-900)!important;text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-card-labels,html[data-theme="minimal"] .td-card-badges{display:contents!important;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-card-labels,html[data-theme="minimal"] .td-card-badges{display:contents!important;color:var(--ink-400);font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-card-badges.is-compact .td-meta-text{display:inline}
 html[data-theme="minimal"] .td-card-body>*,html[data-theme="minimal"] .td-card-labels>*,html[data-theme="minimal"] .td-card-badges>*{white-space:nowrap;flex:none}
 html[data-theme="minimal"] .td-card-badge,html[data-theme="minimal"] .td-due{display:inline-flex;gap:0;order:1}
 html[data-theme="minimal"] .td-card-badges>.td-card-due{flex:none;overflow:visible}
 html[data-theme="minimal"] .td-card-badge svg,html[data-theme="minimal"] .td-due svg{display:none!important}
-html[data-theme="minimal"] .td-card-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-card-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px;vertical-align:-2px}
+html[data-theme="minimal"] .td-card-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-card-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px;transform:translateY(2px)}
+/* Glyph badges share the baseline of the words around them (centred, the glyph set the baseline and the count rode 2px high) */
+html[data-theme="minimal"] .td-card-badge[title^="Attachments"],html[data-theme="minimal"] .td-card-badge[title^="Repeats"]{align-items:baseline}
 html[data-theme="minimal"] .td-card-badge[title^="This item has a description"]{display:none}
 html[data-theme="minimal"] .td-card-badges>.td-card-avatars{order:2}
 html[data-theme="minimal"] .td-card-badge[title^="Subitems"]{order:3;color:var(--ink-400)!important}
@@ -129,51 +153,76 @@ html[data-theme="minimal"] .td-card-badge[title^="Repeats"],html[data-theme="min
 html[data-theme="minimal"] .td-prio-text{display:inline;text-transform:capitalize}
 /* Urgent is pinned to the plain ink and red stays with overdue. Under one ink every meta word already is ink, so this only holds the hierarchy if metadata is ever dimmed again */
 html[data-theme="minimal"] .td-card-badge[data-priority="urgent"],html[data-theme="minimal"] .td-list-row-badge[data-priority="urgent"]{color:var(--ink-900)!important}
-html[data-theme="minimal"] .td-card-id,html[data-theme="minimal"] .td-list-row-key,html[data-theme="minimal"] .td-calendar-chip-key{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-card-id{order:10;margin-left:auto}
+html[data-theme="minimal"] .td-card-id,html[data-theme="minimal"] .td-list-row-key,html[data-theme="minimal"] .td-calendar-chip-key{font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+/* The key never takes a line of its own: the meta words wrap short of a slot reserved for it (key width from --td-key-ch, set by ItemCard, at the mono advance of .6em) and the key hangs into that slot at the end of the last line. The title keeps the full width. */
+html[data-theme="minimal"] .td-card-body:has(.td-card-id){padding-right:calc(var(--td-key-ch,6)*6.6px + 10px)!important}
+html[data-theme="minimal"] .td-card-body:has(.td-card-id)>.td-card-title{width:calc(100% + (var(--td-key-ch,6)*6.6px + 10px));margin-right:calc(-1*(var(--td-key-ch,6)*6.6px + 10px))}
+html[data-theme="minimal"] .td-card-id{order:10;margin-left:auto;margin-right:calc(-1*(var(--td-key-ch,6)*6.6px + 10px))}
+html[data-theme="minimal"][data-touch="true"] .td-card-id{padding:4px 0;margin:-4px calc(-1*(var(--td-key-ch,6)*6.6px + 10px)) -4px auto}
 html[data-theme="minimal"] .td-card-id:hover,html[data-theme="minimal"] .td-list-row-key:hover{color:var(--ink-900)}
 html[data-theme="minimal"] .td-card-more{top:10px;right:0;width:16px;height:18px;border-radius:0;background:var(--chrome-canvas);box-shadow:-6px 0 4px -2px var(--chrome-canvas);color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-more:hover,html[data-theme="minimal"] .td-card-more[aria-expanded="true"]{color:var(--ink-900)}
 html[data-theme="minimal"] .td-card-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
 html[data-theme="minimal"] .td-card-meta{padding:4px 0 0}
-html[data-theme="minimal"] .td-card.td-file-target{outline:1px dashed var(--ink-900);outline-offset:-1px;background:var(--blue-100);box-shadow:none}
+html[data-theme="minimal"] .td-card.td-file-target{outline:none;background:var(--blue-100);box-shadow:none;isolation:isolate}
 html[data-theme="minimal"] .td-card.td-file-target::after{border-radius:0;font:400 11px/16px var(--font-ui);right:0;bottom:10px}
 /* Labels are words; assignees are initials; both comma-separated, grey */
-html[data-theme="minimal"] .td-card-labels .td-label,html[data-theme="minimal"] .td-list-row-labels .td-list-row-label{display:inline!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important;overflow:visible!important;position:static!important;transition:none!important}
-html[data-theme="minimal"] .td-card-labels .td-label+.td-label::before,html[data-theme="minimal"] .td-list-row-labels .td-list-row-label+.td-list-row-label::before{content:", "}
+html[data-theme="minimal"] .td-card-labels .td-label,html[data-theme="minimal"] .td-list-row-labels .td-list-row-label{display:inline!important;background:none!important;color:var(--ink-400)!important;font:400 11px/16px var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important;overflow:visible!important;position:static!important;transition:none!important}
+/* The comma belongs to the label before it, so a wrapped line never opens with ", "; the no-break space is the word gap (a plain trailing space would collapse at the end of the flex item) */
+html[data-theme="minimal"] .td-card-labels .td-label:has(+.td-label)::after,html[data-theme="minimal"] .td-list-row-labels .td-list-row-label:has(+.td-list-row-label:not(.td-list-row-label-more))::after{content:",\00a0"}
 html[data-theme="minimal"] .td-card-labels .td-label:not(:last-of-type){margin-right:-10px!important}
 html[data-theme="minimal"] .td-list-row-labels .td-list-row-label-more,html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar-more,html[data-theme="minimal"] .td-card-avatars .td-card-avatar-more{display:none!important}
 html[data-theme="minimal"] .td-list-row-labels,html[data-theme="minimal"] .td-list-row-labels.is-float .td-list-row-labels-in{position:static;width:auto!important;height:auto;padding:0;overflow:visible;background:none!important;max-width:100%!important;flex-wrap:wrap}
 html[data-theme="minimal"] .td-list-row-labels .td-list-row-label{max-width:100%!important;white-space:normal;overflow-wrap:anywhere}
 html[data-theme="minimal"] .td-card-avatars,html[data-theme="minimal"] .td-list-row-avatars{gap:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-avatars .td-card-avatar,html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar{width:auto!important;height:auto!important;border-radius:0;box-shadow:none!important;margin:0!important;overflow:visible;transition:none}
-html[data-theme="minimal"] .td-card-avatars .td-card-avatar+.td-card-avatar::before,html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar+.td-list-row-avatar::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-card-avatars .td-avatar,html[data-theme="minimal"] .td-list-row-avatars .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;display:inline!important}
+html[data-theme="minimal"] .td-card-avatars .td-card-avatar+.td-card-avatar::before,html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar+.td-list-row-avatar::before{content:",\00a0";font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-card-avatars .td-avatar,html[data-theme="minimal"] .td-list-row-avatars .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/16px var(--font-ui)!important;display:inline!important}
 html[data-theme="minimal"] .td-card-avatars img.td-avatar,html[data-theme="minimal"] .td-list-row-avatars img.td-avatar{width:14px!important;height:14px!important;border-radius:50%!important;vertical-align:-3px}
 html[data-theme="minimal"] .td-list-row .td-list-row-avatars:hover .td-list-row-avatar+.td-list-row-avatar{margin-left:0}
 html[data-theme="minimal"] .td-list-row-avatars .td-list-row-avatar.td-list-row-avatar-extra{width:auto!important}
 html[data-theme="minimal"] .td-card-avatars .td-card-avatar-extra{display:inline-flex}
 /* Dates: words, grey; overdue red at normal weight; done grey */
-html[data-theme="minimal"] .td-due{background:none!important;color:var(--ink-400)!important;height:auto!important;padding:0!important;border-radius:0!important;font:400 11px/1.45 var(--font-ui)!important}
+html[data-theme="minimal"] .td-due{background:none!important;color:var(--ink-400)!important;height:auto!important;padding:0!important;border-radius:0!important;font:400 11px/16px var(--font-ui)!important}
 html[data-theme="minimal"] .td-due[data-state="overdue"]{color:var(--danger)!important}
-html[data-theme="minimal"] .td-status{color:var(--ink-400)!important;font:400 11px/1.45 var(--font-ui)!important;gap:3px}
+html[data-theme="minimal"] .td-status{color:var(--ink-400)!important;font:400 11px/16px var(--font-ui)!important;gap:3px}
 html[data-theme="minimal"] .td-status svg{width:11px;height:11px;stroke:var(--ink-400)}
 /* Add an item · Add list · the quick-add composer, all as plain grey rows */
-html[data-theme="minimal"] .td-list-column-foot{padding-top:0}
-html[data-theme="minimal"] .td-list-column-add,html[data-theme="minimal"] .td-board-addlist,html[data-theme="minimal"] .td-list-view-addlist,html[data-theme="minimal"] .td-list-section-add,html[data-theme="minimal"] .td-calendar-day-list-add{height:auto;padding:10px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
+html[data-theme="minimal"] .td-list-column-foot{padding-top:0;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-list-column-cards:empty+.td-list-column-foot{border-top-color:transparent}
+html[data-theme="minimal"] .td-list-column-cards:not(:empty)+.td-list-column-composer{border-top-color:var(--border-divider)}
+html[data-theme="minimal"] .td-list-column-add,html[data-theme="minimal"] .td-board-addlist,html[data-theme="minimal"] .td-list-view-addlist,html[data-theme="minimal"] .td-list-section-add,html[data-theme="minimal"] .td-calendar-day-list-add{height:auto;padding:10px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/20px var(--font-ui);gap:6px}
 html[data-theme="minimal"] .td-list-column-add svg,html[data-theme="minimal"] .td-board-addlist svg,html[data-theme="minimal"] .td-list-view-addlist svg,html[data-theme="minimal"] .td-list-section-add svg,html[data-theme="minimal"] .td-calendar-day-list-add svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-list-section-add>span:first-child{width:14px}
+/* Board: "Add an item" takes the List view's plus — a 14px glyph in a 16px box on the title edge, 10px to the label; "Add list" stays words only on the list-name edge */
+html[data-theme="minimal"] .td-list-column-add{gap:10px}
+html[data-theme="minimal"] .td-list-column-add>svg{flex:none;margin:0 1px}
+/* Pixel-snapped plus in full ink: a 13px glyph on whole-pixel x/y with a 1px stroke (24/13 viewBox units) puts each bar on exactly one pixel row/column, so it renders solid white in dark mode instead of a 1.17px bar smeared across two half-lit rows. Still sits in the 16px box, 10px to the label */
+html[data-theme="minimal"] .td-list-column-add>svg,html[data-theme="minimal"] .td-list-view-addlist>svg,html[data-theme="minimal"] .td-list-composer-plus svg{width:13px!important;height:13px!important;stroke-width:1.8462;stroke-linecap:butt;shape-rendering:crispEdges;color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-column-add>svg{align-self:flex-start;margin:4px 2px 0 1px}
+html[data-theme="minimal"] .td-board-addlist>svg{display:none!important}
+html[data-theme="minimal"] .td-list-view-addlist>svg{flex:none;align-self:flex-start;margin:4px 1px 0 0}
+/* List view add row: a 16px glyph box and the 10px row gap, so the plus centres under the checkboxes and the label starts on the title column */
+html[data-theme="minimal"] .td-list-section-add,html[data-theme="minimal"] .td-calendar-day-list-add{gap:10px}
+html[data-theme="minimal"] .td-list-section-add>span:first-child,html[data-theme="minimal"] .td-calendar-day-list-add>span:first-child{width:16px!important}
 html[data-theme="minimal"] .td-list-column-add:hover,html[data-theme="minimal"] .td-board-addlist:hover,html[data-theme="minimal"] .td-list-view-addlist:hover,html[data-theme="minimal"] .td-list-section-add:hover,html[data-theme="minimal"] .td-calendar-day-list-add:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-column-add:focus-visible,html[data-theme="minimal"] .td-board-addlist:focus-visible,html[data-theme="minimal"] .td-list-view-addlist:focus-visible,html[data-theme="minimal"] .td-list-section-add:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-board-addlist{align-self:flex-start;padding:0 0 8px;height:auto;width:var(--size-list-width);justify-content:flex-start}
+html[data-theme="minimal"] .td-list-column-add:focus-visible,html[data-theme="minimal"] .td-board-addlist:focus-visible,html[data-theme="minimal"] .td-list-view-addlist:focus-visible,html[data-theme="minimal"] .td-list-section-add:focus-visible,html[data-theme="minimal"] .td-calendar-day-list-add:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-board-addlist{align-self:flex-start;padding:0 0 9px;height:auto;width:var(--size-list-width);justify-content:flex-start}
 /* List view: "Add list" is a section-level action, so it takes the list-title weight and tracking (.td-list-section-name) rather than the item-row weight */
-html[data-theme="minimal"] .td-list-view-addlist{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;padding:0;align-self:flex-start}
+html[data-theme="minimal"] .td-list-view-addlist{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;padding:0;align-self:flex-start}
 /* Hidden lists (after "Add list" in Board and List): the same grey words as the add row, ink on hover or while its menu is open */
-html[data-theme="minimal"] .td-hidden-lists{height:auto;padding:0;border-radius:0;background:none;opacity:1;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);gap:6px}
+html[data-theme="minimal"] .td-hidden-lists{height:auto;padding:0;border-radius:0;background:none;opacity:1;color:var(--ink-400);font:400 13px/20px var(--font-ui);gap:6px}
 html[data-theme="minimal"] .td-hidden-lists svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-hidden-lists:hover,html[data-theme="minimal"] .td-hidden-lists[aria-expanded="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-hidden-lists:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-list-column-composer{margin:0;padding:10px 0;background:none;box-shadow:none;border-radius:0;border-bottom:1px solid var(--border-divider)}
+/* The composer is the add row with a caret: same hairline above, same 13/20 line, same 41px, so opening it moves nothing */
+html[data-theme="minimal"] .td-list-column-composer{margin:0;padding:10px 0;background:none;box-shadow:none;border-radius:0;border-top:1px solid transparent}
+html[data-theme="minimal"] .td-list-column-composer .td-quick-add-input{font:400 13px/20px var(--font-ui)}
+/* The composer keeps the add row's plus, so the caret lands where the label was */
+html[data-theme="minimal"] .td-list-column-composer{display:flex;align-items:flex-start;gap:10px}
+html[data-theme="minimal"] .td-list-column-composer>.td-quick-add{flex:1;min-width:0}
+html[data-theme="minimal"] .td-list-composer-plus{display:inline-flex;justify-content:flex-start;width:16px;flex:none;margin-top:4px;padding-left:1px;box-sizing:border-box}
+/* ⋯ › Add an item: the composer opens as the column's first row, under the name's hairline and closed by its own */
+html[data-theme="minimal"] .td-list-column-composer.is-top{border-top:0;border-bottom:1px solid var(--border-divider)}
 /* ── List view: sections are the same ledger, one column wide */
 html[data-theme="minimal"] .td-list-view{padding:20px 24px 24px}
 html[data-theme="minimal"] .td-list-view-inner{gap:24px}
@@ -181,9 +230,9 @@ html[data-theme="minimal"] .td-list-section{background:none;border-radius:0;box-
 html[data-theme="minimal"] .td-list-section-head{padding:0 0 8px;gap:6px;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-list-section-collapsed>.td-list-section-head{padding-bottom:8px}
 html[data-theme="minimal"] .td-list-section-head .td-popover-anchor:has(>.td-list-section-iconbtn){display:none!important}
-html[data-theme="minimal"] .td-list-section-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900);white-space:nowrap;flex:1 1 auto}
+html[data-theme="minimal"] .td-list-section-name{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900);white-space:nowrap;flex:1 1 auto}
 html[data-theme="minimal"] .td-list-section-count{display:none}
-html[data-theme="minimal"] .td-list-section-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-section-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-section-actions{gap:10px}
 html[data-theme="minimal"] .td-list-section-chevron,html[data-theme="minimal"] .td-list-section-addbtn,html[data-theme="minimal"] .td-list-section-more{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-list-section-more{opacity:1}
@@ -193,7 +242,9 @@ html[data-theme="minimal"] .td-list-section-chevron:focus-visible,html[data-them
 html[data-theme="minimal"] .td-list-section-body{padding-bottom:0!important}
 html[data-theme="minimal"] .td-list-row-group{background:none;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-list-row-group.is-selected{background:var(--blue-100);box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
-html[data-theme="minimal"] .td-list-row{min-height:0;padding:10px 0;gap:10px;font:400 13px/1.45 var(--font-ui)}
+/* The row aligns on the first baseline: title (13/20), the meta words and the key (11/16) sit on one line of type. The checkbox and a notification's source stay top-aligned; the meta group drops its 20px floor so an empty one cannot push the baseline down. */
+html[data-theme="minimal"] .td-list-row{min-height:0;padding:10px 0;gap:10px;align-items:baseline;font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-list-row>.td-list-row-from{align-self:flex-start}
 html[data-theme="minimal"] .td-list-row:hover{background:none}
 html[data-theme="minimal"] .td-list-row:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-list-row-subs .td-list-row{border-top:1px solid var(--border-divider)}
@@ -203,28 +254,30 @@ html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-head{bord
 html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-group{border-bottom-color:transparent}
 html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-subs .td-list-row{border-top-color:transparent}
 html[data-theme="minimal"] .td-list-row-sub{padding-left:26px}
-html[data-theme="minimal"] .td-list-row-title{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-list-row-title{font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-row-group .td-list-row:has(.td-check-box-on)>.td-list-row-title{color:var(--ink-900);text-decoration:line-through;text-decoration-color:var(--ink-400);text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-list-row.is-unread{background:none;box-shadow:none}
 html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-title{font-weight:500}
-html[data-theme="minimal"] .td-list-row-end{gap:4px 10px;color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-list-row-end{min-height:0;gap:4px 10px;color:var(--ink-400);font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-list-row-end>*{height:auto}
-html[data-theme="minimal"] .td-list-row-badge{color:var(--ink-400);font:400 11px/1.45 var(--font-ui);gap:0}
+html[data-theme="minimal"] .td-list-row-badge{color:var(--ink-400);font:400 11px/16px var(--font-ui);gap:0}
 html[data-theme="minimal"] .td-list-row-badge svg{display:none!important}
 html[data-theme="minimal"] .td-list-row-badge[title^="Attachments"] svg,html[data-theme="minimal"] .td-list-row-badge[title^="Repeats"] svg{display:inline!important;width:12px;height:12px;margin-right:2px}
 /* Attachments keep the paperclip, and sit where they sit on a card: last in the meta line, right before the key (a notification row's "about" key stays the closing cell) */
 html[data-theme="minimal"] .td-list-row-end>.td-list-row-badge[title^="Attachments"]{order:1}
 html[data-theme="minimal"] .td-list-row-end>.td-list-row-cell:has(>.td-list-row-about){order:2}
-html[data-theme="minimal"] .td-list-row-key.td-list-row-idkey{min-width:0}
+/* Keys keep the shared column width (--td-key-w) and set flush right with tabular figures, so the key's left edge and the meta group before it hold one x down the list; dates take tabular figures too */
+html[data-theme="minimal"] .td-list-row-key.td-list-row-idkey{justify-content:flex-end}
+html[data-theme="minimal"] .td-list-row-end .td-due{font-variant-numeric:tabular-nums!important}
 /* The row key reads as one more meta label: same face, size and ink as the badges to its left (mono stays on cards and calendar chips) */
-html[data-theme="minimal"] .td-list-row>.td-list-row-idkey{height:auto;margin-left:0;font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-list-row>.td-list-row-idkey{height:auto;margin-left:0;font:400 11px/16px var(--font-ui);font-variant-numeric:tabular-nums}
 html[data-theme="minimal"] .td-list-row.td-drop-before{box-shadow:inset 0 1px 0 var(--ink-900)}
 html[data-theme="minimal"] .td-list-row.td-drop-after{box-shadow:inset 0 -1px 0 var(--ink-900)}
 html[data-theme="minimal"] .td-list-row.td-drop-into{box-shadow:inset 0 0 0 1px var(--ink-900);background:var(--blue-100)}
 html[data-theme="minimal"] .td-list-row.td-file-target{outline:1px dashed var(--ink-900);background:var(--blue-100)}
 html[data-theme="minimal"] .td-list-row.td-file-target::after,html[data-theme="minimal"] .td-card.td-file-target::after{background:var(--ink-900);color:var(--chrome-canvas)}
-html[data-theme="minimal"] .td-list-section-addrow{min-height:0;padding:10px 0;gap:6px;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-list-section-addrow>span:first-child{width:14px;margin-top:2px}
+html[data-theme="minimal"] .td-list-section-addrow{min-height:0;padding:10px 0;gap:10px;color:var(--ink-400);font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-list-section-addrow>span:first-child{width:16px!important;margin-top:3px}
 html[data-theme="minimal"] .td-list-section-addrow>span:first-child svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-list-section-addrow .td-quick-add-input{font-weight:400}
 /* Switches (Projects · Auto-assign statuses): same rule as checkboxes — hairline track when off, filled ink with a paper knob when on. Rounded maps the on-track to --action-primary, which in Minimal is the ink itself, so the white knob and check vanished */
@@ -242,65 +295,100 @@ html[data-theme="minimal"] .td-check-circle{width:16px;height:16px;border-color:
 html[data-theme="minimal"] .td-check:hover .td-check-box{border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-check-box-on,html[data-theme="minimal"] .td-check-circle.td-check-box-on{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
 html[data-theme="minimal"] .td-check-circle:not(.td-check-box-on){color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-row>span:first-child{margin-top:1px!important}
+/* 16px box centred on the 20px title line */
+html[data-theme="minimal"] .td-list-row>span:first-child{margin-top:2px!important;align-self:flex-start}
 /* ── Calendar: a ruled month — horizontal hairlines only, no weekend tint, today in ink, chips as text */
-html[data-theme="minimal"] .td-calendar-header{padding:20px 24px 12px;gap:16px}
+html[data-theme="minimal"] .td-calendar-header{padding:20px 24px 12px;gap:8px 16px}
+/* Seven equal day columns: the grid is the largest multiple of 7px that fits and the header gives up the same remainder (0–6px), so the period picker still ends on the last column. When the weeks scroll, the scrollbar takes its width from the columns and any remainder (0–6px) stays beside it */
+html[data-theme="minimal"] .td-calendar-header:has(+div>.td-calendar-grid){padding-right:calc(24px + mod(100% - 48px,7px))}
+/* Day period: the header sits on the day list's 900px column (24px page margin each side) */
+html[data-theme="minimal"] .td-calendar-header:has(+div .td-calendar-day-list){padding-left:calc(24px + round(down,calc((100% - 48px - min(100% - 48px,900px))/2),1px));padding-right:calc(24px + round(up,calc((100% - 48px - min(100% - 48px,900px))/2),1px))}
 html[data-theme="minimal"] .td-calendar-header+div{padding:0 24px 20px!important}
-html[data-theme="minimal"] .td-calendar-header-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
-html[data-theme="minimal"] .td-calendar-header .td-btn-chrome,html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome,html[data-theme="minimal"] .td-calendar-header .td-select-trigger{height:auto;padding:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-calendar-header-title{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-header .td-btn-chrome,html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome,html[data-theme="minimal"] .td-calendar-header .td-select-trigger{height:auto;padding:0;background:none;color:var(--ink-900);font:400 13px/20px var(--font-ui);border-radius:0}
 html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome{width:16px!important;height:16px!important}
 html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome svg{width:16px;height:16px}
+/* The period picker keeps one whole-pixel width, so the chevrons left of it sit on the pixel grid and stay put when the period changes */
+html[data-theme="minimal"] .td-calendar-header .td-select-trigger{min-width:64px;justify-content:space-between}
 html[data-theme="minimal"] .td-calendar-header .td-btn-chrome:hover,html[data-theme="minimal"] .td-calendar-header .td-btn-chrome:active,html[data-theme="minimal"] .td-calendar-header .td-btn-chrome[aria-expanded="true"],html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome:hover,html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome:active{background:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-header .td-btn-chrome:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
-html[data-theme="minimal"] .td-calendar-grid{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-calendar-grid-weekday>div{padding:6px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-grid{background:none;border-radius:0;box-shadow:none;overflow:visible;width:round(down,100%,7px)}
+html[data-theme="minimal"] .td-calendar-grid-weekday,html[data-theme="minimal"] .td-calendar-week{grid-template-columns:repeat(7,round(down,calc(100%/7 + .01px),1px))}
+html[data-theme="minimal"] .td-calendar-grid-weekday{border-top:1px solid var(--border-divider)}
+/* The weeks reach 6px into the page margin so a day's hover, focus and drop frame can sit 6px left of its text; the scrollbar, when there is one, lands in that margin */
+html[data-theme="minimal"] .td-calendar-weeks{margin:0 -6px;padding:0 6px;scrollbar-width:thin;scrollbar-color:var(--border-divider) transparent}
+html[data-theme="minimal"] .td-calendar-grid-weekday>div{padding:6px 0;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-grid-weekday>div.is-wknd{background:none}
 html[data-theme="minimal"] .td-calendar-grid-weekday>div.is-today{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-calendar-grid-weekday>div.is-today>span{color:var(--ink-900);font-weight:500}
+html[data-theme="minimal"] .td-calendar-grid-weekday>div.is-today>span{color:var(--ink-900);font-weight:500;box-shadow:inset 0 -1px 0 var(--ink-900)}
+/* Week period: the weekday numbers are the month's day numbers (mono 11/16) with today underlined the same way */
+html[data-theme="minimal"] .td-calendar-grid-weekday-number{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-week{border-top:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-calendar-cell{border-right:0}
 html[data-theme="minimal"] .td-calendar-cell.is-wknd{background:none}
-html[data-theme="minimal"] .td-calendar-cell:hover{background:var(--n-a03)}
-html[data-theme="minimal"] .td-calendar-cell:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-calendar-cell.is-drop{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-calendar-day-number{top:6px;left:0;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-cell::before{content:"";position:absolute;inset:-1px 6px -1px -6px;border:1px solid transparent;pointer-events:none}
+html[data-theme="minimal"] .td-calendar-week:last-child .td-calendar-cell::before{bottom:0}
+html[data-theme="minimal"] .td-calendar-cell:hover{background:none}
+html[data-theme="minimal"] .td-calendar-cell:hover::before{background:var(--n-a03)}
+html[data-theme="minimal"] .td-calendar-cell:focus-visible{box-shadow:none}
+html[data-theme="minimal"] .td-calendar-cell:focus-visible::before{border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-cell.is-drop{background:none;box-shadow:none}
+html[data-theme="minimal"] .td-calendar-cell.is-drop::before{background:var(--blue-100);border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-day-number{top:6px;left:0;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-day-number.is-out{color:var(--ink-300)}
 html[data-theme="minimal"] .td-calendar-day-number.is-today,html[data-theme="minimal"] .td-calendar-today{background:none;color:var(--ink-900);font-weight:500;min-width:0;height:auto;padding:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-day-number.is-today{top:6px;left:0}
-html[data-theme="minimal"] .td-calendar-cell-add{top:4px;right:0;width:16px;height:16px;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-cell-add{top:6px;right:12px;width:16px;height:16px;border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-cell-add:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-cell-add svg{width:14px;height:14px}
-html[data-theme="minimal"] .td-calendar-chips{padding:2px 0 6px;gap:2px;margin:0}
-html[data-theme="minimal"] .td-calendar-chip{height:auto;padding:1px 0;background:none;box-shadow:none;border-radius:0;font:400 12px/1.35 var(--font-ui);color:var(--ink-900);gap:4px}
+/* Chips sit on the 20px lane grid (18px line + 2px) and stop 12px short of the next column; titles are 13/18 and keys 11/16 as on cards, on one baseline */
+html[data-theme="minimal"] .td-calendar-chips{padding:1px 12px 5px 0;gap:2px;margin:0;container:td-calendar-day/inline-size}
+/* In a day column under 160px the key gives its 44px to the title; the key stays on the item itself and in Day view */
+@container td-calendar-day (max-width:147px){html[data-theme="minimal"] .td-calendar-chip-key{display:none}}
+html[data-theme="minimal"] .td-calendar-chip{height:18px;padding:0;align-items:baseline;background:none;box-shadow:none;border-radius:0;font:400 13px/18px var(--font-ui);color:var(--ink-900);gap:4px}
 html[data-theme="minimal"] .td-calendar-chip:hover{box-shadow:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-chip:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:1px}
 html[data-theme="minimal"] .td-calendar-chip-bars{display:none}
 html[data-theme="minimal"] .td-calendar-chip.is-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-calendar-chip.is-done>svg{display:none!important}
-html[data-theme="minimal"] .td-calendar-chip>svg{width:11px;height:11px}
-html[data-theme="minimal"] .td-calendar-chip-key{font-size:10px}
-html[data-theme="minimal"] .td-calendar-span{background:none;border:0;border-radius:0;margin:1px 0;padding:0;height:18px;box-shadow:inset 0 -1px 0 var(--ink-900);font:400 12px/1.35 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-chip>svg{width:11px;height:11px;transform:translateY(1px)}
+html[data-theme="minimal"] .td-calendar-span{background:none;border:0;border-radius:0;margin:1px 0;padding:0;height:18px;box-shadow:inset 0 -1px 0 var(--ink-900);font:400 13px/18px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-span.is-l{padding-left:0}
+html[data-theme="minimal"] .td-calendar-span:not(.is-r){margin-right:12px}
 html[data-theme="minimal"] .td-calendar-span.is-done{color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-calendar-span:hover{box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-span:focus-visible{outline:1px solid var(--ink-900);outline-offset:1px;box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-calendar-more{padding:1px 0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-more{padding:1px 0;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+/* Week period: titles wrap on the 18px line with the key on the first baseline, 8px between items so a wrapped title reads as one item; the + sits 6px above the foot of the day column */
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chips{gap:8px}
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip{min-height:18px;padding:0;align-items:baseline}
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip>svg,html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip-key{margin-top:0}
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-cell-add{bottom:6px}
+/* The first item sits 8px under the last bar's rule, the same 8px as between items (was 2px, so a bar read as that item's heading) */
+html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-week:has(>.td-calendar-span-cell) .td-calendar-chips{padding-top:7px}
+/* Day columns under 80px: single-line items back on the 20px lane grid */
+@container td-calendar-grid (max-width:560px){html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chips{gap:2px}}
+@container td-calendar-day (max-width:80px){html[data-theme="minimal"] .td-calendar-grid[data-period="week"] .td-calendar-chip{height:18px;min-height:0;padding:0;align-items:baseline}}
+/* A done bar reads as a strike only, like a done chip */
+html[data-theme="minimal"] .td-calendar-span.is-done>svg{display:none!important}
 html[data-theme="minimal"] .td-calendar-more:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-mini{background:none;box-shadow:none;border-radius:0;border-top:1px solid var(--border-divider);padding:8px 0 0}
 html[data-theme="minimal"] .td-calendar-mini:hover{box-shadow:none}
 html[data-theme="minimal"] .td-calendar-mini:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
-html[data-theme="minimal"] .td-calendar-mini-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-mini-name{font:500 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-mini-weekday{font:400 9px/12px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-mini-day{font:400 11px/14px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-calendar-mini-day.is-today .td-calendar-mini-number{background:none;color:var(--ink-900);font-weight:500;box-shadow:inset 0 -1px 0 var(--ink-900);border-radius:0}
 html[data-theme="minimal"] .td-calendar-mini-dot{background:var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-day-list{gap:0}
-html[data-theme="minimal"] .td-calendar-day-list-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-day-list-meta{font:400 11px/16px var(--font-ui);color:var(--ink-400);padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-calendar-day-list-block{background:none;border-radius:0;box-shadow:none}
 html[data-theme="minimal"] .td-calendar-day-list-block>*+*{border-top:0}
-html[data-theme="minimal"] .td-calendar-day-list-empty{padding:16px 0;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+/* An empty day is one row on the 40px row grid, ruled like an item row */
+html[data-theme="minimal"] .td-calendar-day-list-empty{padding:10px 0;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400);border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"][data-row-dividers="false"] .td-calendar-day-list-empty{border-bottom-color:transparent}
 /* ── Chrome rows under the toolbar (filter · sort · saved views) and their chips: outlined ink instead of white pills */
-html[data-theme="minimal"] .td-filter-chip{height:24px;padding:0 8px;border-radius:2px;font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-filter-chip{height:24px;padding:0 8px;border-radius:2px;font:400 12px/18px var(--font-ui)}
 html[data-theme="minimal"] .td-filter-chip-on{background:none;color:var(--ink-900);box-shadow:inset 0 0 0 1px var(--ink-900);padding-right:4px}
 html[data-theme="minimal"] .td-filter-chip-on:hover{background:var(--n-a03)}
 html[data-theme="minimal"] .td-filter-chip-off{background:none;color:var(--ink-400);box-shadow:inset 0 0 0 1px var(--border-divider)}
@@ -309,7 +397,11 @@ html[data-theme="minimal"] .td-filter-chip-dot{width:6px;height:6px;border-radiu
 html[data-theme="minimal"] .td-btn-chrome,html[data-theme="minimal"] .td-btn-chrome-ghost{background:none;color:var(--ink-400);font-weight:400}
 html[data-theme="minimal"] .td-btn-chrome:hover,html[data-theme="minimal"] .td-btn-chrome:active,html[data-theme="minimal"] .td-btn-chrome-ghost:hover,html[data-theme="minimal"] .td-btn-chrome-ghost:active{background:none;color:var(--ink-900)}
 /* Row actions (Reset filters · Reset sorting · Hide): grey words at the chip size, no pill, no padding; the icon shrinks to the text; hover inks the word */
-html[data-theme="minimal"] .td-btn.td-bar-action{height:24px;padding:0 2px;gap:5px;border-radius:2px;background:none;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-btn.td-bar-action{height:24px;padding:0 2px;gap:5px;border-radius:2px;background:none;font:400 12px/18px var(--font-ui);color:var(--ink-400)}
+/* The row label is a heading like the list names: 500 on the 13/20 line (it was the one 600 on the screen). In the Views row the tabs are 13/20 words, so its action is too; Filter and Sort keep theirs at the 12px chip size */
+html[data-theme="minimal"] .td-chip-bar-label{font:500 13px/20px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] nav.td-chip-bar .td-btn.td-bar-action{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] nav.td-chip-bar .td-btn.td-bar-action svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-btn.td-bar-action.td-btn-chrome{color:var(--ink-900)}
 html[data-theme="minimal"] .td-btn.td-bar-action svg{width:12px;height:12px}
 html[data-theme="minimal"] .td-btn.td-bar-action:hover,html[data-theme="minimal"] .td-btn.td-bar-action:active{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
@@ -319,7 +411,7 @@ html[data-theme="minimal"] .td-btn.td-chip-rail-page{height:24px;padding:0 2px;b
 html[data-theme="minimal"] .td-btn.td-chip-rail-page:hover{background:none;color:var(--ink-900)}
 /* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
 html[data-theme="minimal"] nav.td-chip-bar .td-chip-rail{gap:16px}
-html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast) var(--ease-standard)}
+html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/20px var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast) var(--ease-standard)}
 html[data-theme="minimal"] .td-saved-view-tab:hover,html[data-theme="minimal"] .td-saved-view-save:hover,html[data-theme="minimal"] .td-saved-view-save[aria-expanded="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-saved-view-tab[aria-current="true"],html[data-theme="minimal"] .td-saved-view-tab[aria-current="true"]:hover{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
 html[data-theme="minimal"] .td-saved-view-tab.has-menu{padding-right:0}
@@ -331,9 +423,9 @@ html[data-theme="minimal"] .td-saved-view-more{position:static;transform:none;op
 html[data-theme="minimal"] .td-saved-view-more .td-iconbtn,html[data-theme="minimal"] .td-saved-view-wrap[data-selected="true"] .td-saved-view-more .td-iconbtn{border-radius:0;background:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-saved-view-more .td-iconbtn:hover,html[data-theme="minimal"] .td-saved-view-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-saved-view-popover{padding:8px 14px 10px}
-html[data-theme="minimal"] .td-saved-view-popover-title{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-saved-view-summary{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-saved-view-summary code{padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-saved-view-popover-title{font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-saved-view-summary{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-saved-view-summary code{padding:0;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-900)}
 /* ── Shared controls: buttons, icon buttons, segmented and menus drop their fills for hairlines */
 html[data-theme="minimal"] .td-btn{font-weight:500;font-size:13px}
 html[data-theme="minimal"] .td-btn-outline{box-shadow:none;border-color:var(--border-divider)}
@@ -346,22 +438,25 @@ html[data-theme="minimal"] .td-iconbtn{border-radius:2px}
 html[data-theme="minimal"] .td-field{box-shadow:none;font-size:13px}
 html[data-theme="minimal"] .td-field:focus{box-shadow:none;border-color:var(--ink-900)}
 /* Tooltips: the same ink pill at the theme's 12px, no medium weight, square corners. Labeled toolbar controls lose their text here (icon-only 48px row), so their hints turn on */
-html[data-theme="minimal"] .td-tooltip-popup,html[data-theme="minimal"] .td-tooltip[data-tip]::after{font:400 12px/1.45 var(--font-ui);letter-spacing:0;padding:3px 7px;border-radius:2px}
+html[data-theme="minimal"] .td-tooltip-popup,html[data-theme="minimal"] .td-tooltip[data-tip]::after{font:400 12px/18px var(--font-ui);letter-spacing:0;padding:3px 7px;border-radius:2px}
 html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip]::before,html[data-theme="minimal"] .td-subnav-seg.td-tooltip-labeled[data-tip]::after,html[data-theme="minimal"] .td-subnav-seg.td-tooltip-labeled[data-tip]::before{display:block}
 html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip][data-tip-kbd]::after,html[data-theme="minimal"] .td-subnav-seg.td-tooltip-labeled[data-tip][data-tip-kbd]::after{content:attr(data-tip) "\2003" attr(data-tip-kbd);font-family:var(--font-ui);font-size:12px}
 /* ── Account pages (Projects · Project groups · Settings): the same 24px gutter as the board; page title is a plain 500-weight line; no white card — the table is rows over hairlines, column heads in grey over one ink hairline */
 html[data-theme="minimal"] .td-projects,html[data-theme="minimal"] .td-settings,html[data-theme="minimal"] .td-inbox{padding:20px 24px 24px!important}
 html[data-theme="minimal"] .td-inbox-inner{gap:16px!important}
-html[data-theme="minimal"] .td-inbox-title{font:500 15px/1.45 var(--font-ui)!important;color:var(--ink-900)!important;margin:0!important}
-html[data-theme="minimal"] .td-inbox-readall{height:auto;padding:0;background:none;border:0;box-shadow:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui)}
+/* Inbox heading: the account pages' 15/22 title on the list-name line. "Mark all read" sits on its baseline; the + is always visible and closes the row on the date / key edge, 10px after it. */
+html[data-theme="minimal"] .td-inbox .td-list-section-head{align-items:baseline}
+html[data-theme="minimal"] .td-inbox .td-list-section-name{font:500 15px/22px var(--font-ui);letter-spacing:0}
+html[data-theme="minimal"] .td-inbox .td-list-section-actions{align-self:center;margin-left:4px}
+html[data-theme="minimal"] .td-inbox-readall{height:auto;padding:0;background:none;border:0;box-shadow:none;color:var(--ink-400);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-inbox-readall:hover,html[data-theme="minimal"] .td-inbox-readall:active{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-inbox-readall svg{display:none}
+html[data-theme="minimal"] .td-inbox-readall svg{display:none!important}
 html[data-theme="minimal"] .td-projects-inner{gap:16px}
-html[data-theme="minimal"] .td-projects-title,html[data-theme="minimal"] .td-settings-title{font:500 15px/1.45 var(--font-ui);color:var(--ink-900);margin:0}
+html[data-theme="minimal"] .td-projects-title,html[data-theme="minimal"] .td-settings-title{font:500 15px/22px var(--font-ui);color:var(--ink-900);margin:0}
 html[data-theme="minimal"] .td-projects-card{background:none;border-radius:0;box-shadow:none;padding:0}
-html[data-theme="minimal"] .td-projects-table th{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0 12px 8px 0;border-bottom:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-projects-table th{font:400 11px/16px var(--font-ui);color:var(--ink-400);padding:0 12px 8px 0;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-projects-table th:last-child{padding-right:0}
-html[data-theme="minimal"] .td-projects-table td{font:400 13px/1.45 var(--font-ui);padding:10px 12px 10px 0;border-bottom:1px solid var(--border-divider);border-radius:0!important}
+html[data-theme="minimal"] .td-projects-table td{font:400 13px/20px var(--font-ui);padding:10px 12px 10px 0;border-bottom:1px solid var(--border-divider);border-radius:0!important}
 html[data-theme="minimal"] .td-projects-table td:last-child{padding-right:0}
 html[data-theme="minimal"] .td-projects-table td.td-projects-name{font-weight:400}
 html[data-theme="minimal"] .td-projects-row:hover td{background:none;color:var(--ink-900)}
@@ -376,22 +471,28 @@ html[data-theme="minimal"] .td-projects-lead{gap:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-projects-table .td-iconbtn{color:var(--ink-400);border-radius:0}
 html[data-theme="minimal"] .td-projects-table .td-iconbtn:hover,html[data-theme="minimal"] .td-projects-table .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
 /* Group abbreviations: mono like every key in the theme; the edit affordance is a hairline under the text, not a box */
-html[data-theme="minimal"] .td-groups-abbr{font:400 12px/1.45 var(--font-mono);color:var(--ink-400);border-radius:0;box-shadow:none}
+html[data-theme="minimal"] .td-groups-abbr{font:400 12px/18px var(--font-mono);color:var(--ink-400);border-radius:0;box-shadow:none}
 html[data-theme="minimal"] .td-groups-abbr:hover{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
 html[data-theme="minimal"] .td-groups-abbr:focus-visible{box-shadow:inset 0 -1px 0 var(--ink-900)}
-html[data-theme="minimal"] .td-groups-input{font:400 12px/1.45 var(--font-mono);color:var(--ink-900);background:none;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-groups-input{font:400 12px/18px var(--font-mono);color:var(--ink-900);background:none;border-radius:0;box-shadow:inset 0 -1px 0 var(--ink-900)}
 html[data-theme="minimal"] .td-groups-edit{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-groups-edit:hover{background:none;color:var(--ink-900)}
 /* Settings: the left nav is the sidebar's vocabulary — grey words, ink when current, no pill; the search a hairline; groups are ledgers with the group name in 500 over an ink hairline */
 html[data-theme="minimal"] .td-settings-inner{grid-template-columns:172px minmax(0,1fr);gap:40px}
 html[data-theme="minimal"] .td-settings-inner[data-nav="false"]{grid-template-columns:minmax(0,1fr)}
-html[data-theme="minimal"] .td-settings-search .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-settings-search .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-settings-search .td-field::placeholder{color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-search svg{width:16px;height:16px;stroke-width:1.75;color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-search .td-field-icon{left:0}
 /* Inbox: the page title is the same plain 500 line as the other account pages; “Mark all read” is a word, not a pill; a notification's source is a grey glyph, never a colored disc; unread rows carry an ink dot under the checkbox instead of a tint */
+/* The source sits in one 14px slot (the glyph's width; two mono initials are 13.2px), so every notification title starts on the same whole pixel */
+html[data-theme="minimal"] .td-list-row-from{width:14px;justify-content:flex-start}
+/* A notification's "about" key is the same meta label as a List view key: UI face, tabular figures, one shared width (--td-about-w, set by the Inbox), flush right. Rows without a key leave that slot free (--td-about-slot), so Created dates hold one column; the dates take tabular figures too */
+html[data-theme="minimal"] .td-list-row-end .td-list-row-about{font:400 11px/16px var(--font-ui);font-variant-numeric:tabular-nums;min-width:var(--td-about-w,0px);justify-content:flex-end}
+html[data-theme="minimal"] .td-list-row-badge[title^="Created"]{font-variant-numeric:tabular-nums}
+html[data-theme="minimal"] .td-inbox .td-list-row-end>.td-list-row-badge[title^="Created"]{margin-right:var(--td-about-slot,0px)}
 html[data-theme="minimal"] .td-list-row-from .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:transparent!important;font-size:0!important;position:relative}
-html[data-theme="minimal"] .td-list-row-from .td-avatar::after{content:attr(data-initials);font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-list-row-from .td-avatar::after{content:attr(data-initials);font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-list-row-from .td-notification-mark{background:none;border-radius:0;color:var(--ink-400);width:auto!important;height:auto!important}
 html[data-theme="minimal"] .td-list-row-from .td-notification-mark svg{width:14px;height:14px;stroke-width:1.75}
 html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-title{font-weight:500;letter-spacing:-.005em}
@@ -400,9 +501,9 @@ html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from::after{conte
 html[data-theme="minimal"] .td-settings-search{margin-bottom:20px}
 html[data-theme="minimal"] .td-settings-clear{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-clear:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-settings-navhead{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:16px 0 6px}
+html[data-theme="minimal"] .td-settings-navhead{font:400 11px/16px var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:16px 0 6px}
 html[data-theme="minimal"] .td-settings-navhead:first-child{margin-top:0}
-html[data-theme="minimal"] .td-settings-navrow{height:auto;padding:4px 0;gap:0;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-navrow{height:auto;padding:4px 0;gap:0;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-navrow:hover,html[data-theme="minimal"] .td-settings-navrow:active{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-navrow[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em}
 html[data-theme="minimal"] .td-settings-navrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
@@ -411,24 +512,24 @@ html[data-theme="minimal"] .td-settings-crumb{display:none}
 html[data-theme="minimal"] .td-settings-main{gap:32px;max-width:640px}
 html[data-theme="minimal"] .td-settings-group{background:none;border-radius:0;box-shadow:none;overflow:visible}
 html[data-theme="minimal"] .td-settings-grouphead{padding:0 0 8px;border-bottom:1px solid var(--ink-900)}
-html[data-theme="minimal"] .td-settings-grouptitle{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-settings-grouppath,html[data-theme="minimal"] .td-settings-grouppath-btn{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-grouptitle{font:500 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-grouppath,html[data-theme="minimal"] .td-settings-grouppath-btn{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-row{padding:10px 0;min-height:0;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-settings-row+.td-settings-row,html[data-theme="minimal"] .td-settings-body+.td-settings-row{border-top:0}
 html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row{padding:6px 0}
 html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row:last-child{padding-bottom:6px}
-html[data-theme="minimal"] .td-settings-rowlabel{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-settings-rowhint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-rowlabel{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-settings-rowhint{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-mark{font-weight:500;text-decoration-color:var(--ink-900)}
 @keyframes td-settings-hit-minimal{0%,40%{background:var(--n-a06)}100%{background:transparent}}
 html[data-theme="minimal"] .td-settings-row[data-hit="true"]{animation-name:td-settings-hit-minimal}
 /* Row controls: the native select is a word with a chevron over a hairline; keyboard keys in mono, no chip */
-html[data-theme="minimal"] .td-settings-select{height:24px;padding:0 20px 0 0;background-color:transparent;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);background-position:right 0 center}
+html[data-theme="minimal"] .td-settings-select{height:24px;padding:0 20px 0 0;background-color:transparent;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900);background-position:right 0 center}
 html[data-theme="minimal"] .td-settings-select:hover{background-color:transparent;border-bottom-color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-select:focus-visible{box-shadow:none;border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-settings-row-control .td-field{height:24px;padding:3px 0!important;background:none;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-settings-row-control .td-field{height:24px;padding:3px 0!important;background:none;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-settings-row-control .td-field:focus{border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-settings-kbd{background:none;border-radius:0;padding:0;min-width:0;height:auto;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-kbd{background:none;border-radius:0;padding:0;min-width:0;height:auto;font:400 12px/18px var(--font-mono);color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-keys{gap:6px}
 /* Switch (core): hairline track off, ink track on, paper knob; the same rule as the Projects toggle */
 html[data-theme="minimal"] .td-switch-track,html[data-theme="minimal"] .td-switch:hover .td-switch-track{background:none;box-shadow:inset 0 0 0 1px var(--ink-400)}
@@ -444,27 +545,27 @@ html[data-theme="minimal"] .td-popover{padding:6px 0}
 html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){padding:0}
 html[data-theme="minimal"] .td-popover.td-style-menu{padding:12px}
 html[data-theme="minimal"] .td-menu{gap:0}
-html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
 html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-user-menu-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
 html[data-theme="minimal"] .td-menu-item[aria-checked="true"],html[data-theme="minimal"] .td-menu-item[aria-pressed="true"]{color:var(--ink-900)}
 html[data-theme="minimal"] .td-menu-item-icon,html[data-theme="minimal"] .td-user-menu-icon,html[data-theme="minimal"] .td-menu-item-check{color:inherit}
 html[data-theme="minimal"] .td-menu-item svg,html[data-theme="minimal"] .td-user-menu-item svg{width:16px;height:16px;stroke-width:1.75}
 html[data-theme="minimal"] .td-menu-item[data-danger="true"]{color:var(--danger)}
-html[data-theme="minimal"] .td-menu-item-trail{color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-menu-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-menu-item-trail{color:var(--ink-400);font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-menu-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-menu-divider,html[data-theme="minimal"] .td-user-menu-separator{margin:6px 0;background:var(--border-divider)}
-html[data-theme="minimal"] .td-menu-heading{padding:8px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-menu-heading{padding:8px 14px 4px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-user-menu{width:240px;padding:6px 0}
 html[data-theme="minimal"] .td-create-menu{width:200px;padding:6px 0;top:calc(100% + 12px)}
 /* Toolbar menus (Filter · Sort · Members): the same square sheet as every floating layer; section names are plain grey words, rows are normal ink with a faint hover wash, the checked row a paper-grey wash; label swatches shrink to a 6px square so color stays a hint */
 html[data-theme="minimal"] .td-filter-menu,html[data-theme="minimal"] .td-sort-menu,html[data-theme="minimal"] .td-members-menu{border-radius:0}
-html[data-theme="minimal"] .td-filter-menu-head,html[data-theme="minimal"] .td-sort-menu-head,html[data-theme="minimal"] .td-members-menu-head{padding:10px 14px;font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-filter-menu-head,html[data-theme="minimal"] .td-sort-menu-head,html[data-theme="minimal"] .td-members-menu-head{padding:10px 14px;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-filter-menu-head svg{stroke:var(--ink-900)!important}
 html[data-theme="minimal"] .td-filter-menu-scroll,html[data-theme="minimal"] .td-sort-menu-scroll,html[data-theme="minimal"] .td-members-menu-scroll{padding:6px 0}
-html[data-theme="minimal"] .td-filter-menu-section,html[data-theme="minimal"] .td-sort-menu-section,html[data-theme="minimal"] .td-members-menu-section{padding:10px 14px 4px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-filter-menu-row,html[data-theme="minimal"] .td-sort-menu-row,html[data-theme="minimal"] .td-members-menu-row{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-filter-menu-section,html[data-theme="minimal"] .td-sort-menu-section,html[data-theme="minimal"] .td-members-menu-section{padding:10px 14px 4px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-filter-menu-row,html[data-theme="minimal"] .td-sort-menu-row,html[data-theme="minimal"] .td-members-menu-row{padding:6px 14px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-filter-menu-row:hover,html[data-theme="minimal"] .td-sort-menu-row:hover,html[data-theme="minimal"] button.td-members-menu-row:hover:not(:disabled){background:var(--chrome-hover);color:var(--ink-900)}
 html[data-theme="minimal"] button.td-members-menu-row:disabled[aria-checked="false"],html[data-theme="minimal"] button.td-members-menu-row:disabled[aria-checked="false"] .td-members-menu-line{color:var(--ink-300)}
 /* Checked rows stay bare paper: the checkbox or the check carries the state, so a hover fill never reads as "picked" */
@@ -475,91 +576,91 @@ html[data-theme="minimal"] .td-filter-menu-row>svg{stroke:currentColor!important
 /* The Filter / Sort count reads as a plain mono figure beside the glyph (no white pill: invisible on light paper, loud on dark) */
 /* No trigger marker in Minimal: the chip rows under the toolbar are the indicator */
 html[data-theme="minimal"] .td-subnav-dot{display:none}
-html[data-theme="minimal"] .td-filter-menu-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sort-menu-hint{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-sort-menu-direction{font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-members-menu-title{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-members-menu-visibility{height:auto;padding:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-filter-menu-count{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sort-menu-hint{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-sort-menu-direction{font:400 11px/16px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-members-menu-title{font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-members-menu-visibility{height:auto;padding:0;border-radius:0;background:none;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-members-menu-row .td-avatar{display:none!important}
-html[data-theme="minimal"] .td-members-menu-line{font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-members-menu-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-members-menu-role,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger{height:auto;padding:0;border-radius:0;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-members-menu-line{font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-members-menu-sub{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-members-menu-role,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger{height:auto;padding:0;border-radius:0;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-members-menu-role:hover,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-members-menu-link{margin:6px 14px 8px;padding:4px 0;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;background:none}
-html[data-theme="minimal"] .td-members-menu-url{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-members-menu-url{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 /* Auth pages (Log in · Invite · Reset): the wordmark in 500, no card — a plain column on paper; provider buttons and the primary are squares, links are grey words that go ink */
 html[data-theme="minimal"] .td-auth-mark{font:500 20px/1.35 var(--font-ui);letter-spacing:-.01em;margin-bottom:32px}
 html[data-theme="minimal"] .td-auth-card{width:360px;padding:0;background:none;border-radius:0;box-shadow:none}
-html[data-theme="minimal"] .td-auth-title{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-auth-sub{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-auth-title{font:500 15px/22px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-auth-sub{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-auth-sub b{font-weight:500}
 html[data-theme="minimal"] .td-auth-stack{margin-top:24px;gap:8px}
-html[data-theme="minimal"] .td-auth-stack .td-btn{height:36px;border-radius:2px;font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-auth-or{margin:20px 0 16px;font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-auth-label{font:400 13px/1.45 var(--font-ui);color:var(--ink-900);margin-bottom:6px}
-html[data-theme="minimal"] .td-auth-link{font:400 12px/1.45 var(--font-ui);color:var(--ink-400);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
+html[data-theme="minimal"] .td-auth-stack .td-btn{height:36px;border-radius:2px;font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-or{margin:20px 0 16px;font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-label{font:400 13px/20px var(--font-ui);color:var(--ink-900);margin-bottom:6px}
+html[data-theme="minimal"] .td-auth-link{font:400 12px/18px var(--font-ui);color:var(--ink-400);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
 html[data-theme="minimal"] .td-auth-link:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
 html[data-theme="minimal"] .td-auth-field{margin-bottom:16px}
 html[data-theme="minimal"] .td-auth-field .td-field{height:32px;padding-left:0;padding-right:0;background:none;border:0;border-bottom:1px solid var(--border-input);border-radius:0;box-shadow:none}
 html[data-theme="minimal"] .td-auth-field .td-field:focus{border-bottom-color:var(--ink-900);box-shadow:none;outline:none}
-html[data-theme="minimal"] .td-auth-links{margin-top:20px;font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-links{margin-top:20px;font:400 12px/18px var(--font-ui)}
 html[data-theme="minimal"] .td-auth-who{margin-top:20px;padding:10px 0;border-radius:0;background:none;border-top:1px solid var(--border-divider);border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-auth-who .td-avatar{display:none!important}
-html[data-theme="minimal"] .td-auth-who-text b{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-auth-who-text span{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-who-text b{font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-who-text span{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-auth-tile{width:auto;height:auto;border-radius:0;background:none}
 html[data-theme="minimal"] .td-auth-tile svg{stroke:var(--ink-900)!important;width:16px;height:16px;stroke-width:1.75}
-html[data-theme="minimal"] .td-auth-project-name b{font:500 15px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-auth-project-name span{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-auth-description{padding:0 0 0 12px;border-left:1px solid var(--ink-900);font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-auth-foot{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-auth-project-name b{font:500 15px/22px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-project-name span{font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-description{padding:0 0 0 12px;border-left:1px solid var(--ink-900);font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-auth-foot{font:400 11px/16px var(--font-ui)}
 /* Command palette (Ctrl+K): a square sheet with a hairline ring; the query sits on an ink hairline, results are rows, the highlight a paper-grey wash, keys in bare mono */
 html[data-theme="minimal"] .td-command-palette{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);width:520px}
 html[data-theme="minimal"] .td-command-palette-input{padding:14px 20px 10px;gap:12px;border-bottom:1px solid var(--ink-900);color:var(--ink-900)}
 html[data-theme="minimal"] .td-command-palette-input svg{width:16px;height:16px;stroke-width:1.75}
-html[data-theme="minimal"] .td-command-palette-input input{font:400 15px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-command-palette-input input{font:400 15px/22px var(--font-ui)}
 html[data-theme="minimal"] .td-command-palette-list{padding:6px 0}
-html[data-theme="minimal"] .td-command-palette-row{padding:8px 20px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-command-palette-row{padding:8px 20px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-command-palette-row[aria-selected="true"]{background:var(--blue-100)}
-html[data-theme="minimal"] .td-command-palette-list-name{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-command-palette-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-command-palette-empty{padding:20px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-command-palette-foot{padding:10px 20px;gap:16px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-list-name{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-id{font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-empty{padding:20px;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-foot{padding:10px 20px;gap:16px;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-user-menu-id{padding:8px 14px 10px;gap:0}
 html[data-theme="minimal"] .td-user-menu-id .td-avatar{display:none!important}
-html[data-theme="minimal"] .td-user-menu-name{font:500 13px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-user-menu-name{font:500 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-user-menu-email{display:none}
 html[data-theme="minimal"] .td-select-search{border-radius:0;background:none;border-bottom:1px solid var(--border-divider);margin:0 14px 6px;padding:0}
 /* Dialogs: title in 500 over a hairline, footer buttons as words with the primary filled ink */
 html[data-theme="minimal"] .td-dialog-head{padding:16px 16px 12px 24px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-dialog-title{font:500 15px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-dialog-title{font:500 15px/22px var(--font-ui)}
 html[data-theme="minimal"] .td-dialog-body{padding:16px 24px 24px}
 html[data-theme="minimal"] .td-dialog-foot{padding:12px 24px}
 html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger){background:none;border:0;box-shadow:none;color:var(--ink-400);font-weight:400}
 html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-dialog-foot .td-btn-primary,html[data-theme="minimal"] .td-dialog-foot .td-btn-danger{border-radius:2px;font-weight:500}
 /* Toast: an ink bar, square, words only; the action is underlined paper, not blue */
-html[data-theme="minimal"] .td-toast{border-radius:0;box-shadow:none;padding:8px 8px 8px 16px;font:400 13px/1.45 var(--font-ui);color:var(--chrome-canvas)}
-html[data-theme="minimal"] .td-toast-action{color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);text-decoration:underline;text-underline-offset:3px;border-radius:0}
+html[data-theme="minimal"] .td-toast{border-radius:0;box-shadow:none;padding:8px 8px 8px 16px;font:400 13px/20px var(--font-ui);color:var(--chrome-canvas)}
+html[data-theme="minimal"] .td-toast-action{color:var(--chrome-canvas);font:400 13px/20px var(--font-ui);text-decoration:underline;text-underline-offset:3px;border-radius:0}
 html[data-theme="minimal"] .td-toast-action:hover,html[data-theme="minimal"] .td-toast-action:active{background:none;text-decoration-color:color-mix(in srgb,var(--chrome-canvas) 50%,transparent)}
-html[data-theme="minimal"] .td-toast-meta{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-toast-meta{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-toast .td-iconbtn{border-radius:0}
 /* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash */
-html[data-theme="minimal"] .td-search-dropdown{border-radius:0;top:calc(100% + 8px)}
+html[data-theme="minimal"] .td-search-dropdown{border-radius:0;top:calc(100% + 6px)}
 html[data-theme="minimal"] .td-search-dropdown-scroll{padding:0 16px}
-html[data-theme="minimal"] .td-search-dropdown-head{padding:12px 0 8px;font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-search-dropdown-row{width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-head{padding:12px 0 8px;font:500 13px/20px var(--font-ui);letter-spacing:-.005em;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-row{width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-search-dropdown-scroll>.td-search-dropdown-row:last-child{box-shadow:none}
 html[data-theme="minimal"] .td-search-dropdown-row[aria-selected="true"]{background:var(--blue-100)}
 html[data-theme="minimal"] .td-search-dropdown-icon{width:16px;height:16px;border-radius:0;background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-search-dropdown-icon svg{stroke-width:1.75;stroke:var(--ink-900)!important}
-html[data-theme="minimal"] .td-search-dropdown-id{font:400 11px/1.45 var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-id{font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-search-dropdown-title mark{background:none;color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
-html[data-theme="minimal"] .td-search-dropdown-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-search-dropdown-empty{padding:16px;text-align:left;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-search-dropdown-foot{padding:10px 16px;gap:16px;font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-search-dropdown-foot .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-meta{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-empty{padding:16px;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-foot{padding:10px 16px;gap:16px;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-foot .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 13px/20px var(--font-mono);color:var(--ink-400)}
 /* ── Item overlay: the same ledger inside the dialog — square card, 500-weight title, section names over hairlines, every list (subitems, attachments, relations, comments) as rows, no fills, no bubbles */
 html[data-theme="minimal"] .td-modal{border-radius:0}
 html[data-theme="minimal"] .td-modal-cover{border-radius:0}
@@ -568,13 +669,13 @@ html[data-theme="minimal"] .td-modal-head{padding:16px 16px 0 24px}
 html[data-theme="minimal"] .td-modal-aside{padding:16px 16px 24px}
 html[data-theme="minimal"] .td-modal-title{font:500 16px/1.35 var(--font-ui)!important;letter-spacing:-.005em}
 html[data-theme="minimal"] .td-modal-title-input{margin:0!important;padding:0 0 1px!important;background:none!important;border:0!important;border-bottom:1px solid var(--ink-900)!important;border-radius:0!important;box-shadow:none!important}
-html[data-theme="minimal"] .td-modal-key{padding:0 6px!important;font:400 11px/1.45 var(--font-mono)!important;text-transform:none!important;letter-spacing:0!important;color:var(--ink-400)!important}
+html[data-theme="minimal"] .td-modal-key{padding:0 6px!important;font:400 11px/16px var(--font-mono)!important;text-transform:none!important;letter-spacing:0!important;color:var(--ink-400)!important}
 html[data-theme="minimal"] .td-modal-key:hover{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-modal-corner .td-iconbtn{border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-modal-corner .td-iconbtn:hover,html[data-theme="minimal"] .td-modal-corner .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-400)}
 /* Aside field values: labels as comma-separated words in ink, like everywhere else in the theme */
 html[data-theme="minimal"] .td-modal-aside .td-label-picker-value{gap:0}
-html[data-theme="minimal"] .td-modal-aside .td-label-picker-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+html[data-theme="minimal"] .td-modal-aside .td-label-picker-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/20px var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
 html[data-theme="minimal"] .td-modal-aside .td-label-picker-value .td-label+.td-label::before{content:", "}
 /* Assignees: the avatar stack becomes one user glyph, so the row keeps its place in the glyph column */
 html[data-theme="minimal"] .td-modal-aside .td-avatar-stack{display:inline-block!important;width:16px;height:16px;flex:none;background:var(--ink-900);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat}
@@ -584,30 +685,30 @@ html[data-theme="minimal"] .td-modal-aside .td-btn{font-weight:400}
 /* Section heads (Attachments, Relations, Activity): name in ink over a hairline; no leading icon, body flush left */
 html[data-theme="minimal"] .td-item-section-head,html[data-theme="minimal"] .td-activity-head{gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-item-section-head>svg,html[data-theme="minimal"] .td-item-section-head>span:first-child:empty,html[data-theme="minimal"] .td-activity-head>svg{display:none}
-html[data-theme="minimal"] .td-item-section-title,html[data-theme="minimal"] .td-activity-title{font:500 13px/1.45 var(--font-ui)!important;letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-item-section-title,html[data-theme="minimal"] .td-activity-title{font:500 13px/20px var(--font-ui)!important;letter-spacing:-.005em;color:var(--ink-900)}
 html[data-theme="minimal"] .td-item-section-body{margin:0!important}
 html[data-theme="minimal"] .td-activity-head{margin-bottom:0}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn:hover,html[data-theme="minimal"] .td-activity-head .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn svg{width:16px;height:16px;stroke-width:1.75}
 /* Plain buttons in the main column (Add, Cancel, Save): words, not pills; primary stays filled ink with square corners */
-html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger){height:auto;padding:0;background:none;font:400 13px/1.45 var(--font-ui);color:var(--ink-400);border-radius:0}
+html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger){height:auto;padding:0;background:none;font:400 13px/20px var(--font-ui);color:var(--ink-400);border-radius:0}
 html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-modal-main .td-btn-primary,html[data-theme="minimal"] .td-modal-main .td-btn-danger{height:28px;padding:0 10px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-modal-main .td-btn-primary,html[data-theme="minimal"] .td-modal-main .td-btn-danger{height:28px;padding:0 10px;border-radius:2px;font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-modal-main .td-btn:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px;box-shadow:none}
 /* Description: bare text; the editor is a hairline-bottomed area, no ring */
 html[data-theme="minimal"] .td-description-view{margin:0;padding:0;border-radius:0}
 html[data-theme="minimal"] .td-description-view:hover{background:none}
 html[data-theme="minimal"] .td-description-view:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:4px}
-html[data-theme="minimal"] .td-description-empty{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-description-textarea{padding:8px 0;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-description-empty{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-description-textarea{padding:8px 0;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-description-textarea.is-mono{font:400 12px/1.5 var(--font-mono)}
 html[data-theme="minimal"] .td-description-bar .td-iconbtn{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-description-bar .td-iconbtn:hover,html[data-theme="minimal"] .td-description-bar .td-iconbtn[aria-pressed="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-markdown{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-markdown{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-markdown h1{font:500 16px/1.35 var(--font-ui)}
 html[data-theme="minimal"] .td-markdown h2{font:500 14px/1.4 var(--font-ui)}
-html[data-theme="minimal"] .td-markdown h3{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-markdown h3{font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-markdown a,html[data-theme="minimal"] .td-markdown .td-markdown-mention{color:var(--ink-900);font-weight:400;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
 html[data-theme="minimal"] .td-markdown .td-markdown-key:hover{color:var(--ink-900)}
 html[data-theme="minimal"] .td-markdown code{border-radius:2px;font-size:11.5px}
@@ -617,76 +718,76 @@ html[data-theme="minimal"] .td-markdown-box{border-width:1px;border-color:var(--
 html[data-theme="minimal"] .td-markdown-box[data-on="true"]{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
 /* Subitems: count in mono over a hairline, rows with a hairline below, done in grey without the strike, the drag line in ink */
 html[data-theme="minimal"] .td-checklist-head{padding:0 0 8px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-checklist-head-count{font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-checklist-head-count{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-checklist-head [role="progressbar"],html[data-theme="minimal"] .td-checklist-head [role="progressbar"]>div{border-radius:0!important;height:2px!important}
 html[data-theme="minimal"] .td-checklist-head-actions .td-iconbtn{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-checklist-head-actions .td-iconbtn:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-checklist-row{padding:10px 0;gap:10px;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
 html[data-theme="minimal"] .td-checklist-row:hover{background:none}
-html[data-theme="minimal"] .td-checklist-row-text{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-checklist-row-text{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-checklist-row-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-checklist-line{left:0;right:0;height:1px;margin-top:0;border-radius:0;background:var(--ink-900)}
 html[data-theme="minimal"] .td-checklist-line::before{display:none}
 html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn,html[data-theme="minimal"] .td-checklist-row>.td-popover-anchor .td-iconbtn{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn:hover,html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-checklist-add{padding:10px 0;gap:6px;border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
+html[data-theme="minimal"] .td-checklist-add{padding:10px 0;gap:6px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-400);transition:none}
 html[data-theme="minimal"] .td-checklist-add svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-checklist-add:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-checklist-add:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-checklist-add.is-editing{border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-checklist-add-input{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-checklist-add-input{font:400 13px/20px var(--font-ui)}
 /* Attachments and relations: rows, hairline below, square thumbs, 500-weight names, grey meta */
 html[data-theme="minimal"] .td-attachments{gap:0}
 html[data-theme="minimal"] .td-attachments-row{margin:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
 html[data-theme="minimal"] .td-attachments-row:hover,html[data-theme="minimal"] .td-attachments-row:focus-within{background:none}
 html[data-theme="minimal"] .td-attachments-thumb{width:56px;height:40px;border-radius:0}
 html[data-theme="minimal"] .td-attachments-thumb[data-kind]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 9px/10px var(--font-mono);letter-spacing:0;text-transform:none}
-html[data-theme="minimal"] .td-attachments-name{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-attachments-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-attachments-name{font:500 13px/20px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-attachments-meta{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-attachments-actions .td-iconbtn{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-attachments-actions .td-iconbtn:hover,html[data-theme="minimal"] .td-attachments-actions .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-attachments-rename{margin:0;padding:0;height:auto;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-attachments-confirm{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-drop-inner{border:1px dashed var(--ink-900);border-radius:0;font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-drop-inner small{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-attachments-rename{margin:0;padding:0;height:auto;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-attachments-confirm{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-drop-inner{border:1px dashed var(--ink-900);border-radius:0;font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-drop-inner small{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-relations{gap:16px}
 html[data-theme="minimal"] .td-relations-group{gap:0}
-html[data-theme="minimal"] .td-relations-head{padding:0 0 6px;font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-relations-head{padding:0 0 6px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-relations-head svg{display:none}
 html[data-theme="minimal"] .td-relations-row{margin:0;min-height:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
 html[data-theme="minimal"] .td-relations-row:hover,html[data-theme="minimal"] .td-relations-row:focus-within{background:none}
-html[data-theme="minimal"] .td-relations-open{font:400 13px/1.45 var(--font-ui);border-radius:0}
+html[data-theme="minimal"] .td-relations-open{font:400 13px/20px var(--font-ui);border-radius:0}
 html[data-theme="minimal"] .td-relations-open:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
-html[data-theme="minimal"] .td-relations-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-relations-key{font:400 11px/16px var(--font-mono)}
 html[data-theme="minimal"] .td-relations-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-relations-list{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-relations-list{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-relations-remove .td-iconbtn,html[data-theme="minimal"] .td-relations-remove{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-relations-types{background:none;padding:0;gap:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--border-divider)}
-html[data-theme="minimal"] .td-relations-types button{border-radius:0;color:var(--ink-400);font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-relations-types button{border-radius:0;color:var(--ink-400);font:400 12px/18px var(--font-ui)}
 html[data-theme="minimal"] .td-relations-types button[aria-pressed="true"]{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
 /* Activity: the composer is a hairline-bottomed field; comments are rows without avatars or bubbles, author in 500, meta grey; reactions as hairline chips */
 html[data-theme="minimal"] .td-composer{padding:12px 0 8px}
-html[data-theme="minimal"] .td-mention-field-textarea{padding:6px 0;background:none;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-ui);transition:border-color var(--duration-base,150ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-mention-field-textarea{padding:6px 0;background:none;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui);transition:border-color var(--duration-base,150ms) var(--ease-standard,ease)}
 html[data-theme="minimal"] .td-mention-field-textarea:focus{border-color:var(--ink-900);box-shadow:none}
 html[data-theme="minimal"] .td-mention-field-list{border-radius:0;padding:0 8px}
-html[data-theme="minimal"] .td-mention-field-option{border-radius:0;font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-mention-field-option{border-radius:0;font:400 13px/20px var(--font-ui);box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-mention-field-option:last-child{box-shadow:none}
 html[data-theme="minimal"] .td-mention-field-option[aria-selected="true"],html[data-theme="minimal"] .td-mention-field-option:hover{background:var(--blue-100)}
 html[data-theme="minimal"] .td-mention-field-option .td-avatar{display:none!important}
-html[data-theme="minimal"] .td-composer-foot .td-btn-primary{height:28px;padding:0 10px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-composer-foot .td-btn-primary{height:28px;padding:0 10px;border-radius:2px;font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-composer-hint,html[data-theme="minimal"] .td-composer-reply{font-size:11px;color:var(--ink-400)}
 html[data-theme="minimal"] .td-comment{margin:0;gap:0;padding:10px 0;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-comment>.td-avatar{display:none!important}
-html[data-theme="minimal"] .td-comment-meta{font:400 11px/1.45 var(--font-ui);color:var(--ink-400);gap:8px}
-html[data-theme="minimal"] .td-comment-meta b{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
+html[data-theme="minimal"] .td-comment-meta{font:400 11px/16px var(--font-ui);color:var(--ink-400);gap:8px}
+html[data-theme="minimal"] .td-comment-meta b{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
 html[data-theme="minimal"] .td-comment-bubble{margin-top:2px;padding:0;background:none;border-radius:0;box-shadow:none}
-html[data-theme="minimal"] .td-comment-body{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-comment-body{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-comment-body b{font-weight:500!important}
-html[data-theme="minimal"] .td-comment-actions{margin-top:6px;gap:8px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-comment-actions{margin-top:6px;gap:8px;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-comment-actions a{color:var(--ink-400)}
 html[data-theme="minimal"] .td-comment-actions a:hover{color:var(--ink-900);text-decoration:none}
-html[data-theme="minimal"] .td-comment-edit-foot .td-btn{height:28px;border-radius:2px;font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-reaction{height:22px;padding:0 6px;border-radius:2px;border-color:var(--border-divider);background:none;font:400 11px/1.45 var(--font-ui);color:var(--ink-400);transition:none}
+html[data-theme="minimal"] .td-comment-edit-foot .td-btn{height:28px;border-radius:2px;font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-reaction{height:22px;padding:0 6px;border-radius:2px;border-color:var(--border-divider);background:none;font:400 11px/16px var(--font-ui);color:var(--ink-400);transition:none}
 html[data-theme="minimal"] .td-reaction:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
 html[data-theme="minimal"] .td-reaction[aria-pressed="true"]{background:none;border-color:var(--ink-900);color:var(--ink-900)}
 html[data-theme="minimal"] .td-reaction-add{width:22px;height:22px;border-radius:2px;border-color:var(--border-divider)}
@@ -707,31 +808,31 @@ html[data-theme="minimal"] .td-btn-inverse:hover,html[data-theme="minimal"] .td-
 html[data-theme="minimal"] .td-btn:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] .td-iconbtn:not(.td-iconbtn-round){border-radius:0}
 /* Avatars: wherever a disc would sit beside a name, the initials in mono instead (images stay, 14px) */
-html[data-theme="minimal"] .td-member-picker-row span.td-avatar,html[data-theme="minimal"] .td-project-panel-member span.td-avatar,html[data-theme="minimal"] .td-project-panel-head span.td-avatar,html[data-theme="minimal"] .td-activity-log-row span.td-avatar,html[data-theme="minimal"] .td-archive-row span.td-avatar,html[data-theme="minimal"] .td-avatar-stack span.td-avatar,html[data-theme="minimal"] .td-item-picker-row span.td-avatar,html[data-theme="minimal"] .td-member-picker-value span.td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/1.45 var(--font-mono)!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-member-picker-row span.td-avatar,html[data-theme="minimal"] .td-project-panel-member span.td-avatar,html[data-theme="minimal"] .td-project-panel-head span.td-avatar,html[data-theme="minimal"] .td-activity-log-row span.td-avatar,html[data-theme="minimal"] .td-archive-row span.td-avatar,html[data-theme="minimal"] .td-avatar-stack span.td-avatar,html[data-theme="minimal"] .td-item-picker-row span.td-avatar,html[data-theme="minimal"] .td-member-picker-value span.td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/16px var(--font-mono)!important;box-shadow:none!important}
 html[data-theme="minimal"] .td-member-picker-row img.td-avatar,html[data-theme="minimal"] .td-project-panel-member img.td-avatar,html[data-theme="minimal"] .td-activity-log-row img.td-avatar,html[data-theme="minimal"] .td-archive-row img.td-avatar,html[data-theme="minimal"] .td-avatar-stack img.td-avatar{width:14px!important;height:14px!important;box-shadow:none!important}
 html[data-theme="minimal"] .td-avatar-stack>*{box-shadow:none;border-radius:0}
 html[data-theme="minimal"] .td-avatar-stack>*+*{margin-left:0}
-html[data-theme="minimal"] .td-avatar-stack>*+*::before{content:",\00a0";font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-avatar-stack-more{width:auto!important;height:auto!important;background:none;color:var(--ink-400);font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-avatar-stack>*+*::before{content:",\00a0";font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-avatar-stack-more{width:auto!important;height:auto!important;background:none;color:var(--ink-400);font:400 11px/16px var(--font-mono)}
 html[data-theme="minimal"] .td-btn .td-avatar-stack{display:none}
 html[data-theme="minimal"] .td-label-picker-value{gap:0}
-html[data-theme="minimal"] .td-label-picker-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/1.45 var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+html[data-theme="minimal"] .td-label-picker-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/20px var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
 html[data-theme="minimal"] .td-label-picker-value .td-label+.td-label::before{content:", "}
 /* Picker search fields (Members · Labels · Project · Item · Icon · typed date): a hairline, not a filled bar; lists flush with the sheet */
 html[data-theme="minimal"] .td-label-picker-search,html[data-theme="minimal"] .td-member-picker-search,html[data-theme="minimal"] .td-project-picker-search,html[data-theme="minimal"] .td-item-picker-search,html[data-theme="minimal"] .td-date-picker-type,html[data-theme="minimal"] .td-icon-picker-search{margin:0 14px 6px;padding:0;height:28px;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);color:var(--ink-400)}
 html[data-theme="minimal"] .td-label-picker-search:focus-within,html[data-theme="minimal"] .td-member-picker-search:focus-within,html[data-theme="minimal"] .td-project-picker-search:focus-within,html[data-theme="minimal"] .td-item-picker-search:focus-within,html[data-theme="minimal"] .td-date-picker-type:focus-within,html[data-theme="minimal"] .td-icon-picker-search:focus-within{box-shadow:none;border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-label-picker-input,html[data-theme="minimal"] .td-member-picker-input,html[data-theme="minimal"] .td-project-picker-input,html[data-theme="minimal"] .td-item-picker-input,html[data-theme="minimal"] .td-date-picker-input,html[data-theme="minimal"] .td-icon-picker-search input,html[data-theme="minimal"] .td-dates-picker-input{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-label-picker-input,html[data-theme="minimal"] .td-member-picker-input,html[data-theme="minimal"] .td-project-picker-input,html[data-theme="minimal"] .td-item-picker-input,html[data-theme="minimal"] .td-date-picker-input,html[data-theme="minimal"] .td-icon-picker-search input,html[data-theme="minimal"] .td-dates-picker-input{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-label-picker-list,html[data-theme="minimal"] .td-member-picker-list,html[data-theme="minimal"] .td-project-picker-list,html[data-theme="minimal"] .td-item-picker-list,html[data-theme="minimal"] .td-select-list{margin:0;padding:0}
-html[data-theme="minimal"] .td-project-picker-head{padding:4px 14px 8px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-picker-head{padding:4px 14px 8px;font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-project-picker-row .td-menu-item-label>svg{color:var(--ink-900)!important}
-html[data-theme="minimal"] .td-project-picker-group,html[data-theme="minimal"] .td-item-picker-list-name,html[data-theme="minimal"] .td-member-picker-sub{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-item-picker-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-project-picker-group,html[data-theme="minimal"] .td-item-picker-list-name,html[data-theme="minimal"] .td-member-picker-sub{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-item-picker-key{font:400 11px/16px var(--font-mono)}
 html[data-theme="minimal"] .td-item-picker-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
 /* Labels: a 6px square of colour before the word; the edit form is hairline fields and square swatches ringed in ink when picked */
 html[data-theme="minimal"] .td-label-picker-bar,html[data-theme="minimal"] .td-cover-picker-dot,html[data-theme="minimal"] .td-bulk-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
 html[data-theme="minimal"] .td-label-picker-form{padding:6px 14px 8px}
-html[data-theme="minimal"] .td-label-picker-form-head{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-label-picker-name,html[data-theme="minimal"] .td-repeat-picker-number,html[data-theme="minimal"] .td-repeat-picker-inline,html[data-theme="minimal"] .td-saved-view-input{padding-left:0;padding-right:0;border:0;border-bottom:1px solid var(--border-input);border-radius:0;background:none;box-shadow:none;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-label-picker-form-head{font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-label-picker-name,html[data-theme="minimal"] .td-repeat-picker-number,html[data-theme="minimal"] .td-repeat-picker-inline,html[data-theme="minimal"] .td-saved-view-input{padding-left:0;padding-right:0;border:0;border-bottom:1px solid var(--border-input);border-radius:0;background:none;box-shadow:none;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-label-picker-name:focus,html[data-theme="minimal"] .td-repeat-picker-number:focus,html[data-theme="minimal"] .td-repeat-picker-inline:focus,html[data-theme="minimal"] .td-saved-view-input:focus{border-color:var(--ink-900);box-shadow:none}
 html[data-theme="minimal"] .td-repeat-picker-number{text-align:left;width:32px}
 html[data-theme="minimal"] .td-label-picker-swatch,html[data-theme="minimal"] .td-cover-picker-swatch,html[data-theme="minimal"] .td-cover-picker-image,html[data-theme="minimal"] .td-cover-picker-upload,html[data-theme="minimal"] .td-project-icon-picker-swatch{border-radius:0}
@@ -740,25 +841,25 @@ html[data-theme="minimal"] .td-project-icon-picker-swatch{width:20px;height:20px
 html[data-theme="minimal"] .td-label-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-image[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-swatch[aria-pressed="true"]{box-shadow:0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas)}
 html[data-theme="minimal"] .td-label-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-image:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-swatch:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
 html[data-theme="minimal"] .td-cover-picker-swatches,html[data-theme="minimal"] .td-cover-picker-images{padding:0 14px 4px}
-html[data-theme="minimal"] .td-cover-picker-upload{border-color:var(--ink-400);color:var(--ink-400);font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-cover-picker-upload{border-color:var(--ink-400);color:var(--ink-400);font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-cover-picker-upload:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
 html[data-theme="minimal"] .td-label-picker-foot,html[data-theme="minimal"] .td-date-picker-foot,html[data-theme="minimal"] .td-dates-picker-foot,html[data-theme="minimal"] .td-repeat-picker-foot{padding:8px 14px 2px;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-label-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-foot .td-btn,html[data-theme="minimal"] .td-dates-picker-foot .td-btn,html[data-theme="minimal"] .td-repeat-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-quick .td-btn,html[data-theme="minimal"] .td-dates-picker-quick .td-btn{font:400 12px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-date-picker-current,html[data-theme="minimal"] .td-dates-picker-current,html[data-theme="minimal"] .td-repeat-picker-summary,html[data-theme="minimal"] .td-date-picker-preview,html[data-theme="minimal"] .td-dates-picker-preview{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-label-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-foot .td-btn,html[data-theme="minimal"] .td-dates-picker-foot .td-btn,html[data-theme="minimal"] .td-repeat-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-quick .td-btn,html[data-theme="minimal"] .td-dates-picker-quick .td-btn{font:400 12px/18px var(--font-ui)}
+html[data-theme="minimal"] .td-date-picker-current,html[data-theme="minimal"] .td-dates-picker-current,html[data-theme="minimal"] .td-repeat-picker-summary,html[data-theme="minimal"] .td-date-picker-preview,html[data-theme="minimal"] .td-dates-picker-preview{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 /* Dates: the fields are hairlines with a mono label, the month a ruled grid — square days, today ringed grey, the picked day in ink, the span a paper-grey wash */
 html[data-theme="minimal"] .td-date-picker,html[data-theme="minimal"] .td-dates-picker,html[data-theme="minimal"] .td-repeat-picker{padding:4px 0 0}
 html[data-theme="minimal"] .td-dates-picker-fields{padding:0 14px}
 html[data-theme="minimal"] .td-dates-picker-field{padding:0;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);transition:border-color var(--duration-fast,100ms) var(--ease-standard,ease)}
 html[data-theme="minimal"] .td-dates-picker-field[data-active="true"]{box-shadow:none;border-bottom-color:var(--ink-900);color:var(--ink-400)}
-html[data-theme="minimal"] .td-dates-picker-label{font:400 11px/1.45 var(--font-mono);letter-spacing:0;text-transform:none}
-html[data-theme="minimal"] .td-dates-picker-addstart{margin-left:14px;padding:0;border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-dates-picker-label{font:400 11px/16px var(--font-mono);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-dates-picker-addstart{margin-left:14px;padding:0;border-radius:0;font:400 12px/18px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-dates-picker-addstart:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-date-picker-quick,html[data-theme="minimal"] .td-dates-picker-quick,html[data-theme="minimal"] .td-date-calendar{padding:0 14px}
 html[data-theme="minimal"] .td-date-calendar{width:auto}
-html[data-theme="minimal"] .td-date-calendar-title{font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-date-calendar-title{font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-date-calendar-weekday{font:400 11px/20px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-date-calendar-grid{border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-date-calendar-day{border-radius:0;font:400 13px/1.45 var(--font-ui);transition:none}
+html[data-theme="minimal"] .td-date-calendar-day{border-radius:0;font:400 13px/20px var(--font-ui);transition:none}
 html[data-theme="minimal"] .td-date-calendar-day:hover{background:var(--n-a06)}
 html[data-theme="minimal"] .td-date-calendar-day:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-date-calendar-day[data-today="true"]{font-weight:500;box-shadow:inset 0 0 0 1px var(--ink-400)}
@@ -766,18 +867,18 @@ html[data-theme="minimal"] .td-date-calendar-day[aria-pressed="true"],html[data-
 html[data-theme="minimal"] .td-date-calendar-day[data-in-range="true"]{background:var(--blue-100)}
 html[data-theme="minimal"] .td-date-calendar-day[data-range-edge="start"],html[data-theme="minimal"] .td-date-calendar-day[data-range-edge="end"]{border-radius:0}
 /* Repeat: the unit segment and weekday discs follow Segmented — no track, hairline below, ink when chosen; radios are hairline rings */
-html[data-theme="minimal"] .td-repeat-picker-head{padding:0 14px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-repeat-picker-head{padding:0 14px;font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-repeat-picker-row,html[data-theme="minimal"] .td-repeat-picker-days,html[data-theme="minimal"] .td-repeat-picker-inline{margin:0 14px}
 html[data-theme="minimal"] .td-repeat-picker-row .td-repeat-picker-inline{margin:0}
 html[data-theme="minimal"] .td-repeat-picker-seg{padding:0;gap:0;border-radius:0;background:none;box-shadow:inset 0 -1px 0 var(--border-divider)}
-html[data-theme="minimal"] .td-repeat-picker-seg button{border-radius:0;font:400 12px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-seg button{border-radius:0;font:400 12px/18px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-repeat-picker-seg button[aria-pressed="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-repeat-picker-seg button:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas),inset 0 0 0 3px var(--ink-900)}
 html[data-theme="minimal"] .td-repeat-picker-days{gap:2px}
-html[data-theme="minimal"] .td-repeat-picker-day{height:26px;border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 11px/1.45 var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-repeat-picker-day{height:26px;border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 11px/16px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-repeat-picker-day[aria-pressed="true"]{background:var(--ink-900);color:var(--chrome-canvas);box-shadow:none}
 html[data-theme="minimal"] .td-repeat-picker-day:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
-html[data-theme="minimal"] .td-repeat-picker-option{padding:0 14px;border-radius:0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-repeat-picker-option{padding:0 14px;border-radius:0;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-repeat-picker-option:hover{background:var(--chrome-hover)}
 html[data-theme="minimal"] .td-repeat-picker-radio{border:1px solid var(--ink-400)}
 html[data-theme="minimal"] .td-repeat-picker-option[aria-checked="true"] .td-repeat-picker-radio{border:4px solid var(--ink-900)}
@@ -787,46 +888,46 @@ html[data-theme="minimal"] .td-icon-picker-option:hover,html[data-theme="minimal
 html[data-theme="minimal"] .td-icon-picker-option[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-option[aria-pressed="true"]{background:var(--blue-100);color:var(--ink-900)}
 html[data-theme="minimal"] .td-icon-picker-option:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-option:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-icon-picker-search{margin:2px 14px 6px}
-html[data-theme="minimal"] .td-icon-picker-empty{text-align:left;padding:8px 14px 12px;font:400 12px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-icon-picker-empty{text-align:left;padding:8px 14px 12px;font:400 12px/18px var(--font-ui)}
 /* Project tile (New project · Project settings head): no fill behind the glyph; a hairline box that goes ink on hover */
 html[data-theme="minimal"] .td-project-icon-picker-tile{border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);transition:none}
 html[data-theme="minimal"] .td-project-icon-picker-tile:hover,html[data-theme="minimal"] .td-project-icon-picker-tile[aria-expanded="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-project-icon-picker-tile:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
 html[data-theme="minimal"] .td-project-icon-picker-glyph{border-radius:0;background:none}
-html[data-theme="minimal"] .td-project-icon-picker-captioned{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-icon-picker-captioned{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-project-icon-picker-panel{padding:4px 14px 8px}
 /* New project dialog: template rows are plain rows, the chosen one on the paper-grey wash with an ink check; the prefix in bare mono */
-html[data-theme="minimal"] .td-project-dialog-label,html[data-theme="minimal"] .td-project-dialog-template-head,html[data-theme="minimal"] .td-project-panel-label{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-project-dialog-hint,html[data-theme="minimal"] .td-project-panel-hint,html[data-theme="minimal"] .td-project-panel-crumb,html[data-theme="minimal"] .td-project-panel-caption{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-project-dialog-template-row{border-radius:0;padding:4px 0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-dialog-label,html[data-theme="minimal"] .td-project-dialog-template-head,html[data-theme="minimal"] .td-project-panel-label{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-project-dialog-hint,html[data-theme="minimal"] .td-project-panel-hint,html[data-theme="minimal"] .td-project-panel-crumb,html[data-theme="minimal"] .td-project-panel-caption{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-project-dialog-template-row{border-radius:0;padding:4px 0;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-project-dialog-template-row:hover{background:var(--chrome-hover)}
 html[data-theme="minimal"] .td-project-dialog-template-row[aria-checked="true"]{background:var(--blue-100);box-shadow:inset 2px 0 0 var(--ink-900);padding-left:8px}
 html[data-theme="minimal"] .td-project-dialog-template-row:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-project-dialog-template-row[aria-checked="true"]:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900),inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-project-dialog-template-name b{font-weight:500}
-html[data-theme="minimal"] .td-project-dialog-template-name span{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-project-dialog-template-name span{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-project-dialog-template-check{color:var(--ink-900)}
 html[data-theme="minimal"] .td-project-dialog-copyrow{padding-left:26px}
-html[data-theme="minimal"] .td-project-dialog-mono,html[data-theme="minimal"] .td-project-panel-mono{font:400 13px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-project-dialog-mono,html[data-theme="minimal"] .td-project-panel-mono{font:400 13px/20px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-project-dialog-name .td-field{font-size:15px}
 /* Project settings: 500-weight name and section titles, links as underlined words, member rows with initials */
-html[data-theme="minimal"] .td-project-panel-name{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-project-panel-section-title{font:500 13px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-project-panel-member-name b{font:500 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-project-panel-member-name span,html[data-theme="minimal"] .td-project-panel-member-role{font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-project-panel-linkbtn{border-radius:0;font:400 13px/1.45 var(--font-ui);color:var(--ink-900);text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:3px}
+html[data-theme="minimal"] .td-project-panel-name{font:500 15px/22px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-project-panel-section-title{font:500 13px/20px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-project-panel-member-name b{font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-project-panel-member-name span,html[data-theme="minimal"] .td-project-panel-member-role{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-project-panel-linkbtn{border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900);text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:3px}
 html[data-theme="minimal"] .td-project-panel-linkbtn:hover{text-decoration-color:var(--ink-900)}
 html[data-theme="minimal"] .td-project-panel-linkbtn.td-project-panel-danger{color:var(--danger);text-decoration-color:var(--danger)}
 html[data-theme="minimal"] .td-project-panel-linkbtn:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
 /* Empty, loading and error states: 500-weight title, the primary action filled ink, the key hint in bare mono; skeletons are square bars on no surface, laid out as the ledger */
-html[data-theme="minimal"] .td-empty-title{font:500 14px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-empty-hint{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-empty-title{font:500 14px/20px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-empty-hint{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-empty-chrome .td-empty-icon,html[data-theme="minimal"] .td-empty-icon{color:var(--ink-400)}
 html[data-theme="minimal"] .td-empty-danger .td-empty-icon{color:var(--danger)}
 html[data-theme="minimal"] .td-empty-icon svg{stroke-width:1.5}
-html[data-theme="minimal"] .td-empty-kbd{padding:0;border:0;border-radius:0;opacity:1;color:var(--ink-400);font:400 11px/1.45 var(--font-mono);margin-left:6px}
+html[data-theme="minimal"] .td-empty-kbd{padding:0;border:0;border-radius:0;opacity:1;color:var(--ink-400);font:400 11px/16px var(--font-mono);margin-left:6px}
 html[data-theme="minimal"] .td-btn-inverse .td-empty-kbd{color:var(--chrome-canvas);opacity:.7}
-html[data-theme="minimal"] .td-notice{margin:12px 24px 0;padding:6px 6px 6px 14px;border-radius:0;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 13px/1.45 var(--font-ui);animation:none}
+html[data-theme="minimal"] .td-notice{margin:12px 24px 0;padding:6px 6px 6px 14px;border-radius:0;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 13px/20px var(--font-ui);animation:none}
 html[data-theme="minimal"] .td-notice-fixed{margin:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
 html[data-theme="minimal"] .td-notice-message{font-weight:500}
 html[data-theme="minimal"] .td-notice-detail{color:var(--ink-400)}
@@ -843,77 +944,77 @@ html[data-theme="minimal"] .td-skeleton-view-list{padding:20px 24px 24px}
 html[data-theme="minimal"] .td-skeleton-view-list-inner{gap:24px}
 html[data-theme="minimal"] .td-skeleton-row{height:40px;border-bottom:1px solid var(--border-divider)}
 /* Bulk action bar: an ink bar, square, words only — the same voice as the toast; its menus are the square sheet */
-html[data-theme="minimal"] .td-bulk{padding:6px 6px 6px 16px;gap:4px;border-radius:0;box-shadow:none;background:var(--ink-900);color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);animation:none}
+html[data-theme="minimal"] .td-bulk{padding:6px 6px 6px 16px;gap:4px;border-radius:0;box-shadow:none;background:var(--ink-900);color:var(--chrome-canvas);font:400 13px/20px var(--font-ui);animation:none}
 html[data-theme="minimal"] .td-bulk-count{font-weight:500;border-right-color:color-mix(in srgb,var(--chrome-canvas) 40%,transparent)}
-html[data-theme="minimal"] .td-bulk-btn{height:28px;padding:0 8px;border-radius:0;color:var(--chrome-canvas);font:400 13px/1.45 var(--font-ui);transition:none}
+html[data-theme="minimal"] .td-bulk-btn{height:28px;padding:0 8px;border-radius:0;color:var(--chrome-canvas);font:400 13px/20px var(--font-ui);transition:none}
 html[data-theme="minimal"] .td-bulk-btn:hover,html[data-theme="minimal"] .td-bulk-btn:active,html[data-theme="minimal"] .td-bulk-btn[aria-expanded="true"]{background:none;text-decoration:underline;text-underline-offset:3px}
 html[data-theme="minimal"] .td-bulk-btn:focus-visible{box-shadow:inset 0 0 0 1px var(--chrome-canvas)}
 html[data-theme="minimal"] .td-bulk-btn.is-danger{color:var(--label-red)}
-html[data-theme="minimal"] .td-bulk-kbd{padding:0;border:0;border-radius:0;color:inherit;opacity:.6;font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-bulk-kbd{padding:0;border:0;border-radius:0;color:inherit;opacity:.6;font:400 11px/16px var(--font-mono)}
 html[data-theme="minimal"] .td-bulk-menu{padding:6px 0;gap:0;border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);animation:none}
-html[data-theme="minimal"] .td-bulk-item{padding:6px 14px;border-radius:0;font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-bulk-item{padding:6px 14px;border-radius:0;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-bulk-item:hover{background:var(--chrome-hover)}
 html[data-theme="minimal"] .td-bulk-item[aria-checked="true"]{background:var(--blue-100)}
 html[data-theme="minimal"] .td-bulk-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
 html[data-theme="minimal"] .td-bulk-divider{margin:6px 0}
 /* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
-html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/1.45 var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/20px var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
 /* Guest bar: the same 48px hairline row as the top bar, words in ink */
 html[data-theme="minimal"] .td-guest{min-height:40px;padding:0 24px;gap:12px;border-bottom-color:var(--border-divider)}
 html[data-theme="minimal"] .td-guest-icon{color:var(--ink-900)}
 html[data-theme="minimal"] .td-guest-icon svg{width:16px;height:16px;stroke-width:1.75}
-html[data-theme="minimal"] .td-guest-text{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-guest-text{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-guest-text b{font-weight:500}
 html[data-theme="minimal"] .td-guest-text span{color:var(--ink-400)}
 /* Project activity log: day headings are grey words over a hairline, rows with a hairline below, the key in bare mono */
-html[data-theme="minimal"] .td-activity-log-count{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-activity-log-day{padding:16px 0 6px;border-bottom:1px solid var(--border-divider);font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-activity-log-count{font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-activity-log-day{padding:16px 0 6px;border-bottom:1px solid var(--border-divider);font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none}
 html[data-theme="minimal"] .td-activity-log-row{padding:10px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-activity-log-row+.td-activity-log-row{border-top:0}
-html[data-theme="minimal"] .td-activity-log-text{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-activity-log-text{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-activity-log-text b{font-weight:500}
-html[data-theme="minimal"] .td-activity-log-key,html[data-theme="minimal"] button.td-activity-log-key{padding:0;margin-left:6px;border-radius:0;background:none;font:400 11px/1.45 var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-activity-log-key,html[data-theme="minimal"] button.td-activity-log-key{padding:0;margin-left:6px;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] button.td-activity-log-key:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] button.td-activity-log-key:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
-html[data-theme="minimal"] .td-activity-log-time{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-activity-log-time{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-activity-log-kind{color:var(--ink-900)}
 /* Archive and trash: no white card — rows over hairlines; the project lead loses its fill; the confirming row takes the paper-grey wash */
 html[data-theme="minimal"] .td-archive{padding:20px 24px 24px;gap:12px}
-html[data-theme="minimal"] .td-archive-caption{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-archive-caption{font:400 12px/18px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-archive-list,html[data-theme="minimal"] .td-archive-empty{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-archive-group{padding:12px 0 4px;font:400 11px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-archive-group{padding:12px 0 4px;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-archive-row{padding:8px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-archive-row+.td-archive-row{border-top:0}
 html[data-theme="minimal"] .td-archive-row:hover,html[data-theme="minimal"] .td-archive-row:focus-within{background:none}
 html[data-theme="minimal"] .td-archive-row[data-confirm="true"]{background:var(--blue-100)}
 html[data-theme="minimal"] .td-archive-lead{border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-archive-lead[data-kind="project"]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider)}
-html[data-theme="minimal"] .td-archive-title{font:400 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-archive-title{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-archive-title[data-done="true"]{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
-html[data-theme="minimal"] .td-archive-meta{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-archive-meta{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-archive-meta b{font-weight:500;color:var(--ink-400)}
-html[data-theme="minimal"] .td-archive-key{font:400 11px/1.45 var(--font-mono)}
+html[data-theme="minimal"] .td-archive-key{font:400 11px/16px var(--font-mono)}
 html[data-theme="minimal"] .td-archive-bar .td-field{height:28px}
 /* Status role review · Keyboard shortcuts: the square sheet; keys in bare mono, section names plain grey words */
 html[data-theme="minimal"] .td-rolereview{padding:20px 24px;border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);animation:none}
-html[data-theme="minimal"] .td-rolereview-title{font:500 15px/1.45 var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-rolereview-body{font:400 13px/1.45 var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-shortcuts-dialog-section h3{font:400 11px/1.45 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400);padding-bottom:4px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-shortcuts-dialog-kbd{padding:0;border:0;border-radius:0;background:none;font:400 12px/1.45 var(--font-mono);color:var(--ink-900)}
-html[data-theme="minimal"] .td-shortcuts-dialog-separator{font:400 11px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-shortcuts-dialog-description{font:400 13px/1.45 var(--font-ui)}
-html[data-theme="minimal"] .td-shortcuts-dialog-note{font:400 12px/1.45 var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-rolereview-title{font:500 15px/22px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-rolereview-body{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-shortcuts-dialog-section h3{font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400);padding-bottom:4px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-shortcuts-dialog-kbd{padding:0;border:0;border-radius:0;background:none;font:400 12px/18px var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-shortcuts-dialog-separator{font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-shortcuts-dialog-description{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-shortcuts-dialog-note{font:400 12px/18px var(--font-ui);color:var(--ink-400)}
 /* Connection status: a word with a glyph on the top bar, no pill; the Settings variant a hairline box */
-html[data-theme="minimal"] .td-connection{height:auto;padding:0;border-radius:0;background:none;color:var(--ink-900);font:400 13px/1.45 var(--font-ui);animation:none;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-connection{height:auto;padding:0;border-radius:0;background:none;color:var(--ink-900);font:400 13px/20px var(--font-ui);animation:none;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
 html[data-theme="minimal"] .td-connection:hover,html[data-theme="minimal"] .td-connection:active,html[data-theme="minimal"] .td-connection[aria-expanded="true"]{background:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-connection:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
 html[data-theme="minimal"] .td-connection-icon svg{width:16px;height:16px;stroke-width:1.75}
 html[data-theme="minimal"] .td-connection-count{color:var(--ink-400)}
 html[data-theme="minimal"] .td-connection-card,html[data-theme="minimal"] .td-connection-card:hover,html[data-theme="minimal"] .td-connection-card[aria-expanded="true"]{height:28px;padding:0 10px;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);color:var(--ink-900)}
 html[data-theme="minimal"] .td-connection-card:hover,html[data-theme="minimal"] .td-connection-card[aria-expanded="true"]{box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-connection-menu-head{padding:6px 14px 2px;font:500 13px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-connection-menu-head{padding:6px 14px 2px;font:500 13px/20px var(--font-ui)}
 /* Password field hint */
-html[data-theme="minimal"] .td-password-field-hint{font:400 11px/1.45 var(--font-ui)}
+html[data-theme="minimal"] .td-password-field-hint{font:400 11px/16px var(--font-ui)}
 
 /* Narrow settings retain the ledger styling while sharing the shell's single-column layout. */
 @container (max-width: 640px) {

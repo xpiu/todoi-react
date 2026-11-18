@@ -58,4 +58,4 @@
 /* ── Minimal · shape & density ──
    Radius, spacing and dimension tokens for the Ledger look; component rules are in tokens/themes/minimal-components.css.
    html-prefixed so it outranks the :root declarations in spacing.css / radius.css, which load after this file. */
-html[data-theme="minimal"]{--radius-xs:2px;--radius-md:3px;--radius-lg:4px;--size-topbar:48px;--size-boardbar:48px;--size-list-width:196px;--size-control:28px;--size-control-lg:36px}
+html[data-theme="minimal"]{--radius-xs:2px;--radius-md:3px;--radius-lg:4px;--size-topbar:48px;--size-boardbar:48px;--size-list-width:196px;--size-cal-chip-pitch:20px;--size-control:28px;--size-control-lg:36px}

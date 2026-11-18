@@ -116,7 +116,8 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
           onClick(e);
         }
       }}
-      style={style}
+      // Minimal reserves a slot for the key at the end of the meta words; its width is the key length in mono characters
+      style={itemId && showId ? ({ "--td-key-ch": itemId.length, ...style } as CSSProperties) : style}
     >
       {selected ? <span className="td-sr-only">Selected</span> : null}
       {cover ? cover.src ? <img className="td-card-cover" src={cover.src} alt="" draggable={false} style={{ height: Math.min(cover.height ?? 82, 82) }} /> : <div className="td-card-cover-color" style={{ height: Math.min(cover.height ?? 36, 82), background: cover.color ?? "var(--surface-cover)" }} /> : null}

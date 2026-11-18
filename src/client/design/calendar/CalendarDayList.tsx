@@ -53,7 +53,9 @@ export function CalendarDayList({ date, items, onOpenItem, onToggleDone, onToggl
         )}
         {onAddItem ? (
           <button type="button" className="td-calendar-day-list-add" data-add-item={iso} onClick={() => onAddItem(iso)}>
-            <Icon name="plus" size={16} />
+            <span className="td-calendar-day-list-plus">
+              <Icon name="plus" size={18} />
+            </span>
             Add an item
           </button>
         ) : null}

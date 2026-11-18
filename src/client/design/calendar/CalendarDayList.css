@@ -1,8 +1,9 @@
 @layer components {
   .td-calendar-day-list {
     width: 100%;
-    max-width: 720px;
+    max-width: 900px;
     margin: 0 auto;
+    margin-left: round(down, calc((100% - min(100%, 900px)) / 2), 1px);
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
@@ -27,7 +28,8 @@
     align-items: center;
     gap: var(--sp-2);
     width: 100%;
-    padding: 9px var(--sp-3);
+    height: 36px;
+    padding: 0 13px;
     border: 0;
     background: none;
     font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
@@ -44,10 +46,21 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
   }
+  .td-calendar-day-list-plus {
+    display: inline-flex;
+    justify-content: center;
+    width: 18px;
+    flex-shrink: 0;
+  }
   .td-calendar-day-list-empty {
     padding: var(--sp-6) var(--sp-4);
     text-align: center;
     font: var(--type-body);
     color: var(--ink-600);
+  }
+  /* Day period: the header (title · Today · prev/next · period) sits on the list's column instead of the full canvas width; 16px = the calendar body padding. */
+  .td-calendar-header:has(+ div .td-calendar-day-list) {
+    padding-left: calc(16px + round(down, calc((100% - 32px - min(100% - 32px, 900px)) / 2), 1px));
+    padding-right: calc(16px + round(up, calc((100% - 32px - min(100% - 32px, 900px)) / 2), 1px));
   }
 }

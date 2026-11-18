@@ -82,6 +82,7 @@
   "td-calgrid-wd": "td-calendar-grid-weekday",
   "td-calgrid-wdnum": "td-calendar-grid-weekday-number",
   "td-calhead": "td-calendar-header",
+  "td-calhead-ctl": "td-calendar-header-controls",
   "td-calhead-spacer": "td-calendar-header-spacer",
   "td-calhead-title": "td-calendar-header-title",
   "td-calmini": "td-calendar-mini",
