@@ -371,5 +371,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     return false;
   };
 
-  return { lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer, copyItems };
+  const rename = (id: string, title: string) => updateItem.mutate({ id, title });
+
+  return { lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer, copyItems, rename };
 }

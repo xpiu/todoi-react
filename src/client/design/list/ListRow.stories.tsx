@@ -67,6 +67,29 @@ export const ManyLabelsAndAssignees: Story = {
     await expect(args.onClick).not.toHaveBeenCalled();
   },
 };
+export const InlineRename: Story = {
+  args: { onRename: fn() },
+  async play({ args, canvas, userEvent }) {
+    // Clicking the title text edits it in place instead of opening the item.
+    await userEvent.click(canvas.getByText("Prepare the helicopter quote"));
+    await expect(args.onClick).not.toHaveBeenCalled();
+    const field = canvas.getByRole("textbox", { name: "Item title" });
+    await expect(field).toHaveFocus();
+    await userEvent.keyboard(" v2{Enter}");
+    await expect(args.onRename).toHaveBeenCalledWith("Prepare the helicopter quote v2");
+    await waitFor(() => expect(canvas.queryByRole("textbox")).not.toBeInTheDocument());
+    // Escape reverts; an unchanged title saves nothing.
+    await userEvent.click(canvas.getByText("Prepare the helicopter quote"));
+    await userEvent.keyboard("zzz{Escape}");
+    await expect(args.onRename).toHaveBeenCalledOnce();
+    await userEvent.click(canvas.getByText("Prepare the helicopter quote"));
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onRename).toHaveBeenCalledOnce();
+    // A click beside the title still opens the item.
+    await userEvent.click(canvas.getByRole("listitem"));
+    await expect(args.onClick).toHaveBeenCalled();
+  },
+};
 export const WithSubitems: Story = {
   args: {
     subitems: [

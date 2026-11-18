@@ -85,6 +85,17 @@
     min-width: 0;
     overflow-wrap: break-word;
   }
+  /* Inline rename (onRename): only the title text is the click target, so the rest of the row still opens the item. */
+  .td-list-row-title-text.is-editable {
+    cursor: text;
+  }
+  .td-list-row-title-text.is-editing {
+    display: block;
+    min-height: 1lh;
+    outline: none;
+    cursor: text;
+    white-space: pre-wrap;
+  }
   .td-list-row-labels {
     position: relative;
     display: inline-flex;

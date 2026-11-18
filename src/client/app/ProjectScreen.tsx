@@ -358,6 +358,7 @@ function ProjectList(props: ViewProps) {
                   itemId={r.itemId}
                   done={r.done}
                   onDone={(done) => actions.setDone(r.id, done)}
+                  onRename={(title) => actions.rename(r.id, title)}
                   labels={r.labels}
                   due={r.due}
                   dueState={r.dueState}
@@ -367,7 +368,7 @@ function ProjectList(props: ViewProps) {
                   attachments={r.attachments}
                   selected={v.isSelected(r.id)}
                   onClick={(e) => v.onItemClick(r.id, list.id, e)}
-                  subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done) }))}
+                  subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done), onRename: (title: string) => actions.rename(s.id, title) }))}
                 />
               ))}
             </ListSection>

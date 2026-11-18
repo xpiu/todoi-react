@@ -2,10 +2,11 @@
 // badges, due pill, repeat glyph, priority flag and side-by-side avatars (one group that may wrap), and
 // after it the mono key (click copies), which stays on the first line.
 // Subitems render beneath as indented rows. Spec: DESIGN.md › List view, Notifications.
-import type { CSSProperties, MouseEvent, SyntheticEvent } from "react";
+import { useLayoutEffect, useRef, useState, type ClipboardEvent, type CSSProperties, type KeyboardEvent, type MouseEvent, type SyntheticEvent } from "react";
 
 const stack = (n: number) => ({ "--td-z": n }) as CSSProperties;
 
+import { isReadOnly } from "../auth/GuestBar";
 import { DueDatePill, type DueState } from "../board/DueDatePill";
 import { LabelChip } from "../board/LabelChip";
 import { Avatar } from "../core/Avatar";
@@ -59,6 +60,8 @@ export interface ListRowProps {
   /** Notification: the item it is about — its key opens that item */
   about?: { key: string; title?: string; onOpen?: () => void };
   onClick?: (e: SyntheticEvent) => void;
+  /** Inline rename: clicking the title text (not the rest of the row) turns it into an editable field with the caret at the end instead of calling onClick. Enter or blur saves a changed, non-empty title, Esc reverts. Ctrl/Cmd/Shift+click and read-only views still reach onClick. */
+  onRename?: (title: string) => void;
   style?: CSSProperties;
 }
 
@@ -132,10 +135,85 @@ function RowLabels({ labels, title }: { labels: RowLabel[]; title: string }) {
   );
 }
 
+/** Inline title edit: the title text becomes a plain-text contentEditable field. Enter or blur saves a changed, non-empty title, Esc reverts. */
+function useTitleEdit(title: string, onRename?: (title: string) => void) {
+  const [editing, setEditing] = useState(false);
+  const field = useRef<HTMLSpanElement>(null);
+  const settled = useRef(false);
+  const seeded = useRef(false);
+  // Entering edit mode seeds the field once; later title changes must not rewrite what is being typed.
+  useLayoutEffect(() => {
+    const el = field.current;
+    if (!editing || !el) {
+      seeded.current = false;
+      return;
+    }
+    if (seeded.current) return;
+    seeded.current = true;
+    settled.current = false;
+    el.textContent = title;
+    el.focus();
+    const selection = window.getSelection();
+    selection?.selectAllChildren(el);
+    selection?.collapseToEnd();
+  }, [editing, title]);
+  const finish = (save: boolean, refocus: boolean) => {
+    if (settled.current) return;
+    settled.current = true;
+    const el = field.current;
+    const value = el?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const row = el?.closest<HTMLElement>(".td-list-row");
+    setEditing(false);
+    if (save && value && value !== title) onRename?.(value);
+    if (refocus) row?.focus();
+  };
+  const start = (e: MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || isReadOnly(e.currentTarget as Element)) return;
+    e.stopPropagation();
+    setEditing(true);
+  };
+  const onKeyDown = (e: KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      finish(true, true);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      finish(false, true);
+    }
+  };
+  // A title is one line of text: paste plain text, whitespace collapsed.
+  const onPaste = (e: ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain").replace(/\s+/g, " ");
+    const selection = window.getSelection();
+    if (!text || !selection?.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const node = document.createTextNode(text);
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+  const node = editing ? (
+    <span ref={field} className="td-list-row-title-text is-editing" role="textbox" aria-label="Item title" contentEditable suppressContentEditableWarning onClick={(e) => e.stopPropagation()} onKeyDown={onKeyDown} onPaste={onPaste} onBlur={() => finish(true, false)} />
+  ) : onRename ? (
+    <span className="td-list-row-title-text is-editable" onClick={start}>
+      {title}
+    </span>
+  ) : (
+    title
+  );
+  return { editing, node };
+}
+
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
-export function ListRow({ title, itemId, showId = true, labels = [], done, onDone, due, dueState = "default", repeat, recurring = !!repeat, created, attachments, priority, assignees = [], status, subitems, sub, selected, dragId, unread, from, about, onClick, style }: ListRowProps) {
+export function ListRow({ title, itemId, showId = true, labels = [], done, onDone, due, dueState = "default", repeat, recurring = !!repeat, created, attachments, priority, assignees = [], status, subitems, sub, selected, dragId, unread, from, about, onClick, onRename, style }: ListRowProps) {
   const hasSubs = !sub && !!subitems?.length;
+  const titleEdit = useTitleEdit(title, onRename);
   const stop = (e: SyntheticEvent) => e.stopPropagation();
   const row = (
     <div
@@ -145,7 +223,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
       role={hasSubs ? undefined : "listitem"}
       tabIndex={0}
       data-selected={selected ? "true" : undefined}
-      draggable={dragId ? true : undefined}
+      draggable={dragId && !titleEdit.editing ? true : undefined}
       data-drag-id={dragId}
       onClick={onClick}
       onKeyDown={(e) => {
@@ -171,7 +249,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
           )}
         </span>
       ) : null}
-      <span className="td-list-row-title">{title}</span>
+      <span className="td-list-row-title">{titleEdit.node}</span>
       <span className="td-list-row-end">
         {status ? (
           <span className="td-list-row-cell">
