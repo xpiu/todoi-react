@@ -9,6 +9,9 @@
   .td-list-view-inner {
     max-width: 900px;
     margin: 0 auto;
+    /* Centred on whole pixels: with an odd free width a plain auto margin starts the column on a half pixel, which
+       softens checkbox rings and 14px glyphs at 1x. margin:0 auto stays as the fallback where round() is unsupported. */
+    margin-left: round(down, calc((100% - min(100%, 900px)) / 2), 1px);
     display: flex;
     flex-direction: column;
     gap: var(--sp-5);
