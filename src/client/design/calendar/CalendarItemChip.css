@@ -78,6 +78,7 @@
     -webkit-line-clamp: 3;
     white-space: normal;
     overflow-wrap: anywhere;
+    -webkit-hyphens: auto;
     hyphens: auto;
     hyphenate-limit-chars: 10 4 4;
   }

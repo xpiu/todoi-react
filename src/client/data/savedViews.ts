@@ -1,4 +1,6 @@
-// Saved views: named, shareable tabs capturing a project's view type + filters + sort.
+// Saved views: named, shareable tabs capturing a project's filters + sort. They never switch the view
+// type (the URL's `v` keeps it); an older definition that still stores one applies only when the URL has
+// none (see app/useResolvedView.ts).
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
 
