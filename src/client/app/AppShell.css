@@ -35,6 +35,8 @@
   .td-app-rows[data-view="list"] > .td-app-rows-inner {
     max-width: 940px;
     margin: 0 auto;
+    /* On the same whole pixel as the list column (ListView.css rounds its centring offset down) */
+    margin-left: round(down, calc((100% - min(100%, 940px)) / 2), 1px);
     padding: 0 var(--sp-2);
     box-sizing: border-box;
   }
