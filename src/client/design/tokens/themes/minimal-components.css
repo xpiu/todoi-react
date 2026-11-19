@@ -458,7 +458,7 @@ html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip]::after
 html[data-theme="minimal"] .td-subnav-action.td-tooltip-labeled[data-tip][data-tip-kbd]::after,html[data-theme="minimal"] .td-subnav-seg.td-tooltip-labeled[data-tip][data-tip-kbd]::after{content:attr(data-tip) "\2003" attr(data-tip-kbd);font-family:var(--font-ui);font-size:12px}
 /* ── Account pages (Projects · Project groups · Settings): the same 24px gutter as the board; page title is a plain 500-weight line; no white card — the table is rows over hairlines, column heads in grey over one ink hairline */
 html[data-theme="minimal"] .td-projects,html[data-theme="minimal"] .td-settings,html[data-theme="minimal"] .td-inbox{padding:20px 24px 24px!important}
-html[data-theme="minimal"] .td-inbox-inner{gap:16px!important}
+html[data-theme="minimal"] .td-inbox>.td-list-view-inner{gap:16px}
 /* Inbox heading: the account pages' 15/22 title on the list-name line. "Mark all read" sits on its baseline; the + is always visible and closes the row on the date / key edge, 10px after it. */
 html[data-theme="minimal"] .td-inbox .td-list-section-head{align-items:baseline}
 html[data-theme="minimal"] .td-inbox .td-list-section-name{font:500 15px/22px var(--font-ui);letter-spacing:0}
