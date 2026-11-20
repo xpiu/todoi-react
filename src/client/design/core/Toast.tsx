@@ -4,6 +4,7 @@
 // outcome so a replacement restarts the countdown.
 import { useCallback, useEffect, useRef, type CSSProperties } from "react";
 
+import { useThemePreference } from "./appearance";
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
 import "./Toast.css";
@@ -15,7 +16,8 @@ export interface ToastProps {
   /** Action button text, e.g. "Undo" */
   actionLabel?: string;
   onAction?: () => void;
-  /** Mono kbd chip after the action label, e.g. "⌘ Z" */
+  /** Mono kbd chip after the action label, e.g. "⌘ Z". A shortcut suggestion: shown only while Appearance › Suggest
+   * shortcuts is on (the binding itself always works). */
   shortcutHint?: string;
   /** Quiet 12px secondary text after the message, e.g. "4 more" on an undo confirmation */
   meta?: string;
@@ -31,6 +33,7 @@ export interface ToastProps {
 export const TOAST_DURATION_MS = 5000;
 
 export function Toast({ message, icon, actionLabel, onAction, shortcutHint, meta, onDismiss, duration = TOAST_DURATION_MS, live = true, style }: ToastProps) {
+  const showKey = useThemePreference("suggestShortcuts");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The timer calls the latest onDismiss, so a new callback identity doesn't restart the countdown.
   const latestDismiss = useRef(onDismiss);
@@ -62,7 +65,7 @@ export function Toast({ message, icon, actionLabel, onAction, shortcutHint, meta
       {actionLabel ? (
         <button type="button" className="td-toast-action" onClick={onAction}>
           {actionLabel}
-          {shortcutHint ? <span className="td-toast-kbd">{shortcutHint}</span> : null}
+          {shortcutHint && showKey ? <span className="td-toast-kbd">{shortcutHint}</span> : null}
         </button>
       ) : null}
       {onDismiss ? <IconButton name="x" label="Dismiss" variant="chrome" size={28} onClick={onDismiss} /> : null}

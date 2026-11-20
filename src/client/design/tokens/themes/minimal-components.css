@@ -655,12 +655,24 @@ html[data-theme="minimal"] .td-dialog-foot{padding:12px 24px}
 html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger){background:none;border:0;box-shadow:none;color:var(--ink-400);font-weight:400}
 html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-dialog-foot .td-btn-primary,html[data-theme="minimal"] .td-dialog-foot .td-btn-danger{border-radius:2px;font-weight:500}
-/* Toast: an ink bar, square, words only; the action is underlined paper, not blue */
-html[data-theme="minimal"] .td-toast{border-radius:0;box-shadow:none;padding:8px 8px 8px 16px;font:400 13px/20px var(--font-ui);color:var(--chrome-canvas)}
-html[data-theme="minimal"] .td-toast-action{color:var(--chrome-canvas);font:400 13px/20px var(--font-ui);text-decoration:underline;text-underline-offset:3px;border-radius:0}
-html[data-theme="minimal"] .td-toast-action:hover,html[data-theme="minimal"] .td-toast-action:active{background:none;text-decoration-color:color-mix(in srgb,var(--chrome-canvas) 50%,transparent)}
-html[data-theme="minimal"] .td-toast-meta{font:400 11px/16px var(--font-ui)}
-html[data-theme="minimal"] .td-toast .td-iconbtn{border-radius:0}
+/* Toast: the one inverted surface — an ink bar with paper type, square, in both modes (--chrome-topbar is the ink here). Every part — message, count, action, key, × — inherits the paper colour at full strength (one ink), so nothing depends on white. No leading glyph: the message says what happened, so the `icon` a caller passes is not drawn in Minimal. */
+html[data-theme="minimal"] .td-toast{align-items:baseline;gap:16px;max-width:min(560px,calc(100vw - 32px));padding:10px 16px;border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui);color:var(--chrome-canvas)}
+html[data-theme="minimal"] body:has(.td-bulk) .td-toast{bottom:calc(16px + 40px + 8px)}
+html[data-theme="minimal"] .td-toast-icon{display:none!important}
+html[data-theme="minimal"] .td-toast-message{margin:0;text-wrap:pretty}
+html[data-theme="minimal"] .td-toast-meta{margin:0;opacity:1;font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-toast-action{display:block;height:auto;padding:0;border-radius:0;color:inherit;font:400 13px/20px var(--font-ui);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+html[data-theme="minimal"] .td-toast-action:hover,html[data-theme="minimal"] .td-toast-action:active{background:none;text-decoration-color:color-mix(in srgb,currentColor 50%,transparent)}
+html[data-theme="minimal"] .td-toast-action:focus-visible{box-shadow:none;outline:1px solid currentColor;outline-offset:3px}
+html[data-theme="minimal"] .td-toast-kbd{margin-left:6px;padding:0;border:0;border-radius:0;color:inherit;opacity:1;font:400 11px/16px var(--font-mono)}
+html[data-theme="minimal"] .td-toast .td-iconbtn{align-self:flex-start;width:16px!important;height:16px!important;margin:2px 0;border-radius:0;color:inherit}
+html[data-theme="minimal"] .td-toast .td-iconbtn svg{width:16px;height:16px}
+html[data-theme="minimal"] .td-toast .td-iconbtn:hover,html[data-theme="minimal"] .td-toast .td-iconbtn:active{background:none;opacity:.55}
+html[data-theme="minimal"] .td-toast .td-iconbtn:focus-visible{outline:1px solid currentColor;outline-offset:3px}
+@media (max-width:592px){
+html[data-theme="minimal"] .td-toast{flex-wrap:wrap;row-gap:4px}
+html[data-theme="minimal"] .td-toast .td-iconbtn{margin-left:auto}
+}
 /* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash */
 html[data-theme="minimal"] .td-search-dropdown{border-radius:0;top:calc(100% + 6px)}
 html[data-theme="minimal"] .td-search-dropdown-scroll{padding:0 16px}

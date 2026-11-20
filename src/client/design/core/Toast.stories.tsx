@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
+import { getAppearance, useAppearanceStore } from "./appearance";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 import { Toast, type ToastProps } from "./Toast";
@@ -48,6 +49,23 @@ export const Undo: Story = {
     await expect(args.onAction).toHaveBeenCalledOnce();
     await userEvent.click(canvas.getByRole("button", { name: "Dismiss" }));
     await expect(args.onDismiss).toHaveBeenCalledOnce();
+  },
+};
+/** The key beside Undo is a shortcut suggestion: it follows Appearance › Suggest shortcuts; Undo itself stays. */
+export const KeyFollowsSuggestShortcuts: Story = {
+  async play({ canvas, canvasElement }) {
+    const { set } = useAppearanceStore.getState();
+    const before = getAppearance().suggestShortcuts;
+    const key = () => canvasElement.querySelector(".td-toast-kbd");
+    try {
+      set({ suggestShortcuts: true });
+      await waitFor(() => expect(key()).toHaveTextContent("⌘ Z"));
+      set({ suggestShortcuts: false });
+      await waitFor(() => expect(key()).toBeNull());
+      await expect(canvas.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+    } finally {
+      set({ suggestShortcuts: before });
+    }
   },
 };
 export const WithMeta: Story = { args: { message: "Archived 5 items", icon: "archive", meta: "4 more" } };
