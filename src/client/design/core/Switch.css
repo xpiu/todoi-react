@@ -55,4 +55,45 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+  /* glyph="link": woven links in the knob while on; off is the plain switch. The links start 1.5px apart and slide
+     together after the knob lands. */
+  .td-switch-link .td-switch-thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .td-switch-glyph {
+    display: block;
+    flex: none;
+    width: 12px;
+    height: 12px;
+    overflow: visible;
+    fill: none;
+    stroke: var(--blue-500);
+    stroke-width: 1.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+  .td-switch-on .td-switch-glyph {
+    opacity: 1;
+  }
+  .td-switch-on:hover .td-switch-glyph {
+    stroke: var(--blue-600);
+  }
+  .td-switch-glyph .td-switch-cut {
+    stroke: var(--surface-card);
+    stroke-width: 2.25;
+    stroke-linecap: butt;
+  }
+  .td-switch-glyph :is(.td-switch-link-l, .td-switch-link-r) {
+    transition: transform 160ms var(--ease-standard) 60ms;
+  }
+  .td-switch-link:not(.td-switch-on) .td-switch-link-l {
+    transform: translateX(-1.5px);
+  }
+  .td-switch-link:not(.td-switch-on) .td-switch-link-r {
+    transform: translateX(1.5px);
+  }
 }

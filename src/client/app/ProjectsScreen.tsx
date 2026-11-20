@@ -8,7 +8,6 @@ import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
 import { projectsOf, useGroups } from "../data/queries";
 import { Avatar } from "../design/core/Avatar";
-import { Button } from "../design/core/Button";
 import { Icon, type IconName } from "../design/core/Icon";
 import { MenuButton, MenuDivider, MenuItem } from "../design/core/Menu";
 import { ViewSkeleton } from "../design/core/Skeleton";
@@ -44,9 +43,6 @@ export function ProjectsScreen() {
       <div className="td-table-inner">
         <div className="td-table-head">
           <h1 className="td-table-title">Projects</h1>
-          <Button variant="inverse" icon="plus" onClick={() => openNewProject()}>
-            New project
-          </Button>
         </div>
         <div className="td-table-card">
           <table className="td-table">
@@ -117,7 +113,7 @@ export function ProjectsScreen() {
                     <td className="td-table-number">{p.itemCount}</td>
                     <td className="td-table-number">{pct != null ? `${pct}%` : <span className="td-table-dim">—</span>}</td>
                     <td className="td-table-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      <Switch checked={p.linkStatuses} aria-label={`Linked statuses for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, linkStatuses: v })} />
+                      <Switch glyph="link" checked={p.linkStatuses} aria-label={`Linked statuses for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, linkStatuses: v })} />
                     </td>
                     <td className="td-table-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <Switch checked={movesOnCheck(p)} aria-label={`Checked items move to Done for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, checkedMove: v })} />
@@ -163,6 +159,13 @@ export function ProjectsScreen() {
               })}
             </tbody>
           </table>
+          {/* Creating is the table's last row, in the List view's "Add an item" idiom */}
+          <button type="button" className="td-table-add" onClick={() => openNewProject()}>
+            <span className="td-table-add-plus">
+              <Icon name="plus" size={16} />
+            </span>
+            New project
+          </button>
         </div>
       </div>
     </div>

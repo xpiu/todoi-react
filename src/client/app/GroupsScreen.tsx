@@ -3,7 +3,6 @@ import { useState } from "react";
 
 import { useProjectMutations } from "../data/projects";
 import { useGroups } from "../data/queries";
-import { Button } from "../design/core/Button";
 import { Icon } from "../design/core/Icon";
 import { IconButton } from "../design/core/IconButton";
 import { MenuButton, MenuDivider, MenuItem } from "../design/core/Menu";
@@ -42,9 +41,6 @@ export function GroupsScreen() {
       <div className="td-table-inner">
         <div className="td-table-head">
           <h1 className="td-table-title">Project groups</h1>
-          <Button variant="inverse" icon="plus" onClick={openNewGroup}>
-            New group
-          </Button>
         </div>
         <div className="td-table-card">
           <table className="td-table">
@@ -117,7 +113,7 @@ export function GroupsScreen() {
                             {g.keyPrefix}
                           </span>
                         )}
-                        {editing === g.id ? null : <IconButton className="td-table-idedit" name="pencil" label={`Edit item ID prefix for ${g.name}`} tooltip="Edit item ID prefix" size={22} iconSize={13} onClick={() => {
+                        {editing === g.id ? null : <IconButton className="td-table-idedit" name="pencil" label={`Edit item ID prefix for ${g.name}`} tooltip="Edit item ID prefix" size={22} iconSize={14} onClick={() => {
                           setEditing(g.id);
                           setDraft(g.keyPrefix);
                         }} />}
@@ -127,33 +123,42 @@ export function GroupsScreen() {
                     <td className="td-table-number">{items}</td>
                     <td className="td-table-number">{items ? `${Math.round((done / items) * 100)}%` : <span className="td-table-dim">—</span>}</td>
                     <td className="td-table-set" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      <MenuButton label={`Settings for ${g.name}`} tooltip="Group settings" placement="bottom-end" tier="detached" size={28} iconSize={16}>
-                        <MenuItem
-                          icon="pencil"
-                          onSelect={() => {
-                            setNameDraft(g.name);
-                            setRenamingId(g.id);
-                          }}
-                        >
-                          Rename
-                        </MenuItem>
-                        <MenuDivider />
-                        <MenuItem
-                          icon="trash-2"
-                          danger
-                          disabled={g.projects.length > 0}
-                          title={g.projects.length ? "Move or delete its projects first" : undefined}
-                          onSelect={() => m.deleteGroup.mutate({ id: g.id }, { onSuccess: () => notify({ message: `Deleted the group ${quote(g.name)}`, icon: "trash-2" }) })}
-                        >
-                          Delete
-                        </MenuItem>
-                      </MenuButton>
+                      <span className="td-table-tools">
+                        <MenuButton label={`Settings for ${g.name}`} tooltip="Group settings" placement="bottom-end" tier="detached" size={28} iconSize={16}>
+                          <MenuItem
+                            icon="pencil"
+                            onSelect={() => {
+                              setNameDraft(g.name);
+                              setRenamingId(g.id);
+                            }}
+                          >
+                            Rename
+                          </MenuItem>
+                          <MenuDivider />
+                          <MenuItem
+                            icon="trash-2"
+                            danger
+                            disabled={g.projects.length > 0}
+                            title={g.projects.length ? "Move or delete its projects first" : undefined}
+                            onSelect={() => m.deleteGroup.mutate({ id: g.id }, { onSuccess: () => notify({ message: `Deleted the group ${quote(g.name)}`, icon: "trash-2" }) })}
+                          >
+                            Delete
+                          </MenuItem>
+                        </MenuButton>
+                      </span>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          {/* Creating is the table's last row, in the List view's "Add an item" idiom */}
+          <button type="button" className="td-table-add" onClick={openNewGroup}>
+            <span className="td-table-add-plus">
+              <Icon name="plus" size={16} />
+            </span>
+            New project group
+          </button>
         </div>
       </div>
     </div>

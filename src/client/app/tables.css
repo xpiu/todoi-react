@@ -8,8 +8,12 @@
     box-sizing: border-box;
     padding: var(--sp-4) var(--sp-5) var(--sp-6);
   }
+  /* Centred on a whole pixel: with an odd free width a plain auto margin starts the column on a half pixel. The offset
+     lives in a custom property applied under @supports, since an unsupported round() would resolve the margin to 0
+     instead of falling back to auto. */
   .td-table-inner {
-    max-width: 900px;
+    --td-center-offset: round(down, calc((100% - min(100%, var(--size-content-max))) / 2), 1px);
+    max-width: var(--size-content-max);
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -33,9 +37,15 @@
     padding: var(--sp-2);
     container-type: inline-size;
   }
+  @supports (margin-left: round(down, 1px, 1px)) {
+    .td-table-inner {
+      margin-left: var(--td-center-offset);
+    }
+  }
   .td-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
   }
   .td-table th {
     font: var(--type-small);
@@ -45,6 +55,8 @@
     padding: 6px var(--sp-3);
     vertical-align: bottom;
     white-space: nowrap;
+    /* Two label lines on every table page, so the first row sits at the same height on Projects and Project groups */
+    height: calc(2 * var(--lh-xs));
   }
   .td-table th.td-table-link {
     white-space: normal;
@@ -89,22 +101,23 @@
   .td-table-row td:last-child {
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
   }
-  .td-table-icon {
+  /* The cell classes outrank `.td-table th` / `td` by specificity, not !important: an !important inside this layer
+     would beat the theme files' unlayered !important (Minimal's icon padding, right-aligned numbers). */
+  .td-table :is(th, td).td-table-icon {
     width: 32px;
-    padding-right: 0 !important;
+    padding-right: 0;
   }
   .td-table-lead {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-2);
   }
-  .td-table-number,
-  .td-table-center {
-    text-align: center !important;
+  .td-table :is(th, td):is(.td-table-number, .td-table-center) {
+    text-align: center;
     font-variant-numeric: tabular-nums;
   }
-  .td-table-link {
-    text-align: center !important;
+  .td-table :is(th, td).td-table-link {
+    text-align: center;
     cursor: default;
   }
   .td-table-dim {
@@ -114,6 +127,48 @@
     display: inline-flex;
     align-items: center;
     gap: 2px;
+    vertical-align: middle;
+  }
+  .td-table :is(th, td).td-table-set {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .td-table-link .td-switch {
+    vertical-align: middle;
+  }
+  /* Creating is the table's last row (List view "Add an item" idiom): 12px padding + the 16px plus + 12px gap put the
+     plus under the row icons and the label on the name column. */
+  .td-table-add {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    width: 100%;
+    box-sizing: border-box;
+    height: 38px;
+    padding: 0 var(--sp-3);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--ink-600);
+    font: var(--weight-medium) var(--text-sm) / var(--lh-sm) var(--font-ui);
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  .td-table-add-plus {
+    display: inline-flex;
+    justify-content: center;
+    flex: none;
+    width: 16px;
+  }
+  .td-table-add:hover {
+    background: var(--surface-list);
+    color: var(--ink-900);
+  }
+  .td-table-add:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
   }
   .td-table-rename {
     width: 100%;
@@ -147,7 +202,8 @@
     transition: opacity var(--duration-base) var(--ease-standard);
   }
   .td-table-row:hover .td-table-idedit,
-  .td-table-row:focus-within .td-table-idedit {
+  .td-table-row:focus-within .td-table-idedit,
+  .td-table-idedit:focus-visible {
     opacity: 1;
   }
   .td-table-abbr {

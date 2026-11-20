@@ -33,6 +33,19 @@ export const Off: Story = {
   },
 };
 export const On: Story = { args: { checked: true } };
+/** glyph="link" (Link lists with statuses): two woven chain links ride in the knob while on; off is the plain switch. */
+export const LinkGlyph: Story = {
+  args: { glyph: "link", checked: true, label: "Link lists with statuses" },
+  async play({ canvas, canvasElement, userEvent }) {
+    const toggle = canvas.getByRole("switch", { name: "Link lists with statuses" });
+    const glyph = () => canvasElement.querySelector(".td-switch-glyph")!;
+    await expect(glyph()).toHaveAttribute("aria-hidden", "true");
+    await waitFor(() => expect(getComputedStyle(glyph()).opacity).toBe("1"));
+    await userEvent.click(toggle);
+    await waitFor(() => expect(getComputedStyle(glyph()).opacity).toBe("0"));
+    await userEvent.click(toggle);
+  },
+};
 export const LabelledByRow: Story = { args: { label: undefined, "aria-label": "Suggest shortcuts", checked: true } };
 export const Disabled: Story = {
   args: { checked: true, disabled: true, label: "Managed by your workspace" },
