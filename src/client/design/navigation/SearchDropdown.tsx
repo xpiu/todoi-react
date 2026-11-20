@@ -115,6 +115,8 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
     ].filter((s) => s.rows.length);
   }
   const flat = sections.flatMap((s) => s.rows);
+  // Longest key shown, in characters: Minimal sizes one key column from it, so every title starts on one edge.
+  const keyCh = flat.reduce((n, r) => Math.max(n, r.itemId ? r.itemId.length : 0), 0);
   const [cur, setCur] = useState(0);
   const sel = Math.min(cur, Math.max(0, flat.length - 1));
   const pick = (r: Row) => onSelect?.(r.type, r.id, r.entity);
@@ -151,7 +153,7 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
     <div className={["td-search-dropdown", className ?? ""].join(" ").trim()} style={style} onMouseDown={(e) => e.preventDefault()}>
       {flat.length ? (
         <div className="td-search-dropdown-scroll" aria-busy={status === "loading" || undefined}>
-          <div role="listbox" id={listId} aria-label="Search results">
+          <div role="listbox" id={listId} aria-label="Search results" style={keyCh ? ({ "--td-sd-key-ch": keyCh } as CSSProperties) : undefined}>
             {sections.map((s, si) => (
               <div key={s.label} role="group" aria-labelledby={`${listId}-sec-${si}`}>
                 <div className="td-search-dropdown-head" id={`${listId}-sec-${si}`}>{s.label}</div>

@@ -648,7 +648,8 @@ html[data-theme="minimal"] .td-command-palette-row[aria-selected="true"]{backgro
 html[data-theme="minimal"] .td-command-palette-list-name{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-command-palette-id{font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-command-palette-empty{padding:20px;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-command-palette-foot{padding:10px 20px;gap:16px;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-foot{padding:10px 20px;gap:16px;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-foot .td-kbd{font:400 13px/20px var(--font-mono)}
 html[data-theme="minimal"] .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-user-menu-id{padding:8px 14px 10px;gap:0}
 html[data-theme="minimal"] .td-user-menu-id .td-avatar{display:none!important}
@@ -681,20 +682,27 @@ html[data-theme="minimal"] .td-toast .td-iconbtn:focus-visible{outline:1px solid
 html[data-theme="minimal"] .td-toast{flex-wrap:wrap;row-gap:4px}
 html[data-theme="minimal"] .td-toast .td-iconbtn{margin-left:auto}
 }
-/* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash */
+/* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash.
+   Everything sits on a 40px row (head 12 + 20 + 7 + 1px line; row, status line and empty state 10 + 20 + 10); the list shows 10½ rows before it scrolls.
+   Hairlines all span the 16px text column: the row's line is drawn 8px inside the row, whose wash still reaches 8px past the text.
+   Rows align on the first baseline, so the key and meta (11/16) share the title's line of type; keys fill one column as wide as the longest key shown (--td-sd-key-ch, set by the component). */
 html[data-theme="minimal"] .td-search-dropdown{border-radius:0;top:calc(100% + 6px)}
-html[data-theme="minimal"] .td-search-dropdown-scroll{padding:0 16px}
-html[data-theme="minimal"] .td-search-dropdown-head{padding:12px 0 8px;font:500 13px/20px var(--font-ui);letter-spacing:-.005em;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-search-dropdown-row{width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
-html[data-theme="minimal"] .td-search-dropdown-scroll>.td-search-dropdown-row:last-child{box-shadow:none}
+html[data-theme="minimal"] .td-search-dropdown-scroll{max-height:calc(40px*10.5);padding:0 16px}
+html[data-theme="minimal"] .td-search-dropdown-head{padding:12px 0 7px;font:500 13px/20px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-row{position:relative;width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;align-items:baseline;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-search-dropdown-row::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:1px;background:var(--border-divider)}
+/* The last row has no line of its own: the footer draws the hairline above the key hints (it stays put while the list scrolls). A status line after the list keeps the row's line. */
+html[data-theme="minimal"] .td-search-dropdown-scroll>[role="listbox"]:last-child>[role="group"]:last-child>.td-search-dropdown-row:last-child::after{content:none}
 html[data-theme="minimal"] .td-search-dropdown-row[aria-selected="true"]{background:var(--blue-100)}
-html[data-theme="minimal"] .td-search-dropdown-icon{width:16px;height:16px;border-radius:0;background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-search-dropdown-icon{width:16px;height:16px;align-self:center;border-radius:0;background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-search-dropdown-icon svg{stroke-width:1.75;stroke:var(--ink-900)!important}
-html[data-theme="minimal"] .td-search-dropdown-id{font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-id{min-width:calc(var(--td-sd-key-ch,0)*1ch);min-width:round(up,calc(var(--td-sd-key-ch,0)*1ch),1px);font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-search-dropdown-title mark{background:none;color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
 html[data-theme="minimal"] .td-search-dropdown-meta{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-search-dropdown-empty{padding:16px;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-search-dropdown-foot{padding:10px 16px;gap:16px;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-note{padding:10px 0;font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-search-dropdown-empty{padding:10px 16px;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-foot{position:relative;padding:10px 16px;gap:16px;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-search-dropdown-foot::before{content:"";position:absolute;left:16px;right:16px;top:0;height:1px;background:var(--border-divider)}
 html[data-theme="minimal"] .td-search-dropdown-foot .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 13px/20px var(--font-mono);color:var(--ink-400)}
 /* ── Item overlay: the same ledger inside the dialog — square card, 500-weight title, section names over hairlines, every list (subitems, attachments, relations, comments) as rows, no fills, no bubbles */
 html[data-theme="minimal"] .td-modal{border-radius:0}
