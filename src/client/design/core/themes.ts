@@ -55,7 +55,7 @@ export interface ThemeDefinition {
   foregrounds: Record<ModeId, ReadonlyArray<ThemeForeground>>;
   /** Whether projects show their icon glyph (sidebar rename, search, project panel) and offer to change it */
   projectIcons: boolean;
-  /** Whether List-view rows are ruled with hairlines, which the Style menu then offers to turn off (Row dividers) */
+  /** Whether List-view rows are ruled with hairlines, which the Appearance menu then offers to turn off (Row dividers) */
   ruledRows: boolean;
   /** Gap (px) between a SubNavbar action and its dropdown. Minimal: (48px row − 16px glyph) / 2 + the 1px hairline,
    * so the menu's ring lies on the bar's hairline, clear of the neighbouring glyphs and the current-view underline */

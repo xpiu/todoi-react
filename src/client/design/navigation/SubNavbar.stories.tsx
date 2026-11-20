@@ -146,7 +146,7 @@ export const OneMenuAtATime: Story = {
     await expect(args.onOpenMenuChange).toHaveBeenLastCalledWith(null);
   },
 };
-export const StyleMenu: Story = {
+export const AppearanceMenu: Story = {
   async play({ args, canvas, canvasElement, globals, userEvent }) {
     await userEvent.click(await canvas.findByRole("button", { name: "Appearance" }));
     const page = within(canvasElement.ownerDocument.body);
@@ -179,11 +179,11 @@ export const CheckedMoveShortcut: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "Appearance" }));
     const page = within(canvasElement.ownerDocument.body);
     const dialog = within(await page.findByRole("dialog", { name: "Appearance" }));
-    await expect(canvas.getByRole("toolbar", { name: "Project views and actions" })).toHaveAttribute("data-open-menu", "style");
+    await expect(canvas.getByRole("toolbar", { name: "Project views and actions" })).toHaveAttribute("data-open-menu", "appearance");
     await expect(dialog.queryByRole("checkbox", { name: /Checked items move to Done/ })).not.toBeInTheDocument();
     const row = dialog.getByRole("button", { name: "Checked items move to Done: on. Opens the Projects page" });
     await expect(row.querySelector(".td-check-box-on")).not.toBeNull();
-    const label = row.querySelector(".td-style-goto-label")!;
+    const label = row.querySelector(".td-appearance-goto-label")!;
     await expect(label.getBoundingClientRect().height).toBeLessThanOrEqual(20);
     await userEvent.click(label);
     await expect(args.onOpenCheckedMove).toHaveBeenCalledOnce();

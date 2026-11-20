@@ -1,7 +1,7 @@
 // SubNavbar — view switcher (List / Board / Cal. + optional Views toggle) and the Filter / Sort /
-// Style / Members / Share actions. It owns its five dropdowns with ONE open-menu value (controllable
+// Appearance / Members / Share actions. It owns its five dropdowns with ONE open-menu value (controllable
 // via openMenu / onOpenMenuChange), so exactly one is open at a time and the host can show the Filter
-// and Sort rows while their menu is open. Style is the quick appearance menu on the shared store (a
+// and Sort rows while their menu is open. Appearance is the quick menu on the shared store (a
 // dialog Popover); Share is a Menu with Copy project URL and share targets. Spec: DESIGN.md › Subnavbar.
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 
@@ -35,11 +35,11 @@ export const DEFAULT_VIEWS: SubNavbarView[] = [
   { id: "board", label: "Board", icon: "kanban" },
   { id: "calendar", label: "Cal.", icon: "calendar" },
 ];
-const STYLE_ACTION: SubNavbarAction = { id: "style", label: "Appearance", icon: "palette" };
+const APPEARANCE_ACTION: SubNavbarAction = { id: "appearance", label: "Appearance", icon: "palette" };
 export const DEFAULT_ACTIONS: SubNavbarAction[] = [
   { id: "filter", label: "Filter", icon: "filter" },
   { id: "sort", label: "Sort", icon: "arrow-up-narrow-wide" },
-  STYLE_ACTION,
+  APPEARANCE_ACTION,
 ];
 const VIS_ICONS: Record<string, IconName> = { Private: "lock", Shared: "users", Public: "globe" };
 const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; href: (u: string) => string }> = [
@@ -48,7 +48,7 @@ const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; 
   { id: "discord", label: "Discord", icon: "discord", href: () => "https://discord.com/channels/@me" },
 ];
 
-export type SubNavbarMenu = "filter" | "sort" | "style" | "members" | "share";
+export type SubNavbarMenu = "filter" | "sort" | "appearance" | "members" | "share";
 /** The chip row each menu drives: presses there toggle chips without closing the menu. */
 const MENU_ROWS: Partial<Record<SubNavbarMenu, string>> = { filter: '[role="toolbar"][aria-label="Filters"]', sort: '[role="toolbar"][aria-label="Sorting"]' };
 
@@ -101,9 +101,9 @@ export interface SubNavbarProps {
   projectUrl?: string;
   /** @default "Private" */
   visibility?: "Private" | "Shared" | "Public";
-  /** "More options" footer in the Style menu → Settings › Appearance */
+  /** "More options" footer in the Appearance menu → Settings › Appearance */
   onOpenAppearance?: () => void;
-  /** Style-menu "Checked items move to Done" row, below Colorize Board columns: a shortcut, not a toggle. The setting
+  /** Appearance-menu "Checked items move to Done" row, below Colorize Board columns: a shortcut, not a toggle. The setting
    * belongs to the project (ProjectPanel › Defaults, the Projects page). Laid out like its checkbox neighbours (box,
    * label) with a chevron on the right: the box shows `checkedMove` and a click anywhere on the row calls
    * onOpenCheckedMove (the menu closes first). Rendered only when onOpenCheckedMove is given */
@@ -151,9 +151,9 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
   const [copied, copy] = useCopy();
   const shareUrl = projectUrl ?? (typeof location !== "undefined" ? location.href : "");
   const copyUrl = () => void copy(shareUrl);
-  const styleMenu = (
-    <div className="td-style-menu">
-      <div className="td-style-label">Theme</div>
+  const appearanceMenu = (
+    <div className="td-appearance-menu">
+      <div className="td-appearance-label">Theme</div>
       <Segmented
         stretch
         aria-label="Theme"
@@ -164,44 +164,44 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
         }}
         options={THEMES.map((t) => ({ id: t.id, label: t.label }))}
       />
-      <div className="td-style-label td-style-label-gap">Mode</div>
+      <div className="td-appearance-label td-appearance-label-gap">Mode</div>
       <Segmented stretch aria-label="Mode" value={ap.mode} onChange={(m) => ap.set({ mode: m })} options={MODES.map((m) => ({ id: m.id, icon: m.icon, label: m.label }))} />
-      <div className="td-style-label td-style-label-gap">Background</div>
+      <div className="td-appearance-label td-appearance-label-gap">Background</div>
       <SwatchGroup aria-label="Background color" options={ap.backgrounds} value={ap.background} onChange={(c) => ap.set({ background: c })} />
       {ap.foregrounds.length ? (
         <>
-          <div className="td-style-label td-style-label-gap">Foreground</div>
+          <div className="td-appearance-label td-appearance-label-gap">Foreground</div>
           <SwatchGroup aria-label="Foreground color" options={ap.foregrounds.map((o) => ({ value: o.id, label: o.label, title: o.title, swatch: `linear-gradient(90deg, ${o.list} 50%, ${o.card} 50%)`, ink: o.ink }))} value={ap.foreground} onChange={(id) => ap.set({ foreground: id })} />
         </>
       ) : null}
-      <div className="td-style-divider" aria-hidden />
-      <div className="td-style-row">
+      <div className="td-appearance-divider" aria-hidden />
+      <div className="td-appearance-row">
         <Checkbox checked={ap.showItemIds} onChange={(v) => ap.set({ showItemIds: v })} label="Show item IDs" />
-        <span className="td-style-example" aria-hidden>
+        <span className="td-appearance-example" aria-hidden>
           TD-102
         </span>
       </div>
-      <div className="td-style-row">
+      <div className="td-appearance-row">
         <Checkbox checked={ap.showLabels} onChange={(v) => ap.set({ showLabels: v })} label="Show labels" />
-        <span className="td-style-trail td-style-example-label" aria-hidden>
+        <span className="td-appearance-trail td-appearance-example-label" aria-hidden>
           <LabelChip color="teal" text="label" size="sm" />
         </span>
       </div>
       {getTheme(ap.theme).ruledRows ? (
-        <div className="td-style-row">
+        <div className="td-appearance-row">
           <Checkbox checked={ap.rowDividers} onChange={(v) => ap.set({ rowDividers: v })} label="Row dividers" />
         </div>
       ) : null}
-      <div className="td-style-row">
+      <div className="td-appearance-row">
         <Checkbox checked={ap.sidebarLeft} onChange={(v) => ap.set({ sidebarLeft: v })} label="Sidebar on left side" />
-        <span className="td-style-trail" aria-hidden>
+        <span className="td-appearance-trail" aria-hidden>
           <Icon name={ap.sidebarLeft ? "panel-left" : "panel-right"} size={14} />
         </span>
       </div>
-      <div className="td-style-row">
+      <div className="td-appearance-row">
         <Checkbox checked={ap.suggestShortcuts} onChange={(v) => ap.set({ suggestShortcuts: v })} label="Suggest shortcuts" />
       </div>
-      <div className="td-style-row">
+      <div className="td-appearance-row">
         <Checkbox checked={ap.colorizeColumns} onChange={(v) => ap.set({ colorizeColumns: v })} label="Colorize Board columns" />
       </div>
       {onOpenCheckedMove ? (
@@ -209,7 +209,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
         // project's value (decoration, not a second control) and a click anywhere on the row opens where it is set.
         <button
           type="button"
-          className="td-style-row td-style-goto"
+          className="td-appearance-row td-appearance-goto"
           aria-label={`Checked items move to Done: ${checkedMove ? "on" : "off"}. Opens the Projects page`}
           title="A project setting. Opens the Projects page, where it is set."
           onClick={() => {
@@ -220,14 +220,14 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
           <span className={"td-check-box" + (checkedMove ? " td-check-box-on" : "")} aria-hidden>
             <Icon name="check" size={11} strokeWidth={3.5} className="td-check-icon" />
           </span>
-          <span className="td-style-goto-label">Checked items move to Done</span>
-          <Icon name="chevron-right" size={14} className="td-style-goto-chevron" />
+          <span className="td-appearance-goto-label">Checked items move to Done</span>
+          <Icon name="chevron-right" size={14} className="td-appearance-goto-chevron" />
         </button>
       ) : null}
       {onOpenAppearance ? (
         <button
           type="button"
-          className="td-style-more"
+          className="td-appearance-more"
           onClick={() => {
             closeMenu();
             onOpenAppearance();
@@ -245,12 +245,12 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       {actions.length || membersMenu ? (
         <div className="td-subnav-actions">
           {actions.map((a) => {
-            if (a.id === "style") {
+            if (a.id === "appearance") {
               const label = a.label;
               return (
                 <Popover
                   key={a.id}
-                  {...menuState("style")}
+                  {...menuState("appearance")}
                   offset={menuOffset}
                   tier="toolbar"
                   placement="bottom-start"
@@ -258,13 +258,13 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   aria-label="Appearance"
                   width={264}
                   trigger={
-                    <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={label} data-menu="style">
+                    <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={label} data-menu="appearance">
                       {a.icon ? <Icon name={a.icon} size={16} /> : null}
                       {label}
                     </button>
                   }
                 >
-                  {styleMenu}
+                  {appearanceMenu}
                 </Popover>
               );
             }

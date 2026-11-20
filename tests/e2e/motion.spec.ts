@@ -1,5 +1,5 @@
 // Reduced motion: one global rule (tokens/motion.css) collapses every transition and animation to a
-// frame while state changes still happen — the Style menu still opens, the toast still shows.
+// frame while state changes still happen — the Appearance menu still opens, the toast still shows.
 import { expect, test } from "@playwright/test";
 
 import { seedProjectId, signIn, useScope } from "./helpers";

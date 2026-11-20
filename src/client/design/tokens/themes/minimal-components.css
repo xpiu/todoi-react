@@ -17,7 +17,7 @@ html[data-theme="minimal"] .td-subnav-views{gap:16px;padding:0;background:none;b
 /* Standalone row (tablet, below desktop): 48px row, 24px side padding and a hairline matching the top bar; glyph spacing is identical to the docked row (16px between icons, 24px between groups) — the row's height does the vertical centring. content-box like the top bar (48px + the 1px hairline), so the 16px glyphs centre on whole pixels and the pixel-snapped view icons stay in full ink */
 html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav){box-sizing:content-box;min-height:48px;padding:0 24px;column-gap:24px;row-gap:0;align-items:center;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-actions,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-subnav-views{align-items:center}
-html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-style-wrap,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-share-wrap{align-items:center}
+html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-appearance-wrap,html[data-theme="minimal"] .td-subnav:not(.td-topnav .td-subnav) .td-share-wrap{align-items:center}
 html[data-theme="minimal"] .td-subnav-action,html[data-theme="minimal"] .td-subnav-seg{height:16px;width:auto;min-width:16px;padding:0;gap:0;font-size:0;line-height:0;color:var(--ink-900);background:none;border-radius:0}
 html[data-theme="minimal"] .td-subnav-action:hover,html[data-theme="minimal"] .td-subnav-action:active,html[data-theme="minimal"] .td-subnav-action[aria-expanded="true"],html[data-theme="minimal"] .td-subnav-seg:hover,html[data-theme="minimal"] .td-subnav-seg:active,html[data-theme="minimal"] .td-subnav-seg[aria-pressed="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-subnav-action:focus-visible,html[data-theme="minimal"] .td-subnav-seg:focus-visible{outline:1px solid var(--ink-900);outline-offset:3px}
@@ -254,7 +254,7 @@ html[data-theme="minimal"] .td-list-row>.td-list-row-from{align-self:flex-start}
 html[data-theme="minimal"] .td-list-row:hover{background:none}
 html[data-theme="minimal"] .td-list-row:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
 html[data-theme="minimal"] .td-list-row-subs .td-list-row{border-top:1px solid var(--border-divider)}
-/* Style menu › Row dividers off: no hairline under the list title, between rows or between subitems. Only the colour changes — borders stay
+/* Appearance menu › Row dividers off: no hairline under the list title, between rows or between subitems. Only the colour changes — borders stay
    1px transparent and every padding is untouched, so titles and rows keep exactly the height they have with dividers on. */
 html[data-theme="minimal"][data-row-dividers="false"] .td-list-section-head{border-bottom-color:transparent}
 html[data-theme="minimal"][data-row-dividers="false"] .td-list-row-group{border-bottom-color:transparent}
@@ -588,7 +588,7 @@ html[data-theme="minimal"] .td-settings-row-control .td-select-trigger>svg{width
 html[data-theme="minimal"] .td-settings-row-control .td-segmented-btn{font:400 13px/20px var(--font-ui)}
 /* Row actions are words in a box: no leading glyph (Icon writes an inline display, hence !important) */
 html[data-theme="minimal"] .td-settings-row-control .td-btn:not(.td-select-trigger)>svg{display:none!important}
-/* Swatches: the Style menu's 40px sheet with a 12px check on whole pixels; label and avatar colours are squares with an ink ring */
+/* Swatches: the Appearance menu's 40px sheet with a 12px check on whole pixels; label and avatar colours are squares with an ink ring */
 html[data-theme="minimal"] .td-settings-row-control .td-swatches:not(.td-settings-colors) .td-swatch{flex:0 0 40px;width:40px!important;height:24px!important}
 html[data-theme="minimal"] .td-settings-row-control .td-swatches:not(.td-settings-colors) .td-swatch>svg{width:12px!important;height:12px!important}
 /* Settings and Account are one ledger (2026-11-20, alignment pass). Every group head is the 29px title line: a × or chevron in the head hangs outside the 20px line (!important outranks the inline padding of closable heads) */
@@ -620,9 +620,9 @@ html[data-theme="minimal"] .td-popover{padding:6px 0}
 html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){padding:0}
 /* Dark: the plus glyph's 1px strokes fall on a half pixel at 14/16px and blur to grey; snap them to whole pixels so the + reads solid white */
 html[data-theme="minimal"][data-mode="dark"] svg path[d="M5 12h14"],html[data-theme="minimal"][data-mode="dark"] svg path[d="M12 5v14"]{shape-rendering:crispEdges}
-/* Style menu: a 14px edge like the menus beside it. The app pads the inner .td-style-menu (the kit pads the popover), so the popover itself carries none */
-html[data-theme="minimal"] .td-popover:has(.td-style-menu){padding:0}
-html[data-theme="minimal"] .td-style-menu{padding:14px}
+/* Appearance menu: a 14px edge like the menus beside it. The app pads the inner .td-appearance-menu (the kit pads the popover), so the popover itself carries none */
+html[data-theme="minimal"] .td-popover:has(.td-appearance-menu){padding:0}
+html[data-theme="minimal"] .td-appearance-menu{padding:14px}
 html[data-theme="minimal"] .td-menu{gap:0}
 html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
@@ -1160,28 +1160,28 @@ html[data-theme="minimal"][data-device="phone"] .td-topnav-user {
 /* ── One ink (2026-11-12): glyphs follow their text. An icon given a token color by its component (list-name icons, status, priority flags, project tints, checks and chevrons in menus) paints currentColor here; danger stays red. Done reads as a 1px strike instead of grey (rules above). Placeholders are the one dimmed text, so a hint never reads as a typed value. */
 html[data-theme="minimal"] svg[stroke^="var(--"]:not([stroke^="var(--danger"]){stroke:currentColor}
 html[data-theme="minimal"] svg[style*="fill: var(--label"],html[data-theme="minimal"] svg[style*="fill:var(--label"]{fill:currentColor!important}
-/* Style menu: the "Show labels" sample is what the switch turns on in this theme — the word, set like the TD-102 sample above it (plain meta type, no box) */
-html[data-theme="minimal"] .td-style-example-label{font:400 11px/16px var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-style-example-label .td-label{display:inline!important;background:none!important;color:inherit!important;font:inherit!important;padding:0!important;border-radius:0!important;max-width:none!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
-/* Style menu: the "Checked items move to Done" row is a shortcut to the project setting; its box follows the checkbox hover */
-html[data-theme="minimal"] .td-style-goto:hover>.td-check-box:not(.td-check-box-on){border-color:var(--ink-900)}
-html[data-theme="minimal"] .td-style-goto:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
-/* Style menu layout (wins 1–11, moon / sun glyphs excepted). The sheet is set like the Filter / Sort / Members menus beside it: 14px edge, 13/20 rows on a 32px pitch, 11/16 section names in sentence case. Steps: 8px name to control, 16px between groups and around the hairline, 12px between rows */
-html[data-theme="minimal"] .td-style-menu .td-style-label{margin-bottom:8px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-style-menu .td-style-label-gap{margin-top:16px}
-html[data-theme="minimal"] .td-style-menu .td-segmented-btn{font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-style-menu .td-check,html[data-theme="minimal"] .td-style-menu .td-style-goto{font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-style-menu .td-style-row{margin-top:12px}
-html[data-theme="minimal"] .td-style-menu .td-style-divider{margin:16px -14px}
+/* Appearance menu: the "Show labels" sample is what the switch turns on in this theme — the word, set like the TD-102 sample above it (plain meta type, no box) */
+html[data-theme="minimal"] .td-appearance-example-label{font:400 11px/16px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-appearance-example-label .td-label{display:inline!important;background:none!important;color:inherit!important;font:inherit!important;padding:0!important;border-radius:0!important;max-width:none!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+/* Appearance menu: the "Checked items move to Done" row is a shortcut to the project setting; its box follows the checkbox hover */
+html[data-theme="minimal"] .td-appearance-goto:hover>.td-check-box:not(.td-check-box-on){border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-appearance-goto:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+/* Appearance menu layout (wins 1–11, moon / sun glyphs excepted). The sheet is set like the Filter / Sort / Members menus beside it: 14px edge, 13/20 rows on a 32px pitch, 11/16 section names in sentence case. Steps: 8px name to control, 16px between groups and around the hairline, 12px between rows */
+html[data-theme="minimal"] .td-appearance-menu .td-appearance-label{margin-bottom:8px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-appearance-menu .td-appearance-label-gap{margin-top:16px}
+html[data-theme="minimal"] .td-appearance-menu .td-segmented-btn{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-appearance-menu .td-check,html[data-theme="minimal"] .td-appearance-menu .td-appearance-goto{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-appearance-menu .td-appearance-row{margin-top:12px}
+html[data-theme="minimal"] .td-appearance-menu .td-appearance-divider{margin:16px -14px}
 /* 10px glyph in the 14px inside of the box, 12px glyph in the swatch: both land on whole pixels (11px and 13px sat half a pixel off) */
-html[data-theme="minimal"] .td-style-menu .td-check-icon{width:10px!important;height:10px!important}
-html[data-theme="minimal"] .td-style-menu .td-swatch>svg{width:12px!important;height:12px!important}
+html[data-theme="minimal"] .td-appearance-menu .td-check-icon{width:10px!important;height:10px!important}
+html[data-theme="minimal"] .td-appearance-menu .td-swatch>svg{width:12px!important;height:12px!important}
 /* Swatches are 40px sheets with 9px between: the five dark papers fill the column like the segments above them (5 × 40 + 4 × 9 = 236); a shorter set (light has two) keeps the same sheet and starts on the left edge */
-html[data-theme="minimal"] .td-style-menu .td-swatches{display:flex;flex-wrap:wrap;gap:9px}
-html[data-theme="minimal"] .td-style-menu .td-swatch{flex:0 0 40px;width:40px!important}
+html[data-theme="minimal"] .td-appearance-menu .td-swatches{display:flex;flex-wrap:wrap;gap:9px}
+html[data-theme="minimal"] .td-appearance-menu .td-swatch{flex:0 0 40px;width:40px!important}
 /* The samples end on the column edge, like the panel glyph and the chevron below them */
-html[data-theme="minimal"] .td-style-menu .td-style-example,html[data-theme="minimal"] .td-style-menu .td-style-example-label{padding:0;border-radius:0;background:none}
+html[data-theme="minimal"] .td-appearance-menu .td-appearance-example,html[data-theme="minimal"] .td-appearance-menu .td-appearance-example-label{padding:0;border-radius:0;background:none}
 /* Footer: a 40px row under its hairline, square, its words on the label column (14px glyph + 10px = the 16px box + 8px) */
-html[data-theme="minimal"] .td-style-menu .td-style-more{gap:10px;width:calc(100% + 28px);margin:16px -14px -14px;padding:10px 14px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-appearance-menu .td-appearance-more{gap:10px;width:calc(100% + 28px);margin:16px -14px -14px;padding:10px 14px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] ::placeholder{color:color-mix(in srgb,var(--ink-900) 55%,transparent)!important}
 html[data-theme="minimal"] .td-checklist-grip{color:var(--ink-900)}

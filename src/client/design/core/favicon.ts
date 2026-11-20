@@ -1,7 +1,7 @@
 // Favicons, one per theme × mode (spec: DESIGN.md › Iconography — a lowercase t in the theme's face,
 // 64px PNGs in public/favicon/). index.html ships a static `<link rel="icon" data-td-favicon>` and
 // its pre-paint script points it at the stored theme × mode; the appearance store calls
-// applyFavicon whenever it applies theme or mode, so the tab icon follows the Style menu.
+// applyFavicon whenever it applies theme or mode, so the tab icon follows the Appearance menu.
 import type { ModeId, ThemeId } from "./themes";
 
 export const FAVICONS: Record<`${ThemeId}-${ModeId}`, string> = {

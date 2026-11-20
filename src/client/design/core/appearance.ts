@@ -1,4 +1,4 @@
-// Appearance — the ONE per-device display-preference store behind the SubNavbar Style dropdown
+// Appearance — the ONE per-device display-preference store behind the SubNavbar Appearance menu
 // and Settings › Appearance (spec: DESIGN.md › Appearance preferences). First Zustand use.
 //
 // Two axes from themes.ts: theme × mode. Background and Foreground picks are remembered PER
