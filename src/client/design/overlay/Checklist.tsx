@@ -161,6 +161,10 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
   return (
     <div className={"td-checklist" + (dragging ? " is-dragging" : "")} role="group" aria-label="Subitems">
       <div className="td-checklist-head">
+        {/* The section glyph: Minimal heads every overlay section with its 16px glyph; Rounded hides it */}
+        <span className="td-checklist-head-icon" aria-hidden>
+          <Icon name="list-checks" size={16} />
+        </span>
         <span className="td-checklist-head-count">
           {done}/{total}
         </span>

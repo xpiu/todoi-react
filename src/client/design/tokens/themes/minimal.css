@@ -25,9 +25,10 @@
 /* Drawer scrim: the paper stays paper in both modes — the overlaid sidebar is set off by its hairline ring and drop, not by tinting the page */
 --scrim:rgba(0,0,0,.12);
 --shadow-card:none;--shadow-raised:0 0 0 1px rgba(255,255,255,.14),0 6px 16px rgba(0,0,0,.5);--shadow-input:none;--shadow-overlay:0 0 0 1px rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.5);
-/* Status tints (Colorize Board columns, off by default here): a faint wash on the column and a status-hued hairline under its name; cards stay bare rows */
+/* Status tints (Colorize Board columns, off by default here): a faint wash on the column and a status-hued hairline under its name; cards stay bare rows.
+   --status-done-line is the Done hue for the wash and the hairline: --success-icon cannot serve because Done is ink in Minimal, and there is no --status-done-hue */
 --status-new-hue:#c9c4de;--status-new-list:color-mix(in srgb,var(--surface-list) 91%,var(--status-new-hue));--status-new-card:transparent;--status-new-card-ring:transparent;
---status-todo-hue:#5c9dff;--status-todo-list:color-mix(in srgb,var(--surface-list) 91%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#ffd83d;--status-doing-list:color-mix(in srgb,var(--surface-list) 92%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-list:color-mix(in srgb,var(--surface-list) 92%,#21e389);--status-done-card:transparent;
+--status-todo-hue:#5c9dff;--status-todo-list:color-mix(in srgb,var(--surface-list) 91%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#ffd83d;--status-doing-list:color-mix(in srgb,var(--surface-list) 92%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-line:#21e389;--status-done-list:color-mix(in srgb,var(--surface-list) 92%,var(--status-done-line));--status-done-card:transparent;
 }
 
 /* ── Minimal · light ── white paper, black ink for everything (--ink-600/-400 and --chrome-text-dim resolve to it), 12% hairlines, red #e8453a overdue */
@@ -52,7 +53,7 @@
 --shadow-card:none;--shadow-raised:0 0 0 1px rgba(0,0,0,.12),0 6px 16px rgba(0,0,0,.10);--shadow-input:none;--shadow-overlay:0 0 0 1px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.08);
 /* Status tints (Colorize Board columns, off by default here): a faint wash on the column and a status-hued hairline under its name; cards stay bare rows */
 --status-new-hue:#8a80b8;--status-new-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-new-hue));--status-new-card:transparent;--status-new-card-ring:transparent;
---status-todo-hue:#3d7efc;--status-todo-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#c99700;--status-doing-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-list:color-mix(in srgb,var(--surface-list) 94%,#1a9c5e);--status-done-card:transparent;
+--status-todo-hue:#3d7efc;--status-todo-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#c99700;--status-doing-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-line:#1a9c5e;--status-done-list:color-mix(in srgb,var(--surface-list) 94%,var(--status-done-line));--status-done-card:transparent;
 }
 
 /* ── Minimal · shape & density ──

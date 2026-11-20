@@ -74,7 +74,7 @@
     padding: var(--sp-4) var(--sp-5) var(--sp-6);
   }
   .td-skeleton-view-list-inner {
-    max-width: 900px;
+    max-width: var(--size-content-max);
     margin: 0 auto;
     display: flex;
     flex-direction: column;

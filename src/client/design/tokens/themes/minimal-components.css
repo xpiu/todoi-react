@@ -88,26 +88,20 @@ html[data-theme="minimal"] .td-list-column{background:none;border-radius:0;box-s
 html[data-theme="minimal"] .td-list-column.is-drop-target{box-shadow:none}
 html[data-theme="minimal"] .td-list-column.is-drop-target>.td-list-column-head{border-bottom-color:var(--ink-900)}
 /* Colorize Board columns (off by default in Minimal): NEW, TODO, DOING and DONE columns take a faint status wash and the name's hairline turns the status hue; cards stay bare rows on the wash. The wash is a layer behind the column, 10px outside it on the top and 8px on the sides (8px of paper between neighbours) and flush with the add row below, so the column keeps its width, its edges and its place: the toggle moves no text. BACKLOG stays paper. */
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]){position:relative;isolation:isolate;background:none}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"])::before{content:"";position:absolute;z-index:-1;inset:-10px -8px 0;border-radius:var(--radius-lg);pointer-events:none}
+/* Each role names its wash and its line colour once (--td-wash, --td-wash-line); every washed rule below reads those. Washed = any role except BACKLOG. Declared on the bare role attribute (a data scope, not a component selector) so the design-system compiler accepts them; only the Minimal Colorize rules read them. */
+[data-status-role="NEW"]{--td-wash:var(--status-new-list);--td-wash-line:var(--status-new-hue)}
+[data-status-role="TODO"]{--td-wash:var(--status-todo-list);--td-wash-line:var(--status-todo-hue)}
+[data-status-role="DOING"]{--td-wash:var(--status-doing-list);--td-wash-line:var(--status-doing-hue)}
+[data-status-role="DONE"]{--td-wash:var(--status-done-list);--td-wash-line:var(--status-done-line)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]){position:relative;isolation:isolate;background:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"])::before{content:"";position:absolute;z-index:-1;inset:-10px -8px 0;background:var(--td-wash);border-radius:var(--radius-lg);pointer-events:none}
 /* No add row (read-only): the wash runs 10px past the last hairline */
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]):not(:has(>.td-list-column-foot,>.td-list-column-composer))::before{bottom:-10px}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="NEW"]::before{background:var(--status-new-list)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="NEW"] .td-card-more{background:var(--status-new-list);box-shadow:-6px 0 4px -2px var(--status-new-list)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="TODO"]::before{background:var(--status-todo-list)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="TODO"] .td-card-more{background:var(--status-todo-list);box-shadow:-6px 0 4px -2px var(--status-todo-list)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DOING"]::before{background:var(--status-doing-list)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DOING"] .td-card-more{background:var(--status-doing-list);box-shadow:-6px 0 4px -2px var(--status-doing-list)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"]::before{background:var(--status-done-list)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"] .td-card-more{background:var(--status-done-list);box-shadow:-6px 0 4px -2px var(--status-done-list)}
-/* Rows on a wash keep the paper rhythm (10px above and below, the … button at 10px), so the name hairline has the same air on both sides, the last row and "Add an item" sit evenly on the closing hairline, and washed columns share one row grid with Backlog; no fill and no ring in any state */
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]) .td-card,html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]) .td-card:hover,html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]) .td-card:focus-visible{background:none;box-shadow:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]):not(:has(>.td-list-column-foot,>.td-list-column-composer))::before{bottom:-10px}
 /* The row's … button covers the end of the title line with the wash colour, as it does with the paper colour off a wash */
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="NEW"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--status-new-hue) 60%,transparent)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="TODO"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--status-todo-hue) 60%,transparent)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DOING"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--status-doing-hue) 60%,transparent)}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,#21e389 60%,transparent)}
-html[data-theme="minimal"][data-mode="light"][data-colorize-columns="true"] .td-list-column[data-status-role="DONE"]>.td-list-column-head{border-bottom-color:color-mix(in srgb,#1a9c5e 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]) .td-card-more{background:var(--td-wash);box-shadow:-6px 0 4px -2px var(--td-wash)}
+/* Rows on a wash keep the paper rhythm (10px above and below, the … button at 10px), so the name hairline has the same air on both sides, the last row and "Add an item" sit evenly on the closing hairline, and washed columns share one row grid with Backlog; no fill and no ring in any state */
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]) :is(.td-card,.td-card:hover,.td-card:focus-visible){background:none;box-shadow:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"])>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--td-wash-line) 60%,transparent)}
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column.is-drop-target[data-status-role]>.td-list-column-head{border-bottom-color:var(--ink-900)}
 /* 9px under the 20px name line and 10px over the 18px title line put the same 12.5px of air on both sides of the hairline */
 html[data-theme="minimal"] .td-list-column-head{padding:0 0 9px;gap:6px;align-items:baseline;border-bottom:1px solid var(--border-divider)}
@@ -125,8 +119,8 @@ html[data-theme="minimal"] .td-list-column-cards{gap:0;padding:0 16px 0 6px;marg
 html[data-theme="minimal"] .td-list-column-cards>.td-list-cue{left:6px!important;right:16px!important}
 html[data-theme="minimal"] .td-list-column-cards>.td-card{width:var(--size-list-width);box-sizing:border-box}
 /* On a wash the scroller stays inside the wash's 8px, so its scrollbar sits on the wash edge and the frame takes 4px a side; rows keep the full column width */
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]) .td-list-column-cards{padding:0 8px 0 4px;margin:0 -8px 0 -4px}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]) .td-list-column-cards>.td-list-cue{left:4px!important;right:8px!important}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]) .td-list-column-cards{padding:0 8px 0 4px;margin:0 -8px 0 -4px}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]) .td-list-column-cards>.td-list-cue{left:4px!important;right:8px!important}
 /* The footer draws the line that closes the column, so an overflowing list ends on a hairline too; the last row gives up its own. "Last" is the card with no card after it, so a drop cue rendered after the cards does not hand the border back mid-drag */
 html[data-theme="minimal"] .td-list-column:has(>.td-list-column-foot,>.td-list-column-composer) .td-list-column-cards>.td-card:not(:has(~.td-card)){border-bottom:0}
 html[data-theme="minimal"] [data-readonly="true"] .td-list-column .td-list-column-cards>.td-card:not(:has(~.td-card)){border-bottom:1px solid var(--border-divider)}
@@ -142,14 +136,13 @@ html[data-theme="minimal"] .td-card.is-selected::before,html[data-theme="minimal
 html[data-theme="minimal"] .td-card.td-file-target::before{border-style:dashed}
 html[data-theme="minimal"] .td-list-column:has(>.td-list-column-foot,>.td-list-column-composer) .td-list-column-cards>.td-card:not(:has(~.td-card))::before{bottom:0}
 html[data-theme="minimal"] [data-readonly="true"] .td-list-column .td-list-column-cards>.td-card:not(:has(~.td-card))::before{bottom:-1px}
-html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column:is([data-status-role="NEW"],[data-status-role="TODO"],[data-status-role="DOING"],[data-status-role="DONE"]) .td-card::before{left:-4px;right:-4px}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]) .td-card::before{left:-4px;right:-4px}
 html[data-theme="minimal"] .td-card>img,html[data-theme="minimal"] .td-card>div:first-child:not(.td-card-body){height:96px!important;max-height:96px;margin-bottom:10px;border-radius:0;object-position:left top}
 html[data-theme="minimal"] .td-card-body{padding:0!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:baseline;gap:0 10px!important}
 html[data-theme="minimal"] .td-card-body>.td-card-title{width:100%;white-space:normal;margin-bottom:4px;font:400 13px/18px var(--font-ui)!important;color:var(--ink-900)!important;padding-right:0!important;order:-1}
 html[data-theme="minimal"] .td-card-title>svg{display:none!important}
 html[data-theme="minimal"] .td-card-title.is-done{color:var(--ink-900)!important;text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-card-labels,html[data-theme="minimal"] .td-card-badges{display:contents!important;color:var(--ink-400);font:400 11px/16px var(--font-ui)}
-html[data-theme="minimal"] .td-card-badges.is-compact .td-meta-text{display:inline}
 html[data-theme="minimal"] .td-card-body>*,html[data-theme="minimal"] .td-card-labels>*,html[data-theme="minimal"] .td-card-badges>*{white-space:nowrap;flex:none}
 html[data-theme="minimal"] .td-card-badge,html[data-theme="minimal"] .td-due{display:inline-flex;gap:0;order:1}
 html[data-theme="minimal"] .td-card-badges>.td-card-due{flex:none;overflow:visible}
@@ -304,8 +297,8 @@ html[data-theme="minimal"] .td-list-row>span:first-child{margin-top:2px!importan
 html[data-theme="minimal"] .td-calendar-header{padding:20px 24px 12px;gap:8px 16px}
 /* Seven equal day columns: the grid is the largest multiple of 7px that fits and the header gives up the same remainder (0–6px), so the period picker still ends on the last column. When the weeks scroll, the scrollbar takes its width from the columns and any remainder (0–6px) stays beside it */
 html[data-theme="minimal"] .td-calendar-header:has(+div>.td-calendar-grid){padding-right:calc(24px + mod(100% - 48px,7px))}
-/* Day period: the header sits on the day list's 900px column (24px page margin each side) */
-html[data-theme="minimal"] .td-calendar-header:has(+div .td-calendar-day-list){padding-left:calc(24px + round(down,calc((100% - 48px - min(100% - 48px,900px))/2),1px));padding-right:calc(24px + round(up,calc((100% - 48px - min(100% - 48px,900px))/2),1px))}
+/* Day period: the header sits on the day list's content column (--size-content-max; 24px page margin each side) */
+html[data-theme="minimal"] .td-calendar-header:has(+div .td-calendar-day-list){padding-left:calc(24px + round(down,calc((100% - 48px - min(100% - 48px,var(--size-content-max)))/2),1px));padding-right:calc(24px + round(up,calc((100% - 48px - min(100% - 48px,var(--size-content-max)))/2),1px))}
 html[data-theme="minimal"] .td-calendar-header+div{padding:0 24px 20px!important}
 html[data-theme="minimal"] .td-calendar-header-title{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
 html[data-theme="minimal"] .td-calendar-header .td-btn-chrome,html[data-theme="minimal"] .td-calendar-header .td-iconbtn-chrome,html[data-theme="minimal"] .td-calendar-header .td-select-trigger{height:auto;padding:0;background:none;color:var(--ink-900);font:400 13px/20px var(--font-ui);border-radius:0}
@@ -405,6 +398,9 @@ html[data-theme="minimal"] .td-btn.td-bar-action{height:24px;padding:0 2px;gap:5
 html[data-theme="minimal"] .td-chip-bar-label{font:500 13px/20px var(--font-ui);letter-spacing:-.005em}
 html[data-theme="minimal"] nav.td-chip-bar .td-btn.td-bar-action{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] nav.td-chip-bar .td-btn.td-bar-action svg{width:14px;height:14px}
+/* Views · Filter by · Sort by rows sit on the 24px page margin shared by the top bar, the toolbar and the columns; in List view they follow the content column on the same whole pixel: its width plus 2 × 24px, the List view's Minimal side padding */
+html[data-theme="minimal"] .td-app-rows .td-chip-bar{padding-left:24px;padding-right:24px}
+html[data-theme="minimal"] .td-app-rows[data-view="list"]>.td-app-rows-inner{max-width:calc(var(--size-content-max) + 2 * 24px);padding:0;margin-left:round(down,calc((100% - min(100%,var(--size-content-max) + 2 * 24px))/2),1px)}
 html[data-theme="minimal"] .td-btn.td-bar-action.td-btn-chrome{color:var(--ink-900)}
 html[data-theme="minimal"] .td-btn.td-bar-action svg{width:12px;height:12px}
 html[data-theme="minimal"] .td-btn.td-bar-action:hover,html[data-theme="minimal"] .td-btn.td-bar-action:active{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--ink-900)}
@@ -412,9 +408,6 @@ html[data-theme="minimal"] .td-btn.td-bar-action:focus-visible{outline:1px solid
 /* The rail's "…" pager: grey word + chevron, no pill */
 html[data-theme="minimal"] .td-btn.td-chip-rail-page{height:24px;padding:0 2px;background:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-btn.td-chip-rail-page:hover{background:none;color:var(--ink-900)}
-/* Views · Filter by · Sort by rows sit on the 24px page margin shared by the top bar, the toolbar and the columns; in List view they follow the 900px column on the same whole pixel (the List view's 24px padding + the column's whole-pixel offset from ListView.css) */
-html[data-theme="minimal"] .td-app-rows .td-chip-bar{padding-left:24px;padding-right:24px}
-html[data-theme="minimal"] .td-app-rows[data-view="list"]>.td-app-rows-inner{max-width:948px;padding:0;margin-left:round(down,calc((100% - min(100%,948px))/2),1px)}
 /* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
 html[data-theme="minimal"] nav.td-chip-bar .td-chip-rail{gap:16px}
 html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/20px var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast) var(--ease-standard)}
@@ -438,7 +431,7 @@ html[data-theme="minimal"] .td-btn-outline{box-shadow:none;border-color:var(--bo
 html[data-theme="minimal"] .td-btn-outline:hover{background:var(--n-a03)}
 /* Item overlay aside: no resting hairline on the field buttons; it appears on hover / pressed / open / focus */
 html[data-theme="minimal"] .td-modal-aside .td-btn-outline{border-color:transparent}
-html[data-theme="minimal"] .td-modal-aside .td-btn-outline:hover,html[data-theme="minimal"] .td-modal-aside .td-btn-outline:active,html[data-theme="minimal"] .td-modal-aside .td-btn-outline[aria-expanded="true"],html[data-theme="minimal"] .td-modal-aside .td-btn-outline[aria-pressed="true"],html[data-theme="minimal"] .td-modal-aside .td-btn-outline:focus-visible{border-color:var(--border-divider)}
+html[data-theme="minimal"] .td-modal-aside .td-btn-outline:hover,html[data-theme="minimal"] .td-modal-aside .td-btn-outline:active,html[data-theme="minimal"] .td-modal-aside .td-btn-outline[aria-expanded="true"],html[data-theme="minimal"] .td-modal-aside .td-btn-outline:focus-visible{border-color:var(--border-divider)}
 html[data-theme="minimal"] .td-btn-primary{color:var(--chrome-canvas)}
 html[data-theme="minimal"] .td-iconbtn{border-radius:2px}
 html[data-theme="minimal"] .td-field{box-shadow:none;font-size:13px}
@@ -508,10 +501,10 @@ html[data-theme="minimal"] .td-settings-search .td-field-icon{left:0}
 /* Inbox: the page title is the same plain 500 line as the other account pages; “Mark all read” is a word, not a pill; a notification's source is a grey glyph, never a colored disc; unread rows carry an ink dot under the checkbox instead of a tint */
 /* The source sits in one 14px slot (the glyph's width; two mono initials are 13.2px), so every notification title starts on the same whole pixel */
 html[data-theme="minimal"] .td-list-row-from{width:14px;justify-content:flex-start}
-/* A notification's "about" key is the same meta label as a List view key: UI face, tabular figures, one shared width (--td-about-w, set by the Inbox), flush right. Rows without a key leave that slot free (--td-about-slot), so Created dates hold one column; the dates take tabular figures too */
-html[data-theme="minimal"] .td-list-row-end .td-list-row-about{font:400 11px/16px var(--font-ui);font-variant-numeric:tabular-nums;min-width:var(--td-about-w,0px);justify-content:flex-end}
+/* A notification's "about" key is the same meta label as a List view key: UI face, tabular figures, one shared width, flush right. The Inbox sets --td-about-ch from the key text (the widest key in ch of this tabular face; 0 when no row has a key), so there is no measuring script: the key's min-width is that many ch, and rows without a key leave the same slot plus the 12px cell gap free, so Created dates hold one column; the dates take tabular figures too */
+html[data-theme="minimal"] .td-list-row-end .td-list-row-about{font:400 11px/16px var(--font-ui);font-variant-numeric:tabular-nums;min-width:calc(var(--td-about-ch,6) * 1ch);justify-content:flex-end}
 html[data-theme="minimal"] .td-list-row-badge[title^="Created"]{font-variant-numeric:tabular-nums}
-html[data-theme="minimal"] .td-inbox .td-list-row-end>.td-list-row-badge[title^="Created"]{margin-right:var(--td-about-slot,0px)}
+html[data-theme="minimal"] .td-inbox .td-list-row-end>.td-list-row-badge[title^="Created"]{margin-right:calc(var(--td-about-ch,0) * 1ch + min(12px,var(--td-about-ch,0) * 999px))}
 html[data-theme="minimal"] .td-list-row-from .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:transparent!important;font-size:0!important;position:relative}
 html[data-theme="minimal"] .td-list-row-from .td-avatar::after{content:attr(data-initials);font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-list-row-from .td-notification-mark{background:none;border-radius:0;color:var(--ink-400);width:auto!important;height:auto!important}
@@ -562,6 +555,8 @@ html[data-theme="minimal"] .td-switch-on .td-switch-thumb,html[data-theme="minim
 html[data-theme="minimal"] .td-switch-glyph,html[data-theme="minimal"] .td-switch-on:hover .td-switch-glyph{stroke:var(--ink-900);stroke-width:1;stroke-linecap:butt}
 html[data-theme="minimal"] .td-switch-glyph .td-switch-cut{stroke:var(--chrome-canvas);stroke-width:2}
 html[data-theme="minimal"] .td-switch:focus-visible .td-switch-track{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 2px var(--chrome-canvas),0 0 0 3px var(--ink-900)}
+html[data-theme="minimal"] .td-switch-glyph,html[data-theme="minimal"] .td-switch-on:hover .td-switch-glyph{stroke:var(--ink-900);stroke-width:1;stroke-linecap:butt}
+html[data-theme="minimal"] .td-switch-glyph .td-switch-cut{stroke:var(--chrome-canvas);stroke-width:2}
 /* ── Floating layers (popovers, menus, the account menu, dialogs): paper with a hairline ring, square corners; menu rows read in normal ink, hover is a faint wash */
 html[data-theme="minimal"] .td-popover,html[data-theme="minimal"] .td-user-menu,html[data-theme="minimal"] .td-create-menu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
 html[data-theme="minimal"] .td-popover{padding:6px 0}
@@ -664,7 +659,9 @@ html[data-theme="minimal"] .td-dialog-foot{padding:12px 24px}
 html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger){background:none;border:0;box-shadow:none;color:var(--ink-400);font-weight:400}
 html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-dialog-foot .td-btn-primary,html[data-theme="minimal"] .td-dialog-foot .td-btn-danger{border-radius:2px;font-weight:500}
-/* Toast: the one inverted surface — an ink bar with paper type, square, in both modes (--chrome-topbar is the ink here). Every part — message, count, action, key, × — inherits the paper colour at full strength (one ink), so nothing depends on white. No leading glyph: the message says what happened, so the `icon` a caller passes is not drawn in Minimal. */
+/* Toast: the one inverted surface — an ink bar with paper type, square, in both modes (--chrome-topbar is the ink here). Every part — message, count, action, key, × — inherits the paper colour at full strength (one ink), so nothing depends on white. No leading glyph: the message says what happened, so the `icon` a caller passes is not drawn in Minimal.
+   One 40px row (10 + 20 + 10) with 16px between parts, up to 560px wide; a long message wraps and the count, action and × stay on its first line. The action is the underlined word, its key in mono without the underline.
+   Where the viewport is narrower than the bar plus its margins, the parts wrap instead of squeezing the message: message first, then count, action and × (flush right) on the next line. */
 html[data-theme="minimal"] .td-toast{align-items:baseline;gap:16px;max-width:min(560px,calc(100vw - 32px));padding:10px 16px;border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui);color:var(--chrome-canvas)}
 html[data-theme="minimal"] body:has(.td-bulk) .td-toast{bottom:calc(16px + 40px + 8px)}
 html[data-theme="minimal"] .td-toast-icon{display:none!important}
@@ -710,7 +707,12 @@ html[data-theme="minimal"] .td-modal-cover{border-radius:0}
 html[data-theme="minimal"] .td-modal-main{padding:16px 24px 24px}
 html[data-theme="minimal"] .td-modal-head{padding:16px 16px 0 24px}
 html[data-theme="minimal"] .td-modal-aside{padding:16px 16px 24px}
-html[data-theme="minimal"] .td-modal-title{font:500 16px/1.35 var(--font-ui)!important;letter-spacing:-.005em}
+/* Aside on the main column's lines: the first 28px row centres on the 16/22 title, dividers span the glyph-to-chevron column, the rule meets the cover, the cover dot sits in the 16px glyph slot */
+html[data-theme="minimal"] .td-modal:not(.is-sheet) .td-modal-main:not(.is-flush)+.td-modal-aside{padding-top:13px}
+html[data-theme="minimal"] .td-modal:not(.is-sheet) .td-modal-aside .td-aside-divider{margin:4px 13px}
+html[data-theme="minimal"] .td-modal:not(.is-sheet) .td-modal-cover+.td-modal-body .td-modal-aside::before{top:0}
+html[data-theme="minimal"] .td-modal-aside .td-btn .td-cover-picker-dot{margin:0 5px}
+html[data-theme="minimal"] .td-modal-title{font:500 16px/22px var(--font-ui)!important;letter-spacing:-.005em}
 html[data-theme="minimal"] .td-modal-title-input{margin:0!important;padding:0 0 1px!important;background:none!important;border:0!important;border-bottom:1px solid var(--ink-900)!important;border-radius:0!important;box-shadow:none!important}
 html[data-theme="minimal"] .td-modal-key{padding:0 6px!important;font:400 11px/16px var(--font-mono)!important;text-transform:none!important;letter-spacing:0!important;color:var(--ink-400)!important}
 html[data-theme="minimal"] .td-modal-key:hover{color:var(--ink-900)!important}
@@ -725,15 +727,18 @@ html[data-theme="minimal"] .td-modal-aside .td-avatar-stack{display:inline-block
 html[data-theme="minimal"] .td-modal-aside .td-avatar-stack>*{display:none!important}
 html[data-theme="minimal"] .td-modal-aside .td-btn>svg{stroke:var(--ink-900)!important}
 html[data-theme="minimal"] .td-modal-aside .td-btn{font-weight:400}
-/* Section heads (Attachments, Relations, Activity): name in ink over a hairline; no leading icon, body flush left */
+/* Section heads (Subitems, Attachments, Relations, Activity): a 16px glyph on the text edge, the name 10px after it (the subitem text column) over a hairline; body flush left */
 html[data-theme="minimal"] .td-item-section-head,html[data-theme="minimal"] .td-activity-head{gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-item-section-head>svg,html[data-theme="minimal"] .td-item-section-head>span:first-child:empty,html[data-theme="minimal"] .td-activity-head>svg{display:none}
+html[data-theme="minimal"] .td-item-section-head>svg,html[data-theme="minimal"] .td-activity-head>svg{width:16px!important;height:16px!important;flex:none}
+html[data-theme="minimal"] .td-checklist-head{gap:10px}
+html[data-theme="minimal"] .td-item-section-head{gap:10px!important}
+html[data-theme="minimal"] .td-checklist-head-icon{display:inline-flex;color:var(--ink-900)}
 html[data-theme="minimal"] .td-item-section-title,html[data-theme="minimal"] .td-activity-title{font:500 13px/20px var(--font-ui)!important;letter-spacing:-.005em;color:var(--ink-900)}
 html[data-theme="minimal"] .td-item-section-body{margin:0!important}
 html[data-theme="minimal"] .td-activity-head{margin-bottom:0}
-html[data-theme="minimal"] .td-activity-head .td-iconbtn{width:16px;height:16px;border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-activity-head .td-iconbtn:hover,html[data-theme="minimal"] .td-activity-head .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-activity-head .td-iconbtn svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-activity-head .td-iconbtn,html[data-theme="minimal"] .td-item-section-head .td-iconbtn{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-activity-head .td-iconbtn:hover,html[data-theme="minimal"] .td-activity-head .td-iconbtn[aria-expanded="true"],html[data-theme="minimal"] .td-item-section-head .td-iconbtn:hover,html[data-theme="minimal"] .td-item-section-head .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-activity-head .td-iconbtn svg,html[data-theme="minimal"] .td-item-section-head .td-iconbtn svg{width:16px;height:16px;stroke-width:1.75}
 /* Plain buttons in the main column (Add, Cancel, Save): words, not pills; primary stays filled ink with square corners */
 html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger){height:auto;padding:0;background:none;font:400 13px/20px var(--font-ui);color:var(--ink-400);border-radius:0}
 html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
@@ -749,15 +754,17 @@ html[data-theme="minimal"] .td-description-textarea.is-mono{font:400 12px/1.5 va
 html[data-theme="minimal"] .td-description-bar .td-iconbtn{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-description-bar .td-iconbtn:hover,html[data-theme="minimal"] .td-description-bar .td-iconbtn[aria-pressed="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-markdown{font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-markdown h1{font:500 16px/1.35 var(--font-ui)}
-html[data-theme="minimal"] .td-markdown h2{font:500 14px/1.4 var(--font-ui)}
+html[data-theme="minimal"] .td-markdown h1{font:500 16px/22px var(--font-ui)}
+html[data-theme="minimal"] .td-markdown h2{font:500 14px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-markdown h3{font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-markdown a,html[data-theme="minimal"] .td-markdown .td-markdown-mention{color:var(--ink-900);font-weight:400;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
 html[data-theme="minimal"] .td-markdown .td-markdown-key:hover{color:var(--ink-900)}
 html[data-theme="minimal"] .td-markdown code{border-radius:2px;font-size:11.5px}
 html[data-theme="minimal"] .td-markdown pre{border-radius:0;background:none;padding:8px 0 8px 12px;border-left:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-markdown blockquote{border-left-color:var(--ink-900)}
-html[data-theme="minimal"] .td-markdown-box{border-width:1px;border-color:var(--ink-400);border-radius:2px}
+html[data-theme="minimal"] .td-markdown>*+*{margin-top:8px}
+html[data-theme="minimal"] .td-markdown li.td-markdown-task{gap:10px}
+html[data-theme="minimal"] .td-markdown-box{width:16px;height:16px;margin-top:2px;border-width:1px;border-color:var(--ink-400);border-radius:2px}
 html[data-theme="minimal"] .td-markdown-box[data-on="true"]{background:var(--ink-900);border-color:var(--ink-900);color:var(--chrome-canvas)}
 /* Subitems: count in mono over a hairline, rows with a hairline below, done in grey without the strike, the drag line in ink */
 html[data-theme="minimal"] .td-checklist-head{padding:0 0 8px;border-bottom:1px solid var(--border-divider)}
@@ -793,10 +800,11 @@ html[data-theme="minimal"] .td-attachments-rename{margin:0;padding:0;height:auto
 html[data-theme="minimal"] .td-attachments-confirm{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-drop-inner{border:1px dashed var(--ink-900);border-radius:0;font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-drop-inner small{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-relations{gap:16px}
+html[data-theme="minimal"] .td-relations{gap:16px;margin-left:0!important}
 html[data-theme="minimal"] .td-relations-group{gap:0}
 html[data-theme="minimal"] .td-relations-head{padding:0 0 6px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
-html[data-theme="minimal"] .td-relations-head svg{display:none}
+html[data-theme="minimal"] .td-relations-head{gap:10px}
+html[data-theme="minimal"] .td-relations-head svg{margin:0 2px;flex:none}
 html[data-theme="minimal"] .td-relations-row{margin:0;min-height:0;padding:10px 0;border-radius:0;border-bottom:1px solid var(--border-divider);transition:none}
 html[data-theme="minimal"] .td-relations-row:hover,html[data-theme="minimal"] .td-relations-row:focus-within{background:none}
 html[data-theme="minimal"] .td-relations-open{font:400 13px/20px var(--font-ui);border-radius:0}
@@ -805,6 +813,8 @@ html[data-theme="minimal"] .td-relations-key{font:400 11px/16px var(--font-mono)
 html[data-theme="minimal"] .td-relations-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-relations-list{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-relations-remove .td-iconbtn,html[data-theme="minimal"] .td-relations-remove{border-radius:0;color:var(--ink-400)}
+/* Remove sits over the end of the row instead of holding a 32px slot, so the list name ends on the column edge */
+html[data-theme="minimal"] .td-relations-row>.td-relations-remove,html[data-theme="minimal"] .td-relations-row>.td-relations-remove:hover{position:absolute;right:0;top:50%;margin-top:-12px;background:var(--surface-card);box-shadow:-6px 0 4px -2px var(--surface-card)}
 html[data-theme="minimal"] .td-relations-types{background:none;padding:0;gap:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-relations-types button{border-radius:0;color:var(--ink-400);font:400 12px/18px var(--font-ui)}
 html[data-theme="minimal"] .td-relations-types button[aria-pressed="true"]{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
@@ -843,6 +853,7 @@ html[data-theme="minimal"] .td-reaction-pick:hover{background:var(--blue-100)}
 html[data-theme="minimal"] .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse){background:none;box-shadow:inset 0 0 0 1px var(--border-divider);border-radius:2px;font-weight:400}
 html[data-theme="minimal"] .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse):hover{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse):active{background:var(--n-a06)}
+html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse),html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse):hover,html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):not(.td-btn-chrome):not(.td-btn-chrome-ghost):not(.td-btn-ghost):not(.td-btn-inverse):active{background:none;box-shadow:none;border-radius:0}
 html[data-theme="minimal"] .td-btn-ghost{color:var(--ink-400);font-weight:400;border-radius:0}
 html[data-theme="minimal"] .td-btn-ghost:hover,html[data-theme="minimal"] .td-btn-ghost:active{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-btn-primary,html[data-theme="minimal"] .td-btn-danger{border-radius:2px;font-weight:500}

@@ -4,7 +4,7 @@
 // sidebar), reorder by drag, and take the list keyboard model. Spec: DESIGN.md › Notifications.
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
+import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 
 import { api, unwrap, type Item } from "../data/api";
 import { newId, useCreateItem, useUpdateItem } from "../data/mutations";
@@ -28,35 +28,14 @@ import { hitKey, useOpenResult } from "./search";
 import "./screens.css";
 
 /**
- * Notification "about" keys share one width (`--td-about-w`) and rows without a key keep that slot free
- * (`--td-about-slot` = the width + the about cell's gap, 0px with no keys), so Created dates hold one
- * column (read by the Minimal theme). Re-measured when the rows change, when fonts load and when the
- * theme changes the key face.
+ * Notification "about" keys share one width, read by the Minimal theme as `--td-about-ch`: the widest key in ch of
+ * the tabular key face (a digit or hyphen is 1ch; a capital counts 1.6ch, the width of W in Inter; anything else
+ * 1.2ch), so the slot is never narrower than the widest key. Rows without a key keep that slot free so Created dates
+ * hold one column; 0 when no row has a key. CSS only: no measuring, font or theme re-runs.
  */
-function useAboutKeyColumn(root: RefObject<HTMLElement | null>, rows: readonly unknown[] | undefined) {
-  useLayoutEffect(() => {
-    const el = root.current;
-    if (!el || !rows) return;
-    let live = true;
-    const sync = () => {
-      if (!live) return;
-      el.style.removeProperty("--td-about-w");
-      let w = 0;
-      for (const key of el.querySelectorAll(".td-list-row-about .td-list-row-key-text")) w = Math.max(w, Math.ceil(key.getBoundingClientRect().width));
-      const cell = el.querySelector(".td-list-row-aboutcell");
-      const gap = cell ? parseFloat(getComputedStyle(cell).columnGap) || 0 : 0;
-      el.style.setProperty("--td-about-w", `${w}px`);
-      el.style.setProperty("--td-about-slot", w ? `${w + gap}px` : "0px");
-    };
-    sync();
-    void document.fonts?.ready.then(sync);
-    const mo = typeof MutationObserver === "undefined" ? null : new MutationObserver(sync);
-    mo?.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => {
-      live = false;
-      mo?.disconnect();
-    };
-  }, [root, rows]);
+function aboutKeyCh(aboutKeys: ReadonlyArray<string | null | undefined>): number {
+  const width = (key: string) => [...key].reduce((n, c) => n + (/[0-9-]/.test(c) ? 1 : /[A-Z]/.test(c) ? 1.6 : 1.2), 0);
+  return Math.ceil(10 * Math.max(0, ...aboutKeys.map((k) => (k ? width(k) : 0)))) / 10;
 }
 
 export function InboxScreen() {
@@ -76,7 +55,7 @@ export function InboxScreen() {
   const dnd = useItemDnd(root, { listSelector: ".td-list-section", itemSelector: ".td-list-row[data-drag-id]", cardsSelector: ".td-list-section-body", onDrop: actions.move });
   // Done items stay out of sight when Settings › Show completed items is off (subitems stay with their parent).
   const data = useMemo(() => (showCompleted ? items.data : items.data?.filter((it) => !it.done || it.parentItemId)), [items.data, showCompleted]);
-  useAboutKeyColumn(root, data);
+  const aboutCh = useMemo(() => aboutKeyCh((data ?? []).map((it) => it.notification?.aboutKey)), [data]);
   const markAllRead = useMutation({
     mutationFn: () => api.api.inbox["mark-all-read"].$post().then((r) => unwrap<{ marked: number }>(r)),
     onSettled: () => {
@@ -135,7 +114,7 @@ export function InboxScreen() {
   };
   return (
     <>
-      <ListView ref={root} className="td-inbox" showAddList={false} onItemKey={onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
+      <ListView ref={root} className="td-inbox" style={{ "--td-about-ch": aboutCh } as CSSProperties} showAddList={false} onItemKey={onItemKey} onMoveItem={actions.onMoveItemKey} rootProps={dnd.rootProps}>
         <ListSection
           listId={listId}
           name="Inbox"

@@ -27,17 +27,23 @@
     overflow: hidden;
   }
   /* Views · Filter by · Sort by rows: full canvas on Board and Calendar; in List view they match the
-     list column (900px, centred; 8px here + the rows' own 12px = the list's 20px inset). */
+     list column (the content column plus the List view's side padding, 2 × --sp-5; 8px here + the rows' own 12px =
+     the list's 20px inset). */
   .td-app-rows {
     flex-shrink: 0;
     background: var(--chrome-canvas);
   }
   .td-app-rows[data-view="list"] > .td-app-rows-inner {
-    max-width: 940px;
+    --td-rows-max: calc(var(--size-content-max) + 2 * var(--sp-5));
+    max-width: var(--td-rows-max);
     margin: 0 auto;
-    /* On the same whole pixel as the list column (ListView.css rounds its centring offset down) */
-    margin-left: round(down, calc((100% - min(100%, 940px)) / 2), 1px);
     padding: 0 var(--sp-2);
     box-sizing: border-box;
+  }
+  /* On the same whole pixel as the list column (ListView.css rounds its centring offset down) */
+  @supports (margin-left: round(down, 1px, 1px)) {
+    .td-app-rows[data-view="list"] > .td-app-rows-inner {
+      margin-left: round(down, calc((100% - min(100%, var(--td-rows-max))) / 2), 1px);
+    }
   }
 }

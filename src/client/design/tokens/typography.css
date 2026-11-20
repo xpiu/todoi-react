@@ -19,7 +19,7 @@
 --type-list-name:600 var(--text-sm)/var(--lh-sm) var(--font-ui);
 --type-page-title:600 var(--text-xl)/var(--lh-xl) var(--font-ui);
 }
-/* Minimal (Ledger) type: Inter for UI, Geist Mono for keys and counts; 13px/1.45 base, medium 500 is the heaviest weight. Fonts ship in assets/fonts. */
+/* Minimal (Ledger) type: Inter for UI, Geist Mono for keys and counts; 13px/20px base, medium 500 is the heaviest weight. Fonts ship in assets/fonts. */
 [data-theme="minimal"]{
 --font-ui:"Inter",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 --font-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;

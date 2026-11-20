@@ -45,12 +45,19 @@ export function Modal({ open, onClose, title, cover, corner, aside, children, wi
   useLayoutEffect(() => {
     const t = titleRef.current, root = popupEl, a = asideEl;
     if (!t) return;
+    // The aside node is read from the popup for the write: the state copy only re-runs this effect.
+    const asideNode = root?.querySelector<HTMLElement>(":scope .td-modal-aside") ?? null;
     const measure = () => {
+      if (asideNode) asideNode.style.width = "";
       if (!root || !a || sheet) {
         t.style.maxWidth = "";
         t.classList.remove("is-measured");
         return;
       }
+      // The aside is as wide as its content: rounded up to a whole pixel, so its text and glyphs (and the main
+      // column beside it) sit on whole pixels. Settles in one pass: the next observation sees the same width.
+      const aw = asideNode ? parseFloat(getComputedStyle(asideNode).width) : 0;
+      if (asideNode && aw % 1) asideNode.style.width = `${Math.ceil(aw)}px`;
       const w = root.clientWidth - a.offsetWidth - 40;
       t.style.maxWidth = w > 0 ? `${w}px` : "";
       t.classList.toggle("is-measured", w > 0);

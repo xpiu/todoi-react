@@ -7,14 +7,19 @@
     padding: var(--sp-4) var(--sp-5) var(--sp-6);
   }
   .td-list-view-inner {
-    max-width: 900px;
+    max-width: var(--size-content-max);
     margin: 0 auto;
-    /* Centred on whole pixels: with an odd free width a plain auto margin starts the column on a half pixel, which
-       softens checkbox rings and 14px glyphs at 1x. margin:0 auto stays as the fallback where round() is unsupported. */
-    margin-left: round(down, calc((100% - min(100%, 900px)) / 2), 1px);
     display: flex;
     flex-direction: column;
     gap: var(--sp-5);
+  }
+  /* Centred on whole pixels: with an odd free width a plain auto margin starts the column on a half pixel, which
+     softens checkbox rings and 14px glyphs at 1x. Under @supports, because round() with a var() inside would compute
+     to 0 where round() is unsupported instead of falling back to margin:0 auto. */
+  @supports (margin-left: round(down, 1px, 1px)) {
+    .td-list-view-inner {
+      margin-left: round(down, calc((100% - min(100%, var(--size-content-max))) / 2), 1px);
+    }
   }
   .td-list-view-tail {
     display: flex;

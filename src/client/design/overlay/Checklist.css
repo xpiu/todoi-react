@@ -6,6 +6,10 @@
     padding: 0 var(--sp-2);
     min-height: 24px;
   }
+  .td-checklist-head-icon {
+    display: none;
+    flex: none;
+  }
   .td-checklist-head-count {
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
     color: var(--ink-400);

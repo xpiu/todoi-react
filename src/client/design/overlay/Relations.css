@@ -2,16 +2,6 @@
   .td-relations-section {
     margin-top: var(--sp-6);
   }
-  .td-relations-section-head {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-3);
-    color: var(--ink-900);
-  }
-  .td-relations-section-title {
-    flex: 1;
-    font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
-  }
   .td-relations-blocked {
     display: inline-flex;
     align-items: center;

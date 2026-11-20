@@ -1,9 +1,8 @@
 @layer components {
   .td-calendar-day-list {
     width: 100%;
-    max-width: 900px;
+    max-width: var(--size-content-max);
     margin: 0 auto;
-    margin-left: round(down, calc((100% - min(100%, 900px)) / 2), 1px);
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
@@ -59,8 +58,14 @@
     color: var(--ink-600);
   }
   /* Day period: the header (title · Today · prev/next · period) sits on the list's column instead of the full canvas width; 16px = the calendar body padding. */
-  .td-calendar-header:has(+ div .td-calendar-day-list) {
-    padding-left: calc(16px + round(down, calc((100% - 32px - min(100% - 32px, 900px)) / 2), 1px));
-    padding-right: calc(16px + round(up, calc((100% - 32px - min(100% - 32px, 900px)) / 2), 1px));
+  /* The List view's column (--size-content-max) on whole pixels; see ListView.css for the @supports guard. */
+  @supports (margin-left: round(down, 1px, 1px)) {
+    .td-calendar-day-list {
+      margin-left: round(down, calc((100% - min(100%, var(--size-content-max))) / 2), 1px);
+    }
+    .td-calendar-header:has(+ div .td-calendar-day-list) {
+      padding-left: calc(16px + round(down, calc((100% - 32px - min(100% - 32px, var(--size-content-max))) / 2), 1px));
+      padding-right: calc(16px + round(up, calc((100% - 32px - min(100% - 32px, var(--size-content-max))) / 2), 1px));
+    }
   }
 }

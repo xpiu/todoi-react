@@ -9,6 +9,7 @@ import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { ItemPicker, statusGlyph, type PickableItem } from "../core/ItemPicker";
 import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "../core/Popover";
+import "./ItemSection.css";
 import "./Relations.css";
 
 export interface RelationTypeDef {
@@ -91,9 +92,10 @@ export function RelationsSection({ relations, items, excludeIds = [], onAdd, onR
   if (!groups.length && !onAdd) return null;
   return (
     <div className="td-relations-section">
-      <div className="td-relations-section-head">
+      {/* The ItemSection head and title, so the section reads like Attachments and Activity in every theme */}
+      <div className="td-item-section-head">
         <Icon name="link-2" size={16} />
-        <span className="td-relations-section-title">Relations</span>
+        <span className="td-item-section-title">Relations</span>
         {blocked ? (
           <span className="td-relations-blocked">
             <Icon name="ban" size={13} />
