@@ -230,8 +230,9 @@
     gap: var(--sp-2);
     min-width: 0;
   }
+  /* Mono labels keep the 20px label line, so their rows are as tall as the rest */
   .td-settings-rowlabel[data-mono="true"] {
-    font: var(--weight-regular) var(--text-xs) / var(--lh-xs) var(--font-mono);
+    font: var(--weight-regular) var(--text-xs) / var(--lh-sm) var(--font-mono);
     word-break: break-all;
   }
   .td-settings-rowhint {
@@ -250,16 +251,6 @@
     padding-top: 0;
     padding-bottom: 0;
     box-sizing: border-box;
-  }
-  .td-settings-group[data-fields="true"] .td-settings-row {
-    min-height: 40px;
-    padding: var(--sp-1) var(--sp-5);
-  }
-  .td-settings-group[data-fields="true"] .td-settings-row + .td-settings-row {
-    border-top: none;
-  }
-  .td-settings-group[data-fields="true"] .td-settings-row:last-child {
-    padding-bottom: 14px;
   }
   .td-settings-empty {
     padding: var(--sp-6) var(--sp-5);
