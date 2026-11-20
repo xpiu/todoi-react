@@ -493,8 +493,11 @@ html[data-theme="minimal"] .td-table-idcell>.td-table-idinput{width:64px;padding
 html[data-theme="minimal"] .td-table-idedit{margin-left:auto;border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-table-idedit:hover{background:none;color:var(--ink-900)}
 /* Settings: the left nav is the sidebar's vocabulary — grey words, ink when current, no pill; the search a hairline; groups are ledgers with the group name in 500 over an ink hairline */
-html[data-theme="minimal"] .td-settings-inner{grid-template-columns:172px minmax(0,1fr);gap:40px}
-html[data-theme="minimal"] .td-settings-inner[data-nav="false"]{grid-template-columns:minmax(0,1fr)}
+/* The column is the List view's: --size-content-max, centred on the same whole pixel (ListView.css), so both edges stay put when Settings opens from a list. 172 + 40 + 688 = 900 */
+html[data-theme="minimal"] .td-settings-inner{max-width:var(--size-content-max);grid-template-columns:172px minmax(0,1fr);gap:40px}
+@supports (margin-left:round(down,1px,1px)){html[data-theme="minimal"] .td-settings-inner{margin-left:round(down,calc((100% - min(100%,var(--size-content-max)))/2),1px)}}
+/* The Import page (no nav) keeps its narrower 680px column, centred */
+html[data-theme="minimal"] .td-settings-inner[data-nav="false"]{max-width:680px;margin-left:auto;grid-template-columns:minmax(0,1fr)}
 html[data-theme="minimal"] .td-settings-search .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-settings-search .td-field::placeholder{color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-search svg{width:16px;height:16px;stroke-width:1.75;color:var(--ink-900)}
@@ -513,28 +516,43 @@ html[data-theme="minimal"] .td-list-row-from .td-notification-mark svg{width:14p
 html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-title{font-weight:500;letter-spacing:-.005em}
 html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from{position:relative}
 html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from::after{content:"";position:absolute;right:-6px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--ink-900)}
-html[data-theme="minimal"] .td-settings-search{margin-bottom:20px}
+/* The nav sits on the content's lines: the head on the first group-title line (30px under the search = the title's 22px + the 32px group gap - 24px field), the first row on the first setting's label line; rows keep a 30px pitch. The base 2px flex gaps are zeroed below so these are the only distances */
+html[data-theme="minimal"] .td-settings-search{margin-bottom:30px}
 html[data-theme="minimal"] .td-settings-clear{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-clear:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-settings-navhead{font:400 11px/16px var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:16px 0 6px}
+html[data-theme="minimal"] .td-settings-navhead{font:400 11px/20px var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:20px 0 14px}
 html[data-theme="minimal"] .td-settings-navhead:first-child{margin-top:0}
-html[data-theme="minimal"] .td-settings-navrow{height:auto;padding:4px 0;gap:0;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-navrow{height:auto;padding:5px 0;gap:0;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-navrow:hover,html[data-theme="minimal"] .td-settings-navrow:active{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-settings-navrow[aria-current="true"]{background:none;color:var(--ink-900);font-weight:500;letter-spacing:-.005em}
-html[data-theme="minimal"] .td-settings-navrow:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+/* Current section: the sidebar's indicator, a hairline under the row; same type as the other rows */
+html[data-theme="minimal"] .td-settings-navrow[aria-current="true"]{background:none;color:var(--ink-900);box-shadow:inset 0 -1px 0 var(--border-divider)}
+html[data-theme="minimal"] .td-settings-navrow:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] .td-settings-navicon{display:none}
 html[data-theme="minimal"] .td-settings-crumb{display:none}
-html[data-theme="minimal"] .td-settings-main{gap:32px;max-width:640px}
+html[data-theme="minimal"] .td-settings-main{gap:32px;max-width:none}
 html[data-theme="minimal"] .td-settings-group{background:none;border-radius:0;box-shadow:none;overflow:visible}
 html[data-theme="minimal"] .td-settings-grouphead{padding:0 0 8px;border-bottom:1px solid var(--ink-900)}
 html[data-theme="minimal"] .td-settings-grouptitle{font:500 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-grouppath,html[data-theme="minimal"] .td-settings-grouppath-btn{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-row{padding:10px 0;min-height:0;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-settings-row+.td-settings-row,html[data-theme="minimal"] .td-settings-body+.td-settings-row{border-top:0}
-html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row{padding:6px 0}
-html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row:last-child{padding-bottom:6px}
+/* One 41px pitch, as on the table pages: a 24px field + 8px above and below + the hairline; a 28px button + 6px. Rows with a hint keep 10px */
+html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row{padding:8px 0}
+html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row:last-child{padding-bottom:8px}
+html[data-theme="minimal"] .td-settings-row:has(.td-settings-row-control .td-btn):not(:has(.td-settings-rowhint)){padding:6px 0}
+/* Identity head (Account › Profile): flush with the ledger, the name on the group-title line over the ink hairline. !important outranks the inline padding-bottom */
+html[data-theme="minimal"] .td-settings-id{padding:0 0 8px!important;border-bottom:1px solid var(--ink-900)}
+html[data-theme="minimal"] .td-settings-idname{font:500 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-idmail{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+/* Body copy inside a group sits on the 13/20 line and the ledger's left edge (no card padding) */
+html[data-theme="minimal"] .td-settings-note,html[data-theme="minimal"] .td-settings-body,html[data-theme="minimal"] .td-settings-status,html[data-theme="minimal"] .td-settings-link,html[data-theme="minimal"] .td-settings-empty{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-settings-note{padding:10px 0}
+html[data-theme="minimal"] .td-settings-body{padding:10px 0}
+html[data-theme="minimal"] .td-settings-empty{padding:20px 0;text-align:left}
+html[data-theme="minimal"] .td-settings-mono{padding:0;border-radius:0;background:none;font:400 11px/20px var(--font-mono);color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-rowlabel[data-mono="true"]{font:400 11px/20px var(--font-mono)}
 html[data-theme="minimal"] .td-settings-rowlabel{font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-settings-rowhint{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-settings-rowhint{max-width:560px;font:400 11px/16px var(--font-ui);color:var(--ink-400);text-wrap:pretty}
 html[data-theme="minimal"] .td-settings-mark{font-weight:500;text-decoration-color:var(--ink-900)}
 @keyframes td-settings-hit-minimal{0%,40%{background:var(--n-a06)}100%{background:transparent}}
 html[data-theme="minimal"] .td-settings-row[data-hit="true"]{animation-name:td-settings-hit-minimal}
@@ -545,6 +563,44 @@ html[data-theme="minimal"] .td-settings-select:focus-visible{box-shadow:none;bor
 html[data-theme="minimal"] .td-settings-row-control .td-field{height:24px;padding:3px 0!important;background:none;border:0;border-bottom:1px solid var(--ink-400);border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-settings-row-control .td-field:focus{border-bottom-color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-kbd{background:none;border-radius:0;padding:0;min-width:0;height:auto;font:400 12px/18px var(--font-mono);color:var(--ink-900)}
+/* Settings rows on the 20px grid (2026-11-20). Label 20 + 4 + hint 16 = two lines of 20, so a hint row is 61px = the 41px row + 20; mono labels and values keep the 20px line. */
+@container (min-width:640.02px){html[data-theme="minimal"] .td-settings-nav,html[data-theme="minimal"] .td-settings-navlist{gap:0}}
+html[data-theme="minimal"] .td-settings-title:has(.td-settings-titlesec) .td-settings-titlepage{display:none}
+html[data-theme="minimal"] .td-settings-titlesec{display:inline}
+html[data-theme="minimal"] .td-settings-rowtext{gap:4px}
+html[data-theme="minimal"] .td-settings-group[data-fields="true"] .td-settings-row:has(.td-settings-rowhint){padding:10px 0}
+html[data-theme="minimal"] .td-settings-rowtext[data-swatch="true"]>.td-settings-rowhint{padding-left:24px}
+/* Words at the trailing edge (mono values, status, links) sit on the label line, with or without a hint under it */
+html[data-theme="minimal"] .td-settings-row:has(.td-settings-rowhint)>.td-settings-row-control:has(>.td-settings-mono,>.td-settings-status,>.td-settings-link):not(:has(.td-btn)){align-self:flex-start}
+/* The 41px pitch outside the Account field groups: a 24px field or select + 8px, 22px swatches + 9px */
+html[data-theme="minimal"] .td-settings-row:has(.td-settings-row-control .td-field):not(:has(.td-settings-rowhint)),html[data-theme="minimal"] .td-settings-row:has(.td-settings-row-control .td-select-trigger):not(:has(.td-settings-rowhint)){padding:8px 0}
+html[data-theme="minimal"] .td-settings-row:has(.td-settings-colors):not(:has(.td-settings-rowhint)){padding:9px 0}
+/* A field with a glyph (Help search): the glyph on the column edge, the text after it — as in the nav search */
+html[data-theme="minimal"] .td-settings-row-control .td-field.td-field-hasicon{padding-left:22px!important}
+html[data-theme="minimal"] .td-settings-row-control .td-field-icon{left:0;color:var(--ink-900)}
+/* Glyph-only controls end on the column edge: the 24px "…" and the 28px chevron / × hold a 16px glyph */
+html[data-theme="minimal"] .td-settings-row-control>.td-iconbtn:last-child,html[data-theme="minimal"] .td-settings-grouphead>.td-iconbtn:last-child{margin-right:-6px}
+/* Select (core Select, an outline Button): a word with a chevron over a hairline, like the text field beside it. The hairline is an inset shadow, so the 24px box keeps the 14px chevron on whole pixels */
+html[data-theme="minimal"] .td-settings-row-control .td-select-trigger{height:24px;padding:0;gap:6px;border:0;border-radius:0;background:none;box-shadow:inset 0 -1px 0 var(--ink-400);font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-settings-row-control .td-select-trigger:is(:hover,:active,[aria-expanded="true"]){background:none;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-settings-row-control .td-select-trigger:focus-visible{outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-settings-row-control .td-select-trigger>svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-settings-row-control .td-segmented-btn{font:400 13px/20px var(--font-ui)}
+/* Row actions are words in a box: no leading glyph (Icon writes an inline display, hence !important) */
+html[data-theme="minimal"] .td-settings-row-control .td-btn:not(.td-select-trigger)>svg{display:none!important}
+/* Swatches: the Style menu's 40px sheet with a 12px check on whole pixels; label and avatar colours are squares with an ink ring */
+html[data-theme="minimal"] .td-settings-row-control .td-swatches:not(.td-settings-colors) .td-swatch{flex:0 0 40px;width:40px!important;height:24px!important}
+html[data-theme="minimal"] .td-settings-row-control .td-swatches:not(.td-settings-colors) .td-swatch>svg{width:12px!important;height:12px!important}
+/* Settings and Account are one ledger (2026-11-20, alignment pass). Every group head is the 29px title line: a × or chevron in the head hangs outside the 20px line (!important outranks the inline padding of closable heads) */
+html[data-theme="minimal"] .td-settings-grouphead{padding-bottom:8px!important}
+html[data-theme="minimal"] .td-settings-grouphead>.td-iconbtn{margin-top:-4px;margin-bottom:-4px}
+/* A row holding only a 28px chevron keeps the 41px pitch */
+html[data-theme="minimal"] .td-settings-row:has(.td-settings-row-control>.td-iconbtn):not(:has(.td-settings-rowhint)){padding:6px 0}
+html[data-theme="minimal"] .td-settings-row-control .td-check{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-settings-mono{max-width:400px}
+html[data-theme="minimal"] .td-settings-colors .td-swatch{border-radius:0}
+html[data-theme="minimal"] .td-settings-colors .td-swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--chrome-canvas),0 0 0 3px var(--ink-900)}
+html[data-theme="minimal"] .td-settings-colors .td-swatch:focus-visible{box-shadow:0 0 0 2px var(--chrome-canvas),0 0 0 3px var(--ink-900),0 0 0 5px var(--chrome-canvas),0 0 0 6px var(--ink-900)}
 html[data-theme="minimal"] .td-settings-keys{gap:6px}
 /* Switch (core): hairline track off, ink track on, paper knob; the same rule as checkboxes */
 html[data-theme="minimal"] .td-switch-track,html[data-theme="minimal"] .td-switch:hover .td-switch-track{background:none;box-shadow:inset 0 0 0 1px var(--ink-400)}

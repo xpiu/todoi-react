@@ -279,12 +279,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
               { id: "shortcuts", label: "Keyboard shortcuts", hint: "The full map, also behind ? anywhere in the app", control: <Button icon="keyboard" onClick={() => navigate({ to: "/settings", search: { s: "keyboard" } })}>Open</Button> },
             ],
           },
-          {
-            id: "help-search",
-            title: "Search",
-            rows: [{ id: "helpSearch", label: "Search help", hint: helpQ.trim() ? `${count(topics.length, "topic")} match` : "Type to filter the topics below", control: <TextField icon="search" value={helpQ} onChange={(e) => setHelpQ(e.target.value)} placeholder="Search" aria-label="Search help" /> }],
-          },
-          { id: "help-topics", title: "Topics", empty: `No topics match “${helpQ}”`, rows: topics.map((t) => ({ id: t.id, label: t.label, hint: t.hint, bodyText: t.body, body: expanded === t.id ? t.body : undefined, control: <IconButton name="chevron-down" label={`${expanded === t.id ? "Collapse" : "Expand"} ${t.label}`} size={28} iconSize={16} aria-expanded={expanded === t.id} onClick={() => setExpanded((e) => (e === t.id ? null : t.id))} /> })) },
+          { id: "help-topics", title: "Topics", rows: [{ id: "helpSearch", label: "Search help", hint: helpQ.trim() ? `${count(topics.length, "topic")} match` : "Type to filter the topics below", control: <TextField icon="search" value={helpQ} onChange={(e) => setHelpQ(e.target.value)} placeholder="Search" aria-label="Search help" /> }, ...topics.map((t) => ({ id: t.id, label: t.label, hint: t.hint, bodyText: t.body, body: expanded === t.id ? t.body : undefined, control: <IconButton name="chevron-down" label={`${expanded === t.id ? "Collapse" : "Expand"} ${t.label}`} size={28} iconSize={16} aria-expanded={expanded === t.id} onClick={() => setExpanded((e) => (e === t.id ? null : t.id))} /> }))] },
           { id: "legal", title: "About", rows: ABOUT_LINKS.map(([id, label, href]) => ({ id, label, hint: id === "licences" ? "Open-source software used in Todoi" : undefined, control: <SettingsLink href={href} /> })) },
         ],
       },
@@ -303,7 +298,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         label: "Notifications",
         icon: "bell",
         groups: [
-          { id: "nt-where", title: "Where they land", rows: [{ id: "ntInbox", label: "Inbox", hint: "Mentions, assignments and comments on items you watch arrive as unread items in your Inbox", control: <Button icon="inbox" onClick={() => navigate({ to: "/inbox" })}>Open Inbox</Button> }] },
+          { id: "nt-where", title: "Where they land", rows: [{ id: "ntInbox", label: "Inbox", hint: "Mentions, assignments and comments on items you watch arrive as unread items in your Inbox", control: <Button icon="inbox" onClick={() => navigate({ to: "/inbox" })}>Open Inbox</Button> }, { id: "notifyEmail", label: "Email delivery", hint: "Email sending isn't set up yet — notifications arrive in your Inbox only", control: <MonoValue value="Inbox only" /> }, { id: "inboxBadge", label: "Unread count on Inbox", hint: "Show a dot on the sidebar Inbox row while it holds unread items", control: prefSwitch("inboxBadge", "Unread count on Inbox") }] },
           {
             id: "nt-events",
             title: "Events",
@@ -314,8 +309,6 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
               { id: "notifyNews", label: "Todoi news", hint: "Todoi doesn't send release news yet", control: <MonoValue value="Not sent yet" /> },
             ],
           },
-          { id: "nt-channels", title: "Channels", rows: [{ id: "notifyEmail", label: "Email delivery", hint: "Email sending isn't set up yet — notifications arrive in your Inbox only", control: <MonoValue value="Inbox only" /> }] },
-          { id: "nt-display", title: "Display", rows: [{ id: "inboxBadge", label: "Unread count on Inbox", hint: "Show a dot on the sidebar Inbox row while it holds unread items", control: prefSwitch("inboxBadge", "Unread count on Inbox") }] },
         ],
       },
     ],
@@ -348,7 +341,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
   const labelled = ls.reduce((n, l) => n + (usage.get(l.id) ?? 0), 0);
   const editRows = (e: LabelDraft): SettingsRow[] => [
     { id: `lb-edit-name`, label: "Name", control: <TextField value={e.name} aria-label="Label name" autoFocus onChange={(ev) => setEdit({ ...e, name: ev.target.value })} /> },
-    { id: `lb-edit-color`, label: "Label color", control: <SwatchGroup size={22} aria-label="Label color" options={LABEL_SWATCHES} value={e.color} onChange={(c) => setEdit({ ...e, color: c as LabelColor })} /> },
+    { id: `lb-edit-color`, label: "Label color", control: <SwatchGroup size={22} className="td-settings-colors" aria-label="Label color" options={LABEL_SWATCHES} value={e.color} onChange={(c) => setEdit({ ...e, color: c as LabelColor })} /> },
     {
       id: `lb-edit-save`,
       label: e.id ? "Save changes" : "Create label",
@@ -496,7 +489,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
               { id: "name", label: "Display name", hint: "Shown on comments, avatars and activity", control: <TextField value={name} aria-label="Display name" onChange={(e) => setDraft({ name: e.target.value, nickname })} onKeyDown={(e) => e.key === "Enter" && saveProfile()} /> },
               { id: "nickname", label: "Handle", hint: `@${nickname || (name.split(/\s+/)[0] ?? "").toLowerCase()} · used for @mentions and quick-add`, control: <TextField value={nickname} aria-label="Handle" placeholder="handle" onChange={(e) => setDraft({ name, nickname: e.target.value.replace(/[^a-z0-9._-]/gi, "").toLowerCase() })} onKeyDown={(e) => e.key === "Enter" && saveProfile()} /> },
               { id: "avatarImage", label: "Avatar image", hint: AVATAR_HINT, control: <AvatarUpload image={m?.image} onChange={(file) => am.updateAvatar.mutateAsync({ file, quiet: true })} /> },
-              { id: "avatarColor", label: "Avatar color", hint: "Behind your initials when you have no image", control: <SwatchGroup size={22} aria-label="Avatar color" options={LABEL_SWATCHES} value={m?.avatarColor} onChange={(c) => am.updateMe.mutate({ avatarColor: c as LabelColor })} /> },
+              { id: "avatarColor", label: "Avatar color", hint: "Behind your initials when you have no image", control: <SwatchGroup size={22} className="td-settings-colors" aria-label="Avatar color" options={LABEL_SWATCHES} value={m?.avatarColor} onChange={(c) => am.updateMe.mutate({ avatarColor: c as LabelColor })} /> },
               {
                 id: "save",
                 label: "Save profile",

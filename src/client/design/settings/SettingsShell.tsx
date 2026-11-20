@@ -69,7 +69,7 @@ function Row({ row, q = "", hit }: { row: SettingsRow; q?: string; hit?: boolean
   return (
     <>
       <div className="td-settings-row" data-hit={hit || undefined} ref={hit ? scrollToHit : undefined}>
-        <div className="td-settings-rowtext">
+        <div className="td-settings-rowtext" data-swatch={row.swatch ? "true" : undefined}>
           <span className="td-settings-rowlabel" data-mono={row.mono ? "true" : undefined}>
             {row.swatch ? <span className="td-settings-bar" style={{ background: row.swatch }} aria-hidden /> : null}
             <span>{label}</span>
@@ -236,7 +236,11 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
           ) : (
             <>
               <div>
-                <h1 className="td-settings-title">{cur.title}</h1>
+                {/* Minimal titles the page with the section's name (the crumb is hidden there); Rounded keeps the page's */}
+                <h1 className="td-settings-title">
+                  <span className="td-settings-titlepage">{cur.title}</span>
+                  {cur.sections.length > 1 ? <span className="td-settings-titlesec">{sec.label}</span> : null}
+                </h1>
                 {cur.sections.length > 1 ? (
                   <p className="td-settings-crumb">
                     {sec.title ?? sec.label}

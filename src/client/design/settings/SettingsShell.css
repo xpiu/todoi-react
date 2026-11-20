@@ -157,6 +157,10 @@
     font: var(--type-page-title);
     color: var(--chrome-text);
   }
+  /* The section's name, shown as the page title by a theme that hides the crumb (Minimal) */
+  .td-settings-titlesec {
+    display: none;
+  }
   .td-settings-crumb {
     margin: 2px 0 0;
     font: var(--type-small);
@@ -189,10 +193,15 @@
     font: var(--weight-semibold) var(--text-sm) / var(--lh-sm) var(--font-ui);
     color: var(--ink-900);
   }
+  /* A count or name beside the group title: it may wrap (it ran past the column under ~880px), ending on the right edge */
   .td-settings-grouppath {
+    min-width: 0;
     font: var(--type-small);
     color: var(--ink-400);
-    white-space: nowrap;
+    text-align: right;
+  }
+  .td-settings-grouptitle:has(+ .td-settings-grouppath) {
+    flex: none;
   }
   .td-settings-row {
     display: flex;
