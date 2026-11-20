@@ -371,6 +371,7 @@ export function AppShell() {
         onCreateAccount={() => navigate({ to: "/signup", search: { next: location.href } })}
         onOpenSettings={() => navigate({ to: "/settings", search: {} })}
         onOpenAccount={() => navigate({ to: "/account", search: {} })}
+        accountLabel={user?.name}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={setSidebarOpen}
         onCreate={(kind) => {

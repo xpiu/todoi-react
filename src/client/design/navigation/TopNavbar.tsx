@@ -52,7 +52,10 @@ export interface TopNavbarProps {
   /** @default true */
   signedIn?: boolean;
   onOpenSettings?: () => void;
+  /** Open the account page (/account) */
   onOpenAccount?: () => void;
+  /** Label of the account row in the avatar menu, e.g. the account owner's name @default "Account" */
+  accountLabel?: string;
   onLogout?: () => void;
   onLogin?: () => void;
   onCreateAccount?: () => void;
@@ -173,6 +176,7 @@ export function TopNavbar({
   signedIn = true,
   onOpenSettings,
   onOpenAccount,
+  accountLabel,
   onLogout,
   onLogin,
   onCreateAccount,
@@ -318,29 +322,23 @@ export function TopNavbar({
                   </button>
                 }
               >
-                {signedIn ? (
-                  <MenuItem className="td-user-menu-id" onSelect={() => (onOpenAccount ?? onOpenSettings ?? onLogout)?.()}>
-                    <span className="td-user-menu-idrow">
-                      <Avatar name={user.name} src={user.src} color={user.avatarColor} size={36} decorative />
+                {/* Signed in, the rows start at once: the account row carries the owner's name. Signed out, a header
+                    says so above the rows. */}
+                {signedIn ? null : (
+                  <>
+                    <div className="td-user-menu-id td-user-menu-idrow">
+                      <GuestAvatar size={36} tone="card" />
                       <span className="td-user-menu-idtext">
-                        <span className="td-user-menu-name">{user.nickname ?? user.name}</span>
-                        {user.email ? <span className="td-user-menu-email">{user.email}</span> : null}
+                        <span className="td-user-menu-name">Not signed in</span>
+                        <span className="td-user-menu-email">Log in to sync your work</span>
                       </span>
-                    </span>
-                  </MenuItem>
-                ) : (
-                  <div className="td-user-menu-id td-user-menu-idrow">
-                    <GuestAvatar size={36} tone="card" />
-                    <span className="td-user-menu-idtext">
-                      <span className="td-user-menu-name">Not signed in</span>
-                      <span className="td-user-menu-email">Log in to sync your work</span>
-                    </span>
-                  </div>
+                    </div>
+                    <MenuDivider />
+                  </>
                 )}
-                <MenuDivider />
                 {onOpenAccount ? (
                   <MenuItem icon="user" onSelect={onOpenAccount}>
-                    Account
+                    {accountLabel ?? "Account"}
                   </MenuItem>
                 ) : null}
                 {onOpenSettings ? (

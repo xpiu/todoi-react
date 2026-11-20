@@ -618,6 +618,8 @@ html[data-theme="minimal"] .td-switch-glyph .td-switch-cut{stroke:var(--chrome-c
 html[data-theme="minimal"] .td-popover,html[data-theme="minimal"] .td-user-menu,html[data-theme="minimal"] .td-create-menu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
 html[data-theme="minimal"] .td-popover{padding:6px 0}
 html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){padding:0}
+/* Dark: the plus glyph's 1px strokes fall on a half pixel at 14/16px and blur to grey; snap them to whole pixels so the + reads solid white */
+html[data-theme="minimal"][data-mode="dark"] svg path[d="M5 12h14"],html[data-theme="minimal"][data-mode="dark"] svg path[d="M12 5v14"]{shape-rendering:crispEdges}
 /* Style menu: a 14px edge like the menus beside it. The app pads the inner .td-style-menu (the kit pads the popover), so the popover itself carries none */
 html[data-theme="minimal"] .td-popover:has(.td-style-menu){padding:0}
 html[data-theme="minimal"] .td-style-menu{padding:14px}
@@ -665,32 +667,35 @@ html[data-theme="minimal"] .td-members-menu-role,html[data-theme="minimal"] .td-
 html[data-theme="minimal"] .td-members-menu-role:hover,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-members-menu-link{margin:6px 14px 8px;padding:4px 0;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;background:none}
 html[data-theme="minimal"] .td-members-menu-url{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
-/* Auth pages (Log in · Invite · Reset): the wordmark in 500, no card — a plain column on paper; provider buttons and the primary are squares, links are grey words that go ink */
-html[data-theme="minimal"] .td-auth-mark{font:500 20px/1.35 var(--font-ui);letter-spacing:-.01em;margin-bottom:32px}
+/* Auth pages (Log in · Invite · Reset): the wordmark in 500, no card — a plain column on paper; provider buttons and the primary are squares, links are grey words that go ink. Exception to the one-ink rule: --td-auth-dim (≈60% ink, ≥4.5:1) carries the secondary copy here — subtitle, "or", links, footer — so the form keeps a hierarchy; the disabled primary is a hairline outline, not a half-opacity slab */
+html[data-theme="minimal"] .td-auth-mark{font:500 20px/28px var(--font-ui);letter-spacing:-.01em;margin-bottom:32px}
 html[data-theme="minimal"] .td-auth-card{width:360px;padding:0;background:none;border-radius:0;box-shadow:none}
 html[data-theme="minimal"] .td-auth-title{font:500 15px/22px var(--font-ui);letter-spacing:-.005em}
-html[data-theme="minimal"] .td-auth-sub{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-auth-sub{margin-top:6px;font:400 13px/20px var(--font-ui);color:var(--td-auth-dim);text-wrap:balance}
 html[data-theme="minimal"] .td-auth-sub b{font-weight:500}
 html[data-theme="minimal"] .td-auth-stack{margin-top:24px;gap:8px}
 html[data-theme="minimal"] .td-auth-stack .td-btn{height:36px;border-radius:2px;font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-auth-or{margin:20px 0 16px;font:400 11px/16px var(--font-ui)}
-html[data-theme="minimal"] .td-auth-label{font:400 13px/20px var(--font-ui);color:var(--ink-900);margin-bottom:6px}
-html[data-theme="minimal"] .td-auth-link{font:400 12px/18px var(--font-ui);color:var(--ink-400);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
+html[data-theme="minimal"] .td-auth-stack .td-btn[disabled]{opacity:1;background:none;color:var(--td-auth-dim);border:1px solid var(--border-divider);box-shadow:none}
+html[data-theme="minimal"] .td-auth-or{margin:20px 0 16px;font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
+html[data-theme="minimal"] .td-auth-label{font:400 13px/20px var(--font-ui);color:var(--ink-900);margin-bottom:4px}
+html[data-theme="minimal"] .td-auth-link{font:400 12px/18px var(--font-ui);color:var(--td-auth-dim);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
 html[data-theme="minimal"] .td-auth-link:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
-html[data-theme="minimal"] .td-auth-field{margin-bottom:16px}
+html[data-theme="minimal"] .td-auth-field{margin-bottom:24px}
 html[data-theme="minimal"] .td-auth-field .td-field{height:32px;padding-left:0;padding-right:0;background:none;border:0;border-bottom:1px solid var(--border-input);border-radius:0;box-shadow:none}
 html[data-theme="minimal"] .td-auth-field .td-field:focus{border-bottom-color:var(--ink-900);box-shadow:none;outline:none}
-html[data-theme="minimal"] .td-auth-links{margin-top:20px;font:400 12px/18px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-links{margin-top:20px;font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
 html[data-theme="minimal"] .td-auth-who{margin-top:20px;padding:10px 0;border-radius:0;background:none;border-top:1px solid var(--border-divider);border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-auth-who .td-avatar{display:none!important}
 html[data-theme="minimal"] .td-auth-who-text b{font:500 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-auth-who-text span{font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-who-text span{font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
 html[data-theme="minimal"] .td-auth-tile{width:auto;height:auto;border-radius:0;background:none}
 html[data-theme="minimal"] .td-auth-tile svg{stroke:var(--ink-900)!important;width:16px;height:16px;stroke-width:1.75}
 html[data-theme="minimal"] .td-auth-project-name b{font:500 15px/22px var(--font-ui)}
-html[data-theme="minimal"] .td-auth-project-name span{font:400 11px/16px var(--font-ui)}
-html[data-theme="minimal"] .td-auth-description{padding:0 0 0 12px;border-left:1px solid var(--ink-900);font:400 13px/20px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-auth-foot{font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-project-name span{font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
+html[data-theme="minimal"] .td-auth-description{padding:0 0 0 12px;border-left:1px solid var(--ink-900);font:400 13px/20px var(--font-ui);color:var(--td-auth-dim)}
+html[data-theme="minimal"] .td-auth-foot{margin-top:24px;font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
+html[data-theme="minimal"] .td-auth-foot a{color:var(--td-auth-dim);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
+html[data-theme="minimal"] .td-auth-foot a:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
 /* Command palette (Ctrl+K): a square sheet with a hairline ring; the query sits on an ink hairline, results are rows, the highlight a paper-grey wash, keys in bare mono */
 html[data-theme="minimal"] .td-command-palette{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);width:520px}
 html[data-theme="minimal"] .td-command-palette-input{padding:14px 20px 10px;gap:12px;border-bottom:1px solid var(--ink-900);color:var(--ink-900)}

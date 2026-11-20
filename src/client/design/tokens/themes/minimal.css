@@ -15,6 +15,8 @@
 /* "Action blue" is the ink: primary buttons, checkboxes, focus rings and selection read as white */
 --blue-700:#c9c9cc;--blue-600:#dcdcdf;--blue-500:#f2f2f3;--blue-400:#b8b8bc;--blue-100:#1f1f21;
 --ink-900:#f2f2f3;--ink-600:#f2f2f3;--ink-400:#f2f2f3;--ink-300:#5c5c62;
+/* Auth pages only (Log in · Invite · Reset): secondary copy, ~60% ink */
+--td-auth-dim:rgba(242,242,243,.6);
 --n-a03:rgba(255,255,255,.03);--n-a06:rgba(255,255,255,.06);--n-a14:rgba(255,255,255,.14);--n-a25:rgba(255,255,255,.24);--n-a31:rgba(255,255,255,.32);
 --surface-card:#141415;--surface-list:#141415;--surface-panel:#141415;--surface-cover:#57575a;--surface-track:#2a2a2c;
 --label-green:#21e389;--label-yellow:#ffd83d;--label-orange:#ff9a52;--label-red:#ff6b60;--label-pink:#ff70b8;--label-blue:#5c9dff;--label-teal:#2fd0f4;--label-lime:#a8e832;
@@ -39,6 +41,7 @@
 --blue-700:#3a3a3a;--blue-600:#262626;--blue-500:#000000;--blue-400:#4a4a4a;--blue-100:#f2f2f2;
 /* Ink: one color — black. --ink-300 is the only grey, reserved for unavailable states (disabled, out-of-month days) */
 --ink-900:#000000;--ink-600:#000000;--ink-400:#000000;--ink-300:#a3a3a3;
+--td-auth-dim:rgba(0,0,0,.56);
 --n-a03:rgba(0,0,0,.03);--n-a06:rgba(0,0,0,.05);--n-a14:rgba(0,0,0,.12);--n-a25:rgba(0,0,0,.22);--n-a31:rgba(0,0,0,.3);
 /* Surfaces: one white; nothing sits on anything */
 --surface-card:#ffffff;--surface-list:#ffffff;--surface-panel:#ffffff;--surface-cover:#555b6b;--surface-track:#e8e8e8;
