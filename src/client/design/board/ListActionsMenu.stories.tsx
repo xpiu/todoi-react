@@ -52,7 +52,7 @@ export const SelectAllAndHide: Story = {
     await expect(args.onSelectAll).toHaveBeenCalledOnce();
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
     await userEvent.click(trigger);
-    await userEvent.click(await page.findByRole("menuitem", { name: "Hide" }));
+    await userEvent.click(await page.findByRole("menuitem", { name: "Hide list" }));
     await expect(args.onHide).toHaveBeenCalledOnce();
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },

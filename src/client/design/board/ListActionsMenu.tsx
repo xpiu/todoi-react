@@ -1,6 +1,6 @@
 // ListActionsMenu — the rows of a list's ⋯ menu (board column and list section alike): Rename, Icon
 // (drill into IconPicker), Status role (drill into the role picker with a title-based suggestion),
-// Select all, Hide. Rendered inside MenuPopover / MenuButton. Spec: DESIGN.md › Lists & Status linking.
+// Select all, Hide list. Rendered inside MenuPopover / MenuButton. Spec: DESIGN.md › Lists & Status linking.
 import { useState } from "react";
 
 import type { ItemStatus } from "../../../shared/item-status";
@@ -82,7 +82,7 @@ export function ListActionsMenu({ name, activeIcon, statusRole, onStatusRoleChan
         Select all
       </MenuItem>
       <MenuItem icon="eye-off" onSelect={() => onHide?.()}>
-        Hide
+        Hide list
       </MenuItem>
     </>
   );
