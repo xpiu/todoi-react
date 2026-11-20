@@ -8,9 +8,10 @@ html[data-theme="minimal"] .td-topnav{height:48px;gap:24px;padding:0 24px;border
 html[data-theme="minimal"] .td-topnav svg,html[data-theme="minimal"] .td-subnav svg,html[data-theme="minimal"] .td-sidebar svg,html[data-theme="minimal"] .td-list-column-head svg,html[data-theme="minimal"] .td-list-section-head svg,html[data-theme="minimal"] .td-calendar-header svg{stroke-width:1.75}
 html[data-theme="minimal"] .td-topnav-title{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;margin:0}
 html[data-theme="minimal"] span.td-topnav-title[data-editable="true"]{padding:0;margin:0;gap:6px}
-html[data-theme="minimal"] input.td-topnav-title{background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/var(--td-title-line,100%) 1px;color:var(--ink-900);border:0;border-radius:0;padding:0 0 1px;margin:0;font:500 13px/20px var(--font-ui);margin-right:-24px}
-html[data-theme="minimal"][data-device="phone"] input.td-topnav-title{margin-right:0}
-html[data-theme="minimal"] .td-topnav-spacer{margin:0}
+html[data-theme="minimal"] input.td-topnav-title{background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/var(--td-title-line,100%) 1px;color:var(--ink-900);border:0;border-radius:0;padding:0 0 1px;margin:1px 0 0;font:500 13px/20px var(--font-ui)}
+/* Truncation clearance: the spacer takes back the gap after it, so a long title (or the rename field) runs to one 24px gap before the next control. The rename field is 21px with its underline; 1px of top margin keeps its text on the title's line (14–34 in the 48px bar) instead of half a pixel above it */
+html[data-theme="minimal"] .td-topnav-spacer{margin:0 -24px 0 0}
+html[data-theme="minimal"][data-device="phone"] .td-topnav-spacer{margin:0}
 html[data-theme="minimal"] .td-topnav .td-subnav{column-gap:24px;row-gap:0;min-height:0;padding:0}
 html[data-theme="minimal"] .td-subnav-actions{gap:16px}
 html[data-theme="minimal"] .td-subnav-views{gap:16px;padding:0;background:none;border-radius:0}
@@ -31,8 +32,8 @@ html[data-theme="minimal"] .td-subnav-vdiv{display:none}
 html[data-theme="minimal"] .td-subnav-actions+.td-subnav-views:has(>.td-subnav-seg[aria-controls]:first-child){margin-left:-8px}
 /* Search → a search glyph over a hairline (132px), the + create glyph, a user glyph instead of the avatar, the sidebar toggle at the far right */
 html[data-theme="minimal"] .td-topnav>div:has(>.td-field-wrap){width:132px!important;margin-left:0}
-/* 28px field: its hairline sits 13px below the bar's centre line, the same row as the current-view underline (16px glyph + 6px). Text and glyph stay where they were */
-html[data-theme="minimal"] .td-topnav .td-field-dark{height:28px!important;padding:5px 0 5px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
+/* 28px field: its hairline sits 13px below the bar's centre line, the same row as the current-view underline (16px glyph + 6px). 4 + 20 + 3 + the 1px line: the 20px text line is the title's and "Views"' (14–34), not half a pixel above them */
+html[data-theme="minimal"] .td-topnav .td-field-dark{height:28px!important;padding:4px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-topnav .td-field-dark:focus{box-shadow:none;border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon{left:0;color:var(--ink-900)}
 /* 14px glyph. TopNavbar also draws it at 14 (TextField iconSize): the pixel-snapped search glyph drawn for 16px and scaled here went soft and grey in dark mode */

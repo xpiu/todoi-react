@@ -196,6 +196,11 @@
     padding-right: 0;
     background: transparent;
   }
+  /* Docked SubNavbar: its leading spacer has nothing to push (the bar's own spacer does that) and only
+     added one more gap before the first action, so a long title truncated that much early. */
+  .td-topnav .td-subnav > .td-subnav-spacer:first-child {
+    display: none;
+  }
 
   /* Search: compact field that widens while its dropdown is open */
   .td-topnav-search {
