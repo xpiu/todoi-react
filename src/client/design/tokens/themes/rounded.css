@@ -17,6 +17,8 @@
 --blue-700:#7db0ff;--blue-600:#5b97ff;--blue-500:#3d84ff;--blue-400:#6ba3ff;--blue-100:#1d2433;
 /* Ink (text on surfaces) */
 --ink-900:#f2f2f3;--ink-600:#c2c2c6;--ink-400:#96969d;--ink-300:#6e6e76;
+/* Auth pages only: secondary copy (Minimal dims its one ink here; Rounded already has a grey) */
+--td-auth-dim:var(--ink-400);
 /* Neutral alphas */
 --n-a03:rgba(255,255,255,.04);--n-a06:rgba(255,255,255,.08);--n-a14:rgba(255,255,255,.16);--n-a25:rgba(255,255,255,.28);--n-a31:rgba(255,255,255,.36);
 /* Surfaces (elevated neutral blacks on the canvas) — the Graphite Foreground preset */
@@ -42,6 +44,8 @@
 --chrome-topbar:#12215e;--chrome-canvas:#7c9fff;--chrome-hover:rgba(11,18,51,.10);--chrome-active:rgba(11,18,51,.16);--chrome-pressed:rgba(11,18,51,.24);--chrome-border:rgba(11,18,51,.32);--chrome-text:#0b1233;--chrome-text-dim:rgba(11,18,51,.82);
 --blue-700:#10289e;--blue-600:#1a3bc9;--blue-500:#264de3;--blue-400:#507cf7;--blue-100:#e5efff;
 --ink-900:#131f45;--ink-600:#3b4a70;--ink-400:#5a6a8c;--ink-300:#8091ad;
+/* Auth pages only: secondary copy (Minimal dims its one ink here; Rounded already has a grey) */
+--td-auth-dim:var(--ink-400);
 /* Neutral alphas (from #091e42) */
 --n-a03:rgba(7,26,69,.03);--n-a06:rgba(7,26,69,.06);--n-a14:rgba(7,26,69,.14);--n-a25:rgba(7,26,69,.25);--n-a31:rgba(7,26,69,.31);
 /* Warm cream lists and panels on the cornflower canvas */
