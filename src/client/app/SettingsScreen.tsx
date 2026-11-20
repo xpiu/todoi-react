@@ -227,7 +227,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         groups: [
           {
             id: "theme",
-            title: "Theme and mode",
+            title: "Theme and colors",
             rows: [
               { id: "apTheme", label: "Theme", hint: "Rounded is the full look; Minimal is the ledger — type, hairlines and ink", control: <Segmented aria-label="Theme" value={ap.theme} options={THEMES.map((t) => ({ id: t.id, label: t.label }))} onChange={(t) => ap.set({ theme: t })} /> },
               { id: "apMode", label: "Mode", hint: "Dark or light inside the theme", control: <Segmented aria-label="Mode" value={ap.mode} options={MODES.map((m) => ({ id: m.id, icon: m.icon, label: m.label }))} onChange={(m) => ap.set({ mode: m })} /> },

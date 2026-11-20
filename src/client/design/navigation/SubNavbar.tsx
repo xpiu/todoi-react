@@ -35,7 +35,7 @@ export const DEFAULT_VIEWS: SubNavbarView[] = [
   { id: "board", label: "Board", icon: "kanban" },
   { id: "calendar", label: "Cal.", icon: "calendar" },
 ];
-const STYLE_ACTION: SubNavbarAction = { id: "style", label: "Style", icon: "palette" };
+const STYLE_ACTION: SubNavbarAction = { id: "style", label: "Appearance", icon: "palette" };
 export const DEFAULT_ACTIONS: SubNavbarAction[] = [
   { id: "filter", label: "Filter", icon: "filter" },
   { id: "sort", label: "Sort", icon: "arrow-up-narrow-wide" },
@@ -246,8 +246,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
         <div className="td-subnav-actions">
           {actions.map((a) => {
             if (a.id === "style") {
-              // The default action takes the theme's name for it (text, hint and accessible name); a host's own label stays.
-              const label = a.label === STYLE_ACTION.label ? getTheme(ap.theme).styleActionLabel : a.label;
+              const label = a.label;
               return (
                 <Popover
                   key={a.id}
@@ -256,7 +255,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   tier="toolbar"
                   placement="bottom-start"
                   role="dialog"
-                  aria-label="Board style"
+                  aria-label="Appearance"
                   width={264}
                   trigger={
                     <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={label} data-menu="style">

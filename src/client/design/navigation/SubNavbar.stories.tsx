@@ -148,10 +148,9 @@ export const OneMenuAtATime: Story = {
 };
 export const StyleMenu: Story = {
   async play({ args, canvas, canvasElement, globals, userEvent }) {
-    // The theme names the action: "Appearance" in Rounded, "Style" in Minimal.
-    await userEvent.click(await canvas.findByRole("button", { name: getTheme(globals.theme).styleActionLabel }));
+    await userEvent.click(await canvas.findByRole("button", { name: "Appearance" }));
     const page = within(canvasElement.ownerDocument.body);
-    const dialog = within(await page.findByRole("dialog", { name: "Board style" }));
+    const dialog = within(await page.findByRole("dialog", { name: "Appearance" }));
     const ids = dialog.getByRole("checkbox", { name: "Show item IDs" });
     const before = useAppearanceStore.getState().showItemIds;
     await userEvent.click(ids);
@@ -168,7 +167,7 @@ export const StyleMenu: Story = {
     } else await expect(dividers).not.toBeInTheDocument();
     await userEvent.click(dialog.getByRole("button", { name: "More options" }));
     await expect(args.onOpenAppearance).toHaveBeenCalledOnce();
-    await waitFor(() => expect(page.queryByRole("dialog", { name: "Board style" })).not.toBeInTheDocument());
+    await waitFor(() => expect(page.queryByRole("dialog", { name: "Appearance" })).not.toBeInTheDocument());
   },
 };
 /** "Checked items move to Done" is a project setting: one row-wide button (box, label, chevron) that shows the
@@ -176,10 +175,10 @@ export const StyleMenu: Story = {
  * open the toolbar marks it with data-open-menu, which turns the neighbouring triggers' hints off. */
 export const CheckedMoveShortcut: Story = {
   args: { checkedMove: true, onOpenCheckedMove: fn() },
-  async play({ args, canvas, canvasElement, globals, userEvent }) {
-    await userEvent.click(await canvas.findByRole("button", { name: getTheme(globals.theme).styleActionLabel }));
+  async play({ args, canvas, canvasElement, userEvent }) {
+    await userEvent.click(await canvas.findByRole("button", { name: "Appearance" }));
     const page = within(canvasElement.ownerDocument.body);
-    const dialog = within(await page.findByRole("dialog", { name: "Board style" }));
+    const dialog = within(await page.findByRole("dialog", { name: "Appearance" }));
     await expect(canvas.getByRole("toolbar", { name: "Project views and actions" })).toHaveAttribute("data-open-menu", "style");
     await expect(dialog.queryByRole("checkbox", { name: /Checked items move to Done/ })).not.toBeInTheDocument();
     const row = dialog.getByRole("button", { name: "Checked items move to Done: on. Opens the Projects page" });
@@ -188,19 +187,18 @@ export const CheckedMoveShortcut: Story = {
     await expect(label.getBoundingClientRect().height).toBeLessThanOrEqual(20);
     await userEvent.click(label);
     await expect(args.onOpenCheckedMove).toHaveBeenCalledOnce();
-    await waitFor(() => expect(page.queryByRole("dialog", { name: "Board style" })).not.toBeInTheDocument());
+    await waitFor(() => expect(page.queryByRole("dialog", { name: "Appearance" })).not.toBeInTheDocument());
     await expect(canvas.getByRole("toolbar", { name: "Project views and actions" })).not.toHaveAttribute("data-open-menu");
   },
 };
-/** Rounded prints the trigger's text, so its Style action says what the menu holds; icon-only Minimal keeps "Style". */
-export const RoundedAppearanceAction: Story = {
-  globals: { theme: "rounded" },
+/** The action reads "Appearance" in both themes: the trigger's text in Rounded, the hint and accessible name of icon-only Minimal. */
+export const AppearanceAction: Story = {
   async play({ canvas, canvasElement, userEvent }) {
     const trigger = await canvas.findByRole("button", { name: "Appearance" });
     await expect(trigger).toHaveAttribute("data-tip", "Appearance");
     await expect(canvas.queryByRole("button", { name: "Style" })).not.toBeInTheDocument();
     await userEvent.click(trigger);
-    await expect(await within(canvasElement.ownerDocument.body).findByRole("dialog", { name: "Board style" })).toBeInTheDocument();
+    await expect(await within(canvasElement.ownerDocument.body).findByRole("dialog", { name: "Appearance" })).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
   },
 };
