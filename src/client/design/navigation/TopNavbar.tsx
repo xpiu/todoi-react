@@ -218,7 +218,8 @@ export function TopNavbar({
   };
   const showKbd = !sFocus && !sOpen && !sQ;
   // Minimal shows the right-hand toggle at 16px (CSS). The pixel-snapped glyph must be drawn at that size: drawn for 20px and scaled down, its rules land between pixels and antialias to grey.
-  const minimalRightToggle = useAppearanceStore((s) => s.theme) === "minimal" && !leftToggle;
+  const minimal = useAppearanceStore((s) => s.theme) === "minimal";
+  const minimalRightToggle = minimal && !leftToggle;
   const toggleBtn = onToggleSidebar ? (
     <IconButton
       name={leftToggle ? "panel-left" : "panel-right"}
@@ -258,6 +259,8 @@ export function TopNavbar({
           <TextField
             dark
             icon="search"
+            // Minimal shows the search glyph at 14px (CSS); its pixel-snapped ring is drawn at that size
+            iconSize={minimal ? 14 : 16}
             placeholder={searchPlaceholder}
             value={searchSources ? sQ : undefined}
             onChange={(e) => {

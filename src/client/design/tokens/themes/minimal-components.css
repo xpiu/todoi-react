@@ -35,6 +35,7 @@ html[data-theme="minimal"] .td-topnav>div:has(>.td-field-wrap){width:132px!impor
 html[data-theme="minimal"] .td-topnav .td-field-dark{height:28px!important;padding:5px 0 5px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-topnav .td-field-dark:focus{box-shadow:none;border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon{left:0;color:var(--ink-900)}
+/* 14px glyph. TopNavbar also draws it at 14 (TextField iconSize): the pixel-snapped search glyph drawn for 16px and scaled here went soft and grey in dark mode */
 html[data-theme="minimal"] .td-topnav .td-field-wrap .td-field-icon svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-topnav .td-field-dark::placeholder{color:transparent!important}
 html[data-theme="minimal"] .td-topnav-kbd{display:none}
@@ -561,7 +562,9 @@ html[data-theme="minimal"] .td-switch-glyph .td-switch-cut{stroke:var(--chrome-c
 html[data-theme="minimal"] .td-popover,html[data-theme="minimal"] .td-user-menu,html[data-theme="minimal"] .td-create-menu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
 html[data-theme="minimal"] .td-popover{padding:6px 0}
 html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){padding:0}
-html[data-theme="minimal"] .td-popover.td-style-menu{padding:12px}
+/* Style menu: a 14px edge like the menus beside it. The app pads the inner .td-style-menu (the kit pads the popover), so the popover itself carries none */
+html[data-theme="minimal"] .td-popover:has(.td-style-menu){padding:0}
+html[data-theme="minimal"] .td-style-menu{padding:14px}
 html[data-theme="minimal"] .td-menu{gap:0}
 html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
@@ -1096,11 +1099,28 @@ html[data-theme="minimal"][data-device="phone"] .td-topnav-user {
 /* ── One ink (2026-11-12): glyphs follow their text. An icon given a token color by its component (list-name icons, status, priority flags, project tints, checks and chevrons in menus) paints currentColor here; danger stays red. Done reads as a 1px strike instead of grey (rules above). Placeholders are the one dimmed text, so a hint never reads as a typed value. */
 html[data-theme="minimal"] svg[stroke^="var(--"]:not([stroke^="var(--danger"]){stroke:currentColor}
 html[data-theme="minimal"] svg[style*="fill: var(--label"],html[data-theme="minimal"] svg[style*="fill:var(--label"]{fill:currentColor!important}
-/* Style menu: the "Show labels" sample is what the switch turns on in this theme — the word, in the same box as the key sample above it */
-html[data-theme="minimal"] .td-style-example-label{font:400 11px/16px var(--font-ui);color:var(--ink-900);padding:1px 6px;border-radius:4px;background:var(--surface-list)}
+/* Style menu: the "Show labels" sample is what the switch turns on in this theme — the word, set like the TD-102 sample above it (plain meta type, no box) */
+html[data-theme="minimal"] .td-style-example-label{font:400 11px/16px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-style-example-label .td-label{display:inline!important;background:none!important;color:inherit!important;font:inherit!important;padding:0!important;border-radius:0!important;max-width:none!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
 /* Style menu: the "Checked items move to Done" row is a shortcut to the project setting; its box follows the checkbox hover */
 html[data-theme="minimal"] .td-style-goto:hover>.td-check-box:not(.td-check-box-on){border-color:var(--ink-900)}
 html[data-theme="minimal"] .td-style-goto:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
+/* Style menu layout (wins 1–11, moon / sun glyphs excepted). The sheet is set like the Filter / Sort / Members menus beside it: 14px edge, 13/20 rows on a 32px pitch, 11/16 section names in sentence case. Steps: 8px name to control, 16px between groups and around the hairline, 12px between rows */
+html[data-theme="minimal"] .td-style-menu .td-style-label{margin-bottom:8px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-style-menu .td-style-label-gap{margin-top:16px}
+html[data-theme="minimal"] .td-style-menu .td-segmented-btn{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-style-menu .td-check,html[data-theme="minimal"] .td-style-menu .td-style-goto{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-style-menu .td-style-row{margin-top:12px}
+html[data-theme="minimal"] .td-style-menu .td-style-divider{margin:16px -14px}
+/* 10px glyph in the 14px inside of the box, 12px glyph in the swatch: both land on whole pixels (11px and 13px sat half a pixel off) */
+html[data-theme="minimal"] .td-style-menu .td-check-icon{width:10px!important;height:10px!important}
+html[data-theme="minimal"] .td-style-menu .td-swatch>svg{width:12px!important;height:12px!important}
+/* Swatches are 40px sheets with 9px between: the five dark papers fill the column like the segments above them (5 × 40 + 4 × 9 = 236); a shorter set (light has two) keeps the same sheet and starts on the left edge */
+html[data-theme="minimal"] .td-style-menu .td-swatches{display:flex;flex-wrap:wrap;gap:9px}
+html[data-theme="minimal"] .td-style-menu .td-swatch{flex:0 0 40px;width:40px!important}
+/* The samples end on the column edge, like the panel glyph and the chevron below them */
+html[data-theme="minimal"] .td-style-menu .td-style-example,html[data-theme="minimal"] .td-style-menu .td-style-example-label{padding:0;border-radius:0;background:none}
+/* Footer: a 40px row under its hairline, square, its words on the label column (14px glyph + 10px = the 16px box + 8px) */
+html[data-theme="minimal"] .td-style-menu .td-style-more{gap:10px;width:calc(100% + 28px);margin:16px -14px -14px;padding:10px 14px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] ::placeholder{color:color-mix(in srgb,var(--ink-900) 55%,transparent)!important}
 html[data-theme="minimal"] .td-checklist-grip{color:var(--ink-900)}

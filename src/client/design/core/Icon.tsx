@@ -152,6 +152,21 @@ const LEDGER_SNAPPED: Record<string, (size: number) => SvgNode[]> = {
   // lines with a 1.17px stroke) and antialiased to grey. Drawn on pixel centres, the frame is one full pixel of ink.
   "panel-right": (s) => SNAPPED["panel-right"]!(s, 1),
   "panel-left": (s) => SNAPPED["panel-left"]!(s, 1),
+  // Search: the ring's diameter a whole number of pixels with its four edges on pixel centres, so it renders in full
+  // ink (Lucide's ring at 14px split its bottom and right edges over two pixels and read grey). At 14px: centre 6,
+  // r 4.5, handle to 12.5.
+  search: (s) => {
+    const u = s / 24;
+    const D = Math.round(16 * u),
+      r = D / 2;
+    const c = Math.round(11 * u - r - 0.5) + 0.5 + r;
+    const e = Math.round(21 * u - 0.5) + 0.5;
+    const k = +(c + r * Math.SQRT1_2).toFixed(2);
+    return [
+      ["circle", { cx: c, cy: c, r }],
+      ["path", { d: `M${k} ${k}L${e} ${e}` }],
+    ];
+  },
 };
 const LEDGER_STROKE = 1.75;
 

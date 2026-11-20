@@ -12,6 +12,8 @@ interface Common {
   dark?: boolean;
   /** Leading icon inside the field, e.g. "search" */
   icon?: IconName;
+  /** The icon's drawn size: a pixel-snapped glyph must be drawn at the size it shows at @default 16 */
+  iconSize?: number;
 }
 
 export type TextFieldProps =
@@ -19,7 +21,7 @@ export type TextFieldProps =
   | (Common & { multiline: true } & Omit<TextareaProps, "children">);
 
 export function TextField(props: TextFieldProps) {
-  const { dark, icon, className, ...rest } = props;
+  const { dark, icon, iconSize = 16, className, ...rest } = props;
   const cls = ["td-field", dark ? "td-field-dark" : "", icon ? "td-field-hasicon" : "", className ?? ""].filter(Boolean).join(" ");
   let field;
   if (rest.multiline) {
@@ -34,7 +36,7 @@ export function TextField(props: TextFieldProps) {
     <div className={"td-field-wrap" + (dark ? " td-field-wrap-dark" : "")}>
       {field}
       <span className="td-field-icon">
-        <Icon name={icon} size={16} />
+        <Icon name={icon} size={iconSize} />
       </span>
     </div>
   );
