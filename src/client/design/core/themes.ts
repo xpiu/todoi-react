@@ -59,6 +59,9 @@ export interface ThemeDefinition {
   ruledRows: boolean;
   /** What the toolbar's default Style action is called. Rounded prints the trigger's text, so it says what the menu holds; icon-only Minimal keeps the short name */
   styleActionLabel: string;
+  /** Gap (px) between a SubNavbar action and its dropdown. Minimal: (48px row − 16px glyph) / 2 + the 1px hairline,
+   * so the menu's ring lies on the bar's hairline, clear of the neighbouring glyphs and the current-view underline */
+  toolbarMenuOffset: number;
 }
 
 // ── Rounded ──────────────────────────────────────────────────────────────────────
@@ -111,6 +114,7 @@ export const THEMES: ReadonlyArray<ThemeDefinition> = [
     projectIcons: true,
     ruledRows: false,
     styleActionLabel: "Appearance",
+    toolbarMenuOffset: 4,
   },
   {
     id: "minimal",
@@ -121,6 +125,7 @@ export const THEMES: ReadonlyArray<ThemeDefinition> = [
     projectIcons: false,
     ruledRows: true,
     styleActionLabel: "Style",
+    toolbarMenuOffset: 17,
   },
 ];
 

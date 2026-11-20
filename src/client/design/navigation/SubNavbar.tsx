@@ -53,10 +53,11 @@ export type SubNavbarMenu = "filter" | "sort" | "style" | "members" | "share";
 const MENU_ROWS: Partial<Record<SubNavbarMenu, string>> = { filter: '[role="toolbar"][aria-label="Filters"]', sort: '[role="toolbar"][aria-label="Sorting"]' };
 
 /** A toolbar-tier dialog Popover behind an action button (Filter, Sort, Members); its body draws its own header, so the popup is flush. */
-function ActionPopover({ label, trigger, children, width = 296, open, onOpenChange, keepOpenWithin }: { label: string; trigger: ReactElement; children: ReactNode; width?: number; open: boolean; onOpenChange: (open: boolean) => void; keepOpenWithin?: string }) {
+function ActionPopover({ label, trigger, children, width = 296, offset, open, onOpenChange, keepOpenWithin }: { label: string; trigger: ReactElement; children: ReactNode; width?: number; offset: number; open: boolean; onOpenChange: (open: boolean) => void; keepOpenWithin?: string }) {
   return (
     <Popover
       open={open}
+      offset={offset}
       onOpenChange={onOpenChange}
       keepOpenWithin={keepOpenWithin}
       tier="toolbar"
@@ -103,8 +104,9 @@ export interface SubNavbarProps {
   /** "More options" footer in the Style menu → Settings › Appearance */
   onOpenAppearance?: () => void;
   /** Style-menu "Checked items move to Done" row, below Colorize Board columns: a shortcut, not a toggle. The setting
-   * belongs to the project (ProjectPanel › Defaults, the Projects page); the box shows `checkedMove` and a click on it
-   * or its label calls onOpenCheckedMove (the menu closes first). Rendered only when onOpenCheckedMove is given */
+   * belongs to the project (ProjectPanel › Defaults, the Projects page). Laid out like its checkbox neighbours (box,
+   * label) with a chevron on the right: the box shows `checkedMove` and a click anywhere on the row calls
+   * onOpenCheckedMove (the menu closes first). Rendered only when onOpenCheckedMove is given */
   checkedMove?: boolean;
   onOpenCheckedMove?: () => void;
   /** Adds the icon-less "Views" segment, first in the view group (left of List / Board / Cal.), that toggles the saved-views row */
@@ -145,6 +147,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
     },
   });
   const closeMenu = () => setMenu(null);
+  const menuOffset = getTheme(ap.theme).toolbarMenuOffset;
   const [copied, copy] = useCopy();
   const shareUrl = projectUrl ?? (typeof location !== "undefined" ? location.href : "");
   const copyUrl = () => void copy(shareUrl);
@@ -202,17 +205,24 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
         <Checkbox checked={ap.colorizeColumns} onChange={(v) => ap.set({ colorizeColumns: v })} label="Colorize Board columns" />
       </div>
       {onOpenCheckedMove ? (
-        // A project setting, not a device preference: the box shows the project's value and a click opens where it is set.
-        <div className="td-style-row td-style-goto" title="A project setting. Opens the Projects page, where it is set.">
-          <Checkbox
-            checked={checkedMove}
-            onChange={() => {
-              closeMenu();
-              onOpenCheckedMove();
-            }}
-            label="Checked items move to Done"
-          />
-        </div>
+        // A project setting, not a device preference: one button laid out like the checkbox rows. The box shows the
+        // project's value (decoration, not a second control) and a click anywhere on the row opens where it is set.
+        <button
+          type="button"
+          className="td-style-row td-style-goto"
+          aria-label={`Checked items move to Done: ${checkedMove ? "on" : "off"}. Opens the Projects page`}
+          title="A project setting. Opens the Projects page, where it is set."
+          onClick={() => {
+            closeMenu();
+            onOpenCheckedMove();
+          }}
+        >
+          <span className={"td-check-box" + (checkedMove ? " td-check-box-on" : "")} aria-hidden>
+            <Icon name="check" size={11} strokeWidth={3.5} className="td-check-icon" />
+          </span>
+          <span className="td-style-goto-label">Checked items move to Done</span>
+          <Icon name="chevron-right" size={14} className="td-style-goto-chevron" />
+        </button>
       ) : null}
       {onOpenAppearance ? (
         <button
@@ -230,7 +240,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
     </div>
   );
   return (
-    <div className={["td-subnav", className ?? ""].join(" ").trim()} style={style} role="toolbar" aria-label="Project views and actions">
+    <div className={["td-subnav", className ?? ""].join(" ").trim()} style={style} role="toolbar" aria-label="Project views and actions" data-open-menu={curMenu ?? undefined}>
       <div className="td-subnav-spacer" />
       {actions.length || membersMenu ? (
         <div className="td-subnav-actions">
@@ -242,6 +252,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                 <Popover
                   key={a.id}
                   {...menuState("style")}
+                  offset={menuOffset}
                   tier="toolbar"
                   placement="bottom-start"
                   role="dialog"
@@ -276,7 +287,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             if (!menu) return <span key={a.id}>{button}</span>;
             const id = a.id as SubNavbarMenu;
             return (
-              <ActionPopover key={a.id} label={`${a.label} options`} trigger={button} {...menuState(id)} keepOpenWithin={MENU_ROWS[id]}>
+              <ActionPopover key={a.id} label={`${a.label} options`} trigger={button} offset={menuOffset} {...menuState(id)} keepOpenWithin={MENU_ROWS[id]}>
                 {menu}
               </ActionPopover>
             );
@@ -285,6 +296,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             <ActionPopover
               label="Project members and sharing"
               width={320}
+              offset={menuOffset}
               {...menuState("members")}
               trigger={
                 <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip="Members" data-menu="members">
@@ -301,6 +313,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
               {...menuState("share")}
               label="Share project"
               tier="toolbar"
+              offset={menuOffset}
               placement="bottom-end"
               minWidth={296}
               trigger={

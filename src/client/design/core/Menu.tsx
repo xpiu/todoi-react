@@ -123,6 +123,8 @@ export interface MenuPopoverProps {
   /** @default "bottom-end" */
   placement?: PopoverPlacement;
   tier?: PopoverTier;
+  /** Gap between the trigger and the menu, px @default 4 */
+  offset?: number;
   width?: number | string;
   /** @default 184 */
   minWidth?: number | string;
@@ -137,7 +139,7 @@ export interface MenuPopoverProps {
 }
 
 /** A menu behind any trigger. Uncontrolled unless `open` is given. */
-export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", width, minWidth = 184, block, children, finalFocus, style, className }: MenuPopoverProps) {
+export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", offset = 4, width, minWidth = 184, block, children, finalFocus, style, className }: MenuPopoverProps) {
   const vp = useViewport();
   const container = usePortalContainer();
   const isSheet = vp.phone;
@@ -162,7 +164,7 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
           data-sheet={isSheet ? "true" : undefined}
           side={side}
           align={align}
-          sideOffset={4}
+          sideOffset={offset}
           collisionPadding={8}
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >

@@ -1072,5 +1072,8 @@ html[data-theme="minimal"] svg[style*="fill: var(--label"],html[data-theme="mini
 /* Style menu: the "Show labels" sample is what the switch turns on in this theme — the word, in the same box as the key sample above it */
 html[data-theme="minimal"] .td-style-example-label{font:400 11px/16px var(--font-ui);color:var(--ink-900);padding:1px 6px;border-radius:4px;background:var(--surface-list)}
 html[data-theme="minimal"] .td-style-example-label .td-label{display:inline!important;background:none!important;color:inherit!important;font:inherit!important;padding:0!important;border-radius:0!important;max-width:none!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
+/* Style menu: the "Checked items move to Done" row is a shortcut to the project setting; its box follows the checkbox hover */
+html[data-theme="minimal"] .td-style-goto:hover>.td-check-box:not(.td-check-box-on){border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-style-goto:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] ::placeholder{color:color-mix(in srgb,var(--ink-900) 55%,transparent)!important}
 html[data-theme="minimal"] .td-checklist-grip{color:var(--ink-900)}

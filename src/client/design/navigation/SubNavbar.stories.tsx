@@ -171,6 +171,27 @@ export const StyleMenu: Story = {
     await waitFor(() => expect(page.queryByRole("dialog", { name: "Board style" })).not.toBeInTheDocument());
   },
 };
+/** "Checked items move to Done" is a project setting: one row-wide button (box, label, chevron) that shows the
+ * project's value and opens the Projects page. It is not a checkbox, so it never toggles in place. While a menu is
+ * open the toolbar marks it with data-open-menu, which turns the neighbouring triggers' hints off. */
+export const CheckedMoveShortcut: Story = {
+  args: { checkedMove: true, onOpenCheckedMove: fn() },
+  async play({ args, canvas, canvasElement, globals, userEvent }) {
+    await userEvent.click(await canvas.findByRole("button", { name: getTheme(globals.theme).styleActionLabel }));
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = within(await page.findByRole("dialog", { name: "Board style" }));
+    await expect(canvas.getByRole("toolbar", { name: "Project views and actions" })).toHaveAttribute("data-open-menu", "style");
+    await expect(dialog.queryByRole("checkbox", { name: /Checked items move to Done/ })).not.toBeInTheDocument();
+    const row = dialog.getByRole("button", { name: "Checked items move to Done: on. Opens the Projects page" });
+    await expect(row.querySelector(".td-check-box-on")).not.toBeNull();
+    const label = row.querySelector(".td-style-goto-label")!;
+    await expect(label.getBoundingClientRect().height).toBeLessThanOrEqual(20);
+    await userEvent.click(label);
+    await expect(args.onOpenCheckedMove).toHaveBeenCalledOnce();
+    await waitFor(() => expect(page.queryByRole("dialog", { name: "Board style" })).not.toBeInTheDocument());
+    await expect(canvas.getByRole("toolbar", { name: "Project views and actions" })).not.toHaveAttribute("data-open-menu");
+  },
+};
 /** Rounded prints the trigger's text, so its Style action says what the menu holds; icon-only Minimal keeps "Style". */
 export const RoundedAppearanceAction: Story = {
   globals: { theme: "rounded" },
