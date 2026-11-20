@@ -33,8 +33,8 @@ describe("hosting", () => {
     const app = createApp(fx.ctx, { fake: { designDir: fx.designNowDir }, hosting: { auth: { username: "admin", password: "pw" }, pushAfterMerge: false } });
     expect((await app.request("/healthz")).status).toBe(200);
     expect((await app.request("/api/state")).status).toBe(401);
-    expect((await app.request("/api/state", { headers: { authorization: "Basic " + Buffer.from("flo:wrong").toString("base64") } })).status).toBe(401);
-    expect((await app.request("/api/state", { headers: { authorization: "Basic " + Buffer.from("flo:pw").toString("base64") } })).status).toBe(200);
+    expect((await app.request("/api/state", { headers: { authorization: "Basic " + Buffer.from("admin:wrong").toString("base64") } })).status).toBe(401);
+    expect((await app.request("/api/state", { headers: { authorization: "Basic " + Buffer.from("admin:pw").toString("base64") } })).status).toBe(200);
   });
 
   it("pushes a merged branch to origin", () => {
