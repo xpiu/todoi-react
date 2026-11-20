@@ -2,8 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { signIn } from "./helpers";
 
-// Below the desktop class the sidebar is a modal sheet (WAI-ARIA modal dialog pattern): focus stays
+// Below the desktop class the sidebar is a sheet. Phone: modal (WAI-ARIA modal dialog pattern): focus stays
 // inside, Escape or the scrim closes it, focus returns to the toggle, and the page behind is inert.
+// Tablet: it opens under the chrome rows, which stay usable.
 const sheet = (page: Page) => page.getByRole("dialog", { name: "Sidebar" });
 
 test.describe("phone", () => {
@@ -75,6 +76,62 @@ test.describe("phone", () => {
 
     // Choosing a destination navigates and closes the sheet.
     await page.getByRole("button", { name: "Show sidebar" }).tap();
+    await sheet(page).getByRole("button", { name: /^Inbox/ }).first().tap();
+    await expect(page).toHaveURL(/\/inbox$/);
+    await expect(sheet(page)).toBeHidden();
+  });
+});
+
+test.describe("tablet", () => {
+  test.use({ viewport: { width: 820, height: 1180 }, hasTouch: true });
+
+  test("the sheet opens under the chrome rows, which stay usable", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/projects");
+    await page.getByRole("button", { name: "Show sidebar" }).tap();
+    await expect(sheet(page)).toBeVisible();
+    await expect.poll(() => sheet(page).evaluate((el) => el.getAnimations().length)).toBe(0);
+
+    // Sheet and scrim start where the body row starts; the sheet has no close row of its own.
+    const tops = await page.evaluate(() => [".td-app-body", ".td-sidebar-scrim", ".td-sidebar-sheet"].map((s) => document.querySelector(s)!.getBoundingClientRect().top));
+    expect(tops[0]).toBeGreaterThan(0);
+    expect(tops[1]).toBe(tops[0]);
+    expect(tops[2]).toBe(tops[0]);
+    await expect(sheet(page).getByRole("button", { name: "Hide sidebar" })).toHaveCount(0);
+
+    // A top-bar menu opens above the sheet; neither the press nor the menu's Escape closes the sheet.
+    await page.locator(".td-topnav-avatarbtn").tap();
+    const menu = page.getByRole("menu", { name: "Account" });
+    await expect(menu).toBeVisible();
+    await expect(sheet(page)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    await expect(sheet(page)).toBeVisible();
+
+    // The top-bar toggle closes it, and it stays closed.
+    await page.getByRole("button", { name: "Hide sidebar" }).tap();
+    await expect(sheet(page)).toBeHidden();
+    await expect(page.getByRole("button", { name: "Show sidebar" })).toBeVisible();
+
+    // The scrim closes it without the tap reaching the page.
+    const url = page.url();
+    await page.getByRole("button", { name: "Show sidebar" }).tap();
+    await expect(sheet(page)).toBeVisible();
+    await page.touchscreen.tap(40, 600);
+    await expect(sheet(page)).toBeHidden();
+    expect(page.url()).toBe(url);
+
+    // Escape closes it and focus returns to the toggle.
+    const toggle = page.getByRole("button", { name: "Show sidebar" });
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(sheet(page)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheet(page)).toBeHidden();
+    await expect(toggle).toBeFocused();
+
+    // Choosing a destination navigates and closes the sheet.
+    await toggle.tap();
     await sheet(page).getByRole("button", { name: /^Inbox/ }).first().tap();
     await expect(page).toHaveURL(/\/inbox$/);
     await expect(sheet(page)).toBeHidden();

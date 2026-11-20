@@ -61,6 +61,8 @@ function subscribe(onChange: () => void) {
     onChange();
   };
   queries.forEach((q) => q.addEventListener("change", handler));
+  // A query may have flipped while nothing was listening; React re-reads the snapshot after subscribing.
+  refresh();
   return () => queries.forEach((q) => q.removeEventListener("change", handler));
 }
 const getSnapshot = () => snapshot;

@@ -1,4 +1,4 @@
-/* Sidebar — chrome rail; collapse animates width only. Below the desktop class it is a modal sheet (.td-sidebar-sheet). */
+/* Sidebar — chrome rail; collapse animates width only. Below the desktop class it is a sheet (.td-sidebar-sheet). */
 @layer components {
   .td-sidebar {
     position: relative;
@@ -13,7 +13,7 @@
     flex-shrink: 0;
     transition: width var(--duration-base) var(--ease-standard);
   }
-  /* Phone and tablet: a modal sheet on the dock side, full height, over a scrim (Base UI Dialog). */
+  /* Phone and tablet: a sheet on the dock side, over a scrim (Base UI Dialog). Phone: full height, above everything. */
   .td-sidebar-scrim {
     position: fixed;
     inset: 0;
@@ -49,6 +49,21 @@
   .td-sidebar-sheet.td-sidebar-left[data-starting-style],
   .td-sidebar-sheet.td-sidebar-left[data-ending-style] {
     transform: translateX(-100%);
+  }
+  /* Tablet: sheet and scrim sit in a host over the body row (the Sidebar's positioned parent), so they
+     start under the chrome rows on the docked rail's tier and top-bar and toolbar menus open above
+     them. The host clips the sheet's shadow and its slide at the bars. */
+  .td-sidebar-under {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-above-content);
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .td-sidebar-scrim[data-under-chrome="true"],
+  .td-sidebar.td-sidebar-sheet[data-under-chrome="true"] {
+    position: absolute;
+    pointer-events: auto;
   }
   .td-sidebar-sheethead {
     display: flex;
