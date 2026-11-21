@@ -21,6 +21,15 @@
   .td-project-icon-picker-tile[aria-expanded="true"] {
     background: var(--blue-100);
   }
+  /* Bare: the glyph alone (the Projects table's icon column); a wash only while hovered or open */
+  .td-project-icon-picker-tile.is-bare {
+    display: flex;
+    background: none;
+  }
+  .td-project-icon-picker-tile.is-bare:hover,
+  .td-project-icon-picker-tile.is-bare[aria-expanded="true"] {
+    background: var(--action-subtle);
+  }
   .td-project-icon-picker-tile:disabled {
     cursor: default;
   }

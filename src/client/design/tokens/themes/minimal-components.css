@@ -536,6 +536,8 @@ html[data-theme="minimal"] .td-settings-clear{border-radius:0;color:var(--ink-40
 html[data-theme="minimal"] .td-settings-clear:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-navhead{font:400 11px/20px var(--font-ui);color:var(--ink-400);padding:0;height:auto;margin:20px 0 14px}
 html[data-theme="minimal"] .td-settings-navhead:first-child{margin-top:0}
+/* The app wraps each page's rows in .td-settings-navpage, so every heading is a first child: the later pages keep Design's 20px above their heading */
+html[data-theme="minimal"] .td-settings-navpage+.td-settings-navpage>.td-settings-navhead{margin-top:20px}
 html[data-theme="minimal"] .td-settings-navrow{height:auto;padding:5px 0;gap:0;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-settings-navrow:hover,html[data-theme="minimal"] .td-settings-navrow:active{background:none;color:var(--ink-900)}
 /* Current section: the sidebar's indicator, a hairline under the row; same type as the other rows */
@@ -1087,6 +1089,9 @@ html[data-theme="minimal"] .td-icon-picker-empty{text-align:left;padding:8px 14p
 html[data-theme="minimal"] .td-project-icon-picker-tile{border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);transition:none}
 html[data-theme="minimal"] .td-project-icon-picker-tile:hover,html[data-theme="minimal"] .td-project-icon-picker-tile[aria-expanded="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-project-icon-picker-tile:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+/* The Projects table's icon column: the glyph alone, as in Design (no frame); focus keeps a ring */
+html[data-theme="minimal"] .td-project-icon-picker-tile.is-bare,html[data-theme="minimal"] .td-project-icon-picker-tile.is-bare:hover,html[data-theme="minimal"] .td-project-icon-picker-tile.is-bare[aria-expanded="true"]{box-shadow:none;background:none}
+html[data-theme="minimal"] .td-project-icon-picker-tile.is-bare:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
 html[data-theme="minimal"] .td-project-icon-picker-glyph{border-radius:0;background:none}
 html[data-theme="minimal"] .td-project-icon-picker-captioned{font:400 13px/20px var(--font-ui)}
 /* Swatches, divider and glyphs on the 14px edge at both ends: 8 × 18 + 7 × 6 = 186; tiles 6 × 32 + 5 × 2 = 202 = 186 + 16 */

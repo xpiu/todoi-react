@@ -8,11 +8,11 @@ import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
 import { projectsOf, useGroups } from "../data/queries";
 import { Avatar } from "../design/core/Avatar";
-import { Icon, type IconName } from "../design/core/Icon";
+import type { IconName } from "../design/core/Icon";
 import { MenuButton, MenuDivider, MenuItem } from "../design/core/Menu";
 import { ViewSkeleton } from "../design/core/Skeleton";
 import { Switch } from "../design/core/Switch";
-import { ProjectIconPicker, projectColorVar } from "../design/project/ProjectIconPicker";
+import { ProjectIconPicker } from "../design/project/ProjectIconPicker";
 import { quote, useFeedback } from "./feedback";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LoadFailed } from "./LoadFailed";
@@ -31,6 +31,8 @@ export function ProjectsScreen() {
   const openSettings = useLifecycle((s) => s.openSettings);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  // The icon column is the icon picker's trigger; the row menu's "Change icon" opens it too (Design: ProjectsScreen)
+  const [iconOpenId, setIconOpenId] = useState<string | null>(null);
   if (groups.isError) return <LoadFailed what="the projects" error={groups.error} onRetry={() => void groups.refetch()} />;
   if (!groups.data) return <ViewSkeleton view="list" lists={1} />;
   const projects = projectsOf(groups.data);
@@ -83,8 +85,8 @@ export function ProjectsScreen() {
                       }
                     }}
                   >
-                    <td className="td-table-icon">
-                      <Icon name={(p.icon as IconName | null) ?? "kanban"} size={16} color={projectColorVar(p.color)} />
+                    <td className="td-table-icon" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      <ProjectIconPicker bare icon={p.icon as IconName | null} color={p.color as LabelColor | null} size={16} iconSize={16} label={`Change icon for ${p.name}`} open={iconOpenId === p.id} onOpenChange={(o) => setIconOpenId(o ? p.id : null)} onChange={(v) => m.updateProject.mutate({ id: p.id, icon: v.icon, color: v.color })} />
                     </td>
                     <td className="td-table-name" onClick={renaming ? (e) => e.stopPropagation() : undefined} onKeyDown={renaming ? (e) => e.stopPropagation() : undefined}>
                       {renaming ? (
@@ -119,7 +121,6 @@ export function ProjectsScreen() {
                     </td>
                     <td className="td-table-set" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <span className="td-table-tools">
-                        <ProjectIconPicker icon={p.icon as IconName | null} color={p.color as LabelColor | null} size={28} iconSize={15} placement="bottom-end" onChange={(v) => m.updateProject.mutate({ id: p.id, icon: v.icon, color: v.color })} />
                         <MenuButton label={`Settings for ${p.name}`} tooltip="Project settings" placement="bottom-end" tier="detached" size={28} iconSize={16}>
                           <MenuItem icon="settings" onSelect={() => openSettings(p.id)}>
                             Project settings
@@ -132,6 +133,9 @@ export function ProjectsScreen() {
                             }}
                           >
                             Rename
+                          </MenuItem>
+                          <MenuItem icon="shapes" onSelect={() => setTimeout(() => setIconOpenId(p.id))}>
+                            Change icon
                           </MenuItem>
                           <MenuItem icon="copy" onSelect={() => m.createProject.mutate({ id: newId(), groupId: p.groupId, name: `${p.name} (copy)`, copyFrom: p.id }, { onSuccess: () => notify({ message: `Duplicated ${quote(p.name)} — lists and settings, not the items`, icon: "copy" }) })}>
                             Duplicate

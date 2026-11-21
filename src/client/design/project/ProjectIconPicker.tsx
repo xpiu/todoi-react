@@ -25,17 +25,27 @@ export interface ProjectIconPickerProps {
   placement?: PopoverPlacement;
   tier?: PopoverTier;
   disabled?: boolean;
+  /** The trigger is the glyph alone, no tile (the Projects table's icon column, as in Design) */
+  bare?: boolean;
+  /** Controlled open state (a "Change icon" menu row opens it) */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   style?: CSSProperties;
 }
 
-export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, size = 32, iconSize, label = "Change icon and color", caption, placement = "bottom-start", tier = "detached", disabled, style }: ProjectIconPickerProps) {
+export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, size = 32, iconSize, label = "Change icon and color", caption, placement = "bottom-start", tier = "detached", disabled, bare, open, onOpenChange, style }: ProjectIconPickerProps) {
   const pop = usePopover();
+  const isOpen = open ?? pop.open;
+  const setOpen = (o: boolean) => {
+    if (open === undefined) pop.setOpen(o);
+    onOpenChange?.(o);
+  };
   const cur = { icon: icon ?? "kanban", color: color ?? "blue" };
   const glyph = <Icon name={cur.icon} size={iconSize ?? Math.round(size / 2)} color={projectColorVar(cur.color)} />;
   return (
     <Popover
-      open={pop.open}
-      onOpenChange={pop.setOpen}
+      open={isOpen}
+      onOpenChange={setOpen}
       placement={placement}
       tier={tier}
       role="dialog"
@@ -53,7 +63,7 @@ export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, s
             </span>
           </button>
         ) : (
-          <button type="button" {...tipProps(disabled ? undefined : label)} className="td-project-icon-picker-tile td-tooltip" style={{ width: size, height: size, ...style }} aria-label={label} disabled={disabled}>
+          <button type="button" {...tipProps(disabled ? undefined : label)} className={"td-project-icon-picker-tile td-tooltip" + (bare ? " is-bare" : "")} style={{ width: size, height: size, ...style }} aria-label={label} disabled={disabled}>
             {glyph}
           </button>
         )
@@ -79,7 +89,7 @@ export function ProjectIconPicker({ icon = "kanban", color = "blue", onChange, s
                 aria-checked={n === cur.icon}
                 onClick={() => {
                   onChange({ icon: n, color: cur.color });
-                  pop.close();
+                  setOpen(false);
                 }}
               >
                 <Icon name={n} size={16} color={projectColorVar(cur.color)} />
