@@ -57,13 +57,13 @@
     color: var(--ink-400);
   }
   .td-command-palette-list {
-    max-height: 346px;
+    max-height: 348px;
     overflow-y: auto;
     padding: 6px;
   }
   .td-command-palette-row {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 10px;
     width: 100%;
     padding: var(--sp-2) 10px;
@@ -122,5 +122,14 @@
     border-top: 1px solid var(--border-divider);
     font: var(--type-small);
     color: var(--ink-400);
+  }
+  /* Key + word as one centred pair: the 18px key sets the line, so the footer is 35px on whole pixels */
+  .td-command-palette-foot > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .td-command-palette-foot .td-kbd {
+    line-height: 16px;
   }
 }

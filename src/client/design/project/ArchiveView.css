@@ -10,6 +10,12 @@
     gap: 10px;
     color: var(--ink-900);
   }
+  /* Centred on a whole pixel, like the List view column (see --size-content-offset for the guard) */
+  @supports (margin-left: round(down, 1px, 1px)) {
+    .td-archive {
+      margin-left: var(--size-content-offset);
+    }
+  }
   .td-archive-oncard {
     padding: 0;
   }
@@ -78,8 +84,9 @@
     padding: 6px var(--sp-3);
     box-sizing: border-box;
   }
+  /* The divider is an inset line, so every row is the same height and titles keep one pitch (a border made every row after the first 1px taller) */
   .td-archive-row + .td-archive-row {
-    border-top: 1px solid var(--border-divider);
+    box-shadow: inset 0 1px 0 var(--border-divider);
   }
   .td-archive-row:hover,
   .td-archive-row:focus-within {
@@ -87,6 +94,11 @@
   }
   .td-archive-row[data-confirm="true"] {
     background: var(--surface-list);
+  }
+  /* The confirming question is read in full: it wraps instead of ending in an ellipsis beside the two buttons */
+  .td-archive-row[data-confirm="true"] .td-archive-meta {
+    white-space: normal;
+    text-wrap: pretty;
   }
   .td-archive-lead {
     flex: none;
@@ -135,6 +147,9 @@
     flex: none;
     font: var(--weight-regular) var(--text-xs) / var(--lh-xs) var(--font-mono);
     color: var(--ink-400);
+  }
+  html[data-device="phone"] .td-archive-key {
+    display: none;
   }
   .td-archive-control {
     flex: none;

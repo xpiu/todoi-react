@@ -19,7 +19,7 @@
   .td-guest-text {
     flex: 1;
     min-width: 0;
-    font: var(--weight-regular) 13px / 18px var(--font-ui);
+    font: var(--weight-regular) 14px / 20px var(--font-ui);
     color: var(--chrome-text);
     display: flex;
     gap: 6px;

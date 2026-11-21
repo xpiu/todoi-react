@@ -78,6 +78,25 @@
   .td-list-row-aboutcell {
     gap: var(--sp-3);
   }
+  /* "About" keys share one column and a row without a key keeps that slot free, so Created dates hold one x down the list. The list sets --td-about-ch (the widest key in ch); unset, nothing changes. The slot is a pseudo-element in the key's own font, so its ch is the key's ch; the 4px takes back the badge gap */
+  .td-list-row-end .td-list-row-about {
+    min-width: calc(var(--td-about-ch, 0) * 1ch);
+    justify-content: flex-end;
+    font-variant-numeric: tabular-nums;
+  }
+  .td-list-row-about .td-list-row-key-icon {
+    justify-content: flex-end;
+  }
+  .td-list-row-badge[title^="Created"] {
+    font-variant-numeric: tabular-nums;
+  }
+  .td-list-row-end > .td-list-row-badge[title^="Created"]::after {
+    content: "";
+    flex: none;
+    width: calc(var(--td-about-ch, 0) * 1ch);
+    margin-left: calc(min(12px, var(--td-about-ch, 0) * 999px) - 4px);
+    font: var(--weight-medium) 11px / 16px var(--font-ui);
+  }
   .td-list-row-title {
     font: var(--type-body);
     color: var(--ink-900);

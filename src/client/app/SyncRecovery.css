@@ -7,11 +7,18 @@
     min-width: 0;
   }
 
+  /* The toggle is a ghost button: its hover box starts 12px left of the row label, so the chevron sits on the label column */
+  .td-sync-recovery > .td-btn-ghost {
+    margin-left: calc(var(--sp-3) * -1);
+  }
+  /* Four whole rows: 4 × 20px + 16px padding + 2px border; written on textarea.… because TextField's textarea.td-field min-height outranks the class alone */
+  textarea.td-sync-draft {
+    resize: vertical;
+    min-height: 98px;
+  }
   .td-sync-draft {
     width: 100%;
     box-sizing: border-box;
-    resize: vertical;
-    min-height: 100px;
     max-height: 400px;
     overflow-wrap: anywhere;
   }
@@ -28,6 +35,7 @@
     font: var(--type-small);
     color: var(--ink-600);
     overflow-wrap: anywhere;
+    text-wrap: pretty;
   }
 
   .td-sync-label {

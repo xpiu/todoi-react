@@ -52,11 +52,17 @@
     flex: 1;
     min-width: 0;
     margin: 0;
+    /* As tall as the 28px close button (22px line + 3px above and below), so the button sits on the first line of a title that wraps */
+    padding: 3px 0;
     font: var(--type-section);
     color: var(--ink-900);
     display: flex;
     align-items: center;
     gap: 10px;
+    text-wrap: balance;
+  }
+  .td-dialog-head > .td-iconbtn {
+    align-self: flex-start;
   }
   .td-dialog-body {
     flex: 1;
@@ -88,5 +94,16 @@
   }
   .td-confirm-body + .td-confirm-body {
     margin-top: var(--sp-2);
+  }
+  /* Pending lines (StateDialog): two 12px bars centred on two 18px text lines, the room held from the first frame, so the dialog keeps its height when the bars show and when a two-line sentence replaces them */
+  .td-confirm-body[aria-busy="true"] {
+    display: flow-root;
+    min-height: 36px;
+  }
+  .td-confirm-body[aria-busy="true"] > .td-skeleton {
+    margin: 3px 0;
+  }
+  .td-confirm-body[aria-busy="true"] > .td-skeleton + .td-skeleton {
+    margin-top: 6px;
   }
 }

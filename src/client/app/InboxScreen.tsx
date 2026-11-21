@@ -28,7 +28,7 @@ import { hitKey, useOpenResult } from "./search";
 import "./screens.css";
 
 /**
- * Notification "about" keys share one width, read by the Minimal theme as `--td-about-ch`: the widest key in ch of
+ * Notification "about" keys share one width, read by both themes as `--td-about-ch`: the widest key in ch of
  * the tabular key face (a digit or hyphen is 1ch; a capital counts 1.6ch, the width of W in Inter; anything else
  * 1.2ch), so the slot is never narrower than the widest key. Rows without a key keep that slot free so Created dates
  * hold one column; 0 when no row has a key. CSS only: no measuring, font or theme re-runs.

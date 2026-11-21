@@ -52,6 +52,15 @@
   .td-menu-item[data-danger="true"] .td-menu-item-icon {
     color: inherit;
   }
+  /* 16px glyph and 14px chevron: both centre on whole pixels in the 30px row */
+  .td-menu-item-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  .td-menu-item-trail svg {
+    width: 14px;
+    height: 14px;
+  }
   .td-menu-item-label {
     flex: 1 1 auto;
     min-width: 0;

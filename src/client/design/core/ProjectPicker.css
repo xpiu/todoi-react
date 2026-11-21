@@ -7,7 +7,7 @@
   .td-project-picker-head {
     display: flex;
     align-items: center;
-    gap: var(--sp-1);
+    gap: 5px;
     padding: 2px var(--sp-1) 6px;
     font: var(--weight-semibold) var(--text-xs) / var(--lh-xs) var(--font-ui);
     color: var(--ink-900);
