@@ -140,6 +140,62 @@
     padding: 4px 0 4px var(--sp-2);
     margin: -4px 0;
   }
+  /* The details row the ⋯ menu expands under the card (Design: ItemCard): Created date + quick actions */
+  .td-card-details {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--duration-base) var(--ease-standard);
+  }
+  .td-card-details[data-expanded="true"] {
+    grid-template-rows: 1fr;
+  }
+  .td-card-details > .td-card-meta {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .td-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px var(--sp-2) 5px;
+    cursor: default;
+  }
+  .td-card-details:not([data-expanded="true"]) > .td-card-meta {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .td-card-meta-created {
+    margin-right: auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: var(--weight-regular) 11px / 16px var(--font-ui);
+    color: var(--ink-400);
+    letter-spacing: 0.01em;
+  }
+  .td-card-qa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    padding: 0;
+    background: none;
+    border-radius: var(--radius-xs);
+    color: var(--ink-400);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .td-card-qa:hover {
+    background: var(--action-subtle);
+    color: var(--ink-900);
+  }
+  .td-card-qa:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
   .td-card-more-anchor {
     position: absolute;
     top: 0;

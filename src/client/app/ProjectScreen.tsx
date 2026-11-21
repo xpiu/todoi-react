@@ -36,6 +36,8 @@ import { TransferDialog, type TransferKind } from "../design/core/ProjectPicker"
 import { useFileDropTargets } from "../design/overlay/Attachments";
 import { attachFiles } from "./uploads";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
+import type { OverlayField } from "../design/overlay/ItemOverlay";
+import { formatDate } from "../design/core/dates";
 import { usePrefs } from "./prefs";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
@@ -62,6 +64,12 @@ export function ProjectScreen() {
   // Keep card callbacks stable when only item data changes.
   const go = useCallback((next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, next) }), [navigate, projectId, state]);
   const openItem = useCallback((id: string, edit?: boolean) => go({ item: id, edit: !!edit }), [go]);
+  // A card quick action opens the item with one field's picker open; a one-shot request, not part of the URL
+  const [pick, setPick] = useState<{ id: string; field: OverlayField } | null>(null);
+  const openItemField = useCallback((id: string, field: OverlayField) => {
+    setPick({ id, field });
+    openItem(id);
+  }, [openItem]);
 
   const failed = project.isError ? project : items.isError ? items : labels.isError ? labels : null;
   if (failed && failed.error instanceof ApiError && failed.error.status === 401) {
@@ -82,8 +90,9 @@ export function ProjectScreen() {
     setSelectedIds,
     clearFilters: () => go({ filters: [] }),
     openItem,
+    openItemField,
   };
-  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={openItem} /> : null;
+  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} openField={pick?.id === state.item ? pick.field : undefined} onClose={() => { setPick(null); go({ item: undefined, edit: undefined }); }} onOpen={openItem} /> : null;
   const body = view === "board" ? <ProjectBoard {...props} /> : view === "calendar" ? <ProjectCalendar {...props} /> : <ProjectList {...props} />;
   return (
     <>
@@ -111,6 +120,7 @@ interface ViewProps {
   setSelectedIds: (next: string[] | ((prev: string[]) => string[])) => void;
   clearFilters: () => void;
   openItem: (id: string, edit?: boolean) => void;
+  openItemField: (id: string, field: OverlayField) => void;
 }
 
 interface VisibleList {
@@ -381,7 +391,7 @@ function ProjectList(props: ViewProps) {
 }
 
 /** Raw immutable item records and stable callbacks let unchanged cards skip a board update. */
-const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, selected, onClick, onDelete }: {
+const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, selected, onClick, onDelete, onQuickAction }: {
   item: Item;
   toRow: ReturnType<typeof itemRowMapper>;
   subitemTotal: number;
@@ -389,6 +399,7 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
   selected: boolean;
   onClick: (id: string, listId: string, e: SyntheticEvent) => void;
   onDelete: ProjectActions["remove"];
+  onQuickAction: (id: string, field: OverlayField) => void;
 }) {
   const r = toRow(item);
   return <ItemCard
@@ -408,6 +419,8 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
     cover={coverOf(item)}
     badges={{ description: !!item.description, attachments: r.attachments, checklist: subitemTotal ? { done: subitemDone, total: subitemTotal } : undefined }}
     onMenuAction={(action) => { if (action === "Delete") void onDelete(item.id); }}
+    created={formatDate(item.createdAt, { year: "auto" })}
+    onQuickAction={(field) => onQuickAction(item.id, field)}
   />;
 });
 
@@ -436,6 +449,7 @@ function ProjectBoard(props: ViewProps) {
                     selected={v.isSelected(r.id)}
                     onClick={v.onItemClick}
                     onDelete={actions.remove}
+                    onQuickAction={props.openItemField}
                   />
                 );
               })}

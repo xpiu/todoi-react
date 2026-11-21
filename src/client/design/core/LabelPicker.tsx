@@ -96,6 +96,8 @@ function LabelForm({ initial, labels, onSave, onCancel, onDelete }: { initial: {
 }
 
 export interface LabelPickerProps {
+  /** Open on mount (a card quick action opens the overlay with this picker open) */
+  defaultOpen?: boolean;
   labels: ReadonlyArray<PickableLabel>;
   /** Selected label ids */
   value: string[];
@@ -113,8 +115,8 @@ export interface LabelPickerProps {
   "aria-label"?: string;
 }
 
-export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabel, onDeleteLabel, placeholder = "Labels", tier = "menu", placement = "bottom-start", width = 248, block, disabled, ...rest }: LabelPickerProps) {
-  const pop = usePopover();
+export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabel, onDeleteLabel, placeholder = "Labels", tier = "menu", placement = "bottom-start", width = 248, block, disabled, defaultOpen = false, ...rest }: LabelPickerProps) {
+  const pop = usePopover(defaultOpen);
   const [q, setQ] = useState("");
   const [edit, setEdit] = useState<{ label?: PickableLabel; draftName?: string } | null>(null);
   const label = rest["aria-label"] ?? "Labels";

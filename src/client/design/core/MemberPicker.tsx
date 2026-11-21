@@ -22,6 +22,8 @@ export interface PickableMember {
 const first = (n: string) => n.split(/\s+/)[0] ?? n;
 
 export interface MemberPickerProps {
+  /** Open on mount (a card quick action opens the overlay with this picker open) */
+  defaultOpen?: boolean;
   members: ReadonlyArray<PickableMember>;
   value: string[];
   onChange: (ids: string[]) => void;
@@ -38,8 +40,8 @@ export interface MemberPickerProps {
   clearLabel?: string;
 }
 
-export function MemberPicker({ members, value, onChange, placeholder = "Assignees", icon = "user-plus", tier = "menu", placement = "bottom-start", width = 248, block, disabled, max, clearLabel = "Clear assignees", ...rest }: MemberPickerProps) {
-  const pop = usePopover();
+export function MemberPicker({ members, value, onChange, placeholder = "Assignees", icon = "user-plus", tier = "menu", placement = "bottom-start", width = 248, block, disabled, max, clearLabel = "Clear assignees", defaultOpen = false, ...rest }: MemberPickerProps) {
+  const pop = usePopover(defaultOpen);
   const [q, setQ] = useState("");
   const label = rest["aria-label"] ?? "Assignees";
   const sel = new Set(value);

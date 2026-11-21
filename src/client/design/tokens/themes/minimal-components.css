@@ -175,6 +175,11 @@ html[data-theme="minimal"] .td-card-more{top:10px;right:0;width:16px;height:18px
 html[data-theme="minimal"] .td-card-more:hover,html[data-theme="minimal"] .td-card-more[aria-expanded="true"]{color:var(--ink-900)}
 html[data-theme="minimal"] .td-card-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
 html[data-theme="minimal"] .td-card-meta{padding:4px 0 0}
+html[data-theme="minimal"] .td-card-details:not([data-expanded="true"])>.td-card-meta{padding:0}
+/* The 196px Minimal card fits "Created Aug 19" and all six quick actions: 18px glyph buttons, no gap */
+html[data-theme="minimal"] .td-card-meta{gap:0}
+html[data-theme="minimal"] .td-card-qa{width:18px;height:20px;border-radius:0}
+html[data-theme="minimal"] .td-card-qa:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-card.td-file-target{outline:none;background:var(--blue-100);box-shadow:none;isolation:isolate}
 html[data-theme="minimal"] .td-card.td-file-target::after{border-radius:0;font:400 11px/16px var(--font-ui);right:0;bottom:10px}
 /* Labels are words; assignees are initials; both comma-separated, grey */

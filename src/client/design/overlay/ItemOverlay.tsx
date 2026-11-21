@@ -81,6 +81,9 @@ export interface OverlayComment {
   edited?: boolean;
   reactions: CommentReaction[];
 }
+/** The rail fields a card quick action can open */
+export type OverlayField = "status" | "priority" | "start" | "due" | "labels" | "assignees";
+
 export interface OverlayActivity {
   id: string;
   src?: string;
@@ -126,6 +129,8 @@ export interface ItemOverlayProps {
   linkStatuses?: boolean;
   /** The E shortcut: open with the title in edit */
   autoEditTitle?: boolean;
+  /** A card quick action: open with this field's picker already open */
+  openField?: OverlayField;
   today?: string;
   onClose: () => void;
   onRename: (title: string) => Save;
@@ -414,6 +419,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
             block
             tier="detached"
             aria-label="Status"
+            defaultOpen={p.openField === "status"}
             title={statusTitle}
             value={status}
             options={statusOpts}
@@ -438,14 +444,14 @@ export function ItemOverlay(p: ItemOverlayProps) {
               )
             }
           />
-          <Select block tier="detached" aria-label="Priority" title="Priority" placeholder="Priority" icon="flag" value={item.priority ?? NO_PRIORITY} width={184} options={[...PRIORITIES.map((pr) => ({ value: pr.value as string, label: pr.label, icon: "flag" as IconName, iconColor: pr.color })), { value: NO_PRIORITY, label: "No priority", icon: "flag-off" as IconName }]} onChange={(v) => p.onSetPriority(v === NO_PRIORITY ? null : (v as ItemPriority))} />
+          <Select block tier="detached" aria-label="Priority" defaultOpen={p.openField === "priority"} title="Priority" placeholder="Priority" icon="flag" value={item.priority ?? NO_PRIORITY} width={184} options={[...PRIORITIES.map((pr) => ({ value: pr.value as string, label: pr.label, icon: "flag" as IconName, iconColor: pr.color })), { value: NO_PRIORITY, label: "No priority", icon: "flag-off" as IconName }]} onChange={(v) => p.onSetPriority(v === NO_PRIORITY ? null : (v as ItemPriority))} />
           <div className="td-aside-divider" />
-          <DatesPicker block tier="detached" start={item.start} due={item.due} time={item.dueTime} state={item.dueState ?? (item.done ? "complete" : undefined)} today={p.today} onChange={p.onSetDates} />
+          <DatesPicker block tier="detached" defaultOpen={p.openField === "start" || p.openField === "due"} defaultField={p.openField === "start" ? "start" : "due"} start={item.start} due={item.due} time={item.dueTime} state={item.dueState ?? (item.done ? "complete" : undefined)} today={p.today} onChange={p.onSetDates} />
           <RepeatPicker block tier="detached" value={item.repeat ?? null} anchor={item.due} today={p.today} onChange={p.onSetRepeat} />
           {p.inbox ? null : (
             <>
-              <LabelPicker block tier="detached" labels={p.labels} value={item.labelIds} onChange={p.onSetLabels} onCreateLabel={p.onCreateLabel} onEditLabel={p.onEditLabel} onDeleteLabel={p.onDeleteLabel} />
-              <MemberPicker block tier="detached" members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
+              <LabelPicker block tier="detached" defaultOpen={p.openField === "labels"} labels={p.labels} value={item.labelIds} onChange={p.onSetLabels} onCreateLabel={p.onCreateLabel} onEditLabel={p.onEditLabel} onDeleteLabel={p.onDeleteLabel} />
+              <MemberPicker block tier="detached" defaultOpen={p.openField === "assignees"} members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
             </>
           )}
           <div className="td-aside-divider" />

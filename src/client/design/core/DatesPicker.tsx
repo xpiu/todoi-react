@@ -49,6 +49,8 @@ export interface DatesPickerProps {
   trigger?: (open: boolean, value: { start: Date | null; due: Date | null; time: string | null }) => ReactNode;
   onOpenChange?: (open: boolean) => void;
   defaultOpen?: boolean;
+  /** The field that takes the typing when it opens on mount @default "due" */
+  defaultField?: "start" | "due";
   style?: CSSProperties;
   className?: string;
 }
@@ -77,6 +79,7 @@ export function DatesPicker({
   trigger,
   onOpenChange,
   defaultOpen = false,
+  defaultField = "due",
   style,
   className,
   ...rest
@@ -85,10 +88,11 @@ export function DatesPicker({
   const pop = usePopover(defaultOpen);
   const S = parseDateValue(start);
   const D = parseDateValue(due);
-  const [active, setActive] = useState<Active>("due");
-  const [showStart, setShowStart] = useState(!!S);
+  const [active, setActive] = useState<Active>(defaultOpen ? defaultField : "due");
+  const [showStart, setShowStart] = useState(!!S || (defaultOpen && defaultField === "start"));
   const [typed, setTyped] = useState({ start: "", due: "", time: "" });
   const dueRef = useRef<HTMLInputElement>(null);
+  const startRef = useRef<HTMLInputElement>(null);
 
   const setOpen = (o: boolean) => {
     pop.setOpen(o);
@@ -152,7 +156,7 @@ export function DatesPicker({
       >
         <span className="td-date-picker-label">{label}</span>
         <input
-          ref={k === "due" ? dueRef : undefined}
+          ref={k === "due" ? dueRef : startRef}
           className="td-date-picker-input"
           placeholder={val ? formatDate(val, { year: "auto", today }) : ph}
           aria-label={`${label} date`}
@@ -184,7 +188,7 @@ export function DatesPicker({
   );
 
   return (
-    <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} sheet={false} role="dialog" aria-label={ariaLabel} block={block} initialFocus={dueRef} className={className}>
+    <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} sheet={false} role="dialog" aria-label={ariaLabel} block={block} initialFocus={active === "start" ? startRef : dueRef} className={className}>
       <div className="td-date-picker">
         <div className="td-date-picker-fields">
           {withStart && showStart ? field("start", "Start", S, "Add a start date") : null}

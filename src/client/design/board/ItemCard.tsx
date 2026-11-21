@@ -1,7 +1,7 @@
 // ItemCard — a board item: optional cover, title (green check when done), compact labels, a badge row
 // (description, due, repeat, subitems progress, attachments, priority, avatars) with the mono key
 // pinned right, and a hover ⋯ menu. Spec: DESIGN.md › Board, Item keys.
-import type { CSSProperties, DragEvent, MouseEvent, SyntheticEvent } from "react";
+import { useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type SyntheticEvent } from "react";
 
 import { Avatar } from "../core/Avatar";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
@@ -14,6 +14,7 @@ import type { StatusLike } from "../core/statuses";
 import { DueDatePill, type DueState } from "./DueDatePill";
 import { LabelChip } from "./LabelChip";
 import type { RowLabel, RowPerson, RowPriority } from "../list/ListRow";
+import type { OverlayField } from "../overlay/ItemOverlay";
 import "../core/text.css";
 import "./ItemCard.css";
 
@@ -25,6 +26,16 @@ const MENU_ITEMS: ReadonlyArray<["pencil" | "arrow-right" | "copy" | "repeat" | 
   ["repeat", "Convert to"],
   ["archive", "Archive"],
   ["trash-2", "Delete"],
+];
+
+/** The quick actions in the row the ⋯ menu expands under a card (Design: ItemCard): each opens that field's picker */
+const QUICK_ACTIONS: ReadonlyArray<["clock" | "calendar" | "users" | "tag" | "flag" | "circle-dot", string, OverlayField]> = [
+  ["clock", "Due date", "due"],
+  ["calendar", "Start date", "start"],
+  ["users", "Assignees", "assignees"],
+  ["tag", "Labels", "labels"],
+  ["flag", "Priority", "priority"],
+  ["circle-dot", "Status", "status"],
 ];
 
 export interface ItemCardProps {
@@ -49,6 +60,10 @@ export interface ItemCardProps {
   dragId?: string;
   onClick?: (e: SyntheticEvent) => void;
   onMenuAction?: (action: CardMenuAction, itemId: string) => void;
+  /** "Aug 12": shown in the details row the ⋯ menu expands */
+  created?: string;
+  /** A details-row quick action (Due date, Start date, Assignees, Labels, Priority, Status); without it the row has no buttons */
+  onQuickAction?: (field: OverlayField, itemId: string) => void;
   style?: CSSProperties;
 }
 
@@ -91,7 +106,19 @@ function ItemKey({ itemId }: { itemId?: string }) {
 
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
-export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, style }: ItemCardProps) {
+export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, created, onQuickAction, style }: ItemCardProps) {
+  // Opening the ⋯ menu also expands the details row under the card (Design: ItemCard). Closing the menu collapses it,
+  // unless the press that closed it landed in the row: that press is a quick action, which collapses it itself.
+  const [expanded, setExpanded] = useState(false);
+  const pressInRow = useRef(false);
+  const onMenuOpenChange = (open: boolean) => {
+    if (open) return setExpanded(true);
+    setTimeout(() => {
+      if (!pressInRow.current) setExpanded(false);
+      pressInRow.current = false;
+    });
+  };
+  const hasDetails = !!itemId && !!onMenuAction && (!!created || !!onQuickAction);
   const cl = badges.checklist;
   const clComplete = !!cl && cl.total > 0 && cl.done === cl.total;
   const hasOtherBadges = !!(due || repeat || badges.description || cl || badges.attachments || status || priority || assignees.length);
@@ -191,7 +218,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
       </div>
       {itemId && onMenuAction ? (
         <span className="td-card-more-anchor" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-          <MenuPopover label="Item options" tier="detached" placement="bottom-end" width={184} trigger={<button {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}>
+          <MenuPopover label="Item options" tier="detached" placement={hasDetails ? "right-start" : "bottom-end"} width={184} onOpenChange={hasDetails ? onMenuOpenChange : undefined} trigger={<button {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}>
             {MENU_ITEMS.map(([icon, label]) => (
               <span key={label}>
                 {label === "Delete" ? <MenuDivider /> : null}
@@ -202,6 +229,40 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             ))}
           </MenuPopover>
         </span>
+      ) : null}
+      {hasDetails ? (
+        <div className="td-card-details" data-expanded={expanded ? "true" : undefined} inert={!expanded}>
+          <div
+            className="td-card-meta"
+            role="group"
+            aria-label="Item details"
+            onPointerDown={() => (pressInRow.current = true)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Escape") setExpanded(false);
+            }}
+          >
+            <span className="td-card-meta-created">{created ? `Created ${created}` : ""}</span>
+            {onQuickAction
+              ? QUICK_ACTIONS.map(([icon, label, field]) => (
+                  <button
+                    key={field}
+                    type="button"
+                    aria-label={label}
+                    {...tipProps(label)}
+                    className={"td-card-qa " + tipProps(label).className}
+                    onClick={() => {
+                      setExpanded(false);
+                      onQuickAction(field, itemId!);
+                    }}
+                  >
+                    <Icon name={icon} size={14} />
+                  </button>
+                ))
+              : null}
+          </div>
+        </div>
       ) : null}
     </div>
   );

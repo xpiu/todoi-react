@@ -10,13 +10,14 @@ import { PortalContainerContext, usePortalContainer } from "./portalContainer";
 import { useViewport } from "./viewport";
 import "./Popover.css";
 
-export type PopoverPlacement = "bottom-start" | "bottom-end" | "top-start" | "top-end";
+/** right-start: beside the anchor (a board card's ⋯ menu, so the card's details row stays in view) */
+export type PopoverPlacement = "bottom-start" | "bottom-end" | "top-start" | "top-end" | "right-start";
 /** menu → --z-menu (default) · nav → sidebar / top bar · detached → anchors inside scroll or transform ancestors · toolbar → app-bar dropdowns */
 export type PopoverTier = "menu" | "nav" | "detached" | "toolbar";
 export type PopoverCloseReason = "outside" | "escape" | "select" | "swipe" | "trigger" | "focus-out" | "other";
 
 export function placementToSide(placement: PopoverPlacement) {
-  const [side, align] = placement.split("-") as ["bottom" | "top", "start" | "end"];
+  const [side, align] = placement.split("-") as ["bottom" | "top" | "right", "start" | "end"];
   return { side, align };
 }
 

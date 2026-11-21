@@ -16,7 +16,7 @@ import type { PickableItem } from "../design/core/ItemPicker";
 import { formatDate, formatRelative } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import type { AttachmentFile } from "../design/overlay/Attachments";
-import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
+import { ItemOverlay, type OverlayField, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { useDrafts } from "./drafts";
 import { MissingItem } from "./MissingItem";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
@@ -34,6 +34,8 @@ export interface ItemOverlayScreenProps {
   labels: Label[];
   itemId: string;
   editTitle?: boolean;
+  /** A card quick action: open with this field's picker open */
+  openField?: OverlayField;
   onClose: () => void;
   onOpen: (id: string, edit?: boolean) => void;
   onSuggestShortcut?: (id: string, delay?: number) => void;
@@ -48,7 +50,7 @@ export function ItemOverlayScreen(props: ItemOverlayScreenProps) {
   return <ItemOverlayBody {...props} item={item} />;
 }
 
-function ItemOverlayBody({ projectId, project, items, labels, itemId, item, editTitle, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps & { item: Item }) {
+function ItemOverlayBody({ projectId, project, items, labels, itemId, item, editTitle, openField, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps & { item: Item }) {
   const details = useItemDetails(itemId);
   const activity = useActivity(projectId ?? "");
   const scope = useMemo(() => scopeOf(projectId), [projectId]);
@@ -145,6 +147,7 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       detailsState={details.data ? undefined : details.isError ? { error: errorMessage(details.error), onRetry: () => void details.refetch() } : "loading"}
       projectItems={projectItems}
       autoEditTitle={editTitle}
+      openField={openField}
       today={today}
       inbox={!projectId}
       onClose={onClose}
