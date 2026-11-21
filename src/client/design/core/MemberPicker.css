@@ -5,7 +5,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* One 20px glyph slot down the sheet (Rounded): search glyph, row avatar and footer glyph share a centre, and search text, names and the footer label one 40px column */
+  .td-picker-search.td-member-picker-search > svg {
+    margin: 0 3px;
+  }
+  html:not([data-theme="minimal"]) .td-member-picker-action > svg {
+    margin: 0 3px;
+  }
+  /* 1px down: the 11px handle sits on the name's baseline (centred, it rode about 1px high) */
   .td-member-picker-sub {
+    position: relative;
+    top: 1px;
     font: var(--weight-regular) 11px / 16px var(--font-ui);
     color: var(--ink-400);
     white-space: nowrap;

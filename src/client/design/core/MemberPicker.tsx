@@ -77,7 +77,7 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
         </Button>
       }
     >
-      <div className="td-picker-search">
+      <div className="td-picker-search td-member-picker-search">
         <Icon name="search" size={14} />
         <input
           className="td-picker-input"
@@ -121,7 +121,7 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
               }
             }}
           >
-            <Avatar name={m.name} src={m.src} color={m.color} size={22} decorative />
+            <Avatar name={m.name} src={m.src} color={m.color} size={20} decorative />
             <span className="td-member-picker-name">{m.name}</span>
             {m.nickname || m.email ? <span className="td-member-picker-sub">{m.nickname ? `@${m.nickname}` : m.email}</span> : null}
             {sel.has(m.id) ? <Icon name="check" size={14} className="td-member-picker-check" /> : null}
