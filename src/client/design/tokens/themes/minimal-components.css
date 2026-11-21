@@ -845,7 +845,8 @@ html[data-theme="minimal"] .td-modal-main .td-btn:focus-visible{outline:1px soli
 html[data-theme="minimal"] .td-description-view{margin:0;padding:0;border-radius:0}
 html[data-theme="minimal"] .td-description-view:hover{background:none}
 html[data-theme="minimal"] .td-description-view:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:4px}
-html[data-theme="minimal"] .td-description-empty{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+/* Same ink as the theme-wide ::placeholder rule, so the empty description reads like the comment field's placeholder */
+html[data-theme="minimal"] .td-description-empty{font:400 13px/20px var(--font-ui);color:color-mix(in srgb,var(--ink-900) 55%,transparent)}
 html[data-theme="minimal"] .td-description-textarea{padding:8px 0;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-description-textarea.is-mono{font:400 12px/1.5 var(--font-mono)}
 html[data-theme="minimal"] .td-description-bar .td-iconbtn{border-radius:0;color:var(--ink-400)}
