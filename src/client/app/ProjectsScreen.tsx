@@ -1,5 +1,5 @@
 // Projects — every project across groups in one table: icon, name (rename inline), lead, items,
-// completed %, the per-project "Link lists with statuses" switch, and a ⋯ with the lifecycle rows.
+// completed %, the per-project "Link Lists with Status" switch, and a ⋯ with the lifecycle rows.
 import { useState } from "react";
 
 import { movesOnCheck } from "../../shared/completion";
@@ -54,10 +54,10 @@ export function ProjectsScreen() {
                 <th>Lead</th>
                 <th className="td-table-number">Items</th>
                 <th className="td-table-number">Completed</th>
-                <th className="td-table-link" title="Link lists with statuses: when on, an item created in or moved to a list with a Status role takes that Status. The item window then shows Status alone, and picking a Status there moves the item to its list.">
-                  Link Lists to Status
+                <th className="td-table-link" title="Link Lists with Status: when on, an item created in or moved to a list with a Status role takes that Status. The item window then shows Status alone, and picking a Status there moves the item to its list.">
+                  Link Lists with Status
                 </th>
-                <th className="td-table-link" title="When on, checking an item also moves it to the list with the Done role, and unchecking sends it back. Follows Link Lists to Status until it is set. Subitems stay with their item.">
+                <th className="td-table-link" title="When on, checking an item also moves it to the list with the Done role, and unchecking sends it back. Follows Link Lists with Status until it is set. Subitems stay with their item.">
                   Checked items move to Done
                 </th>
                 <th>

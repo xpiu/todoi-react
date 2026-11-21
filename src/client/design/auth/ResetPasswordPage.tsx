@@ -37,7 +37,7 @@ export function ResetPasswordPage({ stage, email: emailProp = "", onSend, onSave
           We sent a reset link to <b>{email || emailProp}</b>. It works once and expires in {span}.
         </AuthState>
         <div className="td-auth-stack">
-          <Button variant="outline" onClick={() => onSend(email.trim() || emailProp)}>
+          <Button variant="outline" size="lg" onClick={() => onSend(email.trim() || emailProp)}>
             Send it again
           </Button>
         </div>

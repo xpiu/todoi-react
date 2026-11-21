@@ -118,7 +118,7 @@ export interface ItemOverlayProps {
   /** An Inbox item: "Move to project…" (filing) takes the list select's place; labels and assignees,
    * which belong to a project, are left out */
   inbox?: boolean;
-  /** The project's "Link lists with statuses". When on and every list carries its own Status role (none missing,
+  /** The project's "Link Lists with Status". When on and every list carries its own Status role (none missing,
    * none shared), the List field is hidden and Status stands in for it: picking a Status calls onMoveToList with the
    * list that has that role (the move sets the Status). None, a Status no list carries and Done on a recurring item
    * call onSetStatus and leave the item where it is. Off, a list without a role, two lists sharing one, or an item

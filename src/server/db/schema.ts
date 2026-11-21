@@ -173,7 +173,7 @@ export const projects = pgTable(
     description: text("description"),
     visibility: projectVisibilityEnum("visibility").notNull().default("private"),
     defaultView: projectViewEnum("default_view").notNull().default("list"),
-    /** "Link lists with statuses": an item moved to a list with a role takes that Status */
+    /** "Link Lists with Status": an item moved to a list with a role takes that Status */
     linkStatuses: boolean("link_statuses").notNull().default(true),
     /** "Checked items move to Done": checking an item also moves it to the list with the Done role. Null follows linkStatuses */
     checkedMove: boolean("checked_move"),

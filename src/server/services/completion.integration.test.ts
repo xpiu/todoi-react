@@ -128,7 +128,7 @@ describe("checked items move to Done", () => {
     expect(await place(f.plain)).toMatchObject({ listId: f.todo, status: "DONE", done: true });
   });
 
-  it("follows Link lists with statuses until it is set, and an explicit setting overrides it", async () => {
+  it("follows Link Lists with Status until it is set, and an explicit setting overrides it", async () => {
     const f = await fixture();
     await db.update(projects).set({ linkStatuses: false }).where(eq(projects.id, f.projectId));
     await updateItem(f.plain, { done: true }, {}, {}, f.userId);

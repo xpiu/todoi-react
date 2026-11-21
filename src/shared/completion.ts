@@ -104,7 +104,7 @@ export interface CheckedMoveProject {
   /** In board order */
   lists: ReadonlyArray<{ id: string; statusRole: ItemStatus | null; hidden: boolean }>;
 }
-/** The setting's effective value: unset, it follows "Link lists with statuses". */
+/** The setting's effective value: unset, it follows "Link Lists with Status". */
 export const movesOnCheck = (project: Pick<CheckedMoveProject, "checkedMove" | "linkStatuses">) => project.checkedMove ?? project.linkStatuses;
 
 /**

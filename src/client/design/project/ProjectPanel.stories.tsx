@@ -55,7 +55,7 @@ export const Owner: Story = {
     await userEvent.clear(name);
     await userEvent.type(name, "Helicopter sales Benelux{Enter}");
     await expect(args.onChange).toHaveBeenCalledWith({ name: "Helicopter sales Benelux" });
-    await userEvent.click(panel.getByRole("switch", { name: "Link lists with statuses" }));
+    await userEvent.click(panel.getByRole("switch", { name: "Link Lists with Status" }));
     await expect(args.onChange).toHaveBeenLastCalledWith({ linkStatuses: false });
   },
 };

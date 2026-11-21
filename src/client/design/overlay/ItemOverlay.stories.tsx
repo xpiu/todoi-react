@@ -178,7 +178,7 @@ export const InboxItem: Story = {
     await expect(within(dialog).queryByRole("combobox", { name: "Move to list" })).not.toBeInTheDocument();
   },
 };
-/** "Link lists with statuses" on and every list carries its own role: Status stands in for the List field, and a pick moves the item. */
+/** "Link Lists with Status" on and every list carries its own role: Status stands in for the List field, and a pick moves the item. */
 export const LinkedProject: Story = {
   args: { linkStatuses: true, onManageLinks: fn(), lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Done", statusRole: "DONE" }] },
   async play({ args, canvasElement, userEvent }) {
