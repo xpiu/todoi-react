@@ -127,7 +127,8 @@ export interface MenuPopoverProps {
   offset?: number;
   width?: number | string;
   /** @default 184 */
-  minWidth?: number | string;
+  /** @default 184; null leaves the width to the menu's own class (Account and Create menus) */
+  minWidth?: number | string | null;
   /** Full-width anchor */
   block?: boolean;
   /** MenuItem / MenuDivider / MenuNote / MenuGroup children, or a render function (close) => children; close() goes through Base UI's state and reports "select" */

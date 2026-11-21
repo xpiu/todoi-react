@@ -290,7 +290,9 @@ export function TopNavbar({
             label="Create"
             tier="nav"
             placement="bottom-end"
-            minWidth={212}
+            offset={10}
+            minWidth={null}
+            className="td-create-menu"
             trigger={
               <button type="button" className="td-topnav-plus td-tooltip" aria-label="Create" data-tip="Create">
                 <Icon name="plus" size={20} />
@@ -313,7 +315,9 @@ export function TopNavbar({
                 label="Account"
                 tier="nav"
                 placement="bottom-end"
-                minWidth={264}
+                offset={10}
+                minWidth={null}
+                className="td-user-menu"
                 trigger={
                   <button type="button" className="td-topnav-avatarbtn td-tooltip" data-tip="Account" data-tip-side="bottom-end" aria-label={signedIn ? `Account: ${user.name}` : "Account (not signed in)"}>
                     {avatarEl}

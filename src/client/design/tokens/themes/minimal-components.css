@@ -46,8 +46,10 @@ html[data-theme="minimal"] button.td-topnav-plus svg{stroke-width:1.5}
 html[data-theme="minimal"] button.td-topnav-plus:hover,html[data-theme="minimal"] button.td-topnav-plus[aria-expanded="true"],html[data-theme="minimal"] button.td-topnav-plus:active{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav-user{gap:24px}
 html[data-theme="minimal"] .td-topnav-avatarbtn{border-radius:0;box-shadow:none}
-html[data-theme="minimal"] .td-topnav-avatarbtn:hover .td-avatar,html[data-theme="minimal"] .td-topnav-avatarbtn[aria-expanded="true"] .td-avatar{opacity:.55}
 html[data-theme="minimal"] .td-topnav-avatarbtn .td-avatar{width:16px!important;height:16px!important;border-radius:0!important;color:transparent!important;font-size:0!important;background:var(--ink-900)!important;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%271.75%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2%27/%3E%3Ccircle cx=%2712%27 cy=%277%27 r=%274%27/%3E%3C/svg%3E") center/16px 16px no-repeat}
+/* Signed out, the avatar button shows the same 16px ink person glyph as signed in (no chrome disc) */
+html[data-theme="minimal"] .td-topnav-avatarbtn .td-topnav-guest{width:16px!important;height:16px!important;border-radius:0;background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-topnav-avatarbtn .td-topnav-guest svg{width:16px;height:16px;stroke-width:1.75}
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn{width:16px!important;height:16px!important;margin-left:0;border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn svg{width:16px;height:16px}
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:hover,html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:active{background:none;color:var(--ink-400)}
@@ -645,8 +647,8 @@ html[data-theme="minimal"] .td-menu-kbd{padding:0;border:0;border-radius:0;backg
 html[data-theme="minimal"] .td-menu-divider,html[data-theme="minimal"] .td-user-menu-separator{margin:6px 0;background:var(--border-divider)}
 html[data-theme="minimal"] .td-menu-heading{padding:8px 14px 4px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/16px var(--font-ui)}
-html[data-theme="minimal"] .td-user-menu{width:196px;max-width:196px;padding:6px 0}
-html[data-theme="minimal"] .td-create-menu{width:200px;padding:6px 0;top:calc(100% + 12px)}
+html[data-theme="minimal"] .td-user-menu:not([data-sheet]){width:196px;max-width:196px;padding:6px 0}
+html[data-theme="minimal"] .td-create-menu:not([data-sheet]){width:200px;padding:6px 0}
 /* Toolbar menus (Filter · Sort · Members): the same square sheet as every floating layer; section names are plain grey words, rows are normal ink with a faint hover wash, the checked row a paper-grey wash; label swatches shrink to a 6px square so color stays a hint */
 html[data-theme="minimal"] .td-filter-menu,html[data-theme="minimal"] .td-sort-menu,html[data-theme="minimal"] .td-members-menu{border-radius:0}
 html[data-theme="minimal"] .td-filter-menu-head,html[data-theme="minimal"] .td-sort-menu-head,html[data-theme="minimal"] .td-members-menu-head{padding:10px 14px;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
@@ -734,8 +736,8 @@ html[data-theme="minimal"] .td-command-palette-foot{padding:10px 20px;gap:16px;f
 html[data-theme="minimal"] .td-command-palette-foot>span{align-items:baseline;gap:5px}
 html[data-theme="minimal"] .td-command-palette-foot .td-kbd{font:400 13px/20px var(--font-mono)}
 html[data-theme="minimal"] .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-user-menu-id{padding:8px 14px 10px;gap:0}
-html[data-theme="minimal"] .td-user-menu-id .td-avatar{display:none!important}
+html[data-theme="minimal"] .td-user-menu-id{min-height:0;padding:8px 14px 10px;gap:0}
+html[data-theme="minimal"] .td-user-menu-id .td-avatar,html[data-theme="minimal"] .td-user-menu-id .td-topnav-guest{display:none!important}
 html[data-theme="minimal"] .td-user-menu-name{font:500 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-user-menu-email{display:none}
 html[data-theme="minimal"] .td-select-search{border-radius:0;background:none;border-bottom:1px solid var(--border-divider);margin:0 14px 6px;padding:0}
