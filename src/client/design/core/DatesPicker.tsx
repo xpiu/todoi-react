@@ -184,7 +184,7 @@ export function DatesPicker({
   );
 
   return (
-    <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} width={248} role="dialog" aria-label={ariaLabel} block={block} initialFocus={dueRef} className={className}>
+    <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} sheet={false} role="dialog" aria-label={ariaLabel} block={block} initialFocus={dueRef} className={className}>
       <div className="td-date-picker">
         <div className="td-date-picker-fields">
           {withStart && showStart ? field("start", "Start", S, "Add a start date") : null}

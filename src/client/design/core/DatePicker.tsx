@@ -110,7 +110,7 @@ export function DatePicker({
     <DateTrigger variant={variant} icon={icon} disabled={disabled} data-state={sel ? state : undefined} block={block} aria-label={ariaLabel} title={title} style={style} text={sel ? formatDate(sel) : ""} placeholder={placeholder} />
   );
   return (
-    <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} width={248} role="dialog" aria-label={ariaLabel} block={block} initialFocus={inputRef} className={className}>
+    <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} sheet={false} role="dialog" aria-label={ariaLabel} block={block} initialFocus={inputRef} className={className}>
       <div className="td-date-picker">
         <div className="td-date-picker-field" data-active="true">
           <Icon name="calendar" size={14} />

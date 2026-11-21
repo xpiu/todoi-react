@@ -31,6 +31,12 @@
       opacity var(--duration-base) var(--ease-standard),
       transform var(--duration-base) var(--ease-standard);
   }
+  /* An anchored card below desktop (sheet={false}): shorter than the room Base UI leaves it, or it scrolls */
+  .td-popover[data-compact="true"] {
+    max-height: var(--available-height, calc(100dvh - 16px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   /* A body with its own header and scroller (the toolbar's Filter / Sort / Members) sits edge to edge */
   .td-popover.td-popover-flush:not([data-sheet]) {
     padding: 0;

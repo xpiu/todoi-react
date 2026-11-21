@@ -266,13 +266,13 @@ export function RepeatPicker({ value, onChange, anchor, today, placeholder = "Re
         <CustomForm rule={value} anchor={anchor} today={today} onBack={() => setCustom(false)} onDone={pick} />
       ) : (
         <div ref={listRef} className="td-repeat-picker-list" role="radiogroup" aria-label={ariaLabel} onKeyDown={onListKey}>
-          {row(!value, () => pick(null), "Doesn't repeat", "circle-off")}
+          {row(!value, () => pick(null), "Doesn't repeat")}
           <div className="td-menu-divider" role="separator" />
           {presets.map((p) => (
             <span key={p.key}>{row(signature(p.rule) === cur, () => pick(p.rule), describeRepeat(p.rule, anchor))}</span>
           ))}
           <div className="td-menu-divider" role="separator" />
-          {row(!!value && !isPreset, () => setCustom(true), "Custom…", "settings-2", true)}
+          {row(!!value && !isPreset, () => setCustom(true), "Custom…", undefined, true)}
           {!anchor ? <div className="td-menu-note">Set a due date first; the repeat counts from it.</div> : null}
         </div>
       )}

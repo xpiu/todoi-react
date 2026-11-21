@@ -58,7 +58,7 @@ export interface PopoverProps {
   /** Leave unset for a plain panel; "dialog" for pickers and custom panels with their own fields */
   role?: "dialog";
   "aria-label"?: string;
-  /** Bottom sheet on phones. "auto" follows useViewport() @default "auto" */
+  /** Bottom sheet on phones. "auto" follows useViewport() @default "auto"; false keeps the anchored card on every device (it then scrolls inside the room Base UI leaves it below desktop) */
   sheet?: boolean | "auto";
   /** Full-width trigger wrapper */
   block?: boolean;
@@ -99,6 +99,7 @@ export function Popover({
   const vp = useViewport();
   const container = usePortalContainer();
   const isSheet = sheet === true || (sheet === "auto" && vp.phone);
+  const compact = sheet === false && !vp.desktop;
   const { side, align } = placementToSide(placement);
   const popupRef = useRef<HTMLDivElement>(null);
   const [popupEl, setPopupEl] = useState<HTMLDivElement | null>(null);
@@ -163,6 +164,7 @@ export function Popover({
             ref={bindPopup}
             className={popupCls}
             data-sheet={isSheet ? "true" : undefined}
+            data-compact={compact ? "true" : undefined}
             role={role}
             aria-label={rest["aria-label"]}
             style={popupStyle}

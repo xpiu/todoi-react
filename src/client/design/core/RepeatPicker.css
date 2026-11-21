@@ -5,7 +5,7 @@
     flex-direction: column;
     gap: 10px;
     padding: 6px;
-    width: 236px;
+    box-sizing: border-box;
   }
   .td-repeat-picker-list {
     display: flex;
@@ -56,8 +56,9 @@
   }
   .td-repeat-picker-days {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: var(--sp-1);
+    grid-template-columns: repeat(7, 28px);
+    justify-content: space-between;
+    padding: 0 1px;
   }
   .td-repeat-picker-day {
     height: 28px;

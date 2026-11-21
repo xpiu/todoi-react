@@ -41,8 +41,8 @@ html[data-theme="minimal"] .td-topnav .td-field-dark::placeholder{color:transpar
 html[data-theme="minimal"] .td-topnav-kbd{display:none}
 html[data-theme="minimal"] .td-topnav-create{margin:0}
 html[data-theme="minimal"] button.td-topnav-plus{width:20px;height:20px;border-radius:0;color:var(--ink-900)}
-/* The 20px plus has its arms on the 10px line, between two pixel rows, so the 1.25px stroke antialiased to ~60% ink (grey on dark). Half a pixel down-right puts each arm on a full pixel, like the 16px glyphs beside it */
-html[data-theme="minimal"] button.td-topnav-plus svg{stroke-width:1.5;transform:translate(.5px,.5px)}
+/* A 1.25px stroke at 20px. Icon fits the arms to whole pixels (core/iconHint), as it does for every Minimal glyph */
+html[data-theme="minimal"] button.td-topnav-plus svg{stroke-width:1.5}
 html[data-theme="minimal"] button.td-topnav-plus:hover,html[data-theme="minimal"] button.td-topnav-plus[aria-expanded="true"],html[data-theme="minimal"] button.td-topnav-plus:active{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav-user{gap:24px}
 html[data-theme="minimal"] .td-topnav-avatarbtn{border-radius:0;box-shadow:none}
@@ -96,6 +96,8 @@ html[data-theme="minimal"] .td-list-column.is-drop-target>.td-list-column-head{b
 [data-status-role="DONE"]{--td-wash:var(--status-done-list);--td-wash-line:var(--status-done-line)}
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]){position:relative;isolation:isolate;background:none}
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"])::before{content:"";position:absolute;z-index:-1;inset:-10px -8px 0;background:var(--td-wash);border-radius:var(--radius-lg);pointer-events:none}
+/* A washed list and a selected or focused row isolate, which kept their open menu under whatever comes later (the next list, "N hidden lists"); lift them while a menu is open */
+html[data-theme="minimal"] .td-list-column:has(.td-popover),html[data-theme="minimal"] .td-card:has(.td-popover){position:relative;z-index:var(--z-menu-detached,80)}
 /* No add row (read-only): the wash runs 10px past the last hairline */
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-status-role]:not([data-status-role="BACKLOG"]):not(:has(>.td-list-column-foot,>.td-list-column-composer))::before{bottom:-10px}
 /* The row's … button covers the end of the title line with the wash colour, as it does with the paper colour off a wash */
@@ -506,16 +508,20 @@ html[data-theme="minimal"] .td-settings-search .td-field-icon{left:0}
 /* The source sits in one 14px slot (the glyph's width; two mono initials are 13.2px), so every notification title starts on the same whole pixel */
 html[data-theme="minimal"] .td-list-row-from{width:14px;justify-content:flex-start}
 /* A notification's "about" key is the same meta label as a List view key: UI face, tabular figures, one shared width, flush right. The Inbox sets --td-about-ch from the key text (the widest key in ch of this tabular face; 0 when no row has a key), so there is no measuring script: the key's min-width is that many ch, and rows without a key leave the same slot plus the 12px cell gap free, so Created dates hold one column; the dates take tabular figures too */
-html[data-theme="minimal"] .td-list-row-end .td-list-row-about{font:400 11px/16px var(--font-ui);font-variant-numeric:tabular-nums;min-width:calc(var(--td-about-ch,6) * 1ch);justify-content:flex-end}
-html[data-theme="minimal"] .td-list-row-badge[title^="Created"]{font-variant-numeric:tabular-nums}
-html[data-theme="minimal"] .td-inbox .td-list-row-end>.td-list-row-badge[title^="Created"]{margin-right:calc(var(--td-about-ch,0) * 1ch + min(12px,var(--td-about-ch,0) * 999px))}
+html[data-theme="minimal"] .td-list-row-end .td-list-row-about{font:400 11px/16px var(--font-ui);font-variant-numeric:tabular-nums;min-width:calc(var(--td-about-ch,0) * 1ch);min-width:round(up,calc(var(--td-about-ch,0) * 1ch),1px);justify-content:flex-end}
+/* Created dates start on one whole pixel: a 12ch column (a full "Aug 25, 2026" is 10.5ch of the tabular face: 72.5px of 6.94px digits), rounded up, with the date set flush left. Flush right, the date began wherever its own width left it, on a half pixel as often as not */
+html[data-theme="minimal"] .td-list-row-badge[title^="Created"]{font-variant-numeric:tabular-nums;box-sizing:border-box;width:12ch;width:round(up,12ch,1px);justify-content:flex-start}
+/* Archive rows: Restore is a whole number of pixels wide (70.8px put the key before it on a different half pixel from row to row) */
+html[data-theme="minimal"] .td-archive-control>.td-btn:first-child{min-width:72px}
+html[data-theme="minimal"] .td-list-row-end>.td-list-row-badge[title^="Created"]{margin-right:calc(var(--td-about-ch,0) * 1ch + min(12px,var(--td-about-ch,0) * 999px));margin-right:calc(round(up,calc(var(--td-about-ch,0) * 1ch),1px) + min(12px,var(--td-about-ch,0) * 999px))}
+html[data-theme="minimal"] .td-list-row-end>.td-list-row-badge[title^="Created"]::after{content:none}
 html[data-theme="minimal"] .td-list-row-from .td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:transparent!important;font-size:0!important;position:relative}
 html[data-theme="minimal"] .td-list-row-from .td-avatar::after{content:attr(data-initials);font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-list-row-from .td-notification-mark{background:none;border-radius:0;color:var(--ink-400);width:auto!important;height:auto!important}
 html[data-theme="minimal"] .td-list-row-from .td-notification-mark svg{width:14px;height:14px;stroke-width:1.75}
 html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-title{font-weight:500;letter-spacing:-.005em}
 html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from{position:relative}
-html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from::after{content:"";position:absolute;right:-6px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--ink-900)}
+html[data-theme="minimal"] .td-list-row.is-unread .td-list-row-from::after{content:"";position:absolute;right:-7px;top:8px;width:4px;height:4px;border-radius:50%;background:var(--ink-900)}
 /* The nav sits on the content's lines: the head on the first group-title line (30px under the search = the title's 22px + the 32px group gap - 24px field), the first row on the first setting's label line; rows keep a 30px pitch. The base 2px flex gaps are zeroed below so these are the only distances */
 html[data-theme="minimal"] .td-settings-search{margin-bottom:30px}
 html[data-theme="minimal"] .td-settings-clear{border-radius:0;color:var(--ink-400)}
@@ -548,6 +554,11 @@ html[data-theme="minimal"] .td-settings-idmail{font:400 11px/16px var(--font-ui)
 html[data-theme="minimal"] .td-settings-note,html[data-theme="minimal"] .td-settings-body,html[data-theme="minimal"] .td-settings-status,html[data-theme="minimal"] .td-settings-link,html[data-theme="minimal"] .td-settings-empty{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-settings-note{padding:10px 0}
 html[data-theme="minimal"] .td-settings-body{padding:10px 0}
+/* Saved-change recovery: the toggle is a word on the label column; the conflict sentence is body copy (13/20, wraps at 560px like the hints); the closing word follows the boxes at 16px and wraps flush */
+html[data-theme="minimal"] .td-sync-recovery>.td-btn-ghost{margin-left:0;padding:0}
+html[data-theme="minimal"] .td-sync-explanation{max-width:560px;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-sync-actions{column-gap:16px}
+html[data-theme="minimal"] .td-sync-actions>.td-btn-ghost{padding:0}
 html[data-theme="minimal"] .td-settings-empty{padding:20px 0;text-align:left}
 html[data-theme="minimal"] .td-settings-mono{padding:0;border-radius:0;background:none;font:400 11px/20px var(--font-mono);color:var(--ink-900)}
 html[data-theme="minimal"] .td-settings-rowlabel[data-mono="true"]{font:400 11px/20px var(--font-mono)}
@@ -694,6 +705,18 @@ html[data-theme="minimal"] .td-auth-description{padding:0 0 0 12px;border-left:1
 html[data-theme="minimal"] .td-auth-foot{margin-top:24px;font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
 html[data-theme="minimal"] .td-auth-foot a{color:var(--td-auth-dim);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-divider)}
 html[data-theme="minimal"] .td-auth-foot a:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
+/* Auth rhythm: 24px between blocks (form, fields, buttons); the legal line and a locked email are secondary copy (dim, not ink); state and project glyphs are 16px on the first text line, in one column */
+html[data-theme="minimal"] .td-auth-form{margin-top:24px}
+html[data-theme="minimal"] .td-auth-or+.td-auth-form{margin-top:0}
+html[data-theme="minimal"] .td-auth-stack.is-tight{margin-top:0}
+html[data-theme="minimal"] .td-auth-check+.td-auth-stack{margin-top:20px}
+html[data-theme="minimal"] .td-auth-check .td-check{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-auth-sub.is-legal{margin-top:12px;font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
+html[data-theme="minimal"] .td-auth-field .td-field[readonly]{color:var(--td-auth-dim)}
+html[data-theme="minimal"] .td-auth-state-icon{margin-top:3px}
+html[data-theme="minimal"] .td-auth-state-icon svg{width:16px;height:16px}
+html[data-theme="minimal"] .td-auth-project{align-items:flex-start;gap:10px}
+html[data-theme="minimal"] .td-auth-tile{margin-top:3px}
 /* Command palette (Ctrl+K): a square sheet with a hairline ring; the query sits on an ink hairline, results are rows, the highlight a paper-grey wash, keys in bare mono */
 html[data-theme="minimal"] .td-command-palette{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);width:520px}
 html[data-theme="minimal"] .td-command-palette-input{padding:14px 20px 10px;gap:12px;border-bottom:1px solid var(--ink-900);color:var(--ink-900)}
@@ -706,6 +729,7 @@ html[data-theme="minimal"] .td-command-palette-list-name{font:400 11px/16px var(
 html[data-theme="minimal"] .td-command-palette-id{font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-command-palette-empty{padding:20px;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-command-palette-foot{padding:10px 20px;gap:16px;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-command-palette-foot>span{align-items:baseline;gap:5px}
 html[data-theme="minimal"] .td-command-palette-foot .td-kbd{font:400 13px/20px var(--font-mono)}
 html[data-theme="minimal"] .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-user-menu-id{padding:8px 14px 10px;gap:0}
@@ -718,9 +742,17 @@ html[data-theme="minimal"] .td-dialog-head{padding:16px 16px 12px 24px;border-bo
 html[data-theme="minimal"] .td-dialog-title{font:500 15px/22px var(--font-ui)}
 html[data-theme="minimal"] .td-dialog-body{padding:16px 24px 24px}
 html[data-theme="minimal"] .td-dialog-foot{padding:12px 24px}
-html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger){background:none;border:0;box-shadow:none;color:var(--ink-400);font-weight:400}
-html[data-theme="minimal"] .td-dialog-foot .td-btn:not(.td-btn-primary):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-dialog-foot .td-btn-primary,html[data-theme="minimal"] .td-dialog-foot .td-btn-danger{border-radius:2px;font-weight:500}
+html[data-theme="minimal"] :is(.td-dialog-foot,.td-rolereview-foot) .td-btn:not(.td-btn-primary):not(.td-btn-danger){background:none;border:0;box-shadow:none;color:var(--ink-400);font-weight:400}
+html[data-theme="minimal"] :is(.td-dialog-foot,.td-rolereview-foot) .td-btn:not(.td-btn-primary):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] :is(.td-dialog-foot,.td-rolereview-foot) :is(.td-btn-primary,.td-btn-danger){border-radius:2px;font-weight:500}
+/* A word that closes the footer ends on the 24px column edge (its 12px padding hung it 12px inside) */
+html[data-theme="minimal"] .td-dialog-foot>.td-btn:last-child:not(.td-btn-primary):not(.td-btn-danger){margin-right:-12px}
+/* Confirm and state dialogs: the sentence is body type (13/20) with 16px to the hairline above and below; pending bars sit on two 20px lines */
+html[data-theme="minimal"] .td-confirm-body{font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-dialog-body:has(>.td-confirm-body){padding-bottom:16px}
+html[data-theme="minimal"] .td-confirm-body[aria-busy="true"]{min-height:40px}
+html[data-theme="minimal"] .td-confirm-body[aria-busy="true"]>.td-skeleton{margin:4px 0}
+html[data-theme="minimal"] .td-confirm-body[aria-busy="true"]>.td-skeleton+.td-skeleton{margin-top:8px}
 /* Toast: the one inverted surface — an ink bar with paper type, square, in both modes (--chrome-topbar is the ink here). Every part — message, count, action, key, × — inherits the paper colour at full strength (one ink), so nothing depends on white. No leading glyph: the message says what happened, so the `icon` a caller passes is not drawn in Minimal.
    One 40px row (10 + 20 + 10) with 16px between parts, up to 560px wide; a long message wraps and the count, action and × stay on its first line. The action is the underlined word, its key in mono without the underline.
    Where the viewport is narrower than the bar plus its margins, the parts wrap instead of squeezing the message: message first, then count, action and × (flush right) on the next line. */
@@ -743,13 +775,13 @@ html[data-theme="minimal"] .td-toast .td-iconbtn{margin-left:auto}
 }
 /* ── Search dropdown: a ledger under the search hairline — section names in ink over a hairline, results as rows, keys in mono, the keyboard highlight a paper-grey wash.
    Everything sits on a 40px row (head 12 + 20 + 7 + 1px line; row, status line and empty state 10 + 20 + 10); the list shows 10½ rows before it scrolls.
-   Hairlines all span the 16px text column: the row's line is drawn 8px inside the row, whose wash still reaches 8px past the text.
+   Hairlines and the active row's wash share one width, 8px in from the panel edge; text sits 8px inside them, on the 16px column.
    Rows align on the first baseline, so the key and meta (11/16) share the title's line of type; keys fill one column as wide as the longest key shown (--td-sd-key-ch, set by the component). */
 html[data-theme="minimal"] .td-search-dropdown{border-radius:0;top:calc(100% + 6px)}
-html[data-theme="minimal"] .td-search-dropdown-scroll{max-height:calc(40px*10.5);padding:0 16px}
-html[data-theme="minimal"] .td-search-dropdown-head{padding:12px 0 7px;font:500 13px/20px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-search-dropdown-row{position:relative;width:calc(100% + 16px);margin:0 -8px;padding:10px 8px;gap:10px;align-items:baseline;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-search-dropdown-row::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:1px;background:var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-scroll{max-height:calc(40px*10.5);padding:0 8px}
+html[data-theme="minimal"] .td-search-dropdown-head{padding:12px 8px 7px;font:500 13px/20px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-900);border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-row{position:relative;width:100%;margin:0;padding:10px 8px;gap:10px;align-items:baseline;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-search-dropdown-row::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--border-divider)}
 /* The last row has no line of its own: the footer draws the hairline above the key hints (it stays put while the list scrolls). A status line after the list keeps the row's line. */
 html[data-theme="minimal"] .td-search-dropdown-scroll>[role="listbox"]:last-child>[role="group"]:last-child>.td-search-dropdown-row:last-child::after{content:none}
 html[data-theme="minimal"] .td-search-dropdown-row[aria-selected="true"]{background:var(--blue-100)}
@@ -758,10 +790,10 @@ html[data-theme="minimal"] .td-search-dropdown-icon svg{stroke-width:1.75;stroke
 html[data-theme="minimal"] .td-search-dropdown-id{min-width:calc(var(--td-sd-key-ch,0)*1ch);min-width:round(up,calc(var(--td-sd-key-ch,0)*1ch),1px);font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-search-dropdown-title mark{background:none;color:var(--ink-900);font-weight:500;text-decoration:underline;text-decoration-color:var(--ink-400);text-underline-offset:2px}
 html[data-theme="minimal"] .td-search-dropdown-meta{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-search-dropdown-note{padding:10px 0;font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-search-dropdown-note{padding:10px 8px;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-search-dropdown-empty{padding:10px 16px;text-align:left;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-search-dropdown-foot{position:relative;padding:10px 16px;gap:16px;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-search-dropdown-foot::before{content:"";position:absolute;left:16px;right:16px;top:0;height:1px;background:var(--border-divider)}
+html[data-theme="minimal"] .td-search-dropdown-foot::before{content:"";position:absolute;left:8px;right:8px;top:0;height:1px;background:var(--border-divider)}
 html[data-theme="minimal"] .td-search-dropdown-foot .td-kbd{padding:0;border:0;border-radius:0;background:none;font:400 13px/20px var(--font-mono);color:var(--ink-400)}
 /* ── Item overlay: the same ledger inside the dialog — square card, 500-weight title, section names over hairlines, every list (subitems, attachments, relations, comments) as rows, no fills, no bubbles */
 html[data-theme="minimal"] .td-modal{border-radius:0}
@@ -923,8 +955,8 @@ html[data-theme="minimal"] .td-btn-inverse:hover,html[data-theme="minimal"] .td-
 html[data-theme="minimal"] .td-btn:focus-visible{outline:1px solid var(--ink-900);outline-offset:2px}
 html[data-theme="minimal"] .td-iconbtn:not(.td-iconbtn-round){border-radius:0}
 /* Avatars: wherever a disc would sit beside a name, the initials in mono instead (images stay, 14px) */
-html[data-theme="minimal"] .td-member-picker-row span.td-avatar,html[data-theme="minimal"] .td-project-panel-member span.td-avatar,html[data-theme="minimal"] .td-project-panel-head span.td-avatar,html[data-theme="minimal"] .td-activity-log-row span.td-avatar,html[data-theme="minimal"] .td-archive-row span.td-avatar,html[data-theme="minimal"] .td-avatar-stack span.td-avatar,html[data-theme="minimal"] .td-item-picker-row span.td-avatar,html[data-theme="minimal"] .td-member-picker-value span.td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/16px var(--font-mono)!important;box-shadow:none!important}
-html[data-theme="minimal"] .td-member-picker-row img.td-avatar,html[data-theme="minimal"] .td-project-panel-member img.td-avatar,html[data-theme="minimal"] .td-activity-log-row img.td-avatar,html[data-theme="minimal"] .td-archive-row img.td-avatar,html[data-theme="minimal"] .td-avatar-stack img.td-avatar{width:14px!important;height:14px!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-picker-row span.td-avatar,html[data-theme="minimal"] .td-project-panel-member span.td-avatar,html[data-theme="minimal"] .td-project-panel-head span.td-avatar,html[data-theme="minimal"] .td-activity-log-row span.td-avatar,html[data-theme="minimal"] .td-archive-row span.td-avatar,html[data-theme="minimal"] .td-avatar-stack span.td-avatar,html[data-theme="minimal"] .td-item-picker-row span.td-avatar,html[data-theme="minimal"] .td-member-picker-value span.td-avatar{width:auto!important;height:auto!important;border-radius:0!important;background:none!important;color:var(--ink-400)!important;font:400 11px/16px var(--font-mono)!important;box-shadow:none!important}
+html[data-theme="minimal"] .td-picker-row img.td-avatar,html[data-theme="minimal"] .td-project-panel-member img.td-avatar,html[data-theme="minimal"] .td-activity-log-row img.td-avatar,html[data-theme="minimal"] .td-archive-row img.td-avatar,html[data-theme="minimal"] .td-avatar-stack img.td-avatar{width:14px!important;height:14px!important;box-shadow:none!important}
 html[data-theme="minimal"] .td-avatar-stack>*{box-shadow:none;border-radius:0}
 html[data-theme="minimal"] .td-avatar-stack>*+*{margin-left:0}
 html[data-theme="minimal"] .td-avatar-stack>*+*::before{content:",\00a0";font:400 11px/16px var(--font-ui);color:var(--ink-400)}
@@ -934,12 +966,24 @@ html[data-theme="minimal"] .td-label-picker-value{gap:0}
 html[data-theme="minimal"] .td-label-picker-value .td-label{display:inline!important;background:none!important;color:var(--ink-900)!important;font:400 13px/20px var(--font-ui)!important;padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;box-shadow:none!important;-webkit-text-fill-color:currentColor!important}
 html[data-theme="minimal"] .td-label-picker-value .td-label+.td-label::before{content:", "}
 /* Picker search fields (Members · Labels · Project · Item · Icon · typed date): a hairline, not a filled bar; lists flush with the sheet */
-html[data-theme="minimal"] .td-label-picker-search,html[data-theme="minimal"] .td-member-picker-search,html[data-theme="minimal"] .td-project-picker-search,html[data-theme="minimal"] .td-item-picker-search,html[data-theme="minimal"] .td-date-picker-type,html[data-theme="minimal"] .td-icon-picker-search{margin:0 14px 6px;padding:0;height:28px;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);color:var(--ink-400)}
-html[data-theme="minimal"] .td-label-picker-search:focus-within,html[data-theme="minimal"] .td-member-picker-search:focus-within,html[data-theme="minimal"] .td-project-picker-search:focus-within,html[data-theme="minimal"] .td-item-picker-search:focus-within,html[data-theme="minimal"] .td-date-picker-type:focus-within,html[data-theme="minimal"] .td-icon-picker-search:focus-within{box-shadow:none;border-bottom-color:var(--ink-900)}
-html[data-theme="minimal"] .td-label-picker-input,html[data-theme="minimal"] .td-member-picker-input,html[data-theme="minimal"] .td-project-picker-input,html[data-theme="minimal"] .td-item-picker-input,html[data-theme="minimal"] .td-date-picker-input,html[data-theme="minimal"] .td-icon-picker-search input,html[data-theme="minimal"] .td-dates-picker-input{font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-label-picker-list,html[data-theme="minimal"] .td-member-picker-list,html[data-theme="minimal"] .td-project-picker-list,html[data-theme="minimal"] .td-item-picker-list,html[data-theme="minimal"] .td-select-list{margin:0;padding:0}
-html[data-theme="minimal"] .td-project-picker-head{padding:4px 14px 8px;font:500 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-project-picker-row .td-menu-item-label>svg{color:var(--ink-900)!important}
+html[data-theme="minimal"] .td-picker-search,html[data-theme="minimal"] .td-item-picker-search,html[data-theme="minimal"] .td-date-picker-type,html[data-theme="minimal"] .td-icon-picker-search{margin:0 14px 6px;padding:0;height:28px;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);color:var(--ink-400)}
+html[data-theme="minimal"] .td-picker-search:focus-within,html[data-theme="minimal"] .td-item-picker-search:focus-within,html[data-theme="minimal"] .td-date-picker-type:focus-within,html[data-theme="minimal"] .td-icon-picker-search:focus-within{box-shadow:none;border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"] .td-picker-input,html[data-theme="minimal"] .td-item-picker-input,html[data-theme="minimal"] .td-date-picker-input,html[data-theme="minimal"] .td-icon-picker-search input{font:400 13px/20px var(--font-ui)}
+/* One label column in every picker: 14px edge + a 16px glyph slot + 8px = 38px, for search text, names and footer rows */
+html[data-theme="minimal"] :is(.td-picker-search,.td-item-picker-search,.td-icon-picker-search){gap:8px}
+html[data-theme="minimal"] :is(.td-picker-search,.td-item-picker-search,.td-icon-picker-search)>svg{flex:none;margin:0 1px}
+html[data-theme="minimal"] .td-picker-row span.td-avatar{width:16px!important;justify-content:flex-start!important}
+html[data-theme="minimal"] .td-picker-row img.td-avatar{margin:0 1px}
+html[data-theme="minimal"] .td-label-picker-row .td-label-picker-bar{margin:0 5px}
+html[data-theme="minimal"] .td-picker-list,html[data-theme="minimal"] .td-item-picker-list,html[data-theme="minimal"] .td-select-list{margin:0;padding:0}
+html[data-theme="minimal"] .td-project-picker-head{padding:4px 14px 8px;gap:5px;font:500 13px/20px var(--font-ui)}
+/* Back arrow centred on the 16px glyph slot, heading on the 38px label column (it sat 2px right of the names, the arrow 3px right of the glyphs) */
+html[data-theme="minimal"] .td-project-picker-head>.td-iconbtn{margin-left:-3px}
+/* In a Dialog (TransferDialog) the body already has the 24px edge: glyphs sit on the title's column, the search hairline spans it, rows keep their 14px frame outside the text */
+html[data-theme="minimal"] .td-dialog-body>.td-picker-search{margin-left:0;margin-right:0}
+html[data-theme="minimal"] .td-dialog-body>.td-picker-list{margin:0 -14px}
+html[data-theme="minimal"] .td-dialog-body>.td-project-picker-head,html[data-theme="minimal"] .td-dialog-body>.td-picker-list~.td-menu-note{padding-left:0;padding-right:0}
+html[data-theme="minimal"] .td-picker-row .td-menu-item-label>svg{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-project-picker-group,html[data-theme="minimal"] .td-item-picker-list-name,html[data-theme="minimal"] .td-member-picker-sub{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-item-picker-key{font:400 11px/16px var(--font-mono)}
 html[data-theme="minimal"] .td-item-picker-title[data-done="true"]{text-decoration:line-through;text-decoration-thickness:1px}
@@ -947,29 +991,37 @@ html[data-theme="minimal"] .td-item-picker-title[data-done="true"]{text-decorati
 html[data-theme="minimal"] .td-label-picker-bar,html[data-theme="minimal"] .td-cover-picker-dot,html[data-theme="minimal"] .td-bulk-dot{width:6px;height:6px;border-radius:0;margin:0 3px}
 html[data-theme="minimal"] .td-label-picker-form{padding:6px 14px 8px}
 html[data-theme="minimal"] .td-label-picker-form-head{font:500 13px/20px var(--font-ui)}
+/* The footer hairline spans the sheet like the other pickers'; Save starts on the form's 14px edge (it sat 28px in) */
+html[data-theme="minimal"] .td-label-picker-form .td-label-picker-foot{margin:0 -14px}
+/* One ink: the shared-view glyph is not dimmed (base .7) */
+html[data-theme="minimal"] .td-saved-view-shared{opacity:1}
 html[data-theme="minimal"] .td-label-picker-name,html[data-theme="minimal"] .td-repeat-picker-number,html[data-theme="minimal"] .td-repeat-picker-inline,html[data-theme="minimal"] .td-saved-view-input{padding-left:0;padding-right:0;border:0;border-bottom:1px solid var(--border-input);border-radius:0;background:none;box-shadow:none;font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-label-picker-name:focus,html[data-theme="minimal"] .td-repeat-picker-number:focus,html[data-theme="minimal"] .td-repeat-picker-inline:focus,html[data-theme="minimal"] .td-saved-view-input:focus{border-color:var(--ink-900);box-shadow:none}
 html[data-theme="minimal"] .td-repeat-picker-number{text-align:left;width:32px}
 html[data-theme="minimal"] .td-label-picker-swatch,html[data-theme="minimal"] .td-cover-picker-swatch,html[data-theme="minimal"] .td-cover-picker-image,html[data-theme="minimal"] .td-cover-picker-upload,html[data-theme="minimal"] .td-project-icon-picker-swatch{border-radius:0}
 html[data-theme="minimal"] .td-label-picker-swatch{height:20px}
-html[data-theme="minimal"] .td-project-icon-picker-swatch{width:20px;height:20px;box-shadow:none}
+html[data-theme="minimal"] .td-project-icon-picker-swatch{width:18px;height:18px;box-shadow:none}
 html[data-theme="minimal"] .td-label-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-image[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-swatch[aria-pressed="true"]{box-shadow:0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas)}
 html[data-theme="minimal"] .td-label-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-image:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-swatch:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
+html[data-theme="minimal"] .td-cover-picker{padding:0}
 html[data-theme="minimal"] .td-cover-picker-swatches,html[data-theme="minimal"] .td-cover-picker-images{padding:0 14px 4px}
-html[data-theme="minimal"] .td-cover-picker-upload{border-color:var(--ink-400);color:var(--ink-400);font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-cover-picker-upload{border-color:var(--border-input);color:var(--ink-900);font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-cover-picker-upload:hover{background:none;border-color:var(--ink-900);color:var(--ink-900)}
-html[data-theme="minimal"] .td-label-picker-foot,html[data-theme="minimal"] .td-date-picker-foot,html[data-theme="minimal"] .td-dates-picker-foot,html[data-theme="minimal"] .td-repeat-picker-foot{padding:8px 14px 2px;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-label-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-foot .td-btn,html[data-theme="minimal"] .td-dates-picker-foot .td-btn,html[data-theme="minimal"] .td-repeat-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-quick .td-btn,html[data-theme="minimal"] .td-dates-picker-quick .td-btn{font:400 12px/18px var(--font-ui)}
-html[data-theme="minimal"] .td-date-picker-current,html[data-theme="minimal"] .td-dates-picker-current,html[data-theme="minimal"] .td-repeat-picker-summary,html[data-theme="minimal"] .td-date-picker-preview,html[data-theme="minimal"] .td-dates-picker-preview{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-label-picker-foot,html[data-theme="minimal"] .td-date-picker-foot,html[data-theme="minimal"] .td-repeat-picker-foot{padding:8px 14px 2px;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-label-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-foot .td-btn,html[data-theme="minimal"] .td-repeat-picker-foot .td-btn,html[data-theme="minimal"] .td-date-picker-quick .td-btn{font:400 12px/18px var(--font-ui)}
+html[data-theme="minimal"] .td-date-picker-current,html[data-theme="minimal"] .td-repeat-picker-summary,html[data-theme="minimal"] .td-date-picker-preview{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 /* Dates: the fields are hairlines with a mono label, the month a ruled grid — square days, today ringed grey, the picked day in ink, the span a paper-grey wash */
-html[data-theme="minimal"] .td-date-picker,html[data-theme="minimal"] .td-dates-picker,html[data-theme="minimal"] .td-repeat-picker{padding:4px 0 0}
-html[data-theme="minimal"] .td-dates-picker-fields{padding:0 14px}
-html[data-theme="minimal"] .td-dates-picker-field{padding:0;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);transition:border-color var(--duration-fast,100ms) var(--ease-standard,ease)}
-html[data-theme="minimal"] .td-dates-picker-field[data-active="true"]{box-shadow:none;border-bottom-color:var(--ink-900);color:var(--ink-400)}
-html[data-theme="minimal"] .td-dates-picker-label{font:400 11px/16px var(--font-mono);letter-spacing:0;text-transform:none}
-html[data-theme="minimal"] .td-dates-picker-addstart{margin-left:14px;padding:0;border-radius:0;font:400 12px/18px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-dates-picker-addstart:hover{background:none;color:var(--ink-900)}
-html[data-theme="minimal"] .td-date-picker-quick,html[data-theme="minimal"] .td-dates-picker-quick,html[data-theme="minimal"] .td-date-calendar{padding:0 14px}
+html[data-theme="minimal"] .td-date-picker,html[data-theme="minimal"] .td-repeat-picker{padding:4px 0 0}
+/* Date panels: 14px edge + the 224px month grid + 14px edge, so every part ends on the same two edges and the footer hairline spans the sheet */
+html[data-theme="minimal"] .td-date-picker{box-sizing:border-box;width:252px}
+html[data-theme="minimal"] .td-date-picker-fields{padding:0 14px}
+html[data-theme="minimal"] .td-date-picker-field{padding:0;border-radius:0;background:none;box-shadow:none;border-bottom:1px solid var(--border-divider);transition:border-color var(--duration-fast,100ms) var(--ease-standard,ease)}
+html[data-theme="minimal"] .td-date-picker-field[data-active="true"]{box-shadow:none;border-bottom-color:var(--ink-900);color:var(--ink-400)}
+html[data-theme="minimal"] .td-date-picker-label{font:400 11px/16px var(--font-mono);letter-spacing:0;text-transform:none}
+html[data-theme="minimal"] .td-date-picker-field:has(>.td-date-picker-clear) .td-date-picker-input::placeholder{color:var(--ink-900)!important;opacity:1}
+html[data-theme="minimal"] .td-date-picker-addstart{margin-left:14px;padding:0;border-radius:0;font:400 12px/18px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-date-picker-addstart:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-date-picker-quick,html[data-theme="minimal"] .td-date-calendar{padding:0 14px}
 html[data-theme="minimal"] .td-date-calendar{width:auto}
 html[data-theme="minimal"] .td-date-calendar-title{font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-date-calendar-weekday{font:400 11px/20px var(--font-mono);color:var(--ink-400)}
@@ -983,13 +1035,14 @@ html[data-theme="minimal"] .td-date-calendar-day[data-in-range="true"]{backgroun
 html[data-theme="minimal"] .td-date-calendar-day[data-range-edge="start"],html[data-theme="minimal"] .td-date-calendar-day[data-range-edge="end"]{border-radius:0}
 /* Repeat: the unit segment and weekday discs follow Segmented — no track, hairline below, ink when chosen; radios are hairline rings */
 html[data-theme="minimal"] .td-repeat-picker-head{padding:0 14px;font:500 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-repeat-picker-row,html[data-theme="minimal"] .td-repeat-picker-days,html[data-theme="minimal"] .td-repeat-picker-inline{margin:0 14px}
+html[data-theme="minimal"] .td-repeat-picker-row,html[data-theme="minimal"] .td-repeat-picker-days,html[data-theme="minimal"] .td-repeat-picker-seg,html[data-theme="minimal"] .td-repeat-picker-inline{margin:0 14px}
 html[data-theme="minimal"] .td-repeat-picker-row .td-repeat-picker-inline{margin:0}
 html[data-theme="minimal"] .td-repeat-picker-seg{padding:0;gap:0;border-radius:0;background:none;box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-repeat-picker-seg button{border-radius:0;font:400 12px/18px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-repeat-picker-seg button[aria-pressed="true"]{background:none;box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-repeat-picker-seg button:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas),inset 0 0 0 3px var(--ink-900)}
-html[data-theme="minimal"] .td-repeat-picker-days{gap:2px}
+/* 7 × 28 + 6 × 4 = 220: the weekday boxes fill the 14px-edged column on whole pixels */
+html[data-theme="minimal"] .td-repeat-picker-days{padding:0}
 html[data-theme="minimal"] .td-repeat-picker-day{height:26px;border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);font:400 11px/16px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-repeat-picker-day[aria-pressed="true"]{background:var(--ink-900);color:var(--chrome-canvas);box-shadow:none}
 html[data-theme="minimal"] .td-repeat-picker-day:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
@@ -1003,6 +1056,14 @@ html[data-theme="minimal"] .td-icon-picker-option:hover,html[data-theme="minimal
 html[data-theme="minimal"] .td-icon-picker-option[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-option[aria-pressed="true"]{background:var(--blue-100);color:var(--ink-900)}
 html[data-theme="minimal"] .td-icon-picker-option:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-option:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-icon-picker-search{margin:2px 14px 6px}
+/* Glyphs on the 14px edge: tiles start 8px in (the 16px glyph sits 6px inside its 28px tile), so the panel is the grid + 16px */
+html[data-theme="minimal"] .td-icon-picker{width:194px}
+html[data-theme="minimal"] .td-icon-picker[data-expanded="true"]{width:254px}
+html[data-theme="minimal"] .td-icon-picker-grid{padding:2px 8px}
+html[data-theme="minimal"] .td-icon-picker-auto{gap:8px;padding:6px 14px;font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-icon-picker-auto>span:first-child{width:16px}
+html[data-theme="minimal"] .td-icon-picker-auto>span:first-child svg{width:16px;height:16px}
+html[data-theme="minimal"] .td-icon-picker-auto-trail{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-icon-picker-empty{text-align:left;padding:8px 14px 12px;font:400 12px/18px var(--font-ui)}
 /* Project tile (New project · Project settings head): no fill behind the glyph; a hairline box that goes ink on hover */
 html[data-theme="minimal"] .td-project-icon-picker-tile{border-radius:0;background:none;box-shadow:inset 0 0 0 1px var(--border-divider);transition:none}
@@ -1010,7 +1071,10 @@ html[data-theme="minimal"] .td-project-icon-picker-tile:hover,html[data-theme="m
 html[data-theme="minimal"] .td-project-icon-picker-tile:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900),0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
 html[data-theme="minimal"] .td-project-icon-picker-glyph{border-radius:0;background:none}
 html[data-theme="minimal"] .td-project-icon-picker-captioned{font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-project-icon-picker-panel{padding:4px 14px 8px}
+/* Swatches, divider and glyphs on the 14px edge at both ends: 8 × 18 + 7 × 6 = 186; tiles 6 × 32 + 5 × 2 = 202 = 186 + 16 */
+html[data-theme="minimal"] .td-project-icon-picker-panel{padding:4px 6px 8px}
+html[data-theme="minimal"] .td-project-icon-picker-colors{gap:6px}
+html[data-theme="minimal"] .td-project-icon-picker-grid{gap:2px}
 /* New project dialog: template rows are plain rows, the chosen one on the paper-grey wash with an ink check; the prefix in bare mono */
 html[data-theme="minimal"] .td-project-dialog-label,html[data-theme="minimal"] .td-project-dialog-template-head,html[data-theme="minimal"] .td-project-panel-label{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-project-dialog-hint,html[data-theme="minimal"] .td-project-panel-hint,html[data-theme="minimal"] .td-project-panel-crumb,html[data-theme="minimal"] .td-project-panel-caption{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
@@ -1074,8 +1138,9 @@ html[data-theme="minimal"] .td-bulk-item:focus-visible{box-shadow:inset 2px 0 0 
 html[data-theme="minimal"] .td-bulk-divider{margin:6px 0}
 /* Saved views: tabs are words on the chrome row — grey, ink with a hairline under the open one; the drift dot an ink square */
 html[data-theme="minimal"] .td-saved-view-tab,html[data-theme="minimal"] .td-saved-view-save{height:auto;padding:4px 0;border-radius:0;background:none;color:var(--ink-400);font:400 13px/20px var(--font-ui);box-shadow:inset 0 -1px 0 transparent;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
-/* Guest bar: the same 48px hairline row as the top bar, words in ink */
-html[data-theme="minimal"] .td-guest{min-height:40px;padding:0 24px;gap:12px;border-bottom-color:var(--border-divider)}
+/* Guest bar: a 40px row over its hairline (41px, so glyph, words and buttons centre on whole pixels), words in ink; the last word ends on the 24px edge */
+html[data-theme="minimal"] .td-guest-actions{margin-right:-12px}
+html[data-theme="minimal"] .td-guest{min-height:41px;padding:6px 24px;gap:12px;border-bottom-color:var(--border-divider)}
 html[data-theme="minimal"] .td-guest-icon{color:var(--ink-900)}
 html[data-theme="minimal"] .td-guest-icon svg{width:16px;height:16px;stroke-width:1.75}
 html[data-theme="minimal"] .td-guest-text{font:400 13px/20px var(--font-ui)}
@@ -1094,31 +1159,60 @@ html[data-theme="minimal"] button.td-activity-log-key:focus-visible{box-shadow:n
 html[data-theme="minimal"] .td-activity-log-time{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-activity-log-kind{color:var(--ink-900)}
 /* Archive and trash: no white card — rows over hairlines; the project lead loses its fill; the confirming row takes the paper-grey wash */
-html[data-theme="minimal"] .td-archive{padding:20px 24px 24px;gap:12px}
-html[data-theme="minimal"] .td-archive-caption{font:400 12px/18px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-archive-list,html[data-theme="minimal"] .td-archive-empty{background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-archive-group{padding:12px 0 4px;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-archive-row{padding:8px 0;border-top:0;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-archive-row+.td-archive-row{border-top:0}
+html[data-theme="minimal"] .td-archive{padding:20px 24px 24px;gap:16px}
+html[data-theme="minimal"] .td-archive.td-archive-oncard{padding:0}
+/* The bar: segments, search, project filter and "Empty trash" are four 28px boxes on one hairline row; search is a glyph over an ink hairline, the filter a word with a chevron, "Empty trash" and "Cancel" are words */
+html[data-theme="minimal"] .td-archive-bar{gap:8px 24px}
+html[data-theme="minimal"] .td-archive-bar .td-segmented-btn{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-archive-bar .td-field-wrap{max-width:240px}
+html[data-theme="minimal"] .td-archive-bar .td-field-wrap .td-field{height:24px;padding:3px 0 3px 22px!important;background:none;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;box-shadow:none;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-archive-bar .td-field-wrap .td-field::placeholder{color:var(--ink-400)}
+html[data-theme="minimal"] .td-archive-bar .td-field-wrap svg{width:16px;height:16px;stroke-width:1.75;color:var(--ink-900)}
+html[data-theme="minimal"] .td-archive-bar .td-field-wrap .td-field-icon{left:0}
+html[data-theme="minimal"] .td-archive-bar .td-field-wrap .td-field{height:28px;padding:4px 0 3px 22px!important}
+html[data-theme="minimal"] .td-archive-bar .td-select-trigger{height:24px;padding:0;gap:6px;border:0;border-radius:0;background:none;box-shadow:inset 0 -1px 0 var(--ink-400);font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-archive-bar .td-select-trigger:is(:hover,:active,[aria-expanded="true"]){background:none;box-shadow:inset 0 -1px 0 var(--ink-900)}
+html[data-theme="minimal"] .td-archive-bar .td-select-trigger:focus-visible{outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-archive-bar .td-select-trigger>svg{width:14px;height:14px}
+html[data-theme="minimal"] .td-archive-bar .td-select-trigger{height:28px}
+html[data-theme="minimal"] .td-archive-bar>.td-btn,html[data-theme="minimal"] .td-archive-confirm>.td-btn:not(.td-btn-danger){height:28px;padding:0;background:none;box-shadow:none;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-archive-bar>.td-btn:is(:hover,:active),html[data-theme="minimal"] .td-archive-confirm>.td-btn:not(.td-btn-danger):is(:hover,:active){background:none;text-decoration:underline;text-underline-offset:3px}
+html[data-theme="minimal"] .td-archive-bar>.td-btn>svg{display:none!important}
+html[data-theme="minimal"] .td-archive-confirm{gap:16px}
+html[data-theme="minimal"] .td-archive-confirm>.td-archive-caption{margin:0!important;font:400 13px/20px var(--font-ui);color:var(--ink-900)!important}
+html[data-theme="minimal"] .td-archive-caption{max-width:560px;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+/* The list is a ledger: a group name is the 500 13/20 line over an ink hairline (as in Settings), rows are 61px (title 13/20 + meta 11/16, 12px above and below, a hairline). The row aligns on the title baseline: glyph, key, Restore and "…" sit on the title line */
+html[data-theme="minimal"] .td-archive-list,html[data-theme="minimal"] .td-archive-empty{overflow:visible;background:none;border-radius:0;box-shadow:none;border-top:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-archive-list:has(>.td-archive-group:first-child){border-top:0}
+html[data-theme="minimal"] .td-archive-group{padding:24px 0 8px;border-bottom:1px solid var(--ink-900);font:500 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-archive-group:first-child{padding-top:0}
+html[data-theme="minimal"] .td-archive-row{align-items:baseline;min-height:0;padding:8px 0 12px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-archive-row+.td-archive-row{box-shadow:none}
 html[data-theme="minimal"] .td-archive-row:hover,html[data-theme="minimal"] .td-archive-row:focus-within{background:none}
-html[data-theme="minimal"] .td-archive-row[data-confirm="true"]{background:var(--blue-100)}
-html[data-theme="minimal"] .td-archive-lead{border-radius:0;color:var(--ink-900)}
-html[data-theme="minimal"] .td-archive-lead[data-kind="project"]{background:none;box-shadow:inset 0 0 0 1px var(--border-divider)}
+html[data-theme="minimal"] .td-archive-row[data-confirm="true"]{background:var(--blue-100);box-shadow:-8px 0 0 var(--blue-100),8px 0 0 var(--blue-100)}
+html[data-theme="minimal"] .td-archive-lead{align-self:flex-start;width:16px;height:20px;margin-top:4px;border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-archive-lead[data-kind="project"]{background:none;box-shadow:none}
 html[data-theme="minimal"] .td-archive-title{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-archive-title[data-done="true"]{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-archive-meta{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-archive-meta b{font-weight:500;color:var(--ink-400)}
-html[data-theme="minimal"] .td-archive-key{font:400 11px/16px var(--font-mono)}
-html[data-theme="minimal"] .td-archive-bar .td-field{height:28px}
+html[data-theme="minimal"] .td-archive-key{font:400 11px/16px var(--font-ui);font-variant-numeric:tabular-nums}
+html[data-theme="minimal"] .td-archive-control .td-btn{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-archive-control .td-btn>svg{display:none!important}
+/* "…" is always visible and its 16px glyph ends on the column edge */
+html[data-theme="minimal"] .td-archive-more{opacity:1}
+html[data-theme="minimal"] .td-archive-row:not([data-confirm]) .td-archive-control>:last-child{margin-right:-6px}
 /* Status role review · Keyboard shortcuts: the square sheet; keys in bare mono, section names plain grey words */
-html[data-theme="minimal"] .td-rolereview{padding:20px 24px;border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);animation:none}
+html[data-theme="minimal"] .td-rolereview{padding:20px 24px 24px;border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12);animation:none}
 html[data-theme="minimal"] .td-rolereview-title{font:500 15px/22px var(--font-ui);letter-spacing:-.005em}
 html[data-theme="minimal"] .td-rolereview-body{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+/* Keyboard shortcuts on the Dialog: the first section name 16px under the head hairline, 24px between sections */
+html[data-theme="minimal"] .td-shortcuts-dialog-grid{padding:0;row-gap:24px}
 html[data-theme="minimal"] .td-shortcuts-dialog-section h3{font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400);padding-bottom:4px;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-shortcuts-dialog-kbd{padding:0;border:0;border-radius:0;background:none;font:400 12px/18px var(--font-mono);color:var(--ink-900)}
 html[data-theme="minimal"] .td-shortcuts-dialog-separator{font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-shortcuts-dialog-description{font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-shortcuts-dialog-note{font:400 12px/18px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-shortcuts-dialog-note{margin-top:24px;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 /* Connection status: a word with a glyph on the top bar, no pill; the Settings variant a hairline box */
 html[data-theme="minimal"] .td-connection{height:auto;padding:0;border-radius:0;background:none;color:var(--ink-900);font:400 13px/20px var(--font-ui);animation:none;transition:color var(--duration-fast,100ms) var(--ease-standard,ease)}
 html[data-theme="minimal"] .td-connection:hover,html[data-theme="minimal"] .td-connection:active,html[data-theme="minimal"] .td-connection[aria-expanded="true"]{background:none;color:var(--ink-400)}
@@ -1129,7 +1223,9 @@ html[data-theme="minimal"] .td-connection-card,html[data-theme="minimal"] .td-co
 html[data-theme="minimal"] .td-connection-card:hover,html[data-theme="minimal"] .td-connection-card[aria-expanded="true"]{box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-connection-menu-head{padding:6px 14px 2px;font:500 13px/20px var(--font-ui)}
 /* Password field hint */
-html[data-theme="minimal"] .td-password-field-hint{font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-password-field-hint{font:400 12px/18px var(--font-ui);color:var(--td-auth-dim)}
+html[data-theme="minimal"] .td-password-field-hint[data-ok="true"]{color:var(--ink-900)}
+html[data-theme="minimal"] .td-password-field-hint[data-error="true"]{color:var(--danger)}
 
 /* Narrow settings retain the ledger styling while sharing the shell's single-column layout. */
 @container (max-width: 640px) {
