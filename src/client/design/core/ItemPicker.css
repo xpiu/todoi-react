@@ -68,7 +68,6 @@
   .td-item-picker-row[aria-selected="true"],
   .td-item-picker-row:hover,
   .td-picker-row:hover,
-  .td-picker-row[aria-checked="true"],
   .td-picker-row:focus-visible {
     background: var(--action-subtle);
   }

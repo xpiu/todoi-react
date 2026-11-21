@@ -92,7 +92,9 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
 
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name;
   const subitems = items.filter((it) => it.parentItemId === item.id).sort((a, b) => a.position - b.position);
-  const projectItems: PickableItem[] = items.filter((it) => !it.parentItemId).map((it) => ({ id: it.id, title: it.title, itemId: keyOf(it, project.keyPrefix), listName: listName(it.listId), status: it.status, done: it.done }));
+  // Board order (list by list, then position), as Design lists them in the relation and move pickers
+  const listIndex = new Map(project.lists.map((l, i) => [l.id, i]));
+  const projectItems: PickableItem[] = items.filter((it) => !it.parentItemId).sort((a, b) => (listIndex.get(a.listId) ?? 1e9) - (listIndex.get(b.listId) ?? 1e9) || a.position - b.position).map((it) => ({ id: it.id, title: it.title, itemId: keyOf(it, project.keyPrefix), listName: listName(it.listId), status: it.status, done: it.done }));
   const overlayItem: OverlayItem = {
     id: item.id,
     itemId: keyOf(item, project.keyPrefix),

@@ -638,7 +638,7 @@ html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){paddin
 /* Appearance menu: a 14px edge like the menus beside it. The app pads the inner .td-appearance-menu (the kit pads the popover), so the popover itself carries none */
 html[data-theme="minimal"] .td-popover:has(.td-appearance-menu){padding:0}
 html[data-theme="minimal"] .td-appearance-menu{padding:14px}
-html[data-theme="minimal"] .td-menu,html[data-theme="minimal"] .td-select-list{gap:0}
+html[data-theme="minimal"] .td-menu,html[data-theme="minimal"] .td-select-list,html[data-theme="minimal"] .td-repeat-picker-list{gap:0}
 html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-picker-row,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-picker-row:hover,html[data-theme="minimal"] .td-picker-row:focus-visible,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
 html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-picker-row:focus-visible,html[data-theme="minimal"] .td-user-menu-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
@@ -652,7 +652,8 @@ html[data-theme="minimal"] .td-menu-divider,html[data-theme="minimal"] .td-user-
 html[data-theme="minimal"] .td-menu-heading{padding:8px 14px 4px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-user-menu:not([data-sheet]){width:196px;max-width:196px;padding:6px 0}
-html[data-theme="minimal"] .td-create-menu:not([data-sheet]){width:200px;padding:6px 0}
+/* Design hangs the Minimal Create menu 12px under the +, 2px lower than the Account menu */
+html[data-theme="minimal"] .td-create-menu:not([data-sheet]){width:200px;padding:6px 0;margin-top:2px}
 /* Toolbar menus (Filter · Sort · Members): the same square sheet as every floating layer; section names are plain grey words, rows are normal ink with a faint hover wash, the checked row a paper-grey wash; label swatches shrink to a 6px square so color stays a hint */
 html[data-theme="minimal"] .td-filter-menu,html[data-theme="minimal"] .td-sort-menu,html[data-theme="minimal"] .td-members-menu{border-radius:0}
 html[data-theme="minimal"] .td-filter-menu-head,html[data-theme="minimal"] .td-sort-menu-head,html[data-theme="minimal"] .td-members-menu-head{padding:10px 14px;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
