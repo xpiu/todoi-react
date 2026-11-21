@@ -95,10 +95,14 @@ export function Select<V extends SelectValue = SelectValue>({
   const isSheet = vp.phone;
   const { side, align } = placementToSide(placement);
   const [open, setOpen] = useState(defaultOpen);
+  // Opened with the pointer, the picked row carries only its check (as in Design): Base UI's opening highlight
+  // on it stays unpainted until a key or the pointer moves the highlight. Opened from the keyboard it shows at once.
+  const [quietHighlight, setQuietHighlight] = useState(false);
   const search = searchable ?? options.length > 8;
   const cur = options.find((o) => o.value === value);
   const handleOpenChange = useCallback(
-    (next: boolean, details: { reason?: string }) => {
+    (next: boolean, details: { reason?: string; event?: Event }) => {
+      if (next) setQuietHighlight(details.event instanceof MouseEvent && details.event.detail > 0);
       setOpen(next);
       onOpenChange?.(next, next ? undefined : closeReasonOf(details.reason));
     },
@@ -119,6 +123,9 @@ export function Select<V extends SelectValue = SelectValue>({
       isItemEqualToValue={(a, b) => a?.value === b?.value}
       open={open}
       onOpenChange={handleOpenChange}
+      onItemHighlighted={(_, details) => {
+        if (details.reason !== "none") setQuietHighlight(false);
+      }}
       modal={isSheet}
       disabled={disabled}
       filter={search ? undefined : null}
@@ -145,7 +152,7 @@ export function Select<V extends SelectValue = SelectValue>({
           collisionPadding={8}
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >
-          <Combobox.Popup className={["td-popover", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} aria-label={listName} style={{ width }}>
+          <Combobox.Popup className={["td-popover", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} data-quiet-highlight={quietHighlight ? "true" : undefined} aria-label={listName} style={{ width }}>
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
             {search ? (
               <div className="td-select-search">
@@ -169,7 +176,7 @@ export function Select<V extends SelectValue = SelectValue>({
                 </Combobox.Item>
               )}
             </Combobox.List>
-            <Combobox.Empty className="td-menu-note">No matches</Combobox.Empty>
+            <Combobox.Empty>{/* Base UI keeps this live region mounted; the note inside appears only when nothing matches */}<div className="td-menu-note">No matches</div></Combobox.Empty>
             {footer}
           </Combobox.Popup>
         </Combobox.Positioner>

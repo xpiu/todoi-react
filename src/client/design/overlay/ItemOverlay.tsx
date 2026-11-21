@@ -408,7 +408,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
               </Button>
             ) : null
           ) : statusOnly ? null : (
-            <Select block tier="detached" aria-label="Move to list" title="Move to list" value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button> : null}</> : undefined} />
+            <Select block tier="detached" aria-label="Move to list" title="Move to list" value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined} />
           )}
           <Select
             block
@@ -422,13 +422,19 @@ export function ItemOverlay(p: ItemOverlayProps) {
             footer={
               statusOnly ? (
                 p.onManageLinks ? (
-                  <button type="button" className="td-menu-item td-select-foot" title="This project links lists to Status. Turn the link off on the Projects page to show the List field and move items without changing their Status." onClick={p.onManageLinks}>
+                  <>
+                    <div className="td-menu-divider" role="separator" />
+                    <button type="button" className="td-menu-item td-select-foot" title="This project links lists to Status. Turn the link off on the Projects page to show the List field and move items without changing their Status." onClick={p.onManageLinks}>
                     <Icon name="link-2" size={15} />
                     Lists linked with Status
                   </button>
+                  </>
                 ) : null
               ) : (
-                <div className="td-menu-note" title="A list can carry a Status role. Editing Status directly never moves the item.">Status is set here or by a linked list move. Editing it never moves the item.</div>
+                <>
+                  <div className="td-menu-divider" role="separator" />
+                  <div className="td-menu-note" title="A list can carry a Status role. Editing Status directly never moves the item.">Status is set here or by a linked list move. Editing it never moves the item.</div>
+                </>
               )
             }
           />

@@ -3,8 +3,9 @@
   .td-select-trigger {
     justify-content: flex-start;
   }
+  /* Full width in the overlay rail. No flex: 1 — the trigger is the rail column's own flex item (Base UI renders
+     no anchor span around it), and a 0% basis there collapsed the 28px button to its 20px text line */
   .td-select-trigger[data-block="true"] {
-    flex: 1;
     width: 100%;
   }
   .td-select-value {
@@ -55,5 +56,9 @@
     flex-direction: column;
     gap: 1px;
     outline: none;
+  }
+  /* Opened with the pointer: the picked row shows its check, not a wash (see Select.tsx) */
+  .td-popover[data-quiet-highlight="true"] .td-menu-item[data-highlighted]:not(:hover) {
+    background: none;
   }
 }
