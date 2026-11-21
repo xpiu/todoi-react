@@ -110,7 +110,8 @@ html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-st
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column.is-drop-target[data-status-role]>.td-list-column-head{border-bottom-color:var(--ink-900)}
 /* 9px under the 20px name line and 10px over the 18px title line put the same 12.5px of air on both sides of the hairline */
 html[data-theme="minimal"] .td-list-column-head{padding:0 0 9px;gap:6px;align-items:baseline;border-bottom:1px solid var(--border-divider)}
-html[data-theme="minimal"] .td-list-column-head .td-popover-anchor:has(>.td-list-column-iconbtn){display:none!important}
+/* Minimal list heads are words only: the icon button hides (Icon stays in the ⋯ menu). The app's Base UI trigger is the button itself, with no anchor span around it */
+html[data-theme="minimal"] .td-list-column-head .td-list-column-iconbtn{display:none!important}
 html[data-theme="minimal"] .td-list-column-name{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-column-count{display:none}
 html[data-theme="minimal"] .td-list-column-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
@@ -239,7 +240,7 @@ html[data-theme="minimal"] .td-list-view-inner{gap:24px}
 html[data-theme="minimal"] .td-list-section{background:none;border-radius:0;box-shadow:none}
 html[data-theme="minimal"] .td-list-section-head{padding:0 0 8px;gap:6px;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-list-section-collapsed>.td-list-section-head{padding-bottom:8px}
-html[data-theme="minimal"] .td-list-section-head .td-popover-anchor:has(>.td-list-section-iconbtn){display:none!important}
+html[data-theme="minimal"] .td-list-section-head .td-list-section-iconbtn{display:none!important}
 html[data-theme="minimal"] .td-list-section-name{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900);white-space:nowrap;flex:1 1 auto}
 html[data-theme="minimal"] .td-list-section-count{display:none}
 html[data-theme="minimal"] .td-list-section-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
@@ -629,8 +630,6 @@ html[data-theme="minimal"] .td-switch:focus-visible .td-switch-track{box-shadow:
 html[data-theme="minimal"] .td-popover,html[data-theme="minimal"] .td-user-menu,html[data-theme="minimal"] .td-create-menu,html[data-theme="minimal"] .td-dialog{border-radius:0;box-shadow:0 0 0 1px var(--border-divider),0 12px 32px rgba(0,0,0,.12)}
 html[data-theme="minimal"] .td-popover{padding:6px 0}
 html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){padding:0}
-/* Dark: the plus glyph's 1px strokes fall on a half pixel at 14/16px and blur to grey; snap them to whole pixels so the + reads solid white */
-html[data-theme="minimal"][data-mode="dark"] svg path[d="M5 12h14"],html[data-theme="minimal"][data-mode="dark"] svg path[d="M12 5v14"]{shape-rendering:crispEdges}
 /* Appearance menu: a 14px edge like the menus beside it. The app pads the inner .td-appearance-menu (the kit pads the popover), so the popover itself carries none */
 html[data-theme="minimal"] .td-popover:has(.td-appearance-menu){padding:0}
 html[data-theme="minimal"] .td-appearance-menu{padding:14px}
@@ -878,8 +877,8 @@ html[data-theme="minimal"] .td-checklist-row-text{font:400 13px/20px var(--font-
 html[data-theme="minimal"] .td-checklist-row-done{color:var(--ink-900);text-decoration:line-through;text-decoration-thickness:1px}
 html[data-theme="minimal"] .td-checklist-line{left:0;right:0;height:1px;margin-top:0;border-radius:0;background:var(--ink-900)}
 html[data-theme="minimal"] .td-checklist-line::before{display:none}
-html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn,html[data-theme="minimal"] .td-checklist-row>.td-popover-anchor .td-iconbtn{border-radius:0;color:var(--ink-400)}
-html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn:hover,html[data-theme="minimal"] .td-checklist-row-more .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-iconbtn.td-checklist-row-more{border-radius:0;color:var(--ink-400)}
+html[data-theme="minimal"] .td-iconbtn.td-checklist-row-more:hover,html[data-theme="minimal"] .td-iconbtn.td-checklist-row-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-checklist-add{padding:10px 0;gap:6px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-400);transition:none}
 html[data-theme="minimal"] .td-checklist-add svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-checklist-add:hover{background:none;color:var(--ink-900)}

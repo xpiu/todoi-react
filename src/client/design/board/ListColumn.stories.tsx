@@ -86,10 +86,19 @@ export const RenameCancel: Story = {
   },
 };
 export const ChangeIcon: Story = {
-  async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Change icon for Doing" });
-    await userEvent.click(trigger);
+  async play({ args, canvas, canvasElement, globals, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
+    if (globals.theme === "minimal") {
+      // Minimal list heads are words only: the icon is changed from the ⋯ menu's Icon row
+      await expect(canvas.queryByRole("button", { name: "Change icon for Doing" })).toBeNull();
+      await userEvent.click(canvas.getByRole("button", { name: "List actions for Doing" }));
+      await userEvent.click(await page.findByRole("menuitem", { name: /Icon/ }));
+      const picker = await page.findByRole("group", { name: "List icon" });
+      await userEvent.click(within(picker).getByRole("button", { name: "On hold" }));
+      await expect(args.onIconChange).toHaveBeenCalledWith("circle-pause");
+      return;
+    }
+    await userEvent.click(canvas.getByRole("button", { name: "Change icon for Doing" }));
     const dialog = await page.findByRole("dialog", { name: "Icon for Doing" });
     await userEvent.click(within(dialog).getByRole("button", { name: "On hold" }));
     await expect(args.onIconChange).toHaveBeenCalledWith("circle-pause");
