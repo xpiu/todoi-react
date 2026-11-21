@@ -197,6 +197,8 @@ export function TopNavbar({
   const [sFocus, setSFocus] = useState(false);
   const [sRecent, setSRecent] = useState<SearchRecent[]>([]);
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  // Design hangs the Account menu from the whole avatar + sidebar-toggle group: its right edge meets the toggle's
+  const userWrapRef = useRef<HTMLDivElement>(null);
   // The field is the dropdown's combobox: it controls the results listbox and points at its highlighted option.
   const sListId = useId();
   const [sActive, setSActive] = useState<string>();
@@ -308,7 +310,7 @@ export function TopNavbar({
         </div>
       ) : null}
       {user || (toggleBtn && !leftToggle) ? (
-        <div className="td-topnav-user">
+        <div className="td-topnav-user" ref={userWrapRef}>
           {user ? (
             hasUserMenu ? (
               <MenuPopover
@@ -317,6 +319,7 @@ export function TopNavbar({
                 placement="bottom-end"
                 offset={10}
                 minWidth={null}
+                anchor={userWrapRef}
                 className="td-user-menu"
                 trigger={
                   <button type="button" className="td-topnav-avatarbtn td-tooltip" data-tip="Account" data-tip-side="bottom-end" aria-label={signedIn ? `Account: ${user.name}` : "Account (not signed in)"}>

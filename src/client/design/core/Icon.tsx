@@ -3,7 +3,7 @@
 // pixel-snapped panel / list / kanban / calendar glyphs (Rounded's own shapes, and the Ledger view
 // glyphs for Minimal), where Lucide's 24-unit grid would blur axis-aligned lines at 16–20px.
 // Spec: DESIGN.md › Iconography.
-import type { CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type Ref } from "react";
 
 import { useAppearanceStore } from "./appearance";
 import { LUCIDE_ICONS, type LucideIconName } from "./icons";
@@ -152,6 +152,14 @@ const LEDGER_SNAPPED: Record<string, (size: number) => SvgNode[]> = {
   // lines with a 1.17px stroke) and antialiased to grey. Drawn on pixel centres, the frame is one full pixel of ink.
   "panel-right": (s) => SNAPPED["panel-right"]!(s, 1),
   "panel-left": (s) => SNAPPED["panel-left"]!(s, 1),
+  // Plus (create, add an item, add list): Design's fitted cross — both arms on the same pixel centre, each ending on a
+  // half pixel, so the 1.5px stroke reads as one crisp line instead of Lucide's 1.17px rules split over two pixels.
+  // At 20px: centre 10.5, arms 4.5–16.5 (Design's "M5.4 12.6L19.8 12.6" in 24 units).
+  plus: (s) => {
+    const c = Math.round(s / 2 - 0.5) + 0.5;
+    const h = Math.round((7 * s) / 24);
+    return [["path", { d: `M${c - h} ${c}H${c + h}M${c} ${c - h}V${c + h}` }]];
+  },
   // Search: the ring's diameter a whole number of pixels with its four edges on pixel centres, so it renders in full
   // ink (Lucide's ring at 14px split its bottom and right edges over two pixels and read grey). At 14px: centre 6,
   // r 4.5, handle to 12.5.
@@ -186,11 +194,12 @@ export interface IconProps {
 
 const baseStyle: CSSProperties = { flexShrink: 0, display: "block" };
 
-function RawSvg({ nodes, size, viewBox, stroke, color, style, className }: {
-  nodes: SvgNode[]; size: number; viewBox: string; stroke: number; color?: string; style?: CSSProperties; className?: string;
+function RawSvg({ nodes, size, viewBox, stroke, color, style, className, ref }: {
+  nodes: SvgNode[]; size: number; viewBox: string; stroke: number; color?: string; style?: CSSProperties; className?: string; ref?: Ref<SVGSVGElement>;
 }) {
   return (
     <svg
+      ref={ref}
       width={size}
       height={size}
       viewBox={viewBox}
@@ -213,10 +222,22 @@ function RawSvg({ nodes, size, viewBox, stroke, color, style, className }: {
 export function Icon({ name, size = 16, strokeWidth = 2, color, style, className }: IconProps) {
   const minimal = useAppearanceStore((s) => s.theme) === "minimal";
   const ledgerSnapped = minimal ? LEDGER_SNAPPED[name] : undefined;
+  // Minimal CSS often draws a glyph at another size than its prop (an "Add an item" plus: 16 → 13px). A shape fitted to
+  // the prop then lands between pixels, so the drawn width is read once after layout and the shape is fitted to it
+  // (as Design's Icon does). Whole-pixel sizes only; no observers.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [drawn, setDrawn] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!ledgerSnapped || !svgRef.current) return;
+    const w = parseFloat(getComputedStyle(svgRef.current).width);
+    const px = Math.round(w);
+    setDrawn(Math.abs(w - px) < 0.01 && px >= 8 && px !== size ? px : null);
+  }, [ledgerSnapped, size]);
   if (ledgerSnapped) {
+    const fit = drawn ?? size;
     // The width also goes inline: the theme's `svg { stroke-width: 1.75 }` rules assume a 24-unit viewBox and would outrank the attribute.
-    const sw = (LEDGER_STROKE * size) / 24;
-    return <RawSvg nodes={ledgerSnapped(size)} size={size} viewBox={`0 0 ${size} ${size}`} stroke={sw} color={color} style={{ strokeWidth: sw, ...style }} className={className} />;
+    const sw = (LEDGER_STROKE * fit) / 24;
+    return <RawSvg ref={svgRef} nodes={ledgerSnapped(fit)} size={size} viewBox={`0 0 ${fit} ${fit}`} stroke={sw} color={color} style={{ strokeWidth: sw, ...style }} className={className} />;
   }
   const snapped = !minimal ? SNAPPED[name] : undefined;
   if (snapped) {

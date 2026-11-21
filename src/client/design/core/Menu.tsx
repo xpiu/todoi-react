@@ -3,7 +3,7 @@
 // MenuButton = MenuPopover with an IconButton trigger. Rows: MenuItem / MenuDivider / MenuNote /
 // MenuGroup + MenuHeading. Spec: DESIGN.md › Inline editing primitives.
 import { Menu as BaseMenu } from "@base-ui/react/menu";
-import { createContext, useCallback, useContext, useRef, useState, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode, type RefObject } from "react";
 
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
@@ -126,11 +126,12 @@ export interface MenuPopoverProps {
   /** Gap between the trigger and the menu, px @default 4 */
   offset?: number;
   width?: number | string;
-  /** @default 184 */
   /** @default 184; null leaves the width to the menu's own class (Account and Create menus) */
   minWidth?: number | string | null;
   /** Full-width anchor */
   block?: boolean;
+  /** Position against this element instead of the trigger (the Account menu aligns with the whole avatar + sidebar-toggle group) */
+  anchor?: RefObject<Element | null>;
   /** MenuItem / MenuDivider / MenuNote / MenuGroup children, or a render function (close) => children; close() goes through Base UI's state and reports "select" */
   children?: ReactNode | ((close: () => void) => ReactNode);
   /** Where focus goes when the menu closes @default the trigger. Return an element (a field the choice opened) or true for the default. */
@@ -140,7 +141,7 @@ export interface MenuPopoverProps {
 }
 
 /** A menu behind any trigger. Uncontrolled unless `open` is given. */
-export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", offset = 4, width, minWidth = 184, block, children, finalFocus, style, className }: MenuPopoverProps) {
+export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", offset = 4, width, minWidth = 184, block, anchor, children, finalFocus, style, className }: MenuPopoverProps) {
   const vp = useViewport();
   const container = usePortalContainer();
   const isSheet = vp.phone;
@@ -166,6 +167,7 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
           side={side}
           align={align}
           sideOffset={offset}
+          anchor={isSheet ? undefined : anchor}
           collisionPadding={8}
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >

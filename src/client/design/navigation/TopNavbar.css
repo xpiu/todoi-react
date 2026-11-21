@@ -58,6 +58,11 @@
   .td-popover.td-user-menu:not([data-sheet]) {
     width: 264px;
   }
+  /* Their rows set the label 10px from the glyph (8px in other menus) */
+  .td-user-menu .td-menu-item,
+  .td-create-menu .td-menu-item {
+    gap: 10px;
+  }
   /* Account menu identity header (a MenuItem carrying the avatar + two lines) */
   .td-user-menu-id {
     min-height: 52px;
