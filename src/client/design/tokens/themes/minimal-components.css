@@ -115,7 +115,7 @@ html[data-theme="minimal"] .td-list-column-head .td-list-column-iconbtn{display:
 html[data-theme="minimal"] .td-list-column-name{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-column-count{display:none}
 html[data-theme="minimal"] .td-list-column-rename{height:auto;outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;font:500 13px/20px var(--font-ui);color:var(--ink-900)}
-html[data-theme="minimal"] .td-list-column-head .td-list-column-more-anchor{align-self:center;margin-left:auto}
+html[data-theme="minimal"] .td-list-column-head>.td-list-column-more{align-self:center;margin-left:auto}
 html[data-theme="minimal"] .td-list-column-head .td-list-column-more{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400);opacity:1}
 html[data-theme="minimal"] .td-list-column-head .td-list-column-more svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-list-column-head:hover .td-list-column-more,html[data-theme="minimal"] .td-list-column-head .td-list-column-more:focus-visible,html[data-theme="minimal"] .td-list-column-head .td-list-column-more[aria-expanded="true"]{opacity:1}
