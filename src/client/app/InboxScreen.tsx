@@ -20,7 +20,8 @@ import { ListView } from "../design/list/ListView";
 import { notifyFailure, useFeedback } from "./feedback";
 import { INBOX_SCOPE, NO_LABELS, useInbox } from "./inbox";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
-import { rowsForList } from "./items";
+import { avatarColorVar, rowsForList } from "./items";
+import { notificationKind } from "../design/core/notifications";
 import { useToday } from "./today";
 import { LoadFailed } from "./LoadFailed";
 import { usePrefs } from "./prefs";
@@ -137,6 +138,8 @@ export function InboxScreen() {
             rows.map((r) => {
               const it = byId(r.id);
               const about = it?.notification?.aboutKey;
+              const sender = it?.notificationFrom;
+              const kind = it?.notification ? notificationKind(it.notification.kind) : null;
               return (
                 <ListRow
                   key={r.id}
@@ -150,6 +153,7 @@ export function InboxScreen() {
                   attachments={r.attachments}
                   created={r.created}
                   unread={r.unread}
+                  from={sender ? { name: sender.name, src: sender.image ?? undefined, color: avatarColorVar(sender.avatarColor) } : kind ? { icon: kind.icon, label: kind.label } : undefined}
                   about={about && it ? { key: about, onOpen: () => void openAbout(it) } : undefined}
                   onClick={() => open(r.id)}
                   subitems={r.subitems.map((s) => ({ title: s.title, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done) }))}

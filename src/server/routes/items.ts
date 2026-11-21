@@ -6,7 +6,7 @@ import { createItemSchema, duplicateItemSchema, idSchema, moveItemSchema, update
 import { viewerOf } from "../auth";
 import { db, inRequestTransaction } from "../db";
 import { nextPosition } from "../db/position";
-import { attachments, groups, itemAssignees, itemLabels, items, lists, projects } from "../db/schema";
+import { attachments, groups, itemAssignees, itemLabels, items, lists, projects, users } from "../db/schema";
 import { initialStatus } from "../../shared/completion";
 import { duplicateItem, moveItem, placeAmongSiblings, updateItem } from "../services/items";
 import { logActivity, quote } from "../services/activity";
@@ -18,18 +18,25 @@ import { fail, idParam, validate } from "../errors";
 const listQuery = validate("query", z.object({ listId: idSchema.optional(), projectId: idSchema.optional() }));
 
 type ItemRow = typeof items.$inferSelect;
-/** Attach each item's label and assignee ids (one query each for the whole set). */
-async function withRelations(rows: ItemRow[]) {
-  if (!rows.length) return [] as Array<ItemRow & { labelIds: string[]; assigneeIds: string[]; attachmentCount: number }>;
+/** Attach each item's label and assignee ids (one query each for the whole set), and for an Inbox notification the
+ * sender's display (name, image, avatar color) so the row can show who it came from. */
+type ItemWithRelations = ItemRow & { labelIds: string[]; assigneeIds: string[]; attachmentCount: number; notificationFrom?: { name: string; image: string | null; avatarColor: string | null } };
+async function withRelations(rows: ItemRow[]): Promise<ItemWithRelations[]> {
+  if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
   const labelQuery = db.select().from(itemLabels).where(inArray(itemLabels.itemId, ids));
   const assigneeQuery = db.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids));
   const attachmentQuery = db.select({ itemId: attachments.itemId, n: sql<number>`count(*)::int` }).from(attachments).where(inArray(attachments.itemId, ids)).groupBy(attachments.itemId);
+  const senderIds = [...new Set(rows.map((r) => r.notification?.fromUserId).filter((id): id is string => !!id))];
+  const senderQuery = senderIds.length ? db.select({ id: users.id, name: users.name, image: users.image, avatarColor: users.avatarColor }).from(users).where(inArray(users.id, senderIds)) : Promise.resolve([]);
   // A queued write uses one transaction connection; ordinary reads can use the pool in parallel.
-  const [labelRows, assigneeRows, attachmentRows] = inRequestTransaction()
-    ? [await labelQuery, await assigneeQuery, await attachmentQuery]
-    : await Promise.all([labelQuery, assigneeQuery, attachmentQuery]);
-  return rows.map((r) => ({ ...r, labelIds: labelRows.filter((l) => l.itemId === r.id).map((l) => l.labelId), assigneeIds: assigneeRows.filter((a) => a.itemId === r.id).map((a) => a.userId), attachmentCount: attachmentRows.find((a) => a.itemId === r.id)?.n ?? 0 }));
+  const [labelRows, assigneeRows, attachmentRows, senderRows] = inRequestTransaction()
+    ? [await labelQuery, await assigneeQuery, await attachmentQuery, await senderQuery]
+    : await Promise.all([labelQuery, assigneeQuery, attachmentQuery, senderQuery]);
+  return rows.map((r) => {
+    const sender = r.notification?.fromUserId ? senderRows.find((u) => u.id === r.notification!.fromUserId) : undefined;
+    return { ...r, labelIds: labelRows.filter((l) => l.itemId === r.id).map((l) => l.labelId), assigneeIds: assigneeRows.filter((a) => a.itemId === r.id).map((a) => a.userId), attachmentCount: attachmentRows.find((a) => a.itemId === r.id)?.n ?? 0, ...(sender ? { notificationFrom: { name: sender.name, image: sender.image, avatarColor: sender.avatarColor } } : {}) };
+  });
 }
 
 export const itemsRoute = new Hono()
