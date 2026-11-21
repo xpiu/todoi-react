@@ -26,7 +26,7 @@ const meta = {
     onSearchSelect: fn(),
     onSearchChange: fn(),
     onCreate: fn(),
-    user: { name: "Todoi", email: "info@todoi.org", avatarColor: "var(--label-teal)" },
+    user: { name: "Todoi", avatarColor: "var(--label-teal)" },
     onOpenSettings: fn(),
     onOpenAccount: fn(),
     onLogout: fn(),

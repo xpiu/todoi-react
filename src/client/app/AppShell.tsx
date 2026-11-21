@@ -364,7 +364,7 @@ export function AppShell() {
           else openResult.item({ id, projectId: type === "inbox" ? null : ((entity as { projectId?: string | null }).projectId ?? null) });
           if (!vp.desktop) setSidebarOpen(false);
         }}
-        user={user ? { name: user.name, nickname: user.nickname ?? undefined, email: user.email, src: user.image ?? undefined, avatarColor: avatarColorVar(user.avatarColor) } : { name: "Guest" }}
+        user={user ? { name: user.name, src: user.image ?? undefined, avatarColor: avatarColorVar(user.avatarColor) } : { name: "Guest" }}
         signedIn={signedIn}
         onLogout={logout}
         onLogin={() => navigate({ to: "/login", search: { next: location.href } })}
@@ -397,6 +397,7 @@ export function AppShell() {
           activeId={activeId}
           collapsed={!sidebarOpen}
           modal={!vp.desktop}
+          contained={vp.device === "tablet"}
           onClose={() => setOverlaySidebar(false)}
           onAdd={(groupId) => lifecycle.openNewProject(groupId)}
           onNavAdd={(id) => {

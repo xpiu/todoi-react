@@ -24,8 +24,6 @@ const CREATE_ITEMS: ReadonlyArray<[CreateKind, IconName, string]> = [
 
 export interface TopNavbarUser {
   name: string;
-  nickname?: string;
-  email?: string;
   src?: string;
   /** "var(--label-teal)" */
   avatarColor?: string;

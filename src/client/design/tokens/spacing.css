@@ -4,6 +4,8 @@
 --size-list-width:275px;--size-topbar:56px;--size-boardbar:48px;--size-control:32px;--size-control-lg:40px;--size-overlay-width:880px;--size-overlay-aside:max-content;
 /* The centred content column: List view, Calendar › Day, Inbox, Archive, the table pages (Projects, Project groups). The chip rows above the List view add the view's side padding to it. */
 --size-content-max:900px;
+/* Its left margin, centred on a whole pixel: with an odd free width a plain auto margin starts the column on a half pixel, which softens 1px rings and small glyphs at 1x. Apply it under @supports (margin-left: round(down, 1px, 1px)): where round() is unsupported the margin would compute to 0 instead of falling back to auto. */
+--size-content-offset:round(down,calc((100% - min(100%,var(--size-content-max)))/2),1px);
 /* One item row in a Calendar day (chip + gap); CalendarGrid reads it to count how many items fit */
 --size-cal-chip-pitch:25px;
 }

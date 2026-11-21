@@ -12,6 +12,7 @@
   .td-app-subrow {
     flex-shrink: 0;
   }
+  /* Positioned: on tablets the sidebar sheet and its scrim cover this row (Sidebar `contained`). */
   .td-app-body {
     position: relative;
     display: flex;
@@ -40,7 +41,7 @@
     padding: 0 var(--sp-2);
     box-sizing: border-box;
   }
-  /* On the same whole pixel as the list column (ListView.css rounds its centring offset down) */
+  /* On the same whole pixel as the list column (--size-content-offset, for this wider column) */
   @supports (margin-left: round(down, 1px, 1px)) {
     .td-app-rows[data-view="list"] > .td-app-rows-inner {
       margin-left: round(down, calc((100% - min(100%, var(--td-rows-max))) / 2), 1px);

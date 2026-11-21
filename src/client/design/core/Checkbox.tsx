@@ -23,14 +23,21 @@ export interface CheckboxProps extends Omit<ComponentPropsWithRef<"button">, "ty
 
 export const RECURRING_HOLD_MS = 650;
 
+/** The box alone: for a row that shows a value without being a checkbox (the row itself is the control). */
+export function CheckboxBox({ on, shape = "square" }: { on: boolean; shape?: CheckboxProps["shape"] }) {
+  return (
+    <span className={["td-check-box", shape === "circle" ? "td-check-circle" : "", on ? "td-check-box-on" : ""].filter(Boolean).join(" ")}>
+      <Icon name="check" size={shape === "circle" ? 12 : 11} strokeWidth={3.5} className="td-check-icon" />
+    </span>
+  );
+}
+
 export function Checkbox({ checked, onChange, shape = "square", label, recurring, className, onClick, ...rest }: CheckboxProps) {
   const [flash, setFlash] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
   }, []);
-  const on = !!checked || flash;
-  const boxCls = ["td-check-box", shape === "circle" ? "td-check-circle" : "", on ? "td-check-box-on" : ""].filter(Boolean).join(" ");
   return (
     <button
       type="button"
@@ -49,9 +56,7 @@ export function Checkbox({ checked, onChange, shape = "square", label, recurring
         onChange?.(!checked);
       }}
     >
-      <span className={boxCls}>
-        <Icon name="check" size={shape === "circle" ? 12 : 11} strokeWidth={3.5} className="td-check-icon" />
-      </span>
+      <CheckboxBox on={!!checked || flash} shape={shape} />
       {label ? <span>{label}</span> : null}
     </button>
   );

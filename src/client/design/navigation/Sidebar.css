@@ -60,8 +60,8 @@
     overflow: hidden;
     pointer-events: none;
   }
-  .td-sidebar-scrim[data-under-chrome="true"],
-  .td-sidebar.td-sidebar-sheet[data-under-chrome="true"] {
+  .td-sidebar-under .td-sidebar-scrim,
+  .td-sidebar-under .td-sidebar.td-sidebar-sheet {
     position: absolute;
     pointer-events: auto;
   }

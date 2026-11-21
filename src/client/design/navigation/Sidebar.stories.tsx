@@ -135,14 +135,12 @@ export const ModalSheet: Story = {
 };
 /** Tablet: the sheet and its scrim cover the positioned element the Sidebar sits in, so the chrome rows above stay in reach. */
 export const TabletSheet: Story = {
-  args: { modal: true },
+  args: { modal: true, contained: true },
   globals: { viewport: { value: "tablet", isRotated: false } },
   decorators: [(Story) => <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--chrome-canvas)" }}><div style={{ flex: "none", height: "var(--size-topbar)", padding: "0 var(--sp-4)", display: "flex", alignItems: "center", color: "var(--chrome-text)" }}>Chrome rows</div><div data-testid="body" style={{ position: "relative", flex: 1, minHeight: 0 }}><Story /></div></div>],
   async play({ args, canvas, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
-    // The viewport global may land a frame after the first render, which remounts the sheet in its host.
-    await waitFor(() => expect(page.getByRole("dialog", { name: "Sidebar" })).toHaveAttribute("data-under-chrome", "true"));
-    const sheet = page.getByRole("dialog", { name: "Sidebar" });
+    const sheet = await page.findByRole("dialog", { name: "Sidebar" });
     await waitFor(() => expect(sheet).toBeVisible());
     await waitFor(() => expect(sheet.getAnimations()).toHaveLength(0));
     await expect(sheet.getBoundingClientRect().top).toBe(canvas.getByTestId("body").getBoundingClientRect().top);

@@ -58,10 +58,10 @@
     color: var(--ink-600);
   }
   /* Day period: the header (title · Today · prev/next · period) sits on the list's column instead of the full canvas width; 16px = the calendar body padding. */
-  /* The List view's column (--size-content-max) on whole pixels; see ListView.css for the @supports guard. */
+  /* The List view's column (--size-content-max) on whole pixels; see --size-content-offset for the @supports guard. */
   @supports (margin-left: round(down, 1px, 1px)) {
     .td-calendar-day-list {
-      margin-left: round(down, calc((100% - min(100%, var(--size-content-max))) / 2), 1px);
+      margin-left: var(--size-content-offset);
     }
     .td-calendar-header:has(+ div .td-calendar-day-list) {
       padding-left: calc(16px + round(down, calc((100% - 32px - min(100% - 32px, var(--size-content-max))) / 2), 1px));

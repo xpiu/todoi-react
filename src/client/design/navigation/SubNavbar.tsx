@@ -6,7 +6,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 
 import { useAppearance } from "../core/appearance";
-import { Checkbox } from "../core/Checkbox";
+import { Checkbox, CheckboxBox } from "../core/Checkbox";
 import { copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
 import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
@@ -217,9 +217,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             onOpenCheckedMove();
           }}
         >
-          <span className={"td-check-box" + (checkedMove ? " td-check-box-on" : "")} aria-hidden>
-            <Icon name="check" size={11} strokeWidth={3.5} className="td-check-icon" />
-          </span>
+          <CheckboxBox on={!!checkedMove} />
           <span className="td-appearance-goto-label">Checked items move to Done</span>
           <Icon name="chevron-right" size={14} className="td-appearance-goto-chevron" />
         </button>
@@ -246,7 +244,6 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
         <div className="td-subnav-actions">
           {actions.map((a) => {
             if (a.id === "appearance") {
-              const label = a.label;
               return (
                 <Popover
                   key={a.id}
@@ -258,9 +255,9 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   aria-label="Appearance"
                   width={264}
                   trigger={
-                    <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={label} data-menu="appearance">
+                    <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={a.label} data-menu="appearance">
                       {a.icon ? <Icon name={a.icon} size={16} /> : null}
-                      {label}
+                      {a.label}
                     </button>
                   }
                 >

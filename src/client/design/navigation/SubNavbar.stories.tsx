@@ -148,7 +148,10 @@ export const OneMenuAtATime: Story = {
 };
 export const AppearanceMenu: Story = {
   async play({ args, canvas, canvasElement, globals, userEvent }) {
-    await userEvent.click(await canvas.findByRole("button", { name: "Appearance" }));
+    // The action reads "Appearance" in both themes: the trigger's text in Rounded, the hint and accessible name of icon-only Minimal.
+    const trigger = await canvas.findByRole("button", { name: "Appearance" });
+    await expect(trigger).toHaveAttribute("data-tip", "Appearance");
+    await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const dialog = within(await page.findByRole("dialog", { name: "Appearance" }));
     const ids = dialog.getByRole("checkbox", { name: "Show item IDs" });
@@ -189,17 +192,6 @@ export const CheckedMoveShortcut: Story = {
     await expect(args.onOpenCheckedMove).toHaveBeenCalledOnce();
     await waitFor(() => expect(page.queryByRole("dialog", { name: "Appearance" })).not.toBeInTheDocument());
     await expect(canvas.getByRole("toolbar", { name: "Project views and actions" })).not.toHaveAttribute("data-open-menu");
-  },
-};
-/** The action reads "Appearance" in both themes: the trigger's text in Rounded, the hint and accessible name of icon-only Minimal. */
-export const AppearanceAction: Story = {
-  async play({ canvas, canvasElement, userEvent }) {
-    const trigger = await canvas.findByRole("button", { name: "Appearance" });
-    await expect(trigger).toHaveAttribute("data-tip", "Appearance");
-    await expect(canvas.queryByRole("button", { name: "Style" })).not.toBeInTheDocument();
-    await userEvent.click(trigger);
-    await expect(await within(canvasElement.ownerDocument.body).findByRole("dialog", { name: "Appearance" })).toBeInTheDocument();
-    await userEvent.keyboard("{Escape}");
   },
 };
 export const ShareAndExport: Story = {

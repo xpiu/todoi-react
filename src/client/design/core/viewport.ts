@@ -52,18 +52,19 @@ function refresh() {
     snapshot = next;
     applyViewportAttrs(snapshot);
   }
-  return snapshot;
+}
+// The queries are watched for the page's lifetime, not per subscriber: the snapshot and the <html> attributes
+// (which CSS reads with no hook mounted) stay current, and a late subscriber never starts from a stale device.
+const subscribers = new Set<() => void>();
+for (const q of [DEVICE_QUERIES.desktop, DEVICE_QUERIES.tablet, TOUCH_QUERY]) {
+  mm(q)?.addEventListener("change", () => {
+    refresh();
+    subscribers.forEach((notify) => notify());
+  });
 }
 function subscribe(onChange: () => void) {
-  const queries = [DEVICE_QUERIES.desktop, DEVICE_QUERIES.tablet, TOUCH_QUERY].map(mm).filter((q): q is MediaQueryList => !!q);
-  const handler = () => {
-    refresh();
-    onChange();
-  };
-  queries.forEach((q) => q.addEventListener("change", handler));
-  // A query may have flipped while nothing was listening; React re-reads the snapshot after subscribing.
-  refresh();
-  return () => queries.forEach((q) => q.removeEventListener("change", handler));
+  subscribers.add(onChange);
+  return () => void subscribers.delete(onChange);
 }
 const getSnapshot = () => snapshot;
 const serverSnapshot: ViewportState = { device: "desktop", touch: false, desktop: true, phone: false };

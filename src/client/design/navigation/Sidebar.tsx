@@ -17,7 +17,6 @@ import { IconPicker } from "../core/IconPicker";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
 import { PortalContainerContext } from "../core/portalContainer";
 import { useToastHost } from "../core/ToastPortal";
-import { useViewport } from "../core/viewport";
 import "./Sidebar.css";
 
 export const ITEM_DRAG_TYPE = "application/x-todoi-item";
@@ -79,8 +78,10 @@ export interface SidebarProps {
   dropHint?: string;
   /** true fully hides the sidebar (animated width to 0; a closed sheet when `modal`) */
   collapsed?: boolean;
-  /** Phone and tablet: a sheet over the page instead of a rail beside it. Phone: full height and modal. Tablet: sheet and scrim cover the element the Sidebar is rendered in (which must be positioned), so the chrome rows above it stay usable */
+  /** Phone and tablet: a sheet over the page instead of a rail beside it; full height and modal unless `contained` */
   modal?: boolean;
+  /** With `modal` (the app sets it on tablets): sheet and scrim cover only the element the Sidebar is rendered in, which must be positioned, and the dialog is not modal, so the chrome rows above that element stay usable */
+  contained?: boolean;
   /** The sheet asks to close (Escape, the scrim, its close button) */
   onClose?: () => void;
   /** @default 264 (max) */
@@ -90,11 +91,10 @@ export interface SidebarProps {
   className?: string;
 }
 
-export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelect, onAdd, onNavAdd, onProjectRename, onProjectIconChange, onProjectAction, onItemDrop, dropHint = "Drop on a project to file it", collapsed = false, modal = false, onClose, width = 264, side, style, className }: SidebarProps) {
+export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelect, onAdd, onNavAdd, onProjectRename, onProjectIconChange, onProjectAction, onItemDrop, dropHint = "Drop on a project to file it", collapsed = false, modal = false, contained = false, onClose, width = 264, side, style, className }: SidebarProps) {
   width = Math.min(width, 264);
-  // Tablet: the sheet opens under the chrome rows, inside a host that covers the Sidebar's own parent.
-  const tablet = useViewport().device === "tablet";
-  const under = modal && tablet;
+  // Contained: the sheet opens inside a host that covers the Sidebar's own parent, under the chrome rows.
+  const under = modal && contained;
   const [underEl, setUnderEl] = useState<HTMLElement | null>(null);
   // The sheet's popup hosts its menus, and on phones the app toast too, so both stay usable while the page is inert.
   const [sheetEl, setSheetEl] = useState<HTMLElement | null>(null);
@@ -289,21 +289,20 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
         {/* Under the chrome rows the dialog is not modal: the bars keep working, a press on them leaves the
             sheet open, and only the scrim (its own click), Escape and the host's toggle close it. */}
         <BaseDialog.Root open={!collapsed} modal={!under} disablePointerDismissal={under} onOpenChange={(open) => !open && onClose?.()}>
-          {under && !underEl ? null : (
-            <BaseDialog.Portal container={under ? underEl : undefined}>
-              <BaseDialog.Backdrop className="td-sidebar-scrim" data-under-chrome={under ? "true" : undefined} onClick={under ? () => onClose?.() : undefined} />
-              <BaseDialog.Popup ref={setSheetEl} className={cls + " td-sidebar-sheet"} data-under-chrome={under ? "true" : undefined} aria-label="Sidebar" style={{ width, ...style }} {...asideDnd}>
-                <PortalContainerContext value={sheetEl}>
-                  {under ? null : (
-                    <div className="td-sidebar-sheethead">
-                      <IconButton name="x" label="Hide sidebar" size={32} iconSize={18} variant="chrome" onClick={() => onClose?.()} />
-                    </div>
-                  )}
-                  <div className="td-sidebar-sheetbody">{inner}</div>
-                </PortalContainerContext>
-              </BaseDialog.Popup>
-            </BaseDialog.Portal>
-          )}
+          {/* While the host is not mounted yet its container is null, and the portal waits for it. */}
+          <BaseDialog.Portal container={under ? underEl : undefined}>
+            <BaseDialog.Backdrop className="td-sidebar-scrim" onClick={under ? () => onClose?.() : undefined} />
+            <BaseDialog.Popup ref={setSheetEl} className={cls + " td-sidebar-sheet"} aria-label="Sidebar" style={{ width, ...style }} {...asideDnd}>
+              <PortalContainerContext value={sheetEl}>
+                {under ? null : (
+                  <div className="td-sidebar-sheethead">
+                    <IconButton name="x" label="Hide sidebar" size={32} iconSize={18} variant="chrome" onClick={() => onClose?.()} />
+                  </div>
+                )}
+                <div className="td-sidebar-sheetbody">{inner}</div>
+              </PortalContainerContext>
+            </BaseDialog.Popup>
+          </BaseDialog.Portal>
         </BaseDialog.Root>
       </>
     );

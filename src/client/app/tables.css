@@ -8,22 +8,12 @@
     box-sizing: border-box;
     padding: var(--sp-4) var(--sp-5) var(--sp-6);
   }
-  /* Centred on a whole pixel: with an odd free width a plain auto margin starts the column on a half pixel. The offset
-     lives in a custom property applied under @supports, since an unsupported round() would resolve the margin to 0
-     instead of falling back to auto. */
   .td-table-inner {
-    --td-center-offset: round(down, calc((100% - min(100%, var(--size-content-max))) / 2), 1px);
     max-width: var(--size-content-max);
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 14px;
-  }
-  .td-table-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-3);
   }
   .td-table-title {
     font: var(--type-page-title);
@@ -37,9 +27,10 @@
     padding: var(--sp-2);
     container-type: inline-size;
   }
+  /* Centred on a whole pixel (see --size-content-offset for the guard) */
   @supports (margin-left: round(down, 1px, 1px)) {
     .td-table-inner {
-      margin-left: var(--td-center-offset);
+      margin-left: var(--size-content-offset);
     }
   }
   .td-table {

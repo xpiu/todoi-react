@@ -11,6 +11,7 @@ import { quote, useFeedback } from "./feedback";
 import { useLifecycle } from "./lifecycle";
 import { LoadFailed } from "./LoadFailed";
 import "../design/core/text.css";
+import { TableAddRow } from "./TableAddRow";
 import "./tables.css";
 import { useOpenProject } from "./useOpenProject";
 
@@ -39,9 +40,7 @@ export function GroupsScreen() {
   return (
     <div className="td-table-page">
       <div className="td-table-inner">
-        <div className="td-table-head">
-          <h1 className="td-table-title">Project groups</h1>
-        </div>
+        <h1 className="td-table-title">Project groups</h1>
         <div className="td-table-card">
           <table className="td-table">
             <thead>
@@ -152,13 +151,7 @@ export function GroupsScreen() {
               })}
             </tbody>
           </table>
-          {/* Creating is the table's last row, in the List view's "Add an item" idiom */}
-          <button type="button" className="td-table-add" onClick={openNewGroup}>
-            <span className="td-table-add-plus">
-              <Icon name="plus" size={16} />
-            </span>
-            New project group
-          </button>
+          <TableAddRow label="New project group" onClick={openNewGroup} />
         </div>
       </div>
     </div>
