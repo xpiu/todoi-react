@@ -150,6 +150,11 @@
   .td-date-picker-input::placeholder {
     color: var(--ink-400);
   }
+  /* A set date is the field's value, not a hint: it reads in ink (the × shows exactly when a date is set and nothing is typed) */
+  .td-date-picker-field:has(> .td-date-picker-clear) .td-date-picker-input::placeholder {
+    color: var(--ink-900);
+    opacity: 1;
+  }
   .td-date-picker-preview {
     font: var(--weight-regular) 11px / 16px var(--font-ui);
     color: var(--ink-400);
