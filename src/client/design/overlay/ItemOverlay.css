@@ -70,6 +70,16 @@
     display: flex;
     align-items: center;
     background: var(--surface-card);
+    animation: td-activity-search-in var(--duration-base) var(--ease-standard);
+  }
+  /* The field wipes open from the search button's edge (right to left) */
+  @keyframes td-activity-search-in {
+    from {
+      clip-path: inset(0 0 0 100%);
+    }
+    to {
+      clip-path: inset(0);
+    }
   }
   .td-activity-search > * {
     flex: 1 1 auto;

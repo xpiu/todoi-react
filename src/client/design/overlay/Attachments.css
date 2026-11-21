@@ -167,6 +167,12 @@
     background: var(--surface-card);
     opacity: 0.96;
     pointer-events: none;
+    animation: td-drop-in var(--duration-fast) var(--ease-standard);
+  }
+  @keyframes td-drop-in {
+    from {
+      opacity: 0;
+    }
   }
   .td-drop-inner {
     display: flex;
@@ -192,6 +198,11 @@
     align-items: center;
     justify-content: center;
     outline: none;
+    transition: opacity var(--duration-base) var(--ease-standard);
+  }
+  .td-lightbox[data-starting-style],
+  .td-lightbox[data-ending-style] {
+    opacity: 0;
   }
   .td-lightbox img {
     max-width: calc(100vw - 128px);

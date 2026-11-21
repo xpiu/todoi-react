@@ -33,6 +33,7 @@
   }
   /* An anchored card below desktop (sheet={false}): shorter than the room Base UI leaves it, or it scrolls */
   .td-popover[data-compact="true"] {
+    max-width: calc(100vw - 16px);
     max-height: var(--available-height, calc(100dvh - 16px));
     overflow-y: auto;
     overscroll-behavior: contain;
