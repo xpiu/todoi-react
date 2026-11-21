@@ -186,8 +186,9 @@ export const LinkedProject: Story = {
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
     await expect(within(dialog).queryByRole("combobox", { name: "Move to list" })).not.toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole("combobox", { name: "Status" }));
-    const note = await page.findByText("Lists are linked to Status here. Picking a Status moves the item to its list.");
-    await waitFor(() => expect(note).toBeVisible());
+    const linked = await page.findByRole("button", { name: "Lists linked with Status" });
+    await waitFor(() => expect(linked).toBeVisible());
+    await expect(page.queryByText("Lists are linked to Status here. Picking a Status moves the item to its list.")).not.toBeInTheDocument();
     await userEvent.click(await page.findByRole("option", { name: "Done" }));
     await expect(args.onMoveToList).toHaveBeenCalledWith("l3");
     await expect(args.onSetStatus).not.toHaveBeenCalled();

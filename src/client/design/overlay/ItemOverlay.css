@@ -42,9 +42,9 @@
     margin-top: var(--sp-6);
   }
   .td-activity-head {
+    position: relative;
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
     gap: var(--sp-3);
     color: var(--ink-900);
     margin-bottom: var(--sp-3);
@@ -57,18 +57,22 @@
     font: var(--weight-semibold) var(--text-md) / var(--lh-md) var(--font-ui);
   }
   .td-activity-head > .td-iconbtn {
-    order: 1;
     flex: none;
   }
+  /* The search overlays the head row (right-aligned, left of the icon), so opening it never changes the head height or moves the divider */
   .td-activity-search {
-    order: 2;
-    flex: 1 1 100%;
-    min-width: 0;
+    position: absolute;
+    z-index: var(--z-raised);
+    top: 0;
+    right: 44px;
+    height: 32px;
+    width: min(240px, calc(100% - 154px));
+    display: flex;
+    align-items: center;
+    background: var(--surface-card);
   }
-  html[data-device="desktop"] .td-activity-search,
-  html[data-device="tablet"] .td-activity-search {
-    order: 0;
-    flex: 0 1 240px;
-    margin-left: auto;
+  .td-activity-search > * {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }

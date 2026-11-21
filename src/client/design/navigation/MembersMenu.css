@@ -133,9 +133,22 @@
     font: var(--weight-regular) var(--text-xs) / var(--lh-xs) var(--font-mono);
     color: var(--ink-600);
   }
-  .td-members-menu-copy {
+  /* Copy is a quiet action inside the link field: no fill at rest, the field's own ink, a wash on hover */
+  .td-btn.td-members-menu-copy {
     height: 26px;
     padding: 0 var(--sp-2);
+    gap: 5px;
+    background: transparent;
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
+    color: var(--ink-600);
+    flex-shrink: 0;
+  }
+  .td-btn.td-members-menu-copy:hover {
+    background: var(--action-subtle-hover);
+    color: var(--ink-900);
+  }
+  .td-btn.td-members-menu-copy svg {
+    width: 14px;
+    height: 14px;
   }
 }

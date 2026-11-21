@@ -16,6 +16,14 @@
     background: var(--surface-list);
     color: var(--ink-400);
   }
+  /* Search text on the menu rows' label column (4 + 8 + 14px glyph + 1 + 8 = 35px), shared by the label, member and project pickers */
+  .td-picker-search {
+    gap: 8px;
+  }
+  .td-picker-search > svg {
+    flex: none;
+    margin-right: 1px;
+  }
   .td-item-picker-input,
   .td-picker-input {
     flex: 1;

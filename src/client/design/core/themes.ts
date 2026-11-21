@@ -93,9 +93,9 @@ export const MINIMAL_LIGHT_BACKGROUNDS: ThemeBackground[] = [
   { value: "#f7f5f0", label: "Paper", title: "Paper — warm off-white", ink: "#000000", surfaces: true, shape: "square" },
 ];
 export const MINIMAL_DARK_BACKGROUNDS: ThemeBackground[] = [
-  { value: "#121110", label: "Soot", title: "Soot — deepest black with a trace of warmth (default)", ink: "#f2f2f3", surfaces: true, shape: "square" },
+  { value: "#1b1917", label: "Ink", title: "Ink — warm near-black, the dark Paper (default)", ink: "#f2f2f3", surfaces: true, shape: "square" },
+  { value: "#121110", label: "Soot", title: "Soot — deepest black with a trace of warmth", ink: "#f2f2f3", surfaces: true, shape: "square" },
   { value: "#15171c", label: "Slate", title: "Slate — cool near-black", ink: "#f2f2f3", surfaces: true, shape: "square" },
-  { value: "#1b1917", label: "Ink", title: "Ink — warm near-black, the dark Paper", ink: "#f2f2f3", surfaces: true, shape: "square" },
   { value: "#141415", label: "Black", ink: "#f2f2f3", surfaces: true, shape: "square" },
   { value: "#0e0e0e", label: "Carbon", title: "Carbon — pure deep black", ink: "#f2f2f3", surfaces: true, shape: "square" },
 ];

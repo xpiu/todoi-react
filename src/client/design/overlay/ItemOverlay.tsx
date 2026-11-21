@@ -421,10 +421,12 @@ export function ItemOverlay(p: ItemOverlayProps) {
             onChange={pickStatus}
             footer={
               statusOnly ? (
-                <>
-                  {p.onManageLinks ? <button type="button" className="td-menu-item td-select-foot" title="This project links lists to Status. Turn the link off on the Projects page to show the List field and move items without changing their Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Lists linked to Status</button> : null}
-                  <div className="td-menu-note" title="Each list in this project carries a Status role. A Status that no list carries, and None, change the Status only.">Lists are linked to Status here. Picking a Status moves the item to its list.</div>
-                </>
+                p.onManageLinks ? (
+                  <button type="button" className="td-menu-item td-select-foot" title="This project links lists to Status. Turn the link off on the Projects page to show the List field and move items without changing their Status." onClick={p.onManageLinks}>
+                    <Icon name="link-2" size={15} />
+                    Lists linked with Status
+                  </button>
+                ) : null
               ) : (
                 <div className="td-menu-note" title="A list can carry a Status role. Editing Status directly never moves the item.">Status is set here or by a linked list move. Editing it never moves the item.</div>
               )

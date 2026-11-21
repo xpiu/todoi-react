@@ -633,19 +633,19 @@ html[data-theme="minimal"][data-mode="dark"] svg path[d="M5 12h14"],html[data-th
 html[data-theme="minimal"] .td-popover:has(.td-appearance-menu){padding:0}
 html[data-theme="minimal"] .td-appearance-menu{padding:14px}
 html[data-theme="minimal"] .td-menu{gap:0}
-html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
-html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
-html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-user-menu-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
+html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-picker-row,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-picker-row:hover,html[data-theme="minimal"] .td-picker-row:focus-visible,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}
+html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-picker-row:focus-visible,html[data-theme="minimal"] .td-user-menu-item:focus-visible{box-shadow:inset 2px 0 0 var(--ink-900)}
 html[data-theme="minimal"] .td-menu-item[aria-checked="true"],html[data-theme="minimal"] .td-menu-item[aria-pressed="true"]{color:var(--ink-900)}
 html[data-theme="minimal"] .td-menu-item-icon,html[data-theme="minimal"] .td-user-menu-icon,html[data-theme="minimal"] .td-menu-item-check{color:inherit}
-html[data-theme="minimal"] .td-menu-item svg,html[data-theme="minimal"] .td-user-menu-item svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"] .td-menu-item svg,html[data-theme="minimal"] .td-picker-row svg,html[data-theme="minimal"] .td-user-menu-item svg{width:16px;height:16px;stroke-width:1.75}
 html[data-theme="minimal"] .td-menu-item[data-danger="true"]{color:var(--danger)}
 html[data-theme="minimal"] .td-menu-item-trail{color:var(--ink-400);font:400 11px/16px var(--font-ui)}
 html[data-theme="minimal"] .td-menu-kbd{padding:0;border:0;border-radius:0;background:none;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-menu-divider,html[data-theme="minimal"] .td-user-menu-separator{margin:6px 0;background:var(--border-divider)}
 html[data-theme="minimal"] .td-menu-heading{padding:8px 14px 4px;font:400 11px/16px var(--font-ui);letter-spacing:0;text-transform:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-menu-note{padding:4px 14px 6px;font:400 11px/16px var(--font-ui)}
-html[data-theme="minimal"] .td-user-menu{width:240px;padding:6px 0}
+html[data-theme="minimal"] .td-user-menu{width:196px;max-width:196px;padding:6px 0}
 html[data-theme="minimal"] .td-create-menu{width:200px;padding:6px 0;top:calc(100% + 12px)}
 /* Toolbar menus (Filter · Sort · Members): the same square sheet as every floating layer; section names are plain grey words, rows are normal ink with a faint hover wash, the checked row a paper-grey wash; label swatches shrink to a 6px square so color stays a hint */
 html[data-theme="minimal"] .td-filter-menu,html[data-theme="minimal"] .td-sort-menu,html[data-theme="minimal"] .td-members-menu{border-radius:0}
@@ -675,6 +675,8 @@ html[data-theme="minimal"] .td-members-menu-sub{font:400 11px/16px var(--font-ui
 html[data-theme="minimal"] .td-members-menu-role,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger{height:auto;padding:0;border-radius:0;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-members-menu-role:hover,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-members-menu-link{margin:6px 14px 8px;padding:4px 0;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;background:none}
+html[data-theme="minimal"] .td-btn.td-members-menu-copy{height:auto;padding:0;border-radius:0;background:none;font:500 11px/16px var(--font-ui);color:var(--ink-600)}
+html[data-theme="minimal"] .td-btn.td-members-menu-copy:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-members-menu-url{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 /* Auth pages (Log in · Invite · Reset): the wordmark in 500, no card — a plain column on paper; provider buttons and the primary are squares, links are grey words that go ink. Exception to the one-ink rule: --td-auth-dim (≈60% ink, ≥4.5:1) carries the secondary copy here — subtitle, "or", links, footer — so the form keeps a hierarchy; the disabled primary is a hairline outline, not a half-opacity slab */
 html[data-theme="minimal"] .td-auth-mark{font:500 20px/28px var(--font-ui);letter-spacing:-.01em;margin-bottom:32px}
@@ -832,6 +834,8 @@ html[data-theme="minimal"] .td-activity-head{margin-bottom:0}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn,html[data-theme="minimal"] .td-item-section-head .td-iconbtn{width:16px!important;height:16px!important;border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn:hover,html[data-theme="minimal"] .td-activity-head .td-iconbtn[aria-expanded="true"],html[data-theme="minimal"] .td-item-section-head .td-iconbtn:hover,html[data-theme="minimal"] .td-item-section-head .td-iconbtn[aria-expanded="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-activity-head .td-iconbtn svg,html[data-theme="minimal"] .td-item-section-head .td-iconbtn svg{width:16px;height:16px;stroke-width:1.75}
+html[data-theme="minimal"]:not([data-mode="light"]) .td-filter-chip-category{color:var(--ink-900);opacity:1}
+html[data-theme="minimal"] .td-activity-search{right:26px;height:20px;width:min(240px,calc(100% - 136px))}
 /* Plain buttons in the main column (Add, Cancel, Save): words, not pills; primary stays filled ink with square corners */
 html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger){height:auto;padding:0;background:none;font:400 13px/20px var(--font-ui);color:var(--ink-400);border-radius:0}
 html[data-theme="minimal"] .td-modal-main .td-btn:not(.td-btn-primary):not(.td-btn-outline):not(.td-btn-danger):hover{background:none;color:var(--ink-900)}
@@ -911,6 +915,12 @@ html[data-theme="minimal"] .td-relations-row>.td-relations-remove,html[data-them
 html[data-theme="minimal"] .td-relations-types{background:none;padding:0;gap:0;border-radius:0;box-shadow:inset 0 -1px 0 var(--border-divider)}
 html[data-theme="minimal"] .td-relations-types button{border-radius:0;color:var(--ink-400);font:400 12px/18px var(--font-ui)}
 html[data-theme="minimal"] .td-relations-types button[aria-pressed="true"]{background:none;box-shadow:inset 0 -1px 0 var(--ink-900);color:var(--ink-900)}
+/* Relation picker: no inset of its own, so tabs, search and rows share the pickers' 14px edge and 38px label column; tabs are text-width and start on that edge; 6px between tabs, search and list */
+html[data-theme="minimal"] .td-relations-pick{padding:0;gap:0}
+html[data-theme="minimal"] .td-relations-types{margin:0 14px 6px;gap:18px}
+html[data-theme="minimal"] .td-relations-types button{flex:none;padding:0}
+html[data-theme="minimal"] .td-relations-types svg{margin:0 1px}
+html[data-theme="minimal"] .td-item-picker-input{padding:0}
 /* Activity: the composer is a hairline-bottomed field; comments are rows without avatars or bubbles, author in 500, meta grey; reactions as hairline chips */
 html[data-theme="minimal"] .td-composer{padding:12px 0 8px}
 html[data-theme="minimal"] .td-mention-field-textarea{padding:6px 0;background:none;border:0;border-bottom:1px solid var(--border-divider);border-radius:0;box-shadow:none;font:400 13px/20px var(--font-ui);transition:border-color var(--duration-base,150ms) var(--ease-standard,ease)}
