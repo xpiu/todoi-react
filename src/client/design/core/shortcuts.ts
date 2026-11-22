@@ -121,6 +121,9 @@ export const SHORTCUT_SECTIONS: ReadonlyArray<ShortcutSection> = [
       [["D"], "Mark done / not done"],
       [["1", "–", "4"], "Set priority Urgent / High / Medium / Low"],
       [["0"], "Clear priority"],
+      [["A"], "Assignees — opens the picker on the Board card"],
+      [["L"], "Labels — opens the picker on the Board card"],
+      [["shift", "+", "D"], "Dates — opens the picker on the Board card"],
       [["⌫"], "Delete the item"],
     ],
   },
@@ -185,10 +188,17 @@ export const SHORTCUTS = {
     if (!noMod(e)) return null;
     const k = e.key, kk = low(e);
     if (kk === "e") return "edit";
-    if (kk === "d") return "done";
+    if (kk === "d" && !e.shiftKey) return "done";
     if (k === "Backspace" || k === "Delete") return "delete";
     if (/^[0-4]$/.test(k)) return `priority-${Number(k) as 0 | 1 | 2 | 3 | 4}`;
     return null;
+  },
+  /** Board card quick pickers: A, L, shift+D open that field's picker at its icon. Plain L never follows G (callers check the chord first). */
+  itemQuickEdit(e: KeyEvt): "assignees" | "labels" | "dates" | null {
+    if (!noMod(e)) return null;
+    const kk = low(e);
+    if (e.shiftKey) return kk === "d" ? "dates" : null;
+    return kk === "a" ? "assignees" : kk === "l" ? "labels" : null;
   },
   /** Unmodified focus movement (arrows + J/K). */
   focusMove(e: KeyEvt): FocusDir | null {

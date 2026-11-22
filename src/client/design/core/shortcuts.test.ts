@@ -25,12 +25,21 @@ describe("SHORTCUTS", () => {
     expect(SHORTCUTS.itemAction(ev("Backspace"))).toBe("delete");
     expect(SHORTCUTS.itemAction(ev("3"))).toBe("priority-3");
     expect(SHORTCUTS.itemAction(ev("d", { ctrlKey: true }))).toBeNull();
+    expect(SHORTCUTS.itemAction(ev("D", { shiftKey: true }))).toBeNull();
     expect(SHORTCUTS.focusMove(ev("ArrowDown"))).toBe("down");
     expect(SHORTCUTS.focusMove(ev("k"))).toBe("up");
     expect(SHORTCUTS.focusMove(ev("ArrowDown", { shiftKey: true }))).toBeNull();
     expect(SHORTCUTS.selectMove(ev("ArrowDown", { shiftKey: true }))).toBe("down");
     expect(SHORTCUTS.itemMove(ev("ArrowRight", { metaKey: true }))).toBe("right");
     expect(SHORTCUTS.itemMove(ev("ArrowRight"))).toBeNull();
+  });
+  it("opens the Board card quick pickers with A, L and shift+D", () => {
+    expect(SHORTCUTS.itemQuickEdit(ev("a"))).toBe("assignees");
+    expect(SHORTCUTS.itemQuickEdit(ev("l"))).toBe("labels");
+    expect(SHORTCUTS.itemQuickEdit(ev("D", { shiftKey: true }))).toBe("dates");
+    expect(SHORTCUTS.itemQuickEdit(ev("d"))).toBeNull();
+    expect(SHORTCUTS.itemQuickEdit(ev("a", { metaKey: true }))).toBeNull();
+    expect(SHORTCUTS.itemQuickEdit(ev("L", { shiftKey: true }))).toBeNull();
   });
   it("resolves the G chord", () => {
     expect(SHORTCUTS.goTarget("B")).toEqual({ view: "board" });

@@ -21,7 +21,7 @@ import { BulkBar } from "../design/core/BulkBar";
 import { EmptyState } from "../design/core/EmptyState";
 import type { IconName } from "../design/core/Icon";
 import type { SelectMode } from "../design/core/KeyNav";
-import type { ItemAction } from "../design/core/shortcuts";
+import { isTyping, SHORTCUTS, type ItemAction } from "../design/core/shortcuts";
 import { ViewSkeleton } from "../design/core/Skeleton";
 import { useTouchDrag } from "../design/core/touchDrag";
 import { ListRow } from "../design/list/ListRow";
@@ -506,7 +506,28 @@ function useCardQuickEdit(root: React.RefObject<HTMLDivElement | null>) {
     document.addEventListener("pointerdown", onDown, true);
     return () => document.removeEventListener("pointerdown", onDown, true);
   }, [rowId, cardOf]);
-  return { quick, rowId, anchor, open, close };
+  // A, L and Shift+D on a focused card open Assignees, Labels and Dates at their icons. Runs before KeyNav (its
+  // onKeyDown), so Shift+D never reaches "done"; L right after G belongs to the G chord (G then L: List view).
+  const gAt = useRef(0);
+  const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const t = e.target as HTMLElement;
+    if (isTyping(t)) return;
+    if (SHORTCUTS.is("chord-g", e)) {
+      gAt.current = e.timeStamp;
+      return;
+    }
+    const chord = gAt.current && e.timeStamp - gAt.current < 1000;
+    gAt.current = 0;
+    const k = chord ? null : SHORTCUTS.itemQuickEdit(e);
+    const card = k ? t.closest<HTMLElement>(".td-card[data-drag-id]") : null;
+    if (!k || !card) return;
+    const field: QuickField = k === "dates" ? "due" : k;
+    const icon = card.querySelector<HTMLElement>(`.td-card-qa[data-field="${field}"]`);
+    if (!icon) return;
+    e.preventDefault();
+    open(card.dataset.dragId!, field, icon, "key");
+  };
+  return { quick, rowId, anchor, open, close, onKey };
 }
 
 /** Raw immutable item records and stable callbacks let unchanged cards skip a board update. */
@@ -565,7 +586,7 @@ function ProjectBoard(props: ViewProps) {
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
     <>
-      <BoardView ref={root} onAddList={() => actions.addList()} after={v.hiddenMenu} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps}>
+      <BoardView ref={root} onAddList={() => actions.addList()} after={v.hiddenMenu} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} onKeyDown={qe.onKey} rootProps={v.dnd.rootProps}>
         {v.lists.map((list) => {
           const rows = v.rowsOf(list.id);
           return (
