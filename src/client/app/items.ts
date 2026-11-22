@@ -7,6 +7,7 @@ import type { RowLabel, RowPerson, RowPriority } from "../design/list/ListRow";
 import type { DueState } from "../design/board/DueDatePill";
 import { attachmentUrl } from "../data/attachments";
 import { SAMPLE_COVERS } from "../design/covers";
+import type { PickableItem } from "../design/core/ItemPicker";
 
 export const PRIORITY_LABEL: Record<ItemPriority, RowPriority> = { URGENT: "Urgent", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
 
@@ -120,4 +121,14 @@ export function rowsByList(items: Item[], opts: RowOptions, toRow = itemRowMappe
 /** Items of one list as row models: top-level rows in position order, each with its subitems. */
 export function rowsForList(items: Item[], listId: string, opts: RowOptions): RowModel[] {
   return rowsByList(items.filter((it) => it.listId === listId), opts).get(listId) ?? [];
+}
+
+/** A project's top-level items for an ItemPicker (relations, "Make subitem of"), in board order: list by list, then position. */
+export function pickableItems(items: Item[], project: { keyPrefix: string; lists: ReadonlyArray<{ id: string; name: string }> }): PickableItem[] {
+  const listIndex = new Map(project.lists.map((l, i) => [l.id, i]));
+  const listName = new Map(project.lists.map((l) => [l.id, l.name]));
+  return items
+    .filter((it) => !it.parentItemId)
+    .sort((a, b) => (listIndex.get(a.listId) ?? 1e9) - (listIndex.get(b.listId) ?? 1e9) || a.position - b.position)
+    .map((it) => ({ id: it.id, title: it.title, itemId: keyOf(it, project.keyPrefix), listName: listName.get(it.listId), status: it.status, done: it.done }));
 }

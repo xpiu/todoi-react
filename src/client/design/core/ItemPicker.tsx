@@ -1,8 +1,9 @@
 // ItemPicker — search-and-pick one item (by key, title or list). Panel body only: mount it inside a
 // Popover or a Dialog. Rows: status glyph · mono key · title (struck when done) · list name. Enter
 // picks the highlighted match, ↑↓ move it from the field. Spec: DESIGN.md › Relations, Subitems.
-import { useId, useState, type KeyboardEvent, type RefObject } from "react";
+import { useId, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 
+import { Dialog } from "./Dialog";
 import { Icon, type IconName } from "./Icon";
 import { STATUSES } from "./statuses";
 import "./ItemPicker.css";
@@ -116,5 +117,25 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
         <div className="td-menu-note">{emptyText}</div>
       )}
     </div>
+  );
+}
+
+/** "Make subitem of": pick the parent an item moves under (the overlay ⋯ and a board card's ⋯ › Convert to). */
+export function MakeSubitemDialog({ open, onClose, items, onPick, title = "Make subitem of" }: { open: boolean; onClose: () => void; items: PickableItem[]; onPick: (parent: PickableItem) => void; title?: string }) {
+  const searchRef = useRef<HTMLInputElement>(null);
+  return (
+    <Dialog open={open} onClose={onClose} title={title} width={360} initialFocus={searchRef}>
+      <ItemPicker
+        items={items}
+        autoFocus={false}
+        inputRef={searchRef}
+        placeholder="Search items…"
+        onPick={(t) => {
+          onClose();
+          onPick(t);
+        }}
+      />
+      <div className="td-menu-note">This item moves under the picked item as a subitem; its key stays.</div>
+    </Dialog>
   );
 }

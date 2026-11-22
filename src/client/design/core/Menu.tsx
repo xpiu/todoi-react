@@ -14,6 +14,7 @@ import { useViewport } from "./viewport";
 import "./Popover.css";
 import "./kbd.css";
 import "./Menu.css";
+import "./ProjectPicker.css";
 
 export interface MenuItemProps {
   /** 15px glyph, --ink-600 (currentColor on danger rows) */
@@ -98,6 +99,18 @@ export function MenuGroup({ children }: { children?: ReactNode }) {
     <InMenuGroup value>
       <BaseMenu.Group className="td-menu-group">{children}</BaseMenu.Group>
     </InMenuGroup>
+  );
+}
+
+/** A drill view's head inside a menu: Back (a menu row, so arrow keys reach it) and the view's title (the group label). Render it first inside MenuGroup. */
+export function MenuDrillHead({ title, onBack }: { title: ReactNode; onBack: () => void }) {
+  return (
+    <div className="td-project-picker-head">
+      <BaseMenu.Item nativeButton closeOnClick={false} onClick={onBack} render={<IconButton name="arrow-left" label="Back" size={22} iconSize={13} />} />
+      <BaseMenu.GroupLabel render={<span />} className="td-project-picker-head-title">
+        {title}
+      </BaseMenu.GroupLabel>
+    </div>
   );
 }
 

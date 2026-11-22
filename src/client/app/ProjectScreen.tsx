@@ -2,14 +2,16 @@
 // also carries the filters and sort; selection lives here so it survives a view switch.
 // Spec: DESIGN.md › Views, Filtering, Selection.
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 
 import type { ItemStatus } from "../../shared/item-status";
 import { ApiError, type Item, type Label, type ProjectDetail } from "../data/api";
 import { newId } from "../data/mutations";
 import { useLabels, useProject, useProjectItems } from "../data/queries";
 import { BoardView } from "../design/board/BoardView";
-import { ItemCard } from "../design/board/ItemCard";
+import { ItemCard, type CardMenuAction } from "../design/board/ItemCard";
+import type { BulkOption } from "../design/core/BulkBar";
+import { MakeSubitemDialog } from "../design/core/ItemPicker";
 import { ListColumn } from "../design/board/ListColumn";
 import { useItemDnd, type ItemDnd } from "../design/board/useItemDnd";
 import { isReadOnly } from "../design/auth/GuestBar";
@@ -27,7 +29,7 @@ import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { filterViewItems, itemComparator, sortLists } from "./filters";
-import { coverOf, itemRowMapper, rowsByList, rowsForList } from "./items";
+import { coverOf, itemRowMapper, pickableItems, rowsByList, rowsForList } from "./items";
 import { ConfirmDialog } from "../design/core/Dialog";
 import { statusById } from "../design/core/statuses";
 import { count } from "../design/core/text";
@@ -141,7 +143,10 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   // Files dropped on a card or row attach to that item.
   const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files, items.find((it) => it.id === id)?.title), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
-  const [transfer, setTransfer] = useState<TransferKind | null>(null);
+  // Move / Copy to another project: the selection (BulkBar) or one card (its ⋯ › Move to)
+  const [transfer, setTransfer] = useState<{ kind: TransferKind; ids: string[] } | null>(null);
+  // A card's ⋯ › Convert to › Subitem of another item…
+  const [subitemFor, setSubitemFor] = useState<Item | null>(null);
   // A new Status role on a list with items waits for the review: existing items, or future moves only.
   const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
   const picker = useProjectPicker(projectId);
@@ -235,7 +240,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           actions={actions.bulkActions(selectedIds)}
           onAction={(id, value) => {
             if (id === "move" && (value === "__move" || value === "__copy")) {
-              setTransfer(value === "__copy" ? "copy" : "move");
+              setTransfer({ kind: value === "__copy" ? "copy" : "move", ids: selectedIds });
               return;
             }
             if (actions.bulk(id, value, selectedIds)) setSelectedIds([]);
@@ -243,10 +248,18 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           onClear={() => setSelectedIds([])}
         />
       ) : null}
-      <TransferDialog kind={transfer} onClose={() => setTransfer(null)} projects={picker.projects} count={selectedIds.length} loadLists={picker.loadLists} onPick={(kind, proj, list) => {
-        void actions.transfer(selectedIds, proj, list, kind === "copy");
-        if (kind === "move") setSelectedIds([]);
+      <TransferDialog kind={transfer?.kind ?? null} onClose={() => setTransfer(null)} projects={picker.projects} count={transfer?.ids.length ?? 1} loadLists={picker.loadLists} onPick={(kind, proj, list) => {
+        const ids = transfer?.ids ?? [];
+        void actions.transfer(ids, proj, list, kind === "copy");
+        if (kind === "move") setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
       }} />
+      <MakeSubitemDialog
+        open={!!subitemFor}
+        title="Convert to subitem of"
+        onClose={() => setSubitemFor(null)}
+        items={subitemFor ? pickableItems(items, project).filter((p) => p.id !== subitemFor.id) : []}
+        onPick={(parent) => subitemFor && actions.makeSubitemOf(subitemFor, parent)}
+      />
     </>
   );
   const requestRole = (list: VisibleList, role: ItemStatus | null) => {
@@ -276,7 +289,24 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   );
   const hiddenMenu = <HiddenListsMenu lists={actions.hiddenLists.map((l) => ({ id: l.id, name: l.name, count: totals.get(l.id) ?? 0 }))} onShow={actions.showLists} />;
   const isSelected = (id: string) => selectedIds.includes(id);
-  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
+  // A board card's ⋯ menu, on the existing item actions: Rename opens the item with its title in edit (the E key),
+  // Move to reuses the BulkBar's list move and project transfer, Duplicate / Archive / Convert to the overlay's.
+  const cardMenuRef = useRef<(it: Item, action: CardMenuAction, value?: string) => void>(() => {});
+  useLayoutEffect(() => {
+    cardMenuRef.current = (it, action, value) => {
+      if (action === "Rename") openItem(it.id, true);
+      else if (action === "Move to" && (value === "__move" || value === "__copy")) setTransfer({ kind: value === "__copy" ? "copy" : "move", ids: [it.id] });
+      else if (action === "Move to" && value && value !== it.listId) actions.bulk("move", value, [it.id]);
+      else if (action === "Duplicate") void actions.copyItems([it.id], { projectId, listId: it.listId, name: null });
+      else if (action === "Convert to") setSubitemFor(it);
+      else if (action === "Archive") actions.archive(it);
+      else if (action === "Delete") void actions.remove(it.id);
+    };
+  });
+  const onCardMenu = useCallback((it: Item, action: CardMenuAction, value?: string) => cardMenuRef.current(it, action, value), []);
+  const { moveOptions } = actions;
+  const moveOptionsByList = useMemo(() => new Map(lists.map((l) => [l.id, moveOptions(l.id)])), [lists, moveOptions]);
+  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -391,14 +421,15 @@ function ProjectList(props: ViewProps) {
 }
 
 /** Raw immutable item records and stable callbacks let unchanged cards skip a board update. */
-const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, selected, onClick, onDelete, onQuickAction }: {
+const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, selected, onClick, onMenu, moveOptions, onQuickAction }: {
   item: Item;
   toRow: ReturnType<typeof itemRowMapper>;
   subitemTotal: number;
   subitemDone: number;
   selected: boolean;
   onClick: (id: string, listId: string, e: SyntheticEvent) => void;
-  onDelete: ProjectActions["remove"];
+  onMenu: (it: Item, action: CardMenuAction, value?: string) => void;
+  moveOptions?: BulkOption[];
   onQuickAction: (id: string, field: OverlayField) => void;
 }) {
   const r = toRow(item);
@@ -418,7 +449,8 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
     onClick={(e) => onClick(item.id, item.listId, e)}
     cover={coverOf(item)}
     badges={{ description: !!item.description, attachments: r.attachments, checklist: subitemTotal ? { done: subitemDone, total: subitemTotal } : undefined }}
-    onMenuAction={(action) => { if (action === "Delete") void onDelete(item.id); }}
+    onMenuAction={(action, _id, value) => onMenu(item, action, value)}
+    moveOptions={moveOptions}
     created={formatDate(item.createdAt, { year: "auto" })}
     onQuickAction={(field) => onQuickAction(item.id, field)}
   />;
@@ -448,7 +480,8 @@ function ProjectBoard(props: ViewProps) {
                     subitemDone={r.subitems.filter((s) => s.done).length}
                     selected={v.isSelected(r.id)}
                     onClick={v.onItemClick}
-                    onDelete={actions.remove}
+                    onMenu={v.onCardMenu}
+                    moveOptions={v.moveOptionsByList.get(it.listId)}
                     onQuickAction={props.openItemField}
                   />
                 );

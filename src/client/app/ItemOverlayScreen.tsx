@@ -12,7 +12,6 @@ import { attachmentUrl, useAttachmentMutations } from "../data/attachments";
 import { downloadText, fileSlug, itemToMarkdown, itemsToCsv } from "./exportData";
 import { useProjectActions } from "./useProjectActions";
 import { useProjectPicker } from "./useProjectPicker";
-import type { PickableItem } from "../design/core/ItemPicker";
 import { formatDate, formatRelative } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import type { AttachmentFile } from "../design/overlay/Attachments";
@@ -22,7 +21,7 @@ import { MissingItem } from "./MissingItem";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
 import { snapshotUndo } from "./snapshotUndo";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
-import { avatarColorVar, coverOf, dueStateOf, keyOf, type Person } from "./items";
+import { avatarColorVar, coverOf, dueStateOf, keyOf, pickableItems, type Person } from "./items";
 import { useToday } from "./today";
 import { peopleOf, useCurrentUser, type ItemContainer } from "./session";
 
@@ -92,9 +91,7 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
 
   const listName = (id: string) => project.lists.find((l) => l.id === id)?.name;
   const subitems = items.filter((it) => it.parentItemId === item.id).sort((a, b) => a.position - b.position);
-  // Board order (list by list, then position), as Design lists them in the relation and move pickers
-  const listIndex = new Map(project.lists.map((l, i) => [l.id, i]));
-  const projectItems: PickableItem[] = items.filter((it) => !it.parentItemId).sort((a, b) => (listIndex.get(a.listId) ?? 1e9) - (listIndex.get(b.listId) ?? 1e9) || a.position - b.position).map((it) => ({ id: it.id, title: it.title, itemId: keyOf(it, project.keyPrefix), listName: listName(it.listId), status: it.status, done: it.done }));
+  const projectItems = pickableItems(items, project);
   const overlayItem: OverlayItem = {
     id: item.id,
     itemId: keyOf(item, project.keyPrefix),
@@ -209,15 +206,13 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       onDeleteComment={(id) => deleteComment.mutate({ id })}
       onReactComment={(id, emoji) => reactComment.mutate({ id, emoji })}
       onMakeSubitemOf={(parent) => {
-        updateItem.mutate({ id: item.id, parentItemId: parent.id });
-        notify({ message: `${quote(item.title)} is now a subitem of ${parent.itemId ?? parent.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id: item.id, before: { parentItemId: null }, after: { parentItemId: parent.id }, restore: () => updateItem.mutateAsync({ id: item.id, parentItemId: null, quiet: true }) }]) });
+        actions.makeSubitemOf(item, parent);
         onClose();
       }}
       onMenuAction={(action) => {
         if (action === "duplicate") void actions.copyItems([item.id], { projectId, listId: item.listId, name: null });
         else if (action === "archive") {
-          patch({ archived: true });
-          notify({ message: `Archived ${quote(item.title)}`, icon: "archive", restore: () => updateItem.mutateAsync({ id: item.id, archived: false, quiet: true }) });
+          actions.archive(item);
           onClose();
         } else if (action === "delete") {
           void actions.remove(item.id);

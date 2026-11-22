@@ -20,7 +20,7 @@ import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { InlineError } from "../core/InlineError";
 import { Skeleton } from "../core/Skeleton";
-import { ItemPicker, type PickableItem } from "../core/ItemPicker";
+import { MakeSubitemDialog, type PickableItem } from "../core/ItemPicker";
 import { LabelPicker, type LabelDraft, type PickableLabel } from "../core/LabelPicker";
 import { MemberPicker, type PickableMember } from "../core/MemberPicker";
 import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
@@ -30,7 +30,6 @@ import { Select } from "../core/Select";
 import { SHORTCUTS } from "../core/shortcuts";
 import { STATUSES } from "../core/statuses";
 import { TextField } from "../core/TextField";
-import { Dialog } from "../core/Dialog";
 import { Checklist, ChecklistAddRow, type ChecklistItem } from "./Checklist";
 import { Comment, type CommentReaction } from "./Comment";
 import { CommentComposer, mentionHandle, type MentionMember } from "./CommentComposer";
@@ -216,7 +215,6 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const [query, setQuery] = useState("");
   const [linkCopied, copy] = useCopy(900);
   const [subitemOf, setSubitemOf] = useState(false);
-  const subitemSearchRef = useRef<HTMLInputElement>(null);
   const [transfer, setTransfer] = useState<TransferKind | null>(null);
   const [menuView, setMenuView] = useState<"main" | "export">("main");
   const pickerRef = useRef<(() => void) | null>(null);
@@ -572,19 +570,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
         </div>
       </div>
       <TransferDialog kind={transfer} onClose={() => setTransfer(null)} projects={p.projects ?? []} loadLists={p.loadLists} onPick={(kind, proj, list) => (kind === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list)} />
-      <Dialog open={subitemOf} onClose={() => setSubitemOf(false)} title="Make subitem of" width={360} initialFocus={subitemSearchRef}>
-        <ItemPicker
-          items={others}
-          autoFocus={false}
-          inputRef={subitemSearchRef}
-          placeholder="Search items…"
-          onPick={(t) => {
-            setSubitemOf(false);
-            p.onMakeSubitemOf?.(t);
-          }}
-        />
-        <div className="td-menu-note">This item moves under the picked item as a subitem; its key stays.</div>
-      </Dialog>
+      <MakeSubitemDialog open={subitemOf} onClose={() => setSubitemOf(false)} items={others} onPick={(t) => p.onMakeSubitemOf?.(t)} />
     </Modal>
   );
 }

@@ -46,8 +46,9 @@
     margin: 0 calc(-1 * var(--sp-1));
     padding: 0 var(--sp-1);
   }
-  /* A note under the lists uses the panel's width (Menu caps notes at 220px: three lines in the 380px move dialog) */
-  .td-picker-list ~ .td-menu-note {
+  /* A note under the lists (or under an ItemPicker in a dialog) uses the panel's width (Menu caps notes at 220px: three lines in the 380px move dialog) */
+  .td-picker-list ~ .td-menu-note,
+  .td-item-picker ~ .td-menu-note {
     max-width: none;
     text-wrap: pretty;
   }

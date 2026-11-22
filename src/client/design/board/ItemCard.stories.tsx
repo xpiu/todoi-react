@@ -53,6 +53,35 @@ export const DetailsRow: Story = {
   },
 };
 
+export const MenuDrills: Story = {
+  args: {
+    moveOptions: [
+      { value: "l1", label: "New", icon: "circle-dashed", checked: true },
+      { value: "l2", label: "Doing", icon: "circle-dot" },
+      { value: null, label: "", divider: true },
+      { value: "__move", label: "Move to another project…", icon: "folder-input" },
+      { value: "__copy", label: "Copy to another project…", icon: "folder-output" },
+    ],
+  },
+  parameters: { docs: { description: { story: "Move to and Convert to drill into a view inside the same menu (Back returns): the project's lists with the current one checked, then another project; Convert to › Subitem of another item…" } } },
+  async play({ args, canvas, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    canvas.getByRole("listitem").focus();
+    await userEvent.click(canvas.getByRole("button", { name: "Item options" }));
+    await userEvent.click(await page.findByRole("menuitem", { name: "Move to" }));
+    const menu = await page.findByRole("menu");
+    await expect(within(menu).getByText("Move to", { selector: ".td-project-picker-head-title" })).toBeInTheDocument();
+    await userEvent.click(within(menu).getByText("Doing"));
+    await expect(args.onMenuAction).toHaveBeenCalledWith("Move to", "HE-115", "l2");
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+    canvas.getByRole("listitem").focus();
+    await userEvent.click(await canvas.findByRole("button", { name: "Item options" }));
+    await userEvent.click(await page.findByRole("menuitem", { name: "Convert to" }));
+    await userEvent.click(await page.findByRole("menuitem", { name: /Subitem of another item/ }));
+    await expect(args.onMenuAction).toHaveBeenCalledWith("Convert to", "HE-115", "subitem");
+  },
+};
+
 export const CrowdedMetadata: Story = {
   args: {
     due: "Oct 20, 2026", repeat: "Every week", priority: "High", status: "DOING",

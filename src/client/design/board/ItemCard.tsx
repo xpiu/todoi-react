@@ -1,12 +1,13 @@
 // ItemCard — a board item: optional cover, title (green check when done), compact labels, a badge row
 // (description, due, repeat, subitems progress, attachments, priority, avatars) with the mono key
 // pinned right, and a hover ⋯ menu. Spec: DESIGN.md › Board, Item keys.
-import { useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type SyntheticEvent } from "react";
+import { Fragment, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type SyntheticEvent } from "react";
 
 import { Avatar } from "../core/Avatar";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
-import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
+import type { BulkOption } from "../core/BulkBar";
+import { MenuDivider, MenuDrillHead, MenuGroup, MenuItem, MenuPopover } from "../core/Menu";
 import { PRIORITY_COLORS } from "../core/priorities";
 import { StatusChip } from "../core/StatusChip";
 import { tipProps } from "../core/Tooltip";
@@ -59,7 +60,10 @@ export interface ItemCardProps {
   /** Makes the card draggable (data-drag-id) */
   dragId?: string;
   onClick?: (e: SyntheticEvent) => void;
-  onMenuAction?: (action: CardMenuAction, itemId: string) => void;
+  /** A menu choice. "Move to" carries the picked list id (or "__move" / "__copy" for another project); "Convert to" carries "subitem" */
+  onMenuAction?: (action: CardMenuAction, itemId: string, value?: string) => void;
+  /** The Move to choices (the BulkBar's): with them, Move to drills into this list instead of firing at once */
+  moveOptions?: BulkOption[];
   /** "Aug 12": shown in the details row the ⋯ menu expands */
   created?: string;
   /** A details-row quick action (Due date, Start date, Assignees, Labels, Priority, Status); without it the row has no buttons */
@@ -106,7 +110,9 @@ function ItemKey({ itemId }: { itemId?: string }) {
 
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
-export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, created, onQuickAction, style }: ItemCardProps) {
+export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, created, onQuickAction, style }: ItemCardProps) {
+  // The ⋯ menu's drill views (Design: the overlay ⋯ drills the same way): Move to › a list or another project, Convert to › subitem
+  const [menuView, setMenuView] = useState<"main" | "move" | "convert">("main");
   // Opening the ⋯ menu also expands the details row under the card (Design: ItemCard). Closing the menu collapses it,
   // unless the press that closed it landed in the row: that press is a quick action, which collapses it itself.
   const [expanded, setExpanded] = useState(false);
@@ -218,15 +224,50 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
       </div>
       {itemId && onMenuAction ? (
         <span className="td-card-more-anchor" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-          <MenuPopover label="Item options" tier="detached" placement={hasDetails ? "right-start" : "bottom-end"} width={184} onOpenChange={hasDetails ? onMenuOpenChange : undefined} trigger={<button {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}>
-            {MENU_ITEMS.map(([icon, label]) => (
-              <span key={label}>
-                {label === "Delete" ? <MenuDivider /> : null}
-                <MenuItem icon={icon} danger={label === "Delete"} onSelect={() => onMenuAction(label, itemId)}>
-                  {label}
+          <MenuPopover
+            label="Item options"
+            tier="detached"
+            placement={hasDetails ? "right-start" : "bottom-end"}
+            width={menuView === "main" ? 184 : 224}
+            onOpenChange={(open) => {
+              if (!open) setMenuView("main");
+              if (hasDetails) onMenuOpenChange(open);
+            }}
+            trigger={<button {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}
+          >
+            {menuView === "move" && moveOptions ? (
+              <MenuGroup>
+                <MenuDrillHead title="Move to" onBack={() => setMenuView("main")} />
+                {moveOptions.map((o, i) =>
+                  o.divider ? (
+                    <MenuDivider key={`d${i}`} />
+                  ) : (
+                    <MenuItem key={o.value ?? i} icon={o.icon} iconColor={o.iconColor} checked={o.checked} disabled={o.checked} onSelect={() => o.value && onMenuAction("Move to", itemId, o.value)}>
+                      {o.label}
+                    </MenuItem>
+                  ),
+                )}
+              </MenuGroup>
+            ) : menuView === "convert" ? (
+              <MenuGroup>
+                <MenuDrillHead title="Convert to" onBack={() => setMenuView("main")} />
+                <MenuItem icon="corner-down-right" onSelect={() => onMenuAction("Convert to", itemId, "subitem")}>
+                  Subitem of another item…
                 </MenuItem>
-              </span>
-            ))}
+              </MenuGroup>
+            ) : (
+              MENU_ITEMS.map(([icon, label]) => {
+                const drillTo = label === "Move to" && moveOptions ? "move" : label === "Convert to" ? "convert" : null;
+                return (
+                  <Fragment key={label}>
+                    {label === "Delete" ? <MenuDivider /> : null}
+                    <MenuItem icon={icon} danger={label === "Delete"} drill={!!drillTo} onSelect={() => (drillTo ? setMenuView(drillTo) : onMenuAction(label, itemId))}>
+                      {label}
+                    </MenuItem>
+                  </Fragment>
+                );
+              })
+            )}
           </MenuPopover>
         </span>
       ) : null}

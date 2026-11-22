@@ -13,7 +13,7 @@ import { newId, scopeOf, useCreateItem, useCreateList, useDeleteItem, useDuplica
 import { listIconFor } from "../design/board/listIcons";
 import { daysBetweenISO, formatDate, formatDateRange, shiftISO } from "../design/core/dates";
 import type { DropTarget } from "../design/board/useItemDnd";
-import type { BulkAction } from "../design/core/BulkBar";
+import type { BulkAction, BulkOption } from "../design/core/BulkBar";
 import { PRIORITY_COLORS } from "../design/core/priorities";
 import type { QuickAddResult } from "../design/core/quickAdd";
 import type { ItemAction } from "../design/core/shortcuts";
@@ -312,10 +312,12 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     );
 
   /** The BulkBar's actions for the current selection. */
+  /** The Move to choices (BulkBar, a board card's ⋯): this project's visible lists, then another project. */
+  const moveOptions = useCallback((currentListId?: string): BulkOption[] => [...lists.map((l) => ({ value: l.id, label: l.name, checked: l.id === currentListId, icon: listIconFor(l.name).icon, iconColor: listIconFor(l.name).color })), { value: null, label: "", divider: true }, { value: "__move", label: "Move to another project…", icon: "folder-input" }, { value: "__copy", label: "Copy to another project…", icon: "folder-output" }], [lists]);
   const bulkActions = (selectedIds: string[]): BulkAction[] => {
     const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
     return [
-      { id: "move", label: "Move to", icon: "arrow-right", options: [...lists.map((l) => ({ value: l.id, label: l.name, icon: listIconFor(l.name).icon, iconColor: listIconFor(l.name).color })), { value: null, label: "", divider: true }, { value: "__move", label: "Move to another project…", icon: "folder-input" }, { value: "__copy", label: "Copy to another project…", icon: "folder-output" }] },
+      { id: "move", label: "Move to", icon: "arrow-right", options: moveOptions() },
       { id: "priority", label: "Priority", icon: "flag", options: [...PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABEL[p], icon: "flag" as const, iconColor: PRIORITY_COLORS[PRIORITY_LABEL[p]] })), { value: null, label: "None", icon: "flag-off" }] },
       { id: "label", label: "Label", icon: "tag", options: labels.map((l) => ({ value: l.id, label: l.name, swatch: `var(--label-${l.color})`, checked: sel.length > 0 && sel.every((it) => it.labelIds.includes(l.id)) })) },
       { id: "assign", label: "Assign", icon: "user-plus", options: [...people.map((p) => ({ value: p.id, label: p.name, icon: "user" as const })), { value: null, label: "Unassigned", icon: "user-x" }] },
@@ -338,7 +340,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
         if (!moved) return;
         const dest = project.lists.find((l) => l.id === value);
         const status = dest?.statusRole && project.linkStatuses ? ` — Statuses set to ${statusName(dest.statusRole)}` : "";
-        const base = `Moved ${count(moved.length, "item")} to ${listName(value)}`;
+        const base = `Moved ${moved.length === 1 ? quote(moved[0]!.it.title) : count(moved.length, "item")} to ${listName(value)}`;
         notify({ message: base + status, history: base, icon: "arrow-right", restore: snapshotUndo([...moved].reverse().map(({ it, result }) => ({ id: it.id, ...moveSnapshot(it, result.forward.item), restore: () => moveItem.mutateAsync({ id: it.id, listId: it.listId, position: result.at, quiet: true }) }))) });
       });
       return true;
@@ -372,6 +374,16 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   };
 
   const rename = (id: string, title: string) => updateItem.mutate({ id, title });
+  /** Archive one item; the toast brings it back (the overlay ⋯ and a board card's ⋯) */
+  const archive = (it: Item) => {
+    updateItem.mutate({ id: it.id, archived: true });
+    notify({ message: `Archived ${quote(it.title)}`, icon: "archive", restore: () => updateItem.mutateAsync({ id: it.id, archived: false, quiet: true }) });
+  };
+  /** Turn an item into a subitem of another (its key stays); the toast makes it an item again */
+  const makeSubitemOf = (it: Item, parent: { id: string; itemId?: string; title: string }) => {
+    updateItem.mutate({ id: it.id, parentItemId: parent.id });
+    notify({ message: `${quote(it.title)} is now a subitem of ${parent.itemId ?? parent.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id: it.id, before: { parentItemId: null }, after: { parentItemId: parent.id }, restore: () => updateItem.mutateAsync({ id: it.id, parentItemId: null, quiet: true }) }]) });
+  };
 
-  return { lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, bulk, reschedule, addItemOn, transfer, copyItems, rename };
+  return { lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
 }

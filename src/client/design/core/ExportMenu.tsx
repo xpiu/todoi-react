@@ -1,11 +1,9 @@
 // ExportMenu — export an item or a view: PDF · Markdown · CSV rows with the extension as a mono
 // trail, one summary note, an optional Print row. Menu rows, so it lives inside an existing menu
 // (a ⋯ drill view) or behind ExportButton. Spec: DESIGN.md › Export & print.
-import { Menu as BaseMenu } from "@base-ui/react/menu";
 
 import type { IconName } from "./Icon";
-import { IconButton } from "./IconButton";
-import { MenuButton, MenuDivider, MenuGroup, MenuItem, MenuNote } from "./Menu";
+import { MenuButton, MenuDivider, MenuDrillHead, MenuGroup, MenuItem, MenuNote } from "./Menu";
 import "./ProjectPicker.css";
 import "./ExportMenu.css";
 
@@ -77,12 +75,7 @@ export function ExportMenu({ scope = "view", count, filtered, view, subitems, co
   // Drill view: Back is a menu row (arrow keys reach it) and the title names the group of export rows.
   return (
     <MenuGroup>
-      <div className="td-project-picker-head">
-        <BaseMenu.Item nativeButton closeOnClick={false} onClick={onBack} render={<IconButton name="arrow-left" label="Back" size={22} iconSize={13} />} />
-        <BaseMenu.GroupLabel render={<span />} className="td-project-picker-head-title">
-          {title}
-        </BaseMenu.GroupLabel>
-      </div>
+      <MenuDrillHead title={title} onBack={onBack} />
       {rows}
     </MenuGroup>
   );
