@@ -85,6 +85,20 @@ export const MenuDrills: Story = {
   },
 };
 
+export const KeyboardOpensMenu: Story = {
+  parameters: { docs: { description: { story: "Shift+F10 (or the menu key) on the focused card opens its ⋯ menu; Esc closes it and focus returns to the ⋯." } } },
+  async play({ args, canvas, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    canvas.getByRole("listitem").focus();
+    await userEvent.keyboard("{Shift>}{F10}{/Shift}");
+    const menu = await page.findByRole("menu", { name: "Item options" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Duplicate" }));
+    await expect(args.onMenuAction).toHaveBeenCalledWith("Duplicate", "HE-115");
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+    await expect(args.onClick).not.toHaveBeenCalled();
+  },
+};
+
 export const CrowdedMetadata: Story = {
   args: {
     due: "Oct 20, 2026", repeat: "Every week", priority: "High", status: "DOING",

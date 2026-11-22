@@ -120,6 +120,8 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
   // unless the press that closed it landed in the row (a quick action collapses it itself) or Tab left the menu: the
   // row's first quick action is then the next stop, and the row stays until focus leaves the card.
   const [expanded, setExpanded] = useState(false);
+  // Controlled so the keyboard can open it: Shift+F10 or the menu key on the focused card (DESIGN › Keyboard)
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
   const menuOpen = useRef(false);
   const pressInRow = useRef(false);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -184,6 +186,10 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
         if ((e.key === "Enter" || e.key === " ") && onClick && e.target === e.currentTarget) {
           e.preventDefault();
           onClick(e);
+        } else if ((e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) && itemId && onMenuAction && e.target === e.currentTarget) {
+          e.preventDefault();
+          setMenuIsOpen(true);
+          if (hasDetails) onMenuOpenChange(true);
         }
       }}
       // Minimal reserves a slot for the key at the end of the meta words; its width is the key length in mono characters
@@ -266,7 +272,9 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             tier="detached"
             placement={hasDetails ? "right-start" : "bottom-end"}
             width={menuView === "main" ? (subitemBlocked ? 252 : 184) : 224}
+            open={menuIsOpen}
             onOpenChange={(open, reason) => {
+              setMenuIsOpen(open);
               if (!open) setMenuView("main");
               if (hasDetails) onMenuOpenChange(open, reason);
             }}

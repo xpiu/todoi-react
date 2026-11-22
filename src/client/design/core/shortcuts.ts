@@ -117,6 +117,7 @@ export const SHORTCUT_SECTIONS: ReadonlyArray<ShortcutSection> = [
     title: "Edit the focused item",
     rows: [
       [["E"], "Rename — opens the item with the title ready to edit"],
+      [["shift", "+", "F10"], "Item menu — rename, move, duplicate, archive (on a board card; the menu key works too)"],
       [["D"], "Mark done / not done"],
       [["1", "–", "4"], "Set priority Urgent / High / Medium / Low"],
       [["0"], "Clear priority"],
