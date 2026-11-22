@@ -8,7 +8,7 @@ import { LabelChip } from "../board/LabelChip";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
-import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
+import { Popover, usePickerOpen, type PickerOpenProps, type PopoverPlacement, type PopoverTier } from "./Popover";
 import { labelWithValue } from "./text";
 import "./ItemPicker.css";
 import "./LabelPicker.css";
@@ -95,9 +95,7 @@ function LabelForm({ initial, labels, onSave, onCancel, onDelete }: { initial: {
   );
 }
 
-export interface LabelPickerProps {
-  /** Open on mount (a card quick action opens the overlay with this picker open) */
-  defaultOpen?: boolean;
+export interface LabelPickerProps extends PickerOpenProps {
   labels: ReadonlyArray<PickableLabel>;
   /** Selected label ids */
   value: string[];
@@ -115,8 +113,8 @@ export interface LabelPickerProps {
   "aria-label"?: string;
 }
 
-export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabel, onDeleteLabel, placeholder = "Labels", tier = "menu", placement = "bottom-start", width = 248, block, disabled, defaultOpen = false, ...rest }: LabelPickerProps) {
-  const pop = usePopover(defaultOpen);
+export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabel, onDeleteLabel, placeholder = "Labels", tier = "menu", placement = "bottom-start", width = 248, block, disabled, open, onOpenChange, defaultOpen = false, anchorRef, id, ...rest }: LabelPickerProps) {
+  const pop = usePickerOpen({ open, onOpenChange, defaultOpen });
   const [q, setQ] = useState("");
   const [edit, setEdit] = useState<{ label?: PickableLabel; draftName?: string } | null>(null);
   const label = rest["aria-label"] ?? "Labels";
@@ -141,8 +139,8 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
   return (
     <Popover
       open={pop.open}
-      onOpenChange={(o) => {
-        pop.setOpen(o);
+      onOpenChange={(o, reason) => {
+        pop.setOpen(o, reason);
         if (!o) {
           setQ("");
           setEdit(null);
@@ -154,8 +152,10 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
       role="dialog"
       aria-label={label}
       block={block}
+      anchorRef={anchorRef}
+      id={id}
       trigger={
-        <Button variant="outline" icon="tag" disabled={disabled} aria-label={labelWithValue(label, picked.length ? picked.map((l) => l.name).join(", ") : placeholder)} data-block={block ? "true" : undefined} className="td-aside-btn">
+        anchorRef ? undefined : <Button variant="outline" icon="tag" disabled={disabled} aria-label={labelWithValue(label, picked.length ? picked.map((l) => l.name).join(", ") : placeholder)} data-block={block ? "true" : undefined} className="td-aside-btn">
           <span className="td-label-picker-value" data-placeholder={picked.length ? undefined : "true"}>
             {/* The spaces keep the names apart as text (the flex row drops them visually). */}
             {picked.length

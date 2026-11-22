@@ -10,7 +10,7 @@ import { DateCalendar, type WeekStart } from "./DateCalendar";
 import { dateConventions, formatDate, formatDateRange, formatTime, parseDateValue, parseTime, resolveDate, toISO, type DateInput } from "./dates";
 import { DateTrigger, QUICK_PICKS } from "./DatePicker";
 import { Icon, type IconName } from "./Icon";
-import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
+import { Popover, usePickerOpen, type PickerOpenProps, type PopoverCloseReason, type PopoverPlacement, type PopoverTier } from "./Popover";
 import "./DatePicker.css";
 
 export interface DatesValue {
@@ -20,7 +20,7 @@ export interface DatesValue {
   time: string | null;
 }
 
-export interface DatesPickerProps {
+export interface DatesPickerProps extends PickerOpenProps {
   start?: string | null;
   due?: string | null;
   time?: string | null;
@@ -47,10 +47,10 @@ export interface DatesPickerProps {
   "aria-label"?: string;
   title?: string;
   trigger?: (open: boolean, value: { start: Date | null; due: Date | null; time: string | null }) => ReactNode;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  /** The field that takes the typing when it opens on mount @default "due" */
+  /** The field that takes the typing when it opens (a Start date quick action opens on Start) @default "due" */
   defaultField?: "start" | "due";
+  /** Bottom sheet on phones ("auto"); false keeps the anchored card on every device @default false */
+  sheet?: boolean | "auto";
   style?: CSSProperties;
   className?: string;
 }
@@ -77,32 +77,40 @@ export function DatesPicker({
   withStart = true,
   title,
   trigger,
+  open,
   onOpenChange,
   defaultOpen = false,
+  anchorRef,
+  id,
   defaultField = "due",
+  sheet = false,
   style,
   className,
   ...rest
 }: DatesPickerProps) {
   const ariaLabel = rest["aria-label"] ?? "Dates";
-  const pop = usePopover(defaultOpen);
+  const pop = usePickerOpen({ open, onOpenChange, defaultOpen });
   const S = parseDateValue(start);
   const D = parseDateValue(due);
-  const [active, setActive] = useState<Active>(defaultOpen ? defaultField : "due");
-  const [showStart, setShowStart] = useState(!!S || (defaultOpen && defaultField === "start"));
-  const [typed, setTyped] = useState({ start: "", due: "", time: "" });
+  const first: FieldKey = defaultField === "start" && withStart ? "start" : "due";
+  const fresh = () => ({ active: (pop.open ? first : "due") as Active, showStart: !!S || (pop.open && first === "start"), typed: { start: "", due: "", time: time ? formatTime(time) : "" } });
+  const [active, setActive] = useState<Active>(() => fresh().active);
+  const [showStart, setShowStart] = useState(() => fresh().showStart);
+  const [typed, setTyped] = useState(() => fresh().typed);
   const dueRef = useRef<HTMLInputElement>(null);
   const startRef = useRef<HTMLInputElement>(null);
-
-  const setOpen = (o: boolean) => {
-    pop.setOpen(o);
-    if (o) {
-      setActive("due");
-      setShowStart(!!S);
-      setTyped({ start: "", due: "", time: time ? formatTime(time) : "" });
+  // Every opening starts fresh on its first field, whoever opened it (its trigger, or a controlling parent)
+  const [wasOpen, setWasOpen] = useState(pop.open);
+  if (wasOpen !== pop.open) {
+    setWasOpen(pop.open);
+    if (pop.open) {
+      const f = fresh();
+      setActive(f.active);
+      setShowStart(f.showStart);
+      setTyped(f.typed);
     }
-    onOpenChange?.(o);
-  };
+  }
+  const setOpen = (o: boolean, reason?: PopoverCloseReason) => pop.setOpen(o, reason);
   const emit = (n: Partial<DatesValue>) => {
     const next: DatesValue = { start: n.start !== undefined ? n.start : (start ?? null), due: n.due !== undefined ? n.due : (due ?? null), time: n.time !== undefined ? n.time : (time ?? null) };
     if (next.start && next.due && next.start > next.due) {
@@ -141,7 +149,7 @@ export function DatesPicker({
           emit({ [k]: toISO(g) });
           setTyped((t) => ({ ...t, [k]: "" }));
           if (k === "start") setActive("due");
-        } else if (!typed[k].trim() && k === "due" && D) setOpen(false);
+        } else if (!typed[k].trim() && k === "due" && D) setOpen(false, "select");
       } else if (e.key === "Backspace" && !typed[k] && val) clear();
       else if (e.key.length === 1) e.stopPropagation();
     };
@@ -181,14 +189,14 @@ export function DatesPicker({
     );
   };
   const timeGuess = parseTime(typed.time);
-  const trig = trigger ? (
+  const trig = anchorRef ? undefined : trigger ? (
     <span>{trigger(pop.open, { start: S, due: D, time: time ?? null })}</span>
   ) : (
     <DateTrigger variant={variant} icon={icon} disabled={disabled} data-state={D ? state : undefined} block={block} aria-label={ariaLabel} title={title} style={style} text={formatDateRange(S, D, time, { today })} placeholder={placeholder} />
   );
 
   return (
-    <Popover open={pop.open} onOpenChange={(o) => setOpen(o)} trigger={trig} placement={placement} tier={tier} sheet={false} role="dialog" aria-label={ariaLabel} block={block} initialFocus={active === "start" ? startRef : dueRef} className={className}>
+    <Popover open={pop.open} onOpenChange={setOpen} trigger={trig} anchorRef={anchorRef} id={id} placement={placement} tier={tier} sheet={sheet} role="dialog" aria-label={ariaLabel} block={block} initialFocus={active === "start" ? startRef : dueRef} className={className}>
       <div className="td-date-picker">
         <div className="td-date-picker-fields">
           {withStart && showStart ? field("start", "Start", S, "Add a start date") : null}
@@ -215,7 +223,7 @@ export function DatesPicker({
                     e.preventDefault();
                     if (timeGuess) emit({ time: timeGuess });
                     else if (!typed.time.trim()) emit({ time: null });
-                    setOpen(false);
+                    setOpen(false, "select");
                   } else if (e.key.length === 1) e.stopPropagation();
                 }}
               />
@@ -260,7 +268,7 @@ export function DatesPicker({
               icon="x"
               onClick={() => {
                 onChange?.({ start: null, due: null, time: null });
-                setOpen(false);
+                setOpen(false, "select");
               }}
             >
               Clear

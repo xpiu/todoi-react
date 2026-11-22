@@ -72,6 +72,8 @@ export interface PopoverProps {
   anchorClassName?: string;
   /** Selector of outside regions whose presses don't close it (the chip row a toolbar menu drives) */
   keepOpenWithin?: string;
+  /** Id on the popup, for the opener's aria-controls */
+  id?: string;
 }
 
 const SWIPE_CLOSE_PX = 80;
@@ -95,6 +97,7 @@ export function Popover({
   className,
   anchorClassName,
   keepOpenWithin,
+  id,
   ...rest
 }: PopoverProps) {
   const vp = useViewport();
@@ -136,9 +139,11 @@ export function Popover({
       const ev = details.event;
       const target = details.reason === "focus-out" && ev instanceof FocusEvent ? ev.relatedTarget : details.reason === "outside-press" ? ev?.target : null;
       if (!next && keepOpenWithin && target instanceof Element && target.closest(keepOpenWithin)) return;
+      // Triggerless: a press on the anchor is the opener's own (it toggles), not an outside press
+      if (!next && !trigger && target instanceof Node && anchorRef?.current?.contains(target)) return;
       onOpenChange(next, next ? undefined : closeReasonOf(details.reason));
     },
-    [onOpenChange, keepOpenWithin],
+    [onOpenChange, keepOpenWithin, trigger, anchorRef],
   );
 
   // A bottom sheet spans the screen: the anchored width would leave it short of the right edge.
@@ -163,6 +168,7 @@ export function Popover({
         >
           <BasePopover.Popup
             ref={bindPopup}
+            id={id}
             className={popupCls}
             data-sheet={isSheet ? "true" : undefined}
             data-compact={compact ? "true" : undefined}
@@ -186,6 +192,31 @@ export function usePopover(initial = false) {
   const toggle = useCallback(() => setOpen((o) => !o), []);
   const close = useCallback(() => setOpen(false), []);
   return { open, setOpen, toggle, close };
+}
+
+/** The open/close props every picker (DatesPicker, LabelPicker, MemberPicker, Select) shares. */
+export interface PickerOpenProps {
+  /** Controlled open state; leave unset for the picker's own trigger to drive it */
+  open?: boolean;
+  /** Every open or close, with the close reason */
+  onOpenChange?: (open: boolean, reason?: PopoverCloseReason) => void;
+  /** Open on mount (uncontrolled) */
+  defaultOpen?: boolean;
+  /** Triggerless form: no trigger is rendered and the panel anchors to this element (a Board card's quick-action icon) */
+  anchorRef?: RefObject<HTMLElement | null>;
+  /** Id on the panel, for the opener's aria-controls */
+  id?: string;
+}
+
+/** A picker's open state: its own (from defaultOpen) unless `open` is given, and every change reported with its reason. */
+export function usePickerOpen({ open, onOpenChange, defaultOpen = false }: Pick<PickerOpenProps, "open" | "onOpenChange" | "defaultOpen">) {
+  const [own, setOwn] = useState(defaultOpen);
+  const isOpen = open ?? own;
+  const setOpen = (next: boolean, reason?: PopoverCloseReason) => {
+    if (open === undefined) setOwn(next);
+    onOpenChange?.(next, next ? undefined : reason);
+  };
+  return { open: isOpen, setOpen };
 }
 
 /** A control inside a Popover's body that closes it when clicked (and still runs its own onClick), e.g. a row that opens a dialog. */

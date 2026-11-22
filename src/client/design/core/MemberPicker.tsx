@@ -5,7 +5,7 @@ import { useId, useState } from "react";
 import { Avatar, AvatarStack } from "./Avatar";
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
-import { Popover, usePopover, type PopoverPlacement, type PopoverTier } from "./Popover";
+import { Popover, usePickerOpen, type PickerOpenProps, type PopoverPlacement, type PopoverTier } from "./Popover";
 import { labelWithValue } from "./text";
 import "./ItemPicker.css";
 import "./Menu.css";
@@ -21,9 +21,7 @@ export interface PickableMember {
 }
 const first = (n: string) => n.split(/\s+/)[0] ?? n;
 
-export interface MemberPickerProps {
-  /** Open on mount (a card quick action opens the overlay with this picker open) */
-  defaultOpen?: boolean;
+export interface MemberPickerProps extends PickerOpenProps {
   members: ReadonlyArray<PickableMember>;
   value: string[];
   onChange: (ids: string[]) => void;
@@ -40,8 +38,8 @@ export interface MemberPickerProps {
   clearLabel?: string;
 }
 
-export function MemberPicker({ members, value, onChange, placeholder = "Assignees", icon = "user-plus", tier = "menu", placement = "bottom-start", width = 248, block, disabled, max, clearLabel = "Clear assignees", defaultOpen = false, ...rest }: MemberPickerProps) {
-  const pop = usePopover(defaultOpen);
+export function MemberPicker({ members, value, onChange, placeholder = "Assignees", icon = "user-plus", tier = "menu", placement = "bottom-start", width = 248, block, disabled, max, clearLabel = "Clear assignees", open, onOpenChange, defaultOpen = false, anchorRef, id, ...rest }: MemberPickerProps) {
+  const pop = usePickerOpen({ open, onOpenChange, defaultOpen });
   const [q, setQ] = useState("");
   const label = rest["aria-label"] ?? "Assignees";
   const sel = new Set(value);
@@ -60,8 +58,8 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
   return (
     <Popover
       open={pop.open}
-      onOpenChange={(o) => {
-        pop.setOpen(o);
+      onOpenChange={(o, reason) => {
+        pop.setOpen(o, reason);
         if (!o) setQ("");
       }}
       placement={placement}
@@ -70,8 +68,10 @@ export function MemberPicker({ members, value, onChange, placeholder = "Assignee
       role="dialog"
       aria-label={label}
       block={block}
+      anchorRef={anchorRef}
+      id={id}
       trigger={
-        <Button variant="outline" disabled={disabled} aria-label={labelWithValue(label, shownValue)} data-block={block ? "true" : undefined} className="td-aside-btn">
+        anchorRef ? undefined : <Button variant="outline" disabled={disabled} aria-label={labelWithValue(label, shownValue)} data-block={block ? "true" : undefined} className="td-aside-btn">
           {picked.length ? <AvatarStack people={picked} size={20} max={3} /> : <Icon name={icon} size={16} />}
           <span className="td-member-picker-value" data-placeholder={picked.length ? undefined : "true"}>
             {shownValue}

@@ -3,11 +3,11 @@
 // "searchable select" pattern: the filter field appears automatically above 8 options. Footer rows
 // (Create new list…, Manage links…) sit under the options after a divider. Spec: DESIGN.md › Select.
 import { Combobox } from "@base-ui/react/combobox";
-import { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Button, type ButtonVariant } from "./Button";
 import { Icon, type IconName } from "./Icon";
-import { closeReasonOf, placementToSide, type PopoverCloseReason, type PopoverPlacement, type PopoverTier } from "./Popover";
+import { closeReasonOf, placementToSide, usePickerOpen, type PickerOpenProps, type PopoverPlacement, type PopoverTier } from "./Popover";
 import { usePortalContainer } from "./portalContainer";
 import { useViewport } from "./viewport";
 import "./Popover.css";
@@ -28,7 +28,7 @@ export interface SelectOption<V extends SelectValue = SelectValue> {
   disabled?: boolean;
 }
 
-export interface SelectProps<V extends SelectValue = SelectValue> {
+export interface SelectProps<V extends SelectValue = SelectValue> extends PickerOpenProps {
   value?: V;
   options: ReadonlyArray<SelectOption<V>>;
   /** Called with (value, option) when a different option is picked */
@@ -57,9 +57,6 @@ export interface SelectProps<V extends SelectValue = SelectValue> {
   disabled?: boolean;
   /** Custom trigger text from the current option (undefined when none) */
   renderValue?: (option?: SelectOption<V>) => ReactNode;
-  onOpenChange?: (open: boolean, reason?: PopoverCloseReason) => void;
-  /** Open on mount — for a transient "pick now" control that replaces a row action */
-  defaultOpen?: boolean;
   style?: CSSProperties;
   className?: string;
 }
@@ -84,8 +81,11 @@ export function Select<V extends SelectValue = SelectValue>({
   block,
   disabled,
   renderValue,
+  open: openProp,
   onOpenChange,
   defaultOpen = false,
+  anchorRef,
+  id,
   style,
   className,
   ...rest
@@ -94,20 +94,19 @@ export function Select<V extends SelectValue = SelectValue>({
   const container = usePortalContainer();
   const isSheet = vp.phone;
   const { side, align } = placementToSide(placement);
-  const [open, setOpen] = useState(defaultOpen);
+  const pop = usePickerOpen({ open: openProp, onOpenChange, defaultOpen });
   // Opened with the pointer, the picked row carries only its check (as in Design): Base UI's opening highlight
   // on it stays unpainted until a key or the pointer moves the highlight. Opened from the keyboard it shows at once.
   const [quietHighlight, setQuietHighlight] = useState(false);
   const search = searchable ?? options.length > 8;
   const cur = options.find((o) => o.value === value);
-  const handleOpenChange = useCallback(
-    (next: boolean, details: { reason?: string; event?: Event }) => {
-      if (next) setQuietHighlight(details.event instanceof MouseEvent && details.event.detail > 0);
-      setOpen(next);
-      onOpenChange?.(next, next ? undefined : closeReasonOf(details.reason));
-    },
-    [onOpenChange],
-  );
+  const handleOpenChange = (next: boolean, details: { reason?: string; event?: Event }) => {
+    // Triggerless: a press on the anchor is the opener's own (it toggles), not an outside press
+    const target = details.reason === "outside-press" ? details.event?.target : null;
+    if (!next && anchorRef && target instanceof Node && anchorRef.current?.contains(target)) return;
+    if (next) setQuietHighlight(details.event instanceof MouseEvent && details.event.detail > 0);
+    pop.setOpen(next, closeReasonOf(details.reason));
+  };
   const items = useMemo(() => options as SelectOption<V>[], [options]);
   const listName = rest["aria-label"] ?? placeholder;
   const trigIcon = cur?.icon ? <Icon name={cur.icon} size={16} color={cur.iconColor} /> : icon ? <Icon name={icon} size={16} /> : null;
@@ -121,7 +120,7 @@ export function Select<V extends SelectValue = SelectValue>({
       }}
       itemToStringLabel={(o) => (o ? labelOf(o) : "")}
       isItemEqualToValue={(a, b) => a?.value === b?.value}
-      open={open}
+      open={pop.open}
       onOpenChange={handleOpenChange}
       onItemHighlighted={(_, details) => {
         if (details.reason !== "none") setQuietHighlight(false);
@@ -130,7 +129,7 @@ export function Select<V extends SelectValue = SelectValue>({
       disabled={disabled}
       filter={search ? undefined : null}
     >
-      <Combobox.Trigger
+      {anchorRef ? null : <Combobox.Trigger
         render={
           <Button variant={variant} size={size} iconAfter="chevron-down" disabled={disabled} className="td-select-trigger" data-block={block ? "true" : undefined} aria-label={rest["aria-label"]} title={title} style={style}>
             {trigIcon}
@@ -139,20 +138,21 @@ export function Select<V extends SelectValue = SelectValue>({
             </span>
           </Button>
         }
-      />
+      />}
       <Combobox.Portal container={container ?? undefined}>
         {isSheet ? <Combobox.Backdrop className="td-sheet-backdrop" /> : null}
         <Combobox.Positioner
           className="td-popover-positioner"
           data-tier={tier}
           data-sheet={isSheet ? "true" : undefined}
+          anchor={anchorRef}
           side={side}
           align={align}
           sideOffset={4}
           collisionPadding={8}
           positionMethod={tier === "detached" ? "fixed" : "absolute"}
         >
-          <Combobox.Popup className={["td-popover", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} data-quiet-highlight={quietHighlight ? "true" : undefined} aria-label={listName} style={{ width }}>
+          <Combobox.Popup id={id} className={["td-popover", className ?? ""].filter(Boolean).join(" ")} data-sheet={isSheet ? "true" : undefined} data-quiet-highlight={quietHighlight ? "true" : undefined} aria-label={listName} style={{ width }}>
             {isSheet ? <div className="td-sheet-handle" aria-hidden /> : null}
             {search ? (
               <div className="td-select-search">
