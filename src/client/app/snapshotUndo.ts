@@ -9,7 +9,7 @@ interface SnapshotStep {
   restore: () => Promise<unknown>;
 }
 
-const names: Record<string, string> = { priority: "priority", labelIds: "labels", assigneeIds: "assignees", startDate: "dates", dueDate: "dates", repeatCount: "recurrence", status: "status", done: "status", listId: "list", position: "position", parentItemId: "parent item", projectId: "project" };
+const names: Record<string, string> = { priority: "priority", labelIds: "labels", assigneeIds: "assignees", startDate: "dates", dueDate: "dates", dueTime: "dates", repeatCount: "recurrence", status: "status", done: "status", listId: "list", position: "position", parentItemId: "parent item", projectId: "project" };
 const equal = (a: unknown, b: unknown) => JSON.stringify(Array.isArray(a) ? [...a].sort() : a) === JSON.stringify(Array.isArray(b) ? [...b].sort() : b);
 
 /** Read at Undo time. Retry keeps completed steps and their feedback without restoring them twice. */

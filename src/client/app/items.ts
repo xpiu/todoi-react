@@ -22,6 +22,9 @@ export interface Person {
 /** A person's avatar colour as the CSS variable components take; undefined leaves the Avatar to pick one from the name. */
 export const avatarColorVar = (c: string | null | undefined) => (c ? `var(--label-${c})` : undefined);
 
+/** A person as the MemberPicker lists them (the overlay's Assignees, a Board card's quick picker) */
+export const pickableMember = (p: Person) => ({ id: p.id, name: p.name, nickname: p.nickname ?? undefined, src: p.image ?? undefined, color: avatarColorVar(p.avatarColor) });
+
 /** Overdue against `today` (ISO, from `useToday`, so it turns over at midnight). */
 export function dueStateOf(item: Pick<Item, "dueDate" | "done">, today: string): DueState {
   if (item.done) return "complete";

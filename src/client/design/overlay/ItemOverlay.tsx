@@ -29,7 +29,7 @@ import type { RepeatRule } from "../core/repeat";
 import { RepeatPicker } from "../core/RepeatPicker";
 import { Select } from "../core/Select";
 import { SHORTCUTS } from "../core/shortcuts";
-import { STATUSES } from "../core/statuses";
+import { PRIORITY_OPTIONS, STATUS_OPTIONS, priorityOf, priorityValue, statusMovesItem, statusPick, statusValue } from "../core/itemFields";
 import { TextField } from "../core/TextField";
 import { Checklist, ChecklistAddRow, type ChecklistItem } from "./Checklist";
 import { Comment, type CommentReaction } from "./Comment";
@@ -40,14 +40,6 @@ import { Modal } from "./Modal";
 import { RelationButton, RelationsSection, type Relation } from "./Relations";
 import "./ItemOverlay.css";
 
-const PRIORITIES: Array<{ value: ItemPriority; label: string; color: string }> = [
-  { value: "URGENT", label: "Urgent", color: "var(--label-red)" },
-  { value: "HIGH", label: "High", color: "var(--label-orange)" },
-  { value: "MEDIUM", label: "Medium", color: "var(--label-yellow)" },
-  { value: "LOW", label: "Low", color: "var(--label-blue)" },
-];
-const NO_STATUS = "__none";
-const NO_PRIORITY = "__none";
 
 export interface OverlayItem {
   id: string;
@@ -81,8 +73,6 @@ export interface OverlayComment {
   edited?: boolean;
   reactions: CommentReaction[];
 }
-/** The rail fields a card quick action can open */
-export type OverlayField = "status" | "priority" | "start" | "due" | "labels" | "assignees";
 
 export interface OverlayActivity {
   id: string;
@@ -129,8 +119,6 @@ export interface ItemOverlayProps {
   linkStatuses?: boolean;
   /** The E shortcut: open with the title in edit */
   autoEditTitle?: boolean;
-  /** A card quick action: open with this field's picker already open */
-  openField?: OverlayField;
   today?: string;
   onClose: () => void;
   onRename: (title: string) => Save;
@@ -281,17 +269,14 @@ export function ItemOverlay(p: ItemOverlayProps) {
     const auto = listIconFor(l.name);
     return { value: l.id, label: l.name, icon: (l.icon as IconName | undefined) ?? auto.icon, iconColor: auto.color };
   });
-  const statusOpts = [{ value: NO_STATUS, label: "None", icon: "circle-off" as IconName }, ...STATUSES.map((s) => ({ value: s.id, label: s.name, icon: s.icon, iconColor: s.color }))];
-  const status = item.status ?? (item.done ? "DONE" : NO_STATUS);
+  const status = statusValue(item.status, item.done);
   // Linked project: Status names every list (each carries its own role), so it stands in for the List field.
-  const roles = p.lists.map((l) => l.statusRole ?? null);
   const currentList = p.lists.find((l) => l.id === item.listId);
-  const statusOnly = !p.inbox && !!p.linkStatuses && roles.length > 0 && roles.every(Boolean) && new Set(roles).size === roles.length && !!currentList;
+  const statusOnly = !p.inbox && statusMovesItem(p.lists, p.linkStatuses, item.listId);
   const pickStatus = (v: string) => {
-    const dest = statusOnly && v !== NO_STATUS ? p.lists.find((l) => l.statusRole === v) : null;
-    // A recurring item set to Done completes its occurrence instead, and stays in its list.
-    if (dest && dest.id !== item.listId && !(v === "DONE" && item.repeat && item.due)) p.onMoveToList(dest.id);
-    else p.onSetStatus(v === NO_STATUS ? null : (v as ItemStatus));
+    const pick = statusPick(v, { lists: p.lists, movesItem: statusOnly, listId: item.listId, recurring: !!(item.repeat && item.due) });
+    if ("moveTo" in pick) p.onMoveToList(pick.moveTo);
+    else p.onSetStatus(pick.status);
   };
   const statusTitle = statusOnly && currentList && currentList.statusRole !== item.status ? `Status · in list ${currentList.name}` : "Status";
   const others = p.projectItems.filter((it) => it.id !== item.id);
@@ -420,10 +405,9 @@ export function ItemOverlay(p: ItemOverlayProps) {
             block
             tier="detached"
             aria-label="Status"
-            defaultOpen={p.openField === "status"}
             title={statusTitle}
             value={status}
-            options={statusOpts}
+            options={STATUS_OPTIONS}
             width={200}
             onChange={pickStatus}
             footer={
@@ -445,14 +429,14 @@ export function ItemOverlay(p: ItemOverlayProps) {
               )
             }
           />
-          <Select block tier="detached" aria-label="Priority" defaultOpen={p.openField === "priority"} title="Priority" placeholder="Priority" icon="flag" value={item.priority ?? NO_PRIORITY} width={184} options={[...PRIORITIES.map((pr) => ({ value: pr.value as string, label: pr.label, icon: "flag" as IconName, iconColor: pr.color })), { value: NO_PRIORITY, label: "No priority", icon: "flag-off" as IconName }]} onChange={(v) => p.onSetPriority(v === NO_PRIORITY ? null : (v as ItemPriority))} />
+          <Select block tier="detached" aria-label="Priority" title="Priority" placeholder="Priority" icon="flag" value={priorityValue(item.priority)} width={184} options={PRIORITY_OPTIONS} onChange={(v) => p.onSetPriority(priorityOf(v))} />
           <div className="td-aside-divider" />
-          <DatesPicker block tier="detached" defaultOpen={p.openField === "start" || p.openField === "due"} defaultField={p.openField === "start" ? "start" : "due"} start={item.start} due={item.due} time={item.dueTime} state={item.dueState ?? (item.done ? "complete" : undefined)} today={p.today} onChange={p.onSetDates} />
+          <DatesPicker block tier="detached" start={item.start} due={item.due} time={item.dueTime} state={item.dueState ?? (item.done ? "complete" : undefined)} today={p.today} onChange={p.onSetDates} />
           <RepeatPicker block tier="detached" value={item.repeat ?? null} anchor={item.due} today={p.today} onChange={p.onSetRepeat} />
           {p.inbox ? null : (
             <>
-              <LabelPicker block tier="detached" defaultOpen={p.openField === "labels"} labels={p.labels} value={item.labelIds} onChange={p.onSetLabels} onCreateLabel={p.onCreateLabel} onEditLabel={p.onEditLabel} onDeleteLabel={p.onDeleteLabel} />
-              <MemberPicker block tier="detached" defaultOpen={p.openField === "assignees"} members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
+              <LabelPicker block tier="detached" labels={p.labels} value={item.labelIds} onChange={p.onSetLabels} onCreateLabel={p.onCreateLabel} onEditLabel={p.onEditLabel} onDeleteLabel={p.onDeleteLabel} />
+              <MemberPicker block tier="detached" members={members} value={item.assigneeIds} onChange={p.onSetAssignees} />
             </>
           )}
           <div className="td-aside-divider" />

@@ -181,6 +181,13 @@ html[data-theme="minimal"] .td-card-meta{gap:0}
 html[data-theme="minimal"] .td-card-meta-word{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 html[data-theme="minimal"] .td-card-qa{width:24px;height:24px;border-radius:0}
 html[data-theme="minimal"] .td-card-qa:hover{background:none;color:var(--ink-900)}
+html[data-theme="minimal"] .td-card-due.is-action:hover,html[data-theme="minimal"] .td-card-due.is-action:active,html[data-theme="minimal"] .td-card-due.is-action[aria-expanded="true"]{box-shadow:none;outline:none;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+/* Quick edit: the card keeps its ink frame (Minimal's ring) while one of its pickers is open */
+html[data-theme="minimal"] .td-card.is-quickedit,html[data-theme="minimal"] .td-card.is-quickedit:hover{box-shadow:none;isolation:isolate}
+html[data-theme="minimal"] .td-card.is-quickedit::before{content:"";position:absolute;z-index:-1;inset:0 -6px -1px;border:1px solid var(--ink-900);pointer-events:none}
+/* The six quick-action icons need the card's full width (the last two were clipped beside the date): the date takes its own line above them. The row keeps 2px at the sides and below, so the pressed ring and the focus ring stay inside the collapsing wrapper */
+html[data-theme="minimal"] .td-card-meta{flex-wrap:wrap;padding:4px 2px 2px}
+html[data-theme="minimal"] .td-card-meta-created{flex:1 0 100%;margin-left:-2px}
 html[data-theme="minimal"] .td-card.td-file-target{outline:none;background:var(--blue-100);box-shadow:none;isolation:isolate}
 html[data-theme="minimal"] .td-card.td-file-target::after{border-radius:0;font:400 11px/16px var(--font-ui);right:0;bottom:10px}
 /* Labels are words; assignees are initials; both comma-separated, grey */

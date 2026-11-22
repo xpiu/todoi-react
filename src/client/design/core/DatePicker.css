@@ -108,6 +108,10 @@
     padding: 6px;
     width: 224px;
   }
+  /* As a bottom sheet (a Board quick picker on a phone) the panel keeps its width, centred */
+  .td-popover[data-sheet="true"] > .td-date-picker {
+    margin-inline: auto;
+  }
   .td-date-picker-fields {
     display: flex;
     flex-direction: column;

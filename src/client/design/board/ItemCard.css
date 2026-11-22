@@ -196,6 +196,26 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring);
   }
+  /* Quick edit (CardQuickEdit): the card keeps its ring while one of its pickers is open, the open icon reads pressed */
+  .td-card.is-quickedit,
+  .td-card.is-quickedit:hover,
+  html[data-colorize-columns] .td-list-column[data-status-role] .td-card.is-quickedit {
+    box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
+  }
+  .td-card-qa[aria-expanded="true"],
+  .td-card-qa[aria-expanded="true"]:hover {
+    background: var(--blue-100);
+    color: var(--blue-500);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--blue-500) 35%, transparent);
+  }
+  /* The due pill as the dates quick action: one click opens the picker at the pill */
+  .td-card-due.is-action {
+    cursor: pointer;
+  }
+  /* A badge whose value a quick pick changed pops in once (tokens/motion.css stills it under reduced motion) */
+  .td-card-pop {
+    animation: td-card-pop 260ms var(--ease-standard);
+  }
   .td-card-more-anchor {
     position: absolute;
     top: 0;
@@ -222,10 +242,8 @@
     border-radius: 0 var(--radius-md) 0 var(--radius-xs);
     color: var(--ink-400);
     cursor: pointer;
-    box-shadow:
-      -1px 0 0 color-mix(in srgb, var(--surface-card) 60%, transparent),
-      0 1px 0 color-mix(in srgb, var(--surface-card) 60%, transparent),
-      -1px 1px 0 color-mix(in srgb, var(--surface-card) 40%, transparent);
+    box-shadow: none;
+    outline: none;
   }
   /* The shared hint makes its anchor position: relative; the ⋯ stays pinned to the corner. */
   .td-card-more.td-tooltip[data-tip] {
@@ -239,6 +257,7 @@
     pointer-events: auto;
   }
   .td-card-more:hover,
+  .td-card-more:active,
   .td-card-more[aria-expanded="true"] {
     color: var(--ink-900);
   }
@@ -255,5 +274,19 @@
   }
   .td-prio-text {
     display: none;
+  }
+  @keyframes td-card-pop {
+    0% {
+      transform: scale(0.55);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.08);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 }

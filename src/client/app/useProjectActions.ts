@@ -9,9 +9,12 @@ import type { ItemStatus } from "../../shared/item-status";
 import type { MoveRestore } from "../../shared/items";
 import type { Item, Label } from "../data/api";
 import { keys } from "../data/queries";
+import { useLabelMutations } from "../data/itemContent";
 import { newId, scopeOf, useCreateItem, useCreateList, useDeleteItem, useDuplicateItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
 import { listIconFor } from "../design/board/listIcons";
-import { daysBetweenISO, formatDate, formatDateRange, shiftISO } from "../design/core/dates";
+import { daysBetweenISO, formatDate, formatDateRange, formatTime, shiftISO } from "../design/core/dates";
+import type { DatesValue } from "../design/core/DatesPicker";
+import type { LabelDraft, PickableLabel } from "../design/core/LabelPicker";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction, BulkOption } from "../design/core/BulkBar";
 import { PRIORITY_COLORS } from "../design/core/priorities";
@@ -407,5 +410,55 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     );
   };
 
-  return { lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
+  /** The LabelPicker's create / edit / delete, for the overlay and the Board's quick pickers */
+  const labelOps = useLabelMutations(projectId ?? "");
+  const labelHandlers = {
+    onCreateLabel: (d: LabelDraft) => labelOps.create.mutateAsync({ name: d.name, color: d.color }),
+    onEditLabel: (l: PickableLabel, d: LabelDraft) => labelOps.update.mutate({ id: l.id, name: d.name, color: d.color }),
+    onDeleteLabel: (l: PickableLabel) => labelOps.remove.mutate({ id: l.id }),
+  };
+
+  /** One field edit with its undoable toast (a Board quick pick): the toast follows the server's answer. */
+  const editWithUndo = (id: string, before: Record<string, unknown>, after: Record<string, unknown>, message: string, icon: "clock" | "flag" | "circle-dot") =>
+    updateItem.mutate({ id, ...after }, { onSuccess: () => notify({ message, icon, restore: snapshotUndo([{ id, before, after, restore: () => updateItem.mutateAsync({ id, ...before, quiet: true }) }]) }) });
+  const firstName = (userId: string) => {
+    const p = people.find((x) => x.id === userId);
+    return p ? (p.nickname || p.name.split(" ")[0]) : "someone";
+  };
+  /**
+   * The Board's quick pickers (CardQuickEdit): one toast with Undo per single pick (dates, priority, Status), and one per
+   * labels or assignees session, raised when the picker closes. A Status pick in a linked project is a move (its own toast).
+   */
+  const quickEdit = {
+    setDates: (id: string, next: DatesValue, prev: DatesValue) => {
+      const day = (v: string) => formatDate(v, { weekday: true, year: "auto" });
+      const message =
+        !next.due && !next.start && prev.due && prev.start ? "Dates cleared"
+        : next.due !== prev.due ? (next.due ? `Due date set to ${day(next.due)}` : "Due date cleared")
+        : next.start !== prev.start ? (next.start ? `Start date set to ${day(next.start)}` : "Start date cleared")
+        : next.time ? `Due time set to ${formatTime(next.time)}` : "Due time cleared";
+      editWithUndo(id, { startDate: prev.start, dueDate: prev.due, dueTime: prev.time }, { startDate: next.start, dueDate: next.due, dueTime: next.time }, message, "clock");
+    },
+    setPriority: (id: string, next: ItemPriority | null, prev: ItemPriority | null) => editWithUndo(id, { priority: prev }, { priority: next }, next ? `Priority set to ${PRIORITY_LABEL[next]}` : "Priority cleared", "flag"),
+    setStatus: (id: string, next: ItemStatus | null, prev: ItemStatus | null) => {
+      const it = byId(id);
+      // Done on a recurring item completes its occurrence (the completion toast); any other Status is set as given.
+      if (next === "DONE" && it?.repeatRule && it.dueDate) return setDone(id, true);
+      editWithUndo(id, { status: prev }, { status: next }, next ? `Status set to ${statusName(next)}` : "Status cleared", "circle-dot");
+    },
+    /** To the end of the list, with the move's own toast ("— Status set to Doing"): one move, one Undo */
+    moveToList: (id: string, listId: string) => move(id, { listId, position: items.filter((x) => x.listId === listId && !x.parentItemId).length }),
+    setLabels: (id: string, labelIds: string[]) => setLabels.mutate({ id, labelIds }),
+    setAssignees: (id: string, userIds: string[]) => setAssignees.mutate({ id, userIds }),
+    endSession: (id: string, field: "labels" | "assignees", before: string[], after: string[]) => {
+      if (field === "labels") {
+        const names = after.map((l) => labels.find((x) => x.id === l)?.name).filter(Boolean);
+        notify({ message: names.length ? `Labels: ${names.join(", ")}` : "Labels cleared", icon: "tag", restore: snapshotUndo([{ id, before: { labelIds: before }, after: { labelIds: after }, restore: () => setLabels.mutateAsync({ id, labelIds: before }) }]) });
+      } else {
+        notify({ message: after.length ? `Assigned to ${after.map(firstName).join(", ")}` : "Assignees cleared", icon: "user-plus", restore: snapshotUndo([{ id, before: { assigneeIds: before }, after: { assigneeIds: after }, restore: () => setAssignees.mutateAsync({ id, userIds: before }) }]) });
+      }
+    },
+  };
+
+  return { labelHandlers, quickEdit, lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
 }

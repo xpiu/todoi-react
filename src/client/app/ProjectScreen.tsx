@@ -29,7 +29,7 @@ import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { filterViewItems, itemComparator, sortLists } from "./filters";
-import { coverOf, itemRowMapper, pickableItems, rowsByList, rowsForList } from "./items";
+import { coverOf, itemRowMapper, keyOf, pickableItems, pickableMember, rowsByList, rowsForList } from "./items";
 import { ConfirmDialog } from "../design/core/Dialog";
 import { statusById } from "../design/core/statuses";
 import { count } from "../design/core/text";
@@ -38,7 +38,8 @@ import { TransferDialog, type TransferKind } from "../design/core/ProjectPicker"
 import { useFileDropTargets } from "../design/overlay/Attachments";
 import { attachFiles } from "./uploads";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
-import type { OverlayField } from "../design/overlay/ItemOverlay";
+import { CardQuickEdit } from "../design/board/CardQuickEdit";
+import type { QuickField } from "../design/core/itemFields";
 import { formatDate } from "../design/core/dates";
 import { usePrefs } from "./prefs";
 import { useProjectPicker } from "./useProjectPicker";
@@ -67,12 +68,6 @@ export function ProjectScreen() {
   // Keep card callbacks stable when only item data changes.
   const go = useCallback((next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, next) }), [navigate, projectId, state]);
   const openItem = useCallback((id: string, edit?: boolean) => go({ item: id, edit: !!edit }), [go]);
-  // A card quick action opens the item with one field's picker open; a one-shot request, not part of the URL
-  const [pick, setPick] = useState<{ id: string; field: OverlayField } | null>(null);
-  const openItemField = useCallback((id: string, field: OverlayField) => {
-    setPick({ id, field });
-    openItem(id);
-  }, [openItem]);
 
   const failed = project.isError ? project : items.isError ? items : labels.isError ? labels : null;
   if (failed && failed.error instanceof ApiError && failed.error.status === 401) {
@@ -93,9 +88,8 @@ export function ProjectScreen() {
     setSelectedIds,
     clearFilters: () => go({ filters: [] }),
     openItem,
-    openItemField,
   };
-  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} openField={pick?.id === state.item ? pick.field : undefined} onClose={() => { setPick(null); go({ item: undefined, edit: undefined }); }} onOpen={openItem} /> : null;
+  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={openItem} /> : null;
   const body = view === "board" ? <ProjectBoard {...props} /> : view === "calendar" ? <ProjectCalendar {...props} /> : <ProjectList {...props} />;
   return (
     <>
@@ -123,7 +117,6 @@ interface ViewProps {
   setSelectedIds: (next: string[] | ((prev: string[]) => string[])) => void;
   clearFilters: () => void;
   openItem: (id: string, edit?: boolean) => void;
-  openItemField: (id: string, field: OverlayField) => void;
 }
 
 interface VisibleList {
@@ -446,8 +439,78 @@ function ProjectList(props: ViewProps) {
   );
 }
 
+/** How a card's quick picker was opened: its details-row icon, its due pill, or a key (A, L, Shift+D) */
+type QuickVia = "icon" | "badge" | "key";
+type OpenQuick = (id: string, field: QuickField, anchor: HTMLElement, source: QuickVia) => void;
+
+/**
+ * The Board's inline quick pickers (Design: board/CardQuickEdit): a card's quick-action icon or due pill opens that
+ * field's picker at it; the board stays in view. One picker at a time; `rowId` is the card whose details row stays open
+ * (through the picker, and after a pick so the next icon is one Tab away) until a press lands outside it.
+ */
+function useCardQuickEdit(root: React.RefObject<HTMLDivElement | null>) {
+  const [quick, setQuick] = useState<{ id: string; field: QuickField; via: QuickVia } | null>(null);
+  const [rowId, setRowId] = useState<string | null>(null);
+  const quickRef = useRef(quick);
+  useEffect(() => {
+    quickRef.current = quick;
+  });
+  const anchor = useRef<HTMLElement | null>(null);
+  const focusAfter = useRef<{ id: string; field?: QuickField } | null>(null);
+  const cardOf = useCallback((id: string) => root.current?.querySelector<HTMLElement>(`.td-card[data-drag-id="${CSS.escape(id)}"]`) ?? null, [root]);
+  const open: OpenQuick = useCallback((id, field, el, via) => {
+    const q = quickRef.current;
+    // The pressed icon toggles its picker closed
+    if (q && q.id === id && q.field === field) {
+      quickRef.current = null;
+      setQuick(null);
+      return;
+    }
+    anchor.current = el;
+    if (via !== "badge") setRowId(id);
+    quickRef.current = { id, field, via };
+    setQuick({ id, field, via });
+  }, []);
+  const close = (reason?: string) => {
+    const q = quickRef.current;
+    if (!q) return;
+    quickRef.current = null;
+    setQuick(null);
+    // Esc steps back one level: to the ⋯ menu when the picker came from its row, else closed with focus on the card
+    if (reason === "escape" && q.via !== "badge") {
+      setRowId(null);
+      if (q.via === "icon") {
+        cardOf(q.id)?.querySelector<HTMLElement>(".td-card-more")?.click();
+        return;
+      }
+    }
+    // A pick from the row hands focus back to its icon (the row stays); a key or the pill, to the card
+    if (reason !== "outside") focusAfter.current = { id: q.id, field: q.via === "icon" && reason !== "escape" ? q.field : undefined };
+  };
+  useEffect(() => {
+    const f = focusAfter.current;
+    if (quick || !f) return;
+    focusAfter.current = null;
+    const card = cardOf(f.id);
+    const icon = f.field ? card?.querySelector<HTMLElement>(`.td-card-qa[data-field="${f.field}"]`) : null;
+    (icon ?? card)?.focus();
+  }, [quick, cardOf]);
+  // A press outside the held row's card (and outside any picker) collapses it
+  useEffect(() => {
+    if (!rowId) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Element | null;
+      if (!t?.closest || cardOf(rowId)?.contains(t) || t.closest(".td-popover, .td-sheet-backdrop")) return;
+      setRowId(null);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [rowId, cardOf]);
+  return { quick, rowId, anchor, open, close };
+}
+
 /** Raw immutable item records and stable callbacks let unchanged cards skip a board update. */
-const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, hasSubitems, selected, onClick, onMenu, moveOptions, onQuickAction }: {
+const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, hasSubitems, selected, onClick, onMenu, moveOptions, onQuickAction, quick, detailsOpen }: {
   item: Item;
   toRow: ReturnType<typeof itemRowMapper>;
   subitemTotal: number;
@@ -457,7 +520,10 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
   onMenu: (it: Item, action: CardMenuAction, value?: string) => void;
   hasSubitems: boolean;
   moveOptions?: BulkOption[];
-  onQuickAction: (id: string, field: OverlayField) => void;
+  onQuickAction: OpenQuick;
+  /** This card's open quick picker */
+  quick: { field: QuickField; via: QuickVia } | null;
+  detailsOpen: boolean;
 }) {
   const r = toRow(item);
   return <ItemCard
@@ -480,7 +546,10 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
     moveOptions={moveOptions}
     hasSubitems={hasSubitems}
     created={formatDate(item.createdAt, { year: "auto" })}
-    onQuickAction={(field) => onQuickAction(item.id, field)}
+    onQuickAction={(field, anchor, source) => onQuickAction(item.id, field, anchor, source)}
+    activeQuickAction={quick?.field ?? null}
+    quickActionAnchor={quick?.via === "badge" ? "badge" : "icon"}
+    detailsOpen={detailsOpen}
   />;
 });
 
@@ -488,6 +557,10 @@ function ProjectBoard(props: ViewProps) {
   const root = useRef<HTMLDivElement | null>(null);
   const v = useProjectView(props, root, { listSelector: ".td-list-column", itemSelector: ".td-card[data-drag-id]", cardsSelector: ".td-list-column-cards" });
   const { actions } = v;
+  const qe = useCardQuickEdit(root);
+  const today = useToday();
+  const quickItem = qe.quick ? v.itemsById.get(qe.quick.id) : undefined;
+  const members = useMemo(() => actions.people.map(pickableMember), [actions.people]);
   if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
@@ -511,7 +584,9 @@ function ProjectBoard(props: ViewProps) {
                     onClick={v.onItemClick}
                     onMenu={v.onCardMenu}
                     moveOptions={v.moveOptionsByList.get(it.listId)}
-                    onQuickAction={props.openItemField}
+                    onQuickAction={qe.open}
+                    quick={qe.quick?.id === r.id ? qe.quick : null}
+                    detailsOpen={qe.rowId === r.id}
                   />
                 );
               })}
@@ -519,6 +594,28 @@ function ProjectBoard(props: ViewProps) {
           );
         })}
       </BoardView>
+      {qe.quick && quickItem ? (
+        <CardQuickEdit
+          key={`${qe.quick.id}:${qe.quick.field}`}
+          field={qe.quick.field}
+          anchorRef={qe.anchor}
+          item={{ id: quickItem.id, itemId: keyOf(quickItem, props.project.keyPrefix), title: quickItem.title, listId: quickItem.listId, start: quickItem.startDate, due: quickItem.dueDate, time: quickItem.dueTime, labelIds: quickItem.labelIds, assigneeIds: quickItem.assigneeIds, priority: quickItem.priority, status: quickItem.status, done: quickItem.done, recurring: !!(quickItem.repeatRule && quickItem.dueDate) }}
+          labels={props.labels}
+          members={members}
+          lists={actions.lists}
+          linkStatuses={props.project.linkStatuses}
+          today={today}
+          onClose={qe.close}
+          onSetDates={actions.quickEdit.setDates}
+          onSetPriority={actions.quickEdit.setPriority}
+          onSetStatus={actions.quickEdit.setStatus}
+          onMoveToList={actions.quickEdit.moveToList}
+          onSetLabels={actions.quickEdit.setLabels}
+          onSetAssignees={actions.quickEdit.setAssignees}
+          onSessionEnd={actions.quickEdit.endSession}
+          {...actions.labelHandlers}
+        />
+      ) : null}
       {v.bulkBar}
     </>
   );

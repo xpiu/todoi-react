@@ -5,7 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { errorMessage, explain, type Item, type Label } from "../data/api";
-import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useLabelMutations, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
+import { useAddComment, useAddRelation, useDeleteComment, useEditComment, useReactComment, useRemoveRelation, useSetWatching } from "../data/itemContent";
 import { newId, scopeOf, useCreateItem, useSetItemAssignees, useSetItemLabels, useUpdateItem } from "../data/mutations";
 import { useActivity, useItemDetails } from "../data/queries";
 import { attachmentUrl, useAttachmentMutations } from "../data/attachments";
@@ -15,13 +15,13 @@ import { useProjectPicker } from "./useProjectPicker";
 import { formatDate, formatRelative } from "../design/core/dates";
 import type { IconName } from "../design/core/Icon";
 import type { AttachmentFile } from "../design/overlay/Attachments";
-import { ItemOverlay, type OverlayField, type OverlayItem } from "../design/overlay/ItemOverlay";
+import { ItemOverlay, type OverlayItem } from "../design/overlay/ItemOverlay";
 import { useDrafts } from "./drafts";
 import { MissingItem } from "./MissingItem";
 import { attachFiles, dismissUpload, retryUploads, usePendingUploads } from "./uploads";
 import { snapshotUndo } from "./snapshotUndo";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
-import { avatarColorVar, coverOf, dueStateOf, keyOf, pickableItems, type Person } from "./items";
+import { avatarColorVar, coverOf, dueStateOf, keyOf, pickableItems, pickableMember, type Person } from "./items";
 import { useToday } from "./today";
 import { peopleOf, useCurrentUser, type ItemContainer } from "./session";
 
@@ -33,14 +33,10 @@ export interface ItemOverlayScreenProps {
   labels: Label[];
   itemId: string;
   editTitle?: boolean;
-  /** A card quick action: open with this field's picker open */
-  openField?: OverlayField;
   onClose: () => void;
   onOpen: (id: string, edit?: boolean) => void;
   onSuggestShortcut?: (id: string, delay?: number) => void;
 }
-
-const memberOf = (p: Person) => ({ id: p.id, name: p.name, nickname: p.nickname ?? undefined, src: p.image ?? undefined, color: avatarColorVar(p.avatarColor) });
 
 /** The overlay for an item among the live items on screen; otherwise why it is not there (MissingItem). */
 export function ItemOverlayScreen(props: ItemOverlayScreenProps) {
@@ -49,7 +45,7 @@ export function ItemOverlayScreen(props: ItemOverlayScreenProps) {
   return <ItemOverlayBody {...props} item={item} />;
 }
 
-function ItemOverlayBody({ projectId, project, items, labels, itemId, item, editTitle, openField, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps & { item: Item }) {
+function ItemOverlayBody({ projectId, project, items, labels, itemId, item, editTitle, onClose, onOpen, onSuggestShortcut }: ItemOverlayScreenProps & { item: Item }) {
   const details = useItemDetails(itemId);
   const activity = useActivity(projectId ?? "");
   const scope = useMemo(() => scopeOf(projectId), [projectId]);
@@ -64,7 +60,6 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
   const setWatching = useSetWatching(itemId);
   const addRelation = useAddRelation(itemId);
   const removeRelation = useRemoveRelation(itemId);
-  const labelOps = useLabelMutations(projectId ?? "");
   const files = useAttachmentMutations(itemId, projectId);
   const uploads = usePendingUploads(itemId);
   const actions = useProjectActions(projectId, project, items, labels);
@@ -138,7 +133,7 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       item={overlayItem}
       lists={project.lists.filter((l) => !l.hidden).map((l) => ({ id: l.id, name: l.name, icon: l.icon as IconName | null, statusRole: l.statusRole }))}
       labels={labels}
-      members={people.map(memberOf)}
+      members={people.map(pickableMember)}
       currentUserId={user?.id ?? ""}
       comments={comments}
       activity={activityRows}
@@ -146,7 +141,6 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       detailsState={details.data ? undefined : details.isError ? { error: errorMessage(details.error), onRetry: () => void details.refetch() } : "loading"}
       projectItems={projectItems}
       autoEditTitle={editTitle}
-      openField={openField}
       today={today}
       inbox={!projectId}
       onClose={onClose}
@@ -161,12 +155,7 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       onSetDates={(v) => patch({ startDate: v.start, dueDate: v.due, dueTime: v.time })}
       onSetRepeat={(rule) => patch({ repeatRule: rule })}
       onSetLabels={(labelIds) => setLabels.mutate({ id: item.id, labelIds })}
-      onCreateLabel={async (d) => {
-        const made = await labelOps.create.mutateAsync({ name: d.name, color: d.color });
-        return made;
-      }}
-      onEditLabel={(l, d) => labelOps.update.mutate({ id: l.id, name: d.name, color: d.color })}
-      onDeleteLabel={(l) => labelOps.remove.mutate({ id: l.id })}
+      {...actions.labelHandlers}
       onSetAssignees={(userIds) => setAssignees.mutate({ id: item.id, userIds })}
       onSetCover={(cover) => patch({ cover: cover ? (cover.src ? { attachmentId: cover.attachmentId } : { color: cover.color?.replace(/^var\(--label-([a-z]+)\)$/, "$1") }) : null })}
       onToggleWatch={projectId && details.data ? (watching) => setWatching.mutate({ watching }) : undefined}

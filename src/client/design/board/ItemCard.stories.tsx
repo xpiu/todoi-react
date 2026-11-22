@@ -36,7 +36,7 @@ export const KeyboardAndMenu: Story = {
 
 export const DetailsRow: Story = {
   args: { created: "Aug 12", onQuickAction: fn() },
-  parameters: { docs: { description: { story: "Opening the ⋯ menu also expands the details row under the card: the created date and six quick actions, each opening that field's picker in the item overlay. Clicks in the row never open the card." } } },
+  parameters: { docs: { description: { story: "Opening the ⋯ menu also expands the details row under the card: the created date and six quick actions, each opening that field's picker at the icon (the board mounts it: CardQuickEdit). Clicks in the row never open the card." } } },
   async play({ args, canvas, canvasElement, userEvent }) {
     const row = canvas.getByRole("group", { name: "Item details", hidden: true });
     await expect(row.closest(".td-card-details")).not.toHaveAttribute("data-expanded");
@@ -47,7 +47,7 @@ export const DetailsRow: Story = {
     await waitFor(() => expect(row.closest(".td-card-details")).toHaveAttribute("data-expanded", "true"));
     await expect(row).toHaveTextContent("Created Aug 12");
     await userEvent.click(within(row).getByRole("button", { name: "Due date" }));
-    await expect(args.onQuickAction).toHaveBeenCalledWith("due", "HE-115");
+    await expect(args.onQuickAction).toHaveBeenCalledWith("due", within(row).getByRole("button", { name: "Due date" }), "icon");
     await expect(args.onClick).not.toHaveBeenCalled();
     await waitFor(() => expect(row.closest(".td-card-details")).not.toHaveAttribute("data-expanded"));
   },

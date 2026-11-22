@@ -1,7 +1,7 @@
 // ItemCard — a board item: optional cover, title (green check when done), compact labels, a badge row
 // (description, due, repeat, subitems progress, attachments, priority, avatars) with the mono key
 // pinned right, and a hover ⋯ menu. Spec: DESIGN.md › Board, Item keys.
-import { Fragment, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type SyntheticEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type SyntheticEvent } from "react";
 
 import { Avatar } from "../core/Avatar";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
@@ -16,7 +16,8 @@ import type { StatusLike } from "../core/statuses";
 import { DueDatePill, type DueState } from "./DueDatePill";
 import { LabelChip } from "./LabelChip";
 import type { RowLabel, RowPerson, RowPriority } from "../list/ListRow";
-import type { OverlayField } from "../overlay/ItemOverlay";
+import type { QuickField } from "../core/itemFields";
+import { quickEditId } from "./CardQuickEdit";
 import "../core/text.css";
 import "./ItemCard.css";
 
@@ -30,15 +31,17 @@ const MENU_ITEMS: ReadonlyArray<["pencil" | "arrow-right" | "copy" | "corner-dow
   ["trash-2", "Delete"],
 ];
 
-/** The quick actions in the row the ⋯ menu expands under a card (Design: ItemCard): each opens that field's picker */
-const QUICK_ACTIONS: ReadonlyArray<["clock" | "calendar" | "users" | "tag" | "flag" | "circle-dot", string, OverlayField]> = [
-  ["clock", "Due date", "due"],
-  ["calendar", "Start date", "start"],
-  ["users", "Assignees", "assignees"],
-  ["tag", "Labels", "labels"],
-  ["flag", "Priority", "priority"],
-  ["circle-dot", "Status", "status"],
+/** The quick actions in the row the ⋯ menu expands under a card (Design: ItemCard): each opens that field's picker at the icon (CardQuickEdit) */
+const QUICK_ACTIONS: ReadonlyArray<["clock" | "calendar" | "users" | "tag" | "flag" | "circle-dot", string, QuickField, "dialog" | "listbox"]> = [
+  ["clock", "Due date", "due", "dialog"],
+  ["calendar", "Start date", "start", "dialog"],
+  ["users", "Assignees", "assignees", "dialog"],
+  ["tag", "Labels", "labels", "dialog"],
+  ["flag", "Priority", "priority", "listbox"],
+  ["circle-dot", "Status", "status", "listbox"],
 ];
+/** Badges that pop in once when their value changes during a quick edit */
+type PopKey = "status" | "due" | "priority" | "assignees" | "labels";
 
 export interface ItemCardProps {
   title: string;
@@ -69,8 +72,17 @@ export interface ItemCardProps {
   hasSubitems?: boolean;
   /** "Aug 12": shown in the details row the ⋯ menu expands */
   created?: string;
-  /** A details-row quick action (Due date, Start date, Assignees, Labels, Priority, Status); without it the row has no buttons */
-  onQuickAction?: (field: OverlayField, itemId: string) => void;
+  /**
+   * A details-row quick action (Due date, Start date, Assignees, Labels, Priority, Status), or a click on the due pill
+   * ("badge"): open that field's picker at `anchor`. Without it the row has no buttons and the pill is plain text.
+   */
+  onQuickAction?: (field: QuickField, anchor: HTMLElement, source: "icon" | "badge") => void;
+  /** The field whose quick picker is open on this card: the card keeps its ring and that icon reads pressed */
+  activeQuickAction?: QuickField | null;
+  /** Where the open picker hangs: "badge" (the due pill) leaves the details row as it is and presses no icon @default "icon" */
+  quickActionAnchor?: "icon" | "badge";
+  /** Hold the details row open (the board keeps it after a pick, so the next icon is one Tab away) */
+  detailsOpen?: boolean;
   style?: CSSProperties;
 }
 
@@ -113,7 +125,7 @@ function ItemKey({ itemId }: { itemId?: string }) {
 
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
-export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, hasSubitems, created, onQuickAction, style }: ItemCardProps) {
+export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, hasSubitems, created, onQuickAction, activeQuickAction, quickActionAnchor = "icon", detailsOpen, style }: ItemCardProps) {
   // The ⋯ menu's drill view (as the overlay ⋯ drills into Export): Move to › a list or another project
   const [menuView, setMenuView] = useState<"main" | "move">("main");
   // Opening the ⋯ menu also expands the details row under the card (Design: ItemCard). Closing the menu collapses it,
@@ -158,6 +170,47 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
     }
   };
   const hasDetails = !!itemId && !!onMenuAction && (!!created || !!onQuickAction);
+  /** One floating surface at a time: a quick action closes the ⋯ menu (the board holds the row open through activeQuickAction) */
+  const quickAction = (field: QuickField, anchor: HTMLElement, source: "icon" | "badge") => {
+    menuOpen.current = false;
+    setMenuIsOpen(false);
+    setMenuView("main");
+    setExpanded(false);
+    onQuickAction?.(field, anchor, source);
+  };
+  // A picker opened from the due pill hangs off the pill: no icon is pressed and the row stays as it is
+  const fromBadge = quickActionAnchor === "badge" && activeQuickAction === "due";
+  const pressed = fromBadge ? null : (activeQuickAction ?? null);
+  const rowOpen = expanded || !!detailsOpen || !!pressed;
+  const popupId = dragId ? quickEditId(dragId) : undefined;
+  // A badge whose value changes during a quick edit pops in once (.td-card-pop)
+  const sigKey = JSON.stringify({
+    status: typeof status === "string" ? status : (status?.name ?? ""),
+    due: due ?? "",
+    priority: priority ?? "",
+    assignees: assignees.map((a) => personOf(a).name).join("|"),
+    labels: labels.map((l) => (typeof l === "string" ? l : (l.text ?? l.color))).join("|"),
+  } satisfies Record<PopKey, string>);
+  const seen = useRef<{ sig: Record<PopKey, string>; quick: boolean } | null>(null);
+  const editing = !!activeQuickAction || !!detailsOpen;
+  useEffect(() => {
+    const sig = JSON.parse(sigKey) as Record<PopKey, string>;
+    const prev = seen.current;
+    seen.current = { sig, quick: editing };
+    if (!prev || !(editing || prev.quick)) return;
+    const card = cardRef.current;
+    for (const k of Object.keys(sig) as PopKey[]) {
+      if (prev.sig[k] === sig[k]) continue;
+      const before = new Set(prev.sig[k].split("|"));
+      const targets = k === "labels" ? [...(card?.querySelectorAll<HTMLElement>(".td-card-labels > [data-pop-label]") ?? [])].filter((el) => !before.has(el.dataset.popLabel!)) : [card?.querySelector<HTMLElement>(`[data-pop="${k}"]`)];
+      for (const el of targets) {
+        if (!el) continue;
+        el.classList.remove("td-card-pop");
+        void el.offsetWidth;
+        el.classList.add("td-card-pop");
+      }
+    }
+  }, [sigKey, editing]);
   // Items hold subitems, subitems hold nothing: an item with subitems can't become one (the row says why)
   const subitemBlocked = hasSubitems ?? !!badges.checklist?.total;
   const cl = badges.checklist;
@@ -170,7 +223,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
   return (
     <div
       ref={cardRef}
-      className={"td-card" + (selected ? " is-selected" : "")}
+      className={"td-card" + (selected ? " is-selected" : "") + (activeQuickAction ? " is-quickedit" : "")}
       onBlur={(e) => {
         if (expanded && !menuOpen.current && !e.currentTarget.contains(e.relatedTarget as Node | null)) setExpanded(false);
       }}
@@ -205,20 +258,42 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
         {labelObjs.length ? (
           <div className="td-card-labels">
             {labelObjs.map((l, i) => (
-              <LabelChip key={i} color={l.color} text={l.text} size="sm" />
+              <LabelChip key={l.text ?? i} color={l.color} text={l.text} size="sm" data-pop-label={l.text ?? l.color} />
             ))}
             {keyInLabels ? <ItemKey itemId={itemId} /> : null}
           </div>
         ) : null}
         {hasBadges ? (
           <div className="td-card-badges">
-            {status ? <StatusChip status={status} /> : null}
+            {status ? <StatusChip status={status} data-pop="status" /> : null}
             {badges.description ? (
               <span className="td-card-badge" title="This item has a description">
                 <Icon name="align-left" size={14} />
               </span>
             ) : null}
-            {due ? <DueDatePill date={due} state={dueState} className="td-card-due" /> : null}
+            {due ? (
+              <DueDatePill
+                date={due}
+                state={dueState}
+                className={"td-card-due" + (onQuickAction && itemId ? " is-action" : "")}
+                data-pop="due"
+                // One click on the date opens the dates picker right at the pill; the card body still opens the overlay.
+                // The keyboard path is Shift+D on the card (a button inside a listitem would add a Tab stop per card).
+                {...(onQuickAction && itemId
+                  ? {
+                      role: "button",
+                      label: "Due date",
+                      "aria-haspopup": "dialog" as const,
+                      "aria-expanded": fromBadge,
+                      "aria-controls": fromBadge ? popupId : undefined,
+                      onClick: (e: MouseEvent<HTMLElement>) => {
+                        e.stopPropagation();
+                        quickAction("due", e.currentTarget, "badge");
+                      },
+                    }
+                  : null)}
+              />
+            ) : null}
             {repeat ? (
               <span className="td-card-badge" title={`Repeats: ${repeat}`}>
                 <Icon name="repeat" size={14} />
@@ -239,13 +314,13 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
               </span>
             ) : null}
             {priority ? (
-              <span className="td-card-badge" data-priority={priority.toLowerCase()} title={`Priority: ${priority}`}>
+              <span className="td-card-badge" data-pop="priority" data-priority={priority.toLowerCase()} title={`Priority: ${priority}`}>
                 <Icon name="flag" size={14} color={PRIORITY_COLORS[priority]} style={{ fill: PRIORITY_COLORS[priority] }} />
                 <span className="td-prio-text">{priority}</span>
               </span>
             ) : null}
             {assignees.length ? (
-              <span className="td-card-avatars" title={assignees.map((a) => personOf(a).name).join(", ")}>
+              <span className="td-card-avatars" data-pop="assignees" title={assignees.map((a) => personOf(a).name).join(", ")}>
                 {assignees.slice(0, 3).map((a, i) => {
                   const o = personOf(a);
                   return (
@@ -314,7 +389,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
         </span>
       ) : null}
       {hasDetails ? (
-        <div ref={rowRef} className="td-card-details" data-expanded={expanded ? "true" : undefined} inert={!expanded}>
+        <div ref={rowRef} className="td-card-details" data-expanded={rowOpen ? "true" : undefined} inert={!rowOpen}>
           <div
             className="td-card-meta"
             role="group"
@@ -339,22 +414,26 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
               ) : null}
             </span>
             {onQuickAction
-              ? QUICK_ACTIONS.map(([icon, label, field]) => (
-                  <button
-                    key={field}
-                    type="button"
-                    aria-label={label}
-                    {...tipProps(label)}
-                    className={"td-card-qa " + tipProps(label).className}
-                    onClick={() => {
-                      setExpanded(false);
-                      onQuickAction(field, itemId!);
-                    }}
-                  >
-                    {/* Status shows the glyph of the list the item is in (the Move to list that is checked) */}
-                    <Icon name={field === "status" ? (moveOptions?.find((o) => o.checked)?.icon ?? icon) : icon} size={14} />
-                  </button>
-                ))
+              ? QUICK_ACTIONS.map(([icon, label, field, popup]) => {
+                  const on = pressed === field;
+                  return (
+                    <button
+                      key={field}
+                      type="button"
+                      aria-label={label}
+                      aria-haspopup={popup}
+                      aria-expanded={on}
+                      aria-controls={on ? popupId : undefined}
+                      data-field={field}
+                      {...tipProps(label)}
+                      className={"td-card-qa " + tipProps(label).className}
+                      onClick={(e) => quickAction(field, e.currentTarget, "icon")}
+                    >
+                      {/* Status shows the glyph of the list the item is in (the Move to list that is checked) */}
+                      <Icon name={field === "status" ? (moveOptions?.find((o) => o.checked)?.icon ?? icon) : icon} size={14} />
+                    </button>
+                  );
+                })
               : null}
           </div>
         </div>
