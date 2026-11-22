@@ -45,6 +45,7 @@ import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
 import { peopleOf } from "./session";
 import { useToday } from "./today";
+import { quote } from "./feedback";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import { useResolvedView } from "./useResolvedView";
 import "./screens.css";
@@ -145,7 +146,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
   // Move / Copy to another project: the selection (BulkBar) or one card (its ⋯ › Move to)
   const [transfer, setTransfer] = useState<{ kind: TransferKind; ids: string[] } | null>(null);
-  // A card's ⋯ › Convert to › Subitem of another item…
+  // A card's ⋯ › Make subitem of…
   const [subitemFor, setSubitemFor] = useState<Item | null>(null);
   // A new Status role on a list with items waits for the review: existing items, or future moves only.
   const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
@@ -255,7 +256,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       }} />
       <MakeSubitemDialog
         open={!!subitemFor}
-        title="Convert to subitem of"
+        title={subitemFor ? `Make ${quote(subitemFor.title)} a subitem of` : "Make subitem of"}
         onClose={() => setSubitemFor(null)}
         items={subitemFor ? pickableItems(items, project).filter((p) => p.id !== subitemFor.id) : []}
         onPick={(parent) => subitemFor && actions.makeSubitemOf(subitemFor, parent)}
@@ -290,7 +291,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const hiddenMenu = <HiddenListsMenu lists={actions.hiddenLists.map((l) => ({ id: l.id, name: l.name, count: totals.get(l.id) ?? 0 }))} onShow={actions.showLists} />;
   const isSelected = (id: string) => selectedIds.includes(id);
   // A board card's ⋯ menu, on the existing item actions: Rename opens the item with its title in edit (the E key),
-  // Move to reuses the BulkBar's list move and project transfer, Duplicate / Archive / Convert to the overlay's.
+  // Move to reuses the BulkBar's list move and project transfer, Duplicate / Archive / Make subitem of the overlay's.
   const cardMenuRef = useRef<(it: Item, action: CardMenuAction, value?: string) => void>(() => {});
   useLayoutEffect(() => {
     cardMenuRef.current = (it, action, value) => {
@@ -298,7 +299,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       else if (action === "Move to" && (value === "__move" || value === "__copy")) setTransfer({ kind: value === "__copy" ? "copy" : "move", ids: [it.id] });
       else if (action === "Move to" && value && value !== it.listId) actions.bulk("move", value, [it.id]);
       else if (action === "Duplicate") void actions.copyItems([it.id], { projectId, listId: it.listId, name: null });
-      else if (action === "Convert to") setSubitemFor(it);
+      else if (action === "Make subitem of") setSubitemFor(it);
       else if (action === "Archive") actions.archive(it);
       else if (action === "Delete") void actions.remove(it.id);
     };

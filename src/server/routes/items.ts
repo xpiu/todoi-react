@@ -108,8 +108,13 @@ export const itemsRoute = new Hono()
       // A subitem lives in its parent's list; promoting keeps the list it is in.
       changes.parentItemId = parentItemId;
       if (parentItemId) {
-        const [parent] = await db.select({ listId: items.listId, projectId: items.projectId }).from(items).where(eq(items.id, parentItemId));
+        // Items hold subitems, subitems hold nothing: an item with subitems, or a subitem as the parent, would nest a third level.
+        if (parentItemId === id) return fail(c, 400, "An item can't be its own subitem");
+        const [parent] = await db.select({ listId: items.listId, projectId: items.projectId, parentItemId: items.parentItemId }).from(items).where(eq(items.id, parentItemId));
         if (!parent) return fail(c, 404, "Not found");
+        if (parent.parentItemId) return fail(c, 409, "A subitem can't hold subitems. Pick a top-level item.");
+        const [child] = await db.select({ id: items.id }).from(items).where(and(eq(items.parentItemId, id), itemIsLive)).limit(1);
+        if (child) return fail(c, 409, "This item has its own subitems, so it can't become a subitem. Move or convert them first.");
         changes.listId = parent.listId;
         changes.projectId = parent.projectId;
       }

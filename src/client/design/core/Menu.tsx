@@ -52,6 +52,9 @@ export function MenuItem({ icon, iconColor, children, trailing, shortcut, danger
       aria-label={rest["aria-label"]}
       disabled={disabled}
       data-danger={danger ? "true" : undefined}
+      // A drill row opens a view inside the same menu: announced as a submenu, and → opens it where the host handles it
+      aria-haspopup={drill ? "menu" : undefined}
+      data-drill={drill ? "true" : undefined}
       closeOnClick={!(closeOnSelect === false || drill)}
       className={["td-menu-item", className ?? ""].join(" ").trim()}
       onClick={(e) => {
@@ -133,6 +136,8 @@ export interface MenuPopoverProps {
   open?: boolean;
   disabled?: boolean;
   onOpenChange?: (open: boolean, reason?: PopoverCloseReason) => void;
+  /** Return false to keep the menu open for this close (Escape in a drill view steps back instead) */
+  shouldClose?: (reason: PopoverCloseReason) => boolean;
   /** @default "bottom-end" */
   placement?: PopoverPlacement;
   tier?: PopoverTier;
@@ -154,7 +159,7 @@ export interface MenuPopoverProps {
 }
 
 /** A menu behind any trigger. Uncontrolled unless `open` is given. */
-export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", offset = 4, width, minWidth = 184, block, anchor, children, finalFocus, style, className }: MenuPopoverProps) {
+export function MenuPopover({ trigger, label, open, disabled, onOpenChange, placement = "bottom-end", tier = "menu", offset = 4, width, minWidth = 184, block, anchor, shouldClose, children, finalFocus, style, className }: MenuPopoverProps) {
   const vp = useViewport();
   const container = usePortalContainer();
   const isSheet = vp.phone;
@@ -164,8 +169,15 @@ export function MenuPopover({ trigger, label, open, disabled, onOpenChange, plac
   // Render-function children get a close() through Base UI's own state. It is the only imperative close and
   // follows a choice, so it reports "select".
   const handleOpenChange = useCallback(
-    (next: boolean, details: { reason?: string }) => onOpenChange?.(next, next ? undefined : details.reason === "imperative-action" ? "select" : closeReasonOf(details.reason)),
-    [onOpenChange],
+    (next: boolean, details: { reason?: string; cancel?: () => void }) => {
+      const reason = details.reason === "imperative-action" ? "select" : closeReasonOf(details.reason);
+      if (!next && shouldClose && !shouldClose(reason)) {
+        details.cancel?.();
+        return;
+      }
+      onOpenChange?.(next, next ? undefined : reason);
+    },
+    [onOpenChange, shouldClose],
   );
   const close = useCallback(() => actionsRef.current?.close(), []);
   return (

@@ -339,7 +339,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
       void inTurn(sel, async (it) => ({ at: rankOf(it), forward: await moveItem.mutateAsync({ id: it.id, listId: value, position: end + sel.indexOf(it) }) })).then((moved) => {
         if (!moved) return;
         const dest = project.lists.find((l) => l.id === value);
-        const status = dest?.statusRole && project.linkStatuses ? ` — Statuses set to ${statusName(dest.statusRole)}` : "";
+        const status = dest?.statusRole && project.linkStatuses ? ` — ${moved.length === 1 ? "Status" : "Statuses"} set to ${statusName(dest.statusRole)}` : "";
         const base = `Moved ${moved.length === 1 ? quote(moved[0]!.it.title) : count(moved.length, "item")} to ${listName(value)}`;
         notify({ message: base + status, history: base, icon: "arrow-right", restore: snapshotUndo([...moved].reverse().map(({ it, result }) => ({ id: it.id, ...moveSnapshot(it, result.forward.item), restore: () => moveItem.mutateAsync({ id: it.id, listId: it.listId, position: result.at, quiet: true }) }))) });
       });
@@ -382,7 +382,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   /** Turn an item into a subitem of another (its key stays); the toast makes it an item again */
   const makeSubitemOf = (it: Item, parent: { id: string; itemId?: string; title: string }) => {
     updateItem.mutate({ id: it.id, parentItemId: parent.id });
-    notify({ message: `${quote(it.title)} is now a subitem of ${parent.itemId ?? parent.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id: it.id, before: { parentItemId: null }, after: { parentItemId: parent.id }, restore: () => updateItem.mutateAsync({ id: it.id, parentItemId: null, quiet: true }) }]) });
+    notify({ message: `${quote(it.title)} is now a subitem of ${quote(parent.title)}`, icon: "corner-down-right", restore: snapshotUndo([{ id: it.id, before: { parentItemId: null }, after: { parentItemId: parent.id }, restore: () => updateItem.mutateAsync({ id: it.id, parentItemId: null, quiet: true }) }]) });
   };
 
   return { lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };

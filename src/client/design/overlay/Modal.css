@@ -63,6 +63,10 @@
   .td-modal-head-title.is-measured {
     flex: 0 1 auto;
   }
+  /* Editing, the title field takes the head's free width (sized to its content it showed ~20 characters of a long title) */
+  .td-modal-head-title.is-measured:has(.td-modal-title.is-editing) {
+    flex: 1 1 auto;
+  }
   .td-modal-aside {
     position: relative;
     width: var(--size-overlay-aside);

@@ -7,6 +7,7 @@ import { Avatar } from "../core/Avatar";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
 import type { BulkOption } from "../core/BulkBar";
+import type { PopoverCloseReason } from "../core/Popover";
 import { MenuDivider, MenuDrillHead, MenuGroup, MenuItem, MenuPopover } from "../core/Menu";
 import { PRIORITY_COLORS } from "../core/priorities";
 import { StatusChip } from "../core/StatusChip";
@@ -19,12 +20,12 @@ import type { OverlayField } from "../overlay/ItemOverlay";
 import "../core/text.css";
 import "./ItemCard.css";
 
-export type CardMenuAction = "Rename" | "Move to" | "Duplicate" | "Convert to" | "Archive" | "Delete";
-const MENU_ITEMS: ReadonlyArray<["pencil" | "arrow-right" | "copy" | "repeat" | "archive" | "trash-2", CardMenuAction]> = [
+export type CardMenuAction = "Rename" | "Move to" | "Duplicate" | "Make subitem of" | "Archive" | "Delete";
+const MENU_ITEMS: ReadonlyArray<["pencil" | "arrow-right" | "copy" | "corner-down-right" | "archive" | "trash-2", CardMenuAction]> = [
   ["pencil", "Rename"],
   ["arrow-right", "Move to"],
   ["copy", "Duplicate"],
-  ["repeat", "Convert to"],
+  ["corner-down-right", "Make subitem of"],
   ["archive", "Archive"],
   ["trash-2", "Delete"],
 ];
@@ -60,7 +61,7 @@ export interface ItemCardProps {
   /** Makes the card draggable (data-drag-id) */
   dragId?: string;
   onClick?: (e: SyntheticEvent) => void;
-  /** A menu choice. "Move to" carries the picked list id (or "__move" / "__copy" for another project); "Convert to" carries "subitem" */
+  /** A menu choice. "Move to" carries the picked list id (or "__move" / "__copy" for another project) */
   onMenuAction?: (action: CardMenuAction, itemId: string, value?: string) => void;
   /** The Move to choices (the BulkBar's): with them, Move to drills into this list instead of firing at once */
   moveOptions?: BulkOption[];
@@ -111,18 +112,45 @@ function ItemKey({ itemId }: { itemId?: string }) {
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
 export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, created, onQuickAction, style }: ItemCardProps) {
-  // The ⋯ menu's drill views (Design: the overlay ⋯ drills the same way): Move to › a list or another project, Convert to › subitem
-  const [menuView, setMenuView] = useState<"main" | "move" | "convert">("main");
+  // The ⋯ menu's drill view (as the overlay ⋯ drills into Export): Move to › a list or another project
+  const [menuView, setMenuView] = useState<"main" | "move">("main");
   // Opening the ⋯ menu also expands the details row under the card (Design: ItemCard). Closing the menu collapses it,
-  // unless the press that closed it landed in the row: that press is a quick action, which collapses it itself.
+  // unless the press that closed it landed in the row (a quick action collapses it itself) or Tab left the menu: the
+  // row's first quick action is then the next stop, and the row stays until focus leaves the card.
   const [expanded, setExpanded] = useState(false);
+  const menuOpen = useRef(false);
   const pressInRow = useRef(false);
-  const onMenuOpenChange = (open: boolean) => {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const onMenuOpenChange = (open: boolean, reason?: PopoverCloseReason) => {
+    menuOpen.current = open;
     if (open) return setExpanded(true);
+    if (reason === "focus-out") {
+      setTimeout(() => {
+        const at = document.activeElement;
+        if (!at || at === document.body) rowRef.current?.querySelector<HTMLElement>(".td-card-qa")?.focus();
+      });
+      return;
+    }
     setTimeout(() => {
       if (!pressInRow.current) setExpanded(false);
       pressInRow.current = false;
     });
+  };
+  // Escape or ← in the drill view steps back to the main rows instead of closing; → on Move to drills in
+  const shouldClose = (reason: PopoverCloseReason) => {
+    if (reason !== "escape" || menuView === "main") return true;
+    setMenuView("main");
+    return false;
+  };
+  const onMenuKey = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft" && menuView !== "main") {
+      e.preventDefault();
+      setMenuView("main");
+    } else if (e.key === "ArrowRight" && menuView === "main" && moveOptions && (e.target as HTMLElement).closest("[data-drill]")) {
+      e.preventDefault();
+      setMenuView("move");
+    }
   };
   const hasDetails = !!itemId && !!onMenuAction && (!!created || !!onQuickAction);
   const cl = badges.checklist;
@@ -134,7 +162,11 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
   const labelObjs = labels.map((l) => (typeof l === "string" ? { color: l } : l));
   return (
     <div
+      ref={cardRef}
       className={"td-card" + (selected ? " is-selected" : "")}
+      onBlur={(e) => {
+        if (expanded && !menuOpen.current && !e.currentTarget.contains(e.relatedTarget as Node | null)) setExpanded(false);
+      }}
       // The list / listitem pattern (as ListRow): a focusable item whose ⋯ stays a real button.
       role="listitem"
       tabIndex={0}
@@ -229,12 +261,14 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             tier="detached"
             placement={hasDetails ? "right-start" : "bottom-end"}
             width={menuView === "main" ? 184 : 224}
-            onOpenChange={(open) => {
+            onOpenChange={(open, reason) => {
               if (!open) setMenuView("main");
-              if (hasDetails) onMenuOpenChange(open);
+              if (hasDetails) onMenuOpenChange(open, reason);
             }}
+            shouldClose={shouldClose}
             trigger={<button {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}
           >
+            <div className="td-card-menu-body" onKeyDown={onMenuKey}>
             {menuView === "move" && moveOptions ? (
               <MenuGroup>
                 <MenuDrillHead title="Move to" onBack={() => setMenuView("main")} />
@@ -248,31 +282,27 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
                   ),
                 )}
               </MenuGroup>
-            ) : menuView === "convert" ? (
-              <MenuGroup>
-                <MenuDrillHead title="Convert to" onBack={() => setMenuView("main")} />
-                <MenuItem icon="corner-down-right" onSelect={() => onMenuAction("Convert to", itemId, "subitem")}>
-                  Subitem of another item…
-                </MenuItem>
-              </MenuGroup>
             ) : (
               MENU_ITEMS.map(([icon, label]) => {
-                const drillTo = label === "Move to" && moveOptions ? "move" : label === "Convert to" ? "convert" : null;
+                const drillTo = label === "Move to" && moveOptions ? "move" : null;
+                // Items hold subitems, subitems hold nothing: an item with subitems can't become one
+                const blocked = label === "Make subitem of" && !!cl?.total;
                 return (
                   <Fragment key={label}>
                     {label === "Delete" ? <MenuDivider /> : null}
-                    <MenuItem icon={icon} danger={label === "Delete"} drill={!!drillTo} onSelect={() => (drillTo ? setMenuView(drillTo) : onMenuAction(label, itemId))}>
-                      {label}
+                    <MenuItem icon={icon} danger={label === "Delete"} drill={!!drillTo} disabled={blocked} title={blocked ? "It has its own subitems, so it can't become a subitem" : undefined} onSelect={() => (drillTo ? setMenuView(drillTo) : onMenuAction(label, itemId))}>
+                      {label === "Make subitem of" ? "Make subitem of…" : label}
                     </MenuItem>
                   </Fragment>
                 );
               })
             )}
+            </div>
           </MenuPopover>
         </span>
       ) : null}
       {hasDetails ? (
-        <div className="td-card-details" data-expanded={expanded ? "true" : undefined} inert={!expanded}>
+        <div ref={rowRef} className="td-card-details" data-expanded={expanded ? "true" : undefined} inert={!expanded}>
           <div
             className="td-card-meta"
             role="group"
@@ -284,7 +314,14 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
               if (e.key === "Escape") setExpanded(false);
             }}
           >
-            <span className="td-card-meta-created">{created ? `Created ${created}` : ""}</span>
+            <span className="td-card-meta-created" title={created ? `Created ${created}` : undefined}>
+              {created ? (
+                <>
+                  <span className="td-card-meta-word">Created </span>
+                  {created}
+                </>
+              ) : null}
+            </span>
             {onQuickAction
               ? QUICK_ACTIONS.map(([icon, label, field]) => (
                   <button
@@ -298,7 +335,8 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
                       onQuickAction(field, itemId!);
                     }}
                   >
-                    <Icon name={icon} size={14} />
+                    {/* Status shows the glyph of the list the item is in (the Move to list that is checked) */}
+                    <Icon name={field === "status" ? (moveOptions?.find((o) => o.checked)?.icon ?? icon) : icon} size={14} />
                   </button>
                 ))
               : null}

@@ -26,3 +26,6 @@ export function Mark({ text, q }: { text: string; q: string }): ReactNode {
     </>
   );
 }
+
+/** A title in curly quotes, cut to `max` characters: toasts, dialog titles. */
+export const quote = (title: string, max = 40) => "“" + (title.length > max ? title.slice(0, max - 1).trimEnd() + "…" : title) + "”";

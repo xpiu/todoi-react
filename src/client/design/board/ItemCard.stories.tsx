@@ -63,7 +63,7 @@ export const MenuDrills: Story = {
       { value: "__copy", label: "Copy to another project…", icon: "folder-output" },
     ],
   },
-  parameters: { docs: { description: { story: "Move to and Convert to drill into a view inside the same menu (Back returns): the project's lists with the current one checked, then another project; Convert to › Subitem of another item…" } } },
+  parameters: { docs: { description: { story: "Move to drills into a view inside the same menu (Back, ← or Esc return): the project's lists with the current one checked, then another project. Make subitem of… reports straight away (the host opens the picker)." } } },
   async play({ args, canvas, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
     canvas.getByRole("listitem").focus();
@@ -71,14 +71,17 @@ export const MenuDrills: Story = {
     await userEvent.click(await page.findByRole("menuitem", { name: "Move to" }));
     const menu = await page.findByRole("menu");
     await expect(within(menu).getByText("Move to", { selector: ".td-project-picker-head-title" })).toBeInTheDocument();
+    // Esc steps back to the main rows instead of closing the menu
+    await userEvent.keyboard("{Escape}");
+    await expect(await page.findByRole("menuitem", { name: "Duplicate" })).toBeInTheDocument();
+    await userEvent.click(await page.findByRole("menuitem", { name: "Move to" }));
     await userEvent.click(within(menu).getByText("Doing"));
     await expect(args.onMenuAction).toHaveBeenCalledWith("Move to", "HE-115", "l2");
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
     canvas.getByRole("listitem").focus();
     await userEvent.click(await canvas.findByRole("button", { name: "Item options" }));
-    await userEvent.click(await page.findByRole("menuitem", { name: "Convert to" }));
-    await userEvent.click(await page.findByRole("menuitem", { name: /Subitem of another item/ }));
-    await expect(args.onMenuAction).toHaveBeenCalledWith("Convert to", "HE-115", "subitem");
+    await userEvent.click(await page.findByRole("menuitem", { name: "Make subitem of…" }));
+    await expect(args.onMenuAction).toHaveBeenCalledWith("Make subitem of", "HE-115");
   },
 };
 

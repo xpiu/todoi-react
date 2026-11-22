@@ -99,4 +99,4 @@ export async function copyAndNotify(text: string, message: string) {
 }
 
 /** 'Pricing page: do we show…' — a title in a toast, quoted and clipped. */
-export const quote = (title: string, max = 40) => "“" + (title.length > max ? title.slice(0, max - 1).trimEnd() + "…" : title) + "”";
+export { quote } from "../design/core/text";

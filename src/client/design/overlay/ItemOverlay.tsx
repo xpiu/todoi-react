@@ -21,6 +21,7 @@ import { IconButton } from "../core/IconButton";
 import { InlineError } from "../core/InlineError";
 import { Skeleton } from "../core/Skeleton";
 import { MakeSubitemDialog, type PickableItem } from "../core/ItemPicker";
+import { quote } from "../core/text";
 import { LabelPicker, type LabelDraft, type PickableLabel } from "../core/LabelPicker";
 import { MemberPicker, type PickableMember } from "../core/MemberPicker";
 import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
@@ -310,6 +311,8 @@ export function ItemOverlay(p: ItemOverlayProps) {
           value={titleEdit}
           aria-label="Item title"
           className="td-modal-title-input"
+          // Rename: the whole title selected, so typing replaces it and ← / → keep it
+          onFocus={(e) => e.currentTarget.select()}
           onChange={(e) => setTitleEdit(e.target.value)}
           onBlur={commitTitle}
           onKeyDown={(e) => {
@@ -376,7 +379,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
                     </MenuItem>
                   ) : null}
                   {p.onMakeSubitemOf ? (
-                    <MenuItem icon="corner-down-right" onSelect={() => setSubitemOf(true)}>
+                    <MenuItem icon="corner-down-right" disabled={item.subitems.length > 0} title={item.subitems.length ? "It has its own subitems, so it can't become a subitem" : undefined} onSelect={() => setSubitemOf(true)}>
                       Make subitem of…
                     </MenuItem>
                   ) : null}
@@ -570,7 +573,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
         </div>
       </div>
       <TransferDialog kind={transfer} onClose={() => setTransfer(null)} projects={p.projects ?? []} loadLists={p.loadLists} onPick={(kind, proj, list) => (kind === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list)} />
-      <MakeSubitemDialog open={subitemOf} onClose={() => setSubitemOf(false)} items={others} onPick={(t) => p.onMakeSubitemOf?.(t)} />
+      <MakeSubitemDialog open={subitemOf} title={`Make ${quote(item.title)} a subitem of`} onClose={() => setSubitemOf(false)} items={others} onPick={(t) => p.onMakeSubitemOf?.(t)} />
     </Modal>
   );
 }

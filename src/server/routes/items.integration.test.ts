@@ -62,3 +62,21 @@ describe("creating items", () => {
     expect((await order(f.todo))[5]).toBe("existing@5");
   });
 });
+
+describe("making an item a subitem", () => {
+  const patch = (id: string, body: Record<string, unknown>) => app.request(`/api/items/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  it("never nests a third level: no subitem as the parent, no item that already has subitems, not itself", async () => {
+    const f = await fixture();
+    const parent = await add("parent", { listId: f.todo });
+    const child = await add("child", { listId: f.todo });
+    const other = await add("other", { listId: f.todo });
+    expect((await patch(child.id, { parentItemId: parent.id })).status).toBe(200);
+    // the parent now has a subitem: it can't become one
+    expect((await patch(parent.id, { parentItemId: other.id })).status).toBe(409);
+    // a subitem can't hold one
+    expect((await patch(other.id, { parentItemId: child.id })).status).toBe(409);
+    expect((await patch(other.id, { parentItemId: other.id })).status).toBe(400);
+    const [row] = await db.select({ parentItemId: items.parentItemId }).from(items).where(eq(items.id, other.id));
+    expect(row!.parentItemId).toBeNull();
+  });
+});
