@@ -203,8 +203,12 @@
     z-index: var(--z-hover-control);
   }
   /* Positioned itself, as in the kit, so a theme can offset it (Minimal sets top: 10px). */
+  /* Hidden by opacity, not display: Base UI hands focus back to the ⋯ when its menu closes, and a display:none
+     trigger can't take it (focus fell to <body>). Focused, it shows (the card is :focus-within). */
   .td-card-more {
-    display: none;
+    display: inline-flex;
+    opacity: 0;
+    pointer-events: none;
     position: absolute;
     top: 0;
     right: 0;
@@ -231,7 +235,8 @@
   .td-card:focus-within .td-card-more,
   .td-card-more[aria-expanded="true"],
   html[data-touch="true"] .td-card-more {
-    display: inline-flex;
+    opacity: 1;
+    pointer-events: auto;
   }
   .td-card-more:hover,
   .td-card-more[aria-expanded="true"] {

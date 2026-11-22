@@ -176,9 +176,9 @@ html[data-theme="minimal"] .td-card-more:hover,html[data-theme="minimal"] .td-ca
 html[data-theme="minimal"] .td-card-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
 html[data-theme="minimal"] .td-card-meta{padding:4px 0 0}
 html[data-theme="minimal"] .td-card-details:not([data-expanded="true"])>.td-card-meta{padding:0}
-/* The 196px Minimal card fits the created date and all six quick actions at full 24px targets: the word "Created" drops (it stays in the title) */
+/* The 196px Minimal card fits the created date and all six quick actions at full 24px targets: the word "Created" is visually hidden (screen readers still read it) */
 html[data-theme="minimal"] .td-card-meta{gap:0}
-html[data-theme="minimal"] .td-card-meta-word{display:none}
+html[data-theme="minimal"] .td-card-meta-word{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 html[data-theme="minimal"] .td-card-qa{width:24px;height:24px;border-radius:0}
 html[data-theme="minimal"] .td-card-qa:hover{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-card.td-file-target{outline:none;background:var(--blue-100);box-shadow:none;isolation:isolate}

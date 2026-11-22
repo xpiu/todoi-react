@@ -379,7 +379,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
                     </MenuItem>
                   ) : null}
                   {p.onMakeSubitemOf ? (
-                    <MenuItem icon="corner-down-right" disabled={item.subitems.length > 0} title={item.subitems.length ? "It has its own subitems, so it can't become a subitem" : undefined} onSelect={() => setSubitemOf(true)}>
+                    <MenuItem icon="corner-down-right" disabled={item.subitems.length > 0} trailing={item.subitems.length ? "has subitems" : undefined} onSelect={() => setSubitemOf(true)}>
                       Make subitem of…
                     </MenuItem>
                   ) : null}

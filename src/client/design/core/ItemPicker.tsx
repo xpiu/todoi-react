@@ -77,7 +77,8 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
   const [q, setQ] = useState("");
   const ex = new Set(exclude);
   const ql = q.trim().toLowerCase();
-  const list = items.filter((it) => !ex.has(it.id) && (!ql || [it.itemId, it.title, it.listName].filter(Boolean).some((s) => String(s).toLowerCase().includes(ql)))).slice(0, limit);
+  const matches = items.filter((it) => !ex.has(it.id) && (!ql || [it.itemId, it.title, it.listName].filter(Boolean).some((s) => String(s).toLowerCase().includes(ql))));
+  const list = matches.slice(0, limit);
   const cursor = usePickerCursor(list, (it) => it.id, onPick);
   return (
     <div className="td-item-picker">
@@ -116,11 +117,13 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
       ) : (
         <div className="td-menu-note">{emptyText}</div>
       )}
+      {/* The list stops at `limit`: say so, and how to reach the rest */}
+      {matches.length > list.length ? <div className="td-menu-note">Showing {list.length} of {matches.length}. Type a key or title to find the rest.</div> : null}
     </div>
   );
 }
 
-/** "Make subitem of": pick the parent an item moves under (the overlay ⋯ and a board card's ⋯ › Convert to). */
+/** "Make subitem of": pick the parent an item moves under (the overlay ⋯ and a board card's ⋯). */
 export function MakeSubitemDialog({ open, onClose, items, onPick, title = "Make subitem of" }: { open: boolean; onClose: () => void; items: PickableItem[]; onPick: (parent: PickableItem) => void; title?: string }) {
   const searchRef = useRef<HTMLInputElement>(null);
   return (

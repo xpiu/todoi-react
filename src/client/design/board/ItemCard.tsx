@@ -65,6 +65,8 @@ export interface ItemCardProps {
   onMenuAction?: (action: CardMenuAction, itemId: string, value?: string) => void;
   /** The Move to choices (the BulkBar's): with them, Move to drills into this list instead of firing at once */
   moveOptions?: BulkOption[];
+  /** The item holds subitems (anywhere): "Make subitem of…" is then unavailable. Defaults to the checklist badge's total */
+  hasSubitems?: boolean;
   /** "Aug 12": shown in the details row the ⋯ menu expands */
   created?: string;
   /** A details-row quick action (Due date, Start date, Assignees, Labels, Priority, Status); without it the row has no buttons */
@@ -111,7 +113,7 @@ function ItemKey({ itemId }: { itemId?: string }) {
 
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
-export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, created, onQuickAction, style }: ItemCardProps) {
+export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, hasSubitems, created, onQuickAction, style }: ItemCardProps) {
   // The ⋯ menu's drill view (as the overlay ⋯ drills into Export): Move to › a list or another project
   const [menuView, setMenuView] = useState<"main" | "move">("main");
   // Opening the ⋯ menu also expands the details row under the card (Design: ItemCard). Closing the menu collapses it,
@@ -122,6 +124,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
   const pressInRow = useRef(false);
   const rowRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
   const onMenuOpenChange = (open: boolean, reason?: PopoverCloseReason) => {
     menuOpen.current = open;
     if (open) return setExpanded(true);
@@ -153,6 +156,8 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
     }
   };
   const hasDetails = !!itemId && !!onMenuAction && (!!created || !!onQuickAction);
+  // Items hold subitems, subitems hold nothing: an item with subitems can't become one (the row says why)
+  const subitemBlocked = hasSubitems ?? !!badges.checklist?.total;
   const cl = badges.checklist;
   const clComplete = !!cl && cl.total > 0 && cl.done === cl.total;
   const hasOtherBadges = !!(due || repeat || badges.description || cl || badges.attachments || status || priority || assignees.length);
@@ -260,13 +265,13 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             label="Item options"
             tier="detached"
             placement={hasDetails ? "right-start" : "bottom-end"}
-            width={menuView === "main" ? 184 : 224}
+            width={menuView === "main" ? (subitemBlocked ? 252 : 184) : 224}
             onOpenChange={(open, reason) => {
               if (!open) setMenuView("main");
               if (hasDetails) onMenuOpenChange(open, reason);
             }}
             shouldClose={shouldClose}
-            trigger={<button {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}
+            trigger={<button ref={moreRef} {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}
           >
             <div className="td-card-menu-body" onKeyDown={onMenuKey}>
             {menuView === "move" && moveOptions ? (
@@ -276,7 +281,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
                   o.divider ? (
                     <MenuDivider key={`d${i}`} />
                   ) : (
-                    <MenuItem key={o.value ?? i} icon={o.icon} iconColor={o.iconColor} checked={o.checked} disabled={o.checked} onSelect={() => o.value && onMenuAction("Move to", itemId, o.value)}>
+                    <MenuItem key={o.value ?? i} icon={o.icon} iconColor={o.iconColor} checked={o.checked} onSelect={() => o.value && !o.checked && onMenuAction("Move to", itemId, o.value)}>
                       {o.label}
                     </MenuItem>
                   ),
@@ -285,12 +290,11 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             ) : (
               MENU_ITEMS.map(([icon, label]) => {
                 const drillTo = label === "Move to" && moveOptions ? "move" : null;
-                // Items hold subitems, subitems hold nothing: an item with subitems can't become one
-                const blocked = label === "Make subitem of" && !!cl?.total;
+                const blocked = label === "Make subitem of" && subitemBlocked;
                 return (
                   <Fragment key={label}>
                     {label === "Delete" ? <MenuDivider /> : null}
-                    <MenuItem icon={icon} danger={label === "Delete"} drill={!!drillTo} disabled={blocked} title={blocked ? "It has its own subitems, so it can't become a subitem" : undefined} onSelect={() => (drillTo ? setMenuView(drillTo) : onMenuAction(label, itemId))}>
+                    <MenuItem icon={icon} danger={label === "Delete"} drill={!!drillTo} disabled={blocked} trailing={blocked ? "has subitems" : undefined} onSelect={() => (drillTo ? setMenuView(drillTo) : onMenuAction(label, itemId))}>
                       {label === "Make subitem of" ? "Make subitem of…" : label}
                     </MenuItem>
                   </Fragment>
@@ -311,7 +315,11 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
               e.stopPropagation();
-              if (e.key === "Escape") setExpanded(false);
+              if (e.key === "Escape") {
+                // The row turns inert as it collapses: hand focus to the ⋯ first
+                moreRef.current?.focus();
+                setExpanded(false);
+              }
             }}
           >
             <span className="td-card-meta-created" title={created ? `Created ${created}` : undefined}>

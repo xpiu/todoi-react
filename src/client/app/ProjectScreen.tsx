@@ -233,6 +233,17 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
     return () => document.removeEventListener("keydown", onKey);
   }, [selectedIds.length, setSelectedIds]);
 
+  // Keyboard users keep their place when a card leaves its column: its neighbour (next, else previous, else the column's
+  // "Add an item") takes focus once the board has re-rendered; `follow` keeps focus on the card in its new list.
+  const keepFocus = (id: string, follow = false) => {
+    const sel = `${dndOpts.itemSelector}[data-drag-id="${CSS.escape(id)}"]`;
+    const card = root.current?.querySelector<HTMLElement>(sel);
+    const column = card?.closest(dndOpts.listSelector);
+    const cards = column ? [...column.querySelectorAll<HTMLElement>(dndOpts.itemSelector)] : [];
+    const at = card ? cards.indexOf(card) : -1;
+    const neighbour = cards[at + 1] ?? cards[at - 1] ?? column?.querySelector<HTMLElement>("[data-add-item]") ?? null;
+    setTimeout(() => (follow ? root.current?.querySelector<HTMLElement>(sel) : neighbour?.isConnected ? neighbour : null)?.focus(), 120);
+  };
   const bulkBar = (
     <>
       {selectedIds.length ? (
@@ -251,6 +262,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       ) : null}
       <TransferDialog kind={transfer?.kind ?? null} onClose={() => setTransfer(null)} projects={picker.projects} count={transfer?.ids.length ?? 1} loadLists={picker.loadLists} onPick={(kind, proj, list) => {
         const ids = transfer?.ids ?? [];
+        if (kind === "move" && ids.length === 1) keepFocus(ids[0]!);
         void actions.transfer(ids, proj, list, kind === "copy");
         if (kind === "move") setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
       }} />
@@ -259,7 +271,11 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
         title={subitemFor ? `Make ${quote(subitemFor.title)} a subitem of` : "Make subitem of"}
         onClose={() => setSubitemFor(null)}
         items={subitemFor ? pickableItems(items, project).filter((p) => p.id !== subitemFor.id) : []}
-        onPick={(parent) => subitemFor && actions.makeSubitemOf(subitemFor, parent)}
+        onPick={(parent) => {
+          if (!subitemFor) return;
+          keepFocus(subitemFor.id);
+          actions.makeSubitemOf(subitemFor, parent);
+        }}
       />
     </>
   );
@@ -297,17 +313,26 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
     cardMenuRef.current = (it, action, value) => {
       if (action === "Rename") openItem(it.id, true);
       else if (action === "Move to" && (value === "__move" || value === "__copy")) setTransfer({ kind: value === "__copy" ? "copy" : "move", ids: [it.id] });
-      else if (action === "Move to" && value && value !== it.listId) actions.bulk("move", value, [it.id]);
+      else if (action === "Move to" && value && value !== it.listId) {
+        keepFocus(it.id, true);
+        actions.bulk("move", value, [it.id]);
+      }
       else if (action === "Duplicate") void actions.copyItems([it.id], { projectId, listId: it.listId, name: null });
       else if (action === "Make subitem of") setSubitemFor(it);
-      else if (action === "Archive") actions.archive(it);
-      else if (action === "Delete") void actions.remove(it.id);
+      else if (action === "Archive") {
+        keepFocus(it.id);
+        actions.archive(it);
+      } else if (action === "Delete") {
+        keepFocus(it.id);
+        void actions.remove(it.id);
+      }
     };
   });
+  const parentsWithSubitems = useMemo(() => new Set(items.flatMap((it) => (it.parentItemId ? [it.parentItemId] : []))), [items]);
   const onCardMenu = useCallback((it: Item, action: CardMenuAction, value?: string) => cardMenuRef.current(it, action, value), []);
   const { moveOptions } = actions;
   const moveOptionsByList = useMemo(() => new Map(lists.map((l) => [l.id, moveOptions(l.id)])), [lists, moveOptions]);
-  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
+  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -422,7 +447,7 @@ function ProjectList(props: ViewProps) {
 }
 
 /** Raw immutable item records and stable callbacks let unchanged cards skip a board update. */
-const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, selected, onClick, onMenu, moveOptions, onQuickAction }: {
+const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, hasSubitems, selected, onClick, onMenu, moveOptions, onQuickAction }: {
   item: Item;
   toRow: ReturnType<typeof itemRowMapper>;
   subitemTotal: number;
@@ -430,6 +455,7 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
   selected: boolean;
   onClick: (id: string, listId: string, e: SyntheticEvent) => void;
   onMenu: (it: Item, action: CardMenuAction, value?: string) => void;
+  hasSubitems: boolean;
   moveOptions?: BulkOption[];
   onQuickAction: (id: string, field: OverlayField) => void;
 }) {
@@ -452,6 +478,7 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
     badges={{ description: !!item.description, attachments: r.attachments, checklist: subitemTotal ? { done: subitemDone, total: subitemTotal } : undefined }}
     onMenuAction={(action, _id, value) => onMenu(item, action, value)}
     moveOptions={moveOptions}
+    hasSubitems={hasSubitems}
     created={formatDate(item.createdAt, { year: "auto" })}
     onQuickAction={(field) => onQuickAction(item.id, field)}
   />;
@@ -479,6 +506,7 @@ function ProjectBoard(props: ViewProps) {
                     toRow={v.toRow}
                     subitemTotal={r.subitems.length}
                     subitemDone={r.subitems.filter((s) => s.done).length}
+                    hasSubitems={v.parentsWithSubitems.has(r.id)}
                     selected={v.isSelected(r.id)}
                     onClick={v.onItemClick}
                     onMenu={v.onCardMenu}
