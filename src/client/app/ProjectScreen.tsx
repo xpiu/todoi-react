@@ -130,10 +130,12 @@ interface VisibleList {
 }
 
 /** Everything a view needs beyond rendering: visible lists (filtered, sorted), actions, selection, drag. */
-function useProjectView({ projectId, project, items, labels, filters, sort, selectedIds, setSelectedIds, openItem }: ViewProps, root: React.RefObject<HTMLDivElement | null>, dndOpts: { listSelector: string; itemSelector: string; cardsSelector: string }) {
+function useProjectView({ projectId, project, items, labels, filters, sort, selectedIds, setSelectedIds, openItem }: ViewProps, root: React.RefObject<HTMLDivElement | null>, dndOpts: { listSelector: string; itemSelector: string; cardsSelector: string; subitems?: boolean }) {
   const actions = useProjectActions(projectId, project, items, labels);
-  const dnd = useItemDnd(root, { ...dndOpts, onDrop: actions.move });
-  useTouchItemDrag(root, dnd, dndOpts.itemSelector, actions.move);
+  // List view: subitem rows drag too — between an item's subitems, or onto another item's row (Design: ListScreen)
+  const { subitems: dragSubitems, ...dndSelectors } = dndOpts;
+  const dnd = useItemDnd(root, { ...dndSelectors, onDrop: actions.move, onDropSubitem: dragSubitems ? (id, t) => actions.moveSubitem(id, t.parentId, t.index ?? undefined) : undefined });
+  useTouchItemDrag(root, dnd, dndOpts.itemSelector, !!dragSubitems);
   // Files dropped on a card or row attach to that item.
   const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files, items.find((it) => it.id === id)?.title), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
@@ -380,17 +382,17 @@ function listCallbacks(actions: ProjectActions, list: VisibleList, selectAll: ()
 }
 
 /** The touch long-press layer drives the same slot cue and drop as native drag-and-drop. */
-function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: ItemDnd, selector: string, move: ProjectActions["move"]) {
+function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: ItemDnd, selector: string, subitems: boolean) {
   useTouchDrag(root, {
     selector,
-    onLift: (el) => (isReadOnly(el) || el.getAttribute("data-drag-id")?.includes("/") ? false : undefined),
+    onLift: (el) => (isReadOnly(el) || (!subitems && el.getAttribute("data-drag-id")?.includes("/")) ? false : undefined),
     onMove: (p, d) => {
       dnd.cueAt(p.x, p.y, d.dragId);
     },
     onDrop: (p, d) => {
       const t = dnd.cueAt(p.x, p.y, d.dragId);
       dnd.end();
-      if (t && d.dragId) move(d.dragId, t);
+      if (t && d.dragId) dnd.drop(d.dragId, t);
     },
     onCancel: dnd.end,
   });
@@ -398,7 +400,7 @@ function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: Ite
 
 function ProjectList(props: ViewProps) {
   const root = useRef<HTMLDivElement | null>(null);
-  const v = useProjectView(props, root, { listSelector: ".td-list-section", itemSelector: ".td-list-row[data-drag-id]", cardsSelector: ".td-list-section-body" });
+  const v = useProjectView(props, root, { listSelector: ".td-list-section", itemSelector: ".td-list-row[data-drag-id]", cardsSelector: ".td-list-section-body", subitems: true });
   const { actions } = v;
   if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;

@@ -25,7 +25,7 @@ import { count, joinAnd } from "../design/core/text";
 import { snapshotUndo } from "./snapshotUndo";
 import { useCompletion } from "./completion";
 import { quote, useFeedback } from "./feedback";
-import { PRIORITY_LABEL, type Person } from "./items";
+import { keyOf, PRIORITY_LABEL, type Person } from "./items";
 import { usePrefs } from "./prefs";
 import { peopleOf, type ItemContainer } from "./session";
 
@@ -410,6 +410,39 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     );
   };
 
+  /** A parent's subitems in their order */
+  const subitemsOf = (parentId: string) => items.filter((x) => x.parentItemId === parentId).sort((a, b) => a.position - b.position);
+  /** Put a subitem at `index` among its parent's subitems (positions rewritten in order; quiet, like a same-list reorder) */
+  const reorderSubitem = (parentId: string, id: string, index: number) => {
+    const order = subitemsOf(parentId).filter((s) => s.id !== id);
+    const sub = byId(id);
+    if (!sub) return;
+    order.splice(Math.max(0, Math.min(index, order.length)), 0, sub);
+    order.forEach((s, i) => s.position !== i && updateItem.mutate({ id: s.id, position: i }));
+  };
+  /**
+   * A subitem under another item (the overlay checklist's ⋯ › Move to another item, a List view drag onto an item's row or
+   * between its subitems): one toast with Undo; `index` places it among the new parent's subitems (default: last).
+   */
+  const moveSubitem = (id: string, parentId: string, index?: number) => {
+    const sub = byId(id);
+    const target = byId(parentId);
+    if (!sub || !target || !sub.parentItemId) return;
+    if (sub.parentItemId === parentId) {
+      if (index != null) reorderSubitem(parentId, id, index);
+      return;
+    }
+    const from = sub.parentItemId;
+    const siblings = subitemsOf(parentId);
+    void updateItem.mutateAsync({ id, parentItemId: parentId }).then(
+      () => {
+        if (index != null && index < siblings.length) [...siblings.slice(0, index), sub, ...siblings.slice(index)].forEach((s, i) => updateItem.mutate({ id: s.id, position: i }));
+        notify({ message: `Moved ${quote(sub.title)} under ${keyOf(target, project.keyPrefix) ?? quote(target.title)}`, icon: "corner-down-right", restore: snapshotUndo([{ id, before: { parentItemId: from, listId: sub.listId }, after: { parentItemId: parentId, listId: target.listId }, restore: () => updateItem.mutateAsync({ id, parentItemId: from, quiet: true }) }]) });
+      },
+      () => {},
+    );
+  };
+
   /** The LabelPicker's create / edit / delete, for the overlay and the Board's quick pickers */
   const labelOps = useLabelMutations(projectId ?? "");
   const labelHandlers = {
@@ -460,5 +493,5 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     },
   };
 
-  return { labelHandlers, quickEdit, lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
+  return { labelHandlers, quickEdit, reorderSubitem, moveSubitem, lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
 }

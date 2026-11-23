@@ -162,22 +162,14 @@ function ItemOverlayBody({ projectId, project, items, labels, itemId, item, edit
       onSetDescription={(description) => saving(updateItem.mutateAsync({ id: item.id, description, quiet: true }))}
       onAddSubitem={(title) => createItem.mutate({ id: newId(), title, listId: item.listId, parentItemId: item.id })}
       onToggleSubitem={(id, done) => actions.setDone(id, done)}
-      onReorderSubitem={(id, index) => {
-        const order = subitems.filter((s) => s.id !== id);
-        order.splice(index, 0, subitems.find((s) => s.id === id)!);
-        order.forEach((s, i) => s.position !== i && updateItem.mutate({ id: s.id, position: i }));
-      }}
+      onReorderSubitem={(id, index) => actions.reorderSubitem(item.id, id, index)}
       onOpenSubitem={(id) => onOpen(id)}
       onConvertSubitem={(id) => {
         const s = subitems.find((x) => x.id === id);
         updateItem.mutate({ id, parentItemId: null, position: items.filter((it) => it.listId === item.listId && !it.parentItemId).length });
         if (s) notify({ message: `${quote(s.title)} is now an item in ${listName(item.listId) ?? "the list"}`, icon: "arrow-up-from-line", restore: snapshotUndo([{ id, before: { parentItemId: item.id, listId: item.listId }, after: { parentItemId: null, listId: item.listId }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
       }}
-      onMoveSubitem={(id, target) => {
-        const s = subitems.find((x) => x.id === id);
-        updateItem.mutate({ id, parentItemId: target.id });
-        if (s) notify({ message: `Moved ${quote(s.title)} under ${target.itemId ?? target.title}`, icon: "corner-down-right", restore: snapshotUndo([{ id, before: { parentItemId: item.id, listId: item.listId }, after: { parentItemId: target.id, listId: items.find((it) => it.id === target.id)?.listId ?? item.listId }, restore: () => updateItem.mutateAsync({ id, parentItemId: item.id, quiet: true }) }]) });
-      }}
+      onMoveSubitem={(id, target) => actions.moveSubitem(id, target.id)}
       onDeleteSubitem={(id) => void actions.remove(id)}
       onDeleteSubitems={() => void actions.removeMany(subitems.map((s) => s.id), "subitem")}
       onAddRelation={(type, target) => addRelation.mutate({ type, targetId: target.id })}

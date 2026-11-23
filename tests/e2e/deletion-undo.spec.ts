@@ -104,7 +104,8 @@ test("checklist bulk Undo retries only the restores that failed", async ({ page,
   // The toast follows nested modal focus boundaries and returns when the nested dialog closes.
   await page.getByRole("button", { name: "Item options", exact: true }).click();
   await page.getByRole("menuitem", { name: "Make subitem of…", exact: true }).click();
-  const nested = page.getByRole("dialog", { name: "Make subitem of", exact: true });
+  // The dialog names its subject: Make “<title>” a subitem of
+  const nested = page.getByRole("dialog", { name: /^Make “.+” a subitem of$/ });
   await expect(nested.getByRole("button", { name: /^Undo/ })).toBeVisible();
   await nested.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("button", { name: /^Undo/ })).toBeVisible();
