@@ -4,7 +4,7 @@
 // bold / italic / strike / inline code, links), the quiet toolbar, Save / Cancel; ctrl+↵ saves, Esc
 // cancels. Tiptap serialises back to the same subset through @tiptap/markdown, so GitHub / Embridge
 // round-trips stay exact. Spec: DESIGN.md › Description.
-import { useEffect, useRef, useState, type ComponentType, type CSSProperties, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type RefObject } from "react";
 
 import { Button } from "../core/Button";
 import { InlineError } from "../core/InlineError";
@@ -70,7 +70,18 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
     if (loadedEditor) setEdit(() => loadedEditor);
     setEditing(true);
   };
+  // Leaving edit removes the control that had focus (Save, Discard, the editor). Focus returns to Edit
+  // in the same commit; dropped to the body instead, the Dialog refocuses its popup a frame later, over
+  // whatever was focused in between (the comment composer, mid-typing).
+  const editButton = useRef<HTMLButtonElement>(null);
+  const focusedAtClose = useRef<Element | null>(null);
+  useLayoutEffect(() => {
+    const focused = focusedAtClose.current;
+    focusedAtClose.current = null;
+    if (!editing && focused && !focused.isConnected) editButton.current?.focus();
+  }, [editing]);
   const close = () => {
+    focusedAtClose.current = document.activeElement;
     track(null);
     setError(null);
     setLoadError(null);
@@ -120,7 +131,7 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
       // the visually hidden Edit button, whose focus ring the view draws; links and keys stay separate stops.
       <div className="td-description-view" title="Click to edit description" style={style} onClick={(e) => !(e.target as Element).closest("a, button, [role=link]") && beginEdit()}>
         {value.trim() ? <Markdown text={value} members={members} onOpenKey={onOpenKey} /> : <div className="td-description-empty" aria-hidden>{placeholder}</div>}
-        <button type="button" className="td-description-editbtn td-sr-only" aria-label={value.trim() ? "Edit description" : placeholder} onClick={beginEdit} />
+        <button ref={editButton} type="button" className="td-description-editbtn td-sr-only" aria-label={value.trim() ? "Edit description" : placeholder} onClick={beginEdit} />
       </div>
     );
   if (!Edit) return (
