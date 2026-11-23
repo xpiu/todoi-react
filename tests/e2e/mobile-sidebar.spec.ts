@@ -54,7 +54,8 @@ test.describe("phone", () => {
     const more = sheet(page).getByRole("button", { name: /^Settings for / }).first();
     await expect(more).toBeVisible();
     expect(await more.evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
-    const row = sheet(page).locator(".td-sidebar-rowwrap").first();
+    // The project row that holds this ⋯ (the account's sidebar order may put a nav row first)
+    const row = sheet(page).locator(".td-sidebar-rowwrap:has(.td-sidebar-more)").first();
     const rowBox = (await row.boundingBox())!;
     const moreBox = (await more.boundingBox())!;
     expect(rowBox.height).toBeGreaterThanOrEqual(44);

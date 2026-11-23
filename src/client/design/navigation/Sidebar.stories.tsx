@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState, type ComponentProps } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { DEFAULT_NAV, ITEM_DRAG_TYPE, Sidebar, type SidebarGroup } from "./Sidebar";
+import { moveProject } from "./sidebarOrder";
 
 const GROUPS: SidebarGroup[] = [
   { id: "g1", name: "Helicopters Europe", projects: [{ id: "p1", name: "Helicopter sales", icon: "rocket", color: "var(--label-orange)", count: 24 }, { id: "p2", name: "Maintenance plans", icon: "wrench", color: "var(--label-teal)" }] },
@@ -150,3 +152,52 @@ export const TabletSheet: Story = {
     await expect(args.onClose).toHaveBeenCalledOnce();
   },
 };
+
+/** The rail with the host's side of reordering: the order and the groups live here, as the app keeps them per account. */
+function Reorderable(props: ComponentProps<typeof Sidebar>) {
+  const [groups, setGroups] = useState(GROUPS);
+  const [order, setOrder] = useState<string[]>([]);
+  return (
+    <Sidebar
+      {...props}
+      groups={groups}
+      order={order}
+      onReorder={(next) => {
+        props.onReorder?.(next);
+        setOrder(next);
+      }}
+      onProjectMove={(id, gid, index) => {
+        props.onProjectMove?.(id, gid, index);
+        setGroups((g) => moveProject(g, id, gid, index));
+      }}
+    />
+  );
+}
+
+export const Reorder: Story = {
+  args: { onReorder: fn(), onProjectMove: fn(), canMoveProject: (_id: string, gid: string) => gid !== "g2" },
+  render: (args) => <Reorderable {...args} />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Desktop reordering: drag a group header, a nav row or a project row (a 2px line marks where it lands; a project lands only inside a group), or press Alt+↑ / Alt+↓ on a focused row. A project at the edge of its group steps into the neighbouring group — only where `canMoveProject` allows it (here: not into Internal). The host stores the order; the app keeps it per account.",
+      },
+    },
+  },
+  async play({ args, canvas, userEvent }) {
+    const group = canvas.getByRole("button", { name: "Helicopters Europe" });
+    await expect(group).toHaveAttribute("aria-keyshortcuts", "Alt+ArrowUp Alt+ArrowDown");
+    group.focus();
+    await userEvent.keyboard("{Alt>}{ArrowDown}{/Alt}");
+    await expect(args.onReorder).toHaveBeenCalledWith(["g2", "g1", "projects", "groups", "inbox"]);
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Helicopters Europe" })).toHaveFocus());
+    // A project moves inside its group, then stops at the edge: Internal (now above) is not allowed
+    canvas.getByRole("button", { name: "Maintenance plans" }).focus();
+    await userEvent.keyboard("{Alt>}{ArrowUp}{/Alt}");
+    await expect(args.onProjectMove).toHaveBeenLastCalledWith("p2", "g1", 0);
+    await userEvent.keyboard("{Alt>}{ArrowUp}{/Alt}");
+    await expect(args.onProjectMove).toHaveBeenCalledOnce();
+  },
+};
+

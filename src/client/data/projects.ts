@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { MemberRole } from "../../shared/enums";
 import type { ImportProjectInput } from "../../shared/import";
-import type { CreateGroupInput, CreateProjectInput, UpdateGroupInput, UpdateProjectInput } from "../../shared/projects";
+import type { CreateGroupInput, CreateProjectInput, MoveProjectGroupInput, UpdateGroupInput, UpdateProjectInput } from "../../shared/projects";
 import { api, unwrap } from "./api";
 import type { Quiet } from "./mutations";
 import { keys } from "./queries";
@@ -30,6 +30,8 @@ export function useProjectMutations() {
   const importProject = useMutation({ mutationFn: ({ quiet: _quiet, ...input }: ImportProjectInput & Quiet) => api.api.projects.import.$post({ json: input }).then((r) => unwrap<{ project: { id: string; name: string }; items: number }>(r)), onSettled: () => refresh() });
   const createGroup = useMutation({ mutationFn: ({ quiet: _quiet, ...input }: CreateGroupInput & Quiet) => api.api.groups.$post({ json: input }).then((r) => unwrap<{ id: string; name: string }>(r)), onSettled: () => refresh() });
   const updateProject = useMutation({ mutationFn: (vars: { id: string } & UpdateProjectInput) => api.api.projects[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => refresh(v.id) });
+  /** Another group: its items take new keys there; the reply carries what an Undo hands back */
+  const moveProjectGroup = useMutation({ mutationFn: ({ quiet: _quiet, id, ...json }: { id: string } & MoveProjectGroupInput & Quiet) => api.api.projects[":id"].group.$post({ param: { id }, json }).then((r) => unwrap<{ rekeyed: number; restore: { groupId: string; keys: Array<{ itemId: string; keyNumber: number }> } }>(r)), onSettled: (_d, _e, v) => refresh(v.id) });
   const updateGroup = useMutation({ mutationFn: (vars: { id: string } & UpdateGroupInput) => api.api.groups[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap(r)), onSettled: () => refresh() });
   const archiveProject = useMutation({ mutationFn: ({ id }: { id: string } & Quiet) => api.api.projects[":id"].archive.$post({ param: { id } }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => refresh(v.id) });
   const restoreProject = useMutation({ mutationFn: ({ id }: { id: string } & Quiet) => api.api.projects[":id"].restore.$post({ param: { id } }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => refresh(v.id) });
@@ -42,5 +44,5 @@ export function useProjectMutations() {
   const revokeInvite = useMutation({ mutationFn: ({ code }: { code: string; projectId: string } & Quiet) => api.api.invites[":code"].$delete({ param: { code } }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => qc.invalidateQueries({ queryKey: projectInvitesKey(v.projectId) }) });
   const transferOwnership = useMutation({ mutationFn: ({ projectId, userId }: { projectId: string; userId: string } & Quiet) => api.api.projects[":id"].ownership.$post({ param: { id: projectId }, json: { userId } }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => refresh(v.projectId) });
   const destroyProject = useMutation({ mutationFn: ({ id }: { id: string } & Quiet) => api.api.archive.projects[":id"].$delete({ param: { id } }).then((r) => unwrap<void>(r)), onSettled: () => refresh() });
-  return { transferOwnership, revokeInvite, createProject, importProject, createGroup, updateProject, updateGroup, archiveProject, restoreProject, deleteProject, deleteGroup, setMember, removeMember, createInvite, destroyItem, destroyProject, refresh };
+  return { transferOwnership, revokeInvite, createProject, importProject, createGroup, updateProject, moveProjectGroup, updateGroup, archiveProject, restoreProject, deleteProject, deleteGroup, setMember, removeMember, createInvite, destroyItem, destroyProject, refresh };
 }
