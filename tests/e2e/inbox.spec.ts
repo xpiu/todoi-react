@@ -21,8 +21,11 @@ test("capture, edit, file into a chosen list, undo, and delete/restore without d
   await freshInbox(page);
   await shot(page, "empty");
 
-  // Create › Item lands in the Inbox with the quick-add field focused.
+  // Create › Item lands in the Inbox with the quick-add field focused when no project is current in this tab
+  // (Default destination "Current project" otherwise uses the last project open in the tab).
   await page.goto("/projects");
+  await page.evaluate(() => sessionStorage.removeItem("td-last-project"));
+  await page.reload();
   await page.getByRole("button", { name: "Create" }).click();
   await page.getByRole("menuitem", { name: "Create an item" }).click();
   await expect(page).toHaveURL(/\/inbox$/);

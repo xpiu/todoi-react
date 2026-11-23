@@ -143,8 +143,8 @@ export function AppShell() {
   useEffect(() => {
     if (projectId) setLastProject(projectId);
   }, [projectId]);
-  // Create › New item follows Settings › General › Default destination: the current project (Inbox outside one), the Inbox,
-  // or a chosen project — there quick-add opens in the first list, as N does
+  // Create › New item follows Settings › General › Default destination: the current project (the one on screen, else the
+  // last one open in this tab, else the Inbox), the Inbox, or a chosen project — there quick-add opens in the first list, as N does
   const destination = usePrefs((s) => s.defaultDestination);
   const newItem = () => {
     const known = (groups.data ?? []).some((g) => g.projects.some((p) => p.id === destination));

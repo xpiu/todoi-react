@@ -32,7 +32,7 @@ const PAGES: SettingsPage[] = [
             id: "date",
             title: "Language and time",
             rows: [
-              { id: "language", label: "Language", hint: "Todoi is in English for now; other languages come later", control: <MonoValue value="English" /> },
+              { id: "language", label: "Language", hint: "Menus, buttons and dates. Smart date recognition reads this language", control: <MonoValue value="English" /> },
               { id: "timeFormat", label: "Time format", hint: "14:00 or 2:00 pm on items and in the calendar", control: <TimeFormat /> },
               { id: "showCompleted", label: "Show completed items", hint: "Keep done items visible instead of hiding them", control: <PrefSwitch label="Show completed items" initial /> },
               { id: "smartDates", label: "Smart date recognition", hint: "Read “due fri” or “tomorrow” as a date while you type", control: <PrefSwitch label="Smart date recognition" /> },

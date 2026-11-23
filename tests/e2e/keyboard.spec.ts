@@ -39,7 +39,7 @@ test("a same-list keyboard move is announced, not toasted", async ({ page }) => 
     const first = page.locator("[data-drag-id]", { hasText: "First" });
     await first.focus();
     await page.keyboard.press("ControlOrMeta+ArrowDown");
-    await expect(page.locator("[data-announcer]")).toContainText(/Moved “First \w+” to position 2 of 3 in To-do/);
+    await expect(page.locator("[data-announcer]")).toContainText(/Moved “First [\w-]+” to position 2 of 3 in To-do/);
     await expect(page.locator(".td-toast")).toHaveCount(0);
   } finally {
     await f.cleanup();

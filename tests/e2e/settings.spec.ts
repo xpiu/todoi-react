@@ -117,7 +117,12 @@ test("the Inbox badge follows its setting, and unavailable controls say so", asy
   await expect(page.getByText("Email sending isn't set up yet")).toBeVisible();
   await shot(page, "notifications");
   await page.goto("/settings");
-  await expect(page.getByText("Todoi is in English for now")).toBeVisible();
+  // Only English ships: the other languages are listed, unavailable, and say "Later"
+  await page.getByRole("combobox", { name: "Language" }).or(page.getByRole("button", { name: /^Language/ })).first().click();
+  const dutch = page.getByRole("option", { name: /Nederlands/ });
+  await expect(dutch).toContainText("Later");
+  await expect(dutch).toHaveAttribute("aria-disabled", "true");
+  await page.keyboard.press("Escape");
 });
 
 test("confirmed account preferences survive an API-offline reload", async ({ page, context }) => {
