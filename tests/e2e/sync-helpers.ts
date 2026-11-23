@@ -22,6 +22,12 @@ export async function serverItems(page: Page, projectId: string) {
 
 export const itemCheckbox = (page: Page, id: string, done = false) => page.locator(`[data-drag-id="${id}"]`).getByRole("checkbox", { name: done ? "Mark not done" : "Mark done", exact: true }).first();
 
+/** Open an item from its List row: a click on the title text renames it in place (ListRow, Design 11-18), so focus the row and press Enter */
+export async function openRow(page: Page, title: string) {
+  await page.locator(".td-list-row[data-drag-id]").filter({ has: page.getByText(title, { exact: true }) }).first().focus();
+  await page.keyboard.press("Enter");
+}
+
 export async function editTitle(page: Page, title: string) {
   await page.getByRole("dialog").getByTitle("Click to edit title").click();
   const input = page.getByRole("textbox", { name: "Item title", exact: true });

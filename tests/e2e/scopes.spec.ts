@@ -16,7 +16,8 @@ const SCREENS: Screen[] = [
     },
     ready: (page) => page.getByRole("dialog").first(),
   },
-  { name: "settings", open: async (page) => void (await page.goto("/settings?s=appearance")), ready: (page) => page.getByRole("heading", { level: 1, name: "Settings" }) },
+  { name: "settings", open: async (page) => void (await page.goto("/settings?s=appearance")), // Minimal titles the page with the section's name (Design 11-20), Rounded with "Settings"
+    ready: (page) => page.getByRole("heading", { level: 1, name: /^(Settings|Appearance)$/ }) },
 ];
 
 for (const scope of SCOPES) {

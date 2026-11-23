@@ -2,7 +2,7 @@ import { expect, test, type Page, type Request } from "@playwright/test";
 import { nanoid } from "nanoid";
 
 import { trackAccounts } from "./helpers";
-import { apiOffline, editTitle, guestItem, itemCheckbox, serverItems } from "./sync-helpers";
+import { apiOffline, editTitle, guestItem, itemCheckbox, openRow, serverItems } from "./sync-helpers";
 
 const { watch, own } = trackAccounts(test);
 
@@ -22,7 +22,7 @@ test("create, edit and comment replay in dependency order after reopening", asyn
   await input.fill("Created offline");
   await input.press("Enter");
   await input.press("Escape");
-  await page.getByText("Created offline", { exact: true }).click();
+  await openRow(page, "Created offline");
   await editTitle(page, "Edited offline before creation reaches server");
   const composer = page.getByRole("textbox", { name: "Comment", exact: true });
   await composer.fill("Comment depends on the new item");
@@ -54,7 +54,7 @@ test("acknowledged create, edit and comment survive offline reload without a fol
   await input.fill("Created before snapshots return");
   await input.press("Enter");
   await input.press("Escape");
-  await page.getByText("Created before snapshots return", { exact: true }).click();
+  await openRow(page, "Created before snapshots return");
   await editTitle(page, "Acknowledged title without a fresh snapshot");
   const composer = page.getByRole("textbox", { name: "Comment", exact: true });
   await composer.fill("Acknowledged comment without a fresh snapshot");
@@ -82,7 +82,7 @@ test("acknowledged create, edit and comment survive offline reload without a fol
 
 test("a queued new comment edit uses its creation version and preserves text after a remote conflict", async ({ page, context }) => {
   const fixture = await guestItem(page);
-  await page.getByText("Sync fixture", { exact: true }).click();
+  await openRow(page, "Sync fixture");
   const reconnect = await apiOffline(context);
   const composer = page.getByRole("textbox", { name: "Comment", exact: true });
   await composer.fill("Comment created offline");
