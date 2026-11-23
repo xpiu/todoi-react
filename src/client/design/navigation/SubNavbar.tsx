@@ -42,9 +42,13 @@ export const DEFAULT_ACTIONS: SubNavbarAction[] = [
   APPEARANCE_ACTION,
 ];
 const VIS_ICONS: Record<string, IconName> = { Private: "lock", Shared: "users", Public: "globe" };
+// Design's list. Instagram, Slack and Discord have no share-a-link URL: they open the service, the link is copied above.
 const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; href: (u: string) => string }> = [
+  { id: "instagram", label: "Instagram", icon: "instagram", href: () => "https://www.instagram.com/" },
+  { id: "facebook", label: "Facebook", icon: "facebook", href: (u) => "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(u) },
   { id: "x", label: "X", icon: "x-logo", href: (u) => "https://twitter.com/intent/tweet?url=" + encodeURIComponent(u) },
   { id: "telegram", label: "Telegram", icon: "send", href: (u) => "https://t.me/share/url?url=" + encodeURIComponent(u) },
+  { id: "slack", label: "Slack", icon: "slack", href: () => "https://slack.com/" },
   { id: "discord", label: "Discord", icon: "discord", href: () => "https://discord.com/channels/@me" },
 ];
 

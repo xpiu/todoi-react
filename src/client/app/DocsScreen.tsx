@@ -75,7 +75,7 @@ const PAGES: Record<DocsPage, { title: string; crumb: string; cards: DocsCard[] 
         title: "Work together",
         body: (
           <p>
-            Invite people from a project's Members menu as an <strong>Admin</strong>, <strong>Editor</strong> or <strong>Viewer</strong>. Assign items with <code>@name</code> and mention people in comments. Their notifications arrive in their Inbox.
+            Invite members from a project's Members menu as an <strong>Admin</strong>, <strong>Editor</strong> or <strong>Viewer</strong>. Assign items with <code>@name</code> and mention people in comments. Their notifications arrive in their Inbox.
           </p>
         ),
       },

@@ -54,6 +54,23 @@ const CUSTOM = {
       },
     ],
   ],
+  // Lucide 0.454's outline marks (the set Design draws with), for the Share menu
+  instagram: [
+    ["rect", { x: 2, y: 2, width: 20, height: 20, rx: 5, ry: 5 }],
+    ["path", { d: "M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" }],
+    ["path", { d: "M17.5 6.5h.01" }],
+  ],
+  facebook: [["path", { d: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" }]],
+  slack: [
+    ["rect", { x: 13, y: 2, width: 3, height: 8, rx: 1.5 }],
+    ["path", { d: "M19 8.5V10h1.5A1.5 1.5 0 1 0 19 8.5" }],
+    ["rect", { x: 8, y: 14, width: 3, height: 8, rx: 1.5 }],
+    ["path", { d: "M5 15.5V14H3.5A1.5 1.5 0 1 0 5 15.5" }],
+    ["rect", { x: 14, y: 13, width: 8, height: 3, rx: 1.5 }],
+    ["path", { d: "M15.5 19H14v1.5a1.5 1.5 0 1 0 1.5-1.5" }],
+    ["rect", { x: 2, y: 8, width: 8, height: 3, rx: 1.5 }],
+    ["path", { d: "M8.5 5H10V3.5A1.5 1.5 0 1 0 8.5 5" }],
+  ],
   discord: [
     [
       "path",

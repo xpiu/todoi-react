@@ -8,7 +8,7 @@ const accounts = trackAccounts(test);
 async function openMembers(page: Page, id: string) {
   await page.goto(`/p/${id}`);
   await page.locator('button[data-menu="members"]').click();
-  await page.getByRole("button", { name: "Invite people…", exact: true }).click();
+  await page.getByRole("button", { name: "Invite members…", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Invite by email" })).toBeVisible();
 }
 

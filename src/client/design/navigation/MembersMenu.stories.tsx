@@ -39,7 +39,7 @@ const meta = {
   component: MembersMenu,
   render: (args) => <MembersPopover {...args} />,
   args: { members: MEMBERS, currentUserId: "u1", canManage: true, visibility: "private", url: "https://todoi.com/p/helicopters-europe", onVisibilityChange: fn(), onChangeRole: fn(), onInvite: fn() },
-  parameters: { docs: { description: { component: "The Members action's panel: the roster with roles, Invite people, the Visibility radio group and the copyable project link. It must render inside a Popover (SubNavbar's `membersMenu`), because Invite closes it via PopoverClose. The host owns members, roles and visibility; canManage unlocks the role pickers and visibility." } } },
+  parameters: { docs: { description: { component: "The Members action's panel: the roster with roles, Invite members, Member settings & roles, the Visibility radio group and the copyable project link. It must render inside a Popover (SubNavbar's `membersMenu`), because Invite closes it via PopoverClose. The host owns members, roles and visibility; canManage unlocks the role pickers and visibility." } } },
 } satisfies Meta<typeof MembersMenu>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -67,7 +67,7 @@ export const Admin: Story = {
 export const InvitePeople: Story = {
   async play({ args, canvasElement, userEvent }) {
     const { dialog, page } = await openMenu(canvasElement, userEvent);
-    await userEvent.click(dialog.getByRole("button", { name: "Invite people…" }));
+    await userEvent.click(dialog.getByRole("button", { name: "Invite members…" }));
     await expect(args.onInvite).toHaveBeenCalledOnce();
     await waitFor(() => expect(page.queryByRole("dialog", { name: "Project members and sharing" })).not.toBeInTheDocument());
   },
@@ -77,7 +77,7 @@ export const ReadOnly: Story = {
   async play({ canvasElement, userEvent }) {
     const { dialog } = await openMenu(canvasElement, userEvent);
     await expect(dialog.queryByRole("combobox")).not.toBeInTheDocument();
-    await expect(dialog.queryByRole("button", { name: "Invite people…" })).not.toBeInTheDocument();
+    await expect(dialog.queryByRole("button", { name: "Invite members…" })).not.toBeInTheDocument();
     for (const radio of dialog.getAllByRole("radio")) await expect(radio).toBeDisabled();
     await expect(dialog.getByText("Only admins can change roles or visibility.")).toBeVisible();
   },

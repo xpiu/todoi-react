@@ -1,5 +1,5 @@
 // MembersMenu — the Members action's panel: the roster with each member's role (a picker for admins),
-// Invite people, the Visibility radio and the copyable project link. Body of a toolbar-tier Popover;
+// Invite members, Member settings & roles, the Visibility radio and the copyable project link. Body of a toolbar-tier Popover;
 // the full roster (remove, invite form) stays in the project settings. Spec: DESIGN.md › Subnavbar.
 import { useId } from "react";
 
@@ -24,10 +24,12 @@ export interface MembersMenuProps {
   onChangeRole: (member: PanelMember, role: MemberRole) => void;
   /** Opens the project settings at Members, where the invite form is */
   onInvite?: () => void;
+  /** "Member settings & roles": the full roster in the project settings */
+  onSettings?: () => void;
   url: string;
 }
 
-export function MembersMenu({ members, currentUserId, canManage, visibility, onVisibilityChange, onChangeRole, onInvite, url }: MembersMenuProps) {
+export function MembersMenu({ members, currentUserId, canManage, visibility, onVisibilityChange, onChangeRole, onInvite, onSettings, url }: MembersMenuProps) {
   const [copied, copy] = useCopy();
   const vis = PROJECT_VISIBILITY.find((v) => v.value === visibility) ?? PROJECT_VISIBILITY[0]!;
   const visLabelId = useId();
@@ -35,13 +37,14 @@ export function MembersMenu({ members, currentUserId, canManage, visibility, onV
     <div className="td-members-menu" data-visibility={vis.value}>
       <div className="td-members-menu-head">
         <Icon name="users" size={16} />
-        <span className="td-members-menu-title">Members · {members.length}</span>
-        <span className="td-members-menu-visibility" title={vis.hint}>
+        <span className="td-members-menu-title">Members</span>
+        <span className="td-members-menu-visibility" title={vis.detail}>
           <Icon name={vis.icon} size={12} />
           {vis.label}
         </span>
       </div>
       <div className="td-members-menu-scroll">
+        <div className="td-members-menu-section">Members ({members.length})</div>
         <div role="list" aria-label="Members">
           {members.map((m) => (
             <div key={m.id} className="td-members-menu-row" role="listitem">
@@ -68,7 +71,17 @@ export function MembersMenu({ members, currentUserId, canManage, visibility, onV
             render={
               <button type="button" className="td-members-menu-row td-members-menu-action" onClick={onInvite}>
                 <Icon name="user-plus" size={15} />
-                <span className="td-members-menu-name">Invite people…</span>
+                <span className="td-members-menu-name">Invite members…</span>
+              </button>
+            }
+          />
+        ) : null}
+        {onSettings ? (
+          <PopoverClose
+            render={
+              <button type="button" className="td-members-menu-row td-members-menu-action" onClick={onSettings}>
+                <Icon name="settings" size={15} />
+                <span className="td-members-menu-name">Member settings &amp; roles</span>
               </button>
             }
           />
@@ -82,7 +95,7 @@ export function MembersMenu({ members, currentUserId, canManage, visibility, onV
               <Icon name={v.icon} size={15} />
               <span className="td-members-menu-name">
                 <span className="td-members-menu-line">{v.label}</span>
-                <span className="td-members-menu-sub">{v.hint}</span>
+                <span className="td-members-menu-sub">{v.detail}</span>
               </span>
               {visibility === v.value ? <Icon name="check" size={15} color="var(--text-link)" /> : null}
             </button>

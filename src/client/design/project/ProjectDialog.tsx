@@ -15,10 +15,11 @@ import { TextField } from "../core/TextField";
 import { ProjectIconPicker } from "./ProjectIconPicker";
 import "./ProjectDialog.css";
 
-export const PROJECT_VISIBILITY: ReadonlyArray<{ value: ProjectVisibility; label: string; icon: IconName; hint: string }> = [
-  { value: "private", label: "Private", icon: "lock", hint: "Only members" },
-  { value: "shared", label: "Shared", icon: "users", hint: "Members and guests" },
-  { value: "public", label: "Public", icon: "globe", hint: "Anyone with the link" },
+/** `hint` is the short form (the create dialog), `detail` the sentence the Members menu shows (Design: MembersMenu) */
+export const PROJECT_VISIBILITY: ReadonlyArray<{ value: ProjectVisibility; label: string; icon: IconName; hint: string; detail: string }> = [
+  { value: "private", label: "Private", icon: "lock", hint: "Only members", detail: "Only project members can see it" },
+  { value: "shared", label: "Shared", icon: "users", hint: "Members and guests", detail: "Members and invited guests" },
+  { value: "public", label: "Public", icon: "globe", hint: "Anyone with the link", detail: "Anyone with the link can view" },
 ];
 const TEMPLATE_ICONS: Record<string, IconName> = { blank: "square", simple: "kanban", intake: "inbox", weekly: "calendar" };
 

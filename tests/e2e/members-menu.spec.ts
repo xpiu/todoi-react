@@ -3,7 +3,7 @@ import { expect, test as base } from "@playwright/test";
 import type { ProjectDetail } from "../../src/client/data/api";
 import { checkA11y, freshProject, seedProjectId, signIn } from "./helpers";
 
-// The Members dropdown (DESIGN.md › Subnavbar): the roster with role pickers, Invite people, Visibility
+// The Members dropdown (DESIGN.md › Subnavbar): the roster with role pickers, Invite members, Visibility
 // and the project link, on a fresh project where Sam is an editor. Changes land without closing it.
 type Fixture = { projectId: string; sam: { id: string; name: string } };
 const test = base.extend<{ fixture: Fixture }>({
@@ -44,7 +44,7 @@ test("the Members dropdown changes a role and the visibility in place, and Invit
   await expect(menu.getByRole("textbox", { name: "Project link" })).toHaveValue(new RegExp(`/p/${f.projectId}$`));
   await page.screenshot({ path: ".tmp/test-results/members-menu.png" });
 
-  await menu.getByRole("button", { name: "Invite people…" }).click();
+  await menu.getByRole("button", { name: "Invite members…" }).click();
   await expect(menu).toBeHidden();
   await expect(page.getByRole("region", { name: "Members" }).getByRole("textbox", { name: "Invite by email" })).toBeVisible();
 });

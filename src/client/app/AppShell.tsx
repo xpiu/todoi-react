@@ -334,6 +334,7 @@ export function AppShell() {
       onVisibilityChange={(v) => pm.updateProject.mutate({ id: pd.id, visibility: v })}
       onChangeRole={(mem, r) => pm.setMember.mutate({ projectId: pd.id, userId: mem.id, role: r })}
       onInvite={() => lifecycle.openSettings(pd.id, "members")}
+      onSettings={() => lifecycle.openSettings(pd.id, "members")}
       url={projectUrl(pd.id)}
     />
   ) : undefined;
