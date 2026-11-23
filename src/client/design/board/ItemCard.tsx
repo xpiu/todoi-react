@@ -348,7 +348,8 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             label="Item options"
             tier="detached"
             placement={hasDetails ? "right-start" : "bottom-end"}
-            width={panelOption ? 280 : menuView === "main" ? (subitemBlocked ? 252 : 184) : menuView === "subitem" ? 260 : 224}
+            // Option views size to their longest row (min 184, as Design's card menu); the search pickers keep their width
+            width={panelOption ? 280 : menuView === "subitem" ? 260 : undefined}
             open={menuIsOpen}
             onOpenChange={(open, reason) => {
               setMenuIsOpen(open);

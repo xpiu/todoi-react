@@ -140,6 +140,12 @@
     padding: 4px 0 4px var(--sp-2);
     margin: -4px 0;
   }
+  /* The ⋯ menu's key handler wrapper (← steps back a view) adds no box: its rows lay out as the menu's own,
+     with the menu's row gap (1px Rounded, 0 Minimal) and MenuGroup inheriting it */
+  .td-card-menu-body {
+    display: contents;
+    gap: inherit;
+  }
   /* The details row the ⋯ menu expands under the card (Design: ItemCard): Created date + quick actions */
   .td-card-details {
     display: grid;
