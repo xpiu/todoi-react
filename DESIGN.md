@@ -255,6 +255,8 @@ Todoi is **desktop-first** with three named device classes — **Desktop** (≥ 
 - **Rounded toolbar menu offset 4px:** Design's own port note for the per-theme offset reads "rounded: keep today's 4"; the kit file uses 2.
 - **Member roles Admin / Editor / Viewer (+ Owner):** Design's ProjectPanel, invite page and spec; only the kit's sample MembersMenu says Admin / Member / Observer.
 - **A ⋯ menu that turns into a drill view stays anchored to its ⋯:** the kit positions the popover once and lets a wider drill grow rightwards past the button; the app re-measures and keeps it aligned to the trigger.
+- **Checklist row ⋯ starts with "Open <key>":** the spec's row (Open · Convert to item · Move to another item… · Delete, under Subitems ↔ items); the kit sample leaves Open out.
+- **Move to project note names everything that changes:** the kit's two lines plus "labels match by name" and that non-member assignees and relations to items left behind are removed — what the move actually does.
 - **Filter menu status order New, Backlog, To-do, Doing, Done:** Design's `STATUSES` registry (`components/core/statuses.jsx`); the kit shell's sample filter list hard-codes New, To-do, Doing, Done, Backlog (`ui_kits/todoi/index.html`).
 - **No project toolbar on Inbox / Projects / Project groups:** the kit shell renders the open project's title and toolbar on every screen (`ui_kits/todoi/index.html`, `TDTopBar title={projectName(pid)}`); on the kit's Inbox its Filter lists the project's labels and filters the project, not the Inbox (Playwright: Inbox 9 → 9 rows, project 33 → 8). The app shows the screen's own title there.
 
