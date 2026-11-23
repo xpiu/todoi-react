@@ -9,6 +9,10 @@
   .td-picker-search.td-member-picker-search > svg {
     margin: 0 3px;
   }
+  /* Search text on the names' column: the input's own 2px padding is gone (Design: .td-mp-input) */
+  .td-member-picker-search .td-picker-input {
+    padding: 0;
+  }
   html:not([data-theme="minimal"]) .td-member-picker-action > svg {
     margin: 0 3px;
   }

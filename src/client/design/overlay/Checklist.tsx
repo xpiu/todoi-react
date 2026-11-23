@@ -4,11 +4,10 @@
 import { useRef, useState, type DragEvent } from "react";
 
 import { Checkbox } from "../core/Checkbox";
-import { Dialog } from "../core/Dialog";
 import { Icon } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
-import { ItemPicker, type PickableItem } from "../core/ItemPicker";
-import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
+import { ItemPickerDrill, type PickableItem } from "../core/ItemPicker";
+import { MenuButton, MenuDivider, MenuItem, useMenuDrill } from "../core/Menu";
 import { ProgressBar } from "../core/ProgressBar";
 import { useTouchDrag } from "../core/touchDrag";
 import "./Checklist.css";
@@ -81,6 +80,57 @@ export function ChecklistAddRow({ open, label = "Add a subitem", placeholder = "
   );
 }
 
+type RowActions = Pick<ChecklistProps, "onOpenItem" | "onConvertItem" | "onMoveItem" | "moveTargets" | "onDeleteItem">;
+
+/** A row's hover ⋯: Open · Convert to item · Move to another item… (drills into an ItemPicker in the same menu; Esc or
+ *  Back return) · Delete. Design: Checklist. */
+function ChecklistRowMenu({ item: it, onOpenItem, onConvertItem, onMoveItem, moveTargets = [], onDeleteItem }: RowActions & { item: ChecklistItem }) {
+  const drill = useMenuDrill<"main" | "move">("main");
+  return (
+    <MenuButton label={`Actions for ${it.text}`} tier="detached" size={24} iconSize={14} triggerClassName="td-checklist-row-more" width={drill.view === "move" ? 260 : 200} shouldClose={drill.shouldClose} onOpenChange={(o) => !o && drill.back()}>
+      {(close) =>
+        drill.view === "move" && onMoveItem ? (
+          <ItemPickerDrill
+            title="Move to another item"
+            onBack={drill.back}
+            items={moveTargets}
+            onPick={(t) => {
+              close();
+              onMoveItem(it.id, t);
+            }}
+          />
+        ) : (
+          <>
+            {onOpenItem && it.itemId ? (
+              <MenuItem icon="square-arrow-out-up-right" trailing={it.itemId} onSelect={() => onOpenItem(it.id)}>
+                Open
+              </MenuItem>
+            ) : null}
+            {onConvertItem ? (
+              <MenuItem icon="arrow-up-from-line" onSelect={() => onConvertItem(it.id)}>
+                Convert to item
+              </MenuItem>
+            ) : null}
+            {onMoveItem ? (
+              <MenuItem icon="corner-down-right" drill onSelect={() => drill.setView("move")}>
+                Move to another item…
+              </MenuItem>
+            ) : null}
+            {onDeleteItem ? (
+              <>
+                {onOpenItem || onConvertItem || onMoveItem ? <MenuDivider /> : null}
+                <MenuItem icon="trash-2" danger onSelect={() => onDeleteItem(it.id)}>
+                  Delete
+                </MenuItem>
+              </>
+            ) : null}
+          </>
+        )
+      }
+    </MenuButton>
+  );
+}
+
 export interface ChecklistProps {
   items: ChecklistItem[];
   onToggle?: (id: string, done: boolean) => void;
@@ -103,8 +153,6 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
   const [hideChecked, setHideChecked] = useState(false);
   const [from, setFrom] = useState<string | null>(null);
   const [ins, setIns] = useState<number | null>(null);
-  const [moving, setMoving] = useState<ChecklistItem | null>(null);
-  const moveSearchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const total = items.length, done = items.filter((it) => it.done).length;
   const pct = total ? (done / total) * 100 : 0;
@@ -215,50 +263,12 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
               ) : null}
               <Checkbox checked={it.done} aria-label={it.text} onChange={(v) => onToggle?.(it.id, v)} />
               <span className={"td-checklist-row-text" + (it.done ? " td-checklist-row-done" : "")}>{it.text}</span>
-              {rowMenu ? (
-                <MenuButton label={`Actions for ${it.text}`} tier="detached" size={24} iconSize={14} triggerClassName="td-checklist-row-more" width={200}>
-                  {onOpenItem && it.itemId ? (
-                    <MenuItem icon="square-arrow-out-up-right" trailing={it.itemId} onSelect={() => onOpenItem(it.id)}>
-                      Open
-                    </MenuItem>
-                  ) : null}
-                  {onConvertItem ? (
-                    <MenuItem icon="arrow-up-from-line" onSelect={() => onConvertItem(it.id)}>
-                      Convert to item
-                    </MenuItem>
-                  ) : null}
-                  {onMoveItem ? (
-                    <MenuItem icon="corner-down-right" drill onSelect={() => setMoving(it)}>
-                      Move to another item…
-                    </MenuItem>
-                  ) : null}
-                  {onDeleteItem ? (
-                    <>
-                      {onOpenItem || onConvertItem || onMoveItem ? <MenuDivider /> : null}
-                      <MenuItem icon="trash-2" danger onSelect={() => onDeleteItem(it.id)}>
-                        Delete
-                      </MenuItem>
-                    </>
-                  ) : null}
-                </MenuButton>
-              ) : null}
+              {rowMenu ? <ChecklistRowMenu item={it} onOpenItem={onOpenItem} onConvertItem={onConvertItem} onMoveItem={onMoveItem} moveTargets={moveTargets} onDeleteItem={onDeleteItem} /> : null}
             </div>
           );
         })}
         {onAddItem ? <ChecklistAddRow open={addOpen} onCommit={onAddItem} onDraft={onAddDraft} onClose={onAddClose} /> : null}
       </div>
-      <Dialog open={!!moving} onClose={() => setMoving(null)} title="Move to another item" width={360} initialFocus={moveSearchRef}>
-        <ItemPicker
-          items={moveTargets}
-          autoFocus={false}
-          inputRef={moveSearchRef}
-          placeholder="Search items…"
-          onPick={(t) => {
-            if (moving) onMoveItem?.(moving.id, t);
-            setMoving(null);
-          }}
-        />
-      </Dialog>
     </div>
   );
 }

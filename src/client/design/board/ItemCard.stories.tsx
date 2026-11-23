@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor, within } from "storybook/test";
 
+import { MakeSubitemDrill } from "../core/ItemPicker";
 import { ProjectPicker } from "../core/ProjectPicker";
 import { ItemCard } from "./ItemCard";
 
@@ -64,7 +65,7 @@ export const MenuDrills: Story = {
       { value: "__copy", label: "Copy to another project…", icon: "folder-output" },
     ],
   },
-  parameters: { docs: { description: { story: "Move to drills into a view inside the same menu (Back, ← or Esc return): the project's lists with the current one checked, then another project. Make subitem of… reports straight away (the host opens the picker)." } } },
+  parameters: { docs: { description: { story: "Move to drills into a view inside the same menu (Back, ← or Esc return): the project's lists with the current one checked, then another project. Without subitemPanel, Make subitem of… reports straight away." } } },
   async play({ args, canvas, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
     canvas.getByRole("listitem").focus();
@@ -102,8 +103,10 @@ export const MenuDrillsToProject: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Item options" }));
     await userEvent.click(await page.findByRole("menuitem", { name: "Move to" }));
     const menu = await page.findByRole("menu");
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Copy to another project…" }));
-    const search = within(menu).getByRole("combobox", { name: "Search projects…" });
+    // → on the drill row opens it, as a click does
+    within(menu).getByRole("menuitem", { name: "Copy to another project…" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    const search = await within(menu).findByRole("combobox", { name: "Search projects…" });
     await waitFor(() => expect(search).toHaveFocus());
     // ← in the field moves the caret; it doesn't step back
     await userEvent.keyboard("ha{ArrowLeft}");
@@ -116,6 +119,55 @@ export const MenuDrillsToProject: Story = {
     await expect(pickProject).toHaveBeenCalledWith("p2", "h1");
     await expect(args.onMenuAction).not.toHaveBeenCalled();
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+  },
+};
+
+const pickParent = fn();
+/** Make subitem of… drills into the parent picker inside the same menu (as the overlay ⋯; Design: ItemOverlay); Esc or Back return. */
+export const MenuDrillsToParent: Story = {
+  args: {
+    subitemPanel: (close, back) => (
+      <MakeSubitemDrill
+        items={[{ id: "i2", itemId: "HE-116", title: "Book the maintenance slot", listName: "To do", status: "TODO" }, { id: "i4", itemId: "HE-120", title: "Confirm the export licence", listName: "Doing", status: "DOING" }]}
+        onBack={back}
+        onPick={(t) => {
+          close();
+          pickParent(t.id);
+        }}
+      />
+    ),
+  },
+  async play({ args, canvas, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    canvas.getByRole("listitem").focus();
+    await userEvent.click(canvas.getByRole("button", { name: "Item options" }));
+    const menu = await page.findByRole("menu", { name: "Item options" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Make subitem of…" }));
+    const search = within(menu).getByRole("combobox", { name: "Search items…" });
+    await waitFor(() => expect(search).toHaveFocus());
+    await expect(page.queryByRole("dialog")).not.toBeInTheDocument();
+    // ← in the field moves the caret; Esc steps back to the rows
+    await userEvent.keyboard("ex{ArrowLeft}");
+    await expect(search).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(await within(menu).findByRole("menuitem", { name: "Make subitem of…" }));
+    await userEvent.keyboard("export{Enter}");
+    await expect(pickParent).toHaveBeenCalledWith("i4");
+    await expect(args.onMenuAction).not.toHaveBeenCalled();
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+  },
+};
+/** An item holding subitems can't become one: the row is disabled and says why. */
+export const MakeSubitemBlocked: Story = {
+  args: { hasSubitems: true, subitemPanel: () => null },
+  async play({ canvas, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    canvas.getByRole("listitem").focus();
+    await userEvent.click(canvas.getByRole("button", { name: "Item options" }));
+    const row = await page.findByRole("menuitem", { name: /Make subitem of…/ });
+    await expect(row).toHaveAttribute("aria-disabled", "true");
+    await expect(row).toHaveTextContent("has subitems");
+    await expect(row).not.toHaveAttribute("aria-haspopup");
   },
 };
 

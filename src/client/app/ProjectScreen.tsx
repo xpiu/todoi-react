@@ -11,7 +11,7 @@ import { useLabels, useProject, useProjectItems } from "../data/queries";
 import { BoardView } from "../design/board/BoardView";
 import { ItemCard, type CardMenuAction } from "../design/board/ItemCard";
 import type { BulkOption } from "../design/core/BulkBar";
-import { MakeSubitemDialog } from "../design/core/ItemPicker";
+import { MakeSubitemDrill } from "../design/core/ItemPicker";
 import { ListColumn } from "../design/board/ListColumn";
 import { useItemDnd, type ItemDnd } from "../design/board/useItemDnd";
 import { isReadOnly } from "../design/auth/GuestBar";
@@ -46,7 +46,6 @@ import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
 import { peopleOf } from "./session";
 import { useToday } from "./today";
-import { quote } from "./feedback";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import { useResolvedView } from "./useResolvedView";
 import { useQuickAddRequest } from "./quickAddRequest";
@@ -140,8 +139,6 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   // Files dropped on a card or row attach to that item.
   const fileDrop = useFileDropTargets((files, id) => void attachFiles(id, projectId, files, items.find((it) => it.id === id)?.title), { selector: dndOpts.itemSelector });
   const rootProps = { ...dnd.rootProps, ...mergeDrag(dnd.rootProps, fileDrop) };
-  // A card's ⋯ › Make subitem of…
-  const [subitemFor, setSubitemFor] = useState<Item | null>(null);
   // A new Status role on a list with items waits for the review: existing items, or future moves only.
   const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
   const picker = useProjectPicker(projectId);
@@ -261,6 +258,26 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       />
     );
   });
+  // A card's ⋯ › Make subitem of… drills into the parent picker inside that menu, through a ref as above.
+  const subitemPanelRef = useRef<(id: string, close: () => void, back: () => void) => React.ReactNode>(() => null);
+  useLayoutEffect(() => {
+    subitemPanelRef.current = (id, close, back) => {
+      const it = items.find((x) => x.id === id);
+      if (!it) return null;
+      return (
+        <MakeSubitemDrill
+          items={pickableItems(items, project).filter((p) => p.id !== id)}
+          onBack={back}
+          onPick={(parent) => {
+            close();
+            keepFocus(id);
+            actions.makeSubitemOf(it, parent);
+          }}
+        />
+      );
+    };
+  });
+  const subitemPanel = useCallback((id: string, close: () => void, back: () => void) => subitemPanelRef.current(id, close, back), []);
   const transferOptions = useCallback(
     (options: BulkOption[], ids: string[]): BulkOption[] =>
       options.map((o) => (o.value === "__move" || o.value === "__copy" ? { ...o, panel: (close, back) => transferPanelRef.current(o.value === "__copy", ids, close, back) } : o)),
@@ -278,17 +295,6 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
           onClear={() => setSelectedIds([])}
         />
       ) : null}
-      <MakeSubitemDialog
-        open={!!subitemFor}
-        title={subitemFor ? `Make ${quote(subitemFor.title)} a subitem of` : "Make subitem of"}
-        onClose={() => setSubitemFor(null)}
-        items={subitemFor ? pickableItems(items, project).filter((p) => p.id !== subitemFor.id) : []}
-        onPick={(parent) => {
-          if (!subitemFor) return;
-          keepFocus(subitemFor.id);
-          actions.makeSubitemOf(subitemFor, parent);
-        }}
-      />
     </>
   );
   const requestRole = (list: VisibleList, role: ItemStatus | null) => {
@@ -329,7 +335,6 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
         actions.bulk("move", value, [it.id]);
       }
       else if (action === "Duplicate") void actions.copyItems([it.id], { projectId, listId: it.listId, name: null });
-      else if (action === "Make subitem of") setSubitemFor(it);
       else if (action === "Archive") {
         keepFocus(it.id);
         actions.archive(it);
@@ -345,7 +350,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   // lets unchanged cards skip a board update (item-performance.spec › acknowledging a new item)
   const { moveOptions, lists: projectLists } = actions;
   const moveOptionsByList = useMemo(() => new Map(projectLists.map((l) => [l.id, moveOptions(l.id)])), [projectLists, moveOptions]);
-  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, transferOptions, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
+  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, transferOptions, subitemPanel, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -551,7 +556,7 @@ function useCardQuickEdit(root: React.RefObject<HTMLDivElement | null>) {
 }
 
 /** Raw immutable item records and stable callbacks let unchanged cards skip a board update. */
-const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, hasSubitems, selected, onClick, onMenu, moveOptions, transferOptions, onQuickAction, quick, detailsOpen }: {
+const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTotal, subitemDone, hasSubitems, selected, onClick, onMenu, moveOptions, transferOptions, subitemPanel, onQuickAction, quick, detailsOpen }: {
   item: Item;
   toRow: ReturnType<typeof itemRowMapper>;
   subitemTotal: number;
@@ -563,6 +568,8 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
   moveOptions?: BulkOption[];
   /** Binds the another-project options to this card (their ProjectPicker panel) */
   transferOptions: (options: BulkOption[], ids: string[]) => BulkOption[];
+  /** This card's ⋯ › Make subitem of… panel, by item id */
+  subitemPanel: (id: string, close: () => void, back: () => void) => React.ReactNode;
   onQuickAction: OpenQuick;
   /** This card's open quick picker */
   quick: { field: QuickField; via: QuickVia } | null;
@@ -570,6 +577,7 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
 }) {
   const r = toRow(item);
   const options = useMemo(() => moveOptions && transferOptions(moveOptions, [item.id]), [moveOptions, transferOptions, item.id]);
+  const subitemDrill = useCallback((close: () => void, back: () => void) => subitemPanel(item.id, close, back), [subitemPanel, item.id]);
   return <ItemCard
     dragId={item.id}
     title={r.title}
@@ -589,6 +597,7 @@ const ProjectBoardItem = memo(function ProjectBoardItem({ item, toRow, subitemTo
     onMenuAction={(action, _id, value) => onMenu(item, action, value)}
     moveOptions={options}
     hasSubitems={hasSubitems}
+    subitemPanel={subitemDrill}
     created={formatDate(item.createdAt, { year: "auto" })}
     onQuickAction={(field, anchor, source) => onQuickAction(item.id, field, anchor, source)}
     activeQuickAction={quick?.field ?? null}
@@ -629,6 +638,7 @@ function ProjectBoard(props: ViewProps) {
                     onMenu={v.onCardMenu}
                     moveOptions={v.moveOptionsByList.get(it.listId)}
                     transferOptions={v.transferOptions}
+                    subitemPanel={v.subitemPanel}
                     onQuickAction={qe.open}
                     quick={qe.quick?.id === r.id ? qe.quick : null}
                     detailsOpen={qe.rowId === r.id}

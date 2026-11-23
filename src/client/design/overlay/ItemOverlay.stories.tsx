@@ -199,7 +199,9 @@ export const MoveToProjectDrill: Story = {
     await expect(page.queryByRole("dialog", { name: "Copy to project" })).not.toBeInTheDocument();
     // Esc steps back to the menu's rows; the overlay stays open
     await userEvent.keyboard("{Escape}");
-    await expect(await within(menu).findByRole("menuitem", { name: "Move to project…" })).toBeVisible();
+    // (waitFor: the menu may still be fading in)
+    const moveRow = await within(menu).findByRole("menuitem", { name: "Move to project…" });
+    await waitFor(() => expect(moveRow).toBeVisible());
     await expect(args.onClose).not.toHaveBeenCalled();
     await userEvent.click(within(menu).getByRole("menuitem", { name: "Move to project…" }));
     await userEvent.click(await within(menu).findByRole("option", { name: /Hangar renovation/ }));
@@ -208,6 +210,43 @@ export const MoveToProjectDrill: Story = {
     await expect(args.onMoveToProject).toHaveBeenCalledWith(args.projects![0], { id: "h1", name: "Backlog" });
     await expect(args.onCopyToProject).not.toHaveBeenCalled();
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+  },
+};
+/** ⋯ › Make subitem of… drills into the item picker inside the same menu (Design: ItemOverlay); Esc steps back. */
+export const MakeSubitemDrill: Story = {
+  args: { onMakeSubitemOf: fn(), item: { ...ITEM, subitems: [] } },
+  async play({ args, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Item options" }));
+    const menu = await page.findByRole("menu", { name: "Item options" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Make subitem of…" }));
+    const search = within(menu).getByRole("combobox", { name: "Search items…" });
+    await waitFor(() => expect(search).toHaveFocus());
+    await waitFor(() => expect(within(menu).getByText("This item moves under the picked item as a subitem; its key stays.")).toBeVisible());
+    // The item itself is not a candidate
+    await expect(within(menu).queryByRole("option", { name: /HE-115/ })).not.toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await within(menu).findByRole("menuitem", { name: "Duplicate" });
+    await expect(args.onClose).not.toHaveBeenCalled();
+    // → on the drill row opens it again
+    within(menu).getByRole("menuitem", { name: "Make subitem of…" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await userEvent.click(await within(menu).findByRole("option", { name: /HE-120/ }));
+    await expect(args.onMakeSubitemOf).toHaveBeenCalledWith(PROJECT_ITEMS[3]);
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+  },
+};
+/** An item with subitems can't become one: the row is disabled with "has subitems" (the main menu widens for it). */
+export const MakeSubitemBlocked: Story = {
+  args: { onMakeSubitemOf: fn() },
+  async play({ canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Item options" }));
+    const row = await page.findByRole("menuitem", { name: /Make subitem of…/ });
+    await expect(row).toHaveAttribute("aria-disabled", "true");
+    await expect(row).toHaveTextContent("has subitems");
   },
 };
 /** "Link Lists with Status" on and every list carries its own role: Status stands in for the List field, and a pick moves the item. */

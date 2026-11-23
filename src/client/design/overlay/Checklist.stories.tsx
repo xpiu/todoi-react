@@ -42,7 +42,7 @@ const meta = {
     onDeleteItem: fn(),
     onDelete: fn(),
   },
-  parameters: { docs: { description: { component: "The item's subitems: count and progress, checkbox rows with a ⋯ menu (Open · Convert to item · Move to another item… · Delete), drag reorder (native and long-press) and a row-styled add control. The overlay owns the items; the checklist keeps only the hide-checked, drag and move-dialog state. Each row action appears only when its callback is given." } } },
+  parameters: { docs: { description: { component: "The item's subitems: count and progress, checkbox rows with a ⋯ menu (Open · Convert to item · Move to another item… · Delete), drag reorder (native and long-press) and a row-styled add control. The overlay owns the items; the checklist keeps only the hide-checked, drag and row-menu drill state. Each row action appears only when its callback is given." } } },
 } satisfies Meta<typeof Checklist>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -85,10 +85,19 @@ export const MoveToAnotherItem: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Actions for Book the maintenance slot" }));
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole("menuitem", { name: /Move to another item/ }));
-    const dialog = await page.findByRole("dialog", { name: "Move to another item" });
-    await userEvent.click(within(dialog).getByRole("option", { name: /HE-120/ }));
+    // A drill view inside the same menu, not a dialog (Design: Checklist): Esc steps back to the rows
+    const menu = await page.findByRole("menu", { name: "Actions for Book the maintenance slot" });
+    await expect(page.queryByRole("dialog")).not.toBeInTheDocument();
+    const search = within(menu).getByRole("combobox", { name: "Search items…" });
+    await waitFor(() => expect(search).toHaveFocus());
+    await userEvent.keyboard("{Escape}");
+    // → on the drill row opens it again, as a click does
+    const row = await within(menu).findByRole("menuitem", { name: /Move to another item/ });
+    row.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await userEvent.click(await within(menu).findByRole("option", { name: /HE-120/ }));
     await expect(args.onMoveItem).toHaveBeenCalledWith("s2", TARGETS[1]);
-    await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },
 };
 export const AllDone: Story = { args: { items: SUBITEMS.map((s) => ({ ...s, done: true })) } };

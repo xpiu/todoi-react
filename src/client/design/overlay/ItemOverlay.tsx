@@ -20,8 +20,7 @@ import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { InlineError } from "../core/InlineError";
 import { Skeleton } from "../core/Skeleton";
-import { MakeSubitemDialog, type PickableItem } from "../core/ItemPicker";
-import { quote } from "../core/text";
+import { MakeSubitemDrill, type PickableItem } from "../core/ItemPicker";
 import { LabelPicker, type LabelDraft, type PickableLabel } from "../core/LabelPicker";
 import { MemberPicker, type PickableMember } from "../core/MemberPicker";
 import { MenuButton, MenuDivider, MenuItem, useMenuDrill } from "../core/Menu";
@@ -204,9 +203,8 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [linkCopied, copy] = useCopy(900);
-  const [subitemOf, setSubitemOf] = useState(false);
   // The ⋯ menu's drill views; an Inbox item's aside "Move to project…" opens the same picker in a popover
-  const drill = useMenuDrill<"main" | "export" | "move" | "copy">("main");
+  const drill = useMenuDrill<"main" | "export" | "move" | "copy" | "subitem">("main");
   const menuView = drill.view;
   const filing = usePopover();
   const pickerRef = useRef<(() => void) | null>(null);
@@ -283,6 +281,9 @@ export function ItemOverlay(p: ItemOverlayProps) {
   };
   const statusTitle = statusOnly && currentList && currentList.statusRole !== item.status ? `Status · in list ${currentList.name}` : "Status";
   const others = p.projectItems.filter((it) => it.id !== item.id);
+  // An item with subitems can't become one ("has subitems" trails its row); Design's menu widths per view
+  const subitemBlocked = item.subitems.length > 0;
+  const menuWidth = { main: p.onMakeSubitemOf && subitemBlocked ? 252 : 200, export: 236, move: 280, copy: 280, subitem: 260 }[menuView];
   const q = query.trim().toLowerCase();
   const matches = (text: string, author: string) => !q || `${text} ${author}`.toLowerCase().includes(q);
   const members = p.members;
@@ -345,7 +346,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
             </span>
           ) : null}
           <IconButton name={copyIcon(linkCopied, "link")} label="Copy item link" tooltip={linkCopied === "failed" ? COPY_FAILED : "Copy item link"} iconSize={16} variant={cornerVariant} onClick={copyLink} />
-          <MenuButton label="Item options" variant={cornerVariant} tier="detached" width={menuView === "export" ? 236 : menuView === "move" || menuView === "copy" ? 280 : 220} onOpenChange={(o) => !o && drill.back()} shouldClose={drill.shouldClose}>
+          <MenuButton label="Item options" variant={cornerVariant} tier="detached" width={menuWidth} onOpenChange={(o) => !o && drill.back()} shouldClose={drill.shouldClose}>
             {(close) =>
               menuView === "export" && p.onExport ? (
                 <ExportMenu
@@ -365,6 +366,15 @@ export function ItemOverlay(p: ItemOverlayProps) {
                 />
               ) : (menuView === "move" || menuView === "copy") && (menuView === "copy" ? p.onCopyToProject : p.onMoveToProject) ? (
                 transferPicker(menuView, drill.back, close)
+              ) : menuView === "subitem" && p.onMakeSubitemOf ? (
+                <MakeSubitemDrill
+                  onBack={drill.back}
+                  items={others}
+                  onPick={(t) => {
+                    close();
+                    p.onMakeSubitemOf?.(t);
+                  }}
+                />
               ) : (
                 <>
                   {p.onMoveToProject ? (
@@ -381,7 +391,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
                     </MenuItem>
                   ) : null}
                   {p.onMakeSubitemOf ? (
-                    <MenuItem icon="corner-down-right" disabled={item.subitems.length > 0} trailing={item.subitems.length ? "has subitems" : undefined} onSelect={() => setSubitemOf(true)}>
+                    <MenuItem icon="corner-down-right" drill={!subitemBlocked} disabled={subitemBlocked} trailing={subitemBlocked ? "has subitems" : undefined} onSelect={() => drill.setView("subitem")}>
                       Make subitem of…
                     </MenuItem>
                   ) : null}
@@ -586,7 +596,6 @@ export function ItemOverlay(p: ItemOverlayProps) {
           ))}
         </div>
       </div>
-      <MakeSubitemDialog open={subitemOf} title={`Make ${quote(item.title)} a subitem of`} onClose={() => setSubitemOf(false)} items={others} onPick={(t) => p.onMakeSubitemOf?.(t)} />
     </Modal>
   );
 }

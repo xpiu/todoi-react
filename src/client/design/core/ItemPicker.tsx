@@ -1,12 +1,14 @@
 // ItemPicker — search-and-pick one item (by key, title or list). Panel body only: mount it inside a
-// Popover or a Dialog. Rows: status glyph · mono key · title (struck when done) · list name. Enter
-// picks the highlighted match, ↑↓ move it from the field. Spec: DESIGN.md › Relations, Subitems.
-import { useId, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+// Popover, or as a menu drill view (ItemPickerDrill). Rows: status glyph · mono key · title (struck
+// when done) · list name. Enter picks the highlighted match, ↑↓ move it from the field.
+// Spec: DESIGN.md › Relations, Subitems.
+import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
 
-import { Dialog } from "./Dialog";
 import { Icon, type IconName } from "./Icon";
+import { IconButton } from "./IconButton";
 import { STATUSES } from "./statuses";
 import "./ItemPicker.css";
+import "./ProjectPicker.css";
 
 export interface PickableItem {
   id: string;
@@ -30,8 +32,6 @@ export interface ItemPickerProps {
   placeholder?: string;
   emptyText?: string;
   autoFocus?: boolean;
-  /** The search field, for a host Dialog's initialFocus */
-  inputRef?: RefObject<HTMLInputElement | null>;
   limit?: number;
   "aria-label"?: string;
 }
@@ -92,7 +92,7 @@ export function usePickerCursor<T>(options: readonly T[], key: (o: T) => string,
   };
 }
 
-export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search items…", emptyText = "No items match", autoFocus = true, inputRef, limit = 30, ...rest }: ItemPickerProps) {
+export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search items…", emptyText = "No items match", autoFocus = true, limit = 30, ...rest }: ItemPickerProps) {
   const [q, setQ] = useState("");
   const ex = new Set(exclude);
   const ql = q.trim().toLowerCase();
@@ -104,7 +104,6 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
       <div className="td-item-picker-search">
         <Icon name="search" size={14} />
         <input
-          ref={inputRef}
           className="td-item-picker-input"
           autoFocus={autoFocus}
           placeholder={placeholder}
@@ -142,22 +141,30 @@ export function ItemPicker({ items, exclude = [], onPick, placeholder = "Search 
   );
 }
 
-/** "Make subitem of": pick the parent an item moves under (the overlay ⋯ and a board card's ⋯). */
-export function MakeSubitemDialog({ open, onClose, items, onPick, title = "Make subitem of" }: { open: boolean; onClose: () => void; items: PickableItem[]; onPick: (parent: PickableItem) => void; title?: string }) {
-  const searchRef = useRef<HTMLInputElement>(null);
+/** A picker's drill-view head: Back arrow + title (ItemPickerDrill, ProjectPicker). The arrow is a plain button, not a
+ *  menu row, so ↑↓ stay with the picker's field. */
+export function PickerHead({ title, onBack }: { title: ReactNode; onBack?: () => void }) {
   return (
-    <Dialog open={open} onClose={onClose} title={title} width={360} initialFocus={searchRef}>
-      <ItemPicker
-        items={items}
-        autoFocus={false}
-        inputRef={searchRef}
-        placeholder="Search items…"
-        onPick={(t) => {
-          onClose();
-          onPick(t);
-        }}
-      />
-      <div className="td-menu-note">This item moves under the picked item as a subitem; its key stays.</div>
-    </Dialog>
+    <div className="td-project-picker-head">
+      {onBack ? <IconButton name="arrow-left" label="Back" size={22} iconSize={14} onClick={onBack} /> : null}
+      <span className="td-project-picker-head-title">{title}</span>
+    </div>
   );
+}
+
+/** ItemPicker as a ⋯ menu drill view (Design: ItemOverlay › Make subitem of…, Checklist › Move to another item…):
+ *  Back + title, the picker, an optional note. Escape steps back through the menu's useMenuDrill. */
+export function ItemPickerDrill({ title, onBack, note, ...picker }: ItemPickerProps & { title: string; onBack: () => void; note?: ReactNode }) {
+  return (
+    <>
+      <PickerHead title={title} onBack={onBack} />
+      <ItemPicker aria-label={title} {...picker} />
+      {note ? <div className="td-menu-note">{note}</div> : null}
+    </>
+  );
+}
+
+/** "Make subitem of…" (the overlay ⋯ and a board card's ⋯): the parent picker as a drill view. */
+export function MakeSubitemDrill(props: Omit<ItemPickerProps, "placeholder"> & { onBack: () => void }) {
+  return <ItemPickerDrill title="Make subitem of" note="This item moves under the picked item as a subitem; its key stays." {...props} />;
 }

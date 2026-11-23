@@ -52,7 +52,7 @@ export function MenuItem({ icon, iconColor, children, trailing, shortcut, danger
       aria-label={rest["aria-label"]}
       disabled={disabled}
       data-danger={danger ? "true" : undefined}
-      // A drill row opens a view inside the same menu: announced as a submenu, and → opens it where the host handles it
+      // A drill row opens a view inside the same menu: announced as a submenu, and → opens it as a click does
       aria-haspopup={drill ? "menu" : undefined}
       data-drill={drill ? "true" : undefined}
       closeOnClick={!(closeOnSelect === false || drill)}
@@ -60,6 +60,15 @@ export function MenuItem({ icon, iconColor, children, trailing, shortcut, danger
       onClick={(e) => {
         if (!disabled) onSelect?.(e);
       }}
+      onKeyDown={
+        drill
+          ? (e) => {
+              if (e.key !== "ArrowRight" || disabled) return;
+              e.preventDefault();
+              e.currentTarget.click();
+            }
+          : undefined
+      }
       title={title}
       style={style}
     >

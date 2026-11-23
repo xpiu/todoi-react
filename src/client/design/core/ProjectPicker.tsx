@@ -4,12 +4,11 @@
 // usePickerCursor). Panel body only. onPick(project, list) fires once; the consumer moves / copies and raises ONE toast.
 // Mounted as a menu drill view (item overlay ⋯ › Move / Copy to project…, a card's and the BulkBar's Move to ›
 // another project) or in a popover (an Inbox item's "Move to project…"). Spec: DESIGN.md › Moving between projects.
-import { useCallback, useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { listIconFor } from "../board/listIcons";
 import { Icon, type IconName } from "./Icon";
-import { IconButton } from "./IconButton";
-import { usePickerCursor } from "./ItemPicker";
+import { PickerHead, usePickerCursor } from "./ItemPicker";
 import "./ItemPicker.css";
 import "./ProjectPicker.css";
 
@@ -38,16 +37,12 @@ export interface ProjectPickerProps {
   onBack?: () => void;
   loadLists?: (projectId: string) => Promise<PickableList[]>;
   heading?: string;
-  /** false hides the heading row */
-  showHeading?: boolean;
   note?: string | null;
   placeholder?: string;
   autoFocus?: boolean;
-  /** The search field, for a host Dialog's initialFocus */
-  inputRef?: RefObject<HTMLInputElement | null>;
 }
 
-export function ProjectPicker({ projects, current, action = "move", count = 1, onPick, onBack, loadLists, heading, showHeading = true, note, placeholder = "Search projects…", autoFocus = true, inputRef }: ProjectPickerProps) {
+export function ProjectPicker({ projects, current, action = "move", count = 1, onPick, onBack, loadLists, heading, note, placeholder = "Search projects…", autoFocus = true }: ProjectPickerProps) {
   const [q, setQ] = useState("");
   const [proj, setProj] = useState<PickableProject | null>(null);
   // Back from the lists step returns focus to the search field, which remounts.
@@ -78,22 +73,14 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
   if (proj) {
     return (
       <div className="td-project-picker">
-        <div className="td-project-picker-head">
-          <IconButton
-            name="arrow-left"
-            label="Back"
-            size={22}
-            iconSize={14}
-            onClick={() => {
-              setProj(null);
-              setReturned(true);
-              listCursor.reset(false);
-            }}
-          />
-          <span className="td-project-picker-head-title">
-            {verb} to {proj.name}
-          </span>
-        </div>
+        <PickerHead
+          title={`${verb} to ${proj.name}`}
+          onBack={() => {
+            setProj(null);
+            setReturned(true);
+            listCursor.reset(false);
+          }}
+        />
         {lists == null ? <div className="td-menu-note">Loading lists…</div> : null}
         {lists?.length ? (
           <div
@@ -129,16 +116,10 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
   }
   return (
     <div className="td-project-picker">
-      {onBack || showHeading ? (
-        <div className="td-project-picker-head">
-          {onBack ? <IconButton name="arrow-left" label="Back" size={22} iconSize={14} onClick={onBack} /> : null}
-          <span className="td-project-picker-head-title">{title}</span>
-        </div>
-      ) : null}
+      <PickerHead title={title} onBack={onBack} />
       <div className="td-picker-search">
         <Icon name="search" size={14} />
         <input
-          ref={inputRef}
           className="td-picker-input"
           autoFocus={autoFocus || returned}
           placeholder={placeholder}

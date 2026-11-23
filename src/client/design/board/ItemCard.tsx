@@ -1,7 +1,7 @@
 // ItemCard — a board item: optional cover, title (green check when done), compact labels, a badge row
 // (description, due, repeat, subitems progress, attachments, priority, avatars) with the mono key
 // pinned right, and a hover ⋯ menu. Spec: DESIGN.md › Board, Item keys.
-import { Fragment, useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type SyntheticEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
 
 import { Avatar } from "../core/Avatar";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
@@ -70,6 +70,9 @@ export interface ItemCardProps {
   moveOptions?: BulkOption[];
   /** The item holds subitems (anywhere): "Make subitem of…" is then unavailable. Defaults to the checklist badge's total */
   hasSubitems?: boolean;
+  /** "Make subitem of…" drills into this panel (an ItemPickerDrill) inside the same menu; close() closes the menu, back()
+   * returns to the rows. Without it the row reports onMenuAction("Make subitem of") */
+  subitemPanel?: (close: () => void, back: () => void) => ReactNode;
   /** "Aug 12": shown in the details row the ⋯ menu expands */
   created?: string;
   /**
@@ -127,9 +130,9 @@ function ItemKey({ itemId }: { itemId?: string }) {
 
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
-export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, hasSubitems, created, onQuickAction, activeQuickAction, quickActionAnchor = "icon", detailsOpen, style }: ItemCardProps) {
+export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, hasSubitems, subitemPanel, created, onQuickAction, activeQuickAction, quickActionAnchor = "icon", detailsOpen, style }: ItemCardProps) {
   // The ⋯ menu's drill views (as the overlay ⋯ drills into Export): Move to › a list, or › an option's panel
-  // (another project's ProjectPicker), named by the option's value
+  // (another project's ProjectPicker), named by the option's value; Make subitem of › the item picker ("subitem")
   const drill = useMenuDrill<string>("main");
   const { view: menuView, setView: setMenuView, shouldClose } = drill;
   const panelOption = moveOptions?.find((o) => o.panel && o.value === menuView);
@@ -159,19 +162,12 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
       pressInRow.current = false;
     });
   };
-  // Escape (useMenuDrill) or ← in the drill view steps back a level instead of closing; → on Move to drills in.
+  // Escape (useMenuDrill) or ← in a drill view steps back a level instead of closing (→ on a drill row drills in: MenuItem).
   // ← in a panel's search field moves the caret.
   const onMenuKey = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft" && panelOption && (e.target as HTMLElement).tagName !== "INPUT") {
-      e.preventDefault();
-      setMenuView("move");
-    } else if (e.key === "ArrowLeft" && menuView !== "main" && !panelOption) {
-      e.preventDefault();
-      setMenuView("main");
-    } else if (e.key === "ArrowRight" && menuView === "main" && moveOptions && (e.target as HTMLElement).closest("[data-drill]")) {
-      e.preventDefault();
-      setMenuView("move");
-    }
+    if (e.key !== "ArrowLeft" || menuView === "main" || (e.target as HTMLElement).tagName === "INPUT") return;
+    e.preventDefault();
+    setMenuView(panelOption ? "move" : "main");
   };
   const hasDetails = !!itemId && !!onMenuAction && (!!created || !!onQuickAction);
   /** One floating surface at a time: a quick action closes the ⋯ menu (the board holds the row open through activeQuickAction) */
@@ -352,7 +348,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             label="Item options"
             tier="detached"
             placement={hasDetails ? "right-start" : "bottom-end"}
-            width={panelOption ? 280 : menuView === "main" ? (subitemBlocked ? 252 : 184) : 224}
+            width={panelOption ? 280 : menuView === "main" ? (subitemBlocked ? 252 : 184) : menuView === "subitem" ? 260 : 224}
             open={menuIsOpen}
             onOpenChange={(open, reason) => {
               setMenuIsOpen(open);
@@ -366,6 +362,8 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             <div className="td-card-menu-body" onKeyDown={onMenuKey}>
             {panelOption?.panel ? (
               panelOption.panel(close, () => setMenuView("move"))
+            ) : menuView === "subitem" && subitemPanel ? (
+              subitemPanel(close, () => setMenuView("main"))
             ) : menuView === "move" && moveOptions ? (
               <MenuGroup>
                 <MenuDrillHead title="Move to" onBack={() => setMenuView("main")} />
@@ -381,8 +379,8 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
               </MenuGroup>
             ) : (
               MENU_ITEMS.map(([icon, label]) => {
-                const drillTo = label === "Move to" && moveOptions ? "move" : null;
                 const blocked = label === "Make subitem of" && subitemBlocked;
+                const drillTo = label === "Move to" && moveOptions ? "move" : label === "Make subitem of" && subitemPanel && !blocked ? "subitem" : null;
                 return (
                   <Fragment key={label}>
                     {label === "Delete" ? <MenuDivider /> : null}

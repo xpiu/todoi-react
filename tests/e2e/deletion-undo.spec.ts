@@ -101,13 +101,13 @@ test("checklist bulk Undo retries only the restores that failed", async ({ page,
   await page.goto(`/p/${f.projectId}?v=list&item=${f.parent}`);
   await page.getByRole("button", { name: "Delete subitems", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: /Deleted|Undid:|could not be deleted/ })).toContainText("Deleted 2 subitems");
-  // The toast follows nested modal focus boundaries and returns when the nested dialog closes.
-  await page.getByRole("button", { name: "Item options", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Make subitem of…", exact: true }).click();
-  // The dialog names its subject: Make “<title>” a subitem of
-  const nested = page.getByRole("dialog", { name: /^Make “.+” a subitem of$/ });
+  // The toast follows nested modal focus boundaries and returns when the nested dialog closes: the command palette
+  // opens over the item overlay ("Make subitem of…" is a drill view inside the ⋯ menu now, not a dialog).
+  await page.keyboard.press("ControlOrMeta+k");
+  const nested = page.getByRole("dialog", { name: "Jump to item" });
   await expect(nested.getByRole("button", { name: /^Undo/ })).toBeVisible();
-  await nested.getByRole("button", { name: "Close", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(nested).toBeHidden();
   await expect(page.getByRole("dialog").getByRole("button", { name: /^Undo/ })).toBeVisible();
   const restored: string[] = [];
   let failSecond = true;
