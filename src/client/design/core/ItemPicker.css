@@ -59,12 +59,16 @@
   .td-picker-list > * {
     flex: none;
   }
-  /* A note under the lists (or under an ItemPicker drill view) uses the panel's width, not Menu's 220px note cap */
-  .td-picker-list ~ .td-menu-note,
-  .td-item-picker ~ .td-menu-note,
-  .td-item-picker > .td-menu-note {
+  /* The note under the project picker's lists uses the panel's width (Design: .td-prp-list ~ .td-menu-note); an item
+     drill's notes keep Menu's 220px cap, as Design's MenuNote */
+  .td-picker-list ~ .td-menu-note {
     max-width: none;
     text-wrap: pretty;
+  }
+  /* As a menu drill view, the picker's head, search, list and notes sit on the menu's row gap (1px; Minimal 0), as Design's
+     drill views, which are fragments inside the Menu (a card menu's display: contents body passes the gap on) */
+  .td-menu :is(.td-item-picker, .td-project-picker) {
+    gap: inherit;
   }
   .td-item-picker-row,
   .td-picker-row {

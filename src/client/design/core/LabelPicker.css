@@ -39,6 +39,10 @@
     text-align: left;
     color: var(--ink-900);
   }
+  /* Its plus fills a menu row's 16px glyph slot in the menu glyph's ink-600 (Design draws New label / Create as MenuItems); Minimal keeps the row's ink */
+  html:not([data-theme="minimal"]) .td-label-picker-action > svg {
+    color: var(--ink-600);
+  }
   .td-label-picker-form {
     display: flex;
     flex-direction: column;

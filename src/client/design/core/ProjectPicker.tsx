@@ -102,7 +102,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
               const auto = listIconFor(l.name);
               return (
                 <div key={l.id} className="td-picker-row" {...listCursor.optionProps(l, i)}>
-                  <Icon name={l.icon ?? auto.icon} size={15} color={auto.color} />
+                  <Icon name={l.icon ?? auto.icon} size={16} color={auto.color} />
                   <span className="td-project-picker-name">{l.name}</span>
                 </div>
               );
@@ -136,10 +136,10 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
         <div className="td-picker-list" {...projCursor.listboxProps} aria-label={title}>
           {list.map((p, i) => (
             <div key={p.id} className="td-picker-row" {...projCursor.optionProps(p, i)}>
-              <Icon name={p.icon ?? "kanban"} size={15} color={p.color ?? "var(--ink-600)"} />
+              <Icon name={p.icon ?? "kanban"} size={16} color={p.color ?? "var(--ink-600)"} />
               <span className="td-project-picker-name">{p.name}</span>
               {p.group ? <span className="td-project-picker-group">{p.group}</span> : null}
-              <Icon name="chevron-right" size={13} className="td-project-picker-chevron" />
+              <Icon name="chevron-right" size={14} className="td-project-picker-chevron" />
             </div>
           ))}
         </div>

@@ -243,7 +243,7 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
               <>
                 {list.length ? <div className="td-menu-divider" /> : null}
                 <button type="button" className="td-picker-row td-label-picker-action" onClick={() => setEdit({ draftName: q.trim() })}>
-                  <Icon name="plus" size={14} />
+                  <Icon name="plus" size={16} />
                   Create “{q.trim()}”
                 </button>
               </>
@@ -252,7 +252,7 @@ export function LabelPicker({ labels, value, onChange, onCreateLabel, onEditLabe
               <>
                 {list.length ? <div className="td-menu-divider" /> : null}
                 <button type="button" className="td-picker-row td-label-picker-action" onClick={() => setEdit({})}>
-                  <Icon name="plus" size={14} />
+                  <Icon name="plus" size={16} />
                   New label
                 </button>
               </>

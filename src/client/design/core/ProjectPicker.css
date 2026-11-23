@@ -29,6 +29,10 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* One line per row, as Design's menu-item rows: a long name or group ends in an ellipsis instead of wrapping */
+  .td-project-picker .td-picker-row {
+    white-space: nowrap;
+  }
   .td-project-picker-name {
     flex: 1;
     min-width: 0;

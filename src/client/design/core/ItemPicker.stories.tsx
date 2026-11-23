@@ -45,6 +45,25 @@ export const KeyboardHighlight: Story = {
     await expect(args.onPick).toHaveBeenCalledWith(ITEMS[1]);
   },
 };
+/** A hovered row leads only while the pointer is on it: leaving the list returns to the keyboard's cursor (quiet when untouched), as Design's rows */
+export const HoverClearsOnLeave: Story = {
+  async play({ args, canvas, userEvent }) {
+    const list = canvas.getByRole("listbox");
+    await userEvent.hover(canvas.getByRole("option", { name: /HE-114/ }));
+    await expect(canvas.getByRole("option", { name: /HE-114/ })).toHaveAttribute("aria-selected", "true");
+    await expect(list).not.toHaveAttribute("data-quiet");
+    await userEvent.unhover(list);
+    await expect(list).toHaveAttribute("data-quiet", "true");
+    await expect(canvas.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
+    await userEvent.keyboard("{ArrowDown}");
+    await userEvent.hover(canvas.getByRole("option", { name: /HE-115/ }));
+    await userEvent.unhover(list);
+    await expect(canvas.getAllByRole("option")[1]).toHaveAttribute("aria-selected", "true");
+    await expect(list).not.toHaveAttribute("data-quiet");
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onPick).toHaveBeenCalledWith(ITEMS[1]);
+  },
+};
 export const ClickARow: Story = {
   async play({ args, canvas, userEvent }) {
     await userEvent.click(canvas.getByRole("option", { name: /HE-115/ }));

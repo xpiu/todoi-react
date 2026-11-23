@@ -38,29 +38,36 @@ export interface ItemPickerProps {
 
 /** A picker's highlighted option, driven from the focused field (or the listbox itself) through
  *  aria-activedescendant: ↑↓ move it, Enter picks it, typed keys stay out of app shortcuts. Ids come
- *  from useId, so two pickers never collide. ItemPicker and ProjectPicker share it. */
+ *  from useId, so two pickers never collide. ItemPicker, ProjectPicker and the mention list share it. */
 export function usePickerCursor<T>(options: readonly T[], key: (o: T) => string, onPick: (o: T) => void) {
   const base = useId();
   const [cur, setCur] = useState(0);
   // Quiet until the person moves it (as Select, and as in Design): the first option stays the active descendant, so
   // Enter and screen readers have it, but its row is painted only after ↑↓, a hover or a typed query
   const [moved, setMoved] = useState(false);
-  const sel = Math.min(cur, Math.max(0, options.length - 1));
+  // The row under the pointer leads while it is there; leaving the list returns to the keyboard's cursor (and its
+  // quiet state), as Design's rows clear their hover on leave
+  const [hover, setHover] = useState<number | null>(null);
+  const last = Math.max(0, options.length - 1);
+  const sel = Math.min(hover ?? cur, last);
   const listId = `${base}-list`;
   const optionId = (o: T) => `${base}-opt-${key(o)}`;
   const active = options[sel];
   const pick = () => {
     if (active) onPick(active);
   };
+  const move = (to: number) => {
+    setHover(null);
+    setMoved(true);
+    setCur(to);
+  };
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setMoved(true);
-      setCur(Math.min(sel + 1, options.length - 1));
+      move(Math.min(sel + 1, last));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setMoved(true);
-      setCur(Math.max(sel - 1, 0));
+      move(Math.max(sel - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
       pick();
@@ -70,6 +77,7 @@ export function usePickerCursor<T>(options: readonly T[], key: (o: T) => string,
     /** Back to the first option: shown after a new query, quiet again after a view change (`show` false) */
     reset: (show = true) => {
       setCur(0);
+      setHover(null);
       setMoved(show);
     },
     pick,
@@ -77,16 +85,13 @@ export function usePickerCursor<T>(options: readonly T[], key: (o: T) => string,
     onKeyDown,
     /** For the search field; the listbox is rendered only while something matches */
     comboboxProps: { role: "combobox", "aria-autocomplete": "list", "aria-expanded": options.length > 0, "aria-controls": options.length ? listId : undefined, "aria-activedescendant": active ? optionId(active) : undefined, onKeyDown } as const,
-    listboxProps: { id: listId, role: "listbox", "data-quiet": moved ? undefined : "true" } as const,
+    listboxProps: { id: listId, role: "listbox", "data-quiet": moved || hover != null ? undefined : "true", onMouseLeave: () => setHover(null) } as const,
     optionProps: (o: T, i: number) =>
       ({
         id: optionId(o),
         role: "option",
         "aria-selected": i === sel,
-        onMouseEnter: () => {
-          setMoved(true);
-          setCur(i);
-        },
+        onMouseEnter: () => setHover(i),
         onClick: () => onPick(o),
       }) as const,
   };
