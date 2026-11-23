@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { BulkBar, type BulkAction } from "./BulkBar";
+import { ProjectPicker } from "./ProjectPicker";
 
 // The shape useProjectActions.bulkActions builds for the project screen.
 const ACTIONS: BulkAction[] = [
@@ -80,6 +81,36 @@ export const LabelMenu: Story = {
     await expect(within(menu).getByRole("menuitemradio", { name: "Sales" })).toHaveAttribute("aria-checked", "true");
     await userEvent.click(within(menu).getByRole("menuitemradio", { name: "Urgent" }));
     await expect(args.onAction).toHaveBeenCalledWith("label", "l2");
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
+  },
+};
+const pickProject = fn();
+/** "Move to another project…" carries a panel: the option list swaps for the ProjectPicker inside the same menu (Design: BulkBar). */
+export const AnotherProject: Story = {
+  args: {
+    actions: ACTIONS.map((a) =>
+      a.id === "move" && a.options
+        ? { ...a, options: a.options.map((o) => (o.value === "__move" ? { ...o, panel: (close: () => void, back: () => void) => <ProjectPicker projects={[{ id: "p2", name: "Hangar renovation", lists: [{ id: "h1", name: "Backlog" }] }]} count={3} onBack={back} onPick={(p, l) => { close(); pickProject(p.id, l.id); }} /> } : o)) }
+        : a,
+    ),
+  },
+  async play({ args, canvas, canvasElement, userEvent }) {
+    const move = canvas.getByRole("button", { name: "Move to" });
+    await userEvent.click(move);
+    const page = within(canvasElement.ownerDocument.body);
+    const menu = await page.findByRole("menu", { name: "Move to" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Move to another project…" }));
+    await waitFor(() => expect(within(menu).getByRole("combobox", { name: "Search projects…" })).toHaveFocus());
+    // ← / → move the caret in the field, not the toolbar's focus
+    await userEvent.keyboard("ha{ArrowLeft}{ArrowRight}");
+    await expect(within(menu).getByRole("combobox", { name: "Search projects…" })).toHaveFocus();
+    await userEvent.click(within(menu).getByRole("button", { name: "Back" }));
+    await expect(await within(menu).findByRole("menuitem", { name: "Doing" })).toBeVisible();
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Move to another project…" }));
+    await userEvent.click(await within(menu).findByRole("option", { name: /Hangar renovation/ }));
+    await userEvent.click(within(menu).getByRole("option", { name: "Backlog" }));
+    await expect(pickProject).toHaveBeenCalledWith("p2", "h1");
+    await expect(args.onAction).not.toHaveBeenCalled();
     await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },
 };

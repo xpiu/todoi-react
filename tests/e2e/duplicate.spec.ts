@@ -86,7 +86,7 @@ test("Copy to another project maps labels by name, leaves non-members off, and t
   await page.locator(`[data-drag-id="${f.rich}"]`).click({ modifiers: ["ControlOrMeta"] });
   await page.getByRole("button", { name: "Move to", exact: true }).click();
   await page.getByRole("menuitem", { name: "Copy to another project…" }).click();
-  const picker = page.getByRole("dialog", { name: "Copy to project" });
+  const picker = page.getByRole("menu", { name: "Move to" });
   await picker.getByRole("option", { name: new RegExp(f.dest.name) }).click();
   await picker.getByRole("option", { name: "Arrivals" }).click();
   const toast = page.locator(".td-toast");

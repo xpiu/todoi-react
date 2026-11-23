@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor, within } from "storybook/test";
 
+import { ProjectPicker } from "../core/ProjectPicker";
 import { ItemCard } from "./ItemCard";
 
 const meta = {
@@ -82,6 +83,39 @@ export const MenuDrills: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "Item options" }));
     await userEvent.click(await page.findByRole("menuitem", { name: "Make subitem of…" }));
     await expect(args.onMenuAction).toHaveBeenCalledWith("Make subitem of", "HE-115");
+  },
+};
+
+const pickProject = fn();
+/** Move to › Copy to another project… carries a panel: the ProjectPicker opens one level deeper in the same menu; ← or Back return to the lists. */
+export const MenuDrillsToProject: Story = {
+  args: {
+    moveOptions: [
+      { value: "l1", label: "New", icon: "circle-dashed", checked: true },
+      { value: null, label: "", divider: true },
+      { value: "__copy", label: "Copy to another project…", icon: "folder-output", panel: (close, back) => <ProjectPicker projects={[{ id: "p2", name: "Hangar renovation", lists: [{ id: "h1", name: "Backlog" }] }]} action="copy" onBack={back} onPick={(p, l) => { close(); pickProject(p.id, l.id); }} /> },
+    ],
+  },
+  async play({ args, canvas, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    canvas.getByRole("listitem").focus();
+    await userEvent.click(canvas.getByRole("button", { name: "Item options" }));
+    await userEvent.click(await page.findByRole("menuitem", { name: "Move to" }));
+    const menu = await page.findByRole("menu");
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Copy to another project…" }));
+    const search = within(menu).getByRole("combobox", { name: "Search projects…" });
+    await waitFor(() => expect(search).toHaveFocus());
+    // ← in the field moves the caret; it doesn't step back
+    await userEvent.keyboard("ha{ArrowLeft}");
+    await expect(search).toHaveFocus();
+    await userEvent.click(within(menu).getByRole("button", { name: "Back" }));
+    await expect(await within(menu).findByRole("menuitemradio", { name: "New" })).toBeVisible();
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Copy to another project…" }));
+    await userEvent.click(await within(menu).findByRole("option", { name: /Hangar renovation/ }));
+    await userEvent.click(within(menu).getByRole("option", { name: "Backlog" }));
+    await expect(pickProject).toHaveBeenCalledWith("p2", "h1");
+    await expect(args.onMenuAction).not.toHaveBeenCalled();
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },
 };
 

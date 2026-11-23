@@ -8,7 +8,7 @@ import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
 import { Icon } from "../core/Icon";
 import type { BulkOption } from "../core/BulkBar";
 import type { PopoverCloseReason } from "../core/Popover";
-import { MenuDivider, MenuDrillHead, MenuGroup, MenuItem, MenuPopover } from "../core/Menu";
+import { MenuDivider, MenuDrillHead, MenuGroup, MenuItem, MenuPopover, useMenuDrill } from "../core/Menu";
 import { PRIORITY_COLORS } from "../core/priorities";
 import { StatusChip } from "../core/StatusChip";
 import { tipProps } from "../core/Tooltip";
@@ -128,8 +128,11 @@ function ItemKey({ itemId }: { itemId?: string }) {
 const personOf = (p: RowPerson) => (typeof p === "string" ? { name: p } : p);
 
 export function ItemCard({ title, itemId, pendingId = false, showId = true, labels = [], done, due, dueState = "default", repeat, badges = {}, cover, status, priority, assignees = [], selected, dragId, onClick, onMenuAction, moveOptions, hasSubitems, created, onQuickAction, activeQuickAction, quickActionAnchor = "icon", detailsOpen, style }: ItemCardProps) {
-  // The ⋯ menu's drill view (as the overlay ⋯ drills into Export): Move to › a list or another project
-  const [menuView, setMenuView] = useState<"main" | "move">("main");
+  // The ⋯ menu's drill views (as the overlay ⋯ drills into Export): Move to › a list, or › an option's panel
+  // (another project's ProjectPicker), named by the option's value
+  const drill = useMenuDrill<string>("main");
+  const { view: menuView, setView: setMenuView, shouldClose } = drill;
+  const panelOption = moveOptions?.find((o) => o.panel && o.value === menuView);
   // Opening the ⋯ menu also expands the details row under the card (Design: ItemCard). Closing the menu collapses it,
   // unless the press that closed it landed in the row (a quick action collapses it itself) or Tab left the menu: the
   // row's first quick action is then the next stop, and the row stays until focus leaves the card.
@@ -156,14 +159,13 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
       pressInRow.current = false;
     });
   };
-  // Escape or ← in the drill view steps back to the main rows instead of closing; → on Move to drills in
-  const shouldClose = (reason: PopoverCloseReason) => {
-    if (reason !== "escape" || menuView === "main") return true;
-    setMenuView("main");
-    return false;
-  };
+  // Escape (useMenuDrill) or ← in the drill view steps back a level instead of closing; → on Move to drills in.
+  // ← in a panel's search field moves the caret.
   const onMenuKey = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft" && menuView !== "main") {
+    if (e.key === "ArrowLeft" && panelOption && (e.target as HTMLElement).tagName !== "INPUT") {
+      e.preventDefault();
+      setMenuView("move");
+    } else if (e.key === "ArrowLeft" && menuView !== "main" && !panelOption) {
       e.preventDefault();
       setMenuView("main");
     } else if (e.key === "ArrowRight" && menuView === "main" && moveOptions && (e.target as HTMLElement).closest("[data-drill]")) {
@@ -350,7 +352,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             label="Item options"
             tier="detached"
             placement={hasDetails ? "right-start" : "bottom-end"}
-            width={menuView === "main" ? (subitemBlocked ? 252 : 184) : 224}
+            width={panelOption ? 280 : menuView === "main" ? (subitemBlocked ? 252 : 184) : 224}
             open={menuIsOpen}
             onOpenChange={(open, reason) => {
               setMenuIsOpen(open);
@@ -360,15 +362,18 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
             shouldClose={shouldClose}
             trigger={<button ref={moreRef} {...MORE_TIP} className={"td-card-more " + MORE_TIP.className} type="button" aria-label="Item options"><Icon name="ellipsis" size={14} /></button>}
           >
+            {(close) => (
             <div className="td-card-menu-body" onKeyDown={onMenuKey}>
-            {menuView === "move" && moveOptions ? (
+            {panelOption?.panel ? (
+              panelOption.panel(close, () => setMenuView("move"))
+            ) : menuView === "move" && moveOptions ? (
               <MenuGroup>
                 <MenuDrillHead title="Move to" onBack={() => setMenuView("main")} />
                 {moveOptions.map((o, i) =>
                   o.divider ? (
                     <MenuDivider key={`d${i}`} />
                   ) : (
-                    <MenuItem key={o.value ?? i} icon={o.icon} iconColor={o.iconColor} checked={o.checked} onSelect={() => o.value && !o.checked && onMenuAction("Move to", itemId, o.value)}>
+                    <MenuItem key={o.value ?? i} icon={o.icon} iconColor={o.iconColor} checked={o.checked} drill={!!o.panel} onSelect={() => (o.panel && o.value ? setMenuView(o.value) : o.value && !o.checked && onMenuAction("Move to", itemId, o.value))}>
                       {o.label}
                     </MenuItem>
                   ),
@@ -389,6 +394,7 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
               })
             )}
             </div>
+            )}
           </MenuPopover>
         </span>
       ) : null}

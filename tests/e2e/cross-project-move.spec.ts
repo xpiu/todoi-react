@@ -63,7 +63,8 @@ test("moving an item family to another group's project keeps it valid there, and
   await page.goto(`/p/${f.source.id}?v=list&item=${f.parent}`);
   await page.getByRole("button", { name: "Item options", exact: true }).click();
   await page.getByRole("menuitem", { name: "Move to project…" }).click();
-  const picker = page.getByRole("dialog", { name: "Move to project" });
+  // The picker drills in place inside the ⋯ menu (Design: ItemOverlay)
+  const picker = page.getByRole("menu", { name: "Item options" });
   await picker.getByRole("option", { name: new RegExp(f.dest.name) }).click();
   await expect(picker.getByRole("option", { name: "Arrivals" })).toBeVisible();
   await page.screenshot({ path: ".tmp/test-results/cross-project-move-picker.png" });
@@ -110,7 +111,8 @@ test("Undo on the move toast restores the family, and moved items keep their rel
   for (const id of [f.parent, f.stay, f.peer]) await page.locator(`[data-drag-id="${id}"]`).click({ modifiers: ["ControlOrMeta"] });
   await page.getByRole("button", { name: "Move to", exact: true }).click();
   await page.getByRole("menuitem", { name: "Move to another project…" }).click();
-  const picker = page.getByRole("dialog", { name: "Move to project" });
+  // The option list swaps for the picker inside the same menu (Design: BulkBar)
+  const picker = page.getByRole("menu", { name: "Move to" });
   await picker.getByRole("option", { name: new RegExp(f.dest.name) }).click();
   await picker.getByRole("option", { name: "Arrivals" }).click();
   const toast = page.locator(".td-toast");

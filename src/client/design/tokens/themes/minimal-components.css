@@ -1022,10 +1022,6 @@ html[data-theme="minimal"] .td-picker-list,html[data-theme="minimal"] .td-item-p
 html[data-theme="minimal"] .td-project-picker-head{padding:4px 14px 8px;gap:5px;font:500 13px/20px var(--font-ui)}
 /* Back arrow centred on the 16px glyph slot, heading on the 38px label column (it sat 2px right of the names, the arrow 3px right of the glyphs) */
 html[data-theme="minimal"] .td-project-picker-head>.td-iconbtn{margin-left:-3px}
-/* In a Dialog (TransferDialog) the body already has the 24px edge: glyphs sit on the title's column, the search hairline spans it, rows keep their 14px frame outside the text */
-html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-picker-search{margin-left:0;margin-right:0}
-html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-picker-list{margin:0 -14px}
-html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-project-picker-head,html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-menu-note{padding-left:0;padding-right:0}
 html[data-theme="minimal"] .td-picker-row .td-menu-item-label>svg{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-project-picker-group,html[data-theme="minimal"] .td-item-picker-list-name,html[data-theme="minimal"] .td-member-picker-sub{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-item-picker-key{font:400 11px/16px var(--font-mono)}

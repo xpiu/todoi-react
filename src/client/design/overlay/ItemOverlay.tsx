@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
-import { TransferDialog, type PickableList, type PickableProject, type TransferKind } from "../core/ProjectPicker";
+import { ProjectPicker, type PickableList, type PickableProject } from "../core/ProjectPicker";
 import { AttachmentList, DropOverlay, isImageFile, useFileDrop, type AttachmentFile } from "./Attachments";
 import { ItemSection } from "./ItemSection";
 
@@ -24,7 +24,8 @@ import { MakeSubitemDialog, type PickableItem } from "../core/ItemPicker";
 import { quote } from "../core/text";
 import { LabelPicker, type LabelDraft, type PickableLabel } from "../core/LabelPicker";
 import { MemberPicker, type PickableMember } from "../core/MemberPicker";
-import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
+import { MenuButton, MenuDivider, MenuItem, useMenuDrill } from "../core/Menu";
+import { Popover, usePopover } from "../core/Popover";
 import type { RepeatRule } from "../core/repeat";
 import { RepeatPicker } from "../core/RepeatPicker";
 import { Select } from "../core/Select";
@@ -204,8 +205,10 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const [query, setQuery] = useState("");
   const [linkCopied, copy] = useCopy(900);
   const [subitemOf, setSubitemOf] = useState(false);
-  const [transfer, setTransfer] = useState<TransferKind | null>(null);
-  const [menuView, setMenuView] = useState<"main" | "export">("main");
+  // The ⋯ menu's drill views; an Inbox item's aside "Move to project…" opens the same picker in a popover
+  const drill = useMenuDrill<"main" | "export" | "move" | "copy">("main");
+  const menuView = drill.view;
+  const filing = usePopover();
   const pickerRef = useRef<(() => void) | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const files = item.attachments ?? [];
@@ -286,6 +289,20 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const onDark = !!item.cover && !item.cover.src && item.cover.color === "var(--chrome-topbar)";
   const cornerVariant = onDark ? "chrome" : "ghost";
 
+  /** Move / Copy to project…: the ⋯ menu's drill view (Back returns to the rows) and the Inbox aside's popover */
+  const transferPicker = (kind: "move" | "copy", onBack: (() => void) | undefined, close: () => void) => (
+    <ProjectPicker
+      projects={p.projects ?? []}
+      loadLists={p.loadLists}
+      action={kind}
+      onBack={onBack}
+      onPick={(proj, list) => {
+        close();
+        (kind === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list);
+      }}
+    />
+  );
+
   const title = (
     <h2 className={"td-modal-title" + (titleEdit != null ? " is-editing" : "")} title={titleEdit == null ? "Click to edit title" : undefined} onClick={() => titleEdit == null && setTitleEdit(item.title)}>
       {titleEdit == null ? (
@@ -328,30 +345,30 @@ export function ItemOverlay(p: ItemOverlayProps) {
             </span>
           ) : null}
           <IconButton name={copyIcon(linkCopied, "link")} label="Copy item link" tooltip={linkCopied === "failed" ? COPY_FAILED : "Copy item link"} iconSize={16} variant={cornerVariant} onClick={copyLink} />
-          <MenuButton label="Item options" variant={cornerVariant} tier="detached" width={menuView === "export" ? 236 : 220} onOpenChange={(o) => !o && setMenuView("main")}>
+          <MenuButton label="Item options" variant={cornerVariant} tier="detached" width={menuView === "export" ? 236 : menuView === "move" || menuView === "copy" ? 280 : 220} onOpenChange={(o) => !o && drill.back()} shouldClose={drill.shouldClose}>
             {(close) =>
               menuView === "export" && p.onExport ? (
                 <ExportMenu
                   scope="item"
                   subitems={item.subitems.length}
                   comments={p.comments.length > 0}
-                  onBack={() => setMenuView("main")}
+                  onBack={drill.back}
                   onExport={(f) => {
                     close();
-                    setMenuView("main");
                     p.onExport?.(f);
                   }}
                   onPrint={p.onPrint ? () => {
                     close();
-                    setMenuView("main");
                     p.onPrint?.();
                   } : undefined}
                   printShortcut={`${SHORTCUTS.modLabel} P`}
                 />
+              ) : (menuView === "move" || menuView === "copy") && (menuView === "copy" ? p.onCopyToProject : p.onMoveToProject) ? (
+                transferPicker(menuView, drill.back, close)
               ) : (
                 <>
                   {p.onMoveToProject ? (
-                    <MenuItem icon="folder-input" onSelect={() => setTransfer("move")}>
+                    <MenuItem icon="folder-input" drill onSelect={() => drill.setView("move")}>
                       Move to project…
                     </MenuItem>
                   ) : null}
@@ -359,7 +376,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
                     Duplicate
                   </MenuItem>
                   {p.onCopyToProject ? (
-                    <MenuItem icon="folder-output" onSelect={() => setTransfer("copy")}>
+                    <MenuItem icon="folder-output" drill onSelect={() => drill.setView("copy")}>
                       Copy to project…
                     </MenuItem>
                   ) : null}
@@ -372,7 +389,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
                     Share
                   </MenuItem>
                   {p.onExport ? (
-                    <MenuItem icon="download" drill onSelect={() => setMenuView("export")}>
+                    <MenuItem icon="download" drill onSelect={() => drill.setView("export")}>
                       Export…
                     </MenuItem>
                   ) : null}
@@ -394,9 +411,22 @@ export function ItemOverlay(p: ItemOverlayProps) {
         <div className="td-aside-stack">
           {p.inbox ? (
             p.onMoveToProject ? (
-              <Button variant="outline" icon="folder-input" className="td-aside-btn" onClick={() => setTransfer("move")}>
-                Move to project…
-              </Button>
+              <Popover
+                open={filing.open}
+                onOpenChange={filing.setOpen}
+                tier="detached"
+                width={280}
+                role="dialog"
+                aria-label="Move to project"
+                block
+                trigger={
+                  <Button variant="outline" icon="folder-input" data-block="true" className="td-aside-btn">
+                    Move to project…
+                  </Button>
+                }
+              >
+                {transferPicker("move", undefined, filing.close)}
+              </Popover>
             ) : null
           ) : statusOnly ? null : (
             <Select block tier="detached" aria-label="Move to list" title="Move to list" value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined} />
@@ -556,7 +586,6 @@ export function ItemOverlay(p: ItemOverlayProps) {
           ))}
         </div>
       </div>
-      <TransferDialog kind={transfer} onClose={() => setTransfer(null)} projects={p.projects ?? []} loadLists={p.loadLists} onPick={(kind, proj, list) => (kind === "copy" ? p.onCopyToProject : p.onMoveToProject)?.(proj, list)} />
       <MakeSubitemDialog open={subitemOf} title={`Make ${quote(item.title)} a subitem of`} onClose={() => setSubitemOf(false)} items={others} onPick={(t) => p.onMakeSubitemOf?.(t)} />
     </Modal>
   );

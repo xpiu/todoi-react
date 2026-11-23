@@ -165,7 +165,7 @@ export function Select<V extends SelectValue = SelectValue>({
                 <Combobox.Item key={String(o.value)} value={o} disabled={o.disabled} className="td-menu-item" title={o.title}>
                   {o.icon ? (
                     <span className="td-menu-item-icon">
-                      <Icon name={o.icon} size={15} color={o.iconColor} />
+                      <Icon name={o.icon} size={16} color={o.iconColor} />
                     </span>
                   ) : null}
                   <span className="td-menu-item-label">{labelOf(o)}</span>

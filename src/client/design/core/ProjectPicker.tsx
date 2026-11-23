@@ -2,11 +2,11 @@
 // colour, group at the trailing edge; projects without lists are inert), then the destination list.
 // ↑↓ + Enter move and pick from the search field, then from the focused lists listbox (ItemPicker's
 // usePickerCursor). Panel body only. onPick(project, list) fires once; the consumer moves / copies and raises ONE toast.
-// TransferDialog puts it in the "Move to project" / "Copy to project" dialog.
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+// Mounted as a menu drill view (item overlay ⋯ › Move / Copy to project…, a card's and the BulkBar's Move to ›
+// another project) or in a popover (an Inbox item's "Move to project…"). Spec: DESIGN.md › Moving between projects.
+import { useCallback, useEffect, useState, type RefObject } from "react";
 
 import { listIconFor } from "../board/listIcons";
-import { Dialog } from "./Dialog";
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
 import { usePickerCursor } from "./ItemPicker";
@@ -166,29 +166,5 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
         <div className="td-menu-note">No projects match</div>
       )}
     </div>
-  );
-}
-
-export type TransferKind = "move" | "copy";
-
-/** The picker in its dialog: open while `kind` is set, closing first on a pick; it keeps saying Move or Copy while it closes. */
-export function TransferDialog({ kind, onClose, onPick, ...picker }: { kind: TransferKind | null; onClose: () => void; onPick: (kind: TransferKind, project: PickableProject, list: PickableList) => void } & Omit<ProjectPickerProps, "action" | "onPick" | "showHeading">) {
-  const [shown, setShown] = useState<TransferKind>("move");
-  const searchRef = useRef<HTMLInputElement>(null);
-  if (kind && kind !== shown) setShown(kind);
-  return (
-    <Dialog open={!!kind} onClose={onClose} title={shown === "copy" ? "Copy to project" : "Move to project"} width={380} initialFocus={searchRef}>
-      <ProjectPicker
-        {...picker}
-        autoFocus={false}
-        inputRef={searchRef}
-        action={shown}
-        showHeading={false}
-        onPick={(project, list) => {
-          onClose();
-          onPick(shown, project, list);
-        }}
-      />
-    </Dialog>
   );
 }

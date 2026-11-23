@@ -248,7 +248,7 @@ export function RepeatPicker({ value, onChange, anchor, today, placeholder = "Re
     >
       {icon ? (
         <span className="td-menu-item-icon">
-          <Icon name={icon} size={15} />
+          <Icon name={icon} size={16} />
         </span>
       ) : null}
       <span className="td-menu-item-label">{children}</span>

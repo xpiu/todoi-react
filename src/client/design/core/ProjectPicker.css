@@ -18,6 +18,10 @@
     max-width: none;
     text-wrap: pretty;
   }
+  /* Search text on the project names' column: the input's own 2px padding is gone (Design: .td-prp-input) */
+  .td-project-picker .td-picker-input {
+    padding: 0;
+  }
   .td-project-picker-head-title {
     flex: 1;
     min-width: 0;

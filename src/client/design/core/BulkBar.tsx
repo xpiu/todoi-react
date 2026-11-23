@@ -3,11 +3,11 @@
 // toast. Option menus are the shared Menu on the detached tier. Spec: DESIGN.md › Selection.
 // Base UI Toolbar gives it the WAI-ARIA toolbar keyboard model: one Tab stop, ←/→ (Home/End) between buttons.
 import { Toolbar } from "@base-ui/react/toolbar";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
 
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
-import { MenuDivider, MenuItem, MenuPopover } from "./Menu";
+import { MenuDivider, MenuItem, MenuPopover, useMenuDrill } from "./Menu";
 import "./BulkBar.css";
 
 export interface BulkOption {
@@ -20,6 +20,9 @@ export interface BulkOption {
   /** Every selected item already has it */
   checked?: boolean;
   divider?: boolean;
+  /** A panel swapped in for the option list (a drill row, as Design's BulkBar): "Move to another project…" opens the
+   * ProjectPicker. close() closes the menu; back() returns to the options. */
+  panel?: (close: () => void, back: () => void) => ReactNode;
 }
 export interface BulkAction {
   id: string;
@@ -57,20 +60,7 @@ export function BulkBar({ count, noun = "item", actions, onAction, onClear, clea
           </Toolbar.Button>
         );
         if (!a.options) return <span key={a.id}>{btn}</span>;
-        return (
-          <MenuPopover key={a.id} label={a.label} tier="detached" placement="top-start" minWidth={176} trigger={btn}>
-            {a.options.map((o, i) =>
-              o.divider ? (
-                <MenuDivider key={`div${i}`} />
-              ) : (
-                <MenuItem key={String(o.value)} icon={o.swatch ? undefined : o.icon} iconColor={o.iconColor} checked={o.checked} onSelect={() => onAction(a.id, o.value)}>
-                  {o.swatch ? <span className="td-bulk-dot" style={{ background: o.swatch }} /> : null}
-                  {o.label}
-                </MenuItem>
-              ),
-            )}
-          </MenuPopover>
-        );
+        return <BulkMenu key={a.id} action={a} options={a.options} trigger={btn} onAction={onAction} />;
       })}
       {onClear ? (
         <>
@@ -83,5 +73,29 @@ export function BulkBar({ count, noun = "item", actions, onAction, onClear, clea
         </>
       ) : null}
     </Toolbar.Root>
+  );
+}
+
+/** One action's option menu; an option with a panel drills into it in place (Escape or its Back returns to the options). */
+function BulkMenu({ action, options, trigger, onAction }: { action: BulkAction; options: BulkOption[]; trigger: ReactElement; onAction: BulkBarProps["onAction"] }) {
+  const drill = useMenuDrill<string | null>(null);
+  const panel = options.find((o) => o.panel && o.value === drill.view)?.panel;
+  return (
+    <MenuPopover label={action.label} tier="detached" placement="top-start" minWidth={176} width={panel ? 280 : undefined} trigger={trigger} shouldClose={drill.shouldClose} onOpenChange={(o) => !o && drill.back()}>
+      {(close) =>
+        panel
+          ? panel(close, drill.back)
+          : options.map((o, i) =>
+              o.divider ? (
+                <MenuDivider key={`div${i}`} />
+              ) : (
+                <MenuItem key={String(o.value)} icon={o.swatch ? undefined : o.icon} iconColor={o.iconColor} checked={o.checked} drill={!!o.panel} onSelect={() => (o.panel ? drill.setView(o.value) : onAction(action.id, o.value))}>
+                  {o.swatch ? <span className="td-bulk-dot" style={{ background: o.swatch }} /> : null}
+                  {o.label}
+                </MenuItem>
+              ),
+            )
+      }
+    </MenuPopover>
   );
 }

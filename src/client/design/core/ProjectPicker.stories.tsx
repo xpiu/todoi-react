@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
-import { Button } from "./Button";
-import { ProjectPicker, TransferDialog, type PickableList, type PickableProject, type TransferKind } from "./ProjectPicker";
+import { MenuButton, MenuItem, useMenuDrill } from "./Menu";
+import { ProjectPicker, type PickableList, type PickableProject } from "./ProjectPicker";
 
 const SALES_LISTS: PickableList[] = [
   { id: "s1", name: "To-do" },
@@ -21,10 +20,10 @@ const LOADED: PickableList[] = [{ id: "h1", name: "Backlog" }, { id: "h2", name:
 const meta = {
   title: "Core/ProjectPicker",
   component: ProjectPicker,
-  // Panel body only; TransferDialog (below) is the app's dialog around it.
+  // Panel body only; InMenuDrill (below) mounts it as a ⋯ menu drill view, as the app does.
   decorators: [(Story) => <div className="td-popover" style={{ width: 340, position: "static" }}><Story /></div>],
   args: { projects: PROJECTS, current: "p4", onPick: fn(), loadLists: fn(async () => LOADED) },
-  parameters: { docs: { description: { component: "Move or copy items to another project: pick the project (searchable, `current` excluded), then the destination list. Panel body only; TransferDialog wraps it in the Move/Copy dialog. Lists come from each project's `lists` or from the async loadLists(projectId). onPick(project, list) fires once and the caller performs the transfer and raises one toast." } } },
+  parameters: { docs: { description: { component: "Move or copy items to another project: pick the project (searchable, `current` excluded), then the destination list. Panel body only: a ⋯ menu drill view (item overlay, a card's and the BulkBar's Move to) or a popover (an Inbox item). Lists come from each project's `lists` or from the async loadLists(projectId). onPick(project, list) fires once and the caller performs the transfer and raises one toast." } } },
 } satisfies Meta<typeof ProjectPicker>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -89,25 +88,46 @@ export const NoMatches: Story = {
     await expect(search).toHaveAttribute("aria-expanded", "false");
   },
 };
-export const InTransferDialog: Story = {
+export const InMenuDrill: Story = {
   decorators: [],
+  parameters: { docs: { description: { story: "Copy to project… drills in place inside the ⋯ menu (Design: ItemOverlay): Back or Esc return to the rows, a pick closes the menu." } } },
   render: (args) => {
-    const [kind, setKind] = useState<TransferKind | null>(null);
-    return <>
-      <Button onClick={() => setKind("copy")}>Copy to project…</Button>
-      <TransferDialog kind={kind} onClose={() => setKind(null)} projects={args.projects} current={args.current} loadLists={args.loadLists} onPick={(_kind, project, list) => args.onPick(project, list)} />
-    </>;
+    const drill = useMenuDrill<"main" | "copy">("main");
+    return (
+      <MenuButton label="Item options" width={drill.view === "copy" ? 280 : 220} shouldClose={drill.shouldClose} onOpenChange={(o) => !o && drill.back()}>
+        {(close) =>
+          drill.view === "copy" ? (
+            <ProjectPicker {...args} action="copy" onBack={drill.back} onPick={(project, list) => { close(); args.onPick(project, list); }} />
+          ) : (
+            <MenuItem icon="folder-output" drill onSelect={() => drill.setView("copy")}>
+              Copy to project…
+            </MenuItem>
+          )
+        }
+      </MenuButton>
+    );
   },
   async play({ args, canvas, canvasElement, userEvent }) {
-    const trigger = canvas.getByRole("button", { name: "Copy to project…" });
+    const trigger = canvas.getByRole("button", { name: "Item options" });
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
-    const dialog = await page.findByRole("dialog", { name: "Copy to project" });
-    await waitFor(() => expect(within(dialog).getByRole("combobox", { name: "Search projects…" })).toHaveFocus());
-    await userEvent.click(within(dialog).getByRole("option", { name: /Helicopters Europe/ }));
-    await userEvent.click(within(dialog).getByRole("option", { name: "Done" }));
+    const menu = await page.findByRole("menu", { name: "Item options" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Copy to project…" }));
+    const search = within(menu).getByRole("combobox", { name: "Search projects…" });
+    await waitFor(() => expect(search).toHaveFocus());
+    await waitFor(() => expect(within(menu).getByText("Copy to project", { selector: ".td-project-picker-head-title" })).toBeVisible());
+    // Typing and the arrows stay in the field (no menu typeahead or row roving)
+    await userEvent.keyboard("hang{ArrowDown}");
+    await expect(search).toHaveFocus();
+    await expect(search).toHaveValue("hang");
+    // Esc steps back to the rows; the menu stays open
+    await userEvent.keyboard("{Escape}");
+    await expect(await within(menu).findByRole("menuitem", { name: "Copy to project…" })).toBeVisible();
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Copy to project…" }));
+    await userEvent.click(await within(menu).findByRole("option", { name: /Helicopters Europe/ }));
+    await userEvent.click(within(menu).getByRole("option", { name: "Done" }));
     await expect(args.onPick).toHaveBeenCalledWith(PROJECTS[0], SALES_LISTS[2]);
-    await waitFor(() => expect(page.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
   },
 };

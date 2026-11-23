@@ -171,11 +171,43 @@ export const ImageCover: Story = {
 };
 export const InboxItem: Story = {
   args: { inbox: true, onMoveToProject: fn(), projects: [{ id: "p1", name: "Helicopters Europe", lists: [{ id: "l1", name: "To do" }] }], item: { ...ITEM, labelIds: [], assigneeIds: [], subitems: [], attachments: [] }, relations: [], comments: [], activity: [] },
-  async play({ canvasElement }) {
+  async play({ args, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
-    await expect(within(dialog).getByRole("button", { name: "Move to project…" })).toBeVisible();
     await expect(within(dialog).queryByRole("combobox", { name: "Move to list" })).not.toBeInTheDocument();
+    // The aside button opens the ProjectPicker in a popover beside it, not a dialog over the overlay
+    await userEvent.click(within(dialog).getByRole("button", { name: "Move to project…" }));
+    const picker = await page.findByRole("dialog", { name: "Move to project" });
+    await waitFor(() => expect(within(picker).getByRole("combobox", { name: "Search projects…" })).toHaveFocus());
+    await userEvent.click(within(picker).getByRole("option", { name: /Helicopters Europe/ }));
+    await userEvent.click(within(picker).getByRole("option", { name: "To do" }));
+    await expect(args.onMoveToProject).toHaveBeenCalledWith(args.projects![0], { id: "l1", name: "To do" });
+    await waitFor(() => expect(page.queryByRole("dialog", { name: "Move to project" })).not.toBeInTheDocument());
+  },
+};
+/** ⋯ › Move to project… / Copy to project… drill into the ProjectPicker inside the same menu (Design: ItemOverlay). */
+export const MoveToProjectDrill: Story = {
+  args: { onMoveToProject: fn(), onCopyToProject: fn(), projects: [{ id: "p1", name: "Hangar renovation", lists: [{ id: "h1", name: "Backlog" }] }] },
+  async play({ args, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Item options" }));
+    const menu = await page.findByRole("menu", { name: "Item options" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Copy to project…" }));
+    const search = within(menu).getByRole("combobox", { name: "Search projects…" });
+    await waitFor(() => expect(search).toHaveFocus());
+    await expect(page.queryByRole("dialog", { name: "Copy to project" })).not.toBeInTheDocument();
+    // Esc steps back to the menu's rows; the overlay stays open
+    await userEvent.keyboard("{Escape}");
+    await expect(await within(menu).findByRole("menuitem", { name: "Move to project…" })).toBeVisible();
+    await expect(args.onClose).not.toHaveBeenCalled();
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Move to project…" }));
+    await userEvent.click(await within(menu).findByRole("option", { name: /Hangar renovation/ }));
+    await expect(within(menu).getByText("Move to Hangar renovation")).toBeVisible();
+    await userEvent.click(within(menu).getByRole("option", { name: "Backlog" }));
+    await expect(args.onMoveToProject).toHaveBeenCalledWith(args.projects![0], { id: "h1", name: "Backlog" });
+    await expect(args.onCopyToProject).not.toHaveBeenCalled();
+    await waitFor(() => expect(page.queryByRole("menu")).not.toBeInTheDocument());
   },
 };
 /** "Link Lists with Status" on and every list carries its own role: Status stands in for the List field, and a pick moves the item. */

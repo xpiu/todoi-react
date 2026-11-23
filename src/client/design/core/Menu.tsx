@@ -17,7 +17,7 @@ import "./Menu.css";
 import "./ProjectPicker.css";
 
 export interface MenuItemProps {
-  /** 15px glyph, --ink-600 (currentColor on danger rows) */
+  /** 16px glyph (whole pixels in the 30px row, as Menu.css draws it), --ink-600 (currentColor on danger rows) */
   icon?: IconName;
   iconColor?: string;
   children?: ReactNode;
@@ -65,7 +65,7 @@ export function MenuItem({ icon, iconColor, children, trailing, shortcut, danger
     >
       {icon ? (
         <span className="td-menu-item-icon">
-          <Icon name={icon} size={15} color={iconColor} />
+          <Icon name={icon} size={16} color={iconColor} />
         </span>
       ) : null}
       <span className="td-menu-item-label">{children}</span>
@@ -115,6 +115,20 @@ export function MenuDrillHead({ title, onBack }: { title: ReactNode; onBack: () 
       </BaseMenu.GroupLabel>
     </div>
   );
+}
+
+/** A menu's drill views (Export…, Move to project…, Move to › another project): the view shown, and the `shouldClose`
+ * for its MenuPopover / MenuButton — Escape in a drill view steps back to `main` instead of closing. Return to `main`
+ * when the menu closes (onOpenChange). */
+export function useMenuDrill<V extends string | null>(main: V) {
+  const [view, setView] = useState<V>(main);
+  const back = useCallback(() => setView(main), [main]);
+  const shouldClose = (reason: PopoverCloseReason) => {
+    if (reason !== "escape" || view === main) return true;
+    setView(main);
+    return false;
+  };
+  return { view, setView, back, shouldClose };
 }
 
 /** Uppercase 11px group label: names its MenuGroup; outside one it is decoration only. */
