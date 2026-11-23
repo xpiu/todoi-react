@@ -46,6 +46,7 @@ import { usePrefs, type Prefs } from "./prefs";
 import { avatarColorVar } from "./items";
 import { useCurrentUser } from "./session";
 import { useSidebarOrder } from "./useSidebarOrder";
+import { useLastProject } from "./lastProject";
 import { SidebarOrder } from "../design/navigation/SidebarOrder";
 import { useOpenProject } from "./useOpenProject";
 
@@ -157,6 +158,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const projects = useMemo(() => projectsOf(groups.data), [groups.data]);
   const { user } = useCurrentUser();
   const sidebar = useSidebarOrder(groups.data, user?.id);
+  const lastProjectId = useLastProject();
+  const lastProject = projects.find((p) => p.id === lastProjectId);
   const lifecycle = useLifecycle();
   const [helpQ, setHelpQ] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -181,7 +184,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             id: "date",
             title: "Language and time",
             rows: [
-              { id: "language", label: "Language", hint: "Menus, buttons and dates. Todoi is in English for now; other languages come later", control: <Select aria-label="Language" value={prefs.language} options={LANGUAGES} onChange={(v) => v === "en" && prefs.set({ language: v })} placement="bottom-end" tier="detached" width={220} /> },
+              { id: "language", label: "Language", hint: "Menus, buttons and dates. Smart date recognition reads this language", control: <Select aria-label="Language" value={prefs.language} options={LANGUAGES} onChange={(v) => v === "en" && prefs.set({ language: v })} placement="bottom-end" tier="detached" width={220} /> },
               { id: "timeZone", label: "Time zone", hint: "Due times and “today” follow this zone on every device", control: <Select aria-label="Time zone" value={prefs.timeZone ?? "auto"} options={TIME_ZONES} onChange={(v) => prefs.set({ timeZone: v === "auto" ? null : v })} placement="bottom-end" tier="detached" width={300} searchPlaceholder="Search time zones…" /> },
               { id: "timeFormat", label: "Time format", hint: "14:00 or 2:00 pm on items and in the calendar", control: <Segmented aria-label="Time format" value={prefs.timeFormat} options={[{ id: "24h", label: "24-hour" }, { id: "12h", label: "12-hour" }]} onChange={(v) => prefs.set({ timeFormat: v })} /> },
               { id: "weekStart", label: "Week starts on", hint: "First column in Week and Month views", control: sel("Week starts on", prefs.weekStart, WEEK_STARTS, (v) => prefs.set({ weekStart: v })) },
@@ -195,7 +198,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             title: "Capture defaults",
             rows: [
               { id: "defaultPriority", label: "Default priority", hint: "New items start with this unless quick-add sets one", control: sel("Default priority", prefs.defaultPriority, PRIORITIES, (v) => prefs.set({ defaultPriority: v })) },
-              { id: "defaultDestination", label: "Default destination", hint: "Where Create › New item lands when you don't pick a list", control: <Select aria-label="Default destination" value={projects.some((p) => p.id === prefs.defaultDestination) || prefs.defaultDestination === "inbox" ? prefs.defaultDestination : "current"} options={[{ value: "current", label: "Current project" }, { value: "inbox", label: "Inbox" }, ...projects.map((p) => ({ value: p.id, label: p.name, hint: p.groupName }))]} onChange={(v) => prefs.set({ defaultDestination: v })} placement="bottom-end" tier="detached" width={260} /> },
+              { id: "defaultDestination", label: "Default destination", hint: "Where an item lands when you don't pick a list", control: <Select aria-label="Default destination" value={projects.some((p) => p.id === prefs.defaultDestination) || prefs.defaultDestination === "inbox" ? prefs.defaultDestination : "current"} options={[{ value: "current", label: lastProject ? `Current project — ${lastProject.name}` : "Current project" }, { value: "inbox", label: "Inbox" }, ...projects.map((p) => ({ value: p.id, label: p.name, hint: p.groupName }))]} onChange={(v) => prefs.set({ defaultDestination: v })} placement="bottom-end" tier="detached" width={260} /> },
             ],
           },
         ],

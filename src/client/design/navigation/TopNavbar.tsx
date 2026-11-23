@@ -36,7 +36,7 @@ export interface TopNavbarProps {
   /** When set, the title is click-to-rename */
   onTitleChange?: (title: string) => void;
   search?: boolean;
-  /** @default "Search" */
+  /** Empty by default, as in Design (the ⌘K chip and the glyph say what it is; the field is named "Search") */
   searchPlaceholder?: string;
   searchSources?: SearchSources;
   onSearchSelect?: (type: SearchResultType, id: string, entity: SearchEntity) => void;
@@ -164,7 +164,7 @@ export function TopNavbar({
   titleKey,
   onTitleChange,
   search,
-  searchPlaceholder = "Search",
+  searchPlaceholder = "",
   searchSources,
   onSearchSelect,
   onSearchChange,

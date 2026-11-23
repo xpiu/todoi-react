@@ -42,6 +42,7 @@ import { LifecycleDialogs } from "./LifecycleDialogs";
 import { useProjectMutations } from "../data/projects";
 import { useSidebarOrder } from "./useSidebarOrder";
 import { requestQuickAdd } from "./quickAddRequest";
+import { getLastProject, setLastProject } from "./lastProject";
 import { peopleOf, useCurrentUser } from "./session";
 import { authClient, forgetBrowserSession } from "../auth";
 import { GuestBar } from "../design/auth/GuestBar";
@@ -139,12 +140,17 @@ export function AppShell() {
   // On the Inbox, a row dropped on a sidebar project is filed there.
   const inbox = useInbox(section === "inbox");
   const capture = () => void navigate({ to: "/inbox", search: { capture: true } });
+  useEffect(() => {
+    if (projectId) setLastProject(projectId);
+  }, [projectId]);
   // Create › New item follows Settings › General › Default destination: the current project (Inbox outside one), the Inbox,
   // or a chosen project — there quick-add opens in the first list, as N does
   const destination = usePrefs((s) => s.defaultDestination);
   const newItem = () => {
     const known = (groups.data ?? []).some((g) => g.projects.some((p) => p.id === destination));
-    const target = destination === "inbox" ? null : destination === "current" ? (projectId ?? null) : known ? destination : null;
+    // "Current project": the one on screen, else the one last open this session (Settings shows its name)
+    const current = projectId ?? getLastProject();
+    const target = destination === "inbox" ? null : destination === "current" ? current : known ? destination : null;
     if (!target) return capture();
     requestQuickAdd(target);
     if (target !== projectId) void navigate({ to: "/p/$projectId", params: { projectId: target } });
@@ -167,6 +173,20 @@ export function AppShell() {
   // The SubNavbar's one open dropdown: the Filter / Sort rows list every option while theirs is open.
   const [openMenu, setOpenMenu] = useState<SubNavbarMenu | null>(null);
   const closeMenu = (m: SubNavbarMenu) => setOpenMenu((cur) => (cur === m ? null : cur));
+  // The Filter by / Sort by rows' "Hide" (Design: FilterBar / SortBar): the row collapses, the filters and sort stay on;
+  // opening that menu again or changing a filter / the sort brings it back. Per project, for this session.
+  const [rowsHidden, setRowsHidden] = useState<{ pid: string | null; filter: boolean; sort: boolean }>({ pid: null, filter: false, sort: false });
+  const hiddenRow = (row: "filter" | "sort") => rowsHidden.pid === (projectId ?? null) && rowsHidden[row];
+  const showRow = (row: "filter" | "sort") => setRowsHidden((h) => (h[row] ? { ...h, [row]: false } : h));
+  const hideRow = (row: "filter" | "sort") => {
+    setRowsHidden((h) => ({ ...(h.pid === (projectId ?? null) ? h : { filter: false, sort: false }), pid: projectId ?? null, [row]: true }));
+    closeMenu(row);
+  };
+  /** Opening the Filter or Sort menu brings its row back */
+  const changeMenu = (m: SubNavbarMenu | null) => {
+    if (m === "filter" || m === "sort") showRow(m);
+    setOpenMenu(m);
+  };
   // The tab stays active (with a dot) while the live state drifts from its definition.
   const [lastSaved, setLastSaved] = useState<{ projectId: string; id: string } | null>(null);
   const activeSavedId = resolved.raw.savedView ?? (lastSaved && lastSaved.projectId === projectId ? lastSaved.id : null);
@@ -189,8 +209,11 @@ export function AppShell() {
     void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, patch) });
   };
   const clearFilters = () => setViewState({ filters: [] });
-  const toggleFilter = (f: { type: string; value: string }) => setViewState({ filters: state!.filters.some((a) => sameFilter(a, f)) ? state!.filters.filter((a) => !sameFilter(a, f)) : [...state!.filters, { type: f.type, value: f.value }] });
-  const selectSort = (dim: string, key: string) => setViewState({ sort: nextSort(state!.sort, dim as SortDim, key) });
+  const toggleFilter = (f: { type: string; value: string }) => (showRow("filter"), setViewState({ filters: state!.filters.some((a) => sameFilter(a, f)) ? state!.filters.filter((a) => !sameFilter(a, f)) : [...state!.filters, { type: f.type, value: f.value }] }));
+  const selectSort = (dim: string, key: string) => {
+    showRow("sort");
+    setViewState({ sort: nextSort(state!.sort, dim as SortDim, key) });
+  };
 
   // Filter options and their match counts over the project's top-level items.
   const topItems = useMemo(() => (projectItems.data ?? []).filter((it) => !it.parentItemId), [projectItems.data]);
@@ -298,6 +321,8 @@ export function AppShell() {
             closeMenu("filter");
             suggest("clear-filters");
           }}
+          hidden={hiddenRow("filter")}
+          onHide={() => hideRow("filter")}
         />
         <SortBar
           open={openMenu === "sort"}
@@ -309,6 +334,8 @@ export function AppShell() {
             resetSort();
             closeMenu("sort");
           }}
+          hidden={hiddenRow("sort")}
+          onHide={() => hideRow("sort")}
         />
       </div>
     </div>
@@ -320,7 +347,7 @@ export function AppShell() {
     openPalette: () => setPaletteOpen(true),
     openHelp: () => setHelpOpen(true),
     clearFilters,
-    openFilter: projectId ? () => setOpenMenu("filter") : undefined,
+    openFilter: projectId ? () => changeMenu("filter") : undefined,
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
@@ -338,7 +365,7 @@ export function AppShell() {
       url={projectUrl(pd.id)}
     />
   ) : undefined;
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={setOpenMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} checkedMove={project.data ? movesOnCheck(project.data) : false} onOpenCheckedMove={() => navigate({ to: "/projects" })} membersMenu={membersMenu} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={changeMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} checkedMove={project.data ? movesOnCheck(project.data) : false} onOpenCheckedMove={() => navigate({ to: "/projects" })} membersMenu={membersMenu} /> : null;
 
   const sidebarGroups = sidebarOrder.rail;
   const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: inboxBadge ? (unread.data?.unread ?? 0) : 0 } : n));

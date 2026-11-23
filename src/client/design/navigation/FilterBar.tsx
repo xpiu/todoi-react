@@ -21,14 +21,18 @@ export interface FilterBarProps {
   onToggle: (f: FilterBarOption) => void;
   /** "Reset filters": clears them and closes the menu */
   onClear: () => void;
+  /** "Hide": collapses the row; the filters stay on (the toolbar's Filter button brings it back) */
+  onHide?: () => void;
+  /** Collapsed by Hide */
+  hidden?: boolean;
 }
 
-export function FilterBar({ open, available, filters, onToggle, onClear }: FilterBarProps) {
+export function FilterBar({ open, available, filters, onToggle, onClear, onHide, hidden = false }: FilterBarProps) {
   const isOn = (f: FilterBarOption) => filters.some((a) => a.type === f.type && a.value === f.value);
-  if (!open && !filters.length) return null;
+  if (hidden || (!open && !filters.length)) return null;
   const shown = open ? available : available.filter(isOn);
   return (
-    <ChipBar label="Filter by" icon="filter" aria-label="Filters" moreLabel="More filters" backLabel="Previous filters" actions={<ChipBarAction icon="x" active={filters.length > 0} onClick={onClear}>Reset filters</ChipBarAction>}>
+    <ChipBar label="Filter by" icon="filter" aria-label="Filters" moreLabel="More filters" backLabel="Previous filters" actions={<><ChipBarAction icon="x" active={filters.length > 0} onClick={onClear}>Reset filters</ChipBarAction>{onHide ? <ChipBarAction icon="eye-off" onClick={onHide}>Hide</ChipBarAction> : null}</>}>
       {shown.map((f) => (
         <FilterChip key={`${f.type}:${f.value}`} value={f.value} category={f.type === "label" ? "label" : undefined} color={f.color} icon={f.icon} selected={isOn(f)} onClick={() => onToggle(f)} onRemove={() => onToggle(f)} />
       ))}

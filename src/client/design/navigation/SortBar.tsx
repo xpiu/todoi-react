@@ -15,13 +15,17 @@ export interface SortBarProps {
   sort: Record<string, SortMenuSpec | null>;
   onSelect: (dim: string, key: string) => void;
   onReset: () => void;
+  /** "Hide": collapses the row; the sort stays on (the toolbar's Sort button brings it back) */
+  onHide?: () => void;
+  /** Collapsed by Hide */
+  hidden?: boolean;
 }
 
-export function SortBar({ open, dims, options, sort, onSelect, onReset }: SortBarProps) {
+export function SortBar({ open, dims, options, sort, onSelect, onReset, onHide, hidden = false }: SortBarProps) {
   const active = dims.some(([, d]) => sort[d]);
-  if (!open && !active) return null;
+  if (hidden || (!open && !active)) return null;
   return (
-    <ChipBar label="Sort by" icon="arrow-up-narrow-wide" aria-label="Sorting" moreLabel="More sort options" backLabel="Previous sort options" actions={<ChipBarAction icon="x" active={active} onClick={onReset}>Reset sorting</ChipBarAction>}>
+    <ChipBar label="Sort by" icon="arrow-up-narrow-wide" aria-label="Sorting" moreLabel="More sort options" backLabel="Previous sort options" actions={<><ChipBarAction icon="x" active={active} onClick={onReset}>Reset sorting</ChipBarAction>{onHide ? <ChipBarAction icon="eye-off" onClick={onHide}>Hide</ChipBarAction> : null}</>}>
       {dims.flatMap(([prefix, dim]) => {
         const cur = sort[dim] ?? null;
         const shown = (options[dim] ?? []).filter((o) => open || cur?.key === o.key);
