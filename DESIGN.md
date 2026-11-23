@@ -254,6 +254,7 @@ Todoi is **desktop-first** with three named device classes — **Desktop** (≥ 
 - **Item keys in mono:** the spec says keys are `--font-mono`; the kit's Rounded List row draws them in the UI font. The app keeps mono (Inbox keyless rows reserve the slot in the same font, so dates still align).
 - **Rounded toolbar menu offset 4px:** Design's own port note for the per-theme offset reads "rounded: keep today's 4"; the kit file uses 2.
 - **Member roles Admin / Editor / Viewer (+ Owner):** Design's ProjectPanel, invite page and spec; only the kit's sample MembersMenu says Admin / Member / Observer.
+- **Filter menu status order New, Backlog, To-do, Doing, Done:** Design's `STATUSES` registry (`components/core/statuses.jsx`); the kit shell's sample filter list hard-codes New, To-do, Doing, Done, Backlog (`ui_kits/todoi/index.html`).
 - **No project toolbar on Inbox / Projects / Project groups:** the kit shell renders the open project's title and toolbar on every screen (`ui_kits/todoi/index.html`, `TDTopBar title={projectName(pid)}`); on the kit's Inbox its Filter lists the project's labels and filters the project, not the Inbox (Playwright: Inbox 9 → 9 rows, project 33 → 8). The app shows the screen's own title there.
 
 ## Index
