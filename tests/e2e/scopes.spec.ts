@@ -2,7 +2,7 @@
 // or critical violation, and the screen matches its visual baseline.
 import { test } from "@playwright/test";
 
-import { firstItemId, gate, SCOPES, seedProjectId, signIn, useScope, type Screen } from "./helpers";
+import { gate, seededItemId, SCOPES, seedProjectId, signIn, useScope, type Screen } from "./helpers";
 
 const SCREENS: Screen[] = [
   { name: "list", open: async (page) => void (await page.goto(`/p/${await seedProjectId(page)}?v=list`)), ready: (page) => page.getByRole("list", { name: / items$/ }).first() },
@@ -12,7 +12,7 @@ const SCREENS: Screen[] = [
     name: "overlay",
     open: async (page) => {
       const pid = await seedProjectId(page);
-      await page.goto(`/p/${pid}?v=list&item=${await firstItemId(page, pid)}`);
+      await page.goto(`/p/${pid}?v=list&item=${await seededItemId(page, pid)}`);
     },
     ready: (page) => page.getByRole("dialog").first(),
   },

@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-import { firstItemId, seedProjectId, signIn } from "./helpers";
+import { freshProject, signIn } from "./helpers";
 
 test("untrusted attachments download while ordinary images still preview", async ({ page }) => {
   await signIn(page);
-  const itemId = await firstItemId(page, await seedProjectId(page));
+  // Its own project: the uploads leave activity lines, which must not land on a seeded item (the overlay baselines)
+  const own = await freshProject(page, "Attachment security");
+  const itemId = await own.item("Attachment fixture");
   const created: string[] = [];
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64");
   const upload = async (name: string, mimeType: string, buffer: Buffer) => {
@@ -43,5 +45,6 @@ test("untrusted attachments download while ordinary images still preview", async
     expect((await downloaded).suggestedFilename()).toBe("image.png");
   } finally {
     for (const id of created) expect((await page.request.delete(`/api/attachments/${id}`)).status()).toBe(204);
+    await own.cleanup();
   }
 });

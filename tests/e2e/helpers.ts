@@ -73,10 +73,14 @@ export async function freshProject(page: Page, label: string, { lists = [["To-do
   return { projectId, name, groupId, lists: madeLists, item, cleanup };
 }
 
-export async function firstItemId(page: Page, projectId: string): Promise<string> {
-  const items = (await (await page.request.get(`/api/items?projectId=${projectId}`)).json()) as Array<{ id: string; parentItemId: string | null; done: boolean }>;
-  const it = items.find((i) => !i.parentItemId && !i.done) ?? items[0];
-  if (!it) throw new Error("no seeded items");
+/**
+ * A seeded item by title prefix (default: the item the overlay baselines show). Not "the first item": several seeded
+ * items tie on position and creation time, so the API's first one differs between databases.
+ */
+export async function seededItemId(page: Page, projectId: string, title = "Build the product page for a single helicopter"): Promise<string> {
+  const items = (await (await page.request.get(`/api/items?projectId=${projectId}`)).json()) as Array<{ id: string; title: string }>;
+  const it = items.find((i) => i.title.startsWith(title));
+  if (!it) throw new Error(`no seeded item "${title}"`);
   return it.id;
 }
 
