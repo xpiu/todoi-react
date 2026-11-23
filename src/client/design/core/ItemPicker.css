@@ -16,6 +16,11 @@
     background: var(--surface-list);
     color: var(--ink-400);
   }
+  /* Design .td-ip-search: 9px inset and 7px gap, so the search text (+ the input's 2px padding) starts on the item keys (4 + 9 + 14 + 7 + 2 = 36px) */
+  .td-item-picker-search {
+    gap: 7px;
+    padding: 0 9px;
+  }
   /* Search text on the menu rows' label column (4 + 8 + 14px glyph + 1 + 8 = 35px), shared by the label, member and project pickers */
   .td-picker-search {
     gap: 8px;
@@ -84,6 +89,20 @@
   .td-picker-row:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
+  }
+  /* The status glyph fills a Menu row's 16px icon slot (Design draws the rows as MenuItems), so keys and titles sit on Design's column */
+  .td-item-picker-row > svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+  /* An ItemPickerDrill's head (Design: ItemOverlay › Make subitem of, Checklist › Move to another item): 4px gap and a 13px arrow; the project picker keeps its own */
+  .td-project-picker-head:has(+ .td-item-picker) {
+    gap: 4px;
+  }
+  .td-project-picker-head:has(+ .td-item-picker) > .td-iconbtn svg {
+    width: 13px;
+    height: 13px;
   }
   html[data-touch="true"] .td-item-picker-row,
   html[data-touch="true"] .td-picker-row {
