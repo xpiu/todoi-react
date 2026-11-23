@@ -100,6 +100,8 @@ function setCleanDragImage(e: DragEvent, card: HTMLElement) {
   setTimeout(() => g.remove(), 0);
 }
 
+const PENDING_KEY_CH = "Pending".length + 1;
+
 /** The ⋯ trigger carries the shared styled hint, never the browser's title balloon (DESIGN.md › Tooltips). */
 const MORE_TIP = tipProps("Item options", "bottom-end");
 
@@ -246,7 +248,9 @@ export function ItemCard({ title, itemId, pendingId = false, showId = true, labe
         }
       }}
       // Minimal reserves a slot for the key at the end of the meta words; its width is the key length in mono characters
-      style={itemId && showId ? ({ "--td-key-ch": itemId.length, ...style } as CSSProperties) : style}
+      // Minimal's key slot (DESIGN.md › Item keys) is sized in mono characters. "Pending" gets one to spare: at 7 it can
+      // overflow by a sub-pixel and drop to its own line, so the card would shrink when the server's key arrives.
+      style={hasKey ? ({ "--td-key-ch": itemId ? itemId.length : PENDING_KEY_CH, ...style } as CSSProperties) : style}
     >
       {selected ? <span className="td-sr-only">Selected</span> : null}
       {cover ? cover.src ? <img className="td-card-cover" src={cover.src} alt="" draggable={false} style={{ height: Math.min(cover.height ?? 82, 82) }} /> : <div className="td-card-cover-color" style={{ height: Math.min(cover.height ?? 36, 82), background: cover.color ?? "var(--surface-cover)" }} /> : null}

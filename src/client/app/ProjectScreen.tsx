@@ -329,8 +329,10 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   });
   const parentsWithSubitems = useMemo(() => new Set(items.flatMap((it) => (it.parentItemId ? [it.parentItemId] : []))), [items]);
   const onCardMenu = useCallback((it: Item, action: CardMenuAction, value?: string) => cardMenuRef.current(it, action, value), []);
-  const { moveOptions } = actions;
-  const moveOptionsByList = useMemo(() => new Map(lists.map((l) => [l.id, moveOptions(l.id)])), [lists, moveOptions]);
+  // From the memoized lists (ids, names, icons), not the view's per-render lists with counts: a stable array per list
+  // lets unchanged cards skip a board update (item-performance.spec › acknowledging a new item)
+  const { moveOptions, lists: projectLists } = actions;
+  const moveOptionsByList = useMemo(() => new Map(projectLists.map((l) => [l.id, moveOptions(l.id)])), [projectLists, moveOptions]);
   return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
