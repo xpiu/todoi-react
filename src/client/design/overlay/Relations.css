@@ -106,9 +106,9 @@
     gap: 6px;
     padding: 2px;
   }
-  /* Segment → search → list on one 6px rhythm (the search field's own 4px margin made the second gap 10px) */
+  /* Segment → search → list on one 6px rhythm: the pick's gap above the search, the search's own margin below it */
   .td-relations-pick .td-item-picker-search {
-    margin-bottom: 0;
+    margin-bottom: 6px;
   }
   /* A 14px glyph centres on a whole pixel in the 26px segment (13px sat on a half pixel) */
   .td-relations-types svg {

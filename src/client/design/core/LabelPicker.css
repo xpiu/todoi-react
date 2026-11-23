@@ -16,13 +16,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* The check sits on the row's right edge like the member picker's; the hover pencil sits just left of it */
   .td-label-picker-check {
+    flex: none;
     color: var(--ink-600);
-    margin-right: 24px;
   }
   .td-label-picker-edit {
     position: absolute;
-    right: 4px;
+    right: 28px;
     top: 3px;
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-standard);

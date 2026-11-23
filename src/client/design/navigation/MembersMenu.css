@@ -45,7 +45,6 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-    min-height: 36px;
     padding: 6px 10px;
     border: none;
     border-radius: var(--radius-md);
@@ -102,11 +101,17 @@
   .td-members-menu-rolepick {
     flex-shrink: 0;
   }
+  /* Design's role chevron: 13px, 4px after the role name (the Select trigger draws a 16px one 6px away) */
   .td-members-menu-rolepick .td-select-trigger {
+    gap: var(--sp-1);
     height: 26px;
     padding: 0 var(--sp-2);
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-ui);
     color: var(--ink-600);
+  }
+  .td-members-menu-rolepick .td-select-trigger > svg:last-child {
+    width: 13px;
+    height: 13px;
   }
   .td-members-menu-caption {
     padding: var(--sp-1) 10px;

@@ -39,12 +39,20 @@
   .td-picker-input::placeholder {
     color: var(--ink-400);
   }
+  /* Rows 1px apart, as in a Menu (Minimal closes the gap) */
   .td-item-picker-list,
   .td-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
     max-height: 280px;
     overflow-y: auto;
     margin: 0 calc(-1 * var(--sp-1));
     padding: 0 var(--sp-1);
+  }
+  .td-item-picker-list > *,
+  .td-picker-list > * {
+    flex: none;
   }
   /* A note under the lists (or under an ItemPicker in a dialog) uses the panel's width (Menu caps notes at 220px: three lines in the 380px move dialog) */
   .td-picker-list ~ .td-menu-note,

@@ -51,17 +51,28 @@
     color: var(--ink-400);
   }
 
-  /* The Create and Account menus: Design's widths (Minimal narrows both in minimal-components.css) */
+  /* The Create and Account menus: Design's widths, a 6px inset and touching rows (Minimal narrows both in minimal-components.css) */
   .td-popover.td-create-menu:not([data-sheet]) {
     width: 212px;
   }
   .td-popover.td-user-menu:not([data-sheet]) {
     width: 264px;
   }
+  .td-popover.td-create-menu:not([data-sheet]),
+  .td-popover.td-user-menu:not([data-sheet]) {
+    padding: 6px;
+    gap: 0;
+  }
   /* Their rows set the label 10px from the glyph (8px in other menus) */
   .td-user-menu .td-menu-item,
   .td-create-menu .td-menu-item {
     gap: 10px;
+  }
+  /* Design's account-menu rows (.td-usermenu-item): 14/20 type on a 34px row, roomier than the 13/18 toolbar menus */
+  .td-popover.td-user-menu:not([data-sheet]) .td-menu-item,
+  .td-popover.td-create-menu:not([data-sheet]) .td-menu-item {
+    padding: 7px 10px;
+    font: var(--type-body);
   }
   /* Account menu identity header (a MenuItem carrying the avatar + two lines) */
   .td-user-menu-id {
