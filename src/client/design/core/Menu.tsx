@@ -109,7 +109,7 @@ export function MenuGroup({ children }: { children?: ReactNode }) {
 export function MenuDrillHead({ title, onBack }: { title: ReactNode; onBack: () => void }) {
   return (
     <div className="td-project-picker-head">
-      <BaseMenu.Item nativeButton closeOnClick={false} onClick={onBack} render={<IconButton name="arrow-left" label="Back" size={22} iconSize={13} />} />
+      <BaseMenu.Item nativeButton closeOnClick={false} onClick={onBack} render={<IconButton name="arrow-left" label="Back" size={22} iconSize={14} />} />
       <BaseMenu.GroupLabel render={<span />} className="td-project-picker-head-title">
         {title}
       </BaseMenu.GroupLabel>

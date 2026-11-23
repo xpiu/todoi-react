@@ -56,7 +56,7 @@ function PendingLines() {
       {shown ? (
         <>
           <Skeleton width="70%" />
-          <Skeleton width="45%" style={{ marginTop: 8 }} />
+          <Skeleton width="45%" />
         </>
       ) : null}
     </div>

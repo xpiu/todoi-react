@@ -13,6 +13,11 @@
     color: var(--ink-900);
     min-width: 0;
   }
+  /* Its notes (Loading lists…, no lists, no matches) use the panel's width, not Menu's 220px cap (Design 11-21) */
+  .td-project-picker > .td-menu-note {
+    max-width: none;
+    text-wrap: pretty;
+  }
   .td-project-picker-head-title {
     flex: 1;
     min-width: 0;

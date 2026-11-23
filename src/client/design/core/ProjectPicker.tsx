@@ -83,7 +83,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
             name="arrow-left"
             label="Back"
             size={22}
-            iconSize={13}
+            iconSize={14}
             onClick={() => {
               setProj(null);
               setReturned(true);
@@ -131,7 +131,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
     <div className="td-project-picker">
       {onBack || showHeading ? (
         <div className="td-project-picker-head">
-          {onBack ? <IconButton name="arrow-left" label="Back" size={22} iconSize={13} onClick={onBack} /> : null}
+          {onBack ? <IconButton name="arrow-left" label="Back" size={22} iconSize={14} onClick={onBack} /> : null}
           <span className="td-project-picker-head-title">{title}</span>
         </div>
       ) : null}

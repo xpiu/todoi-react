@@ -1017,9 +1017,9 @@ html[data-theme="minimal"] .td-project-picker-head{padding:4px 14px 8px;gap:5px;
 /* Back arrow centred on the 16px glyph slot, heading on the 38px label column (it sat 2px right of the names, the arrow 3px right of the glyphs) */
 html[data-theme="minimal"] .td-project-picker-head>.td-iconbtn{margin-left:-3px}
 /* In a Dialog (TransferDialog) the body already has the 24px edge: glyphs sit on the title's column, the search hairline spans it, rows keep their 14px frame outside the text */
-html[data-theme="minimal"] .td-dialog-body>.td-picker-search{margin-left:0;margin-right:0}
-html[data-theme="minimal"] .td-dialog-body>.td-picker-list{margin:0 -14px}
-html[data-theme="minimal"] .td-dialog-body>.td-project-picker-head,html[data-theme="minimal"] .td-dialog-body>.td-picker-list~.td-menu-note{padding-left:0;padding-right:0}
+html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-picker-search{margin-left:0;margin-right:0}
+html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-picker-list{margin:0 -14px}
+html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-project-picker-head,html[data-theme="minimal"] .td-dialog-body>.td-project-picker>.td-menu-note{padding-left:0;padding-right:0}
 html[data-theme="minimal"] .td-picker-row .td-menu-item-label>svg{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-project-picker-group,html[data-theme="minimal"] .td-item-picker-list-name,html[data-theme="minimal"] .td-member-picker-sub{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-item-picker-key{font:400 11px/16px var(--font-mono)}
@@ -1038,7 +1038,7 @@ html[data-theme="minimal"] .td-repeat-picker-number{text-align:left;width:32px}
 html[data-theme="minimal"] .td-label-picker-swatch,html[data-theme="minimal"] .td-cover-picker-swatch,html[data-theme="minimal"] .td-cover-picker-image,html[data-theme="minimal"] .td-cover-picker-upload,html[data-theme="minimal"] .td-project-icon-picker-swatch{border-radius:0}
 html[data-theme="minimal"] .td-label-picker-swatch{height:20px}
 html[data-theme="minimal"] .td-project-icon-picker-swatch{width:18px;height:18px;box-shadow:none}
-html[data-theme="minimal"] .td-label-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-swatch[aria-pressed="true"],html[data-theme="minimal"] .td-cover-picker-image[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-swatch[aria-pressed="true"]{box-shadow:0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas)}
+html[data-theme="minimal"] .td-label-picker-swatch:is([aria-pressed="true"],[aria-checked="true"]),html[data-theme="minimal"] .td-cover-picker-swatch:is([aria-pressed="true"],[aria-checked="true"]),html[data-theme="minimal"] .td-cover-picker-image[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-swatch:is([aria-pressed="true"],[aria-checked="true"]){box-shadow:0 0 0 1px var(--ink-900),inset 0 0 0 2px var(--chrome-canvas)}
 html[data-theme="minimal"] .td-label-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-swatch:focus-visible,html[data-theme="minimal"] .td-cover-picker-image:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-swatch:focus-visible{box-shadow:0 0 0 1px var(--chrome-canvas),0 0 0 2px var(--ink-900)}
 html[data-theme="minimal"] .td-cover-picker{padding:0}
 html[data-theme="minimal"] .td-cover-picker-swatches,html[data-theme="minimal"] .td-cover-picker-images{padding:0 14px 4px}
@@ -1090,7 +1090,7 @@ html[data-theme="minimal"] .td-repeat-picker-option[aria-checked="true"] .td-rep
 /* Icon picker: square cells, the chosen one on the paper-grey wash in ink */
 html[data-theme="minimal"] .td-icon-picker-option,html[data-theme="minimal"] .td-icon-picker-auto,html[data-theme="minimal"] .td-project-icon-picker-option{border-radius:0;transition:none}
 html[data-theme="minimal"] .td-icon-picker-option:hover,html[data-theme="minimal"] .td-icon-picker-auto:hover,html[data-theme="minimal"] .td-icon-picker-auto:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-option:hover{background:var(--chrome-hover);color:var(--ink-900)}
-html[data-theme="minimal"] .td-icon-picker-option[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-option[aria-pressed="true"]{background:var(--blue-100);color:var(--ink-900)}
+html[data-theme="minimal"] .td-icon-picker-option[aria-pressed="true"],html[data-theme="minimal"] .td-project-icon-picker-option:is([aria-pressed="true"],[aria-checked="true"]){background:var(--blue-100);color:var(--ink-900)}
 html[data-theme="minimal"] .td-icon-picker-option:focus-visible,html[data-theme="minimal"] .td-project-icon-picker-option:focus-visible{box-shadow:inset 0 0 0 1px var(--ink-900)}
 html[data-theme="minimal"] .td-icon-picker-search{margin:2px 14px 6px}
 /* Glyphs on the 14px edge: tiles start 8px in (the 16px glyph sits 6px inside its 28px tile), so the panel is the grid + 16px */

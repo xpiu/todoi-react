@@ -212,6 +212,10 @@
     padding: 10px var(--sp-5);
     box-sizing: border-box;
   }
+  /* A row with a hint is two lines: one even 60px height in every group (Design 11-21; Minimal sets its own pitch) */
+  .td-settings-row:has(.td-settings-rowhint) {
+    min-height: 60px;
+  }
   .td-settings-row + .td-settings-row,
   .td-settings-body + .td-settings-row {
     border-top: 1px solid var(--border-divider);
