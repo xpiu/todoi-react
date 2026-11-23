@@ -100,6 +100,41 @@
     background: currentcolor;
     flex-shrink: 0;
   }
+  /* Share menu: Design's own rhythm, roomier than other menus: 14/20 rows at 7px 10px (34px, no gap), a 6px
+     inset, 6px around dividers. The Minimal theme layer resets rows, inset, dividers and notes to its 14px edge. */
+  .td-share-menu {
+    gap: 0;
+  }
+  .td-share-menu:not([data-sheet]) {
+    padding: 6px;
+  }
+  .td-share-menu .td-menu-item {
+    gap: 10px;
+    padding: 7px 10px;
+    font: var(--weight-regular) 14px / 20px var(--font-ui);
+  }
+  .td-share-menu .td-menu-divider {
+    margin: 6px var(--sp-1);
+  }
+  .td-share-menu .td-menu-heading {
+    padding: var(--sp-1) 10px 2px;
+  }
+  .td-share-menu .td-menu-note {
+    max-width: none;
+    padding: 2px 10px 6px;
+  }
+  /* The project URL under "Copy project URL": one mono line, cut with an ellipsis; it never widens the menu. */
+  .td-share-url {
+    contain: inline-size;
+    margin: 0 6px 6px;
+    padding: var(--sp-1) 10px;
+    overflow: hidden;
+    font: var(--weight-regular) 12px / 16px var(--font-mono);
+    color: var(--ink-600);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default;
+  }
   .td-share-visibility {
     flex-shrink: 0;
     display: inline-flex;

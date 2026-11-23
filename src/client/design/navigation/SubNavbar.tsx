@@ -10,7 +10,7 @@ import { Checkbox, CheckboxBox } from "../core/Checkbox";
 import { copyIcon, useCopy } from "../core/clipboard";
 import { Icon, type IconName } from "../core/Icon";
 import { ExportMenu, type ExportFormatId } from "../core/ExportMenu";
-import { MenuDivider, MenuGroup, MenuHeading, MenuItem, MenuNote, MenuPopover } from "../core/Menu";
+import { MenuDivider, MenuGroup, MenuHeading, MenuItem, MenuPopover } from "../core/Menu";
 import { Popover } from "../core/Popover";
 import { Segmented } from "../core/Segmented";
 import { hintKeysText } from "../core/ShortcutHint";
@@ -312,6 +312,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             <MenuPopover
               {...menuState("share")}
               label="Share project"
+              className="td-share-menu"
               tier="toolbar"
               offset={menuOffset}
               placement="bottom-end"
@@ -325,7 +326,10 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
               <MenuItem icon={copyIcon(copied, "link")} onSelect={copyUrl} closeOnSelect={false} trailing={<span className="td-share-visibility"><Icon name={VIS_ICONS[visibility] ?? "lock"} size={12} />{visibility}</span>}>
                 {copied === "copied" ? "Link copied!" : copied === "failed" ? "Couldn't copy. Use the address bar." : "Copy project URL"}
               </MenuItem>
-              <MenuNote title={shareUrl}>{shareUrl}</MenuNote>
+              {/* Design: the URL on one mono line, cut with an ellipsis; the full address is its tooltip. */}
+              <div className="td-share-url" title={shareUrl}>
+                {shareUrl}
+              </div>
               <MenuDivider />
               {SHARE_TARGETS.map((t) => (
                 <MenuItem key={t.id} icon={t.icon} onSelect={() => window.open(t.href(shareUrl), "_blank", "noopener")}>
@@ -337,7 +341,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   <MenuDivider />
                   <MenuGroup>
                     <MenuHeading>Export this view</MenuHeading>
-                    <ExportMenu scope="view" view={views.find((v) => v.id === active)?.label === "Cal." ? "Calendar" : views.find((v) => v.id === active)?.label} count={exportCount} filtered={exportFiltered} onExport={onExport} onPrint={() => window.print()} />
+                    <ExportMenu scope="view" view={views.find((v) => v.id === active)?.label === "Cal." ? "Calendar" : views.find((v) => v.id === active)?.label} count={exportCount} filtered={exportFiltered} onExport={onExport} />
                   </MenuGroup>
                 </>
               ) : null}

@@ -95,7 +95,7 @@
     flex: none;
     width: calc(var(--td-about-ch, 0) * 1ch);
     margin-left: calc(min(12px, var(--td-about-ch, 0) * 999px) - 4px);
-    font: var(--weight-medium) 11px / 16px var(--font-ui);
+    font: var(--weight-medium) 11px / 16px var(--font-mono);
   }
   .td-list-row-title {
     font: var(--type-body);
