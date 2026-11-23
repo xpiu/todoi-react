@@ -250,6 +250,12 @@ Todoi is **desktop-first** with three named device classes — **Desktop** (≥ 
 - `Icon` (components/core): thin wrapper over the Lucide CDN registry so React components share one glyph API. Needed because no icon assets could be copied from the source.
 - `Toast`, `CommandPalette`, `ShortcutsDialog`, `KeyNav`, `FilterChip`, item keys, and the keyboard model (see INTERACTION & KEYBOARD): original power-user additions for coder/technician audiences, not present in the source screenshots — styled strictly from existing tokens.
 
+### Where the Design kit's sample screens differ from its own spec (the app follows the spec) — checked 2026-11-23
+- **Item keys in mono:** the spec says keys are `--font-mono`; the kit's Rounded List row draws them in the UI font. The app keeps mono (Inbox keyless rows reserve the slot in the same font, so dates still align).
+- **Rounded toolbar menu offset 4px:** Design's own port note for the per-theme offset reads "rounded: keep today's 4"; the kit file uses 2.
+- **Member roles Admin / Editor / Viewer (+ Owner):** Design's ProjectPanel, invite page and spec; only the kit's sample MembersMenu says Admin / Member / Observer.
+- **No project toolbar on Inbox / Projects / Project groups:** the kit shell renders the open project's title and toolbar on every screen (`ui_kits/todoi/index.html`, `TDTopBar title={projectName(pid)}`); on the kit's Inbox its Filter lists the project's labels and filters the project, not the Inbox (Playwright: Inbox 9 → 9 rows, project 33 → 8). The app shows the screen's own title there.
+
 ## Index
 
 - `styles.css` — global entry; imports everything in `tokens/`.
