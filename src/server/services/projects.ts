@@ -1,6 +1,6 @@
 // Group / project / list behaviours shared by the routes and the seed. Spec: DESIGN.md › Project lifecycle,
 // Lists & Status linking.
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { initialStatus, statusChange } from "../../shared/completion";
@@ -27,6 +27,56 @@ export async function issueKeyNumbers(tx: Tx | typeof db, groupId: string, count
   return g.n - count;
 }
 export const issueKeyNumber = (tx: Tx | typeof db, groupId: string) => issueKeyNumbers(tx, groupId, 1);
+
+export interface GroupMoveKeys {
+  itemId: string;
+  keyNumber: number;
+}
+
+/**
+ * Move a project to another group (the viewer's permission is checked by the access layer: project owner + owner of
+ * the destination group). Item keys are per group, so every keyed item of the project — archived and in Trash too —
+ * takes a fresh number from the destination's counter, in its old order; `keys` (an Undo's `restore.keys`) hands back
+ * numbers the destination issued before and no other project in it uses. The project goes to the end of the group's
+ * shared order. Returns what an Undo needs: the old group and the old numbers.
+ */
+export async function moveProjectToGroup(projectId: string, groupId: string, keys: GroupMoveKeys[] = []): Promise<{ project: Project; rekeyed: number; restore: { groupId: string; keys: GroupMoveKeys[] } } | null> {
+  return db.transaction(async (tx) => {
+    const [cur] = await tx.select().from(projects).where(eq(projects.id, projectId)).for("update");
+    if (!cur) return null;
+    if (cur.groupId === groupId) return { project: cur, rekeyed: 0, restore: { groupId, keys: [] } };
+    const [dest] = await tx.select().from(groups).where(eq(groups.id, groupId)).for("update");
+    if (!dest) return null;
+    const keyed = await tx.select({ id: items.id, keyNumber: items.keyNumber }).from(items).where(and(eq(items.projectId, projectId), isNotNull(items.keyNumber))).orderBy(asc(items.keyNumber));
+    // Handed-back numbers: issued by the destination before, and free in every project of that group
+    const wanted = new Map(keys.filter((k) => k.keyNumber < dest.nextItemNumber).map((k) => [k.itemId, k.keyNumber]));
+    const siblings = (await tx.select({ id: projects.id }).from(projects).where(eq(projects.groupId, groupId))).map((p) => p.id);
+    const taken = new Set(
+      wanted.size && siblings.length
+        ? (await tx.select({ n: items.keyNumber }).from(items).where(and(inArray(items.projectId, siblings), inArray(items.keyNumber, [...wanted.values()])))).map((r) => r.n)
+        : [],
+    );
+    const next = new Map<string, number>();
+    const fresh: string[] = [];
+    for (const it of keyed) {
+      const n = wanted.get(it.id);
+      if (n != null && !taken.has(n)) {
+        next.set(it.id, n);
+        taken.add(n);
+      } else fresh.push(it.id);
+    }
+    if (fresh.length) {
+      const first = await issueKeyNumbers(tx, groupId, fresh.length);
+      fresh.forEach((id, i) => next.set(id, first + i));
+    }
+    // (project, number) is unique: clear the old numbers before writing the new ones
+    if (keyed.length) await tx.update(items).set({ keyNumber: null }).where(and(eq(items.projectId, projectId), isNotNull(items.keyNumber)));
+    for (const it of keyed) await tx.update(items).set({ keyNumber: next.get(it.id)! }).where(eq(items.id, it.id));
+    const position = await nextPosition(tx, projects, eq(projects.groupId, groupId));
+    const [project] = await tx.update(projects).set({ groupId, position }).where(eq(projects.id, projectId)).returning();
+    return { project: project!, rekeyed: keyed.length, restore: { groupId: cur.groupId, keys: keyed.map((it) => ({ itemId: it.id, keyNumber: it.keyNumber! })) } };
+  });
+}
 
 /** Create a project with its lists from a template or by copying another project's lists; the creator becomes owner. */
 export async function createProject(input: CreateProjectInput, userId: string, outer?: Tx): Promise<{ project: Project; lists: List[] }> {

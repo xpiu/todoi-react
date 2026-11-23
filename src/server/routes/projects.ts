@@ -4,12 +4,12 @@ import { z } from "zod";
 
 import { idSchema } from "../../shared/items";
 import { importProjectSchema } from "../../shared/import";
-import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
+import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, moveProjectGroupSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
 import { viewerOf } from "../auth";
 import { db } from "../db";
 import { nextPosition } from "../db/position";
 import { groups, items, lists, members, projects, users } from "../db/schema";
-import { createProject, importProject, listsWithCounts, memberProjectIds, updateList } from "../services/projects";
+import { createProject, importProject, listsWithCounts, memberProjectIds, moveProjectToGroup, updateList } from "../services/projects";
 import { changeMembership } from "../services/members";
 
 import { destroyItem, destroyProject, itemContainersLive, itemIsLive, setProjectLifecycle } from "../services/lifecycle";
@@ -22,7 +22,9 @@ export const groupsRoute = new Hono()
   // The sidebar: every live group with its live projects.
   .get("/", async (c) => {
     const viewer = viewerOf(c);
-    const mine = await memberProjectIds(viewer.userId);
+    // The viewer's role per project: the client offers a move to another group only where the API allows it
+    const roles = new Map((await db.select({ projectId: members.projectId, role: members.role }).from(members).where(eq(members.userId, viewer.userId))).map((m) => [m.projectId, m.role]));
+    const mine = [...roles.keys()];
     const ps = mine.length ? await db.select().from(projects).where(and(liveProjects, inArray(projects.id, mine))).orderBy(asc(projects.position), asc(projects.createdAt)) : [];
     const groupIds = [...new Set(ps.map((p) => p.groupId))];
     const gs = await db.select().from(groups).where(and(liveGroups, or(eq(groups.ownerId, viewer.userId), groupIds.length ? inArray(groups.id, groupIds) : undefined))).orderBy(asc(groups.position), asc(groups.createdAt));
@@ -38,7 +40,7 @@ export const groupsRoute = new Hono()
       const count = counts.find((x) => x.projectId === id);
       return { itemCount: count?.items ?? 0, doneCount: count?.done ?? 0, lead: owners.find((o) => o.projectId === id)?.name ?? null };
     };
-    return c.json(gs.map((g) => ({ ...g, projects: ps.filter((p) => p.groupId === g.id).map((p) => ({ ...p, ...stat(p.id) })) })));
+    return c.json(gs.map((g) => ({ ...g, projects: ps.filter((p) => p.groupId === g.id).map((p) => ({ ...p, ...stat(p.id), role: roles.get(p.id)! })) })));
   })
   .post("/", validate("json", createGroupSchema), async (c) => {
     const viewer = viewerOf(c);
@@ -87,6 +89,12 @@ export const projectsRoute = new Hono()
   .patch("/:id", idParam, validate("json", updateProjectSchema), async (c) => {
     const [row] = await db.update(projects).set(c.req.valid("json")).where(eq(projects.id, c.req.valid("param").id)).returning();
     return row ? c.json(row) : fail(c, 404, "Not found");
+  })
+  // Another group: owner of the project and of the destination group (access.ts); every item key is reissued there
+  .post("/:id/group", idParam, validate("json", moveProjectGroupSchema), async (c) => {
+    const { groupId, keys } = c.req.valid("json");
+    const result = await moveProjectToGroup(c.req.valid("param").id, groupId, keys);
+    return result ? c.json(result) : fail(c, 404, "Not found");
   })
   .post("/:id/archive", idParam, async (c) => {
     const row = await setProjectLifecycle(c.req.valid("param").id, { archived: true });

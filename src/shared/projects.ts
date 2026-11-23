@@ -43,11 +43,16 @@ export const updateProjectSchema = z
     linkStatuses: z.boolean(),
     /** "Checked items move to Done"; null follows linkStatuses */
     checkedMove: z.boolean().nullable(),
-    groupId: idSchema,
     position: z.number().int().min(0),
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
+/** Move a project to another group: its items take new keys there. `keys` hands back an earlier move's numbers (Undo). */
+export const moveProjectGroupSchema = z.object({
+  groupId: idSchema,
+  keys: z.array(z.object({ itemId: idSchema, keyNumber: z.number().int().min(1) })).max(20000).optional(),
+});
+export type MoveProjectGroupInput = z.infer<typeof moveProjectGroupSchema>;
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 

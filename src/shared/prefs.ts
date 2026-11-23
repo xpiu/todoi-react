@@ -5,6 +5,15 @@ import { z } from "zod";
 
 import { ITEM_PRIORITIES } from "./enums";
 
+const sidebarId = z.string().min(1).max(64);
+/**
+ * The sidebar's arrangement, per account (Settings › Appearance › Sidebar order, and drag and drop in the sidebar):
+ * `top` orders the groups and the nav rows (projects, groups, inbox) as one list; `projects` orders each group's
+ * projects by group id. Ids it lacks keep their default place; stale ids are ignored.
+ */
+export const sidebarOrderSchema = z.object({ top: z.array(sidebarId).max(500), projects: z.record(sidebarId, z.array(sidebarId).max(1000)) });
+export type SidebarOrder = z.infer<typeof sidebarOrderSchema>;
+
 export const prefsSchema = z.object({
   timeFormat: z.enum(["24h", "12h"]),
   weekStart: z.enum(["mon", "sun", "sat"]),
@@ -16,11 +25,12 @@ export const prefsSchema = z.object({
   notifyAssignments: z.boolean(),
   notifyWatched: z.boolean(),
   inboxBadge: z.boolean(),
+  sidebarOrder: sidebarOrderSchema,
 });
 export type Prefs = z.infer<typeof prefsSchema>;
 export const prefsPatchSchema = prefsSchema.partial().refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 
-export const DEFAULT_PREFS: Prefs = { timeFormat: "24h", weekStart: "mon", dateFormat: "mdy-text", showCompleted: true, smartDates: true, defaultPriority: "none", notifyMentions: true, notifyAssignments: true, notifyWatched: true, inboxBadge: true };
+export const DEFAULT_PREFS: Prefs = { timeFormat: "24h", weekStart: "mon", dateFormat: "mdy-text", showCompleted: true, smartDates: true, defaultPriority: "none", notifyMentions: true, notifyAssignments: true, notifyWatched: true, inboxBadge: true, sidebarOrder: { top: [], projects: {} } };
 
 /** Stored prefs over the defaults; unknown or invalid keys (an older or newer client) are dropped. */
 export function prefsOf(stored: unknown): Prefs {
