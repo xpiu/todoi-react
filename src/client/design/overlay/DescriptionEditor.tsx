@@ -4,11 +4,12 @@
 // bold / italic / strike / inline code, links), the quiet toolbar, Save / Cancel; ctrl+↵ saves, Esc
 // cancels. Tiptap serialises back to the same subset through @tiptap/markdown, so GitHub / Embridge
 // round-trips stay exact. Spec: DESIGN.md › Description.
-import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type RefObject } from "react";
+import { useEffect, useRef, useState, type ComponentType, type CSSProperties, type RefObject } from "react";
 
 import { Button } from "../core/Button";
 import { InlineError } from "../core/InlineError";
 import { Markdown, type MarkdownMember } from "../core/Markdown";
+import { useReturnFocus } from "../core/returnFocus";
 import { Skeleton, SKELETON_DELAY_MS } from "../core/Skeleton";
 import type { DescriptionEditProps } from "./DescriptionEdit";
 import "../core/text.css";
@@ -70,18 +71,11 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
     if (loadedEditor) setEdit(() => loadedEditor);
     setEditing(true);
   };
-  // Leaving edit removes the control that had focus (Save, Discard, the editor). Focus returns to Edit
-  // in the same commit; dropped to the body instead, the Dialog refocuses its popup a frame later, over
-  // whatever was focused in between (the comment composer, mid-typing).
+  // Leaving edit removes the control that had focus (Save, Discard, the editor): focus returns to Edit.
   const editButton = useRef<HTMLButtonElement>(null);
-  const focusedAtClose = useRef<Element | null>(null);
-  useLayoutEffect(() => {
-    const focused = focusedAtClose.current;
-    focusedAtClose.current = null;
-    if (!editing && focused && !focused.isConnected) editButton.current?.focus();
-  }, [editing]);
+  const leaving = useReturnFocus(editing, editButton);
   const close = () => {
-    focusedAtClose.current = document.activeElement;
+    leaving();
     track(null);
     setError(null);
     setLoadError(null);
@@ -97,6 +91,7 @@ export function DescriptionEditor({ value = "", onChange, onDraft, initialDraft,
       return true;
     }
     track(md);
+    leaving(); // before Save disables (and drops focus) while the change is pending
     setPending(true);
     setError(null);
     try {

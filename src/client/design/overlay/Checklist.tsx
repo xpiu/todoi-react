@@ -9,6 +9,7 @@ import { IconButton } from "../core/IconButton";
 import { ItemPickerDrill, type PickableItem } from "../core/ItemPicker";
 import { MenuButton, MenuDivider, MenuItem, useMenuDrill } from "../core/Menu";
 import { ProgressBar } from "../core/ProgressBar";
+import { useReturnFocus } from "../core/returnFocus";
 import { useTouchDrag } from "../core/touchDrag";
 import "./Checklist.css";
 
@@ -24,11 +25,15 @@ export function ChecklistAddRow({ open, label = "Add a subitem", placeholder = "
   const [adding, setAdding] = useState(!!open);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  // Esc takes the focused field with it: focus returns to the add control.
+  const addButton = useRef<HTMLButtonElement>(null);
+  const leaving = useReturnFocus(adding, addButton);
   const set = (v: string) => {
     setDraft(v);
     onDraft?.(v);
   };
   const close = () => {
+    leaving();
     set("");
     setAdding(false);
     onClose?.();
@@ -41,7 +46,7 @@ export function ChecklistAddRow({ open, label = "Add a subitem", placeholder = "
   };
   if (!adding)
     return (
-      <button type="button" className="td-checklist-add" onClick={() => setAdding(true)}>
+      <button ref={addButton} type="button" className="td-checklist-add" onClick={() => setAdding(true)}>
         <Icon name="plus" size={16} />
         {label}
       </button>

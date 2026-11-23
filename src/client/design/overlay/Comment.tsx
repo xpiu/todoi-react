@@ -1,7 +1,7 @@
 // Comment — one comment or activity row. Comments render Markdown (mentions highlighted), carry
 // reactions (chips + smile-plus picker) and, for the author, Edit (inline MentionField, ctrl+↵ save)
 // and a two-step Delete; anyone gets Reply. Activity rows are one sentence around the bold actor.
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode, type Ref } from "react";
 
 import { Avatar } from "../core/Avatar";
 import { Button } from "../core/Button";
@@ -9,6 +9,7 @@ import { Icon } from "../core/Icon";
 import { InlineError } from "../core/InlineError";
 import { Markdown } from "../core/Markdown";
 import { Popover, usePopover } from "../core/Popover";
+import { useReturnFocus } from "../core/returnFocus";
 import { MentionField, type MentionMember } from "./CommentComposer";
 import "./Comment.css";
 
@@ -75,14 +76,22 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
   };
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Leaving edit takes the focused field or button with it: focus returns to the comment's Edit action.
+  const editAction = useRef<HTMLButtonElement>(null);
+  const leaving = useReturnFocus(editing, editAction);
   const stopEditing = () => {
     setError(null);
     setEditing(false);
+  };
+  const cancel = () => {
+    leaving();
+    stopEditing();
   };
   /** Stay in edit with the text until the change is saved; a failure says why and Save retries. */
   const save = async () => {
     const t = draft.trim();
     if (pending) return;
+    leaving(); // before Save disables (and drops focus) while the change is pending
     if (!t || t === body) return stopEditing();
     setPending(true);
     setError(null);
@@ -95,8 +104,8 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
       setPending(false);
     }
   };
-  const act = (f: () => void, label: string, cls?: string) => (
-    <button type="button" className={"td-comment-action" + (cls ? ` ${cls}` : "")} onClick={f}>
+  const act = (f: () => void, label: string, cls?: string, ref?: Ref<HTMLButtonElement>) => (
+    <button ref={ref} type="button" className={"td-comment-action" + (cls ? ` ${cls}` : "")} onClick={f}>
       {label}
     </button>
   );
@@ -127,7 +136,7 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
                       void save();
                     } else if (e.key === "Escape") {
                       e.stopPropagation();
-                      stopEditing();
+                      cancel();
                     }
                   }}
                 />
@@ -135,7 +144,7 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
                   <Button variant="primary" disabled={pending} onClick={() => void save()}>
                     {pending ? "Saving…" : error ? "Retry" : "Save"}
                   </Button>
-                  <Button variant="ghost" disabled={pending} onClick={stopEditing}>
+                  <Button variant="ghost" disabled={pending} onClick={cancel}>
                     Cancel
                   </Button>
                   <span className="td-comment-edit-hint">ctrl ↵ save · esc</span>
@@ -173,7 +182,7 @@ export function Comment({ author, src, color, meta = "just now", variant = "comm
                     {mine && onEdit ? (
                       <>
                         {onReply ? "•" : null}
-                        {act(startEdit, "Edit")}
+                        {act(startEdit, "Edit", undefined, editAction)}
                       </>
                     ) : null}
                     {mine && onDelete ? (

@@ -11,6 +11,7 @@ import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { MenuButton, MenuDivider, MenuItem } from "../core/Menu";
 import { ProgressBar } from "../core/ProgressBar";
+import { useReturnFocus } from "../core/returnFocus";
 import "./Attachments.css";
 
 export interface AttachmentFile {
@@ -69,9 +70,13 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
   const uploading = file.progress != null && file.progress < 100;
   const pending = uploading || !!file.error;
   const [icon, ext] = kindOf(file.name);
+  // Enter / Esc take the focused name field with them: focus returns to the row's ⋯ (Rename's menu).
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const leaving = useReturnFocus(renaming, menuTrigger);
   const commit = () => {
     const t = name.trim();
     if (t && t !== file.name) onRename?.(t);
+    leaving();
     setRenaming(false);
   };
   const meta = [file.meta, file.size != null ? formatBytes(file.size) : null].filter(Boolean).join(" · ");
@@ -99,10 +104,14 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
               e.target.setSelectionRange(0, i > 0 ? i : e.target.value.length);
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") commit();
-              else if (e.key === "Escape") {
+              if (e.key === "Enter") {
+                // Focus is back on ⋯ before the key finishes: unhandled, its Enter would open the menu
+                e.preventDefault();
+                commit();
+              } else if (e.key === "Escape") {
                 e.stopPropagation();
                 setName(file.name);
+                leaving();
                 setRenaming(false);
               } else if (e.key.length === 1) e.stopPropagation();
             }}
@@ -163,7 +172,7 @@ export function AttachmentRow({ file, onOpen, onDownload, onMakeCover, onRemoveC
       ) : !renaming && !confirm ? (
         <div className="td-attachments-actions">
           {onOpen || file.url ? <IconButton name="external-link" label={`Open ${file.name}`} tooltip="Open" size={28} iconSize={15} onClick={() => (onOpen ? onOpen() : window.open(file.url, "_blank", "noopener"))} /> : null}
-          <MenuButton label={`Actions for ${file.name}`} tier="detached" size={28} iconSize={15} width={184}>
+          <MenuButton label={`Actions for ${file.name}`} triggerRef={menuTrigger} tier="detached" size={28} iconSize={15} width={184}>
             {onDownload || file.url ? (
               <MenuItem icon="download" onSelect={() => (onDownload ? onDownload() : window.open(file.url, "_blank", "noopener"))}>
                 Download

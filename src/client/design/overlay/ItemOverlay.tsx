@@ -27,6 +27,7 @@ import { MenuButton, MenuDivider, MenuItem, useMenuDrill } from "../core/Menu";
 import { Popover, usePopover } from "../core/Popover";
 import type { RepeatRule } from "../core/repeat";
 import { RepeatPicker } from "../core/RepeatPicker";
+import { useReturnFocus } from "../core/returnFocus";
 import { Select } from "../core/Select";
 import { SHORTCUTS } from "../core/shortcuts";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS, priorityOf, priorityValue, statusMovesItem, statusPick, statusValue } from "../core/itemFields";
@@ -209,11 +210,18 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const filing = usePopover();
   const pickerRef = useRef<(() => void) | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  // Esc takes the focused search field with it: focus returns to the Search activity button.
+  const searchButton = useRef<HTMLButtonElement>(null);
+  const leavingSearch = useReturnFocus(searchOpen, searchButton);
   const files = item.attachments ?? [];
   const [dragging, dropHandlers] = useFileDrop((fs) => p.onAddFiles?.(fs), { disabled: !p.onAddFiles });
+  // Enter / Esc take the focused field with them: focus returns to the title (focusable, not a tab stop).
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const leavingTitle = useReturnFocus(titleEdit != null, titleRef);
   /** A failed rename reopens the title with what was typed. */
   const commitTitle = async (): Promise<boolean> => {
     const t = (titleEdit ?? "").trim();
+    leavingTitle();
     setTitleEdit(null);
     if (!t || t === item.title) return true;
     try {
@@ -305,7 +313,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
   );
 
   const title = (
-    <h2 className={"td-modal-title" + (titleEdit != null ? " is-editing" : "")} title={titleEdit == null ? "Click to edit title" : undefined} onClick={() => titleEdit == null && setTitleEdit(item.title)}>
+    <h2 ref={titleRef} tabIndex={-1} className={"td-modal-title" + (titleEdit != null ? " is-editing" : "")} title={titleEdit == null ? "Click to edit title" : undefined} onClick={() => titleEdit == null && setTitleEdit(item.title)}>
       {titleEdit == null ? (
         item.title
       ) : (
@@ -322,6 +330,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
             if (e.key === "Enter") commitTitle();
             else if (e.key === "Escape") {
               e.stopPropagation();
+              leavingTitle();
               setTitleEdit(null);
             } else if (e.key.length === 1) e.stopPropagation();
           }}
@@ -549,7 +558,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
           <div className="td-activity-head">
             <Icon name="activity" size={20} className="td-activity-glyph" />
             <span className="td-activity-title">Activity</span>
-            <IconButton name="search" label="Search activity" tooltip="Search activity" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)} />
+            <IconButton ref={searchButton} name="search" label="Search activity" tooltip="Search activity" aria-expanded={searchOpen} onClick={() => setSearchOpen(true)} />
             {searchOpen ? (
               <div className="td-activity-search" ref={searchRef} onBlur={() => {
                 setSearchOpen(false);
@@ -558,6 +567,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
                 <TextField icon="search" placeholder="Search activity…" aria-label="Search activity" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => {
                   if (e.key === "Escape") {
                     e.stopPropagation();
+                    leavingSearch();
                     setSearchOpen(false);
                     setQuery("");
                   } else if (e.key.length === 1) e.stopPropagation();

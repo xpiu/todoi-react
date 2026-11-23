@@ -3,7 +3,7 @@
 // MenuButton = MenuPopover with an IconButton trigger. Rows: MenuItem / MenuDivider / MenuNote /
 // MenuGroup + MenuHeading. Spec: DESIGN.md › Inline editing primitives.
 import { Menu as BaseMenu } from "@base-ui/react/menu";
-import { createContext, useCallback, useContext, useRef, useState, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode, type RefObject } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type CSSProperties, type MouseEvent, type ReactElement, type ReactNode, type Ref, type RefObject } from "react";
 
 import { Icon, type IconName } from "./Icon";
 import { IconButton } from "./IconButton";
@@ -250,6 +250,8 @@ export interface MenuButtonProps extends Omit<MenuPopoverProps, "trigger"> {
   icon?: IconName;
   /** Class on the trigger button (className styles the popup) */
   triggerClassName?: string;
+  /** The trigger button, for returning focus to it */
+  triggerRef?: Ref<HTMLButtonElement>;
   tooltip?: string;
   tooltipSide?: TooltipSide;
   /** IconButton variant @default "ghost" */
@@ -260,6 +262,6 @@ export interface MenuButtonProps extends Omit<MenuPopoverProps, "trigger"> {
 }
 
 /** Trigger + Popover + Menu in one: the ⋯ menu. */
-export function MenuButton({ icon = "ellipsis", label, tooltip, tooltipSide, variant = "ghost", size = 32, iconSize, triggerClassName, ...rest }: MenuButtonProps) {
-  return <MenuPopover label={label} trigger={<IconButton name={icon} label={label} tooltip={tooltip} tooltipSide={tooltipSide} variant={variant} size={size} iconSize={iconSize} className={triggerClassName} />} {...rest} />;
+export function MenuButton({ icon = "ellipsis", label, tooltip, tooltipSide, variant = "ghost", size = 32, iconSize, triggerClassName, triggerRef, ...rest }: MenuButtonProps) {
+  return <MenuPopover label={label} trigger={<IconButton ref={triggerRef} name={icon} label={label} tooltip={tooltip} tooltipSide={tooltipSide} variant={variant} size={size} iconSize={iconSize} className={triggerClassName} />} {...rest} />;
 }

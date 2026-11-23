@@ -9,6 +9,7 @@ import { Avatar } from "../core/Avatar";
 import { Icon, type IconName } from "../core/Icon";
 import { IconButton } from "../core/IconButton";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
+import { useReturnFocus } from "../core/returnFocus";
 import { IS_MAC } from "../core/shortcuts";
 import { TextField } from "../core/TextField";
 import { SearchDropdown, type SearchDropdownProps, type SearchEntity, type SearchRecent, type SearchResultType, type SearchSources } from "./SearchDropdown";
@@ -95,13 +96,7 @@ function GuestAvatar({ size, tone }: { size: number; tone: "chrome" | "card" }) 
 function NavbarTitle({ title, onTitleChange }: Pick<TopNavbarProps, "title" | "onTitleChange">) {
   const [editing, setEditing] = useState(false);
   const triggerRef = useRef<HTMLSpanElement>(null);
-  const restoreFocus = useRef(false);
-  useEffect(() => {
-    if (!editing && restoreFocus.current) {
-      restoreFocus.current = false;
-      triggerRef.current?.focus();
-    }
-  }, [editing]);
+  const leaving = useReturnFocus(editing, triggerRef);
   const commitTitle = (value: string) => {
     setEditing(false);
     const v = value.trim();
@@ -127,7 +122,7 @@ function NavbarTitle({ title, onTitleChange }: Pick<TopNavbarProps, "title" | "o
           e.preventDefault();
           e.stopPropagation();
           if (e.key === "Escape") e.currentTarget.value = title;
-          restoreFocus.current = true;
+          leaving();
           e.currentTarget.blur();
         }
       }}
