@@ -295,6 +295,8 @@ export function TopNavbar({
             offset={10}
             minWidth={null}
             className="td-create-menu"
+            // A pick that already moved focus into the page (Create an item opens quick-add) keeps it there
+            finalFocus={() => !document.activeElement?.closest(".td-app-content, [role=dialog]")}
             trigger={
               <button type="button" className="td-topnav-plus td-tooltip" aria-label="Create" data-tip="Create">
                 <Icon name="plus" size={20} />

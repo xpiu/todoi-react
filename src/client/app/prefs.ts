@@ -9,7 +9,7 @@ import { persist } from "zustand/middleware";
 
 import { DEFAULT_PREFS, prefsOf, type Prefs } from "../../shared/prefs";
 import { api, unwrap } from "../data/api";
-import { setDateConventions } from "../design/core/dates";
+import { isTimeZone, setDateConventions } from "../design/core/dates";
 import { notifyFailure } from "./feedback";
 
 export { DEFAULT_PREFS, type Prefs };
@@ -29,7 +29,7 @@ export const usePrefs = create<Prefs & { set: (patch: Partial<Prefs>) => void }>
   ),
 );
 
-const applyConventions = (p: Prefs) => setDateConventions({ dateFormat: p.dateFormat, timeFormat: p.timeFormat, weekStart: WEEK_START[p.weekStart] });
+const applyConventions = (p: Prefs) => setDateConventions({ dateFormat: p.dateFormat, timeFormat: p.timeFormat, weekStart: WEEK_START[p.weekStart], timeZone: p.timeZone && isTimeZone(p.timeZone) ? p.timeZone : null });
 applyConventions(usePrefs.getState());
 usePrefs.subscribe(applyConventions);
 
@@ -42,4 +42,4 @@ export function usePrefsSync(enabled: boolean) {
 }
 
 /** A key that changes with the date conventions, so date-bearing screens render again in the new form. */
-export const useDateConventionsKey = () => usePrefs((s) => `${s.dateFormat}|${s.timeFormat}|${s.weekStart}`);
+export const useDateConventionsKey = () => usePrefs((s) => `${s.dateFormat}|${s.timeFormat}|${s.weekStart}|${s.timeZone ?? ""}`);

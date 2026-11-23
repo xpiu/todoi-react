@@ -70,6 +70,25 @@ const BROWSER_TZ = (() => {
     return "UTC";
   }
 })();
+/** English ships; the others are listed so the choice is visible, and stay unavailable until their translations exist */
+const LANGUAGES = [{ value: "en", label: "English" }, ...[["nl", "Nederlands"], ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"]].map(([value, label]) => ({ value: value!, label: label!, disabled: true, hint: "Later" }))];
+/** "auto" is the device's zone (stored as null); a picked zone is its IANA name, with today's offset as a trail */
+const tzOffset = (zone: string) => {
+  try {
+    return new Intl.DateTimeFormat("en", { timeZone: zone, timeZoneName: "shortOffset" }).formatToParts(new Date()).find((x) => x.type === "timeZoneName")?.value.replace("GMT", "UTC") ?? "";
+  } catch {
+    return "";
+  }
+};
+const TIME_ZONES = (() => {
+  let zones: string[];
+  try {
+    zones = Intl.supportedValuesOf("timeZone");
+  } catch {
+    zones = [BROWSER_TZ, "UTC", "Europe/Brussels", "Europe/London", "America/New_York", "America/Los_Angeles", "Asia/Tokyo", "Australia/Sydney"];
+  }
+  return [{ value: "auto", label: `Automatic (${BROWSER_TZ.replace(/_/g, " ")})` }, ...zones.map((z) => ({ value: z, label: z.replace(/_/g, " "), hint: tzOffset(z) }))];
+})();
 const HELP_TOPICS = [
   { id: "h-add", label: "Add items fast", hint: "Quick-add and its inline syntax", body: "Press N to open quick-add in the list you're in. Type #label @name !high due fri >List and the properties land on the new item; the row under the field previews them. Enter adds the item and keeps the field open for the next one." },
   { id: "h-move", label: "Move items", hint: "Drag, or move with the keyboard", body: "Drag an item within or across lists in Board and List view, or press Ctrl + arrows to move the focused item. Cross-list moves show a toast with Undo." },
@@ -162,8 +181,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             id: "date",
             title: "Language and time",
             rows: [
-              { id: "language", label: "Language", hint: "Todoi is in English for now; other languages come later", control: <MonoValue value="English" /> },
-              { id: "timeZone", label: "Time zone", hint: "Due times and “today” follow this device's zone; picking another zone comes later", control: <MonoValue value={BROWSER_TZ.replace(/_/g, " ")} /> },
+              { id: "language", label: "Language", hint: "Menus, buttons and dates. Todoi is in English for now; other languages come later", control: <Select aria-label="Language" value={prefs.language} options={LANGUAGES} onChange={(v) => v === "en" && prefs.set({ language: v })} placement="bottom-end" tier="detached" width={220} /> },
+              { id: "timeZone", label: "Time zone", hint: "Due times and “today” follow this zone on every device", control: <Select aria-label="Time zone" value={prefs.timeZone ?? "auto"} options={TIME_ZONES} onChange={(v) => prefs.set({ timeZone: v === "auto" ? null : v })} placement="bottom-end" tier="detached" width={300} searchPlaceholder="Search time zones…" /> },
               { id: "timeFormat", label: "Time format", hint: "14:00 or 2:00 pm on items and in the calendar", control: <Segmented aria-label="Time format" value={prefs.timeFormat} options={[{ id: "24h", label: "24-hour" }, { id: "12h", label: "12-hour" }]} onChange={(v) => prefs.set({ timeFormat: v })} /> },
               { id: "weekStart", label: "Week starts on", hint: "First column in Week and Month views", control: sel("Week starts on", prefs.weekStart, WEEK_STARTS, (v) => prefs.set({ weekStart: v })) },
               { id: "dateFormat", label: "Date format", hint: "How dates appear on items and in the calendar", control: sel("Date format", prefs.dateFormat, DATE_FORMATS, (v) => prefs.set({ dateFormat: v })) },
@@ -176,7 +195,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             title: "Capture defaults",
             rows: [
               { id: "defaultPriority", label: "Default priority", hint: "New items start with this unless quick-add sets one", control: sel("Default priority", prefs.defaultPriority, PRIORITIES, (v) => prefs.set({ defaultPriority: v })) },
-              { id: "defaultDestination", label: "Default destination", hint: "Where an item lands when you don't pick a list: your Inbox", control: <MonoValue value="Inbox" /> },
+              { id: "defaultDestination", label: "Default destination", hint: "Where Create › New item lands when you don't pick a list", control: <Select aria-label="Default destination" value={projects.some((p) => p.id === prefs.defaultDestination) || prefs.defaultDestination === "inbox" ? prefs.defaultDestination : "current"} options={[{ value: "current", label: "Current project" }, { value: "inbox", label: "Inbox" }, ...projects.map((p) => ({ value: p.id, label: p.name, hint: p.groupName }))]} onChange={(v) => prefs.set({ defaultDestination: v })} placement="bottom-end" tier="detached" width={260} /> },
             ],
           },
         ],

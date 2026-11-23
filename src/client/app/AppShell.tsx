@@ -41,6 +41,7 @@ import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LifecycleDialogs } from "./LifecycleDialogs";
 import { useProjectMutations } from "../data/projects";
 import { useSidebarOrder } from "./useSidebarOrder";
+import { requestQuickAdd } from "./quickAddRequest";
 import { peopleOf, useCurrentUser } from "./session";
 import { authClient, forgetBrowserSession } from "../auth";
 import { GuestBar } from "../design/auth/GuestBar";
@@ -138,6 +139,16 @@ export function AppShell() {
   // On the Inbox, a row dropped on a sidebar project is filed there.
   const inbox = useInbox(section === "inbox");
   const capture = () => void navigate({ to: "/inbox", search: { capture: true } });
+  // Create › New item follows Settings › General › Default destination: the current project (Inbox outside one), the Inbox,
+  // or a chosen project — there quick-add opens in the first list, as N does
+  const destination = usePrefs((s) => s.defaultDestination);
+  const newItem = () => {
+    const known = (groups.data ?? []).some((g) => g.projects.some((p) => p.id === destination));
+    const target = destination === "inbox" ? null : destination === "current" ? (projectId ?? null) : known ? destination : null;
+    if (!target) return capture();
+    requestQuickAdd(target);
+    if (target !== projectId) void navigate({ to: "/p/$projectId", params: { projectId: target } });
+  };
   const activeId = projectId ?? (section === "inbox" || section === "projects" || section === "groups" ? section : undefined);
   const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
@@ -377,7 +388,7 @@ export function AppShell() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={setSidebarOpen}
         onCreate={(kind) => {
-          if (kind === "item") capture();
+          if (kind === "item") newItem();
           else if (kind === "project") lifecycle.openNewProject(project.data?.groupId);
           else if (kind === "group") lifecycle.openNewGroup();
           else if (kind === "list" && projectId && project.data) createList.mutate({ id: newId(), name: `List ${project.data.lists.length + 1}` });

@@ -4,7 +4,7 @@
 // one roving Tab stop, and focus never moves onto a day outside min/max.
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
-import { addDays, addMonths, dateConventions, formatDate, parseDateValue, sameDay, toISO, type DateInput } from "./dates";
+import { addDays, addMonths, currentDay, dateConventions, formatDate, parseDateValue, sameDay, toISO, type DateInput } from "./dates";
 import { IconButton } from "./IconButton";
 import "./DatePicker.css";
 
@@ -30,7 +30,7 @@ export interface DateCalendarProps {
 export function DateCalendar({ value, onChange, today, weekStartsOn = dateConventions().weekStart, min, max, range, style, className }: DateCalendarProps) {
   const sel = parseDateValue(value);
   // The real "today" is read once per mount; `today` (tests, previews) overrides it.
-  const [realToday] = useState(() => parseDateValue(new Date())!);
+  const [realToday] = useState(() => currentDay());
   const tod = parseDateValue(today) ?? realToday;
   const mn = parseDateValue(min);
   const mx = parseDateValue(max);

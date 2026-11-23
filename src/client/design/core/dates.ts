@@ -14,19 +14,45 @@ export interface DateConventions {
   timeFormat: "24h" | "12h";
   /** 0 Sunday … 6 Saturday — the first column of every calendar */
   weekStart: 0 | 1 | 6;
+  /** IANA zone "today" follows; null = the device's zone */
+  timeZone: string | null;
 }
 /** How dates read everywhere — the person's Settings › General, set once by the app (`setDateConventions`). */
-const conventions: DateConventions = { dateFormat: "mdy-text", timeFormat: "24h", weekStart: 1 };
+const conventions: DateConventions = { dateFormat: "mdy-text", timeFormat: "24h", weekStart: 1, timeZone: null };
 export const dateConventions = (): Readonly<DateConventions> => conventions;
 export function setDateConventions(next: Partial<DateConventions>) {
   Object.assign(conventions, next);
+}
+
+/** Whether the browser knows this IANA zone */
+export function isTimeZone(zone: string): boolean {
+  try {
+    return !!new Intl.DateTimeFormat("en", { timeZone: zone }).resolvedOptions().timeZone;
+  } catch {
+    return false;
+  }
+}
+
+/** Today's calendar day (local midnight) in the person's time zone — every default "today" reads this */
+export function currentDay(at: Date = new Date()): Date {
+  const zone = conventions.timeZone;
+  if (!zone) return new Date(at.getFullYear(), at.getMonth(), at.getDate());
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: zone, year: "numeric", month: "numeric", day: "numeric" }).formatToParts(at).map((x) => [x.type, x.value]));
+  return new Date(Number(p.year), Number(p.month) - 1, Number(p.day));
+}
+
+/** Milliseconds until the next day starts in the person's time zone */
+export function msToNextDay(at: Date = new Date()): number {
+  const zone = conventions.timeZone;
+  const p = zone ? Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23" }).formatToParts(at).map((x) => [x.type, Number(x.value)])) : { hour: at.getHours(), minute: at.getMinutes(), second: at.getSeconds() };
+  return Math.max(1000, (86400 - (p.hour! * 3600 + p.minute! * 60 + p.second!)) * 1000 - at.getMilliseconds());
 }
 
 export const sameDay = (a: Date | null | undefined, b: Date | null | undefined): boolean =>
   !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 export function startOfToday(today?: DateInput): Date {
-  const t = parseDateValue(today) ?? new Date();
+  const t = parseDateValue(today) ?? currentDay();
   t.setHours(0, 0, 0, 0);
   return t;
 }
@@ -43,7 +69,7 @@ export interface FormatDateOptions {
 export function formatDate(v: DateInput, { year = "always", today, weekday }: FormatDateOptions = {}): string {
   const d = parseDateValue(v);
   if (!d) return "";
-  const t = parseDateValue(today) ?? new Date();
+  const t = parseDateValue(today) ?? currentDay();
   const withYear = year === "always" || (year === "auto" && d.getFullYear() !== t.getFullYear());
   const day = d.toLocaleDateString("en-US", { weekday: "short" });
   const [y, m, dd] = [d.getFullYear(), pad(d.getMonth() + 1), pad(d.getDate())];

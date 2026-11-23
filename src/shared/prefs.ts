@@ -26,11 +26,17 @@ export const prefsSchema = z.object({
   notifyWatched: z.boolean(),
   inboxBadge: z.boolean(),
   sidebarOrder: sidebarOrderSchema,
+  /** UI language; only English ships so far */
+  language: z.enum(["en", "nl", "fr", "de", "es"]),
+  /** IANA zone that "today" (overdue, Today, the calendar) follows on every device; null = this device's zone */
+  timeZone: z.string().min(1).max(64).nullable(),
+  /** Where Create › New item lands when no list is picked: the current project, the Inbox, or a project id */
+  defaultDestination: z.string().min(1).max(64),
 });
 export type Prefs = z.infer<typeof prefsSchema>;
 export const prefsPatchSchema = prefsSchema.partial().refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 
-export const DEFAULT_PREFS: Prefs = { timeFormat: "24h", weekStart: "mon", dateFormat: "mdy-text", showCompleted: true, smartDates: true, defaultPriority: "none", notifyMentions: true, notifyAssignments: true, notifyWatched: true, inboxBadge: true, sidebarOrder: { top: [], projects: {} } };
+export const DEFAULT_PREFS: Prefs = { timeFormat: "24h", weekStart: "mon", dateFormat: "mdy-text", showCompleted: true, smartDates: true, defaultPriority: "none", notifyMentions: true, notifyAssignments: true, notifyWatched: true, inboxBadge: true, sidebarOrder: { top: [], projects: {} }, language: "en", timeZone: null, defaultDestination: "current" };
 
 /** Stored prefs over the defaults; unknown or invalid keys (an older or newer client) are dropped. */
 export function prefsOf(stored: unknown): Prefs {

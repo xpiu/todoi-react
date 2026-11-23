@@ -49,6 +49,7 @@ import { useToday } from "./today";
 import { quote } from "./feedback";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import { useResolvedView } from "./useResolvedView";
+import { useQuickAddRequest } from "./quickAddRequest";
 import "./screens.css";
 
 const projectRoute = getRouteApi("/app/p/$projectId");
@@ -147,6 +148,9 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
   const picker = useProjectPicker(projectId);
   const anchor = useRef<string | null>(null);
+  // Create › New item aimed at this project: quick-add opens in the first list once the lists are on screen
+  const openFirstAdd = useCallback(() => requestAnimationFrame(() => root.current?.querySelector<HTMLButtonElement>("[data-add-item]")?.click()), [root]);
+  useQuickAddRequest(projectId, project.id === projectId && actions.lists.length > 0, openFirstAdd);
 
   const ctx = useFilterContext(project, labels);
   const showCompleted = usePrefs((s) => s.showCompleted);

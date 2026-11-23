@@ -8,7 +8,7 @@ import { isReadOnly } from "../auth/GuestBar";
 import { Icon } from "../core/Icon";
 import { useTouchDrag } from "../core/touchDrag";
 import { addDays, daysBetweenISO, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
-import { dateConventions } from "../core/dates";
+import { currentDay, dateConventions } from "../core/dates";
 import { CalendarItemChip } from "./CalendarItemChip";
 import "../core/text.css";
 import "./CalendarGrid.css";
@@ -38,7 +38,7 @@ export interface CalendarGridProps {
 const LANE = 20, CELL_PAD = 26 + 4, DEFAULT_PITCH = 25;
 
 export function CalendarGrid({ date, period = "month", items, today, weekStartsOn = dateConventions().weekStart, showItemIds = true, showLabels = true, onOpenItem, onAddItem, onShowMore, onReschedule, onNavigateDate, focusDate, style, className }: CalendarGridProps) {
-  const [now] = useState(() => parseDateValue(new Date())!);
+  const [now] = useState(() => currentDay());
   const todayD = today ?? now;
   const dateKey = toISO(date)!;
   const weeks = useMemo(() => weeksFor(parseDateValue(dateKey)!, period, weekStartsOn), [dateKey, period, weekStartsOn]);

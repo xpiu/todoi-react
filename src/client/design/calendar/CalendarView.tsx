@@ -4,7 +4,7 @@
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 
 import { addDays, coversDay, daysBetween, isSpan, parseDateValue, periodTitle, shiftPeriod, toISO, type CalendarItem, type CalendarPeriod } from "./calendar";
-import { dateConventions } from "../core/dates";
+import { currentDay, dateConventions } from "../core/dates";
 import { CalendarDayList } from "./CalendarDayList";
 import { CalendarGrid } from "./CalendarGrid";
 import { CalendarHeader } from "./CalendarHeader";
@@ -36,7 +36,7 @@ export function CalendarView({ items, period: periodProp, defaultPeriod = "month
   const [selfP, setSelfP] = useState<CalendarPeriod>(defaultPeriod);
   const period = controlled ? periodProp : selfP;
   // Today is sampled once per mount (a pure render must not read the clock).
-  const [now] = useState(() => parseDateValue(new Date())!);
+  const [now] = useState(() => currentDay());
   const todayD = parseDateValue(today) ?? now;
   const [cursor, setCursor] = useState<Date>(() => parseDateValue(date) ?? todayD);
   const [focusIso, setFocusIso] = useState<string | null>(null);
