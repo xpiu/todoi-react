@@ -120,6 +120,18 @@
     gap: 2px;
     vertical-align: middle;
   }
+  /* Rounded: a row's ⋯ rests at 60% and comes to full strength while the row is hovered or holds focus, or its menu is
+     open (Design's RowMenu). Minimal keeps it at full strength. */
+  html:not([data-theme="minimal"]) .td-table-tools .td-iconbtn {
+    opacity: 0.6;
+    transition:
+      background var(--duration-base) var(--ease-standard),
+      opacity var(--duration-base) var(--ease-standard);
+  }
+  html:not([data-theme="minimal"]) :is(.td-table-row:hover, .td-table-row:focus-within) .td-table-tools .td-iconbtn,
+  html:not([data-theme="minimal"]) .td-table-tools .td-iconbtn[aria-expanded="true"] {
+    opacity: 1;
+  }
   .td-table :is(th, td).td-table-set {
     width: 1%;
     text-align: right;

@@ -120,7 +120,6 @@ export function InboxScreen() {
           listId={listId}
           name="Inbox"
           icon="inbox"
-          iconColor="var(--ink-600)"
           menu={false}
           collapsible={false}
           addVisible

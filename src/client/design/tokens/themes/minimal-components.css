@@ -651,7 +651,7 @@ html[data-theme="minimal"] .td-popover,html[data-theme="minimal"] .td-user-menu,
 html[data-theme="minimal"] .td-popover{padding:6px 0}
 html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){padding:0}
 /* Appearance menu: a 14px edge like the menus beside it. The app pads the inner .td-appearance-menu (the kit pads the popover), so the popover itself carries none */
-html[data-theme="minimal"] .td-popover:has(.td-appearance-menu){padding:0}
+html[data-theme="minimal"] .td-popover.td-appearance-popover{padding:0}
 html[data-theme="minimal"] .td-appearance-menu{padding:14px}
 /* Keep the unread indicator visible when Minimal hides navigation icons (app-only: the "Unread count on Inbox" setting); it gives way to the row's + while the row is hovered or focused, so the two never overlap */
 html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"]{display:inline-flex!important;order:1;width:7px;height:7px;margin-left:auto}

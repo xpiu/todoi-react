@@ -258,6 +258,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                   role="dialog"
                   aria-label="Appearance"
                   width={264}
+                  className="td-popover-flush td-appearance-popover"
                   trigger={
                     <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={a.label} data-menu="appearance">
                       {a.icon ? <Icon name={a.icon} size={16} /> : null}

@@ -147,9 +147,16 @@
     color: var(--ink-600);
   }
 
-  /* Appearance menu */
+  /* Appearance menu: the kit pads the popover 12px; the app's popover is flush and the menu carries that padding, so
+     the divider and the More options footer run edge to edge. A phone sheet keeps only its bottom padding. */
+  .td-popover.td-appearance-popover[data-sheet="true"] {
+    padding-inline: 0;
+  }
+  .td-appearance-popover > .td-sheet-handle {
+    margin-inline: 0;
+  }
   .td-appearance-menu {
-    padding: var(--sp-2);
+    padding: var(--sp-3);
     box-sizing: border-box;
   }
   .td-appearance-label {
@@ -166,8 +173,8 @@
     display: flex;
     align-items: center;
     gap: var(--sp-2);
-    width: calc(100% + var(--sp-4));
-    margin: var(--sp-3) calc(var(--sp-2) * -1) calc(var(--sp-2) * -1);
+    width: calc(100% + var(--sp-6));
+    margin: var(--sp-3) calc(var(--sp-3) * -1) calc(var(--sp-3) * -1);
     padding: 9px var(--sp-3);
     box-sizing: border-box;
     border: none;
@@ -246,7 +253,7 @@
   }
   .td-appearance-divider {
     height: 1px;
-    margin: var(--sp-3) calc(var(--sp-2) * -1);
+    margin: var(--sp-3) calc(var(--sp-3) * -1);
     background: var(--border-divider);
   }
   .td-appearance-example {
