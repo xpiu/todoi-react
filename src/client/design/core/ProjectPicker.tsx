@@ -87,7 +87,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
             onClick={() => {
               setProj(null);
               setReturned(true);
-              listCursor.reset();
+              listCursor.reset(false);
             }}
           />
           <span className="td-project-picker-head-title">

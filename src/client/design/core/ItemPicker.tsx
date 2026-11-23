@@ -42,6 +42,9 @@ export interface ItemPickerProps {
 export function usePickerCursor<T>(options: readonly T[], key: (o: T) => string, onPick: (o: T) => void) {
   const base = useId();
   const [cur, setCur] = useState(0);
+  // Quiet until the person moves it (as Select, and as in Design): the first option stays the active descendant, so
+  // Enter and screen readers have it, but its row is painted only after ↑↓, a hover or a typed query
+  const [moved, setMoved] = useState(false);
   const sel = Math.min(cur, Math.max(0, options.length - 1));
   const listId = `${base}-list`;
   const optionId = (o: T) => `${base}-opt-${key(o)}`;
@@ -52,9 +55,11 @@ export function usePickerCursor<T>(options: readonly T[], key: (o: T) => string,
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      setMoved(true);
       setCur(Math.min(sel + 1, options.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      setMoved(true);
       setCur(Math.max(sel - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -62,14 +67,28 @@ export function usePickerCursor<T>(options: readonly T[], key: (o: T) => string,
     } else if (e.key.length === 1) e.stopPropagation();
   };
   return {
-    reset: () => setCur(0),
+    /** Back to the first option: shown after a new query, quiet again after a view change (`show` false) */
+    reset: (show = true) => {
+      setCur(0);
+      setMoved(show);
+    },
     pick,
     activeId: active ? optionId(active) : undefined,
     onKeyDown,
     /** For the search field; the listbox is rendered only while something matches */
     comboboxProps: { role: "combobox", "aria-autocomplete": "list", "aria-expanded": options.length > 0, "aria-controls": options.length ? listId : undefined, "aria-activedescendant": active ? optionId(active) : undefined, onKeyDown } as const,
-    listboxProps: { id: listId, role: "listbox" } as const,
-    optionProps: (o: T, i: number) => ({ id: optionId(o), role: "option", "aria-selected": i === sel, onMouseEnter: () => setCur(i), onClick: () => onPick(o) }) as const,
+    listboxProps: { id: listId, role: "listbox", "data-quiet": moved ? undefined : "true" } as const,
+    optionProps: (o: T, i: number) =>
+      ({
+        id: optionId(o),
+        role: "option",
+        "aria-selected": i === sel,
+        onMouseEnter: () => {
+          setMoved(true);
+          setCur(i);
+        },
+        onClick: () => onPick(o),
+      }) as const,
   };
 }
 

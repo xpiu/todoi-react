@@ -75,7 +75,7 @@
     color: var(--ink-900);
     cursor: pointer;
   }
-  .td-item-picker-row[aria-selected="true"],
+  .td-item-picker-list:not([data-quiet="true"]) .td-item-picker-row[aria-selected="true"],
   .td-item-picker-row:hover,
   .td-picker-row:hover,
   .td-picker-row:focus-visible {

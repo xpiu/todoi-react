@@ -44,7 +44,7 @@
   }
   /* The highlighted option (aria-activedescendant), marked as a hovered row; with the lists listbox
      focused from the keyboard it also carries the row focus ring. */
-  .td-project-picker .td-picker-row[aria-selected="true"] {
+  .td-project-picker .td-picker-list:not([data-quiet="true"]) .td-picker-row[aria-selected="true"] {
     background: var(--action-subtle);
   }
   .td-project-picker .td-picker-list:focus-visible {
