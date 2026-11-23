@@ -52,6 +52,8 @@ export const WithSubNavbar: Story = {
 export const RenameTitle: Story = {
   async play({ args, canvas, userEvent }) {
     const search = canvas.getByRole("combobox", { name: "Search" });
+    // Measure once the fonts are in: a late webfont resizes the controls to the right and moves the field.
+    await document.fonts.ready;
     const searchLeft = search.getBoundingClientRect().left;
     await userEvent.click(canvas.getByRole("button", { name: "Rename project: Helicopter sales" }));
     const field = canvas.getByRole<HTMLInputElement>("textbox", { name: "Project name" });
