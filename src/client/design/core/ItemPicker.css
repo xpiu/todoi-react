@@ -90,11 +90,23 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--focus-ring) inset;
   }
+  /* Key, title and list name share a baseline and the glyph centres, as in Design's .td-ip-row (a centred MenuItem whose label is a baseline
+     flex): the one line is centred in the row by align-content, which needs a multi-line container. The title's 0 basis keeps it on that line. */
+  .td-item-picker-row {
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: baseline;
+  }
   /* The status glyph fills a Menu row's 16px icon slot (Design draws the rows as MenuItems), so keys and titles sit on Design's column */
   .td-item-picker-row > svg {
     flex: none;
+    align-self: center;
     width: 16px;
     height: 16px;
+  }
+  /* A neutral status glyph (New, Backlog, To-do) is ink-300, as Design's not-started glyph and list icons; Minimal keeps the row's ink */
+  html:not([data-theme="minimal"]) .td-item-picker-row > svg {
+    color: var(--ink-300);
   }
   /* An ItemPickerDrill's head (Design: ItemOverlay › Make subitem of, Checklist › Move to another item): 4px gap and a 13px arrow; the project picker keeps its own */
   .td-project-picker-head:has(+ .td-item-picker) {
