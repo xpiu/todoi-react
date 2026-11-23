@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from "drizzle-
 import { nanoid } from "nanoid";
 
 import { dateRangeIssue, type MoveItemInput, type MoveRestore } from "../../shared/items";
+import { STATUS_NAMES } from "../../shared/item-status";
 import { db, type Tx } from "../db";
 import { nextPosition } from "../db/position";
 import { ApiFailure } from "../errors";
@@ -314,7 +315,7 @@ export async function moveItem(id: string, { listId, position, restore }: MoveIt
     if (!crossProject) await tx.update(items).set({ listId: dest.id }).where(eq(items.parentItemId, id));
     if (dest.id !== cur.listId) {
       const [src] = await tx.select({ name: lists.name }).from(lists).where(eq(lists.id, cur.listId));
-      const status = changed.status ? ` — Status set to ${changed.status.to}` : "";
+      const status = changed.status ? ` — Status set to ${changed.status.to ? STATUS_NAMES[changed.status.to] : "None"}` : "";
       // Across projects each log names only its own project's lists: members of one may not see the other.
       if (crossProject) {
         await logActivity(tx, { projectId: cur.projectId, actorId, type: "item", text: `moved ${quote(cur.title)} from ${src?.name ?? "the Inbox"} to another project`, itemId: id, itemKey: keyOf(cur) });

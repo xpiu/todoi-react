@@ -1,6 +1,6 @@
 // Canonical Status registry for the client. Ids come from src/shared/item-status.ts (the Postgres enum);
 // names are display copy and may be renamed without breaking links. Spec: DESIGN.md › Lists & Status linking.
-import { type ItemStatus } from "../../../shared/item-status";
+import { STATUS_NAMES, type ItemStatus } from "../../../shared/item-status";
 import type { IconName } from "./Icon";
 
 export interface StatusDef {
@@ -12,11 +12,11 @@ export interface StatusDef {
 }
 
 export const STATUSES: ReadonlyArray<StatusDef> = [
-  { id: "NEW", name: "New", icon: "circle-dashed" },
-  { id: "BACKLOG", name: "Backlog", icon: "archive" },
-  { id: "TODO", name: "To-do", icon: "circle-todo" },
-  { id: "DOING", name: "Doing", icon: "circle-dot", color: "var(--label-blue)" },
-  { id: "DONE", name: "Done", icon: "circle-check", color: "var(--success-icon)" },
+  { id: "NEW", name: STATUS_NAMES.NEW, icon: "circle-dashed" },
+  { id: "BACKLOG", name: STATUS_NAMES.BACKLOG, icon: "archive" },
+  { id: "TODO", name: STATUS_NAMES.TODO, icon: "circle-todo" },
+  { id: "DOING", name: STATUS_NAMES.DOING, icon: "circle-dot", color: "var(--label-blue)" },
+  { id: "DONE", name: STATUS_NAMES.DONE, icon: "circle-check", color: "var(--success-icon)" },
 ];
 
 export const statusById = (id: string | null | undefined): StatusDef | null => STATUSES.find((s) => s.id === id) ?? null;
