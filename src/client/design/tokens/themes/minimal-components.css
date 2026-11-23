@@ -701,8 +701,8 @@ html[data-theme="minimal"] .td-members-menu-line{font:400 13px/20px var(--font-u
 html[data-theme="minimal"] .td-members-menu-sub{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-members-menu-role,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger{height:auto;padding:0;border-radius:0;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-members-menu-role:hover,html[data-theme="minimal"] .td-members-menu-rolepick .td-select-trigger:hover{background:none;color:var(--ink-900)}
-/* Members menu glyphs at the bar's 1.75 stroke (Design renders the menu inside the sub-navbar, so its svg rule reaches them; the app portals the menu out) */
-html[data-theme="minimal"] .td-members-menu svg{stroke-width:1.75}
+/* Toolbar menu glyphs at the bar's 1.75 stroke (Design renders these menus inside the sub-navbar, so its svg rule reaches them; the app portals them out) */
+html[data-theme="minimal"] :is(.td-members-menu,.td-appearance-menu,.td-filter-menu,.td-sort-menu,.td-share-menu) svg{stroke-width:1.75}
 /* Share menu (Design: SubNavbar Share): the project URL as an 11px mono line on the label column, the export heading 6px clear of the divider */
 html[data-theme="minimal"] .td-share-url{margin:0 0 4px;padding:2px 14px 2px 40px;border-radius:0;font:400 11px/16px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-share-menu .td-menu-heading{padding-top:6px}

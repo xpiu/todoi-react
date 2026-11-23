@@ -173,18 +173,27 @@ export function AppShell() {
   // The SubNavbar's one open dropdown: the Filter / Sort rows list every option while theirs is open.
   const [openMenu, setOpenMenu] = useState<SubNavbarMenu | null>(null);
   const closeMenu = (m: SubNavbarMenu) => setOpenMenu((cur) => (cur === m ? null : cur));
-  // The Filter by / Sort by rows' "Hide" (Design: FilterBar / SortBar): the row collapses, the filters and sort stay on;
-  // opening that menu again or changing a filter / the sort brings it back. Per project, for this session.
-  const [rowsHidden, setRowsHidden] = useState<{ pid: string | null; filter: boolean; sort: boolean }>({ pid: null, filter: false, sort: false });
-  const hiddenRow = (row: "filter" | "sort") => rowsHidden.pid === (projectId ?? null) && rowsHidden[row];
-  const showRow = (row: "filter" | "sort") => setRowsHidden((h) => (h[row] ? { ...h, [row]: false } : h));
-  const hideRow = (row: "filter" | "sort") => {
-    setRowsHidden((h) => ({ ...(h.pid === (projectId ?? null) ? h : { filter: false, sort: false }), pid: projectId ?? null, [row]: true }));
+  // The Filter by / Sort by rows (Design: FilterBar / SortBar). Opening the Filter or Sort menu opens its row, and the row
+  // stays open after the menu closes (all chips, to pick from) until "Hide" — which also hides a row the active filters
+  // or sort would keep; changing a filter or the sort brings it back. Per project, for this session.
+  type Row = "filter" | "sort";
+  const [rows, setRows] = useState<{ pid: string | null; open: Record<Row, boolean>; hidden: Record<Row, boolean> }>({ pid: null, open: { filter: false, sort: false }, hidden: { filter: false, sort: false } });
+  const here = rows.pid === (projectId ?? null);
+  const rowOpen = (row: Row) => openMenu === row || (here && rows.open[row]);
+  const rowHidden = (row: Row) => openMenu !== row && here && rows.hidden[row];
+  const setRow = (row: Row, open: boolean, hidden: boolean) =>
+    setRows((r) => {
+      const base = r.pid === (projectId ?? null) ? r : { pid: projectId ?? null, open: { filter: false, sort: false }, hidden: { filter: false, sort: false } };
+      return { pid: projectId ?? null, open: { ...base.open, [row]: open }, hidden: { ...base.hidden, [row]: hidden } };
+    });
+  const showRow = (row: Row) => here && rows.hidden[row] && setRow(row, rows.open[row], false);
+  const hideRow = (row: Row) => {
+    setRow(row, false, true);
     closeMenu(row);
   };
-  /** Opening the Filter or Sort menu brings its row back */
+  /** Opening the Filter or Sort menu opens its row (and brings back a hidden one) */
   const changeMenu = (m: SubNavbarMenu | null) => {
-    if (m === "filter" || m === "sort") showRow(m);
+    if (m === "filter" || m === "sort") setRow(m, true, false);
     setOpenMenu(m);
   };
   // The tab stays active (with a dot) while the live state drifts from its definition.
@@ -312,7 +321,7 @@ export function AppShell() {
       <div className="td-app-rows-inner">
         {savedViewsRow}
         <FilterBar
-          open={openMenu === "filter"}
+          open={rowOpen("filter")}
           available={barAvailable}
           filters={filters}
           onToggle={toggleFilter}
@@ -321,11 +330,11 @@ export function AppShell() {
             closeMenu("filter");
             suggest("clear-filters");
           }}
-          hidden={hiddenRow("filter")}
+          hidden={rowHidden("filter")}
           onHide={() => hideRow("filter")}
         />
         <SortBar
-          open={openMenu === "sort"}
+          open={rowOpen("sort")}
           dims={SORT_DIMS}
           options={SORT_OPTS}
           sort={sort}
@@ -334,7 +343,7 @@ export function AppShell() {
             resetSort();
             closeMenu("sort");
           }}
-          hidden={hiddenRow("sort")}
+          hidden={rowHidden("sort")}
           onHide={() => hideRow("sort")}
         />
       </div>
