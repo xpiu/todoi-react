@@ -1,14 +1,17 @@
 // Icon — the one glyph API. Lucide through an explicit map (icons.ts), plus Todoi's own glyphs:
 // "circle-todo" (the To-do status: a dial at zero), Ledger variants for the Minimal theme, and
 // pixel-snapped panel / list / kanban / calendar glyphs (Rounded's own shapes, and the Ledger view
-// glyphs for Minimal), where Lucide's 24-unit grid would blur axis-aligned lines at 16–20px.
+// glyphs for Minimal), where Lucide's 24-unit grid would blur axis-aligned lines at 16–20px. Under
+// Minimal every other glyph is grid-fitted to the size it is drawn at (iconHint) and placed on a whole
+// device pixel, as Claude Design's Icon does.
 // Spec: DESIGN.md › Iconography.
 import { useLayoutEffect, useRef, useState, type CSSProperties, type Ref } from "react";
 
 import { useAppearanceStore } from "./appearance";
-import { LUCIDE_ICONS, type LucideIconName } from "./icons";
+import { hintIcon, type IconNode } from "./iconHint";
+import { LUCIDE_ICONS, lucideGlyph, type LucideIconName } from "./icons";
 
-type SvgNode = [tag: "path" | "circle" | "rect", attrs: Record<string, string | number>];
+type SvgNode = IconNode;
 
 /** Glyphs Lucide does not ship. Drawn on the 24-unit grid like Lucide's. */
 const CUSTOM = {
@@ -241,14 +244,6 @@ const LEDGER_SNAPPED: Record<string, (size: number) => SvgNode[]> = {
   // lines with a 1.17px stroke) and antialiased to grey. Drawn on pixel centres, the frame is one full pixel of ink.
   "panel-right": (s) => SNAPPED["panel-right"]!(s, 1),
   "panel-left": (s) => SNAPPED["panel-left"]!(s, 1),
-  // Plus (create, add an item, add list): Design's fitted cross — both arms on the same pixel centre, each ending on a
-  // half pixel, so the 1.5px stroke reads as one crisp line instead of Lucide's 1.17px rules split over two pixels.
-  // At 20px: centre 10.5, arms 4.5–16.5 (Design's "M5.4 12.6L19.8 12.6" in 24 units).
-  plus: (s) => {
-    const c = Math.round(s / 2 - 0.5) + 0.5;
-    const h = Math.round((7 * s) / 24);
-    return [["path", { d: `M${c - h} ${c}H${c + h}M${c} ${c - h}V${c + h}` }]];
-  },
   // Search: the ring's diameter a whole number of pixels with its four edges on pixel centres, so it renders in full
   // ink (Lucide's ring at 14px split its bottom and right edges over two pixels and read grey). At 14px: centre 6,
   // r 4.5, handle to 12.5.
@@ -266,6 +261,90 @@ const LEDGER_SNAPPED: Record<string, (size: number) => SvgNode[]> = {
   },
 };
 const LEDGER_STROKE = 1.75;
+
+// Minimal theme: every other glyph is grid-fitted to the size it is drawn at (iconHint). One entry per name × device-pixel size × stroke.
+const HINTS = new Map<string, SvgNode[]>();
+function fitted(name: string, nodes: SvgNode[], R: number, stroke: number): SvgNode[] {
+  const k = `${name}|${R}|${stroke}`;
+  let h = HINTS.get(k);
+  if (!h) {
+    try {
+      h = hintIcon(nodes, R, (stroke * R) / 24);
+    } catch {
+      h = nodes;
+    }
+    HINTS.set(k, h);
+  }
+  return h;
+}
+
+// Minimal theme, whole-pixel placement. A fitted glyph is only crisp when its box starts on a whole device pixel, and layout often
+// puts it between two: after a word (text widths are fractional), or centred in a box 1px taller than the glyph. Every mounted
+// Minimal glyph is nudged by the missing fraction (under half a pixel, CSS `translate`, so it adds to any transform a rule sets).
+// Re-checked before the next paint whenever layout can have moved: a DOM change, a resize, a font arriving, the end of a
+// transition or animation. Reads first, then writes; `translate` does not dirty layout.
+interface Placement {
+  /** The CSS width the glyph was measured at; a rect of another width means a scaled ancestor. */
+  w: number;
+  shift: [number, number] | null;
+}
+const LIVE = new Map<SVGSVGElement, Placement>();
+const ZERO: [number, number] = [0, 0];
+let frame = 0;
+let watching = false;
+function placeAll() {
+  frame = 0;
+  const dpr = window.devicePixelRatio || 1;
+  const todo: [SVGSVGElement, Placement, number, number][] = [];
+  for (const [el, p] of LIVE) {
+    if (!el.isConnected) {
+      LIVE.delete(el);
+      continue;
+    }
+    const r = el.getBoundingClientRect();
+    if (!r.width) continue;
+    // Inside a scaled ancestor (a zoomed preview, an opening animation) the box is not on the page's pixel grid: no nudge there.
+    if (Math.abs(r.width - p.w) > 0.01) {
+      if (p.shift) todo.push([el, p, 0, 0]);
+      continue;
+    }
+    const c = p.shift ?? ZERO, bx = r.left - c[0], by = r.top - c[1];
+    let sx = Math.round(bx * dpr) / dpr - bx, sy = Math.round(by * dpr) / dpr - by;
+    if (Math.abs(sx) < 0.01) sx = 0;
+    if (Math.abs(sy) < 0.01) sy = 0;
+    if (Math.abs(sx - c[0]) > 0.005 || Math.abs(sy - c[1]) > 0.005) todo.push([el, p, sx, sy]);
+  }
+  for (const [el, p, sx, sy] of todo) {
+    p.shift = sx || sy ? [sx, sy] : null;
+    el.style.translate = sx || sy ? `${+sx.toFixed(3)}px ${+sy.toFixed(3)}px` : "";
+  }
+}
+function schedule() {
+  if (!frame) frame = requestAnimationFrame(placeAll);
+}
+function watch() {
+  if (watching) return;
+  watching = true;
+  window.addEventListener("resize", schedule);
+  document.addEventListener("transitionend", schedule, true);
+  document.addEventListener("animationend", schedule, true);
+  document.fonts?.addEventListener?.("loadingdone", schedule);
+  if (typeof MutationObserver !== "undefined") {
+    new MutationObserver(schedule).observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true });
+  }
+}
+/** Minimal: measure a mounted glyph and keep it on the pixel grid. Other themes: drop any nudge it carried. */
+function place(el: SVGSVGElement, w: number | null) {
+  if (w === null) {
+    if (LIVE.delete(el)) el.style.translate = "";
+    return;
+  }
+  const p = LIVE.get(el);
+  if (p) p.w = w;
+  else LIVE.set(el, { w, shift: null });
+  watch();
+  schedule();
+}
 
 export type IconName = LucideIconName | keyof typeof CUSTOM;
 
@@ -310,37 +389,56 @@ function RawSvg({ nodes, size, viewBox, stroke, color, style, className, ref }: 
 
 export function Icon({ name, size = 16, strokeWidth = 2, color, style, className }: IconProps) {
   const minimal = useAppearanceStore((s) => s.theme) === "minimal";
-  const ledgerSnapped = minimal ? LEDGER_SNAPPED[name] : undefined;
-  // Minimal CSS often draws a glyph at another size than its prop (an "Add an item" plus: 16 → 13px). A shape fitted to
-  // the prop then lands between pixels, so the drawn width is read once after layout and the shape is fitted to it
-  // (as Design's Icon does). Whole-pixel sizes only; no observers.
+  // Minimal: the theme's CSS decides the drawn size and stroke (`svg{width:14px;stroke-width:1.75}`), not the props, and a glyph
+  // fitted to 16px goes soft when it is shown at 14. So the drawn size and stroke are read back after every layout (the state
+  // object stays the same while they do) and the glyph is fitted to those.
   const svgRef = useRef<SVGSVGElement>(null);
-  const [drawn, setDrawn] = useState<number | null>(null);
+  const [fit, setFit] = useState<{ px: number; sw: number } | null>(null);
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- Measured state: re-read after every render, because an ancestor's class or attribute can change the CSS size without changing a prop; the updater returns the same object while nothing changed, so React bails out instead of looping.
   useLayoutEffect(() => {
-    if (!ledgerSnapped || !svgRef.current) return;
-    const w = parseFloat(getComputedStyle(svgRef.current).width);
-    const px = Math.round(w);
-    setDrawn(Math.abs(w - px) < 0.01 && px >= 8 && px !== size ? px : null);
-  }, [ledgerSnapped, size]);
-  if (ledgerSnapped) {
-    const fit = drawn ?? size;
-    // The width also goes inline: the theme's `svg { stroke-width: 1.75 }` rules assume a 24-unit viewBox and would outrank the attribute.
-    const sw = (LEDGER_STROKE * fit) / 24;
-    return <RawSvg ref={svgRef} nodes={ledgerSnapped(fit)} size={size} viewBox={`0 0 ${fit} ${fit}`} stroke={sw} color={color} style={{ strokeWidth: sw, ...style }} className={className} />;
+    const el = svgRef.current;
+    if (!el) return;
+    if (!minimal) {
+      place(el, null);
+      return;
+    }
+    const cs = getComputedStyle(el), w = parseFloat(cs.width), sw = parseFloat(cs.strokeWidth);
+    place(el, w);
+    if (w > 0) setFit((f) => (f && f.px === w && f.sw === sw ? f : { px: w, sw }));
+  });
+  if (minimal) {
+    const px = fit ? (Math.abs(fit.px - Math.round(fit.px)) < 0.01 ? Math.round(fit.px) : fit.px) : size;
+    const ipx = Number.isInteger(px) ? px : size;
+    const ledgerSnapped = LEDGER_SNAPPED[name];
+    if (ledgerSnapped) {
+      // The width also goes inline: the theme's `svg { stroke-width: 1.75 }` rules assume a 24-unit viewBox and would outrank the attribute.
+      const sw = (LEDGER_STROKE * ipx) / 24;
+      return <RawSvg ref={svgRef} nodes={ledgerSnapped(ipx)} size={size} viewBox={`0 0 ${ipx} ${ipx}`} stroke={sw} color={color} style={{ strokeWidth: sw, ...style }} className={className} />;
+    }
+    // Design's drawings first (Todoi's own glyphs, then Lucide 0.454's), then the mapped lucide-react glyph.
+    const lucide = !(name in CUSTOM) && !DESIGN_LUCIDE[name as LucideIconName] && LUCIDE_ICONS[name as LucideIconName] ? lucideGlyph(name as LucideIconName) : null;
+    const nodes: SvgNode[] | undefined = (CUSTOM as Partial<Record<IconName, SvgNode[]>>)[name] ?? DESIGN_LUCIDE[name as LucideIconName] ?? lucide?.nodes;
+    if (nodes) {
+      // Fitted in device pixels (a 14px glyph on a 2x screen is fitted to 28), when the drawn size is a whole number of them.
+      const P = px * (typeof window === "undefined" ? 1 : window.devicePixelRatio || 1), R = Math.round(P);
+      const drawn = Math.abs(P - R) < 0.01 && R >= 8 && R <= 96 ? fitted(name, nodes, R, fit ? fit.sw : strokeWidth) : nodes;
+      const cls = lucide ? [lucide.className, className].filter(Boolean).join(" ") : className;
+      return <RawSvg ref={svgRef} nodes={drawn} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={cls} />;
+    }
   }
   const snapped = !minimal ? SNAPPED[name] : undefined;
   if (snapped) {
     const sw = (strokeWidth * size) / 24;
     const w = sw >= 1.9 ? Math.round(sw) : sw > 1.4 ? 1.5 : 1;
-    return <RawSvg nodes={snapped(size, w)} size={size} viewBox={`0 0 ${size} ${size}`} stroke={w} color={color} style={style} className={className} />;
+    return <RawSvg ref={svgRef} nodes={snapped(size, w)} size={size} viewBox={`0 0 ${size} ${size}`} stroke={w} color={color} style={style} className={className} />;
   }
   const custom: SvgNode[] | undefined = (CUSTOM as Partial<Record<IconName, SvgNode[]>>)[name] ?? DESIGN_LUCIDE[name as LucideIconName];
-  if (custom) return <RawSvg nodes={custom} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={className} />;
+  if (custom) return <RawSvg ref={svgRef} nodes={custom} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={className} />;
   const Lucide = LUCIDE_ICONS[name as LucideIconName];
   if (!Lucide) {
     // A theme variant that has no Lucide fallback (or a stale name): draw the neutral circle instead of crashing.
     if (import.meta.env.DEV) console.warn(`Icon: "${name}" is not in the icon map`);
-    return <RawSvg nodes={[["circle", { cx: 12, cy: 12, r: 10 }]]} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={className} />;
+    return <RawSvg ref={svgRef} nodes={[["circle", { cx: 12, cy: 12, r: 10 }]]} size={size} viewBox="0 0 24 24" stroke={strokeWidth} color={color} style={style} className={className} />;
   }
-  return <Lucide size={size} strokeWidth={strokeWidth} color={color} style={{ ...baseStyle, ...style }} className={className} aria-hidden />;
+  return <Lucide ref={svgRef} size={size} strokeWidth={strokeWidth} color={color} style={{ ...baseStyle, ...style }} className={className} aria-hidden />;
 }

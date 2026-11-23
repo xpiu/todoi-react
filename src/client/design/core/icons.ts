@@ -177,6 +177,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import type { IconNode, IconNodeAttrs } from "./iconHint";
+
 export const LUCIDE_ICONS = {
   "rotate-ccw": RotateCcw,
   "briefcase": Briefcase,
@@ -352,3 +354,40 @@ export const LUCIDE_ICONS = {
 } as const satisfies Record<string, LucideIcon>;
 
 export type LucideIconName = keyof typeof LUCIDE_ICONS;
+
+type IconElement = { props?: { icon?: { name?: unknown; aliases?: unknown; node?: unknown } } };
+type ForwardRefIcon = { render?: (props: object, ref: null) => IconElement };
+/** A mapped Lucide glyph as data: its nodes and the classes lucide-react puts on its `<svg>`. */
+export interface LucideGlyph {
+  nodes: IconNode[];
+  className: string;
+}
+const GLYPHS = new Map<LucideIconName, LucideGlyph | null>();
+
+/**
+ * A mapped Lucide component's drawing as data, for the Minimal theme's pixel fit (iconHint). lucide-react 1.x exports
+ * each icon's data only from its own module (`lucide-react/icons/<name>`, `__iconData`), not from the package root this map
+ * imports; every component is a forwardRef whose render only returns `<Icon icon={iconData} …/>` (no hooks), so calling it
+ * reads the data the component draws. Null when that shape changes (the caller then draws the component unfitted).
+ */
+export function lucideGlyph(name: LucideIconName): LucideGlyph | null {
+  let glyph = GLYPHS.get(name);
+  if (glyph !== undefined) return glyph;
+  glyph = null;
+  try {
+    const icon = (LUCIDE_ICONS[name] as unknown as ForwardRefIcon).render?.({}, null)?.props?.icon;
+    if (icon && Array.isArray(icon.node) && icon.node.length) {
+      const nodes = (icon.node as [IconNode[0], IconNodeAttrs][]).map(([tag, attrs]): IconNode => {
+        const { key: _key, ...rest } = attrs;
+        return [tag, rest];
+      });
+      const aliases = Array.isArray(icon.aliases) ? icon.aliases.filter((a): a is string => typeof a === "string" && a.trim() !== "") : [];
+      const names = [...(typeof icon.name === "string" && icon.name ? [icon.name] : []), ...aliases];
+      glyph = { nodes, className: ["lucide", ...names.map((n) => `lucide-${n}`)].join(" ") };
+    }
+  } catch {
+    glyph = null;
+  }
+  GLYPHS.set(name, glyph);
+  return glyph;
+}
