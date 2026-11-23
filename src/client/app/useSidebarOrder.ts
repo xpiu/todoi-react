@@ -8,8 +8,9 @@ import { useCallback, useMemo } from "react";
 import type { GroupWithProjects } from "../data/api";
 import { useProjectMutations } from "../data/projects";
 import { keys } from "../data/queries";
+import type { IconName } from "../design/core/Icon";
 import { quote } from "../design/core/text";
-import { moveId, moveProject, orderBy } from "../design/navigation/sidebarOrder";
+import { moveId, moveProject, orderBy } from "../design/navigation/sidebarArrangement";
 import { notifyFailure, useFeedback } from "./feedback";
 import { usePrefs } from "./prefs";
 
@@ -71,5 +72,8 @@ export function useSidebarOrder(data: GroupWithProjects[] | undefined, userId: s
     );
   };
 
-  return { groups, order: saved.top, onReorder, onProjectMove, canMoveProject };
+  /** The groups as the Sidebar and SidebarOrder take them */
+  const rail = useMemo(() => groups.map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as IconName, color: p.color ? `var(--label-${p.color})` : undefined })) })), [groups]);
+
+  return { groups, rail, order: saved.top, onReorder, onProjectMove, canMoveProject };
 }

@@ -19,7 +19,7 @@ import { IconPicker } from "../core/IconPicker";
 import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
 import { PortalContainerContext } from "../core/portalContainer";
 import { useToastHost } from "../core/ToastPortal";
-import { orderIds } from "./sidebarOrder";
+import { orderIds } from "./sidebarArrangement";
 import "./Sidebar.css";
 
 export const ITEM_DRAG_TYPE = "application/x-todoi-item";

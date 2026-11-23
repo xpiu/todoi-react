@@ -45,6 +45,8 @@ import { projectUrl } from "./links";
 import { usePrefs, type Prefs } from "./prefs";
 import { avatarColorVar } from "./items";
 import { useCurrentUser } from "./session";
+import { useSidebarOrder } from "./useSidebarOrder";
+import { SidebarOrder } from "../design/navigation/SidebarOrder";
 import { useOpenProject } from "./useOpenProject";
 
 const settingsRoute = getRouteApi("/app/settings");
@@ -134,6 +136,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const online = save.online;
   const groups = useGroups();
   const projects = useMemo(() => projectsOf(groups.data), [groups.data]);
+  const { user } = useCurrentUser();
+  const sidebar = useSidebarOrder(groups.data, user?.id);
   const lifecycle = useLifecycle();
   const [helpQ, setHelpQ] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -247,6 +251,23 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
               { id: "apCheckedMove", label: "Checked items move to Done", hint: "A project setting, shared with its members. Set it per project on the Projects page", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/projects" })}>Projects</Button> },
             ],
           },
+          // The touch twin of the sidebar's drag and drop, on the same state (per account); guests keep the default order
+          ...(user && !user.isAnonymous
+            ? [
+                {
+                  id: "sidebarOrder",
+                  title: "Sidebar order",
+                  rows: [
+                    {
+                      id: "apSidebarOrder",
+                      label: "Groups, projects and pages",
+                      hint: "Drag a row by its handle or use the arrows; the sidebar follows. Saved to your account. A project you move to another group moves for everyone, and its items get that group's keys",
+                      body: <SidebarOrder groups={sidebar.rail} order={sidebar.order} onReorder={sidebar.onReorder} onProjectMove={sidebar.onProjectMove} canMoveProject={sidebar.canMoveProject} />,
+                    },
+                  ],
+                },
+              ]
+            : []),
           {
             id: "chrome",
             title: "Chrome",

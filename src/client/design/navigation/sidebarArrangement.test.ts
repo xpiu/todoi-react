@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { moveId, moveProject, orderBy, orderIds } from "./sidebarOrder";
+import { moveId, moveProject, orderBy, orderIds } from "./sidebarArrangement";
 
 describe("orderIds", () => {
   it("keeps the stored order and drops stale or repeated ids", () => {

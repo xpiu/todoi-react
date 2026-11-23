@@ -3,7 +3,7 @@ import { useState, type ComponentProps } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { DEFAULT_NAV, ITEM_DRAG_TYPE, Sidebar, type SidebarGroup } from "./Sidebar";
-import { moveProject } from "./sidebarOrder";
+import { moveProject } from "./sidebarArrangement";
 
 const GROUPS: SidebarGroup[] = [
   { id: "g1", name: "Helicopters Europe", projects: [{ id: "p1", name: "Helicopter sales", icon: "rocket", color: "var(--label-orange)", count: 24 }, { id: "p2", name: "Maintenance plans", icon: "wrench", color: "var(--label-teal)" }] },
