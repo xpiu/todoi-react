@@ -12,9 +12,12 @@ const AVAILABLE: FilterMenuOption[] = [
   { type: "assignee", value: "Todoi", icon: "user" },
   { type: "assignee", value: "Unassigned", icon: "user-x" },
   { type: "due", value: "Overdue", icon: "clock" },
+  { type: "due", value: "Today", icon: "calendar-check" },
+  { type: "due", value: "This week", icon: "calendar-range" },
+  { type: "due", value: "No date", icon: "calendar-off" },
   { type: "priority", value: "High", icon: "flag", iconColor: "var(--label-orange)" },
 ];
-const COUNTS = { "label:Sales": 12, "label:Urgent": 3, "assignee:Todoi": 8, "assignee:Unassigned": 5, "due:Overdue": 2, "priority:High": 4 };
+const COUNTS = { "label:Sales": 12, "label:Urgent": 3, "assignee:Todoi": 8, "assignee:Unassigned": 5, "due:Overdue": 2, "due:Today": 1, "due:This week": 6, "due:No date": 9, "priority:High": 4 };
 
 // Story state models the host; in the app this body sits in the SubNavbar's Filter Popover.
 function ControlledFilterMenu(args: FilterMenuProps) {
@@ -97,5 +100,18 @@ export const Search: Story = {
     await expect(canvas.getByText("No filters match “zeppelin”")).toBeVisible();
     await userEvent.keyboard("{Escape}");
     await expect(field).toHaveValue("");
+  },
+};
+/** Due date has four values (Design: ViewControls DUE_FILTERS): Overdue · Today · This week · No date. They OR together. */
+export const DueValues: Story = {
+  args: { filters: [{ type: "due", value: "Today" }] },
+  async play({ args, canvas, userEvent }) {
+    const due = canvas.getByRole("group", { name: "Due date" });
+    const rows = [...due.querySelectorAll('[role="checkbox"]')].map((r) => r.getAttribute("aria-label"));
+    await expect(rows).toEqual(["Overdue", "Today", "This week", "No date"]);
+    await expect(canvas.getByRole("checkbox", { name: "Today" })).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(canvas.getByRole("checkbox", { name: "This week" }));
+    await expect(args.onToggle).toHaveBeenLastCalledWith(expect.objectContaining({ type: "due", value: "This week" }));
+    await expect(canvas.getByRole("checkbox", { name: "This week" })).toHaveAttribute("aria-checked", "true");
   },
 };

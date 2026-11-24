@@ -1,5 +1,6 @@
 // Filters and sort for a project's views — pure functions over the API's Item shape so List, Board
 // and Calendar share one model, and the URL (`f`, `s`) can reproduce it. Spec: DESIGN.md › Filtering.
+import { parseDateValue, shiftISO } from "../../shared/dates";
 import type { ItemPriority } from "../../shared/enums";
 import type { Item, Label } from "../data/api";
 import type { IconName } from "../design/core/Icon";
@@ -25,6 +26,31 @@ export const FILTER_SECTIONS: ReadonlyArray<[label: string, type: string]> = [
   ["Status", "status"],
 ];
 
+/** Monday and Sunday (ISO days) of the week holding `today`. */
+export function weekRange(today: string): { start: string; end: string } {
+  const back = (parseDateValue(today)!.getDay() + 6) % 7;
+  return { start: shiftISO(today, -back)!, end: shiftISO(today, 6 - back)! };
+}
+
+/** The Due filter's values (Design: ViewControls DUE_FILTERS); they OR together like every other type. `today` is the
+ * person's day (Settings › General › Time zone, `useToday`). */
+export const DUE_FILTERS: ReadonlyArray<{ value: string; icon: IconName; test: (due: string | null, done: boolean, today: string) => boolean }> = [
+  { value: "Overdue", icon: "clock", test: (due, done, today) => !!due && !done && due < today },
+  { value: "Today", icon: "calendar-check", test: (due, _done, today) => due === today },
+  {
+    value: "This week",
+    icon: "calendar-range",
+    test: (due, _done, today) => {
+      if (!due) return false;
+      const w = weekRange(today);
+      return due >= w.start && due <= w.end;
+    },
+  },
+  { value: "No date", icon: "calendar-off", test: (due) => !due },
+];
+
+/** Does an item's due date match any of the picked Due values? */
+export const matchesDue = (values: string[], it: Pick<Item, "dueDate" | "done">, today: string) => values.some((v) => DUE_FILTERS.find((f) => f.value === v)?.test(it.dueDate, it.done, today) ?? false);
 
 /** Every filter the menu offers for this project. */
 export function availableFilters(labels: Label[], people: Person[]): FilterOption[] {
@@ -32,7 +58,7 @@ export function availableFilters(labels: Label[], people: Person[]): FilterOptio
     ...labels.map((l) => ({ type: "label", value: l.name, color: `var(--label-${l.color})` })),
     ...people.map((p) => ({ type: "assignee", value: p.name, icon: "user" as const })),
     { type: "assignee", value: "Unassigned", icon: "user-x" },
-    { type: "due", value: "Overdue", icon: "clock" },
+    ...DUE_FILTERS.map((f) => ({ type: "due", value: f.value, icon: f.icon })),
     { type: "created", value: "Last 7 days", icon: "calendar" },
     { type: "created", value: "Last 30 days", icon: "calendar" },
     { type: "created", value: "Older", icon: "calendar" },
@@ -76,7 +102,7 @@ export function matchesFilters(it: Item, filters: ViewFilter[], ctx: FilterConte
     } else if (type === "assignee") {
       const names = it.assigneeIds.map((id) => ctx.people.find((p) => p.id === id)?.name).filter(Boolean) as string[];
       ok = names.length ? names.some((n) => vals.includes(n)) : vals.includes("Unassigned");
-    } else if (type === "due") ok = !it.done && !!it.dueDate && it.dueDate < today;
+    } else if (type === "due") ok = matchesDue(vals, it, today);
     else if (type === "created") ok = vals.some((v) => (v === "Older" ? (ageDays(it.createdAt, today) ?? 0) > 30 : inWindow(it.createdAt, v === "Last 7 days" ? 7 : 30, today)));
     else if (type === "start") ok = vals.some((v) => (v === "No start date" ? !it.startDate : inWindow(it.startDate, v === "Last 7 days" ? 7 : 30, today)));
     else if (type === "priority") ok = vals.some((v) => (v === "None" ? !it.priority : !!it.priority && PRIORITY_LABEL[it.priority] === v));

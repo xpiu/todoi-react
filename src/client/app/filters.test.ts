@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item, Label } from "../data/api";
-import { availableFilters, itemComparator, matchesFilters, nextSort, sortLists } from "./filters";
+import { availableFilters, itemComparator, matchesFilters, nextSort, sortLists, weekRange } from "./filters";
 
 const label = (id: string, name: string): Label => ({ id, projectId: "p", name, color: "blue", createdAt: "", updatedAt: "" }) as Label;
 const item = (over: Partial<Item>): Item =>
@@ -21,6 +21,24 @@ describe("matchesFilters", () => {
     expect(matchesFilters(item({}), [{ type: "assignee", value: "Unassigned" }], ctx)).toBe(true);
     expect(matchesFilters(item({ assigneeIds: ["u1"] }), [{ type: "assignee", value: "Flo" }], ctx)).toBe(true);
   });
+  it("matches the four Due values in the person's day, Monday to Sunday weeks, ORed together", () => {
+    // 2026-10-01 is a Thursday: its week runs Monday 2026-09-28 to Sunday 2026-10-04.
+    expect(weekRange("2026-10-01")).toEqual({ start: "2026-09-28", end: "2026-10-04" });
+    expect(weekRange("2026-09-28")).toEqual({ start: "2026-09-28", end: "2026-10-04" });
+    expect(weekRange("2026-10-04")).toEqual({ start: "2026-09-28", end: "2026-10-04" });
+    const due = (value: string) => [{ type: "due", value }];
+    expect(matchesFilters(item({ dueDate: "2026-10-01" }), due("Today"), ctx)).toBe(true);
+    expect(matchesFilters(item({ dueDate: "2026-10-01", done: true }), due("Today"), ctx)).toBe(true);
+    expect(matchesFilters(item({ dueDate: "2026-10-02" }), due("Today"), ctx)).toBe(false);
+    expect(matchesFilters(item({ dueDate: "2026-09-28", done: true }), due("This week"), ctx)).toBe(true);
+    expect(matchesFilters(item({ dueDate: "2026-10-04" }), due("This week"), ctx)).toBe(true);
+    expect(matchesFilters(item({ dueDate: "2026-10-05" }), due("This week"), ctx)).toBe(false);
+    expect(matchesFilters(item({ dueDate: "2026-09-27" }), due("This week"), ctx)).toBe(false);
+    expect(matchesFilters(item({}), due("No date"), ctx)).toBe(true);
+    expect(matchesFilters(item({ dueDate: "2026-10-01" }), due("No date"), ctx)).toBe(false);
+    expect(matchesFilters(item({}), [...due("Overdue"), ...due("No date")], ctx)).toBe(true);
+    expect(matchesFilters(item({ dueDate: "2026-09-01" }), [...due("Overdue"), ...due("No date")], ctx)).toBe(true);
+  });
   it("windows created / start dates and maps priority and status names", () => {
     expect(matchesFilters(item({}), [{ type: "created", value: "Last 30 days" }], ctx)).toBe(true);
     expect(matchesFilters(item({}), [{ type: "created", value: "Last 7 days" }], ctx)).toBe(false);
@@ -36,6 +54,7 @@ describe("matchesFilters", () => {
     expect(av.filter((f) => f.type === "label").map((f) => f.value)).toEqual(["design", "shop"]);
     expect(av.filter((f) => f.type === "assignee").map((f) => f.value)).toEqual(["Flo", "Unassigned"]);
     expect(av.some((f) => f.type === "status" && f.value === "Backlog")).toBe(true);
+    expect(av.filter((f) => f.type === "due").map((f) => f.value)).toEqual(["Overdue", "Today", "This week", "No date"]);
   });
 });
 
