@@ -20,6 +20,7 @@ import { calendarOf, currentFeed, feedCalendar, resetFeed } from "../services/ca
 import { attachmentHeaders } from "../services/attachmentResponse";
 import { openUpload } from "../services/uploads";
 import { inviteRequestId, requestNewInvite } from "../services/inviteRequests";
+import { emailInvite, inviteUrl } from "../services/inviteEmails";
 
 export const meRoute = new Hono()
   .post("/avatar", bodyLimit({ maxSize: MAX_AVATAR_BYTES + 65536, onError: (c) => fail(c, 413, "Choose an image up to 2 MB") }), async (c) => {
@@ -132,7 +133,7 @@ export const projectInvitesRoute = new Hono()
   .get("/:id/invites", idParam, async (c) => {
     viewerOf(c);
     const rows = await db.select().from(invites).where(and(eq(invites.projectId, c.req.valid("param").id), isNull(invites.acceptedAt), isNull(invites.revokedAt)));
-    return c.json(rows.map((r) => ({ ...r, url: `${env.APP_URL}/i/${r.code}` })));
+    return c.json(rows.map((r) => ({ ...r, url: inviteUrl(r.code) })));
   })
   .post("/:id/invites", idParam, validate("json", z.object({ email: z.email().optional(), role: z.enum(["admin", "editor", "viewer"]).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
     const v = viewerOf(c);
@@ -143,7 +144,8 @@ export const projectInvitesRoute = new Hono()
       .values({ id: nanoid(), code: nanoid(12), projectId: id, email: email ?? null, role, invitedBy: v.userId, expiresAt: new Date(Date.now() + days * DAY) })
       .returning();
     await logActivity(db, { projectId: id, actorId: v.userId, type: "member", text: `invited ${email ?? "someone"} as ${role}` });
-    return c.json({ ...row!, url: `${env.APP_URL}/i/${row!.code}` }, 201);
+    const emailed = await emailInvite(row!, v);
+    return c.json({ ...row!, url: inviteUrl(row!.code), emailed }, 201);
   });
 
 export const invitesRoute = new Hono()

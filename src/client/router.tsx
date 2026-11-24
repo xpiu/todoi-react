@@ -1,6 +1,6 @@
 // Routes (DESIGN.md › Secondary pages, Saved views): projects live at /p/:id with the view state in
 // the query (`v`, `f`, `s`, or `view` for a saved view); /inbox, /projects, /groups, /search, /settings,
-// /account, /import, /docs, /docs/agents, /i/:code; /dev/ds is the primitives gallery outside the app frame.
+// /account, /import, /docs, /docs/agents, /i/:code; the emailed links' landings /reset and /verify-email; /dev/ds is the primitives gallery outside the app frame.
 import { createRootRoute, createRoute, createRouter, Outlet, redirect } from "@tanstack/react-router";
 import { lazy } from "react";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { ITEM_STATUSES } from "../shared/item-status";
 import { AppShell } from "./app/AppShell";
 import { preloadDescriptionEditor } from "./design/overlay/DescriptionEditor";
 import { ScreenError, SessionError } from "./app/RouteError";
-import { InviteScreen, LoginScreen, ResetScreen, SignupScreen } from "./app/auth/AuthScreens";
+import { InviteScreen, LoginScreen, ResetScreen, SignupScreen, VerifyEmailScreen } from "./app/auth/AuthScreens";
 import { authClient, ensureBrowserSession } from "./auth";
 import { InboxScreen } from "./app/InboxScreen";
 import { ArchiveScreen } from "./app/ArchiveScreen";
@@ -102,15 +102,18 @@ const DocsScreen = lazy(() => import("./app/DocsScreen").then((m) => ({ default:
 export const docsRoute = createRoute({ getParentRoute: () => appRoute, path: "/docs", component: () => <DocsScreen page="people" /> });
 export const agentDocsRoute = createRoute({ getParentRoute: () => appRoute, path: "/docs/agents", component: () => <DocsScreen page="agents" /> });
 const authSearch = z.object({ next: z.string().optional().catch(undefined), email: z.string().optional().catch(undefined), invite: z.string().optional().catch(undefined) });
+/** Where an emailed link lands: Better Auth adds `token` on success or `error` (a code such as INVALID_TOKEN) */
+const linkSearch = authSearch.extend({ token: z.string().optional().catch(undefined), error: z.string().optional().catch(undefined) });
 export const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: "/login", component: LoginScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
 export const signupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/signup", component: SignupScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
-export const resetRoute = createRoute({ getParentRoute: () => rootRoute, path: "/reset", component: ResetScreen, validateSearch: (s: Record<string, unknown>) => authSearch.parse(s) });
+export const resetRoute = createRoute({ getParentRoute: () => rootRoute, path: "/reset", component: ResetScreen, validateSearch: (s: Record<string, unknown>) => linkSearch.parse(s) });
+export const verifyEmailRoute = createRoute({ getParentRoute: () => rootRoute, path: "/verify-email", component: VerifyEmailScreen, validateSearch: (s: Record<string, unknown>) => linkSearch.parse(s) });
 export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: "/i/$code", component: InviteScreen });
 
 const DesignGallery = lazy(() => import("./dev/DesignGallery").then((m) => ({ default: m.DesignGallery })));
 export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/dev/ds", component: DesignGallery });
 
-const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, searchRoute, archiveRoute, settingsRoute, accountRoute, importRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, inviteRoute, galleryRoute]);
+const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, searchRoute, archiveRoute, settingsRoute, accountRoute, importRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, verifyEmailRoute, inviteRoute, galleryRoute]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true, defaultErrorComponent: ScreenError });
 

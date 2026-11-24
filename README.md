@@ -79,7 +79,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 
 Current limits:
 
-- **Email:** no delivery; admins copy/send invite links. Password reset has a request screen, but no email sender or completed reset flow.
+- **Email:** account emails (password reset, email confirmation, change of address) and invites to an address go out through Resend when `RESEND_API_KEY` is set; without it they are written to `EMAIL_DIR` (see Production). Mention, assignment and comment notifications stay in the Inbox: their email switches are stored but nothing sends them yet.
 - **Sync:** workspace JSON edits persist in IndexedDB before sending, survive reload/close and retry in order with server deduplication. Snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, preserving pending fields. Storage &amp; sync retains submitted text for conflict review; access loss purges cached content. Unsubmitted description/comment drafts use `sessionStorage`. App-shell offline caching, binary uploads and account/session actions are outside the queue. See [sync behavior](docs/sync.md).
 - **Deployment:** one API process with local attachment storage and in-process cleanup. Multiple processes would need shared persistent storage.
 - **Attachments:** 25 MiB per file; storage quotas per uploader: 100 MiB for guests, 2 GiB for accounts.

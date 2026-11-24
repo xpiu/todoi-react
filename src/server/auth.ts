@@ -9,12 +9,14 @@ import type { Context, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { nanoid } from "nanoid";
 
+import { EMAIL_LINK_HOURS, RESET_LINK_MINUTES } from "../shared/accountLinks";
 import { DEV_USER } from "../shared/devUser";
 import { db } from "./db";
 import { createHash } from "node:crypto";
 
 import { accounts, apiTokens, lists, sessions, users, verifications } from "./db/schema";
 import { DEV, env } from "./env";
+import { passwordResetEmail, sendEmail, verifyEmailEmail } from "./email";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
 import { fail } from "./errors";
 
@@ -25,7 +27,27 @@ export const auth = betterAuth({
   // Vite moves to the next port when 5173 is taken; in development any loopback port may call the API.
   trustedOrigins: [env.APP_URL, ...(DEV ? [`http://localhost:${env.PORT}`, "http://localhost:*", "http://127.0.0.1:*"] : [])],
   database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications } }),
-  emailAndPassword: { enabled: true, minPasswordLength: 10 },
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 10,
+    resetPasswordTokenExpiresIn: RESET_LINK_MINUTES * 60,
+    // The link opens /reset?token=… (or ?error=INVALID_TOKEN once used or expired); ResetScreen finishes there.
+    sendResetPassword: async ({ user, url }) => sendEmail({ to: user.email, ...passwordResetEmail({ email: user.email, url }) }),
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    expiresIn: EMAIL_LINK_HOURS * 3600,
+    sendVerificationEmail: async ({ user, url }, request) => {
+      if ((user as { isAnonymous?: boolean | null }).isAnonymous) return;
+      // Every confirmation link lands on /verify-email, whatever the asking page passed.
+      const link = new URL(url);
+      link.searchParams.set("callbackURL", `${env.APP_URL}/verify-email`);
+      const send = sendEmail({ to: user.email, ...verifyEmailEmail({ email: user.email, url: link.toString() }) });
+      // A sign-up never fails over its welcome email: Settings › Notifications can send it again.
+      if (request && new URL(request.url).pathname.endsWith("/sign-up/email")) await send.catch((error: unknown) => console.error("The confirmation email after sign-up wasn't sent", error));
+      else await send;
+    },
+  },
   plugins: [anonymous({
     generateName: () => "Guest",
     onLinkAccount: async ({ anonymousUser, newUser }) => {

@@ -125,11 +125,14 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
       onAction={act}
       onChangeRole={(mem, r) => m.setMember.mutate({ projectId: p.id, userId: mem.id, role: r })}
       onRemoveMember={(mem) => m.removeMember.mutate({ projectId: p.id, userId: mem.id }, { onSuccess: () => notify({ message: `Removed ${mem.name} from ${quote(p.name)}`, icon: "user-x", restore: snapshotUndo([{ id: mem.id, before: { role: mem.role }, after: { role: null }, restore: () => m.setMember.mutateAsync({ projectId: p.id, userId: mem.id, role: mem.role, quiet: true }) }], async (id) => { const fresh = await api.api.projects[":id"].$get({ param: { id: p.id } }).then((r) => unwrap<ProjectDetail>(r)); return { role: fresh.members.find((member) => member.userId === id)?.role ?? null }; }) }) })}
-      // Todoi does not send email: the invite is a link, copied for the admin to send themselves.
+      // The server emails the invite unless the address belongs to an account that turned invite emails off;
+      // then the link is copied for the admin to send themselves.
       onInvite={async (email, r) => {
         const invite = await m.createInvite.mutateAsync({ projectId: p.id, email, role: r, quiet: true }).catch(explain);
+        const copyLink = { undo: () => void copyAndNotify(invite.url, "Copied the invite link"), actionLabel: "Copy link", standalone: true };
+        if (invite.emailed) return notify({ message: `Emailed an invite to ${email}`, icon: "mail", ...copyLink });
         const copied = await copyText(invite.url);
-        notify({ message: copied ? `Copied an invite link for ${email}. Send it to them; Todoi doesn't email invites.` : `Created an invite for ${email}. Copy the link to send it; Todoi doesn't email invites.`, icon: "mail", ...(copied ? {} : { undo: () => void copyAndNotify(invite.url, "Copied the invite link"), actionLabel: "Copy link", standalone: true }) });
+        notify({ message: copied ? `Copied an invite link for ${email}. Send it to them yourself.` : `Created an invite for ${email}. Copy the link to send it yourself.`, icon: "mail", ...(copied ? {} : copyLink) });
       }}
       onOpenKey={(key) => {
         const n = Number(key.split("-")[1]);

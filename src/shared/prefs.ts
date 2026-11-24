@@ -25,6 +25,12 @@ export const prefsSchema = z.object({
   notifyAssignments: z.boolean(),
   notifyWatched: z.boolean(),
   inboxBadge: z.boolean(),
+  /** Email as well as the Inbox, per kind (Settings › Notifications › Email notifications). Only invites are emailed so far */
+  emailMentions: z.boolean(),
+  emailAssignments: z.boolean(),
+  emailComments: z.boolean(),
+  /** An invite to a project you can't open yet is emailed while this is on (addresses without an account always get it) */
+  emailInvites: z.boolean(),
   sidebarOrder: sidebarOrderSchema,
   /** UI language; only English ships so far */
   language: z.enum(["en", "nl", "fr", "de", "es"]),
@@ -36,7 +42,7 @@ export const prefsSchema = z.object({
 export type Prefs = z.infer<typeof prefsSchema>;
 export const prefsPatchSchema = prefsSchema.partial().refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 
-export const DEFAULT_PREFS: Prefs = { timeFormat: "24h", weekStart: "mon", dateFormat: "mdy-text", showCompleted: true, smartDates: true, defaultPriority: "none", notifyMentions: true, notifyAssignments: true, notifyWatched: true, inboxBadge: true, sidebarOrder: { top: [], projects: {} }, language: "en", timeZone: null, defaultDestination: "current" };
+export const DEFAULT_PREFS: Prefs = { timeFormat: "24h", weekStart: "mon", dateFormat: "mdy-text", showCompleted: true, smartDates: true, defaultPriority: "none", notifyMentions: true, notifyAssignments: true, notifyWatched: true, inboxBadge: true, emailMentions: true, emailAssignments: true, emailComments: false, emailInvites: true, sidebarOrder: { top: [], projects: {} }, language: "en", timeZone: null, defaultDestination: "current" };
 
 /** Stored prefs over the defaults; unknown or invalid keys (an older or newer client) are dropped. */
 export function prefsOf(stored: unknown): Prefs {

@@ -2,12 +2,12 @@
 // "new" → "done" or "expired". Spec: DESIGN.md › Sign-in.
 import { useState } from "react";
 
+import { linkSpan, RESET_LINK_MINUTES } from "../../../shared/accountLinks";
 import { Button } from "../core/Button";
 import { Checkbox } from "../core/Checkbox";
 import { AuthError, AuthLink, AuthShell, AuthState } from "./AuthShell";
 import { PasswordField } from "./PasswordField";
 
-export const RESET_LINK_MINUTES = 60;
 export type ResetStage = "request" | "sent" | "new" | "done" | "expired";
 
 export interface ResetPasswordPageProps {
@@ -29,7 +29,7 @@ export function ResetPasswordPage({ stage, email: emailProp = "", onSend, onSave
   const [others, setOthers] = useState(true);
   const validMail = /^\S+@\S+\.\S+$/.test(email.trim());
   const back = onBackToLogin ? <AuthLink label="Back to log in" onClick={onBackToLogin} /> : null;
-  const span = RESET_LINK_MINUTES >= 60 ? `${Math.round(RESET_LINK_MINUTES / 60)} hour${RESET_LINK_MINUTES >= 120 ? "s" : ""}` : `${RESET_LINK_MINUTES} minutes`;
+  const span = linkSpan(RESET_LINK_MINUTES);
   if (stage === "sent")
     return (
       <AuthShell>
