@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { db } from "../db";
 import { comments, groups, itemAssignees, items, lists, members, projects, users } from "../db/schema";
-import { fullSearch, searchItems } from "./search";
+import { fullSearch, searchItems, searchPeople } from "./search";
 
 /** A member project, someone else's public project, and two Inboxes, all with a "Rotor" item. */
 async function fixture() {
@@ -209,5 +209,13 @@ describe("full search (Search page)", () => {
     expect(await fullSearch(f.me, "nobody")).toEqual({ hits: [], total: 0 });
     // And the other person sees only their own: none of mine, not my Inbox.
     expect(ids(await fullSearch(f.other, "rotor", { archived: true }))).toEqual([f.foreign]);
+  });
+
+  it("offers the people of the viewer's own projects for the Assignee filter", async () => {
+    const f = await pageFixture();
+    await db.insert(members).values({ projectId: f.hangar, userId: f.other.userId, role: "editor" });
+    expect((await searchPeople(f.me)).map((p) => p.name)).toEqual(["Me", "Other"]);
+    // The shared project is all they have in common; the comment author who is no member is offered to no one.
+    expect((await searchPeople(f.other)).map((p) => p.name)).toEqual(["Me", "Other"]);
   });
 });

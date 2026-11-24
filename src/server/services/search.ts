@@ -9,7 +9,7 @@ import { alias, union } from "drizzle-orm/pg-core";
 import type { ItemStatus } from "../../shared/item-status";
 import { readableItemIds } from "../access";
 import { db } from "../db";
-import { comments, groups, itemAssignees, items, lists, projects, searchDocument, users } from "../db/schema";
+import { comments, groups, itemAssignees, items, lists, members, projects, searchDocument, users } from "../db/schema";
 import { itemArchived, itemIsLive, itemNotDeleted } from "./lifecycle";
 import { memberProjectIds } from "./projects";
 
@@ -85,6 +85,13 @@ export async function searchItems(viewer: Viewer, query: string, limit = SEARCH_
 }
 
 // ── Search page ───────────────────────────────────────────────────────────────
+
+/** The people the Assignee filter offers: everyone in the projects the viewer is a member of (the viewer too), by name. */
+export async function searchPeople(viewer: Viewer): Promise<Array<{ id: string; name: string }>> {
+  const mine = await memberProjectIds(viewer.userId);
+  if (!mine.length) return [];
+  return db.selectDistinct({ id: users.id, name: users.name }).from(members).innerJoin(users, eq(users.id, members.userId)).where(inArray(members.projectId, mine)).orderBy(asc(users.name), asc(users.id));
+}
 
 export const FULL_SEARCH_PAGE = 20;
 /** Shorter queries match nothing (too many prefixes). */

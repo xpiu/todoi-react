@@ -1,0 +1,239 @@
+/* SearchResults — the Search page behind the top bar's quick dropdown. Tokens only. Minimal: minimal-components.css › Search page. */
+@layer components {
+  .td-search-page {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--chrome-canvas);
+    box-sizing: border-box;
+  }
+  .td-search-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .td-search-head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+  }
+  .td-search-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 8px 0 10px;
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    box-sizing: border-box;
+  }
+  .td-search-field > svg {
+    flex: none;
+    color: var(--ink-600);
+  }
+  .td-search-field:focus-within {
+    border-color: var(--blue-500);
+    box-shadow: 0 0 0 1px var(--blue-500);
+  }
+  .td-search-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: none;
+    padding: 0;
+    font: 400 14px/20px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-search-input::placeholder {
+    color: var(--ink-400);
+  }
+  .td-search-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border: 0;
+    padding: 0;
+    background: none;
+    border-radius: var(--radius-xs);
+    color: var(--ink-400);
+    cursor: pointer;
+  }
+  .td-search-clear:hover {
+    background: var(--action-subtle);
+    color: var(--ink-900);
+  }
+  .td-search-clear:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-search-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .td-search-archived {
+    margin: 0 4px;
+  }
+  .td-search-count {
+    min-height: 20px;
+    padding: 4px 2px 0;
+    font: 400 13px/20px var(--font-ui);
+    color: var(--chrome-text);
+  }
+  .td-search-body {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .td-search-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .td-search-item + .td-search-item {
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-search-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 13px;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: var(--ink-900);
+    font: 400 14px/20px var(--font-ui);
+  }
+  .td-search-row:hover {
+    background: var(--action-subtle);
+  }
+  .td-search-row:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
+  }
+  .td-search-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .td-search-key {
+    flex: none;
+    font: 500 11px/16px var(--font-mono);
+    letter-spacing: 0;
+    color: var(--ink-400);
+  }
+  .td-search-title {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .td-search-row[data-done="true"] .td-search-title,
+  .td-search-row[data-archived="true"] .td-search-title {
+    color: var(--ink-600);
+  }
+  .td-search-badge {
+    flex: none;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: var(--radius-xs);
+    background: var(--action-subtle);
+    font: 500 11px/18px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-search-meta {
+    flex: none;
+    max-width: 40%;
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 400 12px/16px var(--font-ui);
+    color: var(--ink-400);
+  }
+  .td-search-match {
+    font: 400 13px/18px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-search-where {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: center;
+    font: 500 12px/16px var(--font-ui);
+    color: var(--ink-400);
+  }
+  .td-search-snippet {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-search-row mark {
+    background: var(--label-yellow);
+    color: var(--label-text, var(--ink-900));
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+  .td-search-skeleton {
+    padding: 12px 13px;
+  }
+  .td-search-skeleton + .td-search-skeleton {
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-search-more {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 13px;
+    border-top: 1px solid var(--border-divider);
+  }
+
+  /* Touch: rows and the field grow to 44px targets. Phone: the project path drops under the title so the title keeps the line */
+  html[data-touch="true"] .td-search-field {
+    height: 44px;
+  }
+  html[data-touch="true"] .td-search-row {
+    padding: 12px 13px;
+  }
+  html[data-device="phone"] .td-search-page {
+    padding: 12px;
+  }
+  html[data-device="phone"] .td-search-line:first-child {
+    flex-wrap: wrap;
+  }
+  /* The title shrinks beside the key rather than wrapping under it */
+  html[data-device="phone"] .td-search-title {
+    flex: 1 1 0;
+  }
+  html[data-device="phone"] .td-search-meta {
+    flex-basis: 100%;
+    max-width: 100%;
+    margin-left: 0;
+  }
+  html[data-device="phone"] .td-search-filters > * {
+    flex: 1 1 140px;
+  }
+}

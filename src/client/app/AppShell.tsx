@@ -67,7 +67,7 @@ const SORT_DIMS: ReadonlyArray<[string, SortDim]> = [
 ];
 
 /** The pages outside a project whose title leads with Back */
-const BACK_SECTIONS = new Set(["inbox", "projects", "groups", "settings", "account"]);
+const BACK_SECTIONS = new Set(["inbox", "projects", "groups", "search", "settings", "account"]);
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -173,7 +173,7 @@ export function AppShell() {
       : backTarget
         ? () => void navigate({ to: "/p/$projectId", params: { projectId: backTarget.id }, search: backTarget.id === lastProjectId ? getLastProjectView() : {} })
         : () => void navigate({ to: "/projects" });
-  const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
+  const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "search" ? "Search" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
   const resolved = useResolvedView(projectId ?? "", projectMatch?.search ?? {}, project.data?.defaultView);
   const state = projectMatch ? resolved.state : null;

@@ -91,3 +91,6 @@ export type MoveResult = InferResponseType<(typeof api.api.items)[":id"]["move"]
 export type ItemLocation = InferResponseType<(typeof api.api.items)[":id"]["$get"], 200>;
 export type DuplicateResult = InferResponseType<(typeof api.api.items)[":id"]["duplicate"]["$post"], 201>;
 export type SearchHit = InferResponseType<typeof api.api.search.$get, 200>[number];
+export type FullSearchPage = InferResponseType<typeof api.api.search.full.$get, 200>;
+export type FullSearchHit = FullSearchPage["hits"][number];
+export type SearchPerson = InferResponseType<typeof api.api.search.people.$get, 200>[number];

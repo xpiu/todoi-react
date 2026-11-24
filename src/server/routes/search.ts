@@ -3,12 +3,13 @@ import { z } from "zod";
 
 import { ITEM_STATUSES } from "../../shared/item-status";
 import { viewerOf } from "../auth";
-import { FULL_SEARCH_PAGE, SEARCH_LIMIT, fullSearch, searchItems } from "../services/search";
+import { FULL_SEARCH_PAGE, SEARCH_LIMIT, fullSearch, searchItems, searchPeople } from "../services/search";
 import { validate } from "../errors";
 
 // GET /api/search?q= — the viewer's own items only (member projects + Inbox); see services/search.
 // GET /api/search/full?q=&projectId=&status=&assignee=&archived=&offset=&limit= — the Search page:
 // titles, descriptions and comments, one hit per item with its best match, and the total.
+// GET /api/search/people — the Search page's Assignee filter: everyone in the viewer's projects.
 export const searchRoute = new Hono()
   .get("/", validate("query", z.object({ q: z.string().max(200), limit: z.coerce.number().int().min(1).max(50).default(SEARCH_LIMIT) })), async (c) => {
     const { q, limit } = c.req.valid("query");
@@ -33,4 +34,6 @@ export const searchRoute = new Hono()
       const { q, offset, limit, archived, ...filters } = c.req.valid("query");
       return c.json(await fullSearch(viewerOf(c), q, { ...filters, archived: archived === "true" }, offset, limit));
     },
-  );
+  )
+  // GET /api/search/people — whom the Search page's Assignee filter offers.
+  .get("/people", async (c) => c.json(await searchPeople(viewerOf(c))));

@@ -92,6 +92,7 @@ const CUSTOM = {
  * the snapped glyphs (list, kanban, calendar…) keep their own shapes and take precedence.
  */
 const DESIGN_LUCIDE: Partial<Record<LucideIconName, SvgNode[]>> = {
+  type: [["path", { d: "M4 7V4h16v3" }], ["path", { d: "M9 20h6" }], ["path", { d: "M12 4v16" }]],
   "shopping-cart": [["circle", { cx: 8, cy: 21, r: 1 }], ["circle", { cx: 19, cy: 21, r: 1 }], ["path", { d: "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" }]],
   "book-open": [["path", { d: "M12 7v14" }], ["path", { d: "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" }]],
   camera: [["path", { d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" }], ["circle", { cx: 12, cy: 13, r: 3 }]],

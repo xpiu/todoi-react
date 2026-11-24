@@ -1,8 +1,9 @@
 // TanStack Query hooks for the workspace: groups + projects (sidebar), one project with its lists,
 // the items of a project or the Inbox, labels. Keys are grouped so a mutation can invalidate a scope.
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions, useQuery } from "@tanstack/react-query";
 
-import { api, ApiError, unwrap, type GroupWithProjects, type Item, type ItemDetails, type ItemLocation, type Label, type ProjectDetail, type ActivityEntry, type SearchHit } from "./api";
+import type { ItemStatus } from "../../shared/item-status";
+import { api, ApiError, unwrap, type GroupWithProjects, type Item, type ItemDetails, type ItemLocation, type Label, type ProjectDetail, type ActivityEntry, type FullSearchPage, type SearchHit, type SearchPerson } from "./api";
 
 export const keys = {
   groups: ["groups"] as const,
@@ -14,6 +15,9 @@ export const keys = {
   inboxUnread: ["inbox", "unread"] as const,
   activity: (projectId: string) => ["activity", projectId] as const,
   search: (q: string) => ["search", q] as const,
+  // Under "search", so item changes refresh them too (ITEM_DEPENDENTS); not kept for offline use (sync.ts queryPath).
+  fullSearch: (p: FullSearchParams) => ["search", { full: p }] as const,
+  searchPeople: ["search", { people: true }] as const,
 };
 
 export const groupsQuery = () =>
@@ -85,6 +89,36 @@ export const searchQuery = (q: string) =>
     queryFn: ({ signal }) => api.api.search.$get({ query: { q } }, { init: { signal } }).then((r) => unwrap<SearchHit[]>(r)),
     enabled: !!q,
     staleTime: 10_000,
+  });
+
+/** The Search page's request: the query plus its filters (`assignee: "none"` = unassigned). */
+export interface FullSearchParams {
+  q: string;
+  projectId?: string;
+  status?: ItemStatus;
+  assignee?: string;
+  archived?: boolean;
+}
+export const FULL_SEARCH_PAGE = 20;
+/** The Search page: titles, descriptions and comments, a page of 20 at a time with the total. */
+export const fullSearchQuery = (p: FullSearchParams) =>
+  infiniteQueryOptions({
+    queryKey: keys.fullSearch(p),
+    queryFn: ({ pageParam, signal }) =>
+      api.api.search.full
+        .$get({ query: { q: p.q, projectId: p.projectId, status: p.status, assignee: p.assignee, archived: p.archived ? "true" : undefined, offset: String(pageParam), limit: String(FULL_SEARCH_PAGE) } }, { init: { signal } })
+        .then((r) => unwrap<FullSearchPage>(r)),
+    initialPageParam: 0,
+    getNextPageParam: (last, _pages, offset) => (offset + FULL_SEARCH_PAGE < last.total ? offset + FULL_SEARCH_PAGE : undefined),
+    staleTime: 10_000,
+  });
+
+/** Whom the Search page's Assignee filter offers. */
+export const searchPeopleQuery = () =>
+  queryOptions({
+    queryKey: keys.searchPeople,
+    queryFn: ({ signal }) => api.api.search.people.$get(undefined, { init: { signal } }).then((r) => unwrap<SearchPerson[]>(r)),
+    staleTime: 60_000,
   });
 
 export const useGroups = () => useQuery(groupsQuery());

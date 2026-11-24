@@ -143,7 +143,8 @@ function queryPath(key: readonly unknown[]): string | undefined {
   }
   if (kind === "item") return `/api/items/${id}${detail === "details" ? "/details" : ""}`;
   if (kind === "activity") return `/api/activity?projectId=${id}`;
-  if (kind === "search") return `/api/search?q=${encodeURIComponent(String(id))}`;
+  // The dropdown's ["search", q]; the Search page's pages and people are not kept for offline use.
+  if (kind === "search") return typeof id === "string" ? `/api/search?q=${encodeURIComponent(id)}` : undefined;
   if (kind === "inbox" && id === "unread") return "/api/inbox/unread";
   if (kind === "archive") return id && id !== "all" ? `/api/archive?projectId=${id}` : "/api/archive";
   return undefined;

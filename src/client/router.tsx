@@ -1,11 +1,12 @@
 // Routes (DESIGN.md › Secondary pages, Saved views): projects live at /p/:id with the view state in
-// the query (`v`, `f`, `s`, or `view` for a saved view); /inbox, /projects, /groups, /settings,
+// the query (`v`, `f`, `s`, or `view` for a saved view); /inbox, /projects, /groups, /search, /settings,
 // /account, /import, /docs, /docs/agents, /i/:code; /dev/ds is the primitives gallery outside the app frame.
 import { createRootRoute, createRoute, createRouter, Outlet, redirect } from "@tanstack/react-router";
 import { lazy } from "react";
 import { z } from "zod";
 
 import { GROUP_KEYS, PROJECT_VIEWS } from "../shared/enums";
+import { ITEM_STATUSES } from "../shared/item-status";
 import { AppShell } from "./app/AppShell";
 import { preloadDescriptionEditor } from "./design/overlay/DescriptionEditor";
 import { ScreenError, SessionError } from "./app/RouteError";
@@ -16,6 +17,7 @@ import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
 import { ProjectsScreen } from "./app/ProjectsScreen";
 import { ProjectScreen } from "./app/ProjectScreen";
+import { SearchScreen } from "./app/SearchScreen";
 import { queryClient } from "./queryClient";
 import { groupsQuery } from "./data/queries";
 
@@ -67,6 +69,18 @@ export const projectRoute = createRoute({
 export const inboxRoute = createRoute({ getParentRoute: () => appRoute, path: "/inbox", component: InboxScreen, validateSearch: (search: Record<string, unknown>) => z.object({ item: z.string().optional().catch(undefined), edit: z.boolean().optional().catch(undefined), capture: z.boolean().optional().catch(undefined) }).parse(search) });
 export const projectsRoute = createRoute({ getParentRoute: () => appRoute, path: "/projects", component: ProjectsScreen });
 export const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: "/groups", component: GroupsScreen });
+// The Search page: the query and its filters, and the open item (overlay over the results).
+const searchPageSchema = z.object({
+  q: z.string().max(200).optional().catch(undefined),
+  project: z.string().optional().catch(undefined),
+  status: z.enum(ITEM_STATUSES).optional().catch(undefined),
+  /** A user id, or "__none" for unassigned */
+  assignee: z.string().optional().catch(undefined),
+  archived: z.boolean().optional().catch(undefined),
+  item: z.string().optional().catch(undefined),
+  edit: z.boolean().optional().catch(undefined),
+});
+export const searchRoute = createRoute({ getParentRoute: () => appRoute, path: "/search", component: SearchScreen, validateSearch: (search: Record<string, unknown>) => searchPageSchema.parse(search) });
 export const archiveRoute = createRoute({ getParentRoute: () => appRoute, path: "/archive", component: ArchiveScreen, validateSearch: (search: Record<string, unknown>) => z.object({ project: z.string().optional().catch(undefined) }).parse(search) });
 // Settings, Account, Import and Docs load on demand, like the design gallery.
 const loadSettings = () => import("./app/SettingsScreen");
@@ -96,7 +110,7 @@ export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: 
 const DesignGallery = lazy(() => import("./dev/DesignGallery").then((m) => ({ default: m.DesignGallery })));
 export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/dev/ds", component: DesignGallery });
 
-const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, archiveRoute, settingsRoute, accountRoute, importRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, inviteRoute, galleryRoute]);
+const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, searchRoute, archiveRoute, settingsRoute, accountRoute, importRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, inviteRoute, galleryRoute]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true, defaultErrorComponent: ScreenError });
 
