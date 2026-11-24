@@ -194,14 +194,30 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     }
   };
 
+  /** One field edit with its undoable toast (a Board quick pick, a calendar drop): the toast follows the server's answer. */
+  const editWithUndo = (id: string, before: Record<string, unknown>, after: Record<string, unknown>, message: string, icon: "clock" | "flag" | "circle-dot" | "calendar" | "calendar-off") =>
+    updateItem.mutate({ id, ...after }, { onSuccess: () => notify({ message, icon, restore: snapshotUndo([{ id, before, after, restore: () => updateItem.mutateAsync({ id, ...before, quiet: true }) }]) }) });
+
   /** Calendar drop: the item's start and due move together by the days dragged (a range keeps its length); one Undo. */
   const reschedule = (id: string, from: string, to: string) => {
     const it = byId(id);
     const n = daysBetweenISO(from, to);
     if (!it || !it.dueDate || !n) return;
-    const prev = { startDate: it.startDate, dueDate: it.dueDate };
     const next = { startDate: shiftISO(it.startDate, n), dueDate: shiftISO(it.dueDate, n) };
-    updateItem.mutate({ id, ...next }, { onSuccess: () => notify({ message: `Moved ${quote(it.title)} to ${formatDateRange(next.startDate, next.dueDate, null, { year: "auto" })}`, icon: "calendar", restore: snapshotUndo([{ id, before: prev, after: next, restore: () => updateItem.mutateAsync({ id, ...prev, quiet: true }) }]) }) });
+    editWithUndo(id, { startDate: it.startDate, dueDate: it.dueDate }, next, `Moved ${quote(it.title)} to ${formatDateRange(next.startDate, next.dueDate, null, { year: "auto" })}`, "calendar");
+  };
+  /** Calendar "No date" tray → a day: the item gets that due date (a later start moves back to it, as in the Dates picker); one Undo. */
+  const schedule = (id: string, due: string) => {
+    const it = byId(id);
+    if (!it || it.dueDate === due) return;
+    const next = { startDate: it.startDate && it.startDate > due ? due : it.startDate, dueDate: due };
+    editWithUndo(id, { startDate: it.startDate, dueDate: it.dueDate }, next, `Due date set to ${formatDate(due, { weekday: true, year: "auto" })} · ${quote(it.title)}`, "calendar");
+  };
+  /** Calendar chip → the "No date" tray: the due date and its time go, the start stays; one Undo. */
+  const clearDue = (id: string) => {
+    const it = byId(id);
+    if (!it?.dueDate) return;
+    editWithUndo(id, { dueDate: it.dueDate, dueTime: it.dueTime }, { dueDate: null, dueTime: null }, `Due date cleared · ${quote(it.title)}`, "calendar-off");
   };
 
   /** Calendar "+": a fresh item due that day in the first list, undoable (the overlay then names it). */
@@ -453,9 +469,6 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     onDeleteLabel: (l: PickableLabel) => labelOps.remove.mutate({ id: l.id }),
   };
 
-  /** One field edit with its undoable toast (a Board quick pick): the toast follows the server's answer. */
-  const editWithUndo = (id: string, before: Record<string, unknown>, after: Record<string, unknown>, message: string, icon: "clock" | "flag" | "circle-dot") =>
-    updateItem.mutate({ id, ...after }, { onSuccess: () => notify({ message, icon, restore: snapshotUndo([{ id, before, after, restore: () => updateItem.mutateAsync({ id, ...before, quiet: true }) }]) }) });
   const firstName = (userId: string) => {
     const p = people.find((x) => x.id === userId);
     return p ? (p.nickname || p.name.split(" ")[0]) : "someone";
@@ -525,5 +538,5 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     setAssignees.mutate({ id, userIds: patch.assigneeIds }, { onSuccess: () => notify({ message: text, icon: "user-plus", restore: snapshotUndo([{ id, before: { assigneeIds: before }, after: { assigneeIds: patch.assigneeIds }, restore: () => setAssignees.mutateAsync({ id, userIds: before }) }]) }) });
   };
 
-  return { labelHandlers, quickEdit, groupMove, reorderSubitem, moveSubitem, lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
+  return { labelHandlers, quickEdit, groupMove, reorderSubitem, moveSubitem, lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, schedule, clearDue, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
 }

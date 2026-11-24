@@ -89,6 +89,7 @@
   "td-calhead-ctl": "td-calendar-header-controls",
   "td-calhead-spacer": "td-calendar-header-spacer",
   "td-calhead-title": "td-calendar-header-title",
+  "td-calendar-body": "td-calendar-view-body",
   "td-calmini": "td-calendar-mini",
   "td-calmini-day": "td-calendar-mini-day",
   "td-calmini-dot": "td-calendar-mini-dot",

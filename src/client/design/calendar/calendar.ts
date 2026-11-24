@@ -1,6 +1,6 @@
 // Calendar model — pure helpers shared by the grid, the day list and the year view. Items land on
-// their due day; an item with a start and a due at least a day apart is a span. Undated items never
-// reach the calendar (the List view is where they live). Spec: DESIGN.md › Views › Calendar.
+// their due day; an item with a start and a due at least a day apart is a span. Open items without a
+// due date sit in the "No date" tray beside the Month and Week grids. Spec: DESIGN.md › Views › Calendar.
 import { addDays, addMonths, daysBetween, daysBetweenISO, parseDateValue, sameDay, toISO } from "../core/dates";
 
 export type { DateInput } from "../core/dates";
@@ -18,6 +18,8 @@ export interface CalendarItem {
   done?: boolean;
   due?: string | null;
   start?: string | null;
+  /** The item's list, after the key on a "No date" tray row */
+  listName?: string;
   /** The ListRow fields the day list shows */
   priority?: "Urgent" | "High" | "Medium" | "Low";
   assignees?: Array<{ name: string; src?: string; color?: string }>;
@@ -25,6 +27,14 @@ export interface CalendarItem {
   attachments?: number;
   dueState?: "default" | "overdue" | "complete";
 }
+
+/** dataTransfer type a "No date" tray row adds to its drag: a day takes it as "set the due date", the tray ignores it. */
+export const TRAY_DRAG_TYPE = "application/x-td-undated";
+/** dataTransfer type a grid chip or span bar adds to its drag: the tray takes it as "clear the due date". */
+export const CHIP_DRAG_TYPE = "application/x-td-calendar-item";
+
+/** Has no due date (start-only items count as undated) */
+export const isUndated = (it: Pick<CalendarItem, "due">): boolean => !parseDateValue(it.due);
 
 export type CalendarPeriod = "day" | "week" | "month" | "year";
 export const CALENDAR_PERIODS: ReadonlyArray<CalendarPeriod> = ["day", "week", "month", "year"];

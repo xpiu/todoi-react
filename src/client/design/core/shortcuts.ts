@@ -160,6 +160,7 @@ export const SHORTCUT_SECTIONS: ReadonlyArray<ShortcutSection> = [
   {
     title: "Calendar",
     rows: [
+      [["shift", "+", "D"], "Due date of the focused item or “No date” row: pick a day, or Clear to send it to No date"],
       [["←", "↑", "↓", "→"], "Move day focus inside the grid"],
       [["←", "→"], "Previous / next period, when focus is outside the grid"],
       [["PageUp", "PageDown"], "Previous / next period"],
@@ -194,7 +195,7 @@ export const SHORTCUTS = {
     if (/^[0-4]$/.test(k)) return `priority-${Number(k) as 0 | 1 | 2 | 3 | 4}`;
     return null;
   },
-  /** Board card quick pickers: A, L, shift+D open that field's picker at its icon. Plain L never follows G (callers check the chord first). */
+  /** Board card quick pickers: A, L, shift+D open that field's picker at its icon; shift+D also on a calendar chip or "No date" row. Plain L never follows G (callers check the chord first). */
   itemQuickEdit(e: KeyEvt): "assignees" | "labels" | "dates" | null {
     if (!noMod(e)) return null;
     const kk = low(e);

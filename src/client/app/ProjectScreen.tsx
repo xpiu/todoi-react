@@ -25,6 +25,7 @@ import type { SelectMode } from "../design/core/KeyNav";
 import { isTyping, SHORTCUTS, type ItemAction } from "../design/core/shortcuts";
 import { ViewSkeleton } from "../design/core/Skeleton";
 import { useTouchDrag } from "../design/core/touchDrag";
+import { useViewport } from "../design/core/viewport";
 import { ListRow } from "../design/list/ListRow";
 import { ListGroups, type GroupDropCue } from "../design/list/ListGroups";
 import { ListSection } from "../design/list/ListSection";
@@ -49,7 +50,8 @@ import { formatDate } from "../design/core/dates";
 import { usePrefs } from "./prefs";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
-import { peopleOf } from "./session";
+import { peopleOf, useCurrentUser } from "./session";
+import { usePersistedFlag } from "./usePersistedFlag";
 import { useToday } from "./today";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import { useResolvedView } from "./useResolvedView";
@@ -749,23 +751,58 @@ function ProjectBoard(props: ViewProps) {
   );
 }
 
-/** Calendar: dated items (filters apply) on the grid; drag a chip to reschedule; "+" adds an item due that day. */
+/** The "No date" tray's open state, per device (it starts closed on a phone) */
+const CALENDAR_TRAY_KEY = "td-calendar-tray";
+
+/**
+ * Calendar: dated items (filters apply) on the grid; drag a chip to reschedule; "+" adds an item due that day.
+ * Open items without a due date (filters apply) sit in the "No date" tray: a day sets their date, a chip
+ * dropped there loses it. Viewers only look.
+ */
 function ProjectCalendar({ projectId, project, items, labels, filters, openItem }: ViewProps) {
   const actions = useProjectActions(projectId, project, items, labels);
   const ctx = useFilterContext(project, labels);
   const { today } = ctx;
   const showCompleted = usePrefs((s) => s.showCompleted);
-  const calItems = useMemo<CalendarItem[]>(() => {
-    const visibleListIds = new Set(actions.lists.map((l) => l.id));
+  const { user } = useCurrentUser();
+  const role = project.members.find((m) => m.userId === user?.id)?.role;
+  const readOnly = !role || role === "viewer";
+  const phone = useViewport().device === "phone";
+  const [trayOpen, setTrayOpen] = usePersistedFlag(CALENDAR_TRAY_KEY, !phone);
+  const { calItems, trayCount } = useMemo(() => {
+    const listName = new Map(actions.lists.map((l) => [l.id, l.name]));
     const subs = new Map<string, Item[]>();
     for (const it of items) if (it.parentItemId) subs.set(it.parentItemId, [...(subs.get(it.parentItemId) ?? []), it]);
-    return filterViewItems(items, filters, ctx, showCompleted)
-      .filter((it) => !it.parentItemId && it.dueDate && visibleListIds.has(it.listId))
-      .map((it) => {
+    // Top-level items in visible lists; the tray holds the open ones without a due date.
+    const shown = (it: Item) => !it.parentItemId && listName.has(it.listId);
+    const undated = (it: Item) => shown(it) && !it.dueDate && !it.done;
+    const out = filterViewItems(items, filters, ctx, showCompleted)
+      .filter((it) => shown(it) && (it.dueDate || !it.done))
+      .map((it): CalendarItem => {
         const row = rowsForList([it, ...(subs.get(it.id) ?? [])], it.listId, { prefix: project.keyPrefix, labels, people: actions.people, today })[0]!;
-        return { id: it.id, title: it.title, itemId: row.itemId, labels: row.labels.map((l) => (typeof l === "string" ? { color: l } : l)), done: it.done, due: it.dueDate, start: it.startDate, priority: row.priority, assignees: row.assignees.map((a) => (typeof a === "string" ? { name: a } : a)), subitems: row.subitems.map((s) => ({ id: s.id, title: s.title, itemId: s.itemId, done: s.done })), dueState: row.dueState };
+        return { id: it.id, title: it.title, itemId: row.itemId, listName: listName.get(it.listId), labels: row.labels.map((l) => (typeof l === "string" ? { color: l } : l)), done: it.done, due: it.dueDate, start: it.startDate, priority: row.priority, assignees: row.assignees.map((a) => (typeof a === "string" ? { name: a } : a)), subitems: row.subitems.map((s) => ({ id: s.id, title: s.title, itemId: s.itemId, done: s.done })), dueState: row.dueState };
       });
+    // While filters hide some, the count says so: "1 of 5".
+    const total = items.filter(undated).length;
+    const n = out.filter((it) => !it.due).length;
+    return { calItems: out, trayCount: filters.length && n !== total ? `${n} of ${total}` : undefined };
   }, [items, filters, ctx, showCompleted, actions.lists, actions.people, project.keyPrefix, labels, today]);
   if (!actions.lists.length) return <NoLists actions={actions} />;
-  return <CalendarView items={calItems} today={today} onOpenItem={(id) => openItem(id)} onReschedule={actions.reschedule} onAddItem={actions.addItemOn} onToggleDone={actions.setDone} onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)} />;
+  return (
+    <CalendarView
+      items={calItems}
+      today={today}
+      onOpenItem={(id) => openItem(id)}
+      onReschedule={actions.reschedule}
+      onAddItem={actions.addItemOn}
+      onToggleDone={actions.setDone}
+      onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)}
+      trayOpen={trayOpen}
+      onTrayOpenChange={setTrayOpen}
+      trayCount={trayCount}
+      onSchedule={actions.schedule}
+      onClearDate={actions.clearDue}
+      readOnly={readOnly}
+    />
+  );
 }

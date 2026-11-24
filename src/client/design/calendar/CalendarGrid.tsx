@@ -1,13 +1,15 @@
 // CalendarGrid — the month / week grid: weekday header, week rows with day cells (number, hover +),
 // span bars laid in lanes, chips per day with "+N more" when the cell is full. Keyboard: arrows move
 // the focused day (crossing a period edge navigates), Enter opens the day. Native drag and the touch
-// long-press layer both move a chip or a span bar, whole range, by the days dragged. Spec: DESIGN.md › Calendar.
+// long-press layer both move a chip or a span bar, whole range, by the days dragged. A "No date" tray row
+// dropped on a day sets its due date (`onSchedule`); a chip released outside every day goes to
+// `onDropOutside` (the tray clears its due date). Spec: DESIGN.md › Calendar.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from "react";
 
 import { isReadOnly } from "../auth/GuestBar";
 import { Icon } from "../core/Icon";
 import { useTouchDrag } from "../core/touchDrag";
-import { addDays, daysBetweenISO, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, weeksFor, type CalendarItem } from "./calendar";
+import { addDays, CHIP_DRAG_TYPE, daysBetweenISO, isSpan, parseDateValue, placeSpans, rankChip, sameDay, toISO, TRAY_DRAG_TYPE, weeksFor, type CalendarItem } from "./calendar";
 import { currentDay, dateConventions } from "../core/dates";
 import { CalendarItemChip } from "./CalendarItemChip";
 import "../core/text.css";
@@ -30,6 +32,14 @@ export interface CalendarGridProps {
   onNavigateDate?: (iso: string) => void;
   /** The day the view wants focused (after a navigation) */
   focusDate?: string | null;
+  /** A "No date" tray row dropped on a day (native drag): set that item's due date */
+  onSchedule?: (id: string, iso: string) => void;
+  /** A day to tint as the drop target of a drag the grid does not own (a tray row held over it by touch) */
+  dropDay?: string | null;
+  /** Touch drag only: the element under the finger on every move, null when the drag ends (the view lights the tray) */
+  onDragTarget?: (target: Element | null) => void;
+  /** Touch drag only: a chip released outside every day cell (the view: on the tray, clear the due date) */
+  onDropOutside?: (id: string, target: Element | null) => void;
   style?: CSSProperties;
   className?: string;
 }
@@ -37,7 +47,7 @@ export interface CalendarGridProps {
 /** Cell geometry (px) the CSS also uses: lane height and the number row plus padding. The chip pitch comes from the theme (--size-cal-chip-pitch). */
 const LANE = 20, CELL_PAD = 26 + 4, DEFAULT_PITCH = 25;
 
-export function CalendarGrid({ date, period = "month", items, today, weekStartsOn = dateConventions().weekStart, showItemIds = true, showLabels = true, onOpenItem, onAddItem, onShowMore, onReschedule, onNavigateDate, focusDate, style, className }: CalendarGridProps) {
+export function CalendarGrid({ date, period = "month", items, today, weekStartsOn = dateConventions().weekStart, showItemIds = true, showLabels = true, onOpenItem, onAddItem, onShowMore, onReschedule, onNavigateDate, focusDate, onSchedule, dropDay, onDragTarget, onDropOutside, style, className }: CalendarGridProps) {
   const [now] = useState(() => currentDay());
   const todayD = today ?? now;
   const dateKey = toISO(date)!;
@@ -146,9 +156,20 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
       if (isReadOnly(el)) return false;
       return begin(el.getAttribute("data-drag-id")!, el.getAttribute("data-drag-from") ?? isoAt(p.x, p.y));
     },
-    onMove: (p) => setDropIso(isoUnder(p.target)),
-    onDrop: (p) => end(isoUnder(p.target)),
-    onCancel: () => end(null),
+    onMove: (p) => {
+      setDropIso(isoUnder(p.target));
+      onDragTarget?.(p.target);
+    },
+    onDrop: (p) => {
+      const to = isoUnder(p.target);
+      if (!to && dragging) onDropOutside?.(dragging.id, p.target);
+      onDragTarget?.(null);
+      end(to);
+    },
+    onCancel: () => {
+      onDragTarget?.(null);
+      end(null);
+    },
   });
   const dragStart = (id: string, from: string | null) => (e: DragEvent<HTMLElement>) => {
     if (isReadOnly(e.currentTarget) || begin(id, from ?? isoAt(e.clientX, e.clientY)) === false) {
@@ -156,13 +177,16 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
       return;
     }
     e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.setData(CHIP_DRAG_TYPE, id);
     e.dataTransfer.effectAllowed = "move";
   };
+  // A tray row's drag starts outside the grid: the days take it when the view handles `onSchedule`.
+  const fromTray = (e: DragEvent) => !!onSchedule && e.dataTransfer.types.includes(TRAY_DRAG_TYPE);
   const dropHandlers = (dIso: string) =>
-    onReschedule
+    onReschedule || onSchedule
       ? {
           onDragOver: (e: DragEvent) => {
-            if (!dragging) return;
+            if (!dragging && !fromTray(e)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
             setDropIso(dIso);
@@ -170,7 +194,10 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
           onDragLeave: () => setDropIso((x) => (x === dIso ? null : x)),
           onDrop: (e: DragEvent) => {
             e.preventDefault();
-            end(dIso);
+            if (dragging) return end(dIso);
+            setDropIso(null);
+            const id = fromTray(e) ? e.dataTransfer.getData("text/plain") : "";
+            if (id) onSchedule?.(id, dIso);
           },
         }
       : {};
@@ -213,7 +240,8 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
           );
         })}
       </div>
-      <div className="td-calendar-weeks" ref={wrapRef}>
+      {/* A drag that ends anywhere else (on the tray, outside the window) still clears the drag state */}
+      <div className="td-calendar-weeks" ref={wrapRef} onDragEnd={() => (dragging || dropIso ? end(null) : undefined)}>
         {weeks.map((days, wi) => {
           const L = lanes[wi]!;
           const slots = Math.max(0, Math.floor((weekH[wi]! - CELL_PAD - L * LANE) / pitch));
@@ -237,7 +265,7 @@ export function CalendarGrid({ date, period = "month", items, today, weekStartsO
                     role="gridcell"
                     data-iso={dIso}
                     style={{ gridColumn: di + 1 }}
-                    className={"td-calendar-cell" + (wk ? " is-wknd" : "") + (dropDays.has(dIso) || dropIso === dIso ? " is-drop" : "")}
+                    className={"td-calendar-cell" + (wk ? " is-wknd" : "") + (dropDays.has(dIso) || dropIso === dIso || dropDay === dIso ? " is-drop" : "")}
                     ref={(el) => {
                       cellRefs.current[dIso] = el;
                     }}

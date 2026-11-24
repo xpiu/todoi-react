@@ -1366,3 +1366,43 @@ html[data-theme="minimal"] .td-list-section[data-drop="refuse"] .td-list-section
 html[data-theme="minimal"] .td-list-section-dropnote{font:400 11px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-list-section-dropnote svg{width:14px;height:14px}
 html[data-theme="minimal"][data-device="phone"] .td-list-section-dropnote{margin:0 0 0 22px}
+/* ── Calendar tray and Subscribe dialog (Design, 2026-11-24): the tray is a ruled column beside the grid — no surface, a hairline on its grid side, rows as text over hairlines; the dialog's link field is an underlined mono line */
+html[data-theme="minimal"] .td-calendar-view-body[data-tray="true"]{gap:24px}
+html[data-theme="minimal"] .td-calendar-tray{width:196px;padding:0 0 0 24px;background:none;border-radius:0;box-shadow:none;border-left:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-tray[data-drop="true"]{box-shadow:none;border-left-color:var(--ink-900);background:var(--blue-100)}
+html[data-theme="minimal"] .td-calendar-tray-head{padding:5px 0 6px;gap:6px;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-tray-head>svg{display:none!important}
+html[data-theme="minimal"] .td-calendar-tray-title{flex:0 1 auto;font:500 13px/20px var(--font-ui);letter-spacing:-.005em}
+html[data-theme="minimal"] .td-calendar-tray-count{margin-right:auto;font:400 11px/20px var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-tray-hint{margin:8px 0;padding:6px 8px;border:1px dashed var(--ink-900);border-radius:0;background:none;font:400 11px/16px var(--font-ui)}
+html[data-theme="minimal"] .td-calendar-tray-note{padding:10px 0;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-tray-note b{font-weight:500}
+html[data-theme="minimal"] .td-calendar-tray-list{gap:0;padding:0}
+html[data-theme="minimal"] .td-calendar-tray-row{background:none;border-radius:0;box-shadow:none;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-tray-row:hover,html[data-theme="minimal"] .td-calendar-tray-row:focus-within{box-shadow:none}
+html[data-theme="minimal"] .td-calendar-tray-item{padding:10px 0;border-radius:0;font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-calendar-tray-item:hover{color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-tray-item:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}
+html[data-theme="minimal"] .td-calendar-tray-meta{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-tray-key{font:400 11px/16px var(--font-mono)}
+html[data-theme="minimal"] .td-calendar-tray-date{width:16px;height:16px;margin:12px 0 0 8px;border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-tray-date:hover{background:none;color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-tray-date:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:3px}
+html[data-theme="minimal"] .td-calendar-tray-skeleton{padding:10px 0;background:none;border-radius:0;box-shadow:none;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-calendar-tray-toggle svg{display:none!important}
+html[data-theme="minimal"] .td-calendar-tray-toggle-count{font:400 11px/20px var(--font-mono);opacity:1}
+html[data-theme="minimal"] .td-calendar-tray-toggle[aria-expanded="true"]{text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:1px}
+html[data-theme="minimal"][data-touch="true"] .td-calendar-tray-date{width:44px;height:44px;margin:0 -14px 0 0}
+html[data-theme="minimal"][data-device="tablet"] .td-calendar-tray{width:172px}
+html[data-theme="minimal"][data-device="phone"] .td-calendar-tray{width:auto;padding:0;border-left:0}
+html[data-theme="minimal"] .td-calendar-subscribe{font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-calendar-subscribe-intro{color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-subscribe-intro b{font-weight:500}
+html[data-theme="minimal"] .td-calendar-subscribe-label{font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-calendar-subscribe-url{height:28px;padding:0;border:0;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;font:400 11px/20px var(--font-mono)}
+html[data-theme="minimal"] .td-calendar-subscribe-url:focus{box-shadow:none;border-color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-subscribe-note,html[data-theme="minimal"] .td-calendar-subscribe-status{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-subscribe-status svg{stroke:currentColor!important}
+html[data-theme="minimal"] .td-calendar-subscribe-steps{font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-calendar-subscribe-text{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-calendar-subscribe-text b{font:500 13px/20px var(--font-ui)}
