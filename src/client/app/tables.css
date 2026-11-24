@@ -38,16 +38,17 @@
     border-collapse: separate;
     border-spacing: 0;
   }
+  /* Headers in the rows' body size, told apart by weight and tone */
   .td-table th {
-    font: var(--type-small);
+    font: var(--type-body);
     font-weight: var(--weight-medium);
-    color: var(--ink-400);
+    color: var(--ink-600);
     text-align: left;
     padding: 6px var(--sp-3);
     vertical-align: bottom;
     white-space: nowrap;
     /* Two label lines on every table page, so the first row sits at the same height on Projects and Project groups */
-    height: calc(2 * var(--lh-xs));
+    height: calc(2 * var(--lh-sm));
   }
   .td-table th.td-table-link {
     white-space: normal;

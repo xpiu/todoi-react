@@ -49,10 +49,8 @@ export function ProjectsScreen() {
           <table className="td-table">
             <thead>
               <tr>
-                <th>
-                  <span className="td-sr-only">Icon</span>
-                </th>
-                <th>Project</th>
+                {/* The name header spans the icon column, so its label starts at the table's edge above the row icons */}
+                <th colSpan={2}>Project</th>
                 <th>Lead</th>
                 <th className="td-table-number">Items</th>
                 <th className="td-table-number">Completed</th>

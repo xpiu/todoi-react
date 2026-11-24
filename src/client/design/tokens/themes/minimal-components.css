@@ -486,7 +486,7 @@ html[data-theme="minimal"] .td-table-title,html[data-theme="minimal"] .td-settin
 /* The head is the 22px title line, as on the Inbox and Settings. Creating is the last row (.td-table-add): the List view's add row, written with it above — grey words under the last hairline, the 14px plus in the 16px icon column, the label on the name column, one 40px row */
 html[data-theme="minimal"] .td-table-card{background:none;border-radius:0;box-shadow:none;padding:0}
 /* 24px between columns, none after the last; the non-name columns have whole-pixel widths (min-width as well: the name column is width:100% and squeezes a plain width to the content), so switches, glyphs and numbers land on whole pixels */
-html[data-theme="minimal"] .td-table th{height:32px;font:400 11px/16px var(--font-ui);color:var(--ink-400);padding:0 24px 8px 0;border-bottom:1px solid var(--border-divider)}
+html[data-theme="minimal"] .td-table th{height:40px;font:500 13px/20px var(--font-ui);color:var(--ink-400);padding:0 24px 8px 0;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-table td{font:400 13px/20px var(--font-ui);padding:10px 24px 10px 0;border-bottom:1px solid var(--border-divider);border-radius:0!important}
 html[data-theme="minimal"] .td-table :is(th,td):last-child{padding-right:0}
 html[data-theme="minimal"] .td-table td.td-table-name{font-weight:400}
