@@ -257,7 +257,7 @@ export function AppShell() {
       if (siblings) siblings.push(it);
       else byList.set(it.listId, [it]);
     }
-    const order = itemOrder(itemComparator(sort.items));
+    const order = itemOrder(itemComparator(sort.items, filterCtx));
     return sortLists((projectLists ?? []).filter((l) => !l.hidden).map((l) => {
       const items = (byList.get(l.id) ?? []).sort(order);
       return { name: l.name, items, count: items.length };

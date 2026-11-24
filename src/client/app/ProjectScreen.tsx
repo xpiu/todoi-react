@@ -150,7 +150,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const ctx = useFilterContext(project, labels);
   const showCompleted = usePrefs((s) => s.showCompleted);
   const visibleItems = useMemo(() => filterViewItems(items, filters, ctx, showCompleted), [items, filters, ctx, showCompleted]);
-  const order = useMemo(() => itemComparator(sort.items), [sort.items]);
+  const order = useMemo(() => itemComparator(sort.items, ctx), [sort.items, ctx]);
   const rowOptions = useMemo(() => ({ prefix: project.keyPrefix, labels, people: actions.people, order, today: ctx.today }), [project.keyPrefix, labels, actions.people, order, ctx.today]);
   const toRow = useMemo(() => itemRowMapper(rowOptions), [rowOptions]);
   const groupedRows = useMemo(() => rowsByList(visibleItems, rowOptions, toRow), [visibleItems, rowOptions, toRow]);

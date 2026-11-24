@@ -107,7 +107,7 @@ export function matchesFilters(it: Item, filters: ViewFilter[], ctx: FilterConte
     else if (type === "start") ok = vals.some((v) => (v === "No start date" ? !it.startDate : inWindow(it.startDate, v === "Last 7 days" ? 7 : 30, today)));
     else if (type === "priority") ok = vals.some((v) => (v === "None" ? !it.priority : !!it.priority && PRIORITY_LABEL[it.priority] === v));
     else if (type === "status") {
-      const name = STATUSES.find((s) => s.id === (it.status ?? (it.done ? "DONE" : null)))?.name;
+      const name = STATUSES.find((s) => s.id === itemStatusId(it))?.name;
       ok = !!name && vals.includes(name);
     }
     if (!ok) return false;
@@ -142,10 +142,13 @@ export const SORT_OPTS: Record<SortDim, SortOption[]> = {
     { key: "priority", label: "Priority", icon: "flag", dirs: { asc: "Urgent first", desc: "Low first" } },
     { key: "due", label: "Due date", icon: "clock", dirs: { asc: "Soonest first", desc: "Latest first" } },
     { key: "created", label: "Created date", icon: "calendar", dirs: { desc: "Newest first", asc: "Oldest first" } },
+    { key: "updated", label: "Updated date", icon: "history", dirs: { desc: "Newest first", asc: "Oldest first" } },
     { key: "title", label: "Title", icon: "arrow-down-a-z", dirs: { asc: "A–Z", desc: "Z–A" } },
+    { key: "assignee", label: "Assignee", icon: "user", dirs: { asc: "A–Z", desc: "Z–A" } },
+    { key: "status", label: "Status", icon: "circle-dot", dirs: { asc: "New first", desc: "Done first" } },
   ],
 };
-const SORT_DEFAULT_DIR: Record<string, "asc" | "desc"> = { name: "asc", count: "desc", priority: "asc", due: "asc", created: "desc", title: "asc" };
+const SORT_DEFAULT_DIR: Record<string, "asc" | "desc"> = { name: "asc", count: "desc", priority: "asc", due: "asc", created: "desc", updated: "desc", title: "asc", assignee: "asc", status: "asc" };
 
 export type SortState = { lists: SortSpec | null; items: SortSpec | null };
 
@@ -159,19 +162,32 @@ export function nextSort(sort: SortState, dim: SortDim, key: string): SortState 
 
 const PRIORITY_RANK: Record<ItemPriority, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
-/** Comparator for items under a sort spec (null = board order). Empty dates sort last either way. */
-export function itemComparator(spec: SortSpec | null): ((a: Item, b: Item) => number) | null {
+/** An item's Status id; a done item without one reads as Done (filters, sort and Group by agree). */
+export const itemStatusId = (it: Pick<Item, "status" | "done">) => it.status ?? (it.done ? "DONE" : null);
+
+/** Comparator for items under a sort spec (null = board order). Items without a value (no date, priority, assignee or
+ * Status) sort last in both directions; Assignee reads the first assignee's name, Status the STATUSES order. */
+export function itemComparator(spec: SortSpec | null, ctx?: { people: ReadonlyArray<Pick<Person, "id" | "name">> }): ((a: Item, b: Item) => number) | null {
   if (!spec) return null;
   const m = spec.dir === "desc" ? -1 : 1;
-  if (spec.key === "title") return (a, b) => m * a.title.localeCompare(b.title);
-  if (spec.key === "priority") return (a, b) => m * ((a.priority ? PRIORITY_RANK[a.priority] : 4) - (b.priority ? PRIORITY_RANK[b.priority] : 4));
-  const field = spec.key === "due" ? "dueDate" : "createdAt";
+  const key = spec.key;
+  const nameOf = (id: string | undefined) => (id ? (ctx?.people.find((p) => p.id === id)?.name ?? null) : null);
+  const value = (it: Item): string | number | null => {
+    if (key === "title") return it.title;
+    if (key === "priority") return it.priority ? PRIORITY_RANK[it.priority] : null;
+    if (key === "status") {
+      const i = STATUSES.findIndex((s) => s.id === itemStatusId(it));
+      return i < 0 ? null : i;
+    }
+    if (key === "assignee") return nameOf(it.assigneeIds[0]);
+    return (key === "due" ? it.dueDate : key === "updated" ? it.updatedAt : key === "created" ? it.createdAt : null) || null;
+  };
   return (a, b) => {
-    const va = a[field], vb = b[field];
-    if (!va && !vb) return 0;
-    if (!va) return 1;
-    if (!vb) return -1;
-    return m * va.localeCompare(vb);
+    const va = value(a), vb = value(b);
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return m * (typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb)));
   };
 }
 

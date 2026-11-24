@@ -71,6 +71,25 @@ describe("sort", () => {
     expect([a, b, c].sort(itemComparator({ key: "due", dir: "asc" })!).map((x) => x.id)).toEqual(["c", "b", "a"]);
     expect([a, b, c].sort(itemComparator({ key: "due", dir: "desc" })!).map((x) => x.id)).toEqual(["b", "c", "a"]);
     expect([a, b, c].sort(itemComparator({ key: "title", dir: "asc" })!).map((x) => x.id)).toEqual(["b", "a", "c"]);
+    const sorted = (key: string, dir: "asc" | "desc", xs: Item[], people = ctx.people) => [...xs].sort(itemComparator({ key, dir }, { people })!).map((x) => x.id);
+    // Updated: newest first by default, empty last both ways
+    const u1 = item({ id: "u1", updatedAt: "2026-10-01T10:00:00.000Z" }), u2 = item({ id: "u2", updatedAt: "2026-10-02T10:00:00.000Z" }), u0 = item({ id: "u0", updatedAt: "" });
+    expect(nextSort({ lists: null, items: null }, "items", "updated").items).toEqual({ key: "updated", dir: "desc" });
+    expect(sorted("updated", "desc", [u1, u0, u2])).toEqual(["u2", "u1", "u0"]);
+    expect(sorted("updated", "asc", [u0, u2, u1])).toEqual(["u1", "u2", "u0"]);
+    // Assignee: the first assignee's name; unassigned last both ways
+    const people = [{ id: "p1", name: "Ann" }, { id: "p2", name: "Zed" }];
+    const ann = item({ id: "ann", assigneeIds: ["p1", "p2"] }), zed = item({ id: "zed", assigneeIds: ["p2"] }), none = item({ id: "none" });
+    expect(sorted("assignee", "asc", [none, zed, ann], people)).toEqual(["ann", "zed", "none"]);
+    expect(sorted("assignee", "desc", [none, ann, zed], people)).toEqual(["zed", "ann", "none"]);
+    // Status: STATUSES order (New … Done); a done item without a Status reads as Done; no Status last both ways
+    const sNew = item({ id: "new", status: "NEW" }), sDoing = item({ id: "doing", status: "DOING" }), sDone = item({ id: "done", done: true }), sNone = item({ id: "nostatus" });
+    expect(sorted("status", "asc", [sNone, sDone, sDoing, sNew])).toEqual(["new", "doing", "done", "nostatus"]);
+    expect(sorted("status", "desc", [sNone, sNew, sDoing, sDone])).toEqual(["done", "doing", "new", "nostatus"]);
+    // Priority: no priority last both ways
+    const pu = item({ id: "pu", priority: "URGENT" }), pl = item({ id: "pl", priority: "LOW" }), pn = item({ id: "pn" });
+    expect(sorted("priority", "asc", [pn, pl, pu])).toEqual(["pu", "pl", "pn"]);
+    expect(sorted("priority", "desc", [pn, pu, pl])).toEqual(["pl", "pu", "pn"]);
     const lists = [{ name: "To-do", count: 2 }, { name: "Doing", count: 5 }];
     expect(sortLists(lists, { key: "name", dir: "asc" }).map((l) => l.name)).toEqual(["Doing", "To-do"]);
     expect(sortLists(lists, { key: "count", dir: "desc" }).map((l) => l.name)).toEqual(["Doing", "To-do"]);
