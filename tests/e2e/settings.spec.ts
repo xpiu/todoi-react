@@ -114,7 +114,9 @@ test("the Inbox badge follows its setting, and unavailable controls say so", asy
   await toggle(page, "Unread count on Inbox", false);
   await expect(dot).toHaveCount(0);
   await expect(sidebar.getByRole("button", { name: /Inbox.*unread/ })).toHaveCount(0);
-  await expect(page.getByText("Email sending isn't set up yet")).toBeVisible();
+  await expect(page.getByText("Todoi doesn't send release news yet")).toBeVisible();
+  // A guest has no address to email: the Email notifications group is for accounts (account-email.spec.ts).
+  await expect(page.getByRole("region", { name: "Email notifications" })).toHaveCount(0);
   await shot(page, "notifications");
   await page.goto("/settings");
   // Only English ships: the other languages are listed, unavailable, and say "Later"

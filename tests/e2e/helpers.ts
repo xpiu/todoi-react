@@ -1,6 +1,6 @@
 import { expect, type BrowserContext, type Page, type TestType } from "@playwright/test";
 import { AxeBuilder } from "@axe-core/playwright";
-import { rm } from "node:fs/promises";
+import { readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { loadEnvFile } from "node:process";
 import { nanoid } from "nanoid";
@@ -126,6 +126,26 @@ export async function settle(page: Page) {
 if (!process.env.DATABASE_URL) loadEnvFile(".env");
 
 /**
+ * The newest email the API's development transport wrote to an address (EMAIL_DIR, as the API under test
+ * has it; default .data/emails), waiting for it to arrive. `link` is the first http(s) link in its text part.
+ */
+export async function emailTo(to: string, subject: string, timeout = 10_000): Promise<{ subject: string; text: string; link: string }> {
+  const dir = process.env.EMAIL_DIR ?? ".data/emails";
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const names = (await readdir(dir).catch(() => [] as string[])).filter((n) => n.endsWith(".json")).sort().reverse();
+    for (const name of names) {
+      const head = JSON.parse(await readFile(join(dir, name), "utf8")) as { to: string; subject: string };
+      if (head.to !== to || head.subject !== subject) continue;
+      const text = await readFile(join(dir, `${name.slice(0, -".json".length)}.txt`), "utf8");
+      return { subject: head.subject, text, link: /https?:\/\/\S+/.exec(text)![0] };
+    }
+    if (Date.now() > deadline) throw new Error(`No email "${subject}" to ${to} in ${dir}`);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+}
+
+/**
  * Accounts a test's browsers create (guests, sign-ups) are deleted after each test with their
  * workspaces and uploaded bytes. The test's own context is watched; `watch` adds more, `own` adds an id.
  */
@@ -167,6 +187,7 @@ export function trackAccounts(test: TestType<any, any>) {
       await client.query("delete from lists where user_id = any($1)", [ids]);
       await client.query("delete from groups where owner_id = any($1)", [ids]);
       await client.query("delete from members where user_id = any($1)", [ids]);
+      await client.query("delete from verifications where identifier = any($1)", [ids.map((id) => `email-change:${id}`)]);
       await client.query("delete from users where id = any($1)", [ids]);
       await client.query("commit");
       await Promise.all(files.map((f) => rm(join(process.env.UPLOAD_DIR ?? ".data/uploads", f.storage_key), { force: true })));
