@@ -139,3 +139,30 @@ export const SidebarLeft: Story = {
   },
 };
 export const LongTitle: Story = { args: { title: "Helicopter sales and after-market maintenance contracts for Belgium, the Netherlands and Luxembourg" } };
+/** A page outside a project (Settings, Account, Inbox, Projects, Project groups): Back leads the plain title */
+export const Back: Story = {
+  args: { title: "Settings", onTitleChange: undefined, onBack: fn(), backLabel: "Back to Helicopter sales" },
+  async play({ args, canvas, userEvent }) {
+    const back = canvas.getByRole("button", { name: "Back to Helicopter sales" });
+    await expect(back).toHaveAttribute("data-tip", "Back to Helicopter sales");
+    await expect(back.closest(".td-topnav-title")).toHaveAttribute("data-back", "true");
+    // Both themes start the title text 40px from the bar's edge
+    await document.fonts.ready;
+    const bar = canvas.getByRole("banner").getBoundingClientRect().left;
+    const text = canvas.getByText("Settings").getBoundingClientRect().left;
+    await expect(text - bar).toBeCloseTo(40, 0);
+    await userEvent.click(back);
+    await expect(args.onBack).toHaveBeenCalledOnce();
+    back.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onBack).toHaveBeenCalledTimes(2);
+  },
+};
+/** A project title renames and never shows Back, even when the host passes one */
+export const BackIgnoredOnProject: Story = {
+  args: { onBack: fn(), backLabel: "Back to Projects" },
+  async play({ canvas }) {
+    await expect(canvas.queryByRole("button", { name: "Back to Projects" })).not.toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "Rename project: Helicopter sales" })).toBeInTheDocument();
+  },
+};

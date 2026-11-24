@@ -75,5 +75,8 @@ export function useSidebarOrder(data: GroupWithProjects[] | undefined, userId: s
   /** The groups as the Sidebar and SidebarOrder take them */
   const rail = useMemo(() => groups.map((g) => ({ id: g.id, name: g.name, projects: g.projects.map((p) => ({ id: p.id, name: p.name, icon: (p.icon ?? "kanban") as IconName, color: p.color ? `var(--label-${p.color})` : undefined })) })), [groups]);
 
-  return { groups, rail, order: saved.top, onReorder, onProjectMove, canMoveProject };
+  /** Every project in the order the sidebar shows them (the first is where Back goes without a last project) */
+  const projects = useMemo(() => orderBy(rail, saved.top).flatMap((g) => g.projects), [rail, saved.top]);
+
+  return { groups, rail, projects, order: saved.top, onReorder, onProjectMove, canMoveProject };
 }

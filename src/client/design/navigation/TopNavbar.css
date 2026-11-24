@@ -135,6 +135,55 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Back (onBack: Inbox, Projects, Project groups, Settings, Account): a chevron leads the title and returns to the
+     last project. The title becomes a row of the button and its text, so their spacing does not depend on the bar's
+     gap. The 28x28 button (the size of the bar's Create button) holds the 20px chevron with 4px of box either side;
+     the -6px margin starts the box 10px from the bar's edge, and the text follows 2px after the button, 40px from the
+     edge. Overflow is visible so the focus ring and the tooltip are not clipped; the text span truncates. On touch
+     the button is 44px around the same centre. */
+  span.td-topnav-title[data-back="true"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: -6px;
+    overflow: visible;
+  }
+  button.td-topnav-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: none;
+    border-radius: var(--radius-md);
+    color: var(--chrome-text);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  button.td-topnav-back:hover {
+    background: var(--chrome-hover);
+  }
+  button.td-topnav-back:active {
+    background: var(--chrome-active);
+  }
+  button.td-topnav-back:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  html[data-touch="true"] button.td-topnav-back {
+    width: 44px;
+    height: 44px;
+    margin: -8px;
+  }
+  html[data-touch="true"] button.td-topnav-back:hover {
+    background: none;
+  }
+  html[data-touch="true"] button.td-topnav-back:active {
+    background: var(--chrome-active);
+  }
   .td-topnav-title-pen {
     flex-shrink: 0;
     display: inline-flex;

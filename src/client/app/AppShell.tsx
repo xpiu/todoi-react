@@ -42,7 +42,7 @@ import { LifecycleDialogs } from "./LifecycleDialogs";
 import { useProjectMutations } from "../data/projects";
 import { useSidebarOrder } from "./useSidebarOrder";
 import { requestQuickAdd } from "./quickAddRequest";
-import { getLastProject, setLastProject } from "./lastProject";
+import { getLastProject, getLastProjectView, setLastProject, useLastProject } from "./lastProject";
 import { peopleOf, useCurrentUser } from "./session";
 import { authClient, forgetBrowserSession } from "../auth";
 import { GuestBar } from "../design/auth/GuestBar";
@@ -62,6 +62,9 @@ const SORT_DIMS: ReadonlyArray<[string, SortDim]> = [
   ["Lists", "lists"],
   ["Items", "items"],
 ];
+
+/** The pages outside a project whose title leads with Back */
+const BACK_SECTIONS = new Set(["inbox", "projects", "groups", "settings", "account"]);
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -140,9 +143,10 @@ export function AppShell() {
   // On the Inbox, a row dropped on a sidebar project is filed there.
   const inbox = useInbox(section === "inbox");
   const capture = () => void navigate({ to: "/inbox", search: { capture: true } });
+  const projectSearch = projectMatch?.search;
   useEffect(() => {
-    if (projectId) setLastProject(projectId);
-  }, [projectId]);
+    if (projectId) setLastProject(projectId, projectSearch);
+  }, [projectId, projectSearch]);
   // Create › New item follows Settings › General › Default destination: the current project (the one on screen, else the
   // last one open in this tab, else the Inbox), the Inbox, or a chosen project — there quick-add opens in the first list, as N does
   const destination = usePrefs((s) => s.defaultDestination);
@@ -156,6 +160,16 @@ export function AppShell() {
     if (target !== projectId) void navigate({ to: "/p/$projectId", params: { projectId: target } });
   };
   const activeId = projectId ?? (section === "inbox" || section === "projects" || section === "groups" ? section : undefined);
+  // Back on the pages outside a project: to the last project in this tab, in the view it was left in; else the first
+  // project in sidebar order; with none at all, the Projects page (which then has no Back of its own).
+  const lastProjectId = useLastProject();
+  const backTarget = !projectId && BACK_SECTIONS.has(section) && groups.data ? (sidebarOrder.projects.find((p) => p.id === lastProjectId) ?? sidebarOrder.projects[0] ?? null) : undefined;
+  const onBack =
+    backTarget === undefined || (backTarget === null && section === "projects")
+      ? undefined
+      : backTarget
+        ? () => void navigate({ to: "/p/$projectId", params: { projectId: backTarget.id }, search: backTarget.id === lastProjectId ? getLastProjectView() : {} })
+        : () => void navigate({ to: "/projects" });
   const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
   const resolved = useResolvedView(projectId ?? "", projectMatch?.search ?? {}, project.data?.defaultView);
@@ -403,6 +417,8 @@ export function AppShell() {
         title={title}
         titleKey={projectId ?? section}
         onTitleChange={projectId && canManageProject ? (name) => pm.updateProject.mutate({ id: projectId, name }) : undefined}
+        onBack={onBack}
+        backLabel={`Back to ${backTarget?.name ?? "Projects"}`}
         status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
         search
         searchSources={searchSources}

@@ -9,6 +9,12 @@ html[data-theme="minimal"] .td-topnav svg,html[data-theme="minimal"] .td-subnav 
 html[data-theme="minimal"] .td-topnav-title{font:500 13px/20px var(--font-ui);letter-spacing:-.005em;margin:0}
 html[data-theme="minimal"] span.td-topnav-title[data-editable="true"]{padding:0;margin:0;gap:6px}
 html[data-theme="minimal"] input.td-topnav-title{background:linear-gradient(var(--ink-900),var(--ink-900)) no-repeat 0 100%/var(--td-title-line,100%) 1px;color:var(--ink-900);border:0;border-radius:0;padding:0 0 1px;margin:1px 0 0;font:500 13px/20px var(--font-ui)}
+/* Back (Inbox, Projects, Project groups, Settings, Account): a 16px chevron in ink, no drawn box, in a 24px hit area (4px around the glyph). The -8px margin starts the area at 16px, so the stroke sits 2px inside the 24px edge and the title follows 10px after it, at 40px; hover dims it like the other bar glyphs. 44px around the same centre on touch */
+html[data-theme="minimal"] span.td-topnav-title[data-back="true"]{gap:0;margin:0 0 0 -8px}
+html[data-theme="minimal"] button.td-topnav-back{width:24px;height:24px;border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] button.td-topnav-back svg{width:16px;height:16px}
+html[data-theme="minimal"] button.td-topnav-back:hover,html[data-theme="minimal"] button.td-topnav-back:active{background:none;color:var(--ink-400)}
+html[data-theme="minimal"][data-touch="true"] button.td-topnav-back{width:44px;height:44px;margin:-10px}
 /* Truncation clearance: the spacer takes back the gap after it, so a long title (or the rename field) runs to one 24px gap before the next control. The rename field is 21px with its underline; 1px of top margin keeps its text on the title's line (14–34 in the 48px bar) instead of half a pixel above it */
 html[data-theme="minimal"] .td-topnav-spacer{margin:0 -24px 0 0}
 html[data-theme="minimal"][data-device="phone"] .td-topnav-spacer{margin:0}

@@ -1,6 +1,7 @@
 // TopNavbar — the always-visible chrome bar: title (click to rename) left; hoisted SubNavbar,
 // connection pill, search with the ⌘K hint and its dropdown, the + create menu, the avatar menu and
-// the sidebar toggle right (the toggle leads the bar when the sidebar docks left).
+// the sidebar toggle right (the toggle leads the bar when the sidebar docks left). Pages outside a project lead
+// their title with Back (`onBack`), a chevron that returns to the last project.
 // Spec: DESIGN.md › Top navbar, Responsive.
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
@@ -12,6 +13,7 @@ import { MenuDivider, MenuItem, MenuPopover } from "../core/Menu";
 import { useReturnFocus } from "../core/returnFocus";
 import { IS_MAC } from "../core/shortcuts";
 import { TextField } from "../core/TextField";
+import { tipProps } from "../core/Tooltip";
 import { SearchDropdown, type SearchDropdownProps, type SearchEntity, type SearchRecent, type SearchResultType, type SearchSources } from "./SearchDropdown";
 import "./TopNavbar.css";
 
@@ -36,6 +38,15 @@ export interface TopNavbarProps {
   titleKey?: string;
   /** When set, the title is click-to-rename */
   onTitleChange?: (title: string) => void;
+  /**
+   * Back, for the pages outside a project (Inbox, Projects, Project groups, Settings, Account): a chevron-left button
+   * (`button.td-topnav-back`) leads the title, which renders as `span.td-topnav-title[data-back="true"]` holding the
+   * button and the text. The host returns to the last used project in its last used view. Ignored when onTitleChange
+   * is set (a project title has no Back). After Back, focus moves to the project title when it can be renamed.
+   */
+  onBack?: () => void;
+  /** Accessible name and tooltip of the Back button, e.g. "Back to Mars programme" @default "Back" */
+  backLabel?: string;
   search?: boolean;
   /** Empty by default, as in Design (the ⌘K chip and the glyph say what it is; the field is named "Search") */
   searchPlaceholder?: string;
@@ -93,8 +104,11 @@ function GuestAvatar({ size, tone }: { size: number; tone: "chrome" | "card" }) 
 }
 
 // Keep the title draft scoped to its project without resetting search or the rest of the navbar.
-function NavbarTitle({ title, onTitleChange }: Pick<TopNavbarProps, "title" | "onTitleChange">) {
+function NavbarTitle({ title, onTitleChange, onBack, backLabel = "Back" }: Pick<TopNavbarProps, "title" | "onTitleChange" | "onBack" | "backLabel">) {
   const [editing, setEditing] = useState(false);
+  // Minimal draws the chevron at its 16px size, so the pixel fit (core/iconHint) is made for the size shown
+  const minimal = useAppearanceStore((s) => s.theme) === "minimal";
+  const backTip = tipProps(backLabel, "bottom-start");
   const triggerRef = useRef<HTMLSpanElement>(null);
   const leaving = useReturnFocus(editing, triggerRef);
   const commitTitle = (value: string) => {
@@ -149,6 +163,13 @@ function NavbarTitle({ title, onTitleChange }: Pick<TopNavbarProps, "title" | "o
         <Icon name="pencil" size={14} />
       </span>
     </span>
+  ) : onBack ? (
+    <span className="td-topnav-title" data-back="true">
+      <button type="button" {...backTip} className={`td-topnav-back ${backTip.className}`} aria-label={backLabel} onClick={onBack}>
+        <Icon name="chevron-left" size={minimal ? 16 : 20} />
+      </button>
+      <span className="td-topnav-title-text">{title}</span>
+    </span>
   ) : (
     <span className="td-topnav-title">{title}</span>
   );
@@ -158,6 +179,8 @@ export function TopNavbar({
   title,
   titleKey,
   onTitleChange,
+  onBack,
+  backLabel,
   search,
   searchPlaceholder = "",
   searchSources,
@@ -233,13 +256,39 @@ export function TopNavbar({
     />
   ) : null;
 
+  // Back removes its own button, so focus goes to the project title that takes its place once the route has settled
+  // and the title can be renamed. While loading, focus stays lost (on the body) and the wait goes on; focus that moved
+  // on since, or another page with Back, ends it. A title that cannot be renamed takes no focus: focus follows the
+  // route change as anywhere else.
+  const headerRef = useRef<HTMLElement>(null);
+  const wentBack = useRef(false);
+  const hasBack = !!onBack && !onTitleChange;
+  const editable = !!onTitleChange;
+  useEffect(() => {
+    if (!wentBack.current) return;
+    const active = document.activeElement;
+    if (hasBack || (active && active !== document.body)) {
+      wentBack.current = false;
+      return;
+    }
+    if (!editable) return;
+    wentBack.current = false;
+    headerRef.current?.querySelector<HTMLElement>("span.td-topnav-title[data-editable]")?.focus();
+  }, [hasBack, editable]);
+  const back = onBack
+    ? () => {
+        wentBack.current = true;
+        onBack();
+      }
+    : undefined;
+
   const hasUserMenu = !!(onOpenSettings || onOpenAccount || onLogout || onLogin || onCreateAccount);
   const avatarEl = user ? signedIn ? <Avatar name={user.name} src={user.src} color={user.avatarColor} size={28} /> : <GuestAvatar size={28} tone="chrome" /> : null;
 
   return (
-    <header className={["td-topnav", className ?? ""].join(" ").trim()} style={style} data-sidebar-side={side}>
+    <header ref={headerRef} className={["td-topnav", className ?? ""].join(" ").trim()} style={style} data-sidebar-side={side}>
       {leftToggle ? toggleBtn : null}
-      <NavbarTitle key={`${titleKey ?? title}:${!!onTitleChange}`} title={title} onTitleChange={onTitleChange} />
+      <NavbarTitle key={`${titleKey ?? title}:${!!onTitleChange}`} title={title} onTitleChange={onTitleChange} onBack={back} backLabel={backLabel} />
       <div className="td-topnav-spacer" />
       {children ?? null}
       {status ? <div className="td-topnav-status">{status}</div> : null}
