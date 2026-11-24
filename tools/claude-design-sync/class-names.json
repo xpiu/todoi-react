@@ -539,6 +539,8 @@
   "td-scd-sec": "td-shortcuts-dialog-section",
   "td-scd-sep": "td-shortcuts-dialog-separator",
   "td-sd": "td-search-dropdown",
+  "td-sd-all": "td-search-dropdown-all",
+  "td-sd-all-text": "td-search-dropdown-all-text",
   "td-sd-empty": "td-search-dropdown-empty",
   "td-sd-foot": "td-search-dropdown-foot",
   "td-sd-head": "td-search-dropdown-head",

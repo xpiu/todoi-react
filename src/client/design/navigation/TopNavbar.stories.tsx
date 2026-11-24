@@ -100,6 +100,21 @@ export const Search: Story = {
     await expect(field).toHaveValue("");
   },
 };
+/** "See all results" (shift+↵) closes the dropdown and hands the query to the host, which opens the Search page. */
+export const SearchAll: Story = {
+  args: { onSearchAll: fn() },
+  async play({ args, canvas, userEvent }) {
+    const field = canvas.getByRole("combobox", { name: "Search" });
+    await userEvent.click(field);
+    await userEvent.type(field, "quote");
+    await expect(canvas.getByRole("button", { name: /See all results/ })).toBeVisible();
+    await userEvent.keyboard("{Shift>}{Enter}{/Shift}");
+    await expect(args.onSearchAll).toHaveBeenCalledWith("quote");
+    await expect(args.onSearchSelect).not.toHaveBeenCalled();
+    await waitFor(() => expect(canvas.queryByRole("listbox")).not.toBeInTheDocument());
+    await expect(field).toHaveValue("");
+  },
+};
 export const CreateMenu: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Create" }));

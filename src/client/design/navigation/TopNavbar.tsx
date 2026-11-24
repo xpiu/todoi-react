@@ -52,6 +52,8 @@ export interface TopNavbarProps {
   searchPlaceholder?: string;
   searchSources?: SearchSources;
   onSearchSelect?: (type: SearchResultType, id: string, entity: SearchEntity) => void;
+  /** Adds "See all results" to the search dropdown (and shift+↵): open the Search page with this query. The dropdown closes first. */
+  onSearchAll?: (query: string) => void;
   /** The query as typed and whether the dropdown is open — for sources fetched per query */
   onSearchChange?: (query: string, open: boolean) => void;
   /** State of the per-query sources (items), shown in the dropdown */
@@ -185,6 +187,7 @@ export function TopNavbar({
   searchPlaceholder = "",
   searchSources,
   onSearchSelect,
+  onSearchAll,
   onSearchChange,
   searchStatus,
   onCreate,
@@ -238,6 +241,12 @@ export function TopNavbar({
     closeSearch();
     onSearchSelect?.(type, id, entity);
   };
+  const seeAll = onSearchAll
+    ? (q: string) => {
+        closeSearch();
+        onSearchAll(q);
+      }
+    : undefined;
   const showKbd = !sFocus && !sOpen && !sQ;
   // Minimal shows the right-hand toggle at 16px (CSS). The pixel-snapped glyph must be drawn at that size: drawn for 20px and scaled down, its rules land between pixels and antialias to grey.
   const minimal = useAppearanceStore((s) => s.theme) === "minimal";
@@ -327,7 +336,7 @@ export function TopNavbar({
               {kbdHint}
             </span>
           ) : null}
-          {searchSources && sOpen ? <SearchDropdown id={sListId} onActiveChange={setSActive} query={sQ} sources={searchSources} status={searchStatus} recent={sRecent} onSelect={pickResult} onClose={closeSearch} /> : null}
+          {searchSources && sOpen ? <SearchDropdown id={sListId} onActiveChange={setSActive} query={sQ} sources={searchSources} status={searchStatus} recent={sRecent} onSelect={pickResult} onClose={closeSearch} onSeeAll={seeAll} /> : null}
         </div>
       ) : null}
       {onCreate ? (

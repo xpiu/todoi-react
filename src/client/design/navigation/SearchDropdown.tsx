@@ -1,7 +1,8 @@
 // SearchDropdown — the results panel under the top-bar search field: project groups, projects,
 // items and Inbox in grouped sections; ↑↓ + Enter navigate at document level so the field keeps
 // focus, which is the combobox: it takes `id` (the listbox) and onActiveChange (the highlighted
-// option) for aria-controls / aria-activedescendant. Esc closes. Anchored inside the field's wrapper (the top bar is never clipped), which is
+// option) for aria-controls / aria-activedescendant. Esc closes. With `onSeeAll`, a last row (shift+↵) opens the
+// Search page, which also searches descriptions and comments. Anchored inside the field's wrapper (the top bar is never clipped), which is
 // the one listed exception to the Popover rule until it migrates. Spec: DESIGN.md › Search dropdown.
 import { useEffect, useId, useState, type CSSProperties } from "react";
 
@@ -71,11 +72,16 @@ export interface SearchDropdownProps {
   id?: string;
   /** The highlighted option's id (undefined while no listbox is shown), for the field's aria-activedescendant */
   onActiveChange?: (optionId: string | undefined) => void;
+  /**
+   * Renders the row "See all results, with descriptions and comments" under the list while there is a query, and takes
+   * shift+↵ (or ↵ when nothing matches). The host opens the Search page (SearchResults) with this query.
+   */
+  onSeeAll?: (query: string) => void;
   style?: CSSProperties;
   className?: string;
 }
 
-export function SearchDropdown({ query = "", sources = {}, status, recent = [], onSelect, onClose, maxPerSection = 4, id, onActiveChange, style, className }: SearchDropdownProps) {
+export function SearchDropdown({ query = "", sources = {}, status, recent = [], onSelect, onClose, maxPerSection = 4, id, onActiveChange, onSeeAll, style, className }: SearchDropdownProps) {
   const ownId = useId();
   const listId = id ?? ownId;
   // Minimal shows no project glyphs: project and group rows lead with the name.
@@ -120,6 +126,8 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
   const [cur, setCur] = useState(0);
   const sel = Math.min(cur, Math.max(0, flat.length - 1));
   const pick = (r: Row) => onSelect?.(r.type, r.id, r.entity);
+  // The way to the Search page, which also searches descriptions and comments, with filters.
+  const seeAll = onSeeAll && needle ? () => onSeeAll(query.trim()) : undefined;
   const optId = (i: number) => `${listId}-opt-${i}`;
   const activeId = flat.length ? optId(sel) : undefined;
   useEffect(() => {
@@ -137,7 +145,8 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
       } else if (e.key === "Enter") {
         e.preventDefault();
         const r = flat[sel];
-        if (r) pick(r);
+        if (seeAll && (e.shiftKey || !r)) seeAll();
+        else if (r) pick(r);
       } else if (e.key === "Escape") {
         e.preventDefault();
         onClose?.();
@@ -184,6 +193,18 @@ export function SearchDropdown({ query = "", sources = {}, status, recent = [], 
       ) : (
         <div className="td-search-dropdown-empty" role="status" data-tone={note ? status : undefined}>{note ?? `No projects or items match “${query.trim()}”`}</div>
       )}
+      {/* Outside the listbox, so ↑↓ never land on it; shift+↵ (or ↵ when nothing matches) takes it. */}
+      {seeAll ? (
+        <button type="button" className="td-search-dropdown-all" onClick={seeAll}>
+          <Icon name="search" size={14} />
+          <span className="td-search-dropdown-all-text">See all results, with descriptions and comments</span>
+          {suggestShortcuts ? (
+            <kbd className="td-kbd" aria-hidden>
+              shift ↵
+            </kbd>
+          ) : null}
+        </button>
+      ) : null}
       {suggestShortcuts ? (
         <div className="td-search-dropdown-foot">
           <span>

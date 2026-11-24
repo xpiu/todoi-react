@@ -1434,3 +1434,6 @@ html[data-theme="minimal"] .td-search-match{font:400 13px/20px var(--font-ui);co
 html[data-theme="minimal"] .td-search-row mark{background:none;color:var(--ink-900);padding:0;border-radius:0;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 html[data-theme="minimal"] .td-search-skeleton{padding:12px 0}
 html[data-theme="minimal"] .td-search-more{padding:12px 0;border-top:0}
+html[data-theme="minimal"] .td-search-dropdown-all{padding:8px 14px;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
+html[data-theme="minimal"] .td-search-dropdown-all:hover{background:var(--chrome-hover)}
+html[data-theme="minimal"] .td-search-dropdown-all>svg{display:none!important}

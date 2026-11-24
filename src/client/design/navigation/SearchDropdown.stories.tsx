@@ -72,6 +72,38 @@ export const Offline: Story = {
     await expect(canvas.queryByRole("listbox")).not.toBeInTheDocument();
   },
 };
+/** The way to the Search page: a row under the listbox (never an option), shift+↵ from anywhere in the list. */
+export const SeeAll: Story = {
+  args: { query: "helicopter", onSeeAll: fn() },
+  async play({ args, canvas, userEvent }) {
+    const all = canvas.getByRole("button", { name: /See all results, with descriptions and comments/ });
+    await expect(canvas.getByRole("listbox", { name: "Search results" })).not.toContainElement(all);
+    await userEvent.keyboard("{ArrowDown}{Shift>}{Enter}{/Shift}");
+    await expect(args.onSeeAll).toHaveBeenCalledWith("helicopter");
+    await expect(args.onSelect).not.toHaveBeenCalled();
+    // ↵ alone still opens the highlighted result.
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSelect).toHaveBeenCalledWith("group", "g1", expect.objectContaining({ name: "Helicopters Europe" }));
+    await userEvent.click(all);
+    await expect(args.onSeeAll).toHaveBeenCalledTimes(2);
+  },
+};
+/** Nothing matches by name: ↵ takes "See all results", which also searches descriptions and comments. */
+export const SeeAllWhenNothingMatches: Story = {
+  args: { query: "  zeppelin ", status: "ready", onSeeAll: fn() },
+  async play({ args, canvas, userEvent }) {
+    await expect(canvas.getByRole("status")).toHaveTextContent("No projects or items match “zeppelin”");
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSeeAll).toHaveBeenCalledWith("zeppelin");
+  },
+};
+/** No query, no row: there is nothing to see all of. */
+export const SeeAllNeedsQuery: Story = {
+  args: { onSeeAll: fn() },
+  async play({ canvas }) {
+    await expect(canvas.queryByRole("button", { name: /See all results/ })).not.toBeInTheDocument();
+  },
+};
 export const NoResults: Story = {
   args: { query: "zeppelin", status: "ready", onActiveChange: fn() },
   async play({ args, canvas }) {

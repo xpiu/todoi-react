@@ -469,6 +469,10 @@ export function AppShell() {
           else openResult.item({ id, projectId: type === "inbox" ? null : ((entity as { projectId?: string | null }).projectId ?? null) });
           if (!vp.desktop) setSidebarOpen(false);
         }}
+        onSearchAll={(q) => {
+          void navigate({ to: "/search", search: { q } });
+          if (!vp.desktop) setSidebarOpen(false);
+        }}
         user={user ? { name: user.name, src: user.image ?? undefined, avatarColor: avatarColorVar(user.avatarColor) } : { name: "Guest" }}
         signedIn={signedIn}
         onLogout={logout}
