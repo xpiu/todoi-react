@@ -1,7 +1,7 @@
 // Todoi data model (Drizzle ORM, PostgreSQL). Vocabulary and column rationale: docs/design/glossary.md.
 // Conventions: app-generated text ids (nanoid), timestamptz created_at / updated_at on every table,
 // soft removal as two timestamps (archived_at, deleted_at), enums mirroring the const arrays in src/shared/.
-import { sql } from "drizzle-orm";
+import { sql, type SQLWrapper } from "drizzle-orm";
 import { boolean, customType, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES, type GroupKey } from "../../shared/enums";
@@ -14,6 +14,13 @@ const minuteTime = customType<{ data: string; driverData: string }>({
   dataType: () => "time",
   fromDriver: (v) => v.slice(0, 5),
 });
+
+/**
+ * A text column as a full-text document for Search (services/search.ts). The indexes below and the search
+ * query both build it with this function, so the planner can use the GIN indexes. "simple": no stemming and
+ * no stop words, so every language matches word for word (the last word of a query matches as a prefix).
+ */
+export const searchDocument = (column: SQLWrapper) => sql`to_tsvector('simple', coalesce(${column}, ''))`;
 
 export const itemStatusEnum = pgEnum("item_status", ITEM_STATUSES);
 export const itemPriorityEnum = pgEnum("item_priority", ITEM_PRIORITIES);
@@ -280,6 +287,8 @@ export const items = pgTable(
     index("items_project_idx").on(t.projectId),
     index("items_parent_idx").on(t.parentItemId),
     uniqueIndex("items_key_per_project_idx").on(t.projectId, t.keyNumber),
+    index("items_title_search_idx").using("gin", searchDocument(t.title)),
+    index("items_description_search_idx").using("gin", searchDocument(t.description)),
   ],
 );
 
@@ -382,7 +391,7 @@ export const comments = pgTable(
     version: integer("version").notNull().default(1),
     ...timestamps,
   },
-  (t) => [index("comments_item_idx").on(t.itemId, t.createdAt)],
+  (t) => [index("comments_item_idx").on(t.itemId, t.createdAt), index("comments_body_search_idx").using("gin", searchDocument(t.body))],
 );
 
 export const commentReactions = pgTable(

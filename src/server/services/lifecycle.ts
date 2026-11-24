@@ -5,20 +5,28 @@ import { items, projects, type Item } from "../db/schema";
 import { logActivity, quote } from "./activity";
 import { drainUploadCleanup } from "./uploadCleanup";
 
-/** Removal is inherited, not copied: restoring a container preserves each child's own state. */
-export const itemContainersLive = sql`(
+/** Removal is inherited, not copied: restoring a container preserves each child's own state. `states`: which removals count. */
+const itemContainersFree = (states: ReadonlyArray<"archived_at" | "deleted_at">) => {
+  const removed = (alias: string) => sql.raw(states.map((c) => `${alias}.${c} is not null`).join(" or "));
+  return sql`(
   (${items.projectId} is null or exists (
     select 1 from projects as container_project where container_project.id = ${items.projectId}
-      and container_project.archived_at is null and container_project.deleted_at is null
+      and not (${removed("container_project")})
   )) and not exists (
     with recursive ancestors as (
       select id, parent_item_id, archived_at, deleted_at from items as parent where parent.id = ${items.parentItemId}
       union
       select parent.id, parent.parent_item_id, parent.archived_at, parent.deleted_at
       from items as parent join ancestors on parent.id = ancestors.parent_item_id
-    ) select 1 from ancestors where archived_at is not null or deleted_at is not null
+    ) select 1 from ancestors where ${removed("ancestors")}
   )
 )`;
+};
+export const itemContainersLive = itemContainersFree(["archived_at", "deleted_at"]);
+/** Neither the item nor its project or parent is in the Trash; archived ones pass (Search's "Include archived"). */
+export const itemNotDeleted = and(isNull(items.deletedAt), itemContainersFree(["deleted_at"]));
+/** The item, its project or its parent is archived. */
+export const itemArchived = sql<boolean>`not (${and(isNull(items.archivedAt), itemContainersFree(["archived_at"]))})`;
 export const itemIsLive = and(isNull(items.archivedAt), isNull(items.deletedAt), itemContainersLive);
 
 type LifecycleChange = { archived?: boolean; deleted?: boolean };
