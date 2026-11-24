@@ -1,5 +1,5 @@
 // The signed-in person: profile (name, handle, avatar colour) and project invites.
-import { and, asc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { nanoid } from "nanoid";
@@ -7,7 +7,6 @@ import { z } from "zod";
 
 import { LABEL_COLORS } from "../../shared/enums";
 import { MAX_AVATAR_BYTES } from "../../shared/avatars";
-import { itemsToCalendar } from "../../shared/calendarExport";
 import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
@@ -17,9 +16,9 @@ import { logActivity } from "../services/activity";
 import { memberProjectIds } from "../services/projects";
 import { ApiFailure, fail, idParam, validate } from "../errors";
 import { setAvatar } from "../services/avatars";
+import { calendarOf, currentFeed, feedCalendar, resetFeed } from "../services/calendarFeed";
 import { attachmentHeaders } from "../services/attachmentResponse";
 import { openUpload } from "../services/uploads";
-import { itemIsLive } from "../services/lifecycle";
 import { inviteRequestId, requestNewInvite } from "../services/inviteRequests";
 
 export const meRoute = new Hono()
@@ -84,9 +83,7 @@ export const tokensRoute = new Hono()
 /** Everything the viewer can see, as one JSON document. */
 export const exportRoute = new Hono().get("/calendar", async (c) => {
   const v = viewerOf(c);
-  const ids = await memberProjectIds(v.userId);
-  const dated = await db.select().from(items).where(and(itemIsLive, or(isNotNull(items.dueDate), isNotNull(items.startDate)), or(ids.length ? inArray(items.projectId, ids) : undefined, eq(items.listId, v.inboxListId)))).orderBy(asc(items.dueDate), asc(items.id));
-  return c.body(itemsToCalendar(dated, env.APP_URL), 200, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="todoi-calendar-${new Date().toISOString().slice(0, 10)}.ics"` });
+  return c.body(await calendarOf(v.userId, v.inboxListId), 200, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="todoi-calendar-${new Date().toISOString().slice(0, 10)}.ics"` });
 }).get("/", async (c) => {
   const v = viewerOf(c);
   const ids = await memberProjectIds(v.userId);
@@ -100,6 +97,22 @@ export const exportRoute = new Hono().get("/calendar", async (c) => {
   ]);
   const doc = { exportedAt: new Date().toISOString(), user: { id: v.userId, name: v.name, email: v.email }, groups: gs, projects: ps, lists: ls, labels: lbs, items: its };
   return c.body(JSON.stringify(doc, null, 2), 200, { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="todoi-export-${new Date().toISOString().slice(0, 10)}.json"` });
+});
+
+/** The person's private calendar feed link (made on first read), and Reset link, which stops the old one at once. */
+export const calendarFeedRoute = new Hono()
+  .get("/", async (c) => c.json(await currentFeed(viewerOf(c).userId)))
+  .post("/reset", async (c) => c.json(await resetFeed(viewerOf(c).userId)));
+
+/**
+ * The live feed calendar apps poll: no session, the secret is the link. Mounted before the session middleware.
+ * Wrong, malformed and reset tokens all answer 404; nothing is cached on the way, the calendar is one person's.
+ */
+export const feedsRoute = new Hono().get("/calendar/:file", async (c) => {
+  const token = /^(.+)\.ics$/.exec(c.req.param("file"))?.[1];
+  const ics = token ? await feedCalendar(token) : null;
+  if (!ics) return fail(c, 404, "Not found");
+  return c.body(ics, 200, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": 'inline; filename="todoi.ics"', "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex" });
 });
 
 const inviteOut = async (code: string) => {

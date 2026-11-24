@@ -5,7 +5,7 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
-import { avatarsRoute, exportRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
+import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
 import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
@@ -26,12 +26,15 @@ export const app = new Hono()
   .get("/health", (c) => c.json({ ok: true }))
   // Better Auth owns /api/auth/*; everything after resolves the session first.
   .on(["GET", "POST"], "/auth/*", (c) => auth.handler(c.req.raw))
+  // Calendar apps poll the private feed without a session: the link is the secret (no cookie is read or set).
+  .route("/feeds", feedsRoute)
   .use("*", authMiddleware)
   .use("*", workspaceMutations)
   .route("/me", meRoute)
   .route("/avatars", avatarsRoute)
   .route("/me/tokens", tokensRoute)
   .route("/me/export", exportRoute)
+  .route("/me/calendar-feed", calendarFeedRoute)
   .route("/invites", invitesRoute)
   .route("/projects", projectInvitesRoute)
   .route("/groups", groupsRoute)

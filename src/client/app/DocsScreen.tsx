@@ -143,6 +143,9 @@ Content-Type: application/json`}</pre>
               <li>
                 <code>GET /me/export</code>: everything the person can see, as one JSON file
               </li>
+              <li>
+                <code>GET /me/calendar-feed</code>: the private calendar feed link (<code>POST /me/calendar-feed/reset</code> replaces it; the old link stops at once)
+              </li>
             </ul>
           </>
         ),

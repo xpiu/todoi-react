@@ -124,6 +124,19 @@ export const invites = pgTable(
   (t) => [index("invites_project_idx").on(t.projectId)],
 );
 
+/**
+ * A person's private calendar feed (the Calendar's "Subscribe to calendar"). The link carries `feedId` and an
+ * HMAC of it (services/calendarFeed.ts), so the secret part is never stored; "Reset link" replaces `feedId`
+ * and the old link stops at once.
+ */
+export const calendarFeeds = pgTable("calendar_feeds", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  feedId: text("feed_id").notNull().unique(),
+  ...timestamps,
+});
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
