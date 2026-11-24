@@ -10,7 +10,6 @@ import { AvatarUpload } from "./AvatarUpload";
 import { authClient } from "../auth";
 import { useAccountMutations, useMe, useSessions, useTokens } from "../data/account";
 import { useLabelMutations } from "../data/itemContent";
-import { api, apiError } from "../data/api";
 import { useArchive } from "../data/projects";
 import { projectsOf, useGroups, useLabels, useProjectItems } from "../data/queries";
 import { Avatar } from "../design/core/Avatar";
@@ -38,7 +37,7 @@ import { useSaveState } from "./saveState";
 import { SyncRecovery, syncOperationLabel } from "./SyncRecovery";
 import { PasswordField } from "../design/auth/PasswordField";
 import { MonoValue, SettingsLink, SettingsShell, StatusDot, type SettingsGroup, type SettingsPage, type SettingsRow } from "../design/settings/SettingsShell";
-import { downloadText } from "./exportData";
+import { downloadAccountExport } from "./exportData";
 import { copyAndNotify, notifyFailure, quote, useFeedback } from "./feedback";
 import { useLifecycle } from "./lifecycle";
 import { projectUrl } from "./links";
@@ -121,10 +120,7 @@ function ExportAllButton({ notify, format = "json" }: { notify: Notify; format?:
   const run = async () => {
     setBusy(true);
     try {
-      const res = await (format === "ics" ? api.api.me.export.calendar.$get() : api.api.me.export.$get());
-      if (!res.ok) throw await apiError(res);
-      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `todoi-export.${format}`;
-      downloadText(name, await res.blob());
+      await downloadAccountExport(format);
       notify({ message: format === "ics" ? "Exported dated items as a calendar" : "Exported everything as JSON", icon: "download" });
     } catch (err) {
       notifyFailure(err, "Couldn't export: ");

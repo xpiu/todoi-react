@@ -11,6 +11,9 @@ export type ApiToken = InferResponseType<typeof api.api.me.tokens.$get, 200>[num
 
 export const useMe = (enabled = true) => useQuery({ queryKey: ["me"], queryFn: ({ signal }) => api.api.me.$get(undefined, { init: { signal } }).then((r) => unwrap<Me>(r)), enabled });
 export const useTokens = (enabled = true) => useQuery({ queryKey: ["me", "tokens"], queryFn: () => api.api.me.tokens.$get().then((r) => unwrap<ApiToken[]>(r)), enabled });
+export type CalendarFeed = InferResponseType<(typeof api.api.me)["calendar-feed"]["$get"], 200>;
+/** The person's private calendar feed link (the server makes it on first read). */
+export const useCalendarFeed = (enabled = true) => useQuery({ queryKey: ["me", "calendar-feed"], queryFn: ({ signal }) => api.api.me["calendar-feed"].$get(undefined, { init: { signal } }).then((r) => unwrap<CalendarFeed>(r)), enabled });
 /** The person's signed-in devices (Better Auth sessions). */
 export const useSessions = (enabled = true) => useQuery({ queryKey: ["me", "sessions"], queryFn: async () => (await authClient.listSessions()).data ?? [], enabled });
 
@@ -32,5 +35,7 @@ export function useAccountMutations() {
   });
   const createToken = useMutation({ mutationFn: (vars: { name: string; days?: number }) => api.api.me.tokens.$post({ json: vars }).then((r) => unwrap<ApiToken & { secret: string }>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
   const revokeToken = useMutation({ mutationFn: (vars: { id: string }) => api.api.me.tokens[":id"].$delete({ param: vars }).then((r) => unwrap<void>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
-  return { updateMe, updateAvatar, createToken, revokeToken };
+  /** A new feed link; the old one stops at once, so the answer replaces the cached link. `quiet`: the caller shows a failure itself. */
+  const resetCalendarFeed = useMutation({ mutationFn: (_: { quiet?: boolean }) => api.api.me["calendar-feed"].reset.$post().then((r) => unwrap<CalendarFeed>(r)), onSuccess: (feed) => qc.setQueryData(["me", "calendar-feed"], feed) });
+  return { updateMe, updateAvatar, createToken, revokeToken, resetCalendarFeed };
 }

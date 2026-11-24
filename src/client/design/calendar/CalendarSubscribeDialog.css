@@ -1,0 +1,134 @@
+/* CalendarSubscribeDialog — the body of "Subscribe to calendar" (CalendarSubscribePanel) on the shared Dialog. Tokens only. */
+@layer components {
+  .td-calendar-subscribe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    font: 400 14px / 20px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-calendar-subscribe-intro {
+    margin: 0 0 var(--sp-1);
+    color: var(--ink-600);
+  }
+  .td-calendar-subscribe-intro b {
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .td-calendar-subscribe-label {
+    font: 600 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-calendar-subscribe-link {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .td-calendar-subscribe-url {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    box-sizing: border-box;
+    padding: 0 10px;
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    background: var(--surface-list);
+    font: 400 12px / 18px var(--font-mono);
+    color: var(--ink-900);
+    text-overflow: ellipsis;
+  }
+  .td-calendar-subscribe-url:focus {
+    outline: none;
+    border-color: var(--blue-500);
+    box-shadow: 0 0 0 1px var(--blue-500);
+  }
+  .td-calendar-subscribe-url.is-loading {
+    display: flex;
+    align-items: center;
+  }
+  .td-calendar-subscribe-failed {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+  }
+  .td-calendar-subscribe-note,
+  .td-calendar-subscribe-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font: 400 12px / 16px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-calendar-subscribe-note > svg,
+  .td-calendar-subscribe-status > svg {
+    flex: none;
+    margin-top: 1px;
+  }
+  .td-calendar-subscribe-status {
+    color: var(--ink-900);
+  }
+  .td-calendar-subscribe-howto {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2) var(--sp-3);
+    flex-wrap: wrap;
+    margin-top: var(--sp-3);
+  }
+  .td-calendar-subscribe-steps {
+    margin: 0;
+    padding: 0 0 0 20px;
+    display: grid;
+    gap: var(--sp-1);
+    font: 400 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-calendar-subscribe-rows {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--sp-3);
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-calendar-subscribe-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-4);
+    flex-wrap: wrap;
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--border-divider);
+  }
+  .td-calendar-subscribe-row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .td-calendar-subscribe-text {
+    flex: 1 1 220px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    font: 400 12px / 16px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-calendar-subscribe-text b {
+    font: 500 14px / 20px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-calendar-subscribe-actions {
+    display: flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+  }
+  .td-calendar-subscribe-wide {
+    flex-basis: 100%;
+  }
+  /* Phone: the link and its Copy button stack so the link keeps the full width */
+  html[data-device="phone"] .td-calendar-subscribe-link {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  html[data-touch="true"] .td-calendar-subscribe-url {
+    height: 44px;
+  }
+}

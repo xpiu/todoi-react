@@ -47,7 +47,7 @@ word for the thing: `td-card` (ItemCard), `td-label` (LabelChip), `td-due` (DueD
 | `board/ListColumn.css` | `td-list-column` (a list on the board) |
 | `list/ListSection.css`, `list/ListView.css` | `td-list-section` (a list in the List view), `td-list-view` |
 | `core/DatePicker.css` | `td-date-picker`, `td-date-calendar` (the month grid inside it) |
-| `calendar/*.css` | `td-calendar-view`, `-header`, `-grid`, `-week`, `-cell`, `-day-number`, `-chip`, `-span`, `-more`, `-day-list`, `-mini` |
+| `calendar/*.css` | `td-calendar-view`, `-header`, `-grid`, `-week`, `-cell`, `-day-number`, `-chip`, `-span`, `-more`, `-day-list`, `-mini`, `-tray` (+ `-tray-row`, `-tray-item`, `-tray-date`, `-tray-toggle`, …), `-subscribe` (+ `-subscribe-url`, `-subscribe-row`, …; dialog `td-calendar-subscribe-dialog`) |
 | `overlay/Checklist.css` | `td-checklist`, `td-checklist-head`, `-row`, `-add`, `-grip`, `-line`, `-list` |
 | `overlay/CommentComposer.css` | `td-composer`, `td-mention-field` |
 | `core/Skeleton.css` | `td-skeleton` (one placeholder), `td-skeleton-view` (a whole placeholder screen) |

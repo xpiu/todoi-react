@@ -43,6 +43,7 @@ import { HiddenListsMenu } from "../design/board/HiddenListsMenu";
 import { ProjectPicker } from "../design/core/ProjectPicker";
 import { useFileDropTargets } from "../design/overlay/Attachments";
 import { attachFiles } from "./uploads";
+import { CalendarSubscribe } from "./CalendarSubscribe";
 import { ItemOverlayScreen } from "./ItemOverlayScreen";
 import { CardQuickEdit } from "../design/board/CardQuickEdit";
 import type { QuickField } from "../design/core/itemFields";
@@ -769,6 +770,7 @@ function ProjectCalendar({ projectId, project, items, labels, filters, openItem 
   const readOnly = !role || role === "viewer";
   const phone = useViewport().device === "phone";
   const [trayOpen, setTrayOpen] = usePersistedFlag(CALENDAR_TRAY_KEY, !phone);
+  const [subscribing, setSubscribing] = useState(false);
   const { calItems, trayCount } = useMemo(() => {
     const listName = new Map(actions.lists.map((l) => [l.id, l.name]));
     const subs = new Map<string, Item[]>();
@@ -789,20 +791,25 @@ function ProjectCalendar({ projectId, project, items, labels, filters, openItem 
   }, [items, filters, ctx, showCompleted, actions.lists, actions.people, project.keyPrefix, labels, today]);
   if (!actions.lists.length) return <NoLists actions={actions} />;
   return (
-    <CalendarView
-      items={calItems}
-      today={today}
-      onOpenItem={(id) => openItem(id)}
-      onReschedule={actions.reschedule}
-      onAddItem={actions.addItemOn}
-      onToggleDone={actions.setDone}
-      onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)}
-      trayOpen={trayOpen}
-      onTrayOpenChange={setTrayOpen}
-      trayCount={trayCount}
-      onSchedule={actions.schedule}
-      onClearDate={actions.clearDue}
-      readOnly={readOnly}
-    />
+    <>
+      <CalendarView
+        items={calItems}
+        today={today}
+        onOpenItem={(id) => openItem(id)}
+        onReschedule={actions.reschedule}
+        onAddItem={actions.addItemOn}
+        onToggleDone={actions.setDone}
+        onToggleSubitem={(_item, sub, done) => actions.setDone(sub, done)}
+        trayOpen={trayOpen}
+        onTrayOpenChange={setTrayOpen}
+        trayCount={trayCount}
+        onSchedule={actions.schedule}
+        onClearDate={actions.clearDue}
+        onSubscribe={() => setSubscribing(true)}
+        readOnly={readOnly}
+      />
+      {/* Every signed-in person, guests and viewers too, has their own feed */}
+      <CalendarSubscribe open={subscribing} onClose={() => setSubscribing(false)} projectName={project.name} />
+    </>
   );
 }

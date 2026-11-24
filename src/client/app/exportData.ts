@@ -1,8 +1,8 @@
 // Export builders — pure: an item (with subitems, description, attachments, comments) or a view (the
 // items shown, filters and sort applied) as Markdown (the Embridge format Import reads) or CSV
 // (Title, List, Status, Priority, Due, Labels, Assignee, Key). PDF goes through the browser print
-// pipeline. Spec: DESIGN.md › Export & print.
-import type { Item, Label } from "../data/api";
+// pipeline. The account-wide exports come from the server (`downloadAccountExport`). Spec: DESIGN.md › Export & print.
+import { api, apiError, type Item, type Label } from "../data/api";
 import { STATUSES } from "../design/core/statuses";
 import { PRIORITY_LABEL, keyOf, type Person } from "./items";
 
@@ -73,6 +73,14 @@ export function downloadText(name: string, text: string | Blob, mime = "text/pla
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** The account export the server builds — everything as JSON, or the calendar as a one-time .ics — handed to the browser; throws the API's reason. */
+export async function downloadAccountExport(format: "json" | "ics") {
+  const res = await (format === "ics" ? api.api.me.export.calendar.$get() : api.api.me.export.$get());
+  if (!res.ok) throw await apiError(res);
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `todoi-export.${format}`;
+  downloadText(name, await res.blob());
 }
 
 export const fileSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "export";
