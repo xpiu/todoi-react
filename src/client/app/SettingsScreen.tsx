@@ -9,6 +9,7 @@ import { AVATAR_HINT } from "../../shared/avatars";
 import { AvatarUpload } from "./AvatarUpload";
 import { authClient } from "../auth";
 import { useAccountMutations, useMe, useSessions, useTokens } from "../data/account";
+import { errorMessage } from "../data/api";
 import { useLabelMutations } from "../data/itemContent";
 import { useArchive } from "../data/projects";
 import { projectsOf, useGroups, useLabels, useProjectItems } from "../data/queries";
@@ -48,7 +49,8 @@ import { useSidebarOrder } from "./useSidebarOrder";
 import { useLastProject } from "./lastProject";
 import { SidebarOrder } from "../design/navigation/SidebarOrder";
 import { useOpenProject } from "./useOpenProject";
-import { useChangeEmailFlow, useDeleteAccountFlow } from "./AccountFlows";
+import { useChangeEmailFlow, useDeleteAccountFlow, useEmailConfirmation } from "./AccountFlows";
+import { emailNotificationsGroup, type EmailKind } from "../design/settings/EmailNotifications";
 
 const settingsRoute = getRouteApi("/app/settings");
 const accountRoute = getRouteApi("/app/account");
@@ -163,6 +165,29 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const [labelProject, setLabelProject] = useState<string | null>(null);
   const labelsSection = useLabelsSection(page === "settings" ? labelProject : null, setLabelProject, page === "settings" ? projects : []);
   const account = useAccountPages(page === "account", projects, online);
+  const registered = !!user && !user.isAnonymous;
+  const me = useMe(page === "settings" && registered);
+  const confirmation = useEmailConfirmation(me.data?.email ?? user?.email ?? "");
+  const [emailFailed, setEmailFailed] = useState<{ key: EmailKind; message: string } | null>(null);
+  const emailGroup = registered
+    ? [
+        emailNotificationsGroup({
+          values: { emailMentions: prefs.emailMentions, emailAssignments: prefs.emailAssignments, emailComments: prefs.emailComments, emailInvites: prefs.emailInvites },
+          onChange: (key, on) => {
+            setEmailFailed(null);
+            prefs.save({ [key]: on }).catch((err: unknown) => setEmailFailed({ key, message: errorMessage(err).replace(/\.$/, "") }));
+          },
+          email: me.data?.email ?? user.email,
+          pendingEmail: me.data?.pendingEmail,
+          // Until the account loads, don't flash the "not confirmed" state.
+          confirmed: me.data ? me.data.emailVerified : true,
+          failed: emailFailed,
+          onOpenAccount: () => navigate({ to: "/account", search: { s: "signin" } }),
+          onSendConfirmation: confirmation.send,
+          confirmation: confirmation.state,
+        }),
+      ]
+    : [];
   const prefSwitch = (k: keyof Prefs, label: string) => <Switch aria-label={label} checked={!!prefs[k]} onChange={(v) => prefs.set({ [k]: v })} />;
   const sel = <V extends string>(label: string, value: V, options: ReadonlyArray<Opt<V>>, onChange: (v: V) => void, width = 220) => (
     <Select aria-label={label} value={value} options={options} onChange={(v) => v && onChange(v)} placement="bottom-end" tier="detached" width={width} />
@@ -338,7 +363,9 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         label: "Notifications",
         icon: "bell",
         groups: [
-          { id: "nt-where", title: "Where they land", rows: [{ id: "ntInbox", label: "Inbox", hint: "Mentions, assignments and comments on items you watch arrive as unread items in your Inbox", control: <Button icon="inbox" onClick={() => navigate({ to: "/inbox" })}>Open Inbox</Button> }, { id: "notifyEmail", label: "Email delivery", hint: "Email sending isn't set up yet — notifications arrive in your Inbox only", control: <MonoValue value="Inbox only" /> }, { id: "inboxBadge", label: "Unread count on Inbox", hint: "Show a dot on the sidebar Inbox row while it holds unread items", control: prefSwitch("inboxBadge", "Unread count on Inbox") }] },
+          { id: "nt-where", title: "Where they land", rows: [{ id: "ntInbox", label: "Inbox", hint: "Mentions, assignments and comments on items you watch arrive as unread items in your Inbox", control: <Button icon="inbox" onClick={() => navigate({ to: "/inbox" })}>Open Inbox</Button> }, { id: "inboxBadge", label: "Unread count on Inbox", hint: "Show a dot on the sidebar Inbox row while it holds unread items", control: prefSwitch("inboxBadge", "Unread count on Inbox") }] },
+          // Email adds to the Inbox, per kind; only invites are emailed so far (the other switches are stored for when they are).
+          ...emailGroup,
           {
             id: "nt-events",
             title: "Events",
@@ -475,6 +502,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const me = useMe(active);
   const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
   const deleteAccount = useDeleteAccountFlow(me.data?.email ?? user?.email ?? "", online);
+  const confirmEmail = useEmailConfirmation(me.data?.email ?? user?.email ?? "");
   const am = useAccountMutations();
   const tokens = useTokens(active);
   const archive = useArchive(undefined, active);
@@ -620,7 +648,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             id: "checklist",
             title: "Security checklist",
             rows: [
-              { id: "ckEmail", label: "Verified primary email", hint: m?.emailVerified ? "Recovery links reach you" : "Not confirmed yet: Settings › Notifications sends the link again", control: <StatusDot on={!!m?.emailVerified} label={m?.emailVerified ? "Ready" : "Pending"} /> },
+              { id: "ckEmail", label: "Verified primary email", hint: m?.emailVerified || !m ? "Recovery links reach you" : confirmEmail.state === "sent" ? `Sent. Open the link in the email to ${m.email}` : typeof confirmEmail.state === "object" ? `Couldn't send the link: ${confirmEmail.state.error}` : "Confirm your address so reset links reach you", control: m?.emailVerified || !m ? <StatusDot on label="Ready" /> : <Button icon="mail-check" disabled={confirmEmail.state === "busy"} onClick={confirmEmail.send}>{confirmEmail.state === "busy" ? "Sending…" : confirmEmail.state === "sent" ? "Send it again" : "Send confirmation"}</Button> },
               { id: "ckSessions", label: "Active sessions", hint: otherSessions ? `${count(otherSessions, "other device")} signed in` : "Only this device is signed in", control: <Button icon="monitor-smartphone" onClick={() => navigate({ to: "/account", search: { s: "devices" } })}>Review sessions</Button> },
               { id: "ckEverywhere", label: "Log out everywhere else", hint: "Ends every other session; this device stays signed in", control: <Button icon="log-out" disabled={!otherSessions} onClick={() => void authClient.revokeOtherSessions().then(() => {
                 sessions.refetch();

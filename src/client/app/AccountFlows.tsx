@@ -12,9 +12,23 @@ import { count } from "../design/core/text";
 import { formatBytes } from "../design/overlay/Attachments";
 import { ChangeEmailDialog, primaryEmailRow } from "../design/settings/ChangeEmailDialog";
 import { DeleteAccountDialog } from "../design/settings/DeleteAccountDialog";
+import type { ConfirmationState } from "../design/settings/EmailNotifications";
 import type { SettingsRow } from "../design/settings/SettingsShell";
 import { downloadAccountExport } from "./exportData";
 import { useFeedback } from "./feedback";
+
+/** Send the "Confirm your email" link again (Settings › Notifications, Account › Security). */
+export function useEmailConfirmation(email: string) {
+  const [state, setState] = useState<ConfirmationState>("idle");
+  const send = () => {
+    setState("busy");
+    authClient.sendVerificationEmail({ email, callbackURL: "/verify-email" }).then(
+      (r) => setState(r.error ? { error: (r.error.message ?? "the server refused it").replace(/\.$/, "") } : "sent"),
+      (err: unknown) => setState({ error: errorMessage(err).replace(/\.$/, "") }),
+    );
+  };
+  return { state, send };
+}
 
 type DeletionReview = { projects: Array<{ id: string; name: string; items: number }>; groups: Array<{ id: string; name: string; projects: number }>; attachments: { count: number; bytes: number }; memberOf: number; blockers: string[]; fresh: boolean };
 

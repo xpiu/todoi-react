@@ -16,13 +16,26 @@ export { DEFAULT_PREFS, type Prefs };
 
 const WEEK_START = { mon: 1, sun: 0, sat: 6 } as const;
 
-export const usePrefs = create<Prefs & { set: (patch: Partial<Prefs>) => void }>()(
+const saveToAccount = (patch: Partial<Prefs>) => api.api.me.prefs.$patch({ json: patch }).then((r) => unwrap(r));
+
+export const usePrefs = create<Prefs & { set: (patch: Partial<Prefs>) => void; save: (patch: Partial<Prefs>) => Promise<void> }>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...DEFAULT_PREFS,
       set: (patch) => {
         set(patch);
-        api.api.me.prefs.$patch({ json: patch }).then((r) => unwrap(r)).catch((err: unknown) => notifyFailure(err, "Couldn't save that setting to your account: "));
+        saveToAccount(patch).catch((err: unknown) => notifyFailure(err, "Couldn't save that setting to your account: "));
+      },
+      /** For a control that shows its own failure: applied at once, put back when the account refuses it. */
+      save: async (patch) => {
+        const before = Object.fromEntries(Object.keys(patch).map((k) => [k, get()[k as keyof Prefs]])) as Partial<Prefs>;
+        set(patch);
+        try {
+          await saveToAccount(patch);
+        } catch (err) {
+          set(before);
+          throw err;
+        }
       },
     }),
     { name: "td-prefs", partialize: (s) => prefsOf(s), merge: (stored, current) => ({ ...current, ...prefsOf(stored) }) },
