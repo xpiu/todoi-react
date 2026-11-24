@@ -11,7 +11,6 @@ import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
 import { apiTokens, groups, invites, items, labels, lists, members, projects, users } from "../db/schema";
-import { env } from "../env";
 import { logActivity } from "../services/activity";
 import { memberProjectIds } from "../services/projects";
 import { ApiFailure, fail, idParam, validate } from "../errors";

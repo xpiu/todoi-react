@@ -18,6 +18,7 @@ import { createHash } from "node:crypto";
 import { accounts, apiTokens, lists, sessions, users, verifications } from "./db/schema";
 import { DEV, env } from "./env";
 import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } from "./email";
+import { isDeletedAddress } from "./services/accountDeletion";
 import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
 import { fail } from "./errors";
@@ -107,6 +108,10 @@ const VIEWER = "viewer";
 export async function inboxFor(userId: string): Promise<string> {
   const [row] = await db.select({ id: lists.id }).from(lists).where(and(eq(lists.kind, "inbox"), eq(lists.userId, userId)));
   if (row) return row.id;
+  // A deleted account has no Inbox and never gets one back: another device's cached session (Better Auth's
+  // 60-second cookie cache) ends here instead of writing into a removed account.
+  const [owner] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+  if (!owner || isDeletedAddress(owner.email)) throw new HTTPException(401, { message: "Sign in to continue" });
   const id = userId === LOCAL_USER_ID ? LOCAL_INBOX_ID : nanoid();
   const [inserted] = await db.insert(lists).values({ id, kind: "inbox", userId, name: "Inbox", position: 0 }).onConflictDoNothing().returning({ id: lists.id });
   if (inserted) return inserted.id;

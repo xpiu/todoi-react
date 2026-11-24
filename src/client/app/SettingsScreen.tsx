@@ -48,7 +48,7 @@ import { useSidebarOrder } from "./useSidebarOrder";
 import { useLastProject } from "./lastProject";
 import { SidebarOrder } from "../design/navigation/SidebarOrder";
 import { useOpenProject } from "./useOpenProject";
-import { useChangeEmailFlow } from "./AccountFlows";
+import { useChangeEmailFlow, useDeleteAccountFlow } from "./AccountFlows";
 
 const settingsRoute = getRouteApi("/app/settings");
 const accountRoute = getRouteApi("/app/account");
@@ -474,6 +474,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const { user } = useCurrentUser();
   const me = useMe(active);
   const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
+  const deleteAccount = useDeleteAccountFlow(me.data?.email ?? user?.email ?? "", online);
   const am = useAccountMutations();
   const tokens = useTokens(active);
   const archive = useArchive(undefined, active);
@@ -680,7 +681,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
               { id: "archive", label: "Archive and trash", hint: `${count(archived, "entry", "entries")} waiting to be restored or removed for good`, control: <Button icon="archive" onClick={() => navigate({ to: "/archive", search: {} })}>Open</Button> },
             ],
           },
-          { id: "danger", title: "Delete account", tone: "danger", rows: [{ id: "deleteAccount", label: "Delete my account", hint: "Removes your profile and every project you own — contact support to run this until self-service deletion ships", control: <Button icon="trash-2" className="td-settings-danger" disabled>Delete</Button> }] },
+          { id: "danger", title: "Delete account", tone: "danger", rows: [deleteAccount.row] },
         ],
       },
       { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How Todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> }))] }] },
@@ -690,6 +691,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
     <>
       <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} onDone={() => notify({ message: "Password updated", icon: "check" })} />
       {changeEmail.dialog}
+      {deleteAccount.dialog}
     </>
   );
   return { page, dialogs };

@@ -1,5 +1,6 @@
 // The auth pages on Better Auth: log in, create an account, reset a password (request and the emailed
-// link's landing), confirm an email address or a change of address, and the invite landing.
+// link's landing), confirm an email address or a change of address, the invite landing, and the page
+// after an account is deleted.
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -12,6 +13,7 @@ import { SignInPage } from "../../design/auth/SignInPage";
 import { SignUpPage } from "../../design/auth/SignUpPage";
 import { VerifyEmailPage } from "../../design/auth/VerifyEmailPage";
 import { ConfirmEmailChangePage } from "../../design/auth/ConfirmEmailChangePage";
+import { AccountDeletedPage } from "../../design/settings/DeleteAccountDialog";
 import { AuthShell, AuthState } from "../../design/auth/AuthShell";
 import type { IconName } from "../../design/core/Icon";
 import { ViewSkeleton } from "../../design/core/Skeleton";
@@ -25,6 +27,7 @@ const inviteRoute = getRouteApi("/i/$code");
 const resetRoute = getRouteApi("/reset");
 const verifyRoute = getRouteApi("/verify-email");
 const confirmEmailRoute = getRouteApi("/confirm-email");
+const deletedRoute = getRouteApi("/account-deleted");
 
 const safeNext = (next: string | undefined) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
 
@@ -158,6 +161,13 @@ export function ConfirmEmailChangeScreen() {
       onOpenAccount={() => navigate({ to: "/account", search: { s: "signin" } })}
     />
   );
+}
+
+/** /account-deleted: the end of Account › Data › Delete account, signed out. */
+export function AccountDeletedScreen() {
+  const { email } = deletedRoute.useSearch();
+  const navigate = useNavigate();
+  return <AccountDeletedPage email={email ?? "Your account"} onCreateAccount={() => navigate({ to: "/signup", search: {} })} />;
 }
 
 /** /verify-email: Better Auth confirmed the address and sent the person here (?error=… when it couldn't). */
