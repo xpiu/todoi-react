@@ -1,5 +1,5 @@
 // The auth pages on Better Auth: log in, create an account, reset a password (request and the emailed
-// link's landing), confirm an email address, and the invite landing.
+// link's landing), confirm an email address or a change of address, and the invite landing.
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { ResetPasswordPage, type ResetStage } from "../../design/auth/ResetPassw
 import { SignInPage } from "../../design/auth/SignInPage";
 import { SignUpPage } from "../../design/auth/SignUpPage";
 import { VerifyEmailPage } from "../../design/auth/VerifyEmailPage";
+import { ConfirmEmailChangePage } from "../../design/auth/ConfirmEmailChangePage";
 import { AuthShell, AuthState } from "../../design/auth/AuthShell";
 import type { IconName } from "../../design/core/Icon";
 import { ViewSkeleton } from "../../design/core/Skeleton";
@@ -23,6 +24,7 @@ const signupRoute = getRouteApi("/signup");
 const inviteRoute = getRouteApi("/i/$code");
 const resetRoute = getRouteApi("/reset");
 const verifyRoute = getRouteApi("/verify-email");
+const confirmEmailRoute = getRouteApi("/confirm-email");
 
 const safeNext = (next: string | undefined) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
 
@@ -138,6 +140,22 @@ export function ResetScreen() {
       onRequestAgain={restart}
       onBackToLogin={() => navigate({ to: "/login", search: { email: email || undefined } })}
       onContinue={() => window.location.assign("/")}
+    />
+  );
+}
+
+/** /confirm-email: a change-of-address link (server: services/emailChange.ts). Expired also covers a change
+ *  cancelled or replaced since, and an address someone else took meanwhile; INVALID_TOKEN is a used link. */
+export function ConfirmEmailChangeScreen() {
+  const { email, error } = confirmEmailRoute.useSearch();
+  const navigate = useNavigate();
+  return (
+    <ConfirmEmailChangePage
+      stage={!error ? "confirmed" : ["TOKEN_EXPIRED", "CHANGE_CANCELLED", "EMAIL_TAKEN"].includes(error) ? "expired" : "used"}
+      email={email}
+      // A full load: this browser's session now carries the new address.
+      onContinue={() => window.location.assign("/")}
+      onOpenAccount={() => navigate({ to: "/account", search: { s: "signin" } })}
     />
   );
 }

@@ -1,0 +1,194 @@
+/* AccountDialogs — the Account flows on the shared Dialog (ChangeEmailDialog, DeleteAccountDialog), from
+   Design's settings/AccountDialogs.css (2026-11-24). The two-factor, passkey and specimen-card rules stay
+   in the kit: the app has neither flow (owner decision D, 2026-11-25). Tokens only. */
+@layer components {
+  .td-account-dialog {
+    font: 400 14px / 20px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-account-text {
+    margin: 0 0 12px;
+    color: var(--ink-600);
+    text-wrap: pretty;
+  }
+  .td-account-text b {
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .td-account-note {
+    margin: 4px 0 0;
+    font: 400 12px / 16px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-account-note b {
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .td-account-form {
+    margin: 0;
+  }
+  .td-account-field {
+    margin-bottom: 12px;
+  }
+  .td-account-field .td-field {
+    height: 36px;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .td-account-label {
+    display: block;
+    margin: 0 0 4px;
+    font: 500 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-account-state {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .td-account-state > div {
+    flex: 1;
+    min-width: 0;
+  }
+  .td-account-state b {
+    display: block;
+    font: 600 14px / 20px var(--font-ui);
+  }
+  .td-account-state p {
+    margin: 2px 0 0;
+    font: 400 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+    text-wrap: pretty;
+  }
+  .td-account-state p b {
+    display: inline;
+    font: 600 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+    overflow-wrap: anywhere;
+  }
+  .td-account-state-icon {
+    flex: none;
+    display: inline-flex;
+    margin-top: 1px;
+    color: var(--ink-400);
+  }
+  .td-account-state-icon[data-tone="success"] {
+    color: var(--success-icon);
+  }
+  .td-account-state-icon[data-tone="danger"] {
+    color: var(--danger);
+  }
+  .td-account-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .td-account-wide {
+    flex-basis: 100%;
+  }
+
+  /* A labelled action row inside a dialog (Export first) */
+  .td-account-export {
+    display: flex;
+    align-items: center;
+    gap: 8px 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-account-export-text {
+    flex: 1 1 200px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    font: 400 12px / 16px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-account-export-text b {
+    font: 500 14px / 20px var(--font-ui);
+    color: var(--ink-900);
+  }
+
+  /* Delete account: what goes */
+  .td-account-lists {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--surface-list);
+  }
+  .td-account-list-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-600);
+  }
+  .td-account-list-head b {
+    font: 600 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-account-list {
+    margin: 4px 0 0;
+    padding: 0 0 0 24px;
+    list-style: none;
+    display: grid;
+    gap: 2px;
+  }
+  .td-account-list li {
+    display: flex;
+    gap: 8px;
+    font: 400 13px / 18px var(--font-ui);
+  }
+  .td-account-list-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-account-list-meta {
+    flex: none;
+    margin-left: auto;
+    color: var(--ink-400);
+  }
+  .td-account-list-group > .td-account-note {
+    margin: 2px 0 0 24px;
+  }
+  .td-account-blockers {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 0 1px var(--danger);
+    font: 400 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-account-blockers b {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+  .td-account-blockers b svg {
+    color: var(--danger);
+  }
+  .td-account-blockers ul {
+    margin: 4px 0 0;
+    padding-left: 22px;
+    display: grid;
+    gap: 2px;
+    color: var(--ink-600);
+  }
+
+  /* Touch: 44px fields */
+  html[data-touch="true"] .td-account-field .td-field {
+    height: 44px;
+  }
+}

@@ -2,6 +2,7 @@
 // line under the button, "Log in" under the card. An invite locks the address it was sent to.
 import { useState } from "react";
 
+import { validEmail } from "../core/text";
 import { Button } from "../core/Button";
 import { AuthLink, AuthShell } from "./AuthShell";
 import { PasswordField } from "./PasswordField";
@@ -22,7 +23,7 @@ export function SignUpPage({ context, defaultName = "", defaultEmail = "", lockE
   const [name, setName] = useState(defaultName);
   const [email, setEmail] = useState(defaultEmail);
   const [pw, setPw] = useState("");
-  const validMail = /^\S+@\S+\.\S+$/.test(email.trim());
+  const validMail = validEmail(email);
   const can = name.trim().length > 0 && validMail && pw.length >= minLength && !busy;
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();

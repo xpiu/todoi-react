@@ -1,7 +1,10 @@
-// Small text helpers every surface needs: a pluralised count, a value trigger's name, an "a, b and c" list and a search-match highlighter.
+// Small text helpers every surface needs: an email check, a pluralised count, a value trigger's name, an "a, b and c" list and a search-match highlighter.
 import type { ReactNode } from "react";
 
 import "./text.css";
+
+/** Looks like a whole address ("name@company.com"): the forms' one check before the server's. */
+export const validEmail = (v: string | null | undefined) => /^\S+@\S+\.\S+$/.test(String(v ?? "").trim());
 
 /** "1 item", "3 items", "2 entries" — the one place the plural rule lives. */
 export const count = (n: number, word: string, plural = `${word}s`) => `${n} ${n === 1 ? word : plural}`;

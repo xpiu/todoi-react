@@ -2,6 +2,7 @@
 // (Provider buttons and magic links come with their backends.) Spec: DESIGN.md › Sign-in.
 import { useState } from "react";
 
+import { validEmail } from "../core/text";
 import { Button } from "../core/Button";
 import { AuthError, AuthLink, AuthShell } from "./AuthShell";
 
@@ -18,7 +19,7 @@ export interface SignInPageProps {
 export function SignInPage({ context, defaultEmail = "", onSignIn, onForgotPassword, onCreateAccount, error, busy }: SignInPageProps) {
   const [email, setEmail] = useState(defaultEmail);
   const [pw, setPw] = useState("");
-  const validMail = /^\S+@\S+\.\S+$/.test(email.trim());
+  const validMail = validEmail(email);
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!validMail || !pw || busy) return;

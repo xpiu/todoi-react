@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { LabelColor, MemberRole, ProjectView, ProjectVisibility } from "../../../shared/enums";
 import { useProjectIcons } from "../core/appearance";
 import { Avatar } from "../core/Avatar";
+import { validEmail } from "../core/text";
 import { Button } from "../core/Button";
 import { Dialog } from "../core/Dialog";
 import { COPY_FAILED, copyIcon, useCopy } from "../core/clipboard";
@@ -234,7 +235,7 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
       {children}
     </section>
   );
-  const validMail = /^\S+@\S+\.\S+$/.test(inviteMail.trim());
+  const validMail = validEmail(inviteMail);
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   /** The address clears only once the invite exists; a failure keeps it and says why. */

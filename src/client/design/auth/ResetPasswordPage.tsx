@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { linkSpan, RESET_LINK_MINUTES } from "../../../shared/accountLinks";
+import { validEmail } from "../core/text";
 import { Button } from "../core/Button";
 import { Checkbox } from "../core/Checkbox";
 import { AuthError, AuthLink, AuthShell, AuthState } from "./AuthShell";
@@ -27,7 +28,7 @@ export function ResetPasswordPage({ stage, email: emailProp = "", onSend, onSave
   const [email, setEmail] = useState(emailProp);
   const [pw, setPw] = useState("");
   const [others, setOthers] = useState(true);
-  const validMail = /^\S+@\S+\.\S+$/.test(email.trim());
+  const validMail = validEmail(email);
   const back = onBackToLogin ? <AuthLink label="Back to log in" onClick={onBackToLogin} /> : null;
   const span = linkSpan(RESET_LINK_MINUTES);
   if (stage === "sent")

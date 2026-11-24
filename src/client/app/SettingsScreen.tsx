@@ -48,6 +48,7 @@ import { useSidebarOrder } from "./useSidebarOrder";
 import { useLastProject } from "./lastProject";
 import { SidebarOrder } from "../design/navigation/SidebarOrder";
 import { useOpenProject } from "./useOpenProject";
+import { useChangeEmailFlow } from "./AccountFlows";
 
 const settingsRoute = getRouteApi("/app/settings");
 const accountRoute = getRouteApi("/app/account");
@@ -161,7 +162,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const [expanded, setExpanded] = useState<string | null>(null);
   const [labelProject, setLabelProject] = useState<string | null>(null);
   const labelsSection = useLabelsSection(page === "settings" ? labelProject : null, setLabelProject, page === "settings" ? projects : []);
-  const account = useAccountPages(page === "account", projects);
+  const account = useAccountPages(page === "account", projects, online);
   const prefSwitch = (k: keyof Prefs, label: string) => <Switch aria-label={label} checked={!!prefs[k]} onChange={(v) => prefs.set({ [k]: v })} />;
   const sel = <V extends string>(label: string, value: V, options: ReadonlyArray<Opt<V>>, onChange: (v: V) => void, width = 220) => (
     <Select aria-label={label} value={value} options={options} onChange={(v) => v && onChange(v)} placement="bottom-end" tier="detached" width={width} />
@@ -469,9 +470,10 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
 }
 
 /** Account: profile, sign-in, tokens, security, devices, projects, data, support. */
-function useAccountPages(active: boolean, projects: Array<ProjectOption & { groupName: string; visibility: string }>): { page: SettingsPage; dialogs: ReactNode } {
+function useAccountPages(active: boolean, projects: Array<ProjectOption & { groupName: string; visibility: string }>, online: boolean): { page: SettingsPage; dialogs: ReactNode } {
   const { user } = useCurrentUser();
   const me = useMe(active);
+  const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
   const am = useAccountMutations();
   const tokens = useTokens(active);
   const archive = useArchive(undefined, active);
@@ -557,7 +559,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
           {
             id: "primary",
             title: "Primary email",
-            rows: [{ id: "primaryEmail", label: "Primary email", hint: m?.emailVerified ? "Verified" : "Not verified — verification emails arrive once email sending is set up", control: <MonoValue value={m?.email ?? user?.email ?? ""} /> }],
+            rows: [changeEmail.row],
           },
           {
             id: "methods",
@@ -617,7 +619,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             id: "checklist",
             title: "Security checklist",
             rows: [
-              { id: "ckEmail", label: "Verified primary email", hint: m?.emailVerified ? "Recovery links reach you" : "Email verification arrives once email sending is set up", control: <StatusDot on={!!m?.emailVerified} label={m?.emailVerified ? "Ready" : "Pending"} /> },
+              { id: "ckEmail", label: "Verified primary email", hint: m?.emailVerified ? "Recovery links reach you" : "Not confirmed yet: Settings › Notifications sends the link again", control: <StatusDot on={!!m?.emailVerified} label={m?.emailVerified ? "Ready" : "Pending"} /> },
               { id: "ckSessions", label: "Active sessions", hint: otherSessions ? `${count(otherSessions, "other device")} signed in` : "Only this device is signed in", control: <Button icon="monitor-smartphone" onClick={() => navigate({ to: "/account", search: { s: "devices" } })}>Review sessions</Button> },
               { id: "ckEverywhere", label: "Log out everywhere else", hint: "Ends every other session; this device stays signed in", control: <Button icon="log-out" disabled={!otherSessions} onClick={() => void authClient.revokeOtherSessions().then(() => {
                 sessions.refetch();
@@ -684,7 +686,12 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
       { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How Todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> }))] }] },
     ],
   };
-  const dialogs = <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} onDone={() => notify({ message: "Password updated", icon: "check" })} />;
+  const dialogs = (
+    <>
+      <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} onDone={() => notify({ message: "Password updated", icon: "check" })} />
+      {changeEmail.dialog}
+    </>
+  );
   return { page, dialogs };
 }
 

@@ -3,6 +3,7 @@
 // an anonymous session; resource permissions also cover direct public reads without a session.
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { anonymous } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
@@ -16,7 +17,8 @@ import { createHash } from "node:crypto";
 
 import { accounts, apiTokens, lists, sessions, users, verifications } from "./db/schema";
 import { DEV, env } from "./env";
-import { passwordResetEmail, sendEmail, verifyEmailEmail } from "./email";
+import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } from "./email";
+import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
 import { fail } from "./errors";
 
@@ -37,8 +39,11 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     expiresIn: EMAIL_LINK_HOURS * 3600,
-    sendVerificationEmail: async ({ user, url }, request) => {
+    sendVerificationEmail: async ({ user, url, token }, request) => {
       if ((user as { isAnonymous?: boolean | null }).isAnonymous) return;
+      // A change of address (services/emailChange.ts): `user.email` is already the new address here.
+      const claims = emailLinkClaims(token);
+      if (claims?.updateTo && claims.email) return sendEmail({ to: user.email, ...changeEmailEmail({ oldEmail: claims.email, newEmail: user.email, url }) });
       // Every confirmation link lands on /verify-email, whatever the asking page passed.
       const link = new URL(url);
       link.searchParams.set("callbackURL", `${env.APP_URL}/verify-email`);
@@ -56,10 +61,30 @@ export const auth = betterAuth({
       }
     },
   })],
-  databaseHooks: { user: { create: { after: async (user) => {
-    if (user.isAnonymous) await createGuestWorkspace(user.id);
-  } } } },
-  user: { additionalFields: { nickname: { type: "string", required: false }, avatarColor: { type: "string", required: false } } },
+  databaseHooks: { user: {
+    create: { after: async (user) => {
+      if (user.isAnonymous) await createGuestWorkspace(user.id);
+    } },
+    // A change-of-address link was opened: clear the pending change and count the new address as confirmed.
+    update: { after: async (user) => settleEmailChange(user) },
+  } },
+  // A change of address needs the current password (POST /api/me/email-change checks it, then calls
+  // changeEmail on the server), so the endpoint isn't reachable from the browser directly.
+  disabledPaths: ["/change-email"],
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/verify-email") return;
+      const claims = emailLinkClaims(typeof ctx.query?.token === "string" ? ctx.query.token : undefined);
+      if (!claims?.updateTo) return;
+      // A change cancelled or replaced since the link was sent, or an address someone took meanwhile.
+      const refusal = await refusedChange(claims);
+      if (refusal) throw ctx.redirect(confirmEmailChangeUrl(claims.updateTo, refusal));
+    }),
+  },
+  user: {
+    additionalFields: { nickname: { type: "string", required: false }, avatarColor: { type: "string", required: false } },
+    changeEmail: { enabled: true },
+  },
   session: { cookieCache: { enabled: true, maxAge: 60 } },
 });
 

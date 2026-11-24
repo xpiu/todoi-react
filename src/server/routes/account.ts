@@ -21,6 +21,7 @@ import { attachmentHeaders } from "../services/attachmentResponse";
 import { openUpload } from "../services/uploads";
 import { inviteRequestId, requestNewInvite } from "../services/inviteRequests";
 import { emailInvite, inviteUrl } from "../services/inviteEmails";
+import { pendingEmailChange } from "../services/emailChange";
 
 export const meRoute = new Hono()
   .post("/avatar", bodyLimit({ maxSize: MAX_AVATAR_BYTES + 65536, onError: (c) => fail(c, 413, "Choose an image up to 2 MB") }), async (c) => {
@@ -33,7 +34,7 @@ export const meRoute = new Hono()
     const v = viewerOf(c);
     const [u] = await db.select().from(users).where(eq(users.id, v.userId));
     if (!u) return fail(c, 404, "Not found");
-    return c.json({ ...u, prefs: prefsOf(u.prefs), inboxListId: v.inboxListId });
+    return c.json({ ...u, prefs: prefsOf(u.prefs), inboxListId: v.inboxListId, pendingEmail: await pendingEmailChange(v.userId) });
   })
   // Merge a change into the account's preferences (concurrent devices each change their own keys).
   .patch("/prefs", validate("json", prefsPatchSchema), async (c) => {

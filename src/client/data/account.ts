@@ -37,5 +37,10 @@ export function useAccountMutations() {
   const revokeToken = useMutation({ mutationFn: (vars: { id: string }) => api.api.me.tokens[":id"].$delete({ param: vars }).then((r) => unwrap<void>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
   /** A new feed link; the old one stops at once, so the answer replaces the cached link. `quiet`: the caller shows a failure itself. */
   const resetCalendarFeed = useMutation({ mutationFn: (_: { quiet?: boolean }) => api.api.me["calendar-feed"].reset.$post().then((r) => unwrap<CalendarFeed>(r)), onSuccess: (feed) => qc.setQueryData(["me", "calendar-feed"], feed) });
-  return { updateMe, updateAvatar, createToken, revokeToken, resetCalendarFeed };
+  // A change of sign-in address: the server keeps it until the emailed link is opened (`pendingEmail` on /api/me).
+  const refreshMe = () => qc.invalidateQueries({ queryKey: ["me"] });
+  const requestEmailChange = useMutation({ mutationFn: (vars: { email: string; password: string; quiet?: boolean }) => api.api.me["email-change"].$post({ json: { email: vars.email, password: vars.password } }).then((r) => unwrap<{ pendingEmail: string }>(r)), onSuccess: refreshMe });
+  const resendEmailChange = useMutation({ mutationFn: (_vars: { quiet?: boolean }) => api.api.me["email-change"].resend.$post().then((r) => unwrap<{ pendingEmail: string }>(r)), onSuccess: refreshMe });
+  const cancelEmailChange = useMutation({ mutationFn: (_vars: { quiet?: boolean }) => api.api.me["email-change"].$delete().then((r) => unwrap<void>(r)), onSettled: refreshMe });
+  return { updateMe, updateAvatar, createToken, revokeToken, resetCalendarFeed, requestEmailChange, resendEmailChange, cancelEmailChange };
 }
