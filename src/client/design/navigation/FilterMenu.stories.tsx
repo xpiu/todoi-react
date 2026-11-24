@@ -107,7 +107,7 @@ export const DueValues: Story = {
   args: { filters: [{ type: "due", value: "Today" }] },
   async play({ args, canvas, userEvent }) {
     const due = canvas.getByRole("group", { name: "Due date" });
-    const rows = [...due.querySelectorAll('[role="checkbox"]')].map((r) => r.getAttribute("aria-label"));
+    const rows = [...due.querySelectorAll(".td-filter-menu-row")].map((r) => r.getAttribute("aria-label"));
     await expect(rows).toEqual(["Overdue", "Today", "This week", "No date"]);
     await expect(canvas.getByRole("checkbox", { name: "Today" })).toHaveAttribute("aria-checked", "true");
     await userEvent.click(canvas.getByRole("checkbox", { name: "This week" }));

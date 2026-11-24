@@ -2,7 +2,7 @@
 // saved views. Shared by the API and (type-only) the client.
 import { z } from "zod";
 
-import { LABEL_COLORS, PROJECT_VIEWS, RELATION_TYPES } from "./enums";
+import { GROUP_KEYS, LABEL_COLORS, PROJECT_VIEWS, RELATION_TYPES } from "./enums";
 import { idSchema } from "./items";
 
 export const createLabelSchema = z.object({ id: idSchema, projectId: idSchema, name: z.string().trim().min(1).max(60), color: z.enum(LABEL_COLORS) });
@@ -33,6 +33,7 @@ export const viewDefinitionSchema = z.object({
       items: z.object({ key: z.string().max(40), dir: z.enum(["asc", "desc"]) }).nullable().optional(),
     })
     .optional(),
+  group: z.enum(GROUP_KEYS).nullable().optional(),
 });
 export type ViewDefinitionInput = z.infer<typeof viewDefinitionSchema>;
 export const createSavedViewSchema = z.object({ id: idSchema, projectId: idSchema, name: z.string().trim().min(1).max(80), shared: z.boolean().optional(), definition: viewDefinitionSchema });

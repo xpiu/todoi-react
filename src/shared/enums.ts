@@ -10,6 +10,10 @@ export type ProjectVisibility = (typeof PROJECT_VISIBILITIES)[number];
 export const PROJECT_VIEWS = ["list", "board", "calendar"] as const;
 export type ProjectView = (typeof PROJECT_VIEWS)[number];
 
+/** Group by (List view): the one field the rows are grouped by; stored in a saved view's definition and the URL's `g` */
+export const GROUP_KEYS = ["status", "priority", "assignee", "label", "due"] as const;
+export type GroupKey = (typeof GROUP_KEYS)[number];
+
 export const LIST_KINDS = ["project", "inbox"] as const;
 export type ListKind = (typeof LIST_KINDS)[number];
 

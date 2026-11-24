@@ -1,0 +1,55 @@
+/* GroupMenu: rows, head and section label are the Sort menu's (.td-sort-menu-*, SortMenu.css); only what Group adds
+   lives here. Minimal: tokens/themes/minimal-components.css › "Group by (Design, 2026-11-24)". */
+@layer components {
+  .td-sort-menu.td-group-menu {
+    width: 264px;
+  }
+  .td-group-menu-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--sp-1) var(--sp-2);
+    padding: 10px var(--sp-3);
+    border-bottom: 1px solid var(--border-divider);
+    font: 400 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-group-menu-link {
+    border: 0;
+    padding: 0;
+    background: none;
+    font: var(--weight-medium) 13px / 18px var(--font-ui);
+    color: var(--text-link);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+  }
+  .td-group-menu-link:hover {
+    text-decoration: underline;
+  }
+  .td-group-menu-link:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+  .td-group-menu-divider {
+    height: 1px;
+    margin: 6px var(--sp-1);
+    background: var(--border-divider);
+  }
+  .td-group-menu .td-sort-menu-row:disabled {
+    color: var(--ink-300);
+    cursor: default;
+    background: none;
+  }
+  .td-group-menu .td-sort-menu-row:disabled svg {
+    opacity: 0.5;
+  }
+  .td-group-menu .td-sort-menu-row[role="checkbox"][aria-checked="true"] {
+    background: none;
+  }
+  .td-group-menu .td-sort-menu-row[role="checkbox"]:hover {
+    background: var(--surface-list);
+  }
+  html[data-touch="true"] .td-group-menu .td-sort-menu-row {
+    min-height: 44px;
+  }
+}

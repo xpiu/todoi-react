@@ -18,13 +18,14 @@ import { ToastPortalProvider } from "../design/core/ToastPortal";
 import { useViewport } from "../design/core/viewport";
 import { FilterBar } from "../design/navigation/FilterBar";
 import { FilterMenu } from "../design/navigation/FilterMenu";
+import { GroupMenu } from "../design/navigation/GroupMenu";
 import { MembersMenu } from "../design/navigation/MembersMenu";
 import { DEFAULT_NAV, Sidebar } from "../design/navigation/Sidebar";
 import { SortBar } from "../design/navigation/SortBar";
 import { SortMenu } from "../design/navigation/SortMenu";
 import { SubNavbar, type SubNavbarMenu } from "../design/navigation/SubNavbar";
 import { TopNavbar } from "../design/navigation/TopNavbar";
-import { encodeViewState, nextViewSearch, sameDefinition, type ViewDefinition } from "../design/navigation/viewState";
+import { encodeViewState, nextViewSearch, sameDefinition, type GroupKey, type ViewDefinition } from "../design/navigation/viewState";
 import { SavedViewTabs } from "../design/navigation/SavedViewTabs";
 import { useSavedViewMutations } from "../data/savedViews";
 import { useResolvedView } from "./useResolvedView";
@@ -36,6 +37,8 @@ import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
 import { copyAndNotify, quote, useFeedback } from "./feedback";
 import { downloadText, fileSlug, itemsToCsv, viewToMarkdown } from "./exportData";
 import { availableFilters, FILTER_SECTIONS, filterKey, filterViewItems, itemComparator, matchesFilters, nextSort, sameFilter, sortLists, SORT_OPTS, type SortDim } from "./filters";
+import { groupItems } from "./groups";
+import { useCollapsedGroups, useGroupState } from "./groupState";
 import { avatarColorVar, itemOrder, keyOf } from "./items";
 import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { LifecycleDialogs } from "./LifecycleDialogs";
@@ -214,7 +217,7 @@ export function AppShell() {
   const [lastSaved, setLastSaved] = useState<{ projectId: string; id: string } | null>(null);
   const activeSavedId = resolved.raw.savedView ?? (lastSaved && lastSaved.projectId === projectId ? lastSaved.id : null);
   const activeSaved = resolved.savedViews.find((v) => v.id === activeSavedId) ?? null;
-  const currentDef: ViewDefinition = { filters: state?.filters ?? [], sort: state?.sort ?? {} };
+  const currentDef: ViewDefinition = { filters: state?.filters ?? [], sort: state?.sort ?? {}, group: state?.group ?? null };
   const svDirty = !!activeSaved && !sameDefinition(activeSaved.definition, currentDef);
   const goSaved = (id: string | null) => {
     if (!projectId) return;
@@ -248,10 +251,11 @@ export function AppShell() {
   const sort = resolved.state.sort;
   const showCompleted = usePrefs((s) => s.showCompleted);
   const projectLists = project.data?.lists;
+  const visibleTop = useMemo(() => filterViewItems(topItems, filters, filterCtx, showCompleted), [topItems, filters, filterCtx, showCompleted]);
   // The menu note, download and outcome use the same visible, sorted collection.
   const exportLists = useMemo(() => {
     const byList = new Map<string, Item[]>();
-    for (const it of filterViewItems(topItems, filters, filterCtx, showCompleted)) {
+    for (const it of visibleTop) {
       if (view === "calendar" && !it.dueDate) continue;
       const siblings = byList.get(it.listId);
       if (siblings) siblings.push(it);
@@ -262,12 +266,25 @@ export function AppShell() {
       const items = (byList.get(l.id) ?? []).sort(order);
       return { name: l.name, items, count: items.length };
     }), sort.lists);
-  }, [topItems, filters, filterCtx, showCompleted, view, projectLists, sort]);
+  }, [visibleTop, filterCtx, view, projectLists, sort]);
   const exportCount = exportLists.reduce((total, l) => total + l.count, 0);
   const sortActive = (["lists", "items"] as const).filter((d) => sort[d]);
   // The Filter row offers the quick filters (labels, Overdue) plus whatever else is active.
   const barAvailable = [...available.filter((f) => f.type === "label" || f.type === "due"), ...filters.filter((f) => f.type !== "label" && f.type !== "due").map((f) => available.find((a) => sameFilter(a, f)) ?? f)];
   const resetSort = () => setViewState({ sort: { lists: null, items: null } });
+  // Group by (List view): the key travels in the URL and saved views; "Show empty groups" and collapsed groups are per
+  // device. The groups the List view shows (app/groups.ts over the visible lists) answer "Collapse all groups".
+  const group = resolved.state.group;
+  const showEmptyGroups = useGroupState((s) => s.showEmpty);
+  const setShowEmptyGroups = useGroupState((s) => s.setShowEmpty);
+  const setCollapsedGroups = useGroupState((s) => s.setCollapsed);
+  const collapsedGroups = useCollapsedGroups(projectId ?? "", group);
+  const groupIds = useMemo(() => {
+    if (!group) return [];
+    const shown = new Set((projectLists ?? []).filter((l) => !l.hidden).map((l) => l.id));
+    return groupItems(visibleTop.filter((it) => shown.has(it.listId)), group, { ...filterCtx, showEmpty: showEmptyGroups }).map((g) => g.id);
+  }, [group, projectLists, visibleTop, filterCtx, showEmptyGroups]);
+  const selectGroup = (key: "none" | GroupKey) => setViewState({ group: key === "none" ? null : key });
   const notify = useFeedback((s) => s.notify);
   const logout = () => void authClient.signOut().then(({ error }) => {
     if (error) notify({ message: `Couldn't log out: ${error.message ?? "the server refused the request"}`, icon: "circle-alert" });
@@ -298,7 +315,7 @@ export function AppShell() {
         views={resolved.savedViews}
         activeId={activeSavedId}
         dirty={svDirty}
-        canSave={(filters.length > 0 || sortActive.length > 0) && (!activeSaved || svDirty)}
+        canSave={(filters.length > 0 || sortActive.length > 0 || !!group) && (!activeSaved || svDirty)}
         currentDef={currentDef}
         onSelect={goSaved}
         onSave={async (name, shared) => {
@@ -315,7 +332,7 @@ export function AppShell() {
           } else if (action === "update") {
             svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => {
               goSaved(id);
-              notify({ message: `Updated ${quote(v.name)} with the current filters and sort`, icon: "save" });
+              notify({ message: `Updated ${quote(v.name)} with the current filters, sort and grouping`, icon: "save" });
             } });
           } else if (action === "rename" && typeof value === "string") svm.update.mutate({ id, name: value });
           else if (action === "share" && typeof value === "boolean") {
@@ -374,6 +391,28 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
+  // In Board and Calendar the rows are disabled: groups show in List view (the pick is kept for the next visit there).
+  const groupMenu = (
+    <GroupMenu
+      group={group}
+      onSelect={selectGroup}
+      onReset={() => selectGroup("none")}
+      showEmpty={showEmptyGroups}
+      onShowEmptyChange={setShowEmptyGroups}
+      allCollapsed={groupIds.length > 0 && groupIds.every((id) => collapsedGroups.includes(id))}
+      onCollapseAll={(shut) => projectId && group && setCollapsedGroups(projectId, group, shut ? groupIds : [])}
+      disabled={view !== "list"}
+      note={view !== "list" ? "Groups show in List view." : undefined}
+      onOpenList={
+        view !== "list"
+          ? () => {
+              setOpenMenu(null);
+              setView("list");
+            }
+          : undefined
+      }
+    />
+  );
   const pd = project.data;
   const membersMenu = pd ? (
     <MembersMenu
@@ -388,7 +427,7 @@ export function AppShell() {
       url={projectUrl(pd.id)}
     />
   ) : undefined;
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={changeMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} filterActive={filters.length > 0} sortActive={sortActive.length > 0} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} checkedMove={project.data ? movesOnCheck(project.data) : false} onOpenCheckedMove={() => navigate({ to: "/projects" })} membersMenu={membersMenu} /> : null;
+  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={changeMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} groupMenu={groupMenu} filterActive={filters.length > 0} sortActive={sortActive.length > 0} groupActive={!!group} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} checkedMove={project.data ? movesOnCheck(project.data) : false} onOpenCheckedMove={() => navigate({ to: "/projects" })} membersMenu={membersMenu} /> : null;
 
   const sidebarGroups = sidebarOrder.rail;
   const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: inboxBadge ? (unread.data?.unread ?? 0) : 0 } : n));

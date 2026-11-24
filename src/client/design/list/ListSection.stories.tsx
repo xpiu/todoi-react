@@ -4,7 +4,7 @@ import { expect, fn, waitFor, within } from "storybook/test";
 import { getAppearance, useAppearanceStore } from "../core/appearance";
 import { Button } from "../core/Button";
 import { ListRow } from "./ListRow";
-import { ListSection } from "./ListSection";
+import { GroupLead, ListSection } from "./ListSection";
 
 const rows = (
   <>
@@ -102,5 +102,58 @@ export const Rename: Story = {
     await userEvent.clear(field);
     await userEvent.type(field, "In progress{Enter}");
     await expect(args.onRename).toHaveBeenCalledWith("In progress");
+  },
+};
+
+// Group sections (ListGroups): `groupId` + `lead`, no menu, no add rows; count and chevron always show.
+const groupArgs = { groupId: "HIGH", name: "High", count: 3, menu: false, showAddRow: false, onAddItem: undefined, lead: <GroupLead group={{ icon: "flag", iconColor: "var(--label-orange)" }} /> } as const;
+/** A group header leads with its glyph (or a member's avatar, or a label swatch) and has no + while the host gives no onAddItem. */
+export const GroupSection: Story = {
+  args: groupArgs,
+  async play({ canvasElement, canvas }) {
+    const section = canvasElement.querySelector("section")!;
+    await expect(section).toHaveAttribute("data-group-id", "HIGH");
+    await expect(canvas.queryByRole("button", { name: /Add an item/ })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /List actions/ })).not.toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "Collapse High" })).toBeVisible();
+  },
+};
+export const GroupLeads: Story = {
+  render: (args) => (
+    <div style={{ display: "grid", gap: 12 }}>
+      <ListSection {...args} groupId="u1" name="Sam Verhoeven" count={2} lead={<GroupLead group={{ avatar: { name: "Sam Verhoeven" } }} />} />
+      <ListSection {...args} groupId="l1" name="Sales" count={1} lead={<GroupLead group={{ color: "var(--label-orange)" }} />} />
+      <ListSection {...args} groupId="today" name="Today" count={0} lead={<GroupLead group={{ icon: "calendar-check" }} />} empty="No items">
+        {null}
+      </ListSection>
+    </div>
+  ),
+  args: groupArgs,
+};
+/** The host controls collapse (per device for groups): the chevron asks, the host answers. */
+export const GroupCollapsedControlled: Story = {
+  args: { ...groupArgs, collapsed: true, onCollapsedChange: fn() },
+  async play({ args, canvas, userEvent }) {
+    await userEvent.click(canvas.getByRole("button", { name: "Expand High" }));
+    await expect(args.onCollapsedChange).toHaveBeenCalledWith(false);
+    // Still collapsed: the host has not changed `collapsed`
+    await expect(canvas.getByRole("button", { name: "Expand High" })).toHaveAttribute("aria-expanded", "false");
+  },
+};
+/** Dragging an item over a group: "accept" rings it; "refuse" shows a ban glyph and the reason in the header. */
+export const GroupDropStates: Story = {
+  render: (args) => (
+    <div style={{ display: "grid", gap: 12 }}>
+      <ListSection {...args} groupId="today" name="Today" lead={<GroupLead group={{ icon: "calendar-check" }} />} dropState="accept" />
+      <ListSection {...args} groupId="week" name="This week" lead={<GroupLead group={{ icon: "calendar-range" }} />} dropState="refuse" dropNote="This week covers several days. Open the item to pick a date." />
+    </div>
+  ),
+  args: groupArgs,
+  async play({ canvasElement, canvas }) {
+    const [accept, refuse] = [...canvasElement.querySelectorAll("section")];
+    await expect(accept).toHaveAttribute("data-drop", "accept");
+    await expect(refuse).toHaveAttribute("data-drop", "refuse");
+    await expect(canvas.getByText("This week covers several days. Open the item to pick a date.")).toBeVisible();
+    await expect(getComputedStyle(refuse!).cursor).toBe("not-allowed");
   },
 };

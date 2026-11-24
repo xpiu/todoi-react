@@ -681,5 +681,9 @@
   "td-usermenu-idtext": "td-user-menu-idtext",
   "td-usermenu-item": "td-user-menu-item",
   "td-usermenu-name": "td-user-menu-name",
-  "td-usermenu-sep": "td-user-menu-separator"
+  "td-usermenu-sep": "td-user-menu-separator",
+  "td-lsec-lead": "td-list-section-lead",
+  "td-lsec-swatch": "td-list-section-swatch",
+  "td-lsec-dropnote": "td-list-section-dropnote",
+  "td-lsec-empty": "td-list-section-empty"
 }

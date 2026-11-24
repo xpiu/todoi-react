@@ -1,5 +1,5 @@
-// The project's effective view state: the URL's ad-hoc `v / f / s`, or — when `?view=` names a saved
-// view — that view's filters and sort. The view type always comes from the URL's `v` (a saved view never
+// The project's effective view state: the URL's ad-hoc `v / f / s / g`, or — when `?view=` names a saved
+// view — that view's filters, sort and group. The view type always comes from the URL's `v` (a saved view never
 // switches it); an older definition that still carries one only applies when the URL has none. Both the shell and the project screen read it from here.
 import { useSavedViews, type SavedView } from "../data/savedViews";
 import { decodeViewState, type DecodedViewState } from "../design/navigation/viewState";
@@ -11,6 +11,6 @@ export function useResolvedView(projectId: string, search: Record<string, unknow
   const saved = useSavedViews(projectId);
   const active: SavedView | null = raw.savedView ? (saved.data?.find((v) => v.id === raw.savedView) ?? null) : null;
   const d = active?.definition;
-  const state = useMemo<DecodedViewState>(() => d ? { ...raw, view: raw.view ?? d.view, filters: d.filters ?? [], sort: { lists: d.sort?.lists ?? null, items: d.sort?.items ?? null } } : raw, [raw, d]);
+  const state = useMemo<DecodedViewState>(() => d ? { ...raw, view: raw.view ?? d.view, filters: d.filters ?? [], sort: { lists: d.sort?.lists ?? null, items: d.sort?.items ?? null }, group: d.group ?? null } : raw, [raw, d]);
   return { raw, state, active, savedViews: saved.data ?? [], view: state.view ?? defaultView ?? ("list" as ProjectView) };
 }

@@ -1,5 +1,5 @@
-// SubNavbar — view switcher (List / Board / Cal. + optional Views toggle) and the Filter / Sort /
-// Appearance / Members / Share actions. It owns its five dropdowns with ONE open-menu value (controllable
+// SubNavbar — view switcher (List / Board / Cal. + optional Views toggle) and the Filter / Sort / Group /
+// Appearance / Members / Share actions. It owns its six dropdowns with ONE open-menu value (controllable
 // via openMenu / onOpenMenuChange), so exactly one is open at a time and the host can show the Filter
 // and Sort rows while their menu is open. Appearance is the quick menu on the shared store (a
 // dialog Popover); Share is a Menu with Copy project URL and share targets. Spec: DESIGN.md › Subnavbar.
@@ -39,6 +39,8 @@ const APPEARANCE_ACTION: SubNavbarAction = { id: "appearance", label: "Appearanc
 export const DEFAULT_ACTIONS: SubNavbarAction[] = [
   { id: "filter", label: "Filter", icon: "filter" },
   { id: "sort", label: "Sort", icon: "arrow-up-narrow-wide" },
+  // Shown only when the host passes groupMenu (Group by, List view)
+  { id: "group", label: "Group", icon: "layers" },
   APPEARANCE_ACTION,
 ];
 const VIS_ICONS: Record<string, IconName> = { Private: "lock", Shared: "users", Public: "globe" };
@@ -52,7 +54,7 @@ const SHARE_TARGETS: ReadonlyArray<{ id: string; label: string; icon: IconName; 
   { id: "discord", label: "Discord", icon: "discord", href: () => "https://discord.com/channels/@me" },
 ];
 
-export type SubNavbarMenu = "filter" | "sort" | "appearance" | "members" | "share";
+export type SubNavbarMenu = "filter" | "sort" | "group" | "appearance" | "members" | "share";
 /** The chip row each menu drives: presses there toggle chips without closing the menu. */
 const MENU_ROWS: Partial<Record<SubNavbarMenu, string>> = { filter: '[role="toolbar"][aria-label="Filters"]', sort: '[role="toolbar"][aria-label="Sorting"]' };
 
@@ -91,9 +93,14 @@ export interface SubNavbarProps {
   filterMenu?: ReactNode;
   /** Body of the Sort action's Popover (a SortMenu) */
   sortMenu?: ReactNode;
+  /** Body of the Group action's Popover (a GroupMenu, 264px). Renders the Group button (after Sort, glyph `layers`);
+   * without it the toolbar has no Group button */
+  groupMenu?: ReactNode;
   /** Something is filtered / sorted: Rounded marks the trigger with a dot (Minimal relies on the chip rows) */
   filterActive?: boolean;
   sortActive?: boolean;
+  /** A group is picked: the Group trigger carries the dot (and data-active) like Filter / Sort */
+  groupActive?: boolean;
   /** "Export this view" rows at the end of the Share menu */
   onExport?: (format: ExportFormatId) => void;
   exportCount?: number;
@@ -123,12 +130,12 @@ export interface SubNavbarProps {
   className?: string;
 }
 
-export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, filterActive = false, sortActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, checkedMove = false, onOpenCheckedMove, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, savedViewsId, style, className }: SubNavbarProps) {
+export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, actions = DEFAULT_ACTIONS, onAction, openMenu, onOpenMenuChange, filterMenu, sortMenu, groupMenu, filterActive = false, sortActive = false, groupActive = false, onExport, exportCount, exportFiltered, membersMenu, share = true, projectUrl, visibility = "Private", onOpenAppearance, checkedMove = false, onOpenCheckedMove, savedViewsToggle = false, savedViewsOpen = false, onSavedViewsToggle, savedViewsId, style, className }: SubNavbarProps) {
   const ap = useAppearance();
   // Suggest shortcuts puts each view's and Filter's key in its hint (the key alone while the label shows).
   const tipKeys = (hintId: string) => (ap.suggestShortcuts ? hintKeysText(hintId) : undefined);
   const active = activeView ?? views[0]?.id;
-  // One open-menu value for all five dropdowns. The ref guards against a late close of the previous
+  // One open-menu value for all six dropdowns. The ref guards against a late close of the previous
   // menu (its outside press) clearing the one that has just opened.
   const [ownMenu, setOwnMenu] = useState<SubNavbarMenu | null>(null);
   const curMenu = openMenu !== undefined ? openMenu : ownMenu;
@@ -246,7 +253,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
       <div className="td-subnav-spacer" />
       {actions.length || membersMenu ? (
         <div className="td-subnav-actions">
-          {actions.map((a) => {
+          {actions.filter((a) => a.id !== "group" || groupMenu).map((a) => {
             if (a.id === "appearance") {
               return (
                 <Popover
@@ -270,8 +277,8 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
                 </Popover>
               );
             }
-            const menu = a.id === "filter" ? filterMenu : a.id === "sort" ? sortMenu : null;
-            const marked = a.id === "filter" ? filterActive : a.id === "sort" ? sortActive : false;
+            const menu = a.id === "filter" ? filterMenu : a.id === "sort" ? sortMenu : a.id === "group" ? groupMenu : null;
+            const marked = a.id === "filter" ? filterActive : a.id === "sort" ? sortActive : a.id === "group" ? groupActive : false;
             // The active marker is its own element: the trigger's ::after belongs to the tooltip.
             const button = (
               <button type="button" className="td-subnav-action td-tooltip td-tooltip-labeled" data-tip={a.label} data-tip-kbd={a.id === "filter" ? tipKeys("filter") : undefined} data-menu={menu ? a.id : undefined} data-active={marked ? "true" : undefined} onClick={menu ? undefined : () => onAction?.(a.id)}>
@@ -288,7 +295,7 @@ export function SubNavbar({ views = DEFAULT_VIEWS, activeView, onViewChange, act
             if (!menu) return <span key={a.id}>{button}</span>;
             const id = a.id as SubNavbarMenu;
             return (
-              <ActionPopover key={a.id} label={`${a.label} options`} trigger={button} offset={menuOffset} {...menuState(id)} keepOpenWithin={MENU_ROWS[id]}>
+              <ActionPopover key={a.id} label={`${a.label} options`} trigger={button} width={id === "group" ? 264 : undefined} offset={menuOffset} {...menuState(id)} keepOpenWithin={MENU_ROWS[id]}>
                 {menu}
               </ActionPopover>
             );

@@ -1,11 +1,14 @@
 // ListSection — one list as a grouped section: header (icon → IconPicker, name, count, hover + and ⋯,
 // collapse chevron) over a white block of ListRows ending in the "Add an item" ghost row that becomes
-// the quick-add field. Spec: DESIGN.md › List view.
+// the quick-add field. With `groupId` it is one group of the grouped List view (ListGroups): the header
+// leads with `lead` (GroupLead), always shows its count and chevron, and shows the drop cue the host passes.
+// Spec: DESIGN.md › List view, Group by.
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import type { ItemStatus } from "../../../shared/item-status";
 import { ListActionsPopover, ListIconButton, useListRename } from "../board/listHeader";
 import { useThemePreference } from "../core/appearance";
+import { Avatar } from "../core/Avatar";
 import { Icon, type IconName } from "../core/Icon";
 import { AddItemKey, hintKeysText } from "../core/ShortcutHint";
 import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
@@ -45,13 +48,52 @@ export interface ListSectionProps {
   /** Keep the header + visible without hover. Set for a lone list like the Inbox @default false */
   addVisible?: boolean;
   defaultCollapsed?: boolean;
+  /** Group sections (ListGroups): sets data-group-id; the header then always shows its count and chevron, and the +
+   * only when onAddItem is given. Pair with `lead`, `menu={false}` and `showAddRow={false}`. */
+  groupId?: string;
+  /** Replaces the list icon button at the start of the header: `<GroupLead group={group} />` */
+  lead?: ReactNode;
+  /** Controlled collapsed state; omit for the local state seeded by defaultCollapsed */
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
+  /** While an item is dragged over the section: "accept" draws the drop ring, "refuse" a not-allowed cursor and `dropNote` */
+  dropState?: "accept" | "refuse";
+  /** Why the section refuses the dragged item, e.g. "This week covers several days. Open the item to pick a date." */
+  dropNote?: string;
+  /** One grey line under the (empty) rows, e.g. "No items" in an empty group */
+  empty?: string;
   children?: ReactNode;
   style?: CSSProperties;
 }
 
-export function ListSection({ listId, name, count, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onAddItem, quickAdd, showAddRow = true, showHeader = true, defaultCollapsed = false, onRename, onIconChange, onSelectAll, onHide, actions, menu = true, collapsible = true, addVisible = false, children, style }: ListSectionProps) {
+/** What leads a group header (Design: ListSection GroupLead): the member's avatar, the label's swatch, or the group's glyph */
+export interface GroupLeadSpec {
+  avatar?: { name: string; src?: string; color?: string };
+  /** Label swatch colour */
+  color?: string;
+  icon?: IconName;
+  iconColor?: string;
+}
+
+/** The decorative glyph at the start of a group header: a 20px Avatar, a 12px label swatch, else an 18px glyph. The name beside it is the label. */
+export function GroupLead({ group }: { group: GroupLeadSpec }) {
+  return (
+    <span className="td-list-section-lead" aria-hidden="true">
+      {group.avatar ? <Avatar name={group.avatar.name} src={group.avatar.src} color={group.avatar.color} size={20} decorative /> : group.color ? <span className="td-list-section-swatch" style={{ background: group.color }} /> : <Icon name={group.icon ?? "circle"} size={18} color={group.iconColor ?? "var(--ink-600)"} />}
+    </span>
+  );
+}
+
+export function ListSection({ listId, name, count, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onAddItem, quickAdd, showAddRow = true, showHeader = true, defaultCollapsed = false, groupId, lead, collapsed: collapsedProp, onCollapsedChange, dropState, dropNote, empty, onRename, onIconChange, onSelectAll, onHide, actions, menu = true, collapsible = true, addVisible = false, children, style }: ListSectionProps) {
   const rename = useListRename(name, onRename);
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  // Controlled when `collapsed` is passed (group sections: the host keeps it per device), else local.
+  const [ownCollapsed, setOwnCollapsed] = useState(defaultCollapsed);
+  const collapsed = collapsedProp ?? ownCollapsed;
+  const setCollapsed = (next: boolean) => {
+    if (collapsedProp === undefined) setOwnCollapsed(next);
+    if (next !== collapsed) onCollapsedChange?.(next);
+  };
+  const isGroup = groupId != null;
   const [adding, setAdding] = useState<AddPosition | false>(false);
   const suggestShortcuts = useThemePreference("suggestShortcuts");
   const startAdd = (where: AddPosition) => {
@@ -75,12 +117,19 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
     </div>
   );
   return (
-    <section className={collapsed && showHeader ? "td-list-section td-list-section-collapsed" : "td-list-section"} data-list-name={name} data-list-id={listId} data-add-visible={addVisible ? "true" : undefined} style={style}>
+    <section className={collapsed && showHeader ? "td-list-section td-list-section-collapsed" : "td-list-section"} data-list-name={name} data-list-id={listId} data-group-id={groupId} data-drop={dropState} data-add-visible={addVisible ? "true" : undefined} style={style}>
       {showHeader ? (
         <div className="td-list-section-head">
-          <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-section-iconbtn" size={18} />
+          {lead ?? <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-section-iconbtn" size={18} />}
           {rename.renaming ? <input className="td-list-section-rename" {...rename.inputProps} /> : <span className="td-list-section-name">{name}</span>}
           {!rename.renaming && count != null ? <span className="td-list-section-count">{count}</span> : null}
+          {/* A group that cannot take the dragged item says why, in place (the host announces it when the drag ends there) */}
+          {dropState === "refuse" && dropNote ? (
+            <span className="td-list-section-dropnote">
+              <Icon name="ban" size={14} />
+              <span>{dropNote}</span>
+            </span>
+          ) : null}
           {actions ? (
             <div className="td-list-section-extra" onClick={(e) => e.stopPropagation()}>
               {actions}
@@ -88,14 +137,14 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
           ) : null}
           <div className="td-list-section-actions">
             {collapsible ? (
-              <button type="button" className="td-list-section-chevron" aria-expanded={!collapsed} aria-label={collapsed ? `Expand ${name}` : `Collapse ${name}`} onClick={() => setCollapsed((c) => !c)}>
+              <button type="button" className="td-list-section-chevron" aria-expanded={!collapsed} aria-label={collapsed ? `Expand ${name}` : `Collapse ${name}`} onClick={() => setCollapsed(!collapsed)}>
                 <Icon name="chevron-down" size={16} />
               </button>
             ) : null}
             {/* A toggle with one name: aria-pressed says whether the top add row is open. */}
-            <button type="button" className="td-list-section-addbtn td-tooltip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-side={menu ? undefined : "bottom-end"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
+            {isGroup && !onAddItem ? null : <button type="button" className="td-list-section-addbtn td-tooltip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-side={menu ? undefined : "bottom-end"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
               <Icon name="plus" size={16} />
-            </button>
+            </button>}
             {menu ? (
               <ListActionsPopover
                 label={`List actions for ${name}`}
@@ -122,6 +171,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
             <div className="td-list-section-rows" role="list" aria-label={`${name} items`}>
               {children}
             </div>
+            {empty ? <div className="td-list-section-empty">{empty}</div> : null}
             {!showAddRow ? null : adding === "bottom" ? (
               addRow
             ) : (

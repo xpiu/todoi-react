@@ -4,6 +4,7 @@
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 
+import type { GroupKey } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
 import { ApiError, type Item, type Label, type ProjectDetail } from "../data/api";
 import { newId } from "../data/mutations";
@@ -25,11 +26,14 @@ import { isTyping, SHORTCUTS, type ItemAction } from "../design/core/shortcuts";
 import { ViewSkeleton } from "../design/core/Skeleton";
 import { useTouchDrag } from "../design/core/touchDrag";
 import { ListRow } from "../design/list/ListRow";
+import { ListGroups } from "../design/list/ListGroups";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { filterViewItems, itemComparator, sortLists } from "./filters";
-import { coverOf, itemRowMapper, keyOf, pickableItems, pickableMember, rowsByList, rowsForList } from "./items";
+import { groupItems } from "./groups";
+import { useCollapsedGroups, useGroupState } from "./groupState";
+import { coverOf, itemRowMapper, keyOf, pickableItems, pickableMember, rowsByList, rowsForList, type RowModel } from "./items";
 import { ConfirmDialog } from "../design/core/Dialog";
 import { statusById } from "../design/core/statuses";
 import { count } from "../design/core/text";
@@ -84,6 +88,7 @@ export function ProjectScreen() {
     labels: labels.data,
     filters: state.filters,
     sort: state.sort,
+    group: state.group,
     selectedIds,
     setSelectedIds,
     clearFilters: () => go({ filters: [] }),
@@ -113,6 +118,8 @@ interface ViewProps {
   labels: Label[];
   filters: DecodedViewState["filters"];
   sort: DecodedViewState["sort"];
+  /** Group by (List view only) */
+  group: GroupKey | null;
   selectedIds: string[];
   setSelectedIds: (next: string[] | ((prev: string[]) => string[])) => void;
   clearFilters: () => void;
@@ -191,14 +198,14 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
       e.preventDefault();
       // KeyNav already uses DOM order; the same visible order keeps range selection current
       // without making every card's callback depend on the entire items array.
-      const list = root.current?.querySelector(`[data-list-id="${listId}"]`);
+      const list = (e.currentTarget as Element | null)?.closest?.(dndOpts.listSelector) ?? root.current?.querySelector(`[data-list-id="${listId}"]`);
       const ids = [...(list?.querySelectorAll<HTMLElement>(dndOpts.itemSelector) ?? [])].map((el) => el.dataset.dragId!).filter((visibleId) => !visibleId.includes("/"));
       const a = ids.indexOf(anchor.current), b = ids.indexOf(id);
       if (a >= 0 && b >= 0) setSelectedIds((prev) => [...new Set([...prev, ...ids.slice(Math.min(a, b), Math.max(a, b) + 1)])]);
       else onItemSelect([id], "toggle");
     }
     else openItem(id);
-  }, [root, dndOpts.itemSelector, onItemSelect, setSelectedIds, openItem]);
+  }, [root, dndOpts.itemSelector, dndOpts.listSelector, onItemSelect, setSelectedIds, openItem]);
   // Single-key actions apply to the whole selection when the focused item is part of it.
   const onItemKey = (id: string, action: ItemAction) => {
     if (action === "edit") {
@@ -350,7 +357,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   // lets unchanged cards skip a board update (item-performance.spec › acknowledging a new item)
   const { moveOptions, lists: projectLists } = actions;
   const moveOptionsByList = useMemo(() => new Map(projectLists.map((l) => [l.id, moveOptions(l.id)])), [projectLists, moveOptions]);
-  return { actions, dnd: { ...dnd, rootProps }, lists, rowsOf, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, transferOptions, subitemPanel, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
+  return { actions, ctx, order, dnd: { ...dnd, rootProps }, lists, rowsOf, rowsByListId: groupedRows, itemsById, toRow, allFiltered, hiddenCount, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, transferOptions, subitemPanel, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -422,8 +429,42 @@ function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: Ite
 }
 
 function ProjectList(props: ViewProps) {
+  return props.group ? <ProjectGroupedList {...props} group={props.group} /> : <ProjectListSections {...props} />;
+}
+
+type ProjectViewModel = ReturnType<typeof useProjectView>;
+
+/** One List view row (and its subitems); `listId` is the section it sits in for a shift+click range */
+function projectListRow(v: ProjectViewModel, r: RowModel, key: string = r.id) {
+  const { actions } = v;
+  return (
+    <ListRow
+      key={key}
+      dragId={r.id}
+      title={r.title}
+      itemId={r.itemId}
+      done={r.done}
+      onDone={(done) => actions.setDone(r.id, done)}
+      onRename={(title) => actions.rename(r.id, title)}
+      labels={r.labels}
+      due={r.due}
+      dueState={r.dueState}
+      repeat={r.repeat}
+      priority={r.priority}
+      assignees={r.assignees}
+      attachments={r.attachments}
+      selected={v.isSelected(r.id)}
+      onClick={(e) => v.onItemClick(r.id, v.itemsById.get(r.id)?.listId ?? "", e)}
+      subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done), onRename: (title: string) => actions.rename(s.id, title) }))}
+    />
+  );
+}
+
+const LIST_DND = { listSelector: ".td-list-section", itemSelector: ".td-list-row[data-drag-id]", cardsSelector: ".td-list-section-body" };
+
+function ProjectListSections(props: ViewProps) {
   const root = useRef<HTMLDivElement | null>(null);
-  const v = useProjectView(props, root, { listSelector: ".td-list-section", itemSelector: ".td-list-row[data-drag-id]", cardsSelector: ".td-list-section-body", subitems: true });
+  const v = useProjectView(props, root, { ...LIST_DND, subitems: true });
   const { actions } = v;
   if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
@@ -434,31 +475,43 @@ function ProjectList(props: ViewProps) {
           const rows = v.rowsOf(list.id);
           return (
             <ListSection key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
-              {rows.map((r) => (
-                <ListRow
-                  key={r.id}
-                  dragId={r.id}
-                  title={r.title}
-                  itemId={r.itemId}
-                  done={r.done}
-                  onDone={(done) => actions.setDone(r.id, done)}
-                  onRename={(title) => actions.rename(r.id, title)}
-                  labels={r.labels}
-                  due={r.due}
-                  dueState={r.dueState}
-                  repeat={r.repeat}
-                  priority={r.priority}
-                  assignees={r.assignees}
-                  attachments={r.attachments}
-                  selected={v.isSelected(r.id)}
-                  onClick={(e) => v.onItemClick(r.id, list.id, e)}
-                  subitems={r.subitems.map((s) => ({ title: s.title, itemId: s.itemId, done: s.done, dragId: `${r.id}/${s.id}`, onDone: (done: boolean) => actions.setDone(s.id, done), onRename: (title: string) => actions.rename(s.id, title) }))}
-                />
-              ))}
+              {rows.map((r) => projectListRow(v, r))}
             </ListSection>
           );
         })}
       </ListView>
+      {v.bulkBar}
+    </>
+  );
+}
+
+/**
+ * The List view grouped by one field (Group by): the visible lists' rows, in list order or the item sort, regrouped by
+ * Status, priority, assignee, label or Due bucket (app/groups.ts). Collapsed groups and "Show empty groups" are per device
+ * (app/groupState.ts). No add rows and no manual order here; Ctrl/Cmd+↑↓←→ moves are off.
+ */
+function ProjectGroupedList(props: ViewProps & { group: GroupKey }) {
+  const root = useRef<HTMLDivElement | null>(null);
+  const v = useProjectView(props, root, LIST_DND);
+  const { group, projectId } = props;
+  const showEmpty = useGroupState((s) => s.showEmpty);
+  const collapsed = useCollapsedGroups(projectId, group);
+  const setCollapsed = useGroupState((s) => s.setCollapsed);
+  const { rowsByListId, itemsById, order, ctx } = v;
+  // The visible lists in display order (a fresh array every render, so the memo keys on their ids)
+  const listIds = v.lists.map((l) => l.id).join(",");
+  const groups = useMemo(() => {
+    const rows = listIds ? listIds.split(",").flatMap((id) => rowsByListId.get(id) ?? []) : [];
+    // A sort orders the rows across lists; without one they keep list order, then board order.
+    const ordered = order ? [...rows].sort((a, b) => order(itemsById.get(a.id)!, itemsById.get(b.id)!)) : rows;
+    const rowById = new Map(ordered.map((r) => [r.id, r]));
+    return groupItems(ordered.map((r) => itemsById.get(r.id)!), group, { ...ctx, showEmpty }).map((g) => ({ ...g, items: g.items.map((it) => rowById.get(it.id)!) }));
+  }, [listIds, rowsByListId, itemsById, order, ctx, showEmpty, group]);
+  if (!v.lists.length) return <NoLists actions={v.actions} />;
+  if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
+  return (
+    <>
+      <ListGroups ref={root} groups={groups} collapsed={collapsed} onCollapsedChange={(ids) => setCollapsed(projectId, group, ids)} renderRow={(r, g) => projectListRow(v, r, `${g.id}:${r.id}`)} onItemKey={v.onItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps} />
       {v.bulkBar}
     </>
   );

@@ -4,7 +4,7 @@
 import { sql } from "drizzle-orm";
 import { boolean, customType, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core";
 
-import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES } from "../../shared/enums";
+import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES, type GroupKey } from "../../shared/enums";
 import { ITEM_STATUSES } from "../../shared/item-status";
 import type { RepeatRule } from "../../shared/items";
 import type { Prefs } from "../../shared/prefs";
@@ -450,6 +450,7 @@ export interface ViewDefinition {
   view?: "list" | "board" | "calendar";
   filters?: Array<{ type: string; value: string }>;
   sort?: { lists?: { key: string; dir: "asc" | "desc" } | null; items?: { key: string; dir: "asc" | "desc" } | null };
+  group?: GroupKey | null;
 }
 
 export const savedViews = pgTable(

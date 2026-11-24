@@ -188,4 +188,91 @@
   .td-list-section-body.td-drop-end {
     box-shadow: inset 0 2px 0 var(--blue-500);
   }
+
+  /* Group sections (ListGroups, Group by in List view): the header leads with the group's glyph; count and chevron
+     always show; long names end in an ellipsis */
+  .td-list-section-lead {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin: 0 -3px;
+  }
+  .td-list-section-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-xs);
+  }
+  .td-list-section[data-group-id] .td-list-section-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-list-section[data-group-id] .td-list-section-count,
+  .td-list-section[data-group-id] .td-list-section-chevron {
+    opacity: 1;
+  }
+  .td-list-section[data-group-id] .td-list-section-count {
+    flex-shrink: 0;
+  }
+  .td-list-section-empty {
+    padding: 6px 13px 4px;
+    font: 400 13px / 20px var(--font-ui);
+    color: var(--ink-400);
+  }
+  /* Dragging an item over another group: accept = the 2px action-blue ring every drop target uses; refuse = no ring,
+     a not-allowed cursor and the reason in the header */
+  .td-list-section[data-drop="accept"] {
+    box-shadow:
+      var(--shadow-card),
+      0 0 0 2px var(--blue-500);
+  }
+  .td-list-section[data-drop="accept"] > .td-list-section-head {
+    background: var(--action-subtle);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .td-list-section[data-drop="refuse"] {
+    cursor: not-allowed;
+  }
+  .td-list-section[data-drop="refuse"] .td-list-section-name {
+    color: var(--ink-600);
+    flex: 0 0 auto;
+    max-width: 60%;
+    margin-right: 0;
+  }
+  .td-list-section[data-drop="refuse"] .td-list-section-count {
+    margin-right: auto;
+  }
+  .td-list-section-dropnote {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-left: var(--sp-2);
+    font: 400 13px / 20px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-list-section-dropnote > svg {
+    flex-shrink: 0;
+  }
+  .td-list-section-dropnote > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  html[data-device="phone"] .td-list-section-dropnote {
+    flex-basis: 100%;
+    margin: 0 0 var(--sp-1) 29px;
+  }
+  html[data-device="phone"] .td-list-section[data-drop="refuse"] > .td-list-section-head {
+    flex-wrap: wrap;
+  }
+  html[data-device="phone"] .td-list-section-dropnote > span {
+    white-space: normal;
+  }
 }

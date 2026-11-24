@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decodeViewState, encodeViewState, sameDefinition, summarizeView, viewStateToQuery } from "./viewState";
+import { decodeViewState, encodeViewState, nextViewSearch, sameDefinition, summarizeView, viewStateToQuery } from "./viewState";
 
 describe("view state ↔ URL", () => {
   it("encodes ad-hoc state and decodes it back", () => {
@@ -24,6 +24,18 @@ describe("view state ↔ URL", () => {
     expect(d.view).toBeUndefined();
     expect(d.filters).toEqual([]);
     expect(d.sort).toEqual({ lists: null, items: null });
+  });
+  it("carries the group as `g`, drops unknown keys, and leaves the saved view when it changes", () => {
+    expect(encodeViewState({ view: "list", group: "due" })).toEqual({ v: "list", g: "due" });
+    expect(viewStateToQuery({ filters: [{ type: "label", value: "a" }], group: "status" })).toBe("?f=label:a&g=status");
+    expect(decodeViewState({ g: "priority" }).group).toBe("priority");
+    expect(decodeViewState({ g: "nope" }).group).toBeNull();
+    expect(decodeViewState({}).group).toBeNull();
+    expect(nextViewSearch({ savedView: "sv1", view: "list" }, { group: "label" })).toEqual({ v: "list", g: "label" });
+    expect(nextViewSearch({ savedView: "sv1", view: "list" }, { view: "board" })).toEqual({ view: "sv1", v: "board" });
+    expect(summarizeView({ group: "assignee" })).toEqual(["Grouped by Assignee"]);
+    expect(sameDefinition({ group: "status" }, {})).toBe(false);
+    expect(sameDefinition({ group: null }, {})).toBe(true);
   });
   it("summarises and compares definitions", () => {
     expect(summarizeView({ view: "list", filters: [{ type: "label", value: "design" }], sort: { items: { key: "due", dir: "desc" } } })).toEqual(["List", "design", "Items by due ↓"]);

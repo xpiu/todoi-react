@@ -5,6 +5,7 @@ import { expect, fn, waitFor, within } from "storybook/test";
 import { getAppearance, useAppearanceStore } from "../core/appearance";
 import { getTheme } from "../core/themes";
 import { FilterMenu } from "./FilterMenu";
+import { GroupMenu } from "./GroupMenu";
 import { MembersMenu } from "./MembersMenu";
 import { SavedViewTabs } from "./SavedViewTabs";
 import { SortMenu } from "./SortMenu";
@@ -217,5 +218,37 @@ export const ActionsOnly: Story = {
   async play({ args, canvas, userEvent }) {
     await userEvent.click(canvas.getByRole("button", { name: "Filter" }));
     await expect(args.onAction).toHaveBeenCalledWith("filter");
+    // No groupMenu, no Group button
+    await expect(canvas.queryByRole("button", { name: /^Group/ })).not.toBeInTheDocument();
+  },
+};
+/** With `groupMenu` the Group button (layers) follows Sort; it carries the active dot while a group is picked, and its 264px menu stays open on a pick. */
+export const GroupAction: Story = {
+  args: { activeView: "list", groupActive: true, groupMenu: <GroupMenu group="priority" onSelect={fn()} onReset={fn()} onShowEmptyChange={fn()} /> },
+  async play({ canvas, canvasElement, userEvent }) {
+    const buttons = [...canvasElement.querySelectorAll<HTMLElement>(".td-subnav-actions .td-subnav-action")].map((b) => b.dataset.tip);
+    await expect(buttons.slice(0, 3)).toEqual(["Filter", "Sort", "Group"]);
+    const group = canvas.getByRole("button", { name: /^Group/ });
+    await expect(group).toHaveAttribute("data-active", "true");
+    await expect(group).toHaveAttribute("data-menu", "group");
+    await userEvent.click(group);
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Group options" });
+    await expect(within(dialog).getByRole("radio", { name: "Priority" })).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(within(dialog).getByRole("radio", { name: "Status" }));
+    await expect(page.getByRole("dialog", { name: "Group options" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(page.queryByRole("dialog", { name: "Group options" })).not.toBeInTheDocument());
+    await waitFor(() => expect(group).toHaveFocus());
+  },
+};
+/** Board and Calendar: the Group menu's rows are disabled, with the note and "Open List view". */
+export const GroupOutsideListView: Story = {
+  args: { activeView: "board", groupActive: true, groupMenu: <GroupMenu group="status" disabled note="Groups show in List view." onOpenList={fn()} />, openMenu: "group" },
+  async play({ canvasElement }) {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Group options" });
+    await expect(within(dialog).getByRole("note")).toHaveTextContent("Groups show in List view.");
+    await expect(within(dialog).getByRole("radio", { name: "Status" })).toBeDisabled();
   },
 };

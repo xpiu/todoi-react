@@ -1,5 +1,5 @@
 // The project the person was last in, in this tab, and how they were looking at it (the route's view search: `v`, `f`,
-// `s`, `view`): what "Current project" means for Create › New item and in Settings › General › Default destination
+// `s`, `g`, `view`): what "Current project" means for Create › New item and in Settings › General › Default destination
 // ("Current project — <name>") while another page is open, and where the top bar's Back returns to (that project in
 // that view). Kept in sessionStorage, so a reload of the tab keeps it.
 import { useSyncExternalStore } from "react";
@@ -7,7 +7,7 @@ import { useSyncExternalStore } from "react";
 import type { ProjectSearch } from "../router";
 
 /** The parts of the project route's search that make up the view; an open item or rename is not kept */
-export type LastProjectView = Pick<ProjectSearch, "view" | "v" | "f" | "s">;
+export type LastProjectView = Pick<ProjectSearch, "view" | "v" | "f" | "s" | "g">;
 
 const KEY = "td-last-project";
 const VIEW_KEY = "td-last-project-view";
@@ -31,6 +31,7 @@ const viewOf = (search: LastProjectView | undefined): LastProjectView => {
   if (search?.v) out.v = search.v;
   if (search?.f) out.f = search.f;
   if (search?.s) out.s = search.s;
+  if (search?.g) out.g = search.g;
   return out;
 };
 const readView = (): LastProjectView => {

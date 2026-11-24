@@ -5,7 +5,7 @@ import { createRootRoute, createRoute, createRouter, Outlet, redirect } from "@t
 import { lazy } from "react";
 import { z } from "zod";
 
-import { PROJECT_VIEWS } from "../shared/enums";
+import { GROUP_KEYS, PROJECT_VIEWS } from "../shared/enums";
 import { AppShell } from "./app/AppShell";
 import { preloadDescriptionEditor } from "./design/overlay/DescriptionEditor";
 import { ScreenError, SessionError } from "./app/RouteError";
@@ -24,6 +24,8 @@ const viewSearchSchema = z.object({
   v: z.enum(PROJECT_VIEWS).optional().catch(undefined),
   f: z.string().optional().catch(undefined),
   s: z.string().optional().catch(undefined),
+  /** Group by (List view) */
+  g: z.enum(GROUP_KEYS).optional().catch(undefined),
   /** The open item (overlay) */
   item: z.string().optional().catch(undefined),
   /** Open with the title in edit mode (the E shortcut) */
