@@ -3,7 +3,9 @@
 // (td-drop-before / td-drop-after on the card or row under the pointer, td-drop-end on an empty tail).
 // With `onDropSubitem` (List view) a subitem row drags too: between the rows of an item's subitems it
 // reorders or moves there, and over another item's row it rings that row (td-drop-into) and moves under it.
-// The touch layer (useTouchDrag) reuses the same cue logic through `cueAt`. Spec: DESIGN.md › Drag & drop.
+// With `groups` (the grouped List view) a row drops on a whole group section instead: no slot line, the host draws
+// the cue it reports (accept ring, or a refusal with its reason) and a drop changes the grouped field.
+// The touch layer (useTouchDrag) reuses the same cue logic through `cueAt`. Spec: DESIGN.md › Drag & drop, Group by.
 import { useEffect, useMemo, useRef, type DragEvent, type RefObject } from "react";
 
 import { isReadOnly } from "../auth/GuestBar";
@@ -20,8 +22,29 @@ export interface SubitemTarget {
   parentId: string;
   index: number | null;
 }
-export type AnyDropTarget = DropTarget | SubitemTarget;
+/** Where a row lands in the grouped List view: a group section, which takes it (ok) or refuses with a reason */
+export interface GroupTarget {
+  groupId: string;
+  fromGroupId: string | null;
+  ok: boolean;
+  reason?: string | null;
+}
+export type AnyDropTarget = DropTarget | SubitemTarget | GroupTarget;
 export const isSubitemTarget = (t: AnyDropTarget): t is SubitemTarget => "parentId" in t;
+export const isGroupTarget = (t: AnyDropTarget): t is GroupTarget => "groupId" in t;
+
+/** Group mode (grouped List view): rows drop on group sections (data-group-id), never between rows */
+export interface GroupDndOptions {
+  /** Selector of a group section (carries data-group-id) */
+  selector: string;
+  /** Does the group take the item? A refusal with a null reason is silent */
+  canDrop: (itemId: string, fromGroupId: string | null, toGroupId: string) => { ok: boolean; reason?: string | null };
+  onDrop: (itemId: string, fromGroupId: string | null, toGroupId: string) => void;
+  /** The group under the dragged row and its verdict; null when there is none. The host draws it (ListGroups `drop`) */
+  onCue: (cue: { groupId: string; state: "accept" | "refuse"; note?: string } | null) => void;
+  /** The drag ended over a group that refuses: its reason, to announce */
+  onRefuse?: (reason: string) => void;
+}
 
 export interface ItemDndOptions {
   /** Selector of a draggable item inside the view (carries data-drag-id) @default "[data-drag-id]" */
@@ -33,6 +56,8 @@ export interface ItemDndOptions {
   onDrop: (itemId: string, target: DropTarget) => void;
   /** Makes subitem rows (ids "parentId/subId") draggable; called with the subitem's own id */
   onDropSubitem?: (subitemId: string, target: SubitemTarget) => void;
+  /** Group mode: replaces the list / slot targets (onDrop is then unused) */
+  groups?: GroupDndOptions;
 }
 
 export interface ItemDnd {
@@ -44,8 +69,9 @@ export interface ItemDnd {
     onDrop: (e: DragEvent) => void;
     onDragEnd: () => void;
   };
-  /** Paint the slot cue for a point and return the target it means (null off any list) */
-  cueAt: (x: number, y: number, draggingId: string | null) => AnyDropTarget | null;
+  /** Paint the slot cue for a point and return the target it means (null off any list). `source` is the lifted element
+   * (the touch layer; native drags remember it from dragstart) */
+  cueAt: (x: number, y: number, draggingId: string | null, source?: Element | null) => AnyDropTarget | null;
   /** Commit a drop the touch layer resolved through cueAt */
   drop: (draggingId: string, target: AnyDropTarget) => void;
   /** Clear every cue and the dimmed source */
@@ -110,24 +136,55 @@ function resolveSubitem(root: HTMLElement, x: number, y: number, itemSelector: s
  * Bind to the view root. Cards and rows only need `draggable` + `data-drag-id`
  * (ItemCard / ListRow set both from `dragId`); subitems (ids with "/") drag only with `onDropSubitem`.
  */
-export function useItemDnd(rootRef: RefObject<HTMLElement | null>, { itemSelector = "[data-drag-id]", listSelector, cardsSelector, onDrop, onDropSubitem }: ItemDndOptions): ItemDnd {
+export function useItemDnd(rootRef: RefObject<HTMLElement | null>, { itemSelector = "[data-drag-id]", listSelector, cardsSelector, onDrop, onDropSubitem, groups }: ItemDndOptions): ItemDnd {
   const draggingId = useRef<string | null>(null);
   const latestDrop = useRef(onDrop);
   const latestSubDrop = useRef(onDropSubitem);
+  const latestGroups = useRef(groups);
+  // Group mode: the group the row was lifted from, and the last target reported to the host
+  const fromGroup = useRef<string | null>(null);
+  const lastGroup = useRef<GroupTarget | null>(null);
   useEffect(() => {
     latestDrop.current = onDrop;
     latestSubDrop.current = onDropSubitem;
+    latestGroups.current = groups;
   });
   const subitems = !!onDropSubitem;
+  const groupSelector = groups?.selector ?? null;
   return useMemo(() => {
     const opts = { itemSelector, listSelector, cardsSelector };
-    const cueAt = (x: number, y: number, id: string | null): AnyDropTarget | null => {
+    const groupCue = (t: GroupTarget | null) => {
+      const prev = lastGroup.current;
+      lastGroup.current = t;
+      if (prev?.groupId !== t?.groupId || prev?.ok !== t?.ok) latestGroups.current?.onCue(t ? { groupId: t.groupId, state: t.ok ? "accept" : "refuse", note: t.reason ?? undefined } : null);
+    };
+    /** The group section under a point and whether it takes the row (another group only; a silent refusal is no target) */
+    const resolveGroup = (root: HTMLElement, x: number, y: number, id: string, source?: Element | null): GroupTarget | null => {
+      const g = latestGroups.current;
+      if (!g || !groupSelector) return null;
+      const from = source ? (source.closest(groupSelector)?.getAttribute("data-group-id") ?? null) : fromGroup.current;
+      const sec = document.elementFromPoint(x, y)?.closest<HTMLElement>(groupSelector);
+      const to = sec && root.contains(sec) ? sec.getAttribute("data-group-id") : null;
+      let t: GroupTarget | null = null;
+      if (to && to !== from) {
+        const v = g.canDrop(id, from, to);
+        if (v.ok) t = { groupId: to, fromGroupId: from, ok: true };
+        else if (v.reason) t = { groupId: to, fromGroupId: from, ok: false, reason: v.reason };
+      }
+      groupCue(t);
+      return t;
+    };
+    const cueAt = (x: number, y: number, id: string | null, source?: Element | null): AnyDropTarget | null => {
       const root = rootRef.current;
       if (!root) return null;
+      if (groupSelector) return id && !isSubitem(id) ? resolveGroup(root, x, y, id, source) : null;
       return id && isSubitem(id) ? (subitems ? resolveSubitem(root, x, y, itemSelector, id) : null) : resolve(root, x, y, opts, id);
     };
     const drop = (id: string, t: AnyDropTarget) => {
-      if (isSubitemTarget(t)) latestSubDrop.current?.(id.split("/")[1]!, t);
+      if (isGroupTarget(t)) {
+        if (t.ok) latestGroups.current?.onDrop(id, t.fromGroupId, t.groupId);
+        else if (t.reason) latestGroups.current?.onRefuse?.(t.reason);
+      } else if (isSubitemTarget(t)) latestSubDrop.current?.(id.split("/")[1]!, t);
       else latestDrop.current(id, t);
     };
     const end = () => {
@@ -137,6 +194,8 @@ export function useItemDnd(rootRef: RefObject<HTMLElement | null>, { itemSelecto
         root.querySelectorAll(".td-drag-src").forEach((n) => n.classList.remove("td-drag-src"));
       }
       draggingId.current = null;
+      fromGroup.current = null;
+      groupCue(null);
     };
     const rootProps: ItemDnd["rootProps"] = {
       onDragStart: (e) => {
@@ -148,6 +207,7 @@ export function useItemDnd(rootRef: RefObject<HTMLElement | null>, { itemSelecto
           return;
         }
         draggingId.current = id;
+        if (groupSelector) fromGroup.current = el.closest(groupSelector)?.getAttribute("data-group-id") ?? null;
         e.dataTransfer.effectAllowed = "move";
         // A subitem is not an item the sidebar can file
         if (!isSubitem(id)) e.dataTransfer.setData(ITEM_DRAG_TYPE, id);
@@ -157,12 +217,17 @@ export function useItemDnd(rootRef: RefObject<HTMLElement | null>, { itemSelecto
       },
       onDragOver: (e) => {
         if (!draggingId.current) return;
+        const t = cueAt(e.clientX, e.clientY, draggingId.current);
+        // Group mode: only a group that takes the row is a drop target; over the others the browser shows not-allowed
+        if (groupSelector && !(t && isGroupTarget(t) && t.ok)) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
-        cueAt(e.clientX, e.clientY, draggingId.current);
       },
       onDragLeave: (e) => {
-        if (rootRef.current && !rootRef.current.contains(e.relatedTarget as Node | null)) clearCues(rootRef.current);
+        if (rootRef.current && !rootRef.current.contains(e.relatedTarget as Node | null)) {
+          clearCues(rootRef.current);
+          groupCue(null);
+        }
       },
       onDrop: (e) => {
         const id = draggingId.current;
@@ -172,8 +237,13 @@ export function useItemDnd(rootRef: RefObject<HTMLElement | null>, { itemSelecto
         end();
         if (t) drop(id, t);
       },
-      onDragEnd: end,
+      onDragEnd: () => {
+        // A drag that ends over a group that refuses says why (no drop event fires there)
+        const refused = lastGroup.current && !lastGroup.current.ok ? lastGroup.current.reason : null;
+        end();
+        if (refused) latestGroups.current?.onRefuse?.(refused);
+      },
     };
     return { rootProps, cueAt, drop, end };
-  }, [rootRef, itemSelector, listSelector, cardsSelector, subitems]);
+  }, [rootRef, itemSelector, listSelector, cardsSelector, subitems, groupSelector]);
 }

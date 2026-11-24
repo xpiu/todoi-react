@@ -121,6 +121,44 @@ export const Sections: Story = {
   },
 };
 
+// Two groups (sections with data-group-id): the item moves from "a" to "b" when the host says so; focus follows it.
+function GroupedRows(args: KeyNavProps) {
+  const [groups, setGroups] = useState<Record<string, string[]>>({ a: ["HE-1", "HE-2"], b: ["HE-3"] });
+  return (
+    <KeyNav
+      {...args}
+      onMoveGroup={(id, dir, from) => {
+        args.onMoveGroup?.(id, dir, from);
+        const to = from === "a" && dir === "down" ? "b" : from === "b" && dir === "up" ? "a" : null;
+        if (to && from) setGroups((g) => ({ ...g, [from]: g[from]!.filter((x) => x !== id), [to]: [...g[to]!, id] }));
+        return to;
+      }}
+    >
+      {Object.entries(groups).map(([g, ids]) => (
+        <section key={g} data-group-id={g}>
+          <Rows ids={ids} label={`Group ${g}`} />
+        </section>
+      ))}
+    </KeyNav>
+  );
+}
+/** Grouped views: Ctrl/Cmd+Shift+↑↓ asks onMoveGroup (checked before onMoveItem) with the item's group; focus follows into the group it returns. */
+export const MoveGroup: Story = {
+  args: { onMoveGroup: fn() },
+  render: (args) => <GroupedRows {...args} />,
+  async play({ args, canvas, userEvent }) {
+    await userEvent.tab();
+    await expect(canvas.getByRole("listitem", { name: "Item HE-1" })).toHaveFocus();
+    await userEvent.keyboard("{Control>}{Shift>}{ArrowDown}{/Shift}{/Control}");
+    await expect(args.onMoveGroup).toHaveBeenCalledWith("HE-1", "down", "a");
+    await expect(args.onMoveItem).not.toHaveBeenCalled();
+    await waitFor(() => expect(canvas.getByRole("list", { name: "Group b" }).querySelector('[data-drag-id="HE-1"]')).toHaveFocus());
+    // Nothing below "b": the host returns null and nothing moves
+    await userEvent.keyboard("{Control>}{Shift>}{ArrowDown}{/Shift}{/Control}");
+    await expect(args.onMoveGroup).toHaveBeenLastCalledWith("HE-1", "down", "b");
+  },
+};
+
 export const DeleteKeepsFocus: Story = {
   render: (args) => <RemovableRows {...args} />,
   async play({ args, canvas, userEvent }) {

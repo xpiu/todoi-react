@@ -32,6 +32,12 @@ describe("SHORTCUTS", () => {
     expect(SHORTCUTS.selectMove(ev("ArrowDown", { shiftKey: true }))).toBe("down");
     expect(SHORTCUTS.itemMove(ev("ArrowRight", { metaKey: true }))).toBe("right");
     expect(SHORTCUTS.itemMove(ev("ArrowRight"))).toBeNull();
+    // Grouped List view: Ctrl/Cmd+Shift+↑↓ is a group move (checked before itemMove, which matches it too)
+    expect(SHORTCUTS.groupMove(ev("ArrowDown", { ctrlKey: true, shiftKey: true }))).toBe("down");
+    expect(SHORTCUTS.groupMove(ev("ArrowUp", { metaKey: true, shiftKey: true }))).toBe("up");
+    expect(SHORTCUTS.groupMove(ev("ArrowUp", { ctrlKey: true }))).toBeNull();
+    expect(SHORTCUTS.groupMove(ev("ArrowLeft", { ctrlKey: true, shiftKey: true }))).toBeNull();
+    expect(SHORTCUTS.groupMove(ev("ArrowDown", { ctrlKey: true, shiftKey: true, altKey: true }))).toBeNull();
   });
   it("opens the Board card quick pickers with A, L and shift+D", () => {
     expect(SHORTCUTS.itemQuickEdit(ev("a"))).toBe("assignees");

@@ -97,3 +97,46 @@ export const DropCues: Story = {
   },
 };
 export const DropAccepted: Story = { args: { groups: DUE, drop: { groupId: "today", state: "accept" } } };
+
+const rowIn = (root: HTMLElement, group: string, id: string) => root.querySelector<HTMLElement>(`[data-group-id="${group}"] .td-list-row[data-drag-id="${id}"]`)!;
+const accepts = (_id: string, _from: string | null, to: string) => {
+  const g = DUE.find((x) => x.id === to)!;
+  return { ok: g.accepts, reason: g.refuse };
+};
+/** Ctrl/Cmd+Shift+↑↓ moves the focused item to the previous / next group that takes it, skipping refusing ones; the result is announced. */
+export const KeyboardGroupMove: Story = {
+  args: { groups: DUE, canDrop: accepts, onGroupDrop: fn(), onAnnounce: fn() },
+  async play({ args, canvasElement, userEvent }) {
+    // From No date up: This week refuses (skipped), Today takes it
+    rowIn(canvasElement, "none", "r3").focus();
+    await userEvent.keyboard("{Control>}{Shift>}{ArrowUp}{/Shift}{/Control}");
+    await expect(args.onGroupDrop).toHaveBeenCalledWith("r3", "none", "today");
+    await expect(args.onAnnounce).toHaveBeenLastCalledWith("Moved to Today");
+    // From Overdue up: nothing above
+    rowIn(canvasElement, "overdue", "r2").focus();
+    await userEvent.keyboard("{Control>}{Shift>}{ArrowUp}{/Shift}{/Control}");
+    await expect(args.onAnnounce).toHaveBeenLastCalledWith("No group to move to");
+    await expect(args.onGroupDrop).toHaveBeenCalledTimes(1);
+  },
+};
+/** When every group in that direction refuses, the first refusal is announced and nothing moves. */
+export const KeyboardGroupRefused: Story = {
+  args: { groups: DUE, canDrop: (_id, _from, to) => ({ ok: false, reason: DUE.find((x) => x.id === to)?.refuse ?? null }), onGroupDrop: fn(), onAnnounce: fn() },
+  async play({ args, canvasElement, userEvent }) {
+    rowIn(canvasElement, "overdue", "r2").focus();
+    await userEvent.keyboard("{Control>}{Shift>}{ArrowDown}{/Shift}{/Control}");
+    await expect(args.onGroupDrop).not.toHaveBeenCalled();
+    await expect(args.onAnnounce).toHaveBeenLastCalledWith("This week covers several days. Open the item to pick a date.");
+  },
+};
+/** A collapsed target group opens when an item moves into it. */
+export const KeyboardMoveOpensCollapsed: Story = {
+  args: { groups: PRIORITY, collapsed: ["MEDIUM"], onGroupDrop: fn(), onAnnounce: fn() },
+  async play({ args, canvas, canvasElement, userEvent }) {
+    rowIn(canvasElement, "HIGH", "r3").focus();
+    await userEvent.keyboard("{Control>}{Shift>}{ArrowDown}{/Shift}{/Control}");
+    await expect(args.onGroupDrop).toHaveBeenCalledWith("r3", "HIGH", "MEDIUM");
+    await expect(args.onCollapsedChange).toHaveBeenLastCalledWith([]);
+    await expect(canvas.getByRole("button", { name: "Collapse Medium" })).toHaveAttribute("aria-expanded", "true");
+  },
+};

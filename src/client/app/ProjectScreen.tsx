@@ -14,7 +14,7 @@ import { ItemCard, type CardMenuAction } from "../design/board/ItemCard";
 import type { BulkOption } from "../design/core/BulkBar";
 import { MakeSubitemDrill } from "../design/core/ItemPicker";
 import { ListColumn } from "../design/board/ListColumn";
-import { useItemDnd, type ItemDnd } from "../design/board/useItemDnd";
+import { useItemDnd, type GroupDndOptions, type ItemDnd } from "../design/board/useItemDnd";
 import { isReadOnly } from "../design/auth/GuestBar";
 import { CalendarView } from "../design/calendar/CalendarView";
 import type { CalendarItem } from "../design/calendar/calendar";
@@ -26,12 +26,13 @@ import { isTyping, SHORTCUTS, type ItemAction } from "../design/core/shortcuts";
 import { ViewSkeleton } from "../design/core/Skeleton";
 import { useTouchDrag } from "../design/core/touchDrag";
 import { ListRow } from "../design/list/ListRow";
-import { ListGroups } from "../design/list/ListGroups";
+import { ListGroups, type GroupDropCue } from "../design/list/ListGroups";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { filterViewItems, itemComparator, sortLists } from "./filters";
-import { groupItems } from "./groups";
+import { useFeedback } from "./feedback";
+import { groupDrop, groupItems } from "./groups";
 import { useCollapsedGroups, useGroupState } from "./groupState";
 import { coverOf, itemRowMapper, keyOf, pickableItems, pickableMember, rowsByList, rowsForList, type RowModel } from "./items";
 import { ConfirmDialog } from "../design/core/Dialog";
@@ -137,7 +138,7 @@ interface VisibleList {
 }
 
 /** Everything a view needs beyond rendering: visible lists (filtered, sorted), actions, selection, drag. */
-function useProjectView({ projectId, project, items, labels, filters, sort, selectedIds, setSelectedIds, openItem }: ViewProps, root: React.RefObject<HTMLDivElement | null>, dndOpts: { listSelector: string; itemSelector: string; cardsSelector: string; subitems?: boolean }) {
+function useProjectView({ projectId, project, items, labels, filters, sort, selectedIds, setSelectedIds, openItem }: ViewProps, root: React.RefObject<HTMLDivElement | null>, dndOpts: { listSelector: string; itemSelector: string; cardsSelector: string; subitems?: boolean; groups?: GroupDndOptions }) {
   const actions = useProjectActions(projectId, project, items, labels);
   // List view: subitem rows drag too — between an item's subitems, or onto another item's row (Design: ListScreen)
   const { subitems: dragSubitems, ...dndSelectors } = dndOpts;
@@ -417,10 +418,10 @@ function useTouchItemDrag(root: React.RefObject<HTMLDivElement | null>, dnd: Ite
     selector,
     onLift: (el) => (isReadOnly(el) || (!subitems && el.getAttribute("data-drag-id")?.includes("/")) ? false : undefined),
     onMove: (p, d) => {
-      dnd.cueAt(p.x, p.y, d.dragId);
+      dnd.cueAt(p.x, p.y, d.dragId, d.el);
     },
     onDrop: (p, d) => {
-      const t = dnd.cueAt(p.x, p.y, d.dragId);
+      const t = dnd.cueAt(p.x, p.y, d.dragId, d.el);
       dnd.end();
       if (t && d.dragId) dnd.drop(d.dragId, t);
     },
@@ -434,7 +435,7 @@ function ProjectList(props: ViewProps) {
 
 type ProjectViewModel = ReturnType<typeof useProjectView>;
 
-/** One List view row (and its subitems); `listId` is the section it sits in for a shift+click range */
+/** One List view row and its subitems (the list sections and the groups render the same row) */
 function projectListRow(v: ProjectViewModel, r: RowModel, key: string = r.id) {
   const { actions } = v;
   return (
@@ -492,8 +493,14 @@ function ProjectListSections(props: ViewProps) {
  */
 function ProjectGroupedList(props: ViewProps & { group: GroupKey }) {
   const root = useRef<HTMLDivElement | null>(null);
-  const v = useProjectView(props, root, LIST_DND);
   const { group, projectId } = props;
+  // A row dragged onto another group (or moved there with Ctrl/Cmd+Shift+↑↓) changes that one field (groupDrop).
+  // The drag layer reads the current rules through a ref, as the card menus above do.
+  const [cue, setCue] = useState<GroupDropCue | null>(null);
+  const announce = useFeedback((s) => s.announce);
+  const dropRules = useRef<Pick<GroupDndOptions, "canDrop" | "onDrop">>({ canDrop: () => ({ ok: false }), onDrop: () => {} });
+  const groupDnd = useMemo<GroupDndOptions>(() => ({ selector: ".td-list-section[data-group-id]", canDrop: (id, from, to) => dropRules.current.canDrop(id, from, to), onDrop: (id, from, to) => dropRules.current.onDrop(id, from, to), onCue: setCue, onRefuse: announce }), [announce]);
+  const v = useProjectView(props, root, { ...LIST_DND, groups: groupDnd });
   const showEmpty = useGroupState((s) => s.showEmpty);
   const collapsed = useCollapsedGroups(projectId, group);
   const setCollapsed = useGroupState((s) => s.setCollapsed);
@@ -507,11 +514,24 @@ function ProjectGroupedList(props: ViewProps & { group: GroupKey }) {
     const rowById = new Map(ordered.map((r) => [r.id, r]));
     return groupItems(ordered.map((r) => itemsById.get(r.id)!), group, { ...ctx, showEmpty }).map((g) => ({ ...g, items: g.items.map((it) => rowById.get(it.id)!) }));
   }, [listIds, rowsByListId, itemsById, order, ctx, showEmpty, group]);
-  if (!v.lists.length) return <NoLists actions={v.actions} />;
+  const { actions } = v;
+  const canDrop = (id: string, from: string | null, to: string) => {
+    const it = itemsById.get(id);
+    return it ? groupDrop(group, it, from, to, ctx) : { ok: false, reason: null };
+  };
+  const onGroupDrop = (id: string, from: string | null, to: string) => {
+    const it = itemsById.get(id);
+    const r = it ? groupDrop(group, it, from, to, ctx) : null;
+    if (r?.ok) actions.groupMove(id, r.patch, r.message);
+  };
+  useLayoutEffect(() => {
+    dropRules.current = { canDrop, onDrop: onGroupDrop };
+  });
+  if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
     <>
-      <ListGroups ref={root} groups={groups} collapsed={collapsed} onCollapsedChange={(ids) => setCollapsed(projectId, group, ids)} renderRow={(r, g) => projectListRow(v, r, `${g.id}:${r.id}`)} onItemKey={v.onItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps} />
+      <ListGroups ref={root} groups={groups} collapsed={collapsed} onCollapsedChange={(ids) => setCollapsed(projectId, group, ids)} renderRow={(r, g) => projectListRow(v, r, `${g.id}:${r.id}`)} drop={cue} canDrop={canDrop} onGroupDrop={onGroupDrop} onAnnounce={announce} onItemKey={v.onItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps} />
       {v.bulkBar}
     </>
   );

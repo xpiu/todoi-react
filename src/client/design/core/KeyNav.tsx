@@ -1,9 +1,10 @@
 // KeyNav — headless keyboard container for item collections (board cards, list rows). The whole
 // collection is ONE Tab stop (roving tabindex); arrows / J / K move focus inside, Ctrl/Cmd+arrow emits
-// onMoveItem, single keys emit onItemKey, S / shift+arrows / Ctrl+A emit onItemSelect. All matching
+// onMoveItem, Ctrl/Cmd+Shift+↑↓ emits onMoveGroup (grouped List view), single keys emit onItemKey, S / shift+arrows / Ctrl+A emit onItemSelect. All matching
 // goes through the SHORTCUTS registry. Items are located by itemSelector and identified by data-drag-id.
 import { useEffect, useImperativeHandle, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from "react";
 
+import { isReadOnly } from "../auth/GuestBar";
 import { isTyping, SHORTCUTS, type FocusDir, type ItemAction } from "./shortcuts";
 
 const FOCUSABLE = "button,input,select,textarea,a[href],[tabindex]";
@@ -43,6 +44,10 @@ export interface KeyNavProps extends Omit<HTMLAttributes<HTMLDivElement>, "onKey
   sectionSelector?: string;
   /** Ctrl/Cmd+arrow on a focused item. Focus follows the item automatically */
   onMoveItem?: (id: string, dir: FocusDir) => void;
+  /** Ctrl/Cmd+Shift+↑↓ on a focused item inside a `[data-group-id]` section (grouped List view). Return the id of the
+   * group the item moved to, or null when no group in that direction takes it; focus follows the item into that group.
+   * Read-only views never call it. */
+  onMoveGroup?: (id: string, dir: "up" | "down", fromGroupId: string | null) => string | null;
   /** Single-key item action */
   onItemKey?: (id: string, action: ItemAction) => void;
   /** Selection keys: S ("toggle"), shift+↑↓ ("extend", both ids), ctrl/cmd+A ("all") */
@@ -55,7 +60,7 @@ export interface KeyNavProps extends Omit<HTMLAttributes<HTMLDivElement>, "onKey
 
 const isSubitemId = (id: string | null) => !id || id.includes("/");
 
-export function KeyNav({ itemSelector = ".td-card", columnSelector, sectionSelector, onMoveItem, onItemKey, onItemSelect, onKeyDown, ref, children, ...rest }: KeyNavProps) {
+export function KeyNav({ itemSelector = ".td-card", columnSelector, sectionSelector, onMoveItem, onMoveGroup, onItemKey, onItemSelect, onKeyDown, ref, children, ...rest }: KeyNavProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => rootRef.current!, []);
   const activeRef = useRef<HTMLElement | null>(null);
@@ -101,20 +106,33 @@ export function KeyNav({ itemSelector = ".td-card", columnSelector, sectionSelec
     const id = item.getAttribute("data-drag-id");
     const q = (scope: Element) => [...scope.querySelectorAll<HTMLElement>(itemSelector)].filter(visible);
     const afterPaint = (fn: () => void) => requestAnimationFrame(() => requestAnimationFrame(fn));
+    // The moved element re-mounts once the optimistic update lands; keep focus on it (inside `scope`) for a few frames.
+    const follow = (scope: string) => {
+      let frames = 0;
+      const refocus = () => {
+        const el = root.querySelector<HTMLElement>(`${scope}${itemSelector}[data-drag-id="${CSS.escape(id!)}"]`);
+        if (el && document.activeElement !== el && (document.activeElement === document.body || !document.activeElement?.closest(itemSelector) || !root.contains(document.activeElement) || (scope && !document.activeElement.closest(scope.trim())))) el.focus();
+        if (++frames < 30) requestAnimationFrame(refocus);
+      };
+      requestAnimationFrame(refocus);
+    };
 
+    // Grouped views: Ctrl/Cmd+Shift+↑↓ moves the item to the previous / next group (checked first: itemMove matches with shift too)
+    const gm = onMoveGroup ? SHORTCUTS.groupMove(e) : null;
+    if (gm) {
+      e.preventDefault();
+      if (!isSubitemId(id) && !isReadOnly(item)) {
+        const to = onMoveGroup!(id!, gm, item.closest("[data-group-id]")?.getAttribute("data-group-id") ?? null);
+        if (to != null) follow(`[data-group-id="${CSS.escape(to)}"] `);
+      }
+      return;
+    }
     const mv = SHORTCUTS.itemMove(e);
     if (mv) {
       if (onMoveItem && !isSubitemId(id)) {
         e.preventDefault();
         onMoveItem(id!, mv);
-        // The moved element re-mounts once the optimistic update lands; keep focus on it for a few frames.
-        let frames = 0;
-        const refocus = () => {
-          const el = root.querySelector<HTMLElement>(`${itemSelector}[data-drag-id="${CSS.escape(id!)}"]`);
-          if (el && document.activeElement !== el && (document.activeElement === document.body || !document.activeElement?.closest(itemSelector) || !root.contains(document.activeElement))) el.focus();
-          if (++frames < 30) requestAnimationFrame(refocus);
-        };
-        requestAnimationFrame(refocus);
+        follow("");
       }
       return;
     }

@@ -265,7 +265,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Phone: the note takes its own line under the name, count and chevron (order: after the actions) */
   html[data-device="phone"] .td-list-section-dropnote {
+    order: 1;
     flex-basis: 100%;
     margin: 0 0 var(--sp-1) 29px;
   }

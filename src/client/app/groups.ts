@@ -1,7 +1,9 @@
-// Group by (List view) over the API's items — the app side of Design's ViewControls `groupItems` / `dueBucket`. Pure:
-// the List view groups with it and the toolbar's Group menu counts its groups. Group ids are stable ids (Status,
+// Group by (List view) over the API's items — the app side of Design's ViewControls `groupItems` / `groupDrop` /
+// `dueBucket`. Pure: the List view groups with it, the toolbar's Group menu counts its groups, and a drop or
+// Ctrl/Cmd+Shift+↑↓ between groups asks `groupDrop` what changes. Group ids are stable ids (Status,
 // priority, member and label ids, Due buckets), never display names. Spec: DESIGN.md › Group by.
 import type { GroupKey, ItemPriority } from "../../shared/enums";
+import type { ItemStatus } from "../../shared/item-status";
 import type { Item, Label } from "../data/api";
 import type { IconName } from "../design/core/Icon";
 import { PRIORITY_COLORS } from "../design/core/priorities";
@@ -95,4 +97,39 @@ export function groupItems<T extends Item>(items: T[], key: GroupKey, ctx: Group
     else at(dueBucket(it.dueDate, it.done, ctx.today), () => "").items.push(it);
   }
   return defs.filter((d) => d.items.length || (ctx.showEmpty && !d.onlyWhenFilled)).map(({ onlyWhenFilled: _only, ...g }) => g);
+}
+
+/** The one field a move between groups changes */
+export type GroupPatch = { status: ItemStatus } | { priority: ItemPriority | null } | { assigneeIds: string[] } | { labelIds: string[] } | { dueDate: string | null };
+export type GroupDropResult = { ok: true; patch: GroupPatch; message: string } | { ok: false; reason: string | null };
+
+/**
+ * What moving `item` from one group to another does (Design: ViewControls groupDrop). Status sets the status (No status
+ * refuses); Priority sets it, No priority clears it; Assignee and Label swap the source group's value for the target's
+ * and keep the item's other values (Unassigned / No label remove the source value); Due: Today sets today, No date
+ * clears the date, the range groups refuse with their reason.
+ */
+export function groupDrop(key: GroupKey, item: Pick<Item, "assigneeIds" | "labelIds">, fromId: string | null, toId: string | null, ctx: Pick<GroupContext, "today" | "labels" | "people">): GroupDropResult {
+  if (!toId || fromId === toId) return { ok: false, reason: null };
+  const none = toId === GROUP_NONE;
+  if (key === "status") {
+    const s = statusById(toId);
+    return none || !s ? { ok: false, reason: NO_STATUS_REFUSAL } : { ok: true, patch: { status: s.id }, message: `Status set to ${s.name}` };
+  }
+  if (key === "priority") {
+    if (none) return { ok: true, patch: { priority: null }, message: "Priority cleared" };
+    const p = toId as ItemPriority;
+    return PRIORITY_LABEL[p] ? { ok: true, patch: { priority: p }, message: `Priority set to ${PRIORITY_LABEL[p]}` } : { ok: false, reason: null };
+  }
+  if (key === "assignee" || key === "label") {
+    const cur = key === "assignee" ? item.assigneeIds : item.labelIds;
+    const rest = cur.filter((v) => v !== fromId && v !== toId);
+    const next = none ? rest : [...rest, toId];
+    const nameOf = (id: string | null) => (key === "assignee" ? ctx.people.find((p) => p.id === id)?.name : ctx.labels.find((l) => l.id === id)?.name) ?? "";
+    const message = none ? (next.length ? `Removed ${key === "label" ? "label " : ""}${nameOf(fromId)}` : key === "assignee" ? "Unassigned" : "Labels removed") : key === "assignee" ? `Assigned to ${nameOf(toId)}` : `Label set to ${nameOf(toId)}`;
+    return { ok: true, patch: key === "assignee" ? { assigneeIds: next } : { labelIds: next }, message };
+  }
+  const g = DUE_GROUPS.find((x) => x.id === toId);
+  if (!g || !g.accepts) return { ok: false, reason: g?.refuse ?? "Can't drop here." };
+  return toId === "today" ? { ok: true, patch: { dueDate: ctx.today }, message: "Due date set to today" } : { ok: true, patch: { dueDate: null }, message: "Due date cleared" };
 }

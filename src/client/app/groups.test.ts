@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item, Label } from "../data/api";
-import { dueBucket, GROUP_NONE, groupItems } from "./groups";
+import { dueBucket, GROUP_NONE, groupDrop, groupItems } from "./groups";
 
 const label = (id: string, name: string, color = "blue"): Label => ({ id, projectId: "p", name, color, createdAt: "", updatedAt: "" }) as Label;
 const item = (over: Partial<Item>): Item =>
@@ -55,5 +55,40 @@ describe("groupItems", () => {
     expect(shape(groups)).toEqual([["overdue", ["a"]], ["today", ["b"]], ["week", ["c"]], ["later", ["d"]], ["none", ["e"]], ["earlier", ["f"]]]);
     expect(groups.filter((g) => g.accepts).map((g) => g.id)).toEqual(["today", "none"]);
     expect(groupItems([], "due", { ...ctx, showEmpty: true }).map((g) => g.label)).toEqual(["Overdue", "Today", "This week", "Later", "No date"]);
+  });
+});
+
+describe("groupDrop", () => {
+  const it0 = item({ assigneeIds: ["u1", "u2"], labelIds: ["l1"] });
+  it("does nothing within one group", () => {
+    expect(groupDrop("priority", it0, "HIGH", "HIGH", ctx)).toEqual({ ok: false, reason: null });
+  });
+  it("sets a Status, refuses No status", () => {
+    expect(groupDrop("status", it0, "TODO", "DOING", ctx)).toEqual({ ok: true, patch: { status: "DOING" }, message: "Status set to Doing" });
+    expect(groupDrop("status", it0, "TODO", GROUP_NONE, ctx)).toEqual({ ok: false, reason: "Every item needs a status. Drop it on a status instead." });
+  });
+  it("sets or clears the priority", () => {
+    expect(groupDrop("priority", it0, GROUP_NONE, "URGENT", ctx)).toEqual({ ok: true, patch: { priority: "URGENT" }, message: "Priority set to Urgent" });
+    expect(groupDrop("priority", it0, "URGENT", GROUP_NONE, ctx)).toEqual({ ok: true, patch: { priority: null }, message: "Priority cleared" });
+  });
+  it("swaps the source assignee or label for the target's and keeps the others; the none group removes the source", () => {
+    expect(groupDrop("assignee", it0, "u1", "u3", ctx)).toMatchObject({ ok: true, patch: { assigneeIds: ["u2", "u3"] } });
+    expect(groupDrop("assignee", it0, "u1", "u2", ctx)).toEqual({ ok: true, patch: { assigneeIds: ["u2"] }, message: "Assigned to Sam" });
+    expect(groupDrop("assignee", it0, "u1", GROUP_NONE, ctx)).toEqual({ ok: true, patch: { assigneeIds: ["u2"] }, message: "Removed Flo" });
+    expect(groupDrop("assignee", item({ assigneeIds: ["u1"] }), "u1", GROUP_NONE, ctx)).toEqual({ ok: true, patch: { assigneeIds: [] }, message: "Unassigned" });
+    expect(groupDrop("assignee", item({}), GROUP_NONE, "u1", ctx)).toEqual({ ok: true, patch: { assigneeIds: ["u1"] }, message: "Assigned to Flo" });
+    expect(groupDrop("label", it0, "l1", "l2", ctx)).toEqual({ ok: true, patch: { labelIds: ["l2"] }, message: "Label set to shop" });
+    expect(groupDrop("label", it0, "l1", GROUP_NONE, ctx)).toEqual({ ok: true, patch: { labelIds: [] }, message: "Labels removed" });
+    expect(groupDrop("label", item({ labelIds: ["l1", "l2"] }), "l1", GROUP_NONE, ctx)).toEqual({ ok: true, patch: { labelIds: ["l2"] }, message: "Removed label design" });
+  });
+  it("Due: Today sets today, No date clears; the range groups refuse with their reason", () => {
+    expect(groupDrop("due", it0, "none", "today", ctx)).toEqual({ ok: true, patch: { dueDate: "2026-10-01" }, message: "Due date set to today" });
+    expect(groupDrop("due", it0, "overdue", "none", ctx)).toEqual({ ok: true, patch: { dueDate: null }, message: "Due date cleared" });
+    for (const [to, reason] of [
+      ["overdue", "Overdue is not a date. Open the item to change its date."],
+      ["week", "This week covers several days. Open the item to pick a date."],
+      ["later", "Later covers many days. Open the item to pick a date."],
+      ["earlier", "Earlier holds done items. Open the item to change its date."],
+    ]) expect(groupDrop("due", it0, "today", to!, ctx)).toEqual({ ok: false, reason });
   });
 });

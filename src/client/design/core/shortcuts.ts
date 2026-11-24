@@ -132,6 +132,7 @@ export const SHORTCUT_SECTIONS: ReadonlyArray<ShortcutSection> = [
     rows: [
       [["ctrl", "+", "↑", "↓"], "Move within its list"],
       [["ctrl", "+", "←", "→"], "Move to the next list, same position"],
+      [["ctrl", "+", "shift", "+", "↑", "↓"], "Move to the previous / next group (grouped List view)"],
       [["Z", "or", "ctrl", "+", "Z"], "Undo the last change (up to 10 back, this session)"],
     ],
   },
@@ -205,6 +206,11 @@ export const SHORTCUTS = {
     if (!noMod(e) || e.shiftKey) return null;
     const k = e.key, kk = low(e);
     return k === "ArrowUp" || kk === "k" ? "up" : k === "ArrowDown" || kk === "j" ? "down" : k === "ArrowLeft" ? "left" : k === "ArrowRight" ? "right" : null;
+  },
+  /** Grouped List view: Ctrl/Cmd+Shift+↑↓ moves the focused item to the previous / next group. Checked before itemMove, which also matches with shift held. */
+  groupMove(e: KeyEvt): "up" | "down" | null {
+    if (!mod(e) || !e.shiftKey || e.altKey) return null;
+    return e.key === "ArrowUp" ? "up" : e.key === "ArrowDown" ? "down" : null;
   },
   /** Ctrl/Cmd+arrow item move. */
   itemMove(e: KeyEvt): FocusDir | null {

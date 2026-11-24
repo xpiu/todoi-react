@@ -17,6 +17,7 @@ import type { DatesValue } from "../design/core/DatesPicker";
 import type { LabelDraft, PickableLabel } from "../design/core/LabelPicker";
 import type { DropTarget } from "../design/board/useItemDnd";
 import type { BulkAction, BulkOption } from "../design/core/BulkBar";
+import { statusMovesItem, statusPick } from "../design/core/itemFields";
 import { PRIORITY_COLORS } from "../design/core/priorities";
 import type { QuickAddResult } from "../design/core/quickAdd";
 import type { ItemAction } from "../design/core/shortcuts";
@@ -24,6 +25,7 @@ import { STATUSES } from "../design/core/statuses";
 import { count, joinAnd } from "../design/core/text";
 import { snapshotUndo } from "./snapshotUndo";
 import { useCompletion } from "./completion";
+import type { GroupPatch } from "./groups";
 import { quote, useFeedback } from "./feedback";
 import { keyOf, PRIORITY_LABEL, type Person } from "./items";
 import { usePrefs } from "./prefs";
@@ -493,5 +495,35 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     },
   };
 
-  return { labelHandlers, quickEdit, reorderSubitem, moveSubitem, lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
+  /**
+   * Group by: an item dropped on (or Ctrl/Cmd+Shift+↑↓-moved to) another group changes that one field — one toast with
+   * Undo, "Priority set to High · “Pricing page”". A Status in a linked project is a move to that Status's list (the
+   * move's own toast); Done on a recurring item completes its occurrence. Today as a due date pulls a later start date
+   * along, so the range stays valid.
+   */
+  const groupMove = (id: string, patch: GroupPatch, message: string) => {
+    const it = byId(id);
+    if (!it) return;
+    const text = `${message} · ${quote(it.title)}`;
+    if ("status" in patch) {
+      const pick = statusPick(patch.status, { lists, movesItem: statusMovesItem(lists, project.linkStatuses, it.listId), listId: it.listId, recurring: !!(it.repeatRule && it.dueDate) });
+      if ("moveTo" in pick) return quickEdit.moveToList(id, pick.moveTo);
+      if (pick.status === "DONE" && it.repeatRule && it.dueDate) return setDone(id, true);
+      return editWithUndo(id, { status: it.status }, { status: pick.status }, text, "circle-dot");
+    }
+    if ("priority" in patch) return editWithUndo(id, { priority: it.priority }, { priority: patch.priority }, text, "flag");
+    if ("dueDate" in patch) {
+      const due = patch.dueDate;
+      const startDate = due && it.startDate && it.startDate > due ? due : it.startDate;
+      return editWithUndo(id, { startDate: it.startDate, dueDate: it.dueDate, dueTime: it.dueTime }, { startDate, dueDate: due }, text, "clock");
+    }
+    if ("labelIds" in patch) {
+      const before = it.labelIds;
+      return setLabels.mutate({ id, labelIds: patch.labelIds }, { onSuccess: () => notify({ message: text, icon: "tag", restore: snapshotUndo([{ id, before: { labelIds: before }, after: { labelIds: patch.labelIds }, restore: () => setLabels.mutateAsync({ id, labelIds: before }) }]) }) });
+    }
+    const before = it.assigneeIds;
+    setAssignees.mutate({ id, userIds: patch.assigneeIds }, { onSuccess: () => notify({ message: text, icon: "user-plus", restore: snapshotUndo([{ id, before: { assigneeIds: before }, after: { assigneeIds: patch.assigneeIds }, restore: () => setAssignees.mutateAsync({ id, userIds: before }) }]) }) });
+  };
+
+  return { labelHandlers, quickEdit, groupMove, reorderSubitem, moveSubitem, lists, hiddenLists, hideList, showLists, setListRole, people, quickAdd, priorityOf, addItem, move, onMoveItemKey, onItemKey, remove, removeMany, setDone, addList, updateList, createList, bulkActions, moveOptions, bulk, reschedule, addItemOn, archive, makeSubitemOf, transfer, copyItems, rename };
 }

@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode, Ref } from "react";
 import { Icon } from "../core/Icon";
 import type { KeyNavProps } from "../core/KeyNav";
 
-export interface ListsViewProps extends Pick<KeyNavProps, "onMoveItem" | "onItemKey" | "onItemSelect" | "onKeyDown"> {
+export interface ListsViewProps extends Pick<KeyNavProps, "onMoveItem" | "onMoveGroup" | "onItemKey" | "onItemSelect" | "onKeyDown"> {
   children?: ReactNode;
   onAddList?: () => void;
   /** @default true */
