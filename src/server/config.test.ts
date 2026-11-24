@@ -31,4 +31,9 @@ describe("server configuration", () => {
     expect(prod({ APP_URL: "https://todoi.com", BETTER_AUTH_SECRET: SECRET })).toMatchObject({ DEV: false, MIGRATE_ON_START: false, SEED_ON_START: false, CLIENT_DIR: "dist" });
     expect(prod({ APP_URL: "http://localhost:3000", BETTER_AUTH_SECRET: SECRET }).APP_URL).toBe("http://localhost:3000");
   });
+
+  it("sends email through Resend only with a key, from Todoi's no-reply address by default", () => {
+    expect(parseEnv({ DATABASE_URL, RESEND_API_KEY: " " })).toMatchObject({ RESEND_API_KEY: undefined, EMAIL_FROM: "Todoi <no-reply@todoi.com>", EMAIL_DIR: ".data/emails" });
+    expect(parseEnv({ DATABASE_URL, RESEND_API_KEY: "re_123", EMAIL_FROM: "Todoi <hello@todoi.com>" })).toMatchObject({ RESEND_API_KEY: "re_123", EMAIL_FROM: "Todoi <hello@todoi.com>" });
+  });
 });

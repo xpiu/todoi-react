@@ -1,0 +1,66 @@
+// How an email leaves: Resend's REST API (POST https://api.resend.com/emails, no SDK) when a key is
+// configured; otherwise a development transport that writes the message to a folder (.html, .txt and
+// a .json of its headers) and logs one line, so links can be opened locally and by the e2e tests.
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { nanoid } from "nanoid";
+
+import type { RenderedEmail } from "./templates";
+
+export interface OutgoingEmail extends RenderedEmail {
+  to: string;
+}
+export interface MailerConfig {
+  RESEND_API_KEY?: string;
+  EMAIL_FROM: string;
+  EMAIL_DIR: string;
+}
+export type SendEmail = (email: OutgoingEmail) => Promise<void>;
+
+const RESEND_URL = "https://api.resend.com/emails";
+const TIMEOUT_MS = 10_000;
+
+/** A Resend refusal or an unreachable API, worded for the person ("Couldn't send the link: …"). */
+export class EmailNotSent extends Error {}
+
+/** "2026-11-25T10-12-03-120Z-reset-your-todoi-password-x1y2z3": sortable, readable, never clashing. */
+const fileStem = (subject: string, at: Date) => `${at.toISOString().replace(/[:.]/g, "-")}-${subject.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48)}-${nanoid(6)}`;
+
+export function createMailer(config: MailerConfig, deps: { fetch?: typeof fetch; log?: (line: string) => void; now?: () => Date } = {}): SendEmail {
+  const log = deps.log ?? ((line: string) => console.info(line));
+  const now = deps.now ?? (() => new Date());
+  if (config.RESEND_API_KEY) {
+    const key = config.RESEND_API_KEY;
+    const post = deps.fetch ?? fetch;
+    return async ({ to, subject, html, text }) => {
+      let res: Response;
+      try {
+        res = await post(RESEND_URL, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ from: config.EMAIL_FROM, to: [to], subject, html, text }),
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+      } catch {
+        throw new EmailNotSent("the mail service didn't answer");
+      }
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { message?: string } | null;
+        // The reason is logged for the operator; the person gets a short one.
+        console.error(`Resend refused an email (${res.status}): ${body?.message ?? res.statusText}`);
+        throw new EmailNotSent(res.status === 429 ? "too many emails at once, try again in a minute" : "the mail service refused it");
+      }
+    };
+  }
+  return async ({ to, subject, html, text }) => {
+    const at = now();
+    const stem = join(config.EMAIL_DIR, fileStem(subject, at));
+    await mkdir(config.EMAIL_DIR, { recursive: true });
+    await Promise.all([
+      writeFile(`${stem}.html`, html),
+      writeFile(`${stem}.txt`, text),
+      writeFile(`${stem}.json`, `${JSON.stringify({ from: config.EMAIL_FROM, to, subject, date: at.toISOString() }, null, 2)}\n`),
+    ]);
+    log(`Email to ${to} · ${subject} → ${stem}.html (RESEND_API_KEY is unset, so it was not sent)`);
+  };
+}

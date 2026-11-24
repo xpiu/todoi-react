@@ -27,6 +27,12 @@ export function parseEnv(source: Record<string, string | undefined>) {
       BETTER_AUTH_SECRET: dev ? z.string().min(16).default(DEV_AUTH_SECRET) : z.string({ error: "Set BETTER_AUTH_SECRET to 32+ random characters (openssl rand -base64 32)" }).min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
       /** The built client (`npm run build`) the API serves in production; empty to serve the API only */
       CLIENT_DIR: z.string().default(dev ? "" : "dist"),
+      /** Resend (resend.com) API key for account and invite emails; unset = each email is written to EMAIL_DIR instead */
+      RESEND_API_KEY: z.string().trim().optional().transform((v) => v || undefined),
+      /** The sender of every email; the domain must be verified at Resend */
+      EMAIL_FROM: z.string().trim().min(3).default("Todoi <no-reply@todoi.com>"),
+      /** Where the development transport writes emails (.html, .txt and .json headers) when RESEND_API_KEY is unset */
+      EMAIL_DIR: z.string().default(".data/emails"),
     })
     .superRefine((e, ctx) => {
       if (dev) return;
