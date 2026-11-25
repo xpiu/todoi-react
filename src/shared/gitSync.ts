@@ -5,7 +5,7 @@ import { CODECS, FILE_FORMATS, type FileFormat } from "./projectDoc/codecs";
 import type { MergeConflict } from "./projectDoc/merge";
 
 /** GitHub's own rules: an account is 1–39 letters, digits or single hyphens; a repository adds dots and underscores. */
-const owner = z.string().trim().regex(/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/, "Use the GitHub account or organisation name, like todoi-com");
+const owner = z.string().trim().regex(/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/, "Use the GitHub account or organization name, like todoi-com");
 const repo = z.string().trim().regex(/^[A-Za-z0-9._-]{1,100}$/, "Use the repository name, like plans").refine((r) => r !== "." && r !== "..", "Use the repository name, like plans");
 const branch = z.string().trim().min(1, "Name a branch, like main").max(255).refine((b) => !/\s|\.\.|[~^:?*[\\]|^\/|\/$|\.lock$|@\{/.test(b), "That isn't a valid branch name");
 /** A file path in the repository: relative, no "..", ending in a format's extension. */
@@ -25,7 +25,7 @@ export const gitConnectSchema = gitCheckSchema
     mode: z.enum(["store", "use"]),
     conflictPolicy: z.enum(["ask", "todoi", "file"]).optional(),
   })
-  .refine((v) => CODECS[v.format].extensions.some((e) => v.path.toLowerCase().endsWith(e)), { path: ["path"], message: "The file's extension doesn't match the format" });
+  .refine((v) => CODECS[v.format].extensions.some((e) => v.path.toLowerCase().endsWith(e)), { path: ["path"], message: "End the file name in the format's extension: .md for Markdown, .json for JSON, .yaml for YAML" });
 export const gitSettingsSchema = z.object({
   conflictPolicy: z.enum(["ask", "todoi", "file"]).optional(),
   autoSync: z.boolean().optional(),
@@ -69,6 +69,8 @@ export interface GitConnectionView {
   autoSync: boolean;
   webhook: boolean;
   conflicts: MergeConflict[];
+  /** Names for the places conflicts mention: "list:<id>" → the list's name, "item:<id>" → the parent item's title */
+  places: Record<string, string>;
   runs: GitRunView[];
 }
 

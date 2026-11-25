@@ -46,7 +46,7 @@ These six USPs define the intended commercial positioning of Todoi at todoi.com.
 5. **Tasks versioned alongside the work.** Keep task files under Git version control with the code they describe. Developers and agents can commit task updates with code changes, review diffs and trace the history and authorship of task changes using Git.
 6. **Substantially lower pricing.** Aim to offer the key task-management workflows our customers need at roughly one-fifth of the price of a major competitor such as Linear. This is a pricing goal, subject to sustainable operating costs and final plan design.
 
-**React implementation status:** Repository-backed task-file synchronization is still to be brought into this app from the original [Todoi prototype](https://github.com/xpiu/todoi). The client/server synchronization described under [Features and limits](#-features-and-limits) is separate from that planned capability. Current import/export limits still apply; broader formats and storage providers are goals, and the pricing target is not a published subscription price.
+**React implementation status:** Git sync keeps a project in a file in a GitHub repository — Embridge Markdown, JSON or YAML — and syncs both ways with a three-way merge, conflict resolution, undo and push webhooks (see [DESIGN.md › Git sync](DESIGN.md)). It connects with a fine-grained personal access token; a GitHub App install, other storage providers and scheduled syncs are still to come. The client/server synchronization described under [Features and limits](#-features-and-limits) is separate from it. The pricing target is not a published subscription price.
 
 ## ⚡ Quick Start
 
@@ -75,7 +75,8 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 
 - **Workspace:** Project groups, Projects, Lists, Items, Subitems, labels, assignees, watchers, relations, recurrence, covers and attachments. List/Board/Calendar views with filters, sorting and saved views; item overlay with Tiptap descriptions, comments and activity.
 - **Link Lists with Status:** a per-project switch on the Projects page (also in Project settings; default on). When on, an item created in or moved to a list with a Status role takes that Status, and the item edit modal drops its List box: it shows Status alone, and picking a Status moves the item to the list with that role. The List box returns when the switch is off, a list has no role, two lists share a role, or the item is in a hidden list or the Inbox. See [DESIGN.md](DESIGN.md) (Project automation setting).
-- **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export account JSON.
+- **Git sync:** a project kept in a file (Embridge Markdown, JSON or YAML) in a GitHub repository, synced both ways: three-way merge, a conflict dialog or a conflict policy, sync history with undo, and push webhooks. Connect under Settings › Storage & sync with a fine-grained token.
+- **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), Todoi JSON/YAML project files, Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export account JSON.
 - **Accounts:** private guest workspaces, email/password accounts, project roles and invite links, personal API tokens and account preferences stored in PostgreSQL.
 
 Current limits:

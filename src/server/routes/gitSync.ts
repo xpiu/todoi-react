@@ -5,14 +5,17 @@
 import { zValidator } from "@hono/zod-validator";
 import { desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 
 import { gitCheckSchema, gitConnectSchema, gitSettingsSchema, gitSyncSchema, type GitConnectionView, type GitRunView } from "../../shared/gitSync";
 import { idSchema } from "../../shared/items";
+import type { ProjectDoc } from "../../shared/projectDoc/model";
 import { viewerOf } from "../auth";
 import { db } from "../db";
 import { gitConnections, gitSyncRuns, members, projects, type GitConnection, type GitSyncRun } from "../db/schema";
 import { fail } from "../errors";
 import { checkTarget, connectProject, disconnectProject, SyncFailure, syncConnection, undoLastSync } from "../gitSync/engine";
+import { handleWebhook, MAX_WEBHOOK_BYTES, registerWebhook } from "../gitSync/webhooks";
 import { seal, tokenHint } from "../gitSync/secrets";
 import { requireConfirmedEmail } from "../services/confirmedEmail";
 import { z } from "zod";
@@ -21,6 +24,16 @@ const validate = zValidator;
 const idParam = validate("param", z.object({ id: idSchema }));
 
 const runView = (r: GitSyncRun): GitRunView => ({ id: r.id, trigger: r.trigger, outcome: r.outcome, pulled: r.pulled, pushed: r.pushed, conflicts: r.conflicts, error: r.error, notes: r.notes ?? [], undoable: !!r.before, commitSha: r.commitSha, at: r.createdAt.toISOString() });
+
+/** "list:<id>" and "item:<id>" → names, from the documents a conflict came from (the file's first). */
+function placeNames(docs: Array<ProjectDoc | null | undefined>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const d of docs) for (const l of d?.lists ?? []) {
+    out[`list:${l.id}`] ??= l.name;
+    for (const it of l.items) out[`item:${it.id}`] ??= it.title;
+  }
+  return out;
+}
 
 async function connectionView(c: GitConnection, projectName: string): Promise<GitConnectionView> {
   const runs = await db.select().from(gitSyncRuns).where(eq(gitSyncRuns.connectionId, c.id)).orderBy(desc(gitSyncRuns.createdAt)).limit(10);
@@ -42,6 +55,7 @@ async function connectionView(c: GitConnection, projectName: string): Promise<Gi
     autoSync: c.autoSync,
     webhook: c.hookId !== null,
     conflicts: c.state === "conflict" ? (c.pending?.conflicts ?? []) : [],
+    places: c.state === "conflict" ? placeNames([c.pending?.theirs, c.base]) : {},
     runs: runs.map(runView),
   };
 }
@@ -76,8 +90,11 @@ export const gitSyncRoute = new Hono()
     const { id } = c.req.valid("param");
     await requireConfirmedEmail(viewerOf(c), "connect a repository");
     try {
-      const { connection } = await connectProject({ ...c.req.valid("json"), projectId: id }, viewerOf(c).userId);
-      return c.json({ connection: await connectionView(connection, await projectName(id)) }, 201);
+      const input = c.req.valid("json");
+      const { connection } = await connectProject({ ...input, projectId: id }, viewerOf(c).userId);
+      // Pushes to GitHub start a sync when GitHub can reach Todoi and the token may add a webhook.
+      await registerWebhook(connection, input.token);
+      return c.json({ connection: await connectionView((await connectionOf(id))!, await projectName(id)) }, 201);
     } catch (e) {
       return refuse(c, e);
     }
@@ -85,11 +102,13 @@ export const gitSyncRoute = new Hono()
   .patch("/:id/git", idParam, validate("json", gitSettingsSchema), async (c) => {
     const { id } = c.req.valid("param");
     const { token, ...patch } = c.req.valid("json");
-    const [row] = await db
+    let [row] = await db
       .update(gitConnections)
       .set({ ...patch, ...(token ? { tokenCipher: seal(token), tokenHint: tokenHint(token) } : {}) })
       .where(eq(gitConnections.projectId, id))
       .returning();
+    // A new token may be allowed what the old one wasn't: try the webhook again.
+    if (row && token && !row.hookId && (await registerWebhook(row, token))) row = await connectionOf(id);
     return row ? c.json({ connection: await connectionView(row, await projectName(id)) }) : fail(c, 404, "This project isn't connected to a repository");
   })
   .post("/:id/git/sync", idParam, validate("json", gitSyncSchema), async (c) => {
@@ -125,4 +144,10 @@ export const gitConnectionsRoute = new Hono().get("/", async (c) => {
   if (!mine.length) return c.json({ connections: [] });
   const rows = await db.select({ c: gitConnections, name: projects.name }).from(gitConnections).innerJoin(projects, eq(projects.id, gitConnections.projectId)).where(inArray(gitConnections.projectId, mine.map((m) => m.projectId)));
   return c.json({ connections: await Promise.all(rows.map((r) => connectionView(r.c, r.name))) });
+});
+
+/** POST /api/webhooks/github — GitHub's push deliveries (no session; the signature is the proof). */
+export const webhooksRoute = new Hono().post("/github", bodyLimit({ maxSize: MAX_WEBHOOK_BYTES, onError: (c) => c.body(null, 413) }), async (c) => {
+  const out = await handleWebhook({ event: c.req.header("x-github-event"), delivery: c.req.header("x-github-delivery"), signature: c.req.header("x-hub-signature-256") }, await c.req.text());
+  return "synced" in out ? c.json({ syncing: out.synced.length }, out.status) : c.body(null, out.status);
 });

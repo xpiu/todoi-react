@@ -7,7 +7,7 @@ import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
 import { deletionRoute, emailChangeRoute, sudoRoute } from "./routes/accountChanges";
-import { gitConnectionsRoute, gitSyncRoute } from "./routes/gitSync";
+import { gitConnectionsRoute, gitSyncRoute, webhooksRoute } from "./routes/gitSync";
 import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
@@ -43,6 +43,9 @@ export const app = new Hono()
   .on(["GET", "POST"], "/auth/*", (c) => auth.handler(c.req.raw))
   // Calendar apps poll the private feed without a session: the link is the secret (no cookie is read or set).
   .route("/feeds", feedsRoute)
+  // GitHub calls this without a session: each delivery is verified by its signature (gitSync/webhooks.ts).
+  .use("/webhooks/*", rateLimit(LIMITS.webhook))
+  .route("/webhooks", webhooksRoute)
   // API tokens: a budget per token, and tokens that don't work count against their address (before the lookup).
   .use("*", rateLimit(LIMITS.token))
   .use("*", invalidTokenLimit())

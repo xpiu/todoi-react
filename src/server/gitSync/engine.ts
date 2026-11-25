@@ -52,16 +52,16 @@ export function explainGitHub(e: GitHubError, c: Pick<GitConnection, "owner" | "
     case "forbidden":
       return `The token can't write to ${repoName(c)}. Give it Contents: Read and write access to this repository`;
     case "rate-limited":
-      return `GitHub's rate limit was reached. Sync again after ${e.retryAt?.toISOString().slice(11, 16) ?? "a minute"} UTC`;
+      return `GitHub's rate limit was reached. Sync again in ${e.retryAt ? Math.max(1, Math.ceil((e.retryAt.getTime() - Date.now()) / 60_000)) : 1} minute${e.retryAt && Math.ceil((e.retryAt.getTime() - Date.now()) / 60_000) > 1 ? "s" : ""}`;
     case "not-found":
-      return `GitHub can't find ${repoName(c)} or its ${c.branch} branch, or the token can't see them`;
+      return `GitHub can't find ${repoName(c)} or its ${c.branch} branch. Check the name and branch, and that the token includes this repository`;
     case "too-large":
     case "not-a-file":
       return e.message;
     case "unavailable":
       return "GitHub didn't answer. Try again in a minute";
     default:
-      return `GitHub refused the change: ${e.message}`;
+      return `GitHub refused the change (${e.message}). Try again; if it keeps failing, disconnect and connect again`;
   }
 }
 
@@ -126,7 +126,7 @@ export async function syncConnection(connectionId: string, trigger: SyncTrigger,
       return await syncLocked(c, trigger, actor, opts);
     } catch (e) {
       if (e instanceof SyncFailure && e.reason === "busy") throw e;
-      const message = e instanceof GitHubError ? explainGitHub(e, c) : e instanceof SyncFailure ? e.message : e instanceof ProjectFileError ? `The file in ${repoName(c)} can't be read: ${e.problems.join("; ")}` : "The sync stopped on an unexpected error";
+      const message = e instanceof GitHubError ? explainGitHub(e, c) : e instanceof SyncFailure ? e.message : e instanceof ProjectFileError ? `The file in ${repoName(c)} can't be read: ${e.problems.join("; ")}` : "The sync stopped on an unexpected error. Try again; if it keeps failing, disconnect and connect again";
       if (!(e instanceof GitHubError || e instanceof SyncFailure || e instanceof ProjectFileError)) console.error(JSON.stringify({ level: "error", msg: "git sync failed", connectionId: c.id, error: String(e), stack: (e as Error).stack }));
       await db.update(gitConnections).set({ state: "error", lastError: message }).where(eq(gitConnections.id, c.id));
       return record(c, { actorId, trigger, outcome: "failed", error: message });
@@ -136,7 +136,7 @@ export async function syncConnection(connectionId: string, trigger: SyncTrigger,
 
 async function projectOwner(projectId: string): Promise<string> {
   const [row] = await db.execute<{ user_id: string }>(sql`select user_id from members where project_id = ${projectId} and role = 'owner' limit 1`).then((r) => r.rows);
-  if (!row) throw new SyncFailure("not-found", "The project has no owner to sync as");
+  if (!row) throw new SyncFailure("not-found", "The project has no owner to sync as. Give the project an owner in Project settings › Members");
   return row.user_id;
 }
 
@@ -156,7 +156,8 @@ async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string,
     const base = c.base ?? null;
     // An unchanged blob is the base itself; anything else is parsed (and what the codec had to say is kept on the run).
     const parsed = remote.sha === c.fileSha && base ? null : codec.parse(remote.text);
-    const theirs = parsed?.doc ?? base!;
+    // The file's new items get their ids here, so the merge, the counts and the written file all agree on them.
+    const theirs = parsed ? withIds(parsed.doc) : base!;
     const notes = parsed?.warnings.length ? parsed.warnings : null;
     const prefer: Side = opts.resolveAll ?? (c.conflictPolicy === "file" ? "theirs" : "ours");
     const merged = mergeDocs(base, ours, theirs, { choices: opts.choices, prefer });
@@ -190,6 +191,8 @@ async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string,
     }
     await db.update(gitConnections).set({ base: result, fileSha, lastSyncedAt: new Date(), state: "ok", lastError: null, pending: null }).where(eq(gitConnections.id, c.id));
     const outcome = pulled && pushed ? "merged" : pulled ? "pulled" : pushed || commitSha ? "pushed" : "unchanged";
+    // A push that changed nothing here (often Todoi's own commit echoing back) leaves no line in the history.
+    if (outcome === "unchanged" && trigger === "webhook") return { id: "", connectionId: c.id, actorId: actor, trigger, outcome, pulled: 0, pushed: 0, conflicts: 0, error: null, notes, before: null, commitSha: null, createdAt: new Date() };
     return record(c, { actorId: actor, trigger, outcome, pulled, pushed, conflicts: merged.conflicts.length, notes, before: pulled ? ours : null, commitSha });
   }
   throw new SyncFailure("busy", "The file and the project kept changing during the sync. Try again in a moment");

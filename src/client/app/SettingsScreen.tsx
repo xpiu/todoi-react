@@ -36,6 +36,7 @@ import { MODES, THEMES } from "../design/core/themes";
 import { relativeSync } from "../design/core/ConnectionStatus";
 import { useSaveState } from "./saveState";
 import { SyncRecovery, syncOperationLabel } from "./SyncRecovery";
+import { useGitSyncSettings } from "./GitSyncSettings";
 import { PasswordField } from "../design/auth/PasswordField";
 import { MonoValue, SettingsLink, SettingsShell, StatusDot, type SettingsGroup, type SettingsPage, type SettingsRow } from "../design/settings/SettingsShell";
 import { downloadAccountExport } from "./exportData";
@@ -165,8 +166,9 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const [expanded, setExpanded] = useState<string | null>(null);
   const [labelProject, setLabelProject] = useState<string | null>(null);
   const labelsSection = useLabelsSection(page === "settings" ? labelProject : null, setLabelProject, page === "settings" ? projects : []);
-  const account = useAccountPages(page === "account", projects, online);
   const registered = !!user && !user.isAnonymous;
+  const git = useGitSyncSettings({ projects, currentProjectId: lastProjectId ?? null, online, enabled: registered });
+  const account = useAccountPages(page === "account", projects, online, git.storageRow);
   const me = useMe(page === "settings" && registered);
   const confirmation = useEmailConfirmation(me.data?.email ?? user?.email ?? "");
   const [emailFailed, setEmailFailed] = useState<{ key: EmailKind; message: string } | null>(null);
@@ -232,6 +234,10 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         title: "Storage & sync",
         icon: "refresh-cw",
         groups: [
+          // Git sync first (one panel per connected project), then the files you move by hand, then this device.
+          ...(registered
+            ? git.storageGroups
+            : [{ id: "gh-signedout", title: "GitHub sync", tone: "info" as const, rows: [{ id: "ghSignIn", label: "Log in to sync", hint: "Sync keeps a project in a file in a GitHub repository. Guest workspaces stay in Todoi", control: <Button icon="log-in" onClick={() => navigate({ to: "/login", search: { next: "/settings?s=storage" } })}>Log in</Button> }] }]),
           {
             id: "impexp",
             title: "Import & export",
@@ -355,7 +361,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         title: "Integrations & connections",
         icon: "git-branch",
         groups: [
-          { id: "gh", title: "GitHub sync", tone: "info", rows: [{ id: "ghNone", label: "Not connected", hint: "Keeping a project in a Markdown file in a GitHub repository is a later milestone; Export and Import already speak that format", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/settings", search: { s: "storage" } })}>Import & export</Button> }] },
+          ...git.integrationGroups.map((g) => ({ ...g, rows: [...g.rows, { id: "ghSetup", label: "Set up sync", hint: "Connect, sync and resolve conflicts per project", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/settings", search: { s: "storage" } })}>Storage & sync</Button> }] })),
           { id: "api", title: "API", rows: [{ id: "apiTokens", label: "API tokens", hint: "Scripts and tools act as you with a personal token", control: <Button icon="code" onClick={() => navigate({ to: "/account", search: { s: "tokens" } })}>Manage tokens</Button> }, { id: "agentDocs", label: "Todoi for agents", hint: "How an AI agent or a script uses the API", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs/agents" })}>Open</Button> }] },
         ],
       },
@@ -381,7 +387,15 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
       },
     ],
   };
-  return { pages: [settings, account.page], dialogs: account.dialogs };
+  return {
+    pages: [settings, account.page],
+    dialogs: (
+      <>
+        {account.dialogs}
+        {git.dialogs}
+      </>
+    ),
+  };
 }
 
 type ProjectOption = { id: string; name: string; icon: string | null; color: string | null };
@@ -498,7 +512,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
 }
 
 /** Account: profile, sign-in, tokens, security, devices, projects, data, support. */
-function useAccountPages(active: boolean, projects: Array<ProjectOption & { groupName: string; visibility: string }>, online: boolean): { page: SettingsPage; dialogs: ReactNode } {
+function useAccountPages(active: boolean, projects: Array<ProjectOption & { groupName: string; visibility: string; itemCount: number; role: string }>, online: boolean, storageRow: (p: { id: string; name: string; itemCount: number; role: string }) => SettingsRow): { page: SettingsPage; dialogs: ReactNode } {
   const { user } = useCurrentUser();
   const me = useMe(active);
   const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
@@ -693,7 +707,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
               { id: `pj-${p.id}-link`, label: "Share link", hint: p.visibility === "public" ? "Anyone with the link can read this project" : p.visibility === "shared" ? "Members and guests can open the link" : "Only members can open the link", control: <Button icon="link" onClick={() => {
                 void copyAndNotify(projectUrl(p.id), `Copied the link to ${quote(p.name)}`);
               }}>Copy link</Button> },
-              { id: `pj-${p.id}-storage`, label: "Storage", hint: "Where this project's data lives", control: <MonoValue value="Todoi database" /> },
+              storageRow(p),
             ],
           })),
           { id: "pj-new", title: "New", rows: [{ id: "pjNew", label: "New project", hint: "Pick a group, a template and who can see it", control: <Button icon="plus" onClick={() => lifecycle.openNewProject()}>New project</Button> }] },

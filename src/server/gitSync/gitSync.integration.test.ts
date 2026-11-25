@@ -116,7 +116,9 @@ describe("syncing", () => {
     const md = file()!.replace("- [ ] Write the post", "- [ ] Write the launch post").replace("# Done\n", "# Done\n- [x] Book the venue\n> @sam [2026-11-20]: Booked\n");
     await fake.control.push(REPO, "main", "todo/website.md", md);
     const back = await syncConnection(connection.id, "manual", f.userId);
-    expect(back).toMatchObject({ outcome: "merged", pulled: 2 });
+    // Writing the new item's id back is tidying, not a change: the run reads "pulled".
+    expect(back).toMatchObject({ outcome: "pulled", pulled: 2, pushed: 0 });
+    expect(back.commitSha).not.toBeNull();
     expect((await row(f.write)).title).toBe("Write the launch post");
     const venue = (await db.select().from(items).where(and(eq(items.projectId, f.projectId), eq(items.title, "Book the venue"))))[0]!;
     expect(venue).toMatchObject({ done: true, status: "DONE", listId: f.done });

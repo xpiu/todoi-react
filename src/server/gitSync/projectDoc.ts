@@ -203,7 +203,9 @@ export async function applyProjectDoc(tx: Tx, projectId: string, doc: ProjectDoc
     const syncExtra: ItemSyncExtra | null = Object.keys(d.fields).length || unknown.length || d.attachments.length ? { ...(Object.keys(d.fields).length ? { fields: d.fields } : {}), ...(unknown.length ? { assignees: unknown } : {}), ...(d.attachments.length ? { attachments: d.attachments } : {}) } : null;
     const target: ItemStatus | null = d.done ? "DONE" : d.status;
     if (!row) {
-      const state = statusChange({ status: null, done: false, priorStatus: null }, target ?? listRole.get(p.listId) ?? null);
+      // A new item takes its list's Status role — except Done: an unticked "[ ]" in the file stays open.
+      const role = listRole.get(p.listId) ?? null;
+      const state = statusChange({ status: null, done: false, priorStatus: null }, target ?? (role === "DONE" ? null : role));
       await tx.insert(items).values({ id, projectId, listId: p.listId, parentItemId, title: d.title, description: d.description, ...state, priority: d.priority, startDate: d.start, dueDate: d.due, position: p.position, keyNumber: key++, externalId: d.id, syncExtra, createdBy: actorId });
       touched = true;
     } else {
