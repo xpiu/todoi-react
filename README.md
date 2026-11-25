@@ -9,7 +9,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - **Placeholder history:** v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).
 - **Staging:** [staging.todoi.com](https://staging.todoi.com): Dokploy builds the repo `Dockerfile` with PostgreSQL 18; CI deploys `main` after every gate passes (see [Production](#-production)).
 - **Staging database:** `dbstagingtodoireact` in PostgreSQL 18 (also known as `db-staging-todoi-react` in Dokploy on VPS 2).
-- **Email:** `info@todoi.com`; sender: `no-reply@todoi.com` (`EMAIL_FROM`).
+- **Email:** any `@todoi.com` address that fits its purpose: `info@todoi.com` for contact, `no-reply@todoi.com` as the sender (`EMAIL_FROM`).
 - **Domains:** we own todoi.com and todoi.org. todoi.com is the default in links, emails, IDs and examples. Some core features will be reused at todoi.org, so a variant built for it may use todoi.org addresses instead (`info@todoi.org`). The development seed's sign-ins (`info@todoi.org`, `gates@todoi.org`) are local fixtures, not mailboxes. We don't own todoi.app, so never use it in links, emails, IDs or examples.
 - **Documentation:** [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.
 - **Planning:** [todo.md](todo.md)
