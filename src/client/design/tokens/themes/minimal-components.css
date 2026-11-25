@@ -747,7 +747,7 @@ html[data-theme="minimal"] .td-auth-foot a{color:var(--td-auth-dim);text-decorat
 html[data-theme="minimal"] .td-auth-foot a:hover{color:var(--ink-900);text-decoration-color:var(--ink-900)}
 /* Auth rhythm: 24px between blocks (form, fields, buttons); the legal line and a locked email are secondary copy (dim, not ink); state and project glyphs are 16px on the first text line, in one column */
 html[data-theme="minimal"] .td-auth-form{margin-top:24px}
-html[data-theme="minimal"] .td-auth-or+.td-auth-form{margin-top:0}
+html[data-theme="minimal"] .td-auth-or+.td-auth-form,html[data-theme="minimal"] .td-auth-or+.td-auth-stack{margin-top:0}
 html[data-theme="minimal"] .td-auth-stack.is-tight{margin-top:0}
 html[data-theme="minimal"] .td-auth-check+.td-auth-stack{margin-top:20px}
 html[data-theme="minimal"] .td-auth-check .td-check{font:400 13px/20px var(--font-ui)}

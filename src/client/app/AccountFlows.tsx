@@ -16,6 +16,7 @@ import { ChangeEmailDialog, primaryEmailRow } from "../design/settings/ChangeEma
 import { DeleteAccountDialog } from "../design/settings/DeleteAccountDialog";
 import { PasskeysDialog, passkeysRow } from "../design/settings/PasskeysDialog";
 import { describeAgent } from "./deviceName";
+import { passkeyFailure, passkeysSupported } from "./passkeys";
 import type { ConfirmationState } from "../design/settings/EmailNotifications";
 import type { SettingsRow } from "../design/settings/SettingsShell";
 import { downloadAccountExport } from "./exportData";
@@ -121,13 +122,6 @@ export function useDeleteAccountFlow(email: string, online: boolean) {
   return { row, dialog };
 }
 
-/** The reason a browser passkey ceremony gave, as the dialogs say it (the plugin's codes: SimpleWebAuthn's, or its own). */
-export function passkeyFailure(error: { code?: string; message?: string } | null | undefined): string {
-  if (error?.code === "ERROR_CEREMONY_ABORTED" || error?.code === "AUTH_CANCELLED" || error?.code === "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY") return "Your device didn't finish. Nothing was added.";
-  if (error?.code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED" || error?.code === "PREVIOUSLY_REGISTERED") return "This device already holds a passkey for your account.";
-  return (error?.message || "Something went wrong.").replace(/\.$/, "");
-}
-
 /** A name for a new passkey that none of the others has: "Chrome on macOS", then "Chrome on macOS 2". */
 function newPasskeyName(taken: string[]): string {
   const base = describeAgent(navigator.userAgent);
@@ -165,7 +159,7 @@ export function usePasskeysFlow(online: boolean, registered: boolean) {
       passkeys={stored.map((p) => ({ id: p.id, name: nameOf(p), added: p.createdAt ? formatDate(p.createdAt) : "today", lastUsed: p.lastUsedAt ? formatRelative(p.lastUsedAt) : undefined }))}
       loading={list.isPending && registered}
       listError={list.isError ? errorMessage(list.error).replace(/\.$/, "") : null}
-      supported={typeof window.PublicKeyCredential === "function"}
+      supported={passkeysSupported()}
       offline={!online}
       addState={adding ? "waiting" : "idle"}
       addError={addError}
@@ -177,7 +171,7 @@ export function usePasskeysFlow(online: boolean, registered: boolean) {
         const name = newPasskeyName(stored.map(nameOf));
         const r = await authClient.passkey.addPasskey({ name }).catch((err: unknown) => ({ error: { message: errorMessage(err) } }));
         setAdding(false);
-        if (r?.error) return setAddError(passkeyFailure(r.error));
+        if (r?.error) return setAddError(passkeyFailure(r.error, "add"));
         await refresh();
         notify({ message: `Added the passkey ${quote(name)}`, icon: "key-round" });
       }}

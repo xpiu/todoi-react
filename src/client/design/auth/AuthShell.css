@@ -98,7 +98,8 @@
     margin-top: var(--sp-4);
   }
   /* The "or" rule already carries the gap under it; the form adds none */
-  .td-auth-or + .td-auth-form {
+  .td-auth-or + .td-auth-form,
+  .td-auth-or + .td-auth-stack {
     margin-top: 0;
   }
   .td-auth-check + .td-auth-stack {

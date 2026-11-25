@@ -1,11 +1,12 @@
-// The auth pages on Better Auth: log in, create an account, reset a password (request and the emailed
+// The auth pages on Better Auth: log in (password or passkey), create an account, reset a password (request and the emailed
 // link's landing), confirm an email address or a change of address, the invite landing, and the page
 // after an account is deleted.
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { authClient, forgetBrowserSession, syncGuestBeforeAuth } from "../../auth";
+import { passkeyAutofillAvailable, passkeyFailure, passkeysSupported } from "../passkeys";
 import { api, explain, unwrap, type InviteDetail } from "../../data/api";
 import { InvitePage, type InviteState } from "../../design/auth/InvitePage";
 import { ResetPasswordPage, type ResetStage } from "../../design/auth/ResetPasswordPage";
@@ -39,17 +40,55 @@ async function signInWithPassword(email: string, password: string): Promise<stri
   return r.error ? (r.error.message ?? "That email and password don't match.") : null;
 }
 
+/**
+ * Log in with a passkey (a full log-in; there is no second step). `autoFill`: the browser offers the
+ * account's passkeys in the email field's autofill and the promise waits until one is picked. Null, or why not.
+ */
+async function signInWithPasskey(autoFill: boolean): Promise<string | null> {
+  const syncError = await syncGuestBeforeAuth();
+  if (syncError) return syncError;
+  const r = await authClient.signIn.passkey({ autoFill }).catch((err: unknown) => ({ error: { code: "", message: err instanceof Error ? err.message : String(err) } }));
+  return r.error ? passkeyFailure(r.error, "login") : null;
+}
+
 export function LoginScreen() {
   const { next, email } = loginRoute.useSearch();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  // Passkey autofill: offered in the email field for as long as the page is open. A picked passkey logs in;
+  // anything else (the button's own prompt replaces this one, the page closes) ends it quietly.
+  useEffect(() => {
+    let live = true;
+    void passkeyAutofillAvailable().then(async (available) => {
+      if (!available || !live) return;
+      const failed = await signInWithPasskey(true);
+      if (live && !failed) window.location.assign(safeNext(next));
+    });
+    return () => {
+      live = false;
+    };
+  }, [next]);
   return (
     <SignInPage
       context={next && next !== "/" ? "Log in to continue where you left off." : undefined}
       defaultEmail={email ?? ""}
       error={error}
       busy={busy}
+      onPasskey={
+        passkeysSupported()
+          ? async () => {
+              setPasskeyBusy(true);
+              setError(null);
+              const failed = await signInWithPasskey(false);
+              setPasskeyBusy(false);
+              if (failed) setError(failed);
+              else window.location.assign(safeNext(next));
+            }
+          : undefined
+      }
+      passkeyBusy={passkeyBusy}
       onSignIn={async ({ email: e, password }) => {
         setBusy(true);
         setError(null);

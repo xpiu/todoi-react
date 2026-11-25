@@ -54,3 +54,22 @@ export const Busy: Story = {
   },
 };
 export const WithoutSignUp: Story = { args: { onCreateAccount: undefined, onForgotPassword: undefined } };
+
+/** Passkeys offered: the button under an "or" rule, and the email field takes the browser's passkey autofill. */
+export const WithPasskey: Story = {
+  args: { onPasskey: fn() },
+  async play({ args, canvas, userEvent }) {
+    await expect(canvas.getByLabelText("Email")).toHaveAttribute("autocomplete", "username webauthn");
+    await expect(canvas.getByText("or")).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Log in with a passkey" }));
+    await expect(args.onPasskey).toHaveBeenCalledOnce();
+    await expect(args.onSignIn).not.toHaveBeenCalled();
+  },
+};
+export const WaitingForThePasskey: Story = {
+  args: { onPasskey: fn(), passkeyBusy: true },
+  async play({ canvas }) {
+    await expect(canvas.getByRole("button", { name: "Waiting for your device…" })).toBeDisabled();
+  },
+};
+export const PasskeyDidNotFinish: Story = { args: { onPasskey: fn(), error: "Your device didn't finish. Try again, or log in with your password." } };
