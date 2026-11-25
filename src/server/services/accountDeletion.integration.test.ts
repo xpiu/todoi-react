@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { call, cookiesFrom, emailsTo, type Person, signIn, signUp } from "../../../tests/integration/accounts";
 import { db } from "../db";
-import { accounts, activity, apiTokens, attachments, commentReactions, comments, groups, invites, itemAssignees, items, itemWatchers, labels, lists, members, operationReceipts, projects, savedViews, sessions, users, verifications } from "../db/schema";
+import { accounts, activity, apiTokens, attachments, commentReactions, comments, groups, invites, itemAssignees, items, itemWatchers, labels, lists, members, operationReceipts, passkeys, projects, savedViews, sessions, users, verifications } from "../db/schema";
 import { inboxFor } from "../auth";
 import { storeAttachments } from "./attachments";
 import { setAvatar } from "./avatars";
@@ -92,6 +92,7 @@ describe("deleting an account", () => {
     const avatar = await setAvatar(flo.id, new File([Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...new Array(24).fill(0)])], "a.png", { type: "image/png" }));
     const avatarKey = avatar.image!.split("/").pop()!;
     await call("/api/me/tokens", { cookie: flo.cookie, json: { name: "CI" } });
+    await db.insert(passkeys).values({ id: nanoid(), name: "Laptop", userId: flo.id, publicKey: "pk", credentialID: nanoid(), counter: 0, deviceType: "singleDevice", backedUp: false });
     await call("/api/me/email-change", { cookie: flo.cookie, json: { email: `${nanoid(8).toLowerCase()}@example.test`, password: "integration-password" } });
     await call("/api/auth/request-password-reset", { json: { email: flo.email, redirectTo: "/reset" } });
     expect((await emailsTo(flo.email)).map((m) => m.subject)).toContain("Reset your Todoi password");
@@ -109,7 +110,7 @@ describe("deleting an account", () => {
     expect(await db.select().from(invites).where(eq(invites.projectId, own.projectId))).toEqual([]);
     expect(await db.select().from(attachments).where(inArray(attachments.id, [ownFile!.id, inboxFile!.id]))).toEqual([]);
     for (const key of [ownFile!.storageKey, inboxFile!.storageKey, avatarKey]) expect(await openUpload(key)).toBeNull();
-    for (const table of [sessions, accounts, apiTokens]) expect(await db.select().from(table).where(eq(table.userId, flo.id))).toEqual([]);
+    for (const table of [sessions, accounts, apiTokens, passkeys]) expect(await db.select().from(table).where(eq(table.userId, flo.id))).toEqual([]);
     expect(await db.select().from(operationReceipts).where(eq(operationReceipts.actorId, flo.id))).toEqual([]);
     expect(await db.select().from(verifications).where(or(eq(verifications.identifier, `email-change:${flo.id}`), eq(verifications.value, flo.id)))).toEqual([]);
     expect(await db.select().from(members).where(eq(members.userId, flo.id))).toEqual([]);

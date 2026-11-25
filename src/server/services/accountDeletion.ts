@@ -2,7 +2,7 @@
 // Immediate, in one transaction. What goes: the projects you own that nobody else works in (with their
 // lists, items, comments, attachments and files, labels, saved views, invites and log), your project
 // groups, your Inbox, your memberships, assignments and watches elsewhere, your saved views, API tokens,
-// sessions, sign-in methods, pending links and avatar. What stays: other people's projects and items,
+// sessions, sign-in methods (password, passkeys), pending links and avatar. What stays: other people's projects and items,
 // and what you wrote there — comments, reactions, uploads, activity, items you created — still under
 // your stored name: when anything still points at the account, its row stays as a nameplate (no
 // address, no way to sign in); when nothing does, the row goes too.
@@ -11,7 +11,7 @@
 import { and, count, eq, inArray, like, ne, or, sql } from "drizzle-orm";
 
 import { afterCommit, db, type Tx } from "../db";
-import { accounts, apiTokens, attachments, groups, itemAssignees, items, itemWatchers, lists, members, operationReceipts, projects, savedViews, sessions, uploadCleanup, users, verifications } from "../db/schema";
+import { accounts, apiTokens, attachments, groups, itemAssignees, items, itemWatchers, lists, members, operationReceipts, passkeys, projects, savedViews, sessions, uploadCleanup, users, verifications } from "../db/schema";
 import { ApiFailure } from "../errors";
 import { logActivity } from "./activity";
 import { avatarKey } from "./avatars";
@@ -105,6 +105,7 @@ export async function deleteAccount(userId: string): Promise<{ removed: boolean 
     await tx.delete(apiTokens).where(eq(apiTokens.userId, userId));
     await tx.delete(sessions).where(eq(sessions.userId, userId));
     await tx.delete(accounts).where(eq(accounts.userId, userId));
+    await tx.delete(passkeys).where(eq(passkeys.userId, userId));
     await tx.delete(verifications).where(or(eq(verifications.identifier, `email-change:${userId}`), and(like(verifications.identifier, "reset-password:%"), eq(verifications.value, userId))));
     await tx.delete(operationReceipts).where(eq(operationReceipts.actorId, userId));
     const avatar = avatarKey(user.image);

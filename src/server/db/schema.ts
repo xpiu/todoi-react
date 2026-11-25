@@ -89,6 +89,31 @@ export const verifications = pgTable("verifications", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   ...timestamps,
 });
+/**
+ * Passkeys (Better Auth's passkey plugin, model `passkey`): a WebAuthn credential that logs the person in.
+ * `lastUsedAt` is ours (auth.ts › passkeyLastUsed). Every account keeps its password, so any passkey can go.
+ */
+export const passkeys = pgTable(
+  "passkeys",
+  {
+    id: text("id").primaryKey(),
+    /** "Chrome on macOS"; renamed in Settings › Account › Passkeys */
+    name: text("name"),
+    publicKey: text("public_key").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    credentialID: text("credential_id").notNull(),
+    counter: integer("counter").notNull(),
+    deviceType: text("device_type").notNull(),
+    backedUp: boolean("backed_up").notNull(),
+    transports: text("transports"),
+    aaguid: text("aaguid"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  },
+  (t) => [index("passkeys_user_idx").on(t.userId), uniqueIndex("passkeys_credential_idx").on(t.credentialID)],
+);
 
 /** Personal API tokens: the secret is shown once; only its hash is stored. Bearer auth acts as the owner. */
 export const apiTokens = pgTable(

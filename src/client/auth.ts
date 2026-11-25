@@ -1,9 +1,10 @@
-// The Better Auth client: sessions, sign-in / up / out, password changes. One instance for the app.
+// The Better Auth client: sessions, sign-in / up / out, password changes, passkeys. One instance for the app.
+import { passkeyClient } from "@better-auth/passkey/client";
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient } from "better-auth/client/plugins";
 import { clearSyncOwner, openSyncOwner, restoreOfflineOwner, retrySync, useSyncState } from "./data/sync";
 
-export const authClient = createAuthClient({ baseURL: `${window.location.origin}/api/auth`, plugins: [anonymousClient()] });
+export const authClient = createAuthClient({ baseURL: `${window.location.origin}/api/auth`, plugins: [anonymousClient(), passkeyClient()] });
 export const { useSession } = authClient;
 
 let openingSession: Promise<void> | undefined;

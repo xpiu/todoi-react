@@ -1,9 +1,10 @@
-// Who is calling. Better Auth (email + password; sessions in Postgres) answers that per request; the
+// Who is calling. Better Auth (email + password, or a passkey; sessions in Postgres) answers that per request; the
 // `authMiddleware` resolves the session once and stores the viewer on the context. Visitors receive
 // an anonymous session; resource permissions also cover direct public reads without a session.
+import { passkey } from "@better-auth/passkey";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
+import { betterAuth, type BetterAuthPlugin } from "better-auth";
+import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { anonymous } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
@@ -15,7 +16,7 @@ import { DEV_USER } from "../shared/devUser";
 import { db } from "./db";
 import { createHash } from "node:crypto";
 
-import { accounts, apiTokens, lists, sessions, users, verifications } from "./db/schema";
+import { accounts, apiTokens, lists, passkeys, sessions, users, verifications } from "./db/schema";
 import { DEV, env } from "./env";
 import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } from "./email";
 import { isDeletedAddress } from "./services/accountDeletion";
@@ -23,13 +24,22 @@ import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChang
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
 import { fail } from "./errors";
 
+/** "Last used today" in Settings › Account › Passkeys: one more field on Better Auth's passkey model, so its list returns it. */
+const passkeyLastUsed = {
+  id: "passkey-last-used",
+  schema: { passkey: { fields: { lastUsedAt: { type: "date", required: false, input: false } } } },
+} satisfies BetterAuthPlugin;
+
+/** Better Auth's passkey routes that add a passkey (a guest has no account to log back into). */
+const PASSKEY_REGISTRATION = ["/passkey/generate-register-options", "/passkey/verify-registration"];
+
 export const auth = betterAuth({
   baseURL: env.APP_URL,
   basePath: "/api/auth",
   secret: env.BETTER_AUTH_SECRET,
   // Vite moves to the next port when 5173 is taken; in development any loopback port may call the API.
   trustedOrigins: [env.APP_URL, ...(DEV ? [`http://localhost:${env.PORT}`, "http://localhost:*", "http://127.0.0.1:*"] : [])],
-  database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications } }),
+  database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications, passkey: passkeys } }),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 10,
@@ -54,7 +64,17 @@ export const auth = betterAuth({
       else await send;
     },
   },
-  plugins: [anonymous({
+  plugins: [passkey({
+    // The relying party is the app's own address (APP_URL): a passkey made for localhost works on localhost only.
+    rpID: new URL(env.APP_URL).hostname,
+    rpName: "Todoi",
+    origin: new URL(env.APP_URL).origin,
+    authentication: {
+      afterVerification: async ({ clientData }) => {
+        await db.update(passkeys).set({ lastUsedAt: new Date() }).where(eq(passkeys.credentialID, String(clientData.id)));
+      },
+    },
+  }), passkeyLastUsed, anonymous({
     generateName: () => "Guest",
     onLinkAccount: async ({ anonymousUser, newUser }) => {
       if (!newUser.user.isAnonymous && anonymousUser.user.id !== newUser.user.id) {
@@ -74,6 +94,11 @@ export const auth = betterAuth({
   disabledPaths: ["/change-email"],
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      if (PASSKEY_REGISTRATION.includes(ctx.path)) {
+        const session = await getSessionFromCtx(ctx);
+        if (session?.user.isAnonymous) throw new APIError("FORBIDDEN", { message: "Create an account to add a passkey" });
+        return;
+      }
       if (ctx.path !== "/verify-email") return;
       const claims = emailLinkClaims(typeof ctx.query?.token === "string" ? ctx.query.token : undefined);
       if (!claims?.updateTo) return;
