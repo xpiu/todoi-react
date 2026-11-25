@@ -108,13 +108,12 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   );
 
   /**
-   * Quick-add. In a Group by group, `group.preset` is the group's value (groupPreset), sent in the same create request:
-   * what the field typed wins for one-value fields (priority, due, >list), labels and assignees add up. A Status in a
-   * linked project picks the list with that role, as a Status pick does. No toast when the item shows where it was typed;
-   * `group.notice` says, from the predicted item, when it won't (groupAddNotice): then one toast with Undo.
+   * Quick-add. In a Group by group, `preset` is the group's value (groupPreset), sent in the same create request: what
+   * the field typed wins for one-value fields (priority, due, >list), labels and assignees add up. A Status in a linked
+   * project picks the list with that role, as a Status pick does. No toast when the item shows where it was typed;
+   * `notice` says, from the predicted item, when it won't (groupAddNotice, addedHiddenNotice): then one toast with Undo.
    */
-  const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom", group?: { preset: GroupPatch | null; notice: (predicted: Item) => string | null }) => {
-    const preset = group?.preset;
+  const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom", { preset, notice: noticeOf }: { preset?: GroupPatch | null; notice?: (predicted: Item) => string | null } = {}) => {
     const linked = statusMovesItem(lists, project.linkStatuses, listId);
     const pick = preset && "status" in preset ? statusPick(preset.status, { lists, movesItem: linked, listId, recurring: false }) : null;
     const typedList = parsed.list ? project.lists.find((l) => l.name === parsed.list)?.id : undefined;
@@ -126,7 +125,7 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     const fields = withPreset({ priority: priorityOf(parsed), dueDate: parsed.due ?? undefined, labelIds, assigneeIds }, preset, !!parsed.priority);
     const vars = { id: newId(), title, listId: destination, status, ...fields, position };
     createItem.mutate(vars);
-    const notice = group?.notice(predictCreated(vars, { listId: destination, projectId, statusRole: project.lists.find((l) => l.id === destination)?.statusRole ?? null }));
+    const notice = noticeOf?.(predictCreated(vars, { listId: destination, projectId, statusRole: project.lists.find((l) => l.id === destination)?.statusRole ?? null }));
     if (notice) notify({ message: `${notice} · ${quote(title)}`, icon: "plus", restore: () => deleteOne({ id: vars.id, quiet: true }) });
   };
 

@@ -30,8 +30,9 @@ import { ListRow } from "../design/list/ListRow";
 import { ListGroups, type GroupDropCue } from "../design/list/ListGroups";
 import { ListSection } from "../design/list/ListSection";
 import { ListView } from "../design/list/ListView";
+import type { QuickAddResult } from "../design/core/quickAdd";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
-import { filterViewItems, hiddenReason, itemComparator, sortLists } from "./filters";
+import { addedHiddenNotice, filterViewItems, hiddenReason, itemComparator, sortLists } from "./filters";
 import { useFeedback } from "./feedback";
 import { groupAddNotice, groupDrop, groupItems, groupPreset } from "./groups";
 import { useCollapsedGroups, useGroupState } from "./groupState";
@@ -192,6 +193,8 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
     const hiddenList = actions.hiddenLists.find((l) => l.id === it.listId);
     return hiddenList ? `in ${hiddenList.name}, a hidden list` : hiddenReason(it, filters, ctx, showCompleted);
   };
+  /** A list's or column's quick add: one toast with Undo only when the view won't show the new item */
+  const addInList = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom") => actions.addItem(listId, title, parsed, position, { notice: (it) => addedHiddenNotice(whyHidden(it)) });
 
   // Selection: S / shift+arrows / Ctrl+A from KeyNav, Ctrl+click toggles, shift+click ranges within a list.
   const onItemSelect = useCallback((ids: string[], mode: SelectMode) => {
@@ -368,7 +371,7 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   // lets unchanged cards skip a board update (item-performance.spec › acknowledging a new item)
   const { moveOptions, lists: projectLists } = actions;
   const moveOptionsByList = useMemo(() => new Map(projectLists.map((l) => [l.id, moveOptions(l.id)])), [projectLists, moveOptions]);
-  return { actions, ctx, order, dnd: { ...dnd, rootProps }, lists, rowsOf, rowsByListId: groupedRows, itemsById, toRow, allFiltered, hiddenCount, whyHidden, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, transferOptions, subitemPanel, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
+  return { actions, ctx, order, dnd: { ...dnd, rootProps }, lists, rowsOf, rowsByListId: groupedRows, itemsById, toRow, allFiltered, hiddenCount, whyHidden, addInList, onItemSelect, onItemClick, onItemKey, onCardMenu, moveOptionsByList, transferOptions, subitemPanel, parentsWithSubitems, bulkBar: <>{bulkBar}{roleDialog}</>, isSelected, requestRole, hiddenMenu };
 }
 
 function NoLists({ actions }: { actions: ProjectActions }) {
@@ -485,7 +488,7 @@ function ProjectListSections(props: ViewProps) {
         {v.lists.map((list) => {
           const rows = v.rowsOf(list.id);
           return (
-            <ListSection key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
+            <ListSection key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => v.addInList(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
               {rows.map((r) => projectListRow(v, r))}
             </ListSection>
           );
@@ -707,7 +710,7 @@ function ProjectBoard(props: ViewProps) {
         {v.lists.map((list) => {
           const rows = v.rowsOf(list.id);
           return (
-            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => actions.addItem(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
+            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => v.addInList(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
               {rows.map((r) => {
                 const it = v.itemsById.get(r.id)!;
                 return (

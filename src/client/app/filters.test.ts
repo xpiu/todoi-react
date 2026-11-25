@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item, Label } from "../data/api";
-import { availableFilters, hiddenReason, itemComparator, matchesFilters, nextSort, sortLists, weekRange } from "./filters";
+import { addedHiddenNotice, availableFilters, hiddenReason, itemComparator, matchesFilters, nextSort, sortLists, weekRange } from "./filters";
 
 const label = (id: string, name: string): Label => ({ id, projectId: "p", name, color: "blue", createdAt: "", updatedAt: "" }) as Label;
 const item = (over: Partial<Item>): Item =>
@@ -102,5 +102,9 @@ describe("hiddenReason", () => {
     expect(hiddenReason(item({ priority: "LOW" }), [{ type: "priority", value: "High" }], ctx, true)).toBe("hidden by the current filters");
     expect(hiddenReason(item({ done: true, priority: "LOW" }), [{ type: "priority", value: "High" }], ctx, false)).toBe("completed items are hidden");
     expect(hiddenReason(item({ done: true }), [], ctx, true)).toBeNull();
+  });
+  it("makes the quick add's toast line, or none when the item shows", () => {
+    expect(addedHiddenNotice("hidden by the current filters")).toBe("Added · hidden by the current filters");
+    expect(addedHiddenNotice(null)).toBeNull();
   });
 });

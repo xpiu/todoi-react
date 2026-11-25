@@ -121,6 +121,12 @@ export function hiddenReason(it: Item, filters: ViewFilter[], ctx: FilterContext
   return matchesFilters(it, filters, ctx) ? null : "hidden by the current filters";
 }
 
+/**
+ * What a quick add says when the view won't show the new item (decision R3, as Linear and Todoist do):
+ * "Added · hidden by the current filters", or null when nothing hides it (no toast: it shows where it was typed).
+ */
+export const addedHiddenNotice = (hidden: string | null) => (hidden ? `Added · ${hidden}` : null);
+
 /** Filter parent items once; their direct subitems stay with them in every view. */
 export function filterViewItems(items: Item[], filters: ViewFilter[], ctx: FilterContext, showCompleted: boolean): Item[] {
   if (!filters.length && showCompleted) return items;

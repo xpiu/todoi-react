@@ -9,7 +9,7 @@ import type { IconName } from "../design/core/Icon";
 import { PRIORITY_COLORS } from "../design/core/priorities";
 import { STATUSES, statusById } from "../design/core/statuses";
 import type { ItemGroup } from "../design/list/ListGroups";
-import { itemStatusId, weekRange } from "./filters";
+import { addedHiddenNotice, itemStatusId, weekRange } from "./filters";
 import { avatarColorVar, PRIORITY_LABEL, type Person } from "./items";
 
 /** The group for items without a value: No status, No priority, Unassigned, No label */
@@ -153,7 +153,7 @@ export function groupPreset(key: GroupKey, groupId: string, ctx: Pick<GroupConte
  * in another group, or its group is collapsed.
  */
 export function groupAddNotice(item: Item, key: GroupKey, typedIn: string, view: { ctx: GroupContext; collapsed: readonly string[]; hidden: string | null }): string | null {
-  if (view.hidden) return `Added · ${view.hidden}`;
+  if (view.hidden) return addedHiddenNotice(view.hidden);
   const landed = groupItems([item], key, { ...view.ctx, showEmpty: false });
   if (landed.some((g) => g.id === typedIn && !view.collapsed.includes(g.id))) return null;
   return `Added to ${(landed.find((g) => g.id === typedIn) ?? landed[0])?.label ?? "the project"}`;
