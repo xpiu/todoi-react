@@ -1,10 +1,10 @@
 // Account emails end to end through the development transport (EMAIL_DIR): reset a password, change the
-// sign-in email, the Email notifications switches, and deleting an account. Every account here is a fresh
+// sign-in email (after confirming it's you), the Email notifications switches, and deleting an account. Every account here is a fresh
 // sign-up that trackAccounts removes afterwards (the deleted one is already gone).
 import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { checkA11y, emailTo, freshProject, trackAccounts, useScope } from "./helpers";
+import { checkA11y, emailTo, freshProject, outsideSudo, trackAccounts, useScope } from "./helpers";
 
 trackAccounts(test);
 const PASSWORD = "account-email-password";
@@ -41,20 +41,25 @@ test("reset a forgotten password through the emailed link", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "This reset link has expired" })).toBeVisible();
 });
 
-test("change the sign-in email: password, link to the new address, confirmed", async ({ page }) => {
+test("change the sign-in email: confirm it's you, link to the new address, confirmed", async ({ page }) => {
   await useScope(page, "rounded-light");
-  const { email } = await signUp(page, "Change test");
+  const { email, id } = await signUp(page, "Change test");
   const next = `new-${nanoid(8).toLowerCase()}@example.test`;
+  // Three hours after the log-in, outside sudo mode: sending asks for the password first.
+  await outsideSudo(id);
   await page.goto("/account?s=signin");
   await page.getByRole("button", { name: "Change email" }).click();
   const dialog = page.getByRole("dialog", { name: "Change email" });
   await expect(dialog.getByLabel("New email")).toBeFocused();
   await dialog.getByLabel("New email").fill(next);
-  await dialog.getByLabel(/^Current password/).fill("not my password");
   await dialog.getByRole("button", { name: "Send confirmation link" }).click();
-  await expect(dialog.getByText("That password isn't right.")).toBeVisible();
-  await dialog.getByLabel(/^Current password/).fill(PASSWORD);
-  await dialog.getByLabel(/^Current password/).press("Enter");
+  const confirm = page.getByRole("dialog", { name: "Confirm it's you" });
+  await expect(confirm.getByText(/^To change your email, enter your password\./)).toBeVisible();
+  await confirm.getByLabel(/^Password/).fill("not my password");
+  await confirm.getByRole("button", { name: "Confirm" }).click();
+  await expect(confirm.getByText("That password isn't right.")).toBeVisible();
+  await confirm.getByLabel(/^Password/).fill(PASSWORD);
+  await confirm.getByLabel(/^Password/).press("Enter");
   await expect(dialog.getByText("Check your inbox")).toBeVisible();
   await checkA11y(page, "change email sent");
   await dialog.getByRole("button", { name: "Done" }).click();

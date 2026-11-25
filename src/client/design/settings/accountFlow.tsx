@@ -1,4 +1,4 @@
-// accountFlow — the shared parts of the Account dialogs (ChangeEmailDialog, DeleteAccountDialog): the
+// accountFlow — the shared parts of the Account dialogs (ChangeEmailDialog, DeleteAccountDialog, PasskeysDialog, ConfirmAccessDialog): the
 // frame on the shared Dialog with the `td-account-dialog` class on its portaled popup, and the state
 // block (glyph, one bold line, one or two quiet sentences). Styles: AccountDialogs.css. Spec: DESIGN.md › Account.
 import type { ReactNode, RefObject } from "react";
@@ -18,12 +18,15 @@ export interface FlowFrameProps {
   /** The element focused on open (focus returns to the opener on close) */
   initialFocus?: RefObject<HTMLElement | null>;
   children?: ReactNode;
+  /** A dialog stacked over this one (the host's ConfirmAccessDialog), rendered inside it so Base UI nests the two */
+  stacked?: ReactNode;
 }
 
-export function FlowFrame({ open, onClose, title, width = 480, footer, footerLead, initialFocus, children }: FlowFrameProps) {
+export function FlowFrame({ open, onClose, title, width = 480, footer, footerLead, initialFocus, children, stacked }: FlowFrameProps) {
   return (
     <Dialog open={open} onClose={onClose} title={title} width={width} footer={footer} footerLead={footerLead} initialFocus={initialFocus} className="td-account-dialog">
       {children}
+      {stacked}
     </Dialog>
   );
 }

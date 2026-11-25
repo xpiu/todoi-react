@@ -3,6 +3,7 @@ import { useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import { Button } from "../core/Button";
+import { ConfirmAccessDialog } from "./ConfirmAccessDialog";
 import { AccountDeletedPage, DeleteAccountDialog, type DeleteAccountDialogProps } from "./DeleteAccountDialog";
 
 const EMAIL = "flo@helicopterseurope.com";
@@ -37,9 +38,9 @@ const meta = {
   title: "Settings/DeleteAccountDialog",
   component: DeleteAccountDialog,
   render: (args) => <FromRow key={String(args.open)} {...args} />,
-  args: { open: true, email: EMAIL, projects: PROJECTS, groups: GROUPS, attachments: { count: 214, size: "1.2 GB" }, memberOf: 2, onClose: fn(), onDelete: fn(), onExport: fn(), onLogInAgain: fn() },
+  args: { open: true, email: EMAIL, projects: PROJECTS, groups: GROUPS, attachments: { count: 214, size: "1.2 GB" }, memberOf: 2, onClose: fn(), onDelete: fn(), onExport: fn() },
   parameters: {
-    docs: { description: { component: "Delete the account in two steps on the shared Dialog. Review: what goes (the projects only you work in, your project groups, the files), what you leave, Export first, and the server's blockers, which disable Continue. Confirm: type the account email (case ignored), then the red Delete account. Deletion is immediate; `AccountDeletedPage` is the signed-out end state. A stale log-in turns the confirm step into Log in again." } },
+    docs: { description: { component: "Delete the account in two steps on the shared Dialog. Review: what goes (the projects only you work in, your project groups, the files), what you leave, Export first, and the server's blockers, which disable Continue. Confirm: type the account email (case ignored), then the red Delete account. Deletion is immediate; `AccountDeletedPage` is the signed-out end state. Outside sudo mode the host stacks its ConfirmAccessDialog over the confirm step (`stacked`)." } },
   },
 } satisfies Meta<typeof DeleteAccountDialog>;
 export default meta;
@@ -96,13 +97,21 @@ export const Confirm: Story = { args: { defaultStep: "confirm" } };
 export const Deleting: Story = { args: { defaultStep: "confirm", busy: true } };
 export const DeleteFailed: Story = { args: { defaultStep: "confirm", error: "the server didn't answer" } };
 export const ConfirmOffline: Story = { args: { defaultStep: "confirm", offline: true } };
-export const LogInAgain: Story = {
-  args: { defaultStep: "confirm", needsLogin: true },
+/** Outside sudo mode: the host's confirm step stacked over Delete account; Esc closes only that one. */
+export const ConfirmItsYouFirst: Story = {
+  args: { defaultStep: "confirm" },
+  render: function Render(args) {
+    const [asking, setAsking] = useState(true);
+    return <FromRow {...args} stacked={<ConfirmAccessDialog open={asking} onClose={() => setAsking(false)} action="delete your account" onPassword={fn()} />} />;
+  },
   async play({ args, canvasElement, userEvent }) {
-    const d = await dialogOf(canvasElement);
-    await expect(d.queryByRole("button", { name: "Delete account" })).toBeNull();
-    await userEvent.click(d.getByRole("button", { name: "Log in again" }));
-    await expect(args.onLogInAgain).toHaveBeenCalledOnce();
+    const body = within(canvasElement.ownerDocument.body);
+    const confirm = await body.findByRole("dialog", { name: "Confirm it's you" });
+    await waitFor(() => expect(within(confirm).getByLabelText(/^Password/)).toHaveFocus());
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(body.queryByRole("dialog", { name: "Confirm it's you" })).toBeNull());
+    await expect(await dialogOf(canvasElement)).toBeTruthy();
+    await expect(args.onClose).not.toHaveBeenCalled();
   },
 };
 

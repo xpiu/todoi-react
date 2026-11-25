@@ -1,9 +1,10 @@
 // DeleteAccountDialog — two steps on one Dialog. "review": what will be deleted (the projects only you
 // work in, your project groups, the files), what you leave, what blocks it, and Export first. "confirm":
-// type the account email, then the red Delete account. The end state is AccountDeletedPage (signed out,
+// type the account email, then the red Delete account (the host asks to confirm it's you first when the
+// session is outside sudo mode: ConfirmAccessDialog in `stacked`). The end state is AccountDeletedPage (signed out,
 // on AuthShell). Deletion is immediate: no grace period (owner decision D13). From Design's
 // settings/DeleteAccountDialog (2026-11-24). Spec: DESIGN.md › Account.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { AuthShell, AuthState } from "../auth/AuthShell";
 import { Button } from "../core/Button";
@@ -49,14 +50,13 @@ export interface DeleteAccountDialogProps {
   /** Shown as "Couldn't delete the account: …"; the typed email stays */
   error?: string | null;
   offline?: boolean;
-  /** The last log-in is too old for this: the confirm step asks to log in again instead */
-  needsLogin?: boolean;
-  onLogInAgain?: () => void;
+  /** The host's confirm step (ConfirmAccessDialog), stacked over this dialog */
+  stacked?: ReactNode;
   /** Stories: open on the confirm step @default "review" */
   defaultStep?: "review" | "confirm";
 }
 
-export function DeleteAccountDialog({ open, onClose, email, projects = [], groups = [], attachments, memberOf = 0, blockers = [], loading = false, reviewError, onExport, exportState = "idle", exportError, onDelete, busy = false, error, offline = false, needsLogin = false, onLogInAgain, defaultStep = "review" }: DeleteAccountDialogProps) {
+export function DeleteAccountDialog({ open, onClose, email, projects = [], groups = [], attachments, memberOf = 0, blockers = [], loading = false, reviewError, onExport, exportState = "idle", exportError, onDelete, busy = false, error, offline = false, stacked, defaultStep = "review" }: DeleteAccountDialogProps) {
   const [step, setStep] = useState(defaultStep);
   const [typed, setTyped] = useState("");
   // Each opening starts on the review with an empty field (reset while rendering, not in an effect).
@@ -82,7 +82,7 @@ export function DeleteAccountDialog({ open, onClose, email, projects = [], group
   const match = !!email && typed.trim().toLowerCase() === email.toLowerCase();
   const blocked = blockers.length > 0;
   const remove = () => {
-    if (match && !busy && !offline && !needsLogin) onDelete?.();
+    if (match && !busy && !offline) onDelete?.();
   };
 
   if (step === "confirm")
@@ -93,20 +93,15 @@ export function DeleteAccountDialog({ open, onClose, email, projects = [], group
         title="Delete account"
         footerLead="This can't be undone"
         initialFocus={fieldRef}
+        stacked={stacked}
         footer={
           <>
             <Button variant="outline" disabled={busy} onClick={() => setStep("review")}>
               Back
             </Button>
-            {needsLogin ? (
-              <Button variant="primary" onClick={onLogInAgain}>
-                Log in again
-              </Button>
-            ) : (
-              <Button variant="danger" disabled={!match || busy || offline} onClick={remove}>
-                {busy ? "Deleting…" : "Delete account"}
-              </Button>
-            )}
+            <Button variant="danger" disabled={!match || busy || offline} onClick={remove}>
+              {busy ? "Deleting…" : "Delete account"}
+            </Button>
           </>
         }
       >
@@ -128,7 +123,6 @@ export function DeleteAccountDialog({ open, onClose, email, projects = [], group
               Type <b>{email}</b>
             </p>
           </div>
-          {needsLogin ? <p className="td-account-text">For your safety, log in again before you delete your account. You come back to Account afterwards.</p> : null}
           <InlineError message={offline ? "You're offline. Connect to delete your account." : error ? `Couldn't delete the account: ${error}` : null} />
         </form>
       </FlowFrame>

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { call, emailsTo, openLink, PASSWORD, signIn, signUp } from "../../../tests/integration/accounts";
 import { db } from "../db";
-import { users } from "../db/schema";
+import { sessions, users } from "../db/schema";
 import { env } from "../env";
 
 const fresh = () => `${nanoid(10).toLowerCase()}@example.test`;
@@ -15,22 +15,26 @@ const target = (location: string | null) => {
 };
 
 describe("changing the sign-in email", () => {
-  it("needs the current password and a different address; the browser can't call Better Auth's endpoint directly", async () => {
+  it("needs sudo mode and a different address; the browser can't call Better Auth's endpoint directly", async () => {
     const person = await signUp("Flo");
-    const wrong = await call("/api/me/email-change", { cookie: person.cookie, json: { email: fresh(), password: "not the password" } });
-    expect(wrong.status).toBe(400);
-    expect(await wrong.json()).toMatchObject({ fields: { password: "That password isn't right." } });
-    const same = await call("/api/me/email-change", { cookie: person.cookie, json: { email: person.email.toUpperCase(), password: PASSWORD } });
+    const same = await call("/api/me/email-change", { cookie: person.cookie, json: { email: person.email.toUpperCase() } });
     expect(await same.json()).toMatchObject({ fields: { email: "That's already your email." } });
+    // A log-in from three hours ago, never confirmed since: confirm it's you first.
+    await db.update(sessions).set({ createdAt: new Date(Date.now() - 3 * 3600_000) }).where(eq(sessions.userId, person.id));
+    const stale = await call("/api/me/email-change", { cookie: person.cookie, json: { email: fresh() } });
+    expect(stale.status).toBe(403);
+    expect(await stale.json()).toMatchObject({ fields: { sudo: "SUDO_REQUIRED" } });
+    expect((await call("/api/me/sudo", { cookie: person.cookie, json: { password: PASSWORD } })).status).toBe(200);
+    expect((await call("/api/me/email-change", { cookie: person.cookie, json: { email: fresh() } })).status).toBe(200);
     expect((await call("/api/auth/change-email", { cookie: person.cookie, json: { newEmail: fresh() } })).status).toBe(404);
-    const guest = await call("/api/me/email-change", { json: { email: fresh(), password: PASSWORD } });
+    const guest = await call("/api/me/email-change", { json: { email: fresh() } });
     expect(guest.status).toBe(401);
   });
 
   it("emails the new address only, waits for the link, then switches the login and confirms the address", async () => {
     const person = await signUp("Flo");
     const next = fresh();
-    const asked = await call("/api/me/email-change", { cookie: person.cookie, json: { email: next, password: PASSWORD } });
+    const asked = await call("/api/me/email-change", { cookie: person.cookie, json: { email: next } });
     expect(asked.status).toBe(200);
     expect(await asked.json()).toEqual({ pendingEmail: next });
     expect(await me(person.cookie)).toMatchObject({ email: person.email, pendingEmail: next });
@@ -55,7 +59,7 @@ describe("changing the sign-in email", () => {
   it("sends the link again on request, and a cancelled change's link stops working", async () => {
     const person = await signUp("Sam");
     const next = fresh();
-    await call("/api/me/email-change", { cookie: person.cookie, json: { email: next, password: PASSWORD } });
+    await call("/api/me/email-change", { cookie: person.cookie, json: { email: next } });
     expect((await call("/api/me/email-change/resend", { cookie: person.cookie, method: "POST" })).status).toBe(200);
     const links = (await emailsTo(next)).map((m) => m.link);
     expect(links).toHaveLength(2);
@@ -69,7 +73,7 @@ describe("changing the sign-in email", () => {
   it("refuses a link for an address another account took in the meantime", async () => {
     const person = await signUp("Flo");
     const next = fresh();
-    await call("/api/me/email-change", { cookie: person.cookie, json: { email: next, password: PASSWORD } });
+    await call("/api/me/email-change", { cookie: person.cookie, json: { email: next } });
     await signUp("Someone else", next);
     const link = (await emailsTo(next)).find((m) => m.subject === "Confirm your new email for Todoi")!.link!;
     expect(target((await openLink(link)).location)).toMatchObject({ error: "EMAIL_TAKEN" });

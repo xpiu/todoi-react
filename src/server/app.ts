@@ -6,7 +6,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
-import { deletionRoute, emailChangeRoute } from "./routes/accountChanges";
+import { deletionRoute, emailChangeRoute, sudoRoute } from "./routes/accountChanges";
 import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
@@ -32,6 +32,7 @@ export const app = new Hono()
   .use("*", authMiddleware)
   .use("*", workspaceMutations)
   .route("/me", meRoute)
+  .route("/me/sudo", sudoRoute)
   .route("/me/email-change", emailChangeRoute)
   .route("/me/deletion", deletionRoute)
   .route("/avatars", avatarsRoute)

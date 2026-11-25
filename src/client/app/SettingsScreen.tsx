@@ -503,7 +503,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const me = useMe(active);
   const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
   const deleteAccount = useDeleteAccountFlow(me.data?.email ?? user?.email ?? "", online);
-  const passkeys = usePasskeysFlow(online, !!user && !user.isAnonymous);
+  const passkeys = usePasskeysFlow(online, !!user && !user.isAnonymous, me.data?.email ?? user?.email ?? "");
   const confirmEmail = useEmailConfirmation(me.data?.email ?? user?.email ?? "");
   const am = useAccountMutations();
   const tokens = useTokens(active);

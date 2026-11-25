@@ -33,9 +33,9 @@ const meta = {
   title: "Settings/ChangeEmailDialog",
   component: ChangeEmailDialog,
   render: (args) => <FromRow key={String(args.open)} {...args} />,
-  args: { open: true, currentEmail: OLD, requirePassword: true, onClose: fn(), onSend: fn(), onResend: fn(), onCancelChange: fn() },
+  args: { open: true, currentEmail: OLD, onClose: fn(), onSend: fn(), onResend: fn(), onCancelChange: fn() },
   parameters: {
-    docs: { description: { component: "Change the sign-in email in three stages on the shared Dialog: the new address and the current password → “Check your inbox” (the old address keeps working until the link is opened) → “Email changed”. The host owns the stage through `pendingEmail` / `stage`; errors stay under their field and nothing typed is cleared. `primaryEmailRow` is the Settings › Account row that opens it." } },
+    docs: { description: { component: "Change the sign-in email in three stages on the shared Dialog: the new address (the host asks to confirm it's you first, outside sudo mode) → “Check your inbox” (the old address keeps working until the link is opened) → “Email changed”. The host owns the stage through `pendingEmail` / `stage`; errors stay under their field and nothing typed is cleared. `primaryEmailRow` is the Settings › Account row that opens it." } },
   },
 } satisfies Meta<typeof ChangeEmailDialog>;
 export default meta;
@@ -59,14 +59,11 @@ export const EnterTheNewAddress: Story = {
     await userEvent.clear(field);
     await userEvent.type(field, "flo@todoi");
     await expect(d.getByText("Enter a full email address, like name@company.com.")).toBeVisible();
-    await userEvent.type(field, ".com");
-    await userEvent.type(d.getByLabelText(/^Current password/), "the password{Enter}");
-    await expect(args.onSend).toHaveBeenCalledWith({ email: NEW, password: "the password" });
+    await userEvent.type(field, ".com{Enter}");
+    await expect(args.onSend).toHaveBeenCalledWith({ email: NEW });
   },
 };
-export const WithoutPassword: Story = { args: { requirePassword: false } };
 export const ServerRefused: Story = { args: { error: "the mail service refused it" } };
-export const WrongPassword: Story = { args: { passwordError: "That password isn't right." } };
 export const Sending: Story = { args: { busy: true } };
 export const Offline: Story = {
   args: { offline: true },

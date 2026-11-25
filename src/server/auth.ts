@@ -22,6 +22,8 @@ import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } fro
 import { isDeletedAddress } from "./services/accountDeletion";
 import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
+import { sudoUntil } from "./services/sudo";
+import { SUDO_REQUIRED } from "../shared/sudo";
 import { fail } from "./errors";
 
 /** "Last used today" in Settings › Account › Passkeys: one more field on Better Auth's passkey model, so its list returns it. */
@@ -30,8 +32,12 @@ const passkeyLastUsed = {
   schema: { passkey: { fields: { lastUsedAt: { type: "date", required: false, input: false } } } },
 } satisfies BetterAuthPlugin;
 
-/** Better Auth's passkey routes that add a passkey (a guest has no account to log back into). */
-const PASSKEY_REGISTRATION = ["/passkey/generate-register-options", "/passkey/verify-registration"];
+/**
+ * Better Auth's passkey routes that change how the account logs in: registered accounts only (a guest has no
+ * account to log back into), in sudo mode (services/sudo.ts). A registration's verify step needs the
+ * challenge these options set, bound to the same session.
+ */
+const PASSKEY_CHANGES = ["/passkey/generate-register-options", "/passkey/delete-passkey"];
 
 export const auth = betterAuth({
   baseURL: env.APP_URL,
@@ -69,6 +75,9 @@ export const auth = betterAuth({
     rpID: new URL(env.APP_URL).hostname,
     rpName: "Todoi",
     origin: new URL(env.APP_URL).origin,
+    // Sudo mode (hooks.before) replaces the plugin's own "fresh session" rule (a log-in under a day old).
+    // Without it the registration still belongs to the session that asked for the options.
+    registration: { requireSession: false },
     authentication: {
       afterVerification: async ({ clientData }) => {
         await db.update(passkeys).set({ lastUsedAt: new Date() }).where(eq(passkeys.credentialID, String(clientData.id)));
@@ -89,14 +98,16 @@ export const auth = betterAuth({
     // A change-of-address link was opened: clear the pending change and count the new address as confirmed.
     update: { after: async (user) => settleEmailChange(user) },
   } },
-  // A change of address needs the current password (POST /api/me/email-change checks it, then calls
-  // changeEmail on the server), so the endpoint isn't reachable from the browser directly.
+  // A change of address needs sudo mode (POST /api/me/email-change checks it, then calls changeEmail on
+  // the server), so the endpoint isn't reachable from the browser directly.
   disabledPaths: ["/change-email"],
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      if (PASSKEY_REGISTRATION.includes(ctx.path)) {
+      if (PASSKEY_CHANGES.includes(ctx.path)) {
         const session = await getSessionFromCtx(ctx);
-        if (session?.user.isAnonymous) throw new APIError("FORBIDDEN", { message: "Create an account to add a passkey" });
+        if (!session) throw new APIError("UNAUTHORIZED", { message: "Log in to manage your passkeys" });
+        if (session.user.isAnonymous) throw new APIError("FORBIDDEN", { message: "Create an account to add a passkey" });
+        if (!(await sudoUntil(session.session.id))) throw new APIError("FORBIDDEN", { message: "Confirm it's you to continue", code: SUDO_REQUIRED });
         return;
       }
       if (ctx.path !== "/verify-email") return;
@@ -105,6 +116,15 @@ export const auth = betterAuth({
       // A change cancelled or replaced since the link was sent, or an address someone took meanwhile.
       const refusal = await refusedChange(claims);
       if (refusal) throw ctx.redirect(confirmEmailChangeUrl(claims.updateTo, refusal));
+    }),
+    // A passkey log-in from a browser already signed in to the same account (confirming it's them, sudo
+    // mode) replaces that browser's session: the old one goes, so Devices doesn't list this browser twice.
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/passkey/verify-authentication") return;
+      const fresh = ctx.context.newSession;
+      const replaced = await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret);
+      if (!fresh || !replaced || replaced === fresh.session.token) return;
+      await db.delete(sessions).where(and(eq(sessions.token, replaced), eq(sessions.userId, fresh.user.id)));
     }),
   },
   user: {

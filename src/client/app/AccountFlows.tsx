@@ -1,12 +1,13 @@
 // The Account flows wired to the API: change the sign-in email (Primary email row + ChangeEmailDialog),
 // the passkeys (Sign-in methods › Passkeys + PasskeysDialog) and delete the account (Data › Delete account +
-// DeleteAccountDialog). Each hook returns the Settings row that opens its dialog and the dialog itself, for
+// DeleteAccountDialog). Changing the email, adding or removing a passkey and deleting ask to confirm it's you
+// first when the session is outside sudo mode (useSudo, stacked over the flow's dialog). Each hook returns the Settings row that opens its dialog and the dialog itself, for
 // SettingsScreen's Account registry. Spec: DESIGN.md › Account.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { authClient, forgetBrowserSession } from "../auth";
-import { api, apiError, ApiError, errorMessage, unwrap } from "../data/api";
+import { api, apiError, errorMessage, unwrap } from "../data/api";
 import { useAccountMutations, usePasskeys, type Me, type StoredPasskey } from "../data/account";
 import { Button } from "../design/core/Button";
 import { formatDate, formatRelative } from "../design/core/dates";
@@ -17,6 +18,7 @@ import { DeleteAccountDialog } from "../design/settings/DeleteAccountDialog";
 import { PasskeysDialog, passkeysRow } from "../design/settings/PasskeysDialog";
 import { describeAgent } from "./deviceName";
 import { passkeyFailure, passkeysSupported } from "./passkeys";
+import { sudoRequired, useSudo } from "./sudo";
 import type { ConfirmationState } from "../design/settings/EmailNotifications";
 import type { SettingsRow } from "../design/settings/SettingsShell";
 import { downloadAccountExport } from "./exportData";
@@ -35,7 +37,7 @@ export function useEmailConfirmation(email: string) {
   return { state, send };
 }
 
-type DeletionReview = { projects: Array<{ id: string; name: string; items: number }>; groups: Array<{ id: string; name: string; projects: number }>; attachments: { count: number; bytes: number }; memberOf: number; blockers: string[]; fresh: boolean };
+type DeletionReview = { projects: Array<{ id: string; name: string; items: number }>; groups: Array<{ id: string; name: string; projects: number }>; attachments: { count: number; bytes: number }; memberOf: number; blockers: string[] };
 
 /** Account › Data › Delete account: the row, and the two-step dialog. Success leaves for /account-deleted. */
 export function useDeleteAccountFlow(email: string, online: boolean) {
@@ -44,7 +46,7 @@ export function useDeleteAccountFlow(email: string, online: boolean) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [stale, setStale] = useState(false);
+  const sudo = useSudo({ online, email });
   // Read fresh every time the dialog opens: projects and members change.
   const review = useQuery({ queryKey: ["me", "deletion"], queryFn: ({ signal }) => api.api.me.deletion.$get(undefined, { init: { signal } }).then((r) => unwrap<DeletionReview>(r)), enabled: open, staleTime: 0, gcTime: 0 });
   const r = review.data;
@@ -79,13 +81,7 @@ export function useDeleteAccountFlow(email: string, online: boolean) {
       attachments={r ? { count: r.attachments.count, size: r.attachments.count ? formatBytes(r.attachments.bytes) : undefined } : undefined}
       memberOf={r?.memberOf}
       blockers={r?.blockers}
-      needsLogin={stale || r?.fresh === false}
-      onLogInAgain={() =>
-        void authClient.signOut().finally(() => {
-          forgetBrowserSession();
-          window.location.assign(`/login?next=${encodeURIComponent("/account?s=data")}&email=${encodeURIComponent(email)}`);
-        })
-      }
+      stacked={sudo.dialog}
       offline={!online}
       exportState={exportState}
       exportError={exportError}
@@ -103,8 +99,9 @@ export function useDeleteAccountFlow(email: string, online: boolean) {
       busy={busy}
       error={error}
       onDelete={async () => {
-        setBusy(true);
         setError(null);
+        if (!(await sudo.confirm("delete your account"))) return;
+        setBusy(true);
         const res = await api.api.me.deletion.$post({ json: { email } }).catch((err: unknown) => err);
         if (res instanceof Response && res.ok) {
           // The server cleared this browser's session; the next page starts signed out.
@@ -114,8 +111,7 @@ export function useDeleteAccountFlow(email: string, online: boolean) {
         }
         const err = res instanceof Response ? await apiError(res) : res;
         setBusy(false);
-        if (err instanceof ApiError && err.fields.session === "stale") setStale(true);
-        else setError(errorMessage(err).replace(/\.$/, ""));
+        setError(errorMessage(err).replace(/\.$/, ""));
       }}
     />
   );
@@ -132,8 +128,9 @@ function newPasskeyName(taken: string[]): string {
 }
 
 /** Settings › Account › Sign-in methods › Passkeys: the row, and the dialog (Better Auth's passkey endpoints). */
-export function usePasskeysFlow(online: boolean, registered: boolean) {
+export function usePasskeysFlow(online: boolean, registered: boolean, email: string) {
   const qc = useQueryClient();
+  const sudo = useSudo({ online, email });
   const notify = useFeedback((s) => s.notify);
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -164,14 +161,16 @@ export function usePasskeysFlow(online: boolean, registered: boolean) {
       addState={adding ? "waiting" : "idle"}
       addError={addError}
       error={error}
+      stacked={sudo.dialog}
       onAdd={async () => {
-        setAdding(true);
         setAddError(null);
         setError(null);
+        if (!(await sudo.confirm("add a passkey"))) return;
+        setAdding(true);
         const name = newPasskeyName(stored.map(nameOf));
         const r = await authClient.passkey.addPasskey({ name }).catch((err: unknown) => ({ error: { message: errorMessage(err) } }));
         setAdding(false);
-        if (r?.error) return setAddError(passkeyFailure(r.error, "add"));
+        if (r?.error) return setAddError(sudoRequired(r.error) ? "Confirm it's you, then try again." : passkeyFailure(r.error, "add"));
         await refresh();
         notify({ message: `Added the passkey ${quote(name)}`, icon: "key-round" });
       }}
@@ -185,6 +184,7 @@ export function usePasskeysFlow(online: boolean, registered: boolean) {
       onRemove={async (id) => {
         const gone = stored.find((p) => p.id === id);
         setError(null);
+        if (!(await sudo.confirm("remove a passkey"))) return;
         setList((ps) => ps.filter((p) => p.id !== id));
         const r = await authClient.passkey.deletePasskey({ id }).catch((err: unknown) => ({ error: { message: errorMessage(err) } }));
         if (r?.error) setError(`Couldn't remove the passkey: ${(r.error.message || "the server refused it").replace(/\.$/, "")}`);
@@ -204,15 +204,14 @@ export function useChangeEmailFlow(me: Me | undefined, fallbackEmail: string, on
   /** The address this dialog is waiting for: once the account has it, the dialog says "Email changed". */
   const [awaited, setAwaited] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
   const email = me?.email ?? fallbackEmail;
+  const sudo = useSudo({ online, email });
   const pending = me?.pendingEmail ?? null;
   const confirmed = !!awaited && email.toLowerCase() === awaited.toLowerCase();
   const busy = am.requestEmailChange.isPending || am.resendEmailChange.isPending;
   const reset = () => {
     setError(null);
-    setPasswordError(null);
     setResent(false);
   };
   const row = primaryEmailRow({
@@ -232,24 +231,15 @@ export function useChangeEmailFlow(me: Me | undefined, fallbackEmail: string, on
       currentEmail={email}
       pendingEmail={pending}
       stage={confirmed ? "confirmed" : pending ? "sent" : "form"}
-      requirePassword
       busy={busy}
       error={error}
-      passwordError={passwordError}
+      stacked={sudo.dialog}
       offline={!online}
       resent={resent}
-      onSend={({ email: next, password }) => {
+      onSend={async ({ email: next }) => {
         reset();
-        am.requestEmailChange.mutate(
-          { email: next, password: password ?? "", quiet: true },
-          {
-            onSuccess: (r) => setAwaited(r.pendingEmail),
-            onError: (err) => {
-              if (err instanceof ApiError && err.fields.password) setPasswordError(err.fields.password);
-              else setError(errorMessage(err).replace(/\.$/, ""));
-            },
-          },
-        );
+        if (!(await sudo.confirm("change your email"))) return;
+        am.requestEmailChange.mutate({ email: next, quiet: true }, { onSuccess: (r) => setAwaited(r.pendingEmail), onError: (err) => setError(errorMessage(err).replace(/\.$/, "")) });
       }}
       onResend={() => {
         reset();

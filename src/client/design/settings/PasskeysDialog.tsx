@@ -4,7 +4,7 @@
 // browser's own prompt ("Waiting for your device…"). Rows hold sibling buttons only, never a menu. Esc closes
 // an open rename field or confirm first, then the dialog. From Design's settings/PasskeysDialog (2026-11-24).
 // Spec: DESIGN.md › Account.
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "../core/Button";
 import type { DialogCloseReason } from "../core/Dialog";
@@ -53,11 +53,13 @@ export interface PasskeysDialogProps {
   /** Stories: open with this passkey in rename / remove-confirm */
   defaultEditing?: string;
   defaultRemoving?: string;
+  /** The host's confirm step (ConfirmAccessDialog), stacked over this dialog */
+  stacked?: ReactNode;
 }
 
 type Focus = { id: string; action: "rename" | "remove" | "field" } | "add" | null;
 
-export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, listError, supported = true, onAdd, addState = "idle", addError, onRename, onRemove, error, removeBlocked, offline = false, defaultEditing, defaultRemoving }: PasskeysDialogProps) {
+export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, listError, supported = true, onAdd, addState = "idle", addError, onRename, onRemove, error, removeBlocked, offline = false, defaultEditing, defaultRemoving, stacked }: PasskeysDialogProps) {
   const [editing, setEditing] = useState<string | null>(defaultEditing ?? null);
   const [name, setName] = useState(() => passkeys.find((p) => p.id === defaultEditing)?.name ?? "");
   const [removing, setRemoving] = useState<string | null>(defaultRemoving ?? null);
@@ -130,6 +132,7 @@ export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, 
       title="Passkeys"
       width={520}
       initialFocus={passkeys.length || !supported || offline ? doneRef : addRef}
+      stacked={stacked}
       footer={
         <Button ref={doneRef} variant="primary" onClick={() => onClose("close")}>
           Done

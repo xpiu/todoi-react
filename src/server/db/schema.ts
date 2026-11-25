@@ -58,6 +58,8 @@ export const sessions = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    /** Ours, not Better Auth's: when the person last confirmed it's them with a password in this session (services/sudo.ts) */
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [index("sessions_user_idx").on(t.userId)],

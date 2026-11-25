@@ -201,8 +201,8 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
       }
       break;
     case "me":
-      // Tokens, the sign-in address and deleting the account are for registered accounts only.
-      if (id === "tokens" || id === "email-change" || id === "deletion") registered();
+      // Tokens, sudo mode, the sign-in address and deleting the account are for registered accounts only.
+      if (id === "tokens" || id === "sudo" || id === "email-change" || id === "deletion") registered();
       break;
   }
   await next();

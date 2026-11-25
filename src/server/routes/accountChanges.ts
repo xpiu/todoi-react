@@ -1,17 +1,58 @@
-// Account › Sign-in methods › Primary email: ask for a change of address (current password required),
-// send the link again, cancel it. Better Auth signs and applies the link; services/emailChange.ts keeps
-// the change in flight. Account › Data › Delete account: the review and the deletion
-// (services/accountDeletion.ts). Every route here is for registered accounts only (access.ts).
+// Sudo mode (services/sudo.ts): whether this session may do the sensitive account actions now, and
+// confirming it's you with the password. Account › Sign-in methods › Primary email: ask for a change of
+// address, send the link again, cancel it. Better Auth signs and applies the link; services/emailChange.ts
+// keeps the change in flight. Account › Data › Delete account: the review and the deletion
+// (services/accountDeletion.ts). Asking for a change of address and deleting need sudo mode. Every route
+// here is for registered accounts only (access.ts).
 import { isAPIError } from "better-auth/api";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { SUDO_REQUIRED } from "../../shared/sudo";
 import { auth, viewerOf } from "../auth";
 import { EmailNotSent } from "../email";
 import { fail, validate } from "../errors";
 import { deleteAccount, deletionReview } from "../services/accountDeletion";
 import { cancelEmailChange, confirmEmailChangeUrl, pendingEmailChange, recordEmailChange } from "../services/emailChange";
+import { confirmSession, sudoUntil } from "../services/sudo";
+
+/** This request's browser session (read past the cookie cache); API tokens have none. */
+async function browserSession(c: Context) {
+  return (await auth.api.getSession({ headers: c.req.raw.headers, query: { disableCookieCache: true } }))?.session ?? null;
+}
+
+/**
+ * Null when this browser session is in sudo mode; otherwise the refusal to send. API tokens never do these
+ * actions; a session outside the window gets `fields.sudo`, and the client asks the person to confirm.
+ */
+async function sudoRefusal(c: Context, action: string) {
+  const session = await browserSession(c);
+  if (!session) return fail(c, 401, `Log in to ${action}`);
+  if (await sudoUntil(session.id)) return null;
+  return fail(c, 403, "Confirm it's you to continue", { fields: { sudo: SUDO_REQUIRED } });
+}
+
+/** GET: whether this session is in sudo mode (`confirmedUntil`, or null). POST: confirm with the password. */
+export const sudoRoute = new Hono()
+  .get("/", async (c) => {
+    const session = await browserSession(c);
+    const until = session ? await sudoUntil(session.id) : null;
+    return c.json({ confirmedUntil: until?.toISOString() ?? null });
+  })
+  .post("/", validate("json", z.object({ password: z.string().min(1, "Enter your password").max(256) })), async (c) => {
+    const session = await browserSession(c);
+    if (!session) return fail(c, 401, "Log in to continue");
+    try {
+      await auth.api.verifyPassword({ body: { password: c.req.valid("json").password }, headers: c.req.raw.headers });
+    } catch (error) {
+      if (!isAPIError(error)) throw error;
+      if (error.statusCode === 401) return fail(c, 401, "Log in to continue");
+      return fail(c, 400, "That password isn't right.", { fields: { password: "That password isn't right." } });
+    }
+    const until = await confirmSession(session.id);
+    return c.json({ confirmedUntil: until?.toISOString() ?? null });
+  });
 
 /** Better Auth signs a 24-hour link to the new address and sends it (auth.ts › sendVerificationEmail). */
 async function sendChangeLink(c: Context, userId: string, email: string) {
@@ -27,19 +68,12 @@ async function sendChangeLink(c: Context, userId: string, email: string) {
 }
 
 export const emailChangeRoute = new Hono()
-  .post("/", validate("json", z.object({ email: z.email("Enter a full email address, like name@company.com.").max(254), password: z.string().min(1, "Enter your current password").max(256) })), async (c) => {
+  .post("/", validate("json", z.object({ email: z.email("Enter a full email address, like name@company.com.").max(254) })), async (c) => {
     const v = viewerOf(c);
-    const { email: typed, password } = c.req.valid("json");
-    const email = typed.trim().toLowerCase();
+    const email = c.req.valid("json").email.trim().toLowerCase();
     if (email === v.email.toLowerCase()) return fail(c, 400, "That's already your email.", { fields: { email: "That's already your email." } });
-    try {
-      await auth.api.verifyPassword({ body: { password }, headers: c.req.raw.headers });
-    } catch (error) {
-      if (!isAPIError(error)) throw error;
-      // No browser session (an API token): changing the sign-in address needs one.
-      if (error.statusCode === 401) return fail(c, 401, "Log in again to change your email");
-      return fail(c, 400, "That password isn't right.", { fields: { password: "That password isn't right." } });
-    }
+    const refused = await sudoRefusal(c, "change your email");
+    if (refused) return refused;
     return sendChangeLink(c, v.userId, email);
   })
   .post("/resend", async (c) => {
@@ -53,30 +87,14 @@ export const emailChangeRoute = new Hono()
     return c.body(null, 204);
   });
 
-/**
- * A browser session younger than Better Auth's freshAge (a day), as its own sensitive endpoints ask for:
- * deleting needs a recent log-in. API tokens never delete an account.
- */
-async function freshSession(c: Context): Promise<{ fresh: boolean } | null> {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers, query: { disableCookieCache: true } });
-  if (!session) return null;
-  const { freshAge } = (await auth.$context).sessionConfig;
-  return { fresh: freshAge === 0 || Date.now() - new Date(session.session.createdAt).getTime() < freshAge * 1000 };
-}
-
 /** Account › Data › Delete account: what would go, what blocks it, then the deletion itself. */
 export const deletionRoute = new Hono()
-  .get("/", async (c) => {
-    const v = viewerOf(c);
-    const session = await freshSession(c);
-    return c.json({ ...(await deletionReview(v.userId)), fresh: !!session?.fresh });
-  })
+  .get("/", async (c) => c.json(await deletionReview(viewerOf(c).userId)))
   .post("/", validate("json", z.object({ email: z.string().trim().min(1, "Type your account email").max(254) })), async (c) => {
     const v = viewerOf(c);
     if (c.req.valid("json").email.toLowerCase() !== v.email.toLowerCase()) return fail(c, 400, "That isn't your account email", { fields: { email: "Type your account email exactly" } });
-    const session = await freshSession(c);
-    if (!session) return fail(c, 401, "Log in to delete your account");
-    if (!session.fresh) return fail(c, 403, "For your safety, log in again before deleting your account", { fields: { session: "stale" } });
+    const refused = await sudoRefusal(c, "delete your account");
+    if (refused) return refused;
     await deleteAccount(v.userId);
     // Clear this browser's session cookies (the sessions themselves went with the account).
     const out = await auth.api.signOut({ headers: c.req.raw.headers, asResponse: true });

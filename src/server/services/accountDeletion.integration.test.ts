@@ -37,11 +37,10 @@ describe("deleting an account", () => {
     const samsOwn = await project(sam, "Dealers");
     // Sam's project filed in Flo's group.
     await db.update(projects).set({ groupId: solo.groupId }).where(eq(projects.id, samsOwn.projectId));
-    const review = (await (await deletion(flo)).json()) as { projects: Array<{ name: string; items: number }>; groups: Array<{ name: string; projects: number }>; memberOf: number; blockers: string[]; fresh: boolean };
+    const review = (await (await deletion(flo)).json()) as { projects: Array<{ name: string; items: number }>; groups: Array<{ name: string; projects: number }>; memberOf: number; blockers: string[] };
     expect(review.projects).toEqual([expect.objectContaining({ name: "Solo", items: 1 })]);
     expect(review.groups.map((g) => [g.name, g.projects]).sort()).toEqual([["Solo group", 2], ["Website group", 1]]);
     expect(review.blockers).toEqual(["Transfer or delete “Website” first", "Ask Sam to move “Dealers” out of your group “Solo group” first"]);
-    expect(review.fresh).toBe(true);
     const refused = await remove(flo);
     expect(refused.status).toBe(409);
     expect(await refused.json()).toMatchObject({ error: "Transfer or delete “Website” first" });
@@ -49,15 +48,14 @@ describe("deleting an account", () => {
     expect(await db.select({ id: projects.id }).from(projects).where(eq(projects.id, shared.projectId))).toHaveLength(1);
   });
 
-  it("asks for the account email and a fresh log-in, never an API token", async () => {
+  it("asks for the account email and sudo mode, never an API token", async () => {
     const flo = await signUp("Flo");
     expect(await (await remove(flo, "someone@example.test")).json()).toMatchObject({ fields: { email: "Type your account email exactly" } });
-    // A day-old log-in is stale.
-    await db.update(sessions).set({ createdAt: new Date(Date.now() - 2 * 86400_000) }).where(eq(sessions.userId, flo.id));
-    expect(((await (await deletion(flo)).json()) as { fresh: boolean }).fresh).toBe(false);
+    // A log-in from three hours ago, never confirmed since: confirm it's you first (services/sudo.ts).
+    await db.update(sessions).set({ createdAt: new Date(Date.now() - 3 * 3600_000) }).where(eq(sessions.userId, flo.id));
     const stale = await remove(flo);
     expect(stale.status).toBe(403);
-    expect(await stale.json()).toMatchObject({ fields: { session: "stale" } });
+    expect(await stale.json()).toMatchObject({ fields: { sudo: "SUDO_REQUIRED" } });
     const token = (await (await call("/api/me/tokens", { cookie: flo.cookie, json: { name: "CI" } })).json()) as { secret: string };
     expect((await call("/api/me/deletion", { headers: { authorization: `Bearer ${token.secret}` }, json: { email: flo.email } })).status).toBe(401);
     expect(await db.select({ id: users.id }).from(users).where(eq(users.id, flo.id))).toHaveLength(1);
@@ -93,7 +91,7 @@ describe("deleting an account", () => {
     const avatarKey = avatar.image!.split("/").pop()!;
     await call("/api/me/tokens", { cookie: flo.cookie, json: { name: "CI" } });
     await db.insert(passkeys).values({ id: nanoid(), name: "Laptop", userId: flo.id, publicKey: "pk", credentialID: nanoid(), counter: 0, deviceType: "singleDevice", backedUp: false });
-    await call("/api/me/email-change", { cookie: flo.cookie, json: { email: `${nanoid(8).toLowerCase()}@example.test`, password: "integration-password" } });
+    await call("/api/me/email-change", { cookie: flo.cookie, json: { email: `${nanoid(8).toLowerCase()}@example.test` } });
     await call("/api/auth/request-password-reset", { json: { email: flo.email, redirectTo: "/reset" } });
     expect((await emailsTo(flo.email)).map((m) => m.subject)).toContain("Reset your Todoi password");
     for (const key of [ownFile!.storageKey, inboxFile!.storageKey, floUpload!.storageKey, avatarKey]) expect(await openUpload(key)).not.toBeNull();

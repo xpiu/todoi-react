@@ -1,12 +1,11 @@
 // ChangeEmailDialog — change the primary (sign-in) email in three stages on the shared Dialog: "form"
-// (the new address and the current password) → "sent" (check your inbox; the old address keeps working)
+// (the new address; the host asks to confirm it's you first, ConfirmAccessDialog in `stacked`) → "sent" (check your inbox; the old address keeps working)
 // → "confirmed" (the link was opened). While a change waits, Settings › Account shows it on the Primary
 // email row (`primaryEmailRow`) and Review reopens this dialog on "sent". The link lands on
 // ConfirmEmailChangePage. From Design's settings/ChangeEmailDialog (2026-11-24). Spec: DESIGN.md › Account.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { EMAIL_LINK_HOURS } from "../../../shared/accountLinks";
-import { PasswordField } from "../auth/PasswordField";
 import { Button } from "../core/Button";
 import type { DialogCloseReason } from "../core/Dialog";
 import { InlineError } from "../core/InlineError";
@@ -26,7 +25,7 @@ export interface ChangeEmailDialogProps {
   /** @default "sent" while pendingEmail is set, else "form" */
   stage?: ChangeEmailStage;
   /** Send the confirmation link; the host sets pendingEmail once the server accepted it */
-  onSend?: (value: { email: string; password?: string }) => void;
+  onSend?: (value: { email: string }) => void;
   onResend?: () => void;
   /** Drop the pending change; the host closes the dialog and raises a toast ("Email change cancelled") */
   onCancelChange?: () => void;
@@ -34,22 +33,19 @@ export interface ChangeEmailDialogProps {
   busy?: boolean;
   /** The server's reason, shown as "Couldn't send the link: …"; nothing typed is cleared */
   error?: string | null;
-  /** The server refused the current password: shown under that field */
-  passwordError?: string | null;
   /** No connection: sending is disabled and the line says why */
   offline?: boolean;
-  /** Ask for the current password before sending @default false */
-  requirePassword?: boolean;
   /** "Sent again." beside the buttons */
   resent?: boolean;
   /** Hours the link works @default 24 */
   linkHours?: number;
+  /** The host's confirm step (ConfirmAccessDialog), stacked over this dialog */
+  stacked?: ReactNode;
 }
 
-export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, stage: stageProp, onSend, onResend, onCancelChange, busy = false, error, passwordError, offline = false, requirePassword = false, resent = false, linkHours = EMAIL_LINK_HOURS }: ChangeEmailDialogProps) {
+export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, stage: stageProp, onSend, onResend, onCancelChange, busy = false, error, offline = false, resent = false, linkHours = EMAIL_LINK_HOURS, stacked }: ChangeEmailDialogProps) {
   const stage = stageProp ?? (pendingEmail ? "sent" : "form");
   const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
   const [touched, setTouched] = useState(false);
   // A fresh form each time the dialog opens (reset while rendering, not in an effect).
   const [wasOpen, setWasOpen] = useState(open);
@@ -57,7 +53,6 @@ export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, s
     setWasOpen(open);
     if (open) {
       setEmail("");
-      setPw("");
       setTouched(false);
     }
   }
@@ -70,10 +65,10 @@ export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, s
   const typed = email.trim();
   const same = !!typed && typed.toLowerCase() === currentEmail.toLowerCase();
   const local = !touched ? null : !typed ? "Enter the new email address." : same ? "That's already your email." : !validEmail(typed) ? "Enter a full email address, like name@company.com." : null;
-  const can = validEmail(typed) && !same && (!requirePassword || pw.length > 0) && !busy && !offline;
+  const can = validEmail(typed) && !same && !busy && !offline;
   const send = () => {
     setTouched(true);
-    if (can) onSend?.({ email: typed, password: requirePassword ? pw : undefined });
+    if (can) onSend?.({ email: typed });
   };
   const done = (
     <Button ref={doneRef} variant="primary" onClick={() => onClose("close")}>
@@ -83,7 +78,7 @@ export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, s
 
   if (stage === "confirmed")
     return (
-      <FlowFrame open={open} onClose={onClose} title="Change email" footer={done} initialFocus={doneRef}>
+      <FlowFrame open={open} onClose={onClose} title="Change email" footer={done} initialFocus={doneRef} stacked={stacked}>
         <FlowState icon="circle-check" tone="success" title="Email changed">
           You now sign in with <b>{currentEmail}</b>.
         </FlowState>
@@ -91,7 +86,7 @@ export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, s
     );
   if (stage === "sent")
     return (
-      <FlowFrame open={open} onClose={onClose} title="Change email" footer={done} initialFocus={doneRef}>
+      <FlowFrame open={open} onClose={onClose} title="Change email" footer={done} initialFocus={doneRef} stacked={stacked}>
         <FlowState icon="mail" title="Check your inbox">
           We sent a link to <b>{pendingEmail}</b>. Open it within {linkHours} hours to confirm. Until then you sign in with <b>{currentEmail}</b>.
         </FlowState>
@@ -117,6 +112,7 @@ export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, s
       onClose={onClose}
       title="Change email"
       initialFocus={emailRef}
+      stacked={stacked}
       footer={
         <>
           <Button variant="outline" onClick={() => onClose("cancel")}>
@@ -135,7 +131,7 @@ export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, s
           e.preventDefault();
           send();
         }}
-        // Enter in either field sends: the visible button sits in the dialog's footer, outside the form.
+        // Enter sends: the visible button sits in the dialog's footer, outside the form.
         onKeyDown={(e) => {
           if (e.key !== "Enter" || !(e.target instanceof HTMLInputElement)) return;
           e.preventDefault();
@@ -152,7 +148,6 @@ export function ChangeEmailDialog({ open, onClose, currentEmail, pendingEmail, s
           <input ref={emailRef} id="td-account-new-email" className="td-field" type="email" autoComplete="email" value={email} placeholder="name@company.com" aria-invalid={local ? true : undefined} onChange={(e) => setEmail(e.target.value)} onBlur={() => setTouched(true)} />
           <InlineError message={local} />
         </div>
-        {requirePassword ? <PasswordField label="Current password" autoComplete="current-password" value={pw} onChange={setPw} hint="So nobody else can change it" error={passwordError} /> : null}
         <InlineError message={offline ? "You're offline. Connect to change your email." : error ? `Couldn't send the link: ${error}` : null} />
       </form>
     </FlowFrame>
