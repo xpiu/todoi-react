@@ -6,15 +6,18 @@ import { loadEnvFile } from "node:process";
 import { nanoid } from "nanoid";
 import { Pool } from "pg";
 
-import { DEV_USER } from "../../src/shared/devUser";
+import { DEV_USER, GATE_USER } from "../../src/shared/devUser";
 import { APPEARANCE_STORAGE_KEY, APPEARANCE_STORAGE_VERSION, MODE_IDS, THEME_IDS } from "../../src/client/design/core/themes";
 
 export type Scope = `${(typeof THEME_IDS)[number]}-${(typeof MODE_IDS)[number]}`;
 export const SCOPES: Scope[] = THEME_IDS.flatMap((t) => MODE_IDS.map((m) => `${t}-${m}` as Scope));
 
+/** A seeded sign-in: the dev account (shared with hand testing), or GATE_USER for the screenshot gates */
+type SeededUser = typeof DEV_USER | typeof GATE_USER;
+
 /** Sign in through the API; the cookie jar is shared with the page. */
-export async function signIn(page: Page) {
-  const r = await page.request.post("/api/auth/sign-in/email", { data: DEV_USER });
+export async function signIn(page: Page, user: SeededUser = DEV_USER) {
+  const r = await page.request.post("/api/auth/sign-in/email", { data: user });
   expect(r.ok(), "sign-in").toBeTruthy();
 }
 
@@ -33,16 +36,20 @@ export async function expectScope(page: Page, scope: Scope) {
   await expect(page.locator("html")).toHaveAttribute("data-mode", mode!);
 }
 
-/** The seeded project every screen test opens (looked up once per worker). */
-let seeded: Promise<string> | undefined;
-export function seedProjectId(page: Page): Promise<string> {
-  seeded ??= (async () => {
-    const groups = (await (await page.request.get("/api/groups")).json()) as Array<{ projects: Array<{ id: string; name: string }> }>;
-    const p = groups.flatMap((g) => g.projects).find((x) => /website/i.test(x.name)) ?? groups[0]?.projects[0];
-    if (!p) throw new Error("no seeded project");
-    return p.id;
-  })();
-  return seeded;
+/** The seeded project every screen test opens, in the account the page signed in with (looked up once per worker and account). */
+const seeded = new Map<string, Promise<string>>();
+export function seedProjectId(page: Page, user: SeededUser = DEV_USER): Promise<string> {
+  let id = seeded.get(user.email);
+  if (!id) {
+    id = (async () => {
+      const groups = (await (await page.request.get("/api/groups")).json()) as Array<{ projects: Array<{ id: string; name: string }> }>;
+      const p = groups.flatMap((g) => g.projects).find((x) => /website/i.test(x.name)) ?? groups[0]?.projects[0];
+      if (!p) throw new Error("no seeded project");
+      return p.id;
+    })();
+    seeded.set(user.email, id);
+  }
+  return id;
 }
 
 export interface FreshProject {

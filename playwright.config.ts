@@ -1,13 +1,15 @@
 // Browser gates (DESIGN.md › Quality gates): every key screen in all four theme × mode scopes with
 // axe, a reduced-motion check and visual-regression snapshots. Run against the dev servers
 // (`npm run dev` is started for you when nothing listens on :5173). Every test is read-only against
-// the seed (the saved-views case cleans up after itself), so they run in parallel.
+// the seed (the saved-views case cleans up after itself), so they run in parallel. The screenshot gates
+// sign in as GATE_USER, whose workspace the global setup puts back as seeded before each run.
 import { defineConfig, devices } from "@playwright/test";
 
 const BASE_URL = "http://localhost:5173";
 
 export default defineConfig({
   testDir: "tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: true,
   workers: process.env.CI ? 2 : undefined,
   retries: process.env.CI ? 1 : 0,

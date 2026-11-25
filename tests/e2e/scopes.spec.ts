@@ -2,16 +2,17 @@
 // or critical violation, and the screen matches its visual baseline.
 import { test } from "@playwright/test";
 
+import { GATE_USER } from "../../src/shared/devUser";
 import { gate, seededItemId, SCOPES, seedProjectId, signIn, useScope, type Screen } from "./helpers";
 
 const SCREENS: Screen[] = [
-  { name: "list", open: async (page) => void (await page.goto(`/p/${await seedProjectId(page)}?v=list`)), ready: (page) => page.getByRole("list", { name: / items$/ }).first() },
-  { name: "board", open: async (page) => void (await page.goto(`/p/${await seedProjectId(page)}?v=board`)), ready: (page) => page.getByRole("list", { name: / cards$/ }).first() },
-  { name: "calendar", open: async (page) => void (await page.goto(`/p/${await seedProjectId(page)}?v=calendar`)), ready: (page) => page.getByRole("grid", { name: "Calendar" }).first() },
+  { name: "list", open: async (page) => void (await page.goto(`/p/${await seedProjectId(page, GATE_USER)}?v=list`)), ready: (page) => page.getByRole("list", { name: / items$/ }).first() },
+  { name: "board", open: async (page) => void (await page.goto(`/p/${await seedProjectId(page, GATE_USER)}?v=board`)), ready: (page) => page.getByRole("list", { name: / cards$/ }).first() },
+  { name: "calendar", open: async (page) => void (await page.goto(`/p/${await seedProjectId(page, GATE_USER)}?v=calendar`)), ready: (page) => page.getByRole("grid", { name: "Calendar" }).first() },
   {
     name: "overlay",
     open: async (page) => {
-      const pid = await seedProjectId(page);
+      const pid = await seedProjectId(page, GATE_USER);
       await page.goto(`/p/${pid}?v=list&item=${await seededItemId(page, pid)}`);
     },
     ready: (page) => page.getByRole("dialog").first(),
@@ -30,7 +31,7 @@ for (const scope of SCOPES) {
       // marks, the No date tray and relative dates match the baselines on any day the suite runs.
       await page.clock.setFixedTime(SAMPLE_NOW);
       await useScope(page, scope);
-      await signIn(page);
+      await signIn(page, GATE_USER);
     });
     for (const screen of SCREENS) test(screen.name, ({ page }) => gate(page, scope, screen));
   });

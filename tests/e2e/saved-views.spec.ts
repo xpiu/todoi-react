@@ -3,6 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { nanoid } from "nanoid";
 
+import { GATE_USER } from "../../src/shared/devUser";
 import { gate, SCOPES, seedProjectId, signIn, useScope, type Screen } from "./helpers";
 
 const NAME = "Design this week";
@@ -10,7 +11,7 @@ const NAME = "Design this week";
 const savedViews: Screen = {
   name: "saved-views",
   open: async (page) => {
-    const pid = await seedProjectId(page);
+    const pid = await seedProjectId(page, GATE_USER);
     // Sweep views an interrupted run may have left behind, then create this run's.
     const existing = (await (await page.request.get(`/api/saved-views?projectId=${pid}`)).json()) as Array<{ id: string; name: string }>;
     for (const v of existing.filter((x) => x.name === NAME)) await page.request.delete(`/api/saved-views/${v.id}`);
@@ -27,7 +28,7 @@ test.describe.configure({ mode: "serial" });
 for (const scope of SCOPES) {
   test(`${scope} saved-views`, async ({ page }) => {
     await useScope(page, scope);
-    await signIn(page);
+    await signIn(page, GATE_USER);
     await gate(page, scope, savedViews);
   });
 }

@@ -1,25 +1,37 @@
 // Development seed: the UI kit's sample workspace (docs/design/kit-walkthrough.md) so every view has
 // realistic data from the first run. The skeleton (groups, projects, lists) is created only while the
 // database has no groups; the examples themselves (items, comments, photos, Todoi's Inbox) are filled in
-// on every start, so a database seeded by an older version catches up without a reset.
+// on every start, so a database seeded by an older version catches up without a reset. The browser
+// screenshot gates get their own copy (GATE_USER), reset to exactly this before every run.
 import { and, count, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { readFile } from "node:fs/promises";
 
 import type { ItemPriority, LabelColor, NotificationKind } from "../shared/enums";
 import type { ItemStatus } from "../shared/item-status";
-import { DEV_USER } from "../shared/devUser";
+import { DEV_USER, GATE_USER } from "../shared/devUser";
 import { DEV_PASSWORD, inboxFor, LOCAL_USER_ID } from "./auth";
 import { hashPassword } from "better-auth/crypto";
 import { db } from "./db";
 import { nextPosition } from "./db/position";
-import { accounts, attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, labels, lists, members, projects, users, type Project } from "./db/schema";
+import { accounts, attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, labels, lists, members, projects, savedViews, users, type Project } from "./db/schema";
 import { createProject } from "./services/projects";
+import { drainUploadCleanup } from "./services/uploadCleanup";
 import { saveUpload } from "./services/uploads";
 
 const SAM_ID = "seed_user_sam_000000a";
 const DEMO = "seed_user_todoi_0000a";
 const SAM = SAM_ID;
+
+/** The sample's two people: its owner (Todoi) and Sam, who edits the main project with them */
+interface Cast {
+  owner: string;
+  sam: string;
+}
+/** A person named in the sample data (DEMO, SAM), played by this cast */
+const play = (cast: Cast, id: string) => (id === DEMO ? cast.owner : id === SAM ? cast.sam : id);
+/** The screenshot gates' copy (GATE_USER): the same names and colours, so it renders as the dev account's did when seeded */
+const GATE: Cast = { owner: "seed_user_gate_todoi", sam: "seed_user_gate_sam" };
 const MAIN = "Helicopters Europe website";
 const MAIN_DESCRIPTION = "The shop and the public pages for both dealers. Sam takes the shop side, Todoi takes the pages.";
 
@@ -119,37 +131,63 @@ export async function seedIfEmpty() {
   const demo = await ensureDevAccounts();
   await assignExistingSamples(demo);
   const fresh = ((await db.select({ n: count() }).from(groups))[0]?.n ?? 0) === 0;
-  if (fresh) await createSkeleton(demo);
+  const cast = { owner: demo, sam: SAM };
+  if (fresh) await createSkeleton(cast);
   // An earlier seed stored the sample cover's name under `color`; move it to `sample`.
   else await db.execute(sql`update items set cover = jsonb_build_object('sample', cover->>'color') where cover->>'color' like 'web%'`);
-  await fillSamples(demo);
+  const added = await fillSamples(cast);
+  if (added) console.log(`Seeded ${added} sample records for ${DEV_USER.email}`);
   return fresh;
 }
 
-/** The groups, projects and lists of the sample workspace, owned by Flo; Sam edits the main project. */
-async function createSkeleton(demo: string) {
+/**
+ * The screenshot gates' workspace (GATE_USER), exactly as seeded: whatever its projects, Inbox, saved views
+ * and preferences became since is removed first. Run before every browser run (tests/e2e/global-setup.ts).
+ */
+export async function resetGateWorkspace() {
+  await db.insert(users).values([
+    { id: GATE.owner, name: "Todoi", email: GATE_USER.email, emailVerified: true, nickname: "todoi", avatarColor: "blue" },
+    { id: GATE.sam, name: "Sam Verhoeven", email: "sam.gates@todoi.org", emailVerified: true, nickname: "sam", avatarColor: "orange" },
+  ]).onConflictDoNothing();
+  await ensurePassword(GATE.owner);
+  await db.transaction(async (tx) => {
+    // Projects take their lists, items, comments, attachments (queueing the files), labels, members, saved views and log.
+    await tx.delete(projects).where(inArray(projects.groupId, tx.select({ id: groups.id }).from(groups).where(eq(groups.ownerId, GATE.owner))));
+    await tx.delete(groups).where(eq(groups.ownerId, GATE.owner));
+    await tx.delete(items).where(inArray(items.listId, tx.select({ id: lists.id }).from(lists).where(eq(lists.userId, GATE.owner))));
+    await tx.delete(savedViews).where(eq(savedViews.ownerId, GATE.owner));
+    await tx.update(users).set({ prefs: {} }).where(inArray(users.id, [GATE.owner, GATE.sam]));
+  });
+  await drainUploadCleanup();
+  await createSkeleton(GATE);
+  await fillSamples(GATE);
+}
+
+/** The groups, projects and lists of the sample workspace, owned by the cast's owner; Sam edits the main project. */
+async function createSkeleton(cast: Cast) {
   const groupIds = new Map<string, string>();
   await db.insert(groups).values(
     SAMPLE_GROUPS.map(([name, keyPrefix], position) => {
       const id = nanoid();
       groupIds.set(name, id);
-      return { id, name, keyPrefix, ownerId: demo, position };
+      return { id, name, keyPrefix, ownerId: cast.owner, position };
     }),
   );
   for (const p of SAMPLE_PROJECTS) {
-    const { project } = await createProject({ id: nanoid(), groupId: groupIds.get(p.group)!, name: p.name, icon: p.icon, color: p.color, visibility: p.visibility, lists: p.lists }, demo);
-    if (p.name === MAIN) await db.insert(members).values({ projectId: project.id, userId: SAM, role: "editor" });
+    const { project } = await createProject({ id: nanoid(), groupId: groupIds.get(p.group)!, name: p.name, icon: p.icon, color: p.color, visibility: p.visibility, lists: p.lists }, cast.owner);
+    if (p.name === MAIN) await db.insert(members).values({ projectId: project.id, userId: cast.sam, role: "editor" });
   }
   console.log("Seeded the sample workspace (Helicopters Europe website)");
 }
 
-/** Everything the kit shows inside the sample projects, inserted where it is missing (matched by key / title). */
-async function fillSamples(demo: string) {
+/** Everything the kit shows inside the sample projects, inserted where it is missing (matched by key / title). Returns how many records it added. */
+async function fillSamples(cast: Cast) {
+  const demo = cast.owner;
   const sampleGroups = await db
     .select({ id: groups.id, name: groups.name, keyPrefix: groups.keyPrefix })
     .from(groups)
     .where(and(eq(groups.ownerId, demo), inArray(groups.name, SAMPLE_GROUPS.map(([name]) => name)), isNull(groups.deletedAt)));
-  if (!sampleGroups.length) return;
+  if (!sampleGroups.length) return 0;
   const sampleProjects = await db
     .select()
     .from(projects)
@@ -157,7 +195,7 @@ async function fillSamples(demo: string) {
   const projectIds = sampleProjects.map((p) => p.id);
   const byName = new Map(sampleProjects.map((p) => [p.name, p]));
   const main = byName.get(MAIN);
-  if (!main) return;
+  if (!main) return 0;
   let added = 0;
   if (!main.description) await db.update(projects).set({ description: MAIN_DESCRIPTION }).where(eq(projects.id, main.id));
 
@@ -180,12 +218,12 @@ async function fillSamples(demo: string) {
     if (!row) {
       const list = listRows.find((l) => l.projectId === project.id && l.name === it.list) ?? listRows.find((l) => l.projectId === project.id);
       if (!list) continue;
-      row = await insertSampleItem(project, list, it, labelRows, demo);
+      row = await insertSampleItem(project, list, it, labelRows, cast);
       keyed.set(`${project.id}:${it.key}`, row);
       added++;
     }
     if (it.photos) added += await ensurePhotos(row, it.photos, demo);
-    if (it.comments) added += await ensureComments(row.id, it.comments, demo);
+    if (it.comments) added += await ensureComments(row.id, it.comments, cast);
   }
   // Keys are issued from the group counter; keep it above every seeded key.
   for (const group of sampleGroups) {
@@ -193,14 +231,15 @@ async function fillSamples(demo: string) {
     if (keys.length) await db.update(groups).set({ nextItemNumber: sql`greatest(${groups.nextItemNumber}, ${Math.max(...keys) + 1})` }).where(eq(groups.id, group.id));
   }
   const mainGroup = sampleGroups.find((g) => g.id === main.groupId)!;
-  added += await ensureInbox(demo, (key) => {
+  added += await ensureInbox(cast, (key) => {
     const about = keyed.get(`${main.id}:${key}`);
     return about ? { aboutKey: `${mainGroup.keyPrefix}-${key}`, aboutItemId: about.id } : {};
   });
-  if (added) console.log(`Seeded ${added} sample records for ${DEV_USER.email}`);
+  return added;
 }
 
-async function insertSampleItem(project: Project, list: typeof lists.$inferSelect, it: SeedItem, labelRows: Array<typeof labels.$inferSelect>, demo: string) {
+async function insertSampleItem(project: Project, list: typeof lists.$inferSelect, it: SeedItem, labelRows: Array<typeof labels.$inferSelect>, cast: Cast) {
+  const demo = cast.owner;
   const position = await nextPosition(db, items, eq(items.listId, list.id));
   const id = nanoid();
   const cover = it.cover ? { sample: it.cover } : null;
@@ -225,7 +264,7 @@ async function insertSampleItem(project: Project, list: typeof lists.$inferSelec
   });
   const labelIds = (it.labels ?? []).flatMap((name) => labelRows.filter((l) => l.projectId === project.id && l.name === name).map((l) => l.id));
   if (labelIds.length) await db.insert(itemLabels).values(labelIds.map((labelId) => ({ itemId: id, labelId })));
-  if (it.assignees?.length) await db.insert(itemAssignees).values(it.assignees.map((userId) => ({ itemId: id, userId: userId === DEMO ? demo : userId })));
+  if (it.assignees?.length) await db.insert(itemAssignees).values(it.assignees.map((userId) => ({ itemId: id, userId: play(cast, userId) })));
   if (it.subitems?.length) {
     await db.insert(items).values(
       it.subitems.map((s, i) => ({ id: nanoid(), projectId: project.id, listId: list.id, parentItemId: id, keyNumber: s.key, title: s.title, done: !!s.done, status: s.done ? ("DONE" as const) : null, position: i, createdBy: demo })),
@@ -248,14 +287,15 @@ async function ensurePhotos(item: { id: string; cover: { attachmentId?: string }
   return made.length;
 }
 
-async function ensureComments(itemId: string, list: SeedItem["comments"] & {}, demo: string) {
+async function ensureComments(itemId: string, list: SeedItem["comments"] & {}, cast: Cast) {
   if (await hasAny(comments, eq(comments.itemId, itemId))) return 0;
-  await db.insert(comments).values(list.map(([author, body], i) => ({ id: nanoid(), itemId, authorId: author === DEMO ? demo : author, body, createdAt: at("2026-08-25", i * 7) })));
+  await db.insert(comments).values(list.map(([author, body], i) => ({ id: nanoid(), itemId, authorId: play(cast, author), body, createdAt: at("2026-08-25", i * 7) })));
   return list.length;
 }
 
 /** Todoi's account-level Inbox: notifications link back ("related") to the item they are about. */
-async function ensureInbox(demo: string, aboutOf: (key: number) => { aboutKey?: string; aboutItemId?: string }) {
+async function ensureInbox(cast: Cast, aboutOf: (key: number) => { aboutKey?: string; aboutItemId?: string }) {
+  const demo = cast.owner;
   const listId = await inboxFor(demo);
   const present = new Set((await db.select({ title: items.title }).from(items).where(eq(items.listId, listId))).map((r) => r.title));
   let position = await nextPosition(db, items, eq(items.listId, listId));
@@ -270,9 +310,9 @@ async function ensureInbox(demo: string, aboutOf: (key: number) => { aboutKey?: 
       title: it.title,
       description: it.description ?? null,
       unread: !!it.unread,
-      notification: it.kind ? { kind: it.kind, fromUserId: it.from ?? null, ...about } : null,
+      notification: it.kind ? { kind: it.kind, fromUserId: it.from ? play(cast, it.from) : null, ...about } : null,
       position: position++,
-      createdBy: it.from ?? demo,
+      createdBy: it.from ? play(cast, it.from) : demo,
       createdAt: at(it.created),
     });
     if (about.aboutItemId) await db.insert(itemRelations).values({ itemId: id, targetId: about.aboutItemId, type: "related" }).onConflictDoNothing();
@@ -292,12 +332,14 @@ async function ensureDevAccounts() {
   if (!demo) throw new Error("Could not create the sample account");
   await db.update(users).set({ emailVerified: true }).where(eq(users.id, demo.id));
   const people = await db.select({ id: users.id }).from(users).where(inArray(users.id, [LOCAL_USER_ID, demo.id, SAM_ID]));
-  for (const { id: userId } of people) {
-    const [acc] = await db.select({ id: accounts.id }).from(accounts).where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
-    if (acc) continue;
-    await db.insert(accounts).values({ id: nanoid(), userId, accountId: userId, providerId: "credential", password: await hashPassword(DEV_PASSWORD) });
-  }
+  for (const { id } of people) await ensurePassword(id);
   return demo.id;
+}
+
+async function ensurePassword(userId: string) {
+  const [acc] = await db.select({ id: accounts.id }).from(accounts).where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
+  if (acc) return;
+  await db.insert(accounts).values({ id: nanoid(), userId, accountId: userId, providerId: "credential", password: await hashPassword(DEV_PASSWORD) });
 }
 
 /** Move the original kit examples to Todoi's registered account without copying projects or items. */
