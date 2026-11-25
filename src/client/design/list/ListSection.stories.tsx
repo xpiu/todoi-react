@@ -130,6 +130,34 @@ export const GroupLeads: Story = {
   ),
   args: groupArgs,
 };
+/** With onAddItem (a group that stands for one value) the header + opens the quick-add field at the top of the group,
+ * styled as a list section's add row; the host adds the item with the group's value. */
+export const GroupAddItem: Story = {
+  args: { ...groupArgs, onAddItem: fn() },
+  async play({ args, canvas, userEvent }) {
+    const plus = canvas.getByRole("button", { name: "Add an item to High" });
+    await userEvent.click(plus);
+    await expect(plus).toHaveAttribute("aria-pressed", "true");
+    const field = await canvas.findByRole("textbox", { name: "New item in High" });
+    await waitFor(() => expect(field).toHaveFocus());
+    await expect(field.closest(".td-list-section-addrow")).toBe(canvas.getByRole("list", { name: "High items" }).previousElementSibling);
+    await userEvent.type(field, "Ship the rotor{Enter}");
+    await expect(args.onAddItem).toHaveBeenCalledWith("Ship the rotor", expect.objectContaining({ title: "Ship the rotor" }), "top");
+    // Enter keeps the field for the next item; Escape closes it
+    await expect(field).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    await expect(canvas.queryByRole("textbox", { name: "New item in High" })).not.toBeInTheDocument();
+  },
+};
+/** Phone: no hover to reveal it, and no bottom add row in a group, so the group's + always shows. */
+export const GroupAddItemPhone: Story = {
+  args: { ...groupArgs, onAddItem: fn() },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  async play({ canvas, canvasElement }) {
+    await waitFor(() => expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-device", "phone"));
+    await waitFor(() => expect(getComputedStyle(canvas.getByRole("button", { name: "Add an item to High" })).opacity).toBe("1"));
+  },
+};
 /** The host controls collapse (per device for groups): the chevron asks, the host answers. */
 export const GroupCollapsedControlled: Story = {
   args: { ...groupArgs, collapsed: true, onCollapsedChange: fn() },

@@ -25,7 +25,7 @@ import { STATUSES } from "../design/core/statuses";
 import { count, joinAnd } from "../design/core/text";
 import { snapshotUndo } from "./snapshotUndo";
 import { useCompletion } from "./completion";
-import type { GroupPatch } from "./groups";
+import { withPreset, type GroupPatch } from "./groups";
 import { quote, useFeedback } from "./feedback";
 import { keyOf, PRIORITY_LABEL, type Person } from "./items";
 import { usePrefs } from "./prefs";
@@ -106,11 +106,22 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     [labels, project.lists, people, smartDates],
   );
 
-  const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom") => {
-    const destination = parsed.list ? (project.lists.find((l) => l.name === parsed.list)?.id ?? listId) : listId;
+  /**
+   * Quick-add. `preset` is a Group by group's value (groupPreset), sent in the same create request: what the field typed
+   * wins for one-value fields (priority, due, >list), labels and assignees add up. A Status in a linked project picks the
+   * list with that role, as a Status pick does.
+   */
+  const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom", preset?: GroupPatch | null) => {
+    const linked = statusMovesItem(lists, project.linkStatuses, listId);
+    const pick = preset && "status" in preset ? statusPick(preset.status, { lists, movesItem: linked, listId, recurring: false }) : null;
+    const typedList = parsed.list ? project.lists.find((l) => l.name === parsed.list)?.id : undefined;
+    const destination = typedList ?? (pick && "moveTo" in pick ? pick.moveTo : listId);
+    // In a linked project the list's role is the Status, a typed >list's included.
+    const status = pick && "status" in pick && !(linked && typedList) ? (pick.status ?? undefined) : undefined;
     const labelIds = parsed.labels.map((pl) => labels.find((l) => l.name.toLowerCase() === pl.text.toLowerCase())?.id).filter((id): id is string => !!id);
     const assigneeIds = parsed.assignee ? people.filter((p) => p.name === parsed.assignee).map((p) => p.id) : [];
-    createItem.mutate({ id: newId(), title, listId: destination, priority: priorityOf(parsed), dueDate: parsed.due ?? undefined, labelIds, assigneeIds, position });
+    const fields = withPreset({ priority: priorityOf(parsed), dueDate: parsed.due ?? undefined, labelIds, assigneeIds }, preset, !!parsed.priority);
+    createItem.mutate({ id: newId(), title, listId: destination, status, ...fields, position });
   };
 
   /** Move with the undo toast for cross-list moves; same-list reorders only tell screen readers where the item landed. */

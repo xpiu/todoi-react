@@ -277,4 +277,8 @@
   html[data-device="phone"] .td-list-section-dropnote > span {
     white-space: normal;
   }
+  /* Phone: a group's + is its only add affordance (no bottom add row) and there is no hover to reveal it */
+  html[data-device="phone"] .td-list-section[data-group-id] .td-list-section-addbtn {
+    opacity: 1;
+  }
 }

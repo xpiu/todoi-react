@@ -55,8 +55,8 @@ test("Group by Priority: a drag and Ctrl/Cmd+Shift+↓ between groups change the
   await page.keyboard.press("Escape");
   await expect(group(page, "HIGH")).toBeVisible();
   await expect(row(page, "__none", none)).toBeVisible();
-  // No add rows in a grouped view
-  await expect(page.locator(".td-list-groups [data-add-item]")).toHaveCount(0);
+  // No bottom add rows in a grouped view: each group adds through its header + (below)
+  await expect(page.locator(".td-list-groups .td-list-section-add")).toHaveCount(0);
 
   // Drag "Call the hangar" onto High: the group rings, then the priority is set — one toast with Undo
   const d = await drag(page, row(page, "__none", none), group(page, "HIGH"));
@@ -159,4 +159,90 @@ test("Group by Label: a drop swaps the source label for the target's and keeps t
   await expect(group(page, design)).toHaveCount(0);
   await page.getByRole("button", { name: /^Undo/ }).click();
   await expect.poll(async () => (await itemOf(page, both)).labelIds.sort()).toEqual([design, ops].sort());
+});
+
+/** The project's items, by title */
+const byTitle = async (page: Page, projectId: string, title: string) => ((await (await page.request.get(`/api/items?projectId=${projectId}`)).json()) as Item[]).find((it) => it.title === title);
+
+test("Group by Priority: an item added in a group gets that priority in its first list; Create › item opens in the focused item's group", async ({ page, own }) => {
+  await own.item("Pick the paint", { priority: "HIGH" });
+  const none = await own.item("Call the hangar");
+  await page.goto(`/p/${own.projectId}?v=list&g=priority`);
+  await group(page, "HIGH").getByRole("button", { name: "Add an item to High" }).click();
+  const field = page.getByRole("textbox", { name: "New item in High" });
+  await expect(field).toBeFocused();
+  await field.fill("Inspect the rotor");
+  await field.press("Enter");
+  await expect(group(page, "HIGH").locator(".td-list-row", { hasText: "Inspect the rotor" })).toBeVisible();
+  await expect.poll(async () => await byTitle(page, own.projectId, "Inspect the rotor")).toMatchObject({ priority: "HIGH", listId: own.lists[0]!.id });
+  // A typed !priority wins over the group's (the item shows up in its own group)
+  await field.fill("Wash the skids !low");
+  await field.press("Enter");
+  await field.press("Escape");
+  await expect.poll(async () => (await byTitle(page, own.projectId, "Wash the skids"))?.priority).toBe("LOW");
+  await expect(group(page, "LOW").locator(".td-list-row", { hasText: "Wash the skids" })).toBeVisible();
+  // No priority adds without one
+  await group(page, "__none").getByRole("button", { name: "Add an item to No priority" }).click();
+  await page.getByRole("textbox", { name: "New item in No priority" }).fill("Book the pilot");
+  await page.getByRole("textbox", { name: "New item in No priority" }).press("Enter");
+  await expect.poll(async () => await byTitle(page, own.projectId, "Book the pilot")).toMatchObject({ priority: null });
+  await page.keyboard.press("Escape");
+
+  // Create › Create an item (Default destination: the current project) opens the field in the group keyboard focus was
+  // last on — No priority here, not the first group (High)
+  await row(page, "__none", none).focus();
+  await page.getByRole("button", { name: "Create" }).click();
+  await page.getByRole("menuitem", { name: "Create an item" }).click();
+  await expect(page.getByRole("textbox", { name: "New item in No priority" })).toBeFocused();
+  await page.keyboard.press("Escape");
+});
+
+test("Group by Assignee: N opens the field in the focused item's group and the new item is assigned there", async ({ page, own }) => {
+  const me = ((await (await page.request.get("/api/me")).json()) as { id: string; name: string });
+  const mine = await own.item("Plan the route", { assigneeIds: [me.id] });
+  await own.item("Charge the radios");
+  await page.goto(`/p/${own.projectId}?v=list&g=assignee`);
+  await row(page, me.id, mine).focus();
+  await page.keyboard.press("n");
+  const field = page.getByRole("textbox", { name: `New item in ${me.name}` });
+  await expect(field).toBeFocused();
+  await field.fill("File the flight plan");
+  await field.press("Enter");
+  await field.press("Escape");
+  await expect.poll(async () => (await byTitle(page, own.projectId, "File the flight plan"))?.assigneeIds).toEqual([me.id]);
+  await expect(group(page, me.id).locator(".td-list-row", { hasText: "File the flight plan" })).toBeVisible();
+});
+
+test("Group by Due: a range group has no +, so N there opens the first group that takes a value", async ({ page, own }) => {
+  const late = await own.item("Renew the permit", { dueDate: "2020-01-06" });
+  await own.item("Order the decals");
+  await page.goto(`/p/${own.projectId}?v=list&g=due`);
+  await expect(group(page, "overdue")).toBeVisible();
+  await expect(group(page, "overdue").locator("[data-add-item]")).toHaveCount(0);
+  await row(page, "overdue", late).focus();
+  await page.keyboard.press("n");
+  const field = page.getByRole("textbox", { name: "New item in No date" });
+  await expect(field).toBeFocused();
+  await field.fill("Sweep the hangar");
+  await field.press("Enter");
+  await field.press("Escape");
+  await expect.poll(async () => await byTitle(page, own.projectId, "Sweep the hangar")).toMatchObject({ dueDate: null });
+  await expect(group(page, "none").locator(".td-list-row", { hasText: "Sweep the hangar" })).toBeVisible();
+
+  // With "Show empty groups", Today comes first among the groups that take a value: its items are due today
+  await groupButton(page).click();
+  await page.getByRole("dialog", { name: "Group options" }).getByRole("checkbox", { name: "Show empty groups" }).click();
+  await page.keyboard.press("Escape");
+  await row(page, "overdue", late).focus();
+  await page.keyboard.press("n");
+  const today = page.getByRole("textbox", { name: "New item in Today" });
+  await expect(today).toBeFocused();
+  await today.fill("Check the weather");
+  await today.press("Enter");
+  await today.press("Escape");
+  await expect.poll(async () => (await byTitle(page, own.projectId, "Check the weather"))?.dueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(group(page, "today").locator(".td-list-row", { hasText: "Check the weather" })).toBeVisible();
+  // Leave the device preference as it was
+  await groupButton(page).click();
+  await page.getByRole("dialog", { name: "Group options" }).getByRole("checkbox", { name: "Show empty groups" }).click();
 });

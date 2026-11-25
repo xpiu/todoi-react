@@ -133,3 +133,36 @@ export function groupDrop(key: GroupKey, item: Pick<Item, "assigneeIds" | "label
   if (!g || !g.accepts) return { ok: false, reason: g?.refuse ?? "Can't drop here." };
   return toId === "today" ? { ok: true, patch: { dueDate: ctx.today }, message: "Due date set to today" } : { ok: true, patch: { dueDate: null }, message: "Due date cleared" };
 }
+
+/**
+ * What an item added in a group starts with (Group by quick-add): the group's one value — a Status, a priority, the member
+ * or label, today as the due date. The No-value groups add plain (No priority also keeps Settings › Default priority off,
+ * so the item lands where it was added). Null when the group can't take a value: the range Due groups, No status, and a
+ * former member's or unknown label's group. The same rules as a drop onto the group, from an item with no value.
+ */
+export function groupPreset(key: GroupKey, groupId: string, ctx: Pick<GroupContext, "today" | "labels" | "people">): GroupPatch | null {
+  const known = groupId === GROUP_NONE || (key === "assignee" ? ctx.people.some((p) => p.id === groupId) : key === "label" ? ctx.labels.some((l) => l.id === groupId) : true);
+  const r = known ? groupDrop(key, { assigneeIds: [], labelIds: [] }, null, groupId, ctx) : null;
+  return r?.ok ? r.patch : null;
+}
+
+/** The fields a quick-add sends besides its title and list */
+export interface AddedFields {
+  priority?: ItemPriority | null;
+  dueDate?: string;
+  labelIds: string[];
+  assigneeIds: string[];
+}
+
+/**
+ * A quick-add's fields with its group's preset: what was typed wins for one value (`!priority` — `typedPriority` — and a
+ * due date), labels and assignees add up. The Status preset is the caller's (it can pick the list).
+ */
+export function withPreset(fields: AddedFields, preset: GroupPatch | null | undefined, typedPriority: boolean): AddedFields {
+  if (!preset) return fields;
+  if ("priority" in preset) return typedPriority ? fields : { ...fields, priority: preset.priority };
+  if ("dueDate" in preset) return { ...fields, dueDate: fields.dueDate ?? preset.dueDate ?? undefined };
+  if ("labelIds" in preset) return { ...fields, labelIds: [...new Set([...preset.labelIds, ...fields.labelIds])] };
+  if ("assigneeIds" in preset) return { ...fields, assigneeIds: [...new Set([...preset.assigneeIds, ...fields.assigneeIds])] };
+  return fields;
+}

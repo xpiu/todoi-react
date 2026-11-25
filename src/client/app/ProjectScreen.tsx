@@ -33,7 +33,7 @@ import { ListView } from "../design/list/ListView";
 import { nextViewSearch, type DecodedViewState } from "../design/navigation/viewState";
 import { filterViewItems, itemComparator, sortLists } from "./filters";
 import { useFeedback } from "./feedback";
-import { groupDrop, groupItems } from "./groups";
+import { groupDrop, groupItems, groupPreset } from "./groups";
 import { useCollapsedGroups, useGroupState } from "./groupState";
 import { coverOf, itemRowMapper, keyOf, pickableItems, pickableMember, rowsByList, rowsForList, type RowModel } from "./items";
 import { ConfirmDialog } from "../design/core/Dialog";
@@ -56,7 +56,7 @@ import { usePersistedFlag } from "./usePersistedFlag";
 import { useToday } from "./today";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
 import { useResolvedView } from "./useResolvedView";
-import { useQuickAddRequest } from "./quickAddRequest";
+import { addTrigger, useQuickAddRequest } from "./quickAddRequest";
 import "./screens.css";
 
 const projectRoute = getRouteApi("/app/p/$projectId");
@@ -154,8 +154,10 @@ function useProjectView({ projectId, project, items, labels, filters, sort, sele
   const [roleReview, setRoleReview] = useState<{ list: VisibleList; role: ItemStatus } | null>(null);
   const picker = useProjectPicker(projectId);
   const anchor = useRef<string | null>(null);
-  // Create › New item aimed at this project: quick-add opens in the first list once the lists are on screen
-  const openFirstAdd = useCallback(() => requestAnimationFrame(() => root.current?.querySelector<HTMLButtonElement>("[data-add-item]")?.click()), [root]);
+  // Create › New item aimed at this project: quick-add opens once the lists are on screen, as N does — in the list or
+  // group of the item keyboard focus was last on (KeyNav's roving item: the first one until another is focused)
+  const { itemSelector } = dndOpts;
+  const openFirstAdd = useCallback(() => requestAnimationFrame(() => root.current && addTrigger(root.current, root.current.querySelector(`${itemSelector}[tabindex="0"]`))?.click()), [root, itemSelector]);
   useQuickAddRequest(projectId, project.id === projectId && actions.lists.length > 0, openFirstAdd);
 
   const ctx = useFilterContext(project, labels);
@@ -492,7 +494,8 @@ function ProjectListSections(props: ViewProps) {
 /**
  * The List view grouped by one field (Group by): the visible lists' rows, in list order or the item sort, regrouped by
  * Status, priority, assignee, label or Due bucket (app/groups.ts). Collapsed groups and "Show empty groups" are per device
- * (app/groupState.ts). No add rows and no manual order here; Ctrl/Cmd+↑↓←→ moves are off.
+ * (app/groupState.ts). No manual order here (Ctrl/Cmd+↑↓←→ moves are off); a group's + adds an item to the first list
+ * with the group's value (groupPreset), N and Create › New item open it in the focused item's group.
  */
 function ProjectGroupedList(props: ViewProps & { group: GroupKey }) {
   const root = useRef<HTMLDivElement | null>(null);
@@ -534,7 +537,7 @@ function ProjectGroupedList(props: ViewProps & { group: GroupKey }) {
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
     <>
-      <ListGroups ref={root} groups={groups} collapsed={collapsed} onCollapsedChange={(ids) => setCollapsed(projectId, group, ids)} renderRow={(r, g) => projectListRow(v, r, `${g.id}:${r.id}`)} drop={cue} canDrop={canDrop} onGroupDrop={onGroupDrop} onAnnounce={announce} onItemKey={v.onItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps} />
+      <ListGroups ref={root} groups={groups} collapsed={collapsed} onCollapsedChange={(ids) => setCollapsed(projectId, group, ids)} renderRow={(r, g) => projectListRow(v, r, `${g.id}:${r.id}`)} drop={cue} canDrop={canDrop} onGroupDrop={onGroupDrop} onAnnounce={announce} quickAdd={actions.quickAdd} canAdd={(g) => !!groupPreset(group, g.id, ctx)} onAddItem={(g, title, parsed, position) => actions.addItem(v.lists[0]!.id, title, parsed, position, groupPreset(group, g.id, ctx))} onItemKey={v.onItemKey} onItemSelect={v.onItemSelect} rootProps={v.dnd.rootProps} />
       {v.bulkBar}
     </>
   );

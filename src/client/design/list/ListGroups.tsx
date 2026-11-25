@@ -3,12 +3,15 @@
 // a ListView, so the whole view is still one Tab stop. Groups replace the list sections; rows keep the item sort and
 // there is no manual order. The host builds the groups (app/groups.ts), keeps which are collapsed, and owns the drag
 // (useItemDnd in group mode), whose cue it passes back as `drop`. The keyboard twin of the drag lives here:
-// Ctrl/Cmd+Shift+↑↓ (KeyNav onMoveGroup) moves the focused item to the previous / next group that takes it.
+// Ctrl/Cmd+Shift+↑↓ (KeyNav onMoveGroup) moves the focused item to the previous / next group that takes it. With
+// `onAddItem`, a group that stands for one value has a header + (N opens it) whose quick-add field adds an item with
+// that value; the range groups (Overdue, This week…) and No status have none.
 // Board and Calendar are never grouped. Spec: DESIGN.md › Group by.
 import type { ReactNode } from "react";
 
 import type { ListsViewProps } from "../board/listsView";
-import { GroupLead, ListSection, type GroupLeadSpec } from "./ListSection";
+import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
+import { GroupLead, ListSection, type AddPosition, type GroupLeadSpec } from "./ListSection";
 import { ListView } from "./ListView";
 
 /** One group of items in display order (Design: ViewControls ItemGroup) */
@@ -48,9 +51,15 @@ export interface ListGroupsProps<T> extends Pick<ListsViewProps, "onItemKey" | "
   onAnnounce?: (message: string) => void;
   /** Line inside a group with no items (only with "Show empty groups") @default "No items" */
   emptyLabel?: string;
+  /** The quick-add field in a group committed (its header + opens it at the top of the group). The host creates the
+   * item with the group's value. Without it the groups have no + */
+  onAddItem?: (group: ItemGroup<T>, title: string, parsed: QuickAddResult, position: AddPosition) => void;
+  quickAdd?: QuickAddOptions;
+  /** Which groups get the +: those that stand for one value @default the group's `accepts` */
+  canAdd?: (group: ItemGroup<T>) => boolean;
 }
 
-export function ListGroups<T>({ groups, collapsed = [], onCollapsedChange, renderRow, drop, canDrop, onGroupDrop, onAnnounce, emptyLabel = "No items", className, ...view }: ListGroupsProps<T>) {
+export function ListGroups<T>({ groups, collapsed = [], onCollapsedChange, renderRow, drop, canDrop, onGroupDrop, onAnnounce, emptyLabel = "No items", onAddItem, quickAdd, canAdd = (g) => g.accepts, className, ...view }: ListGroupsProps<T>) {
   const toggle = (id: string, shut: boolean) => onCollapsedChange?.(shut ? [...collapsed.filter((x) => x !== id), id] : collapsed.filter((x) => x !== id));
   // The next group in that direction that takes the item; refusing groups are skipped, and the first refusal is
   // announced when none does. A collapsed target opens, so focus can follow the item there.
@@ -88,6 +97,8 @@ export function ListGroups<T>({ groups, collapsed = [], onCollapsedChange, rende
           dropState={drop?.groupId === g.id ? drop.state : undefined}
           dropNote={drop?.groupId === g.id ? drop.note : undefined}
           empty={g.items.length ? undefined : emptyLabel}
+          quickAdd={quickAdd}
+          onAddItem={onAddItem && canAdd(g) ? (title, parsed, position) => onAddItem(g, title, parsed, position) : undefined}
         >
           {g.items.map((it) => renderRow(it, g))}
         </ListSection>

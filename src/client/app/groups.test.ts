@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item, Label } from "../data/api";
-import { dueBucket, GROUP_NONE, groupDrop, groupItems } from "./groups";
+import { dueBucket, GROUP_NONE, groupDrop, groupItems, groupPreset, withPreset } from "./groups";
 
 const label = (id: string, name: string, color = "blue"): Label => ({ id, projectId: "p", name, color, createdAt: "", updatedAt: "" }) as Label;
 const item = (over: Partial<Item>): Item =>
@@ -90,5 +90,48 @@ describe("groupDrop", () => {
       ["later", "Later covers many days. Open the item to pick a date."],
       ["earlier", "Earlier holds done items. Open the item to change its date."],
     ]) expect(groupDrop("due", it0, "today", to!, ctx)).toEqual({ ok: false, reason });
+  });
+});
+
+describe("groupPreset", () => {
+  it("gives a group's one value: Status, priority, member, label, today's date", () => {
+    expect(groupPreset("status", "DOING", ctx)).toEqual({ status: "DOING" });
+    expect(groupPreset("priority", "HIGH", ctx)).toEqual({ priority: "HIGH" });
+    expect(groupPreset("assignee", "u2", ctx)).toEqual({ assigneeIds: ["u2"] });
+    expect(groupPreset("label", "l1", ctx)).toEqual({ labelIds: ["l1"] });
+    expect(groupPreset("due", "today", ctx)).toEqual({ dueDate: "2026-10-01" });
+  });
+  it("adds plain in the No-value groups; No priority keeps the priority empty", () => {
+    expect(groupPreset("assignee", GROUP_NONE, ctx)).toEqual({ assigneeIds: [] });
+    expect(groupPreset("label", GROUP_NONE, ctx)).toEqual({ labelIds: [] });
+    expect(groupPreset("due", "none", ctx)).toEqual({ dueDate: null });
+    expect(groupPreset("priority", GROUP_NONE, ctx)).toEqual({ priority: null });
+  });
+  it("is null for a group that can't take a value: the range Due groups, No status, a former member, an unknown label", () => {
+    for (const id of ["overdue", "week", "later", "earlier"]) expect(groupPreset("due", id, ctx)).toBeNull();
+    expect(groupPreset("status", GROUP_NONE, ctx)).toBeNull();
+    expect(groupPreset("assignee", "gone", ctx)).toBeNull();
+    expect(groupPreset("label", "l9", ctx)).toBeNull();
+    expect(groupPreset("priority", "SOON", ctx)).toBeNull();
+  });
+});
+
+describe("withPreset", () => {
+  const typed = { priority: "MEDIUM" as const, dueDate: undefined, labelIds: ["l2"], assigneeIds: [] };
+  it("puts the group's priority over the default one, but not over a typed !priority", () => {
+    expect(withPreset(typed, { priority: "HIGH" }, false).priority).toBe("HIGH");
+    expect(withPreset(typed, { priority: null }, false).priority).toBeNull();
+    expect(withPreset(typed, { priority: "HIGH" }, true).priority).toBe("MEDIUM");
+  });
+  it("keeps a typed due date; else the group's", () => {
+    expect(withPreset(typed, { dueDate: "2026-10-01" }, false).dueDate).toBe("2026-10-01");
+    expect(withPreset({ ...typed, dueDate: "2026-10-09" }, { dueDate: "2026-10-01" }, false).dueDate).toBe("2026-10-09");
+    expect(withPreset(typed, { dueDate: null }, false).dueDate).toBeUndefined();
+  });
+  it("adds the group's label or member to the typed ones, once", () => {
+    expect(withPreset(typed, { labelIds: ["l1"] }, false).labelIds).toEqual(["l1", "l2"]);
+    expect(withPreset(typed, { labelIds: ["l2"] }, false).labelIds).toEqual(["l2"]);
+    expect(withPreset({ ...typed, assigneeIds: ["u1"] }, { assigneeIds: ["u2"] }, false).assigneeIds).toEqual(["u2", "u1"]);
+    expect(withPreset(typed, null, false)).toBe(typed);
   });
 });

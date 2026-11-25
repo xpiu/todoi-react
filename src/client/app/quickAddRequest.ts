@@ -1,5 +1,6 @@
 // A one-shot "open quick-add in this project" request (Create › New item with a project destination). The project's
 // List or Board view takes it once its lists are on screen, so a request made before navigating still lands there.
+// `addTrigger` is where N and that request open quick-add.
 import { useEffect, useSyncExternalStore } from "react";
 
 /** The project asked for; a request expires after a few seconds (a Calendar default view has no quick-add to take it) */
@@ -26,4 +27,13 @@ export function useQuickAddRequest(projectId: string, ready: boolean, open: () =
     pending = null;
     if (performance.now() - req.at < TTL_MS) open();
   }, [want, projectId, ready, open]);
+}
+
+/**
+ * The add trigger quick-add opens from: the one in the list section, group or column `from` sits in (the focused item),
+ * else the first one in `scope`. A group that can't take a value (Overdue, This week, No status…) has none, so the
+ * first group that can takes it.
+ */
+export function addTrigger(scope: ParentNode, from: Element | null | undefined) {
+  return from?.closest(".td-list-section, .td-list-column")?.querySelector<HTMLButtonElement>("[data-add-item]") ?? scope.querySelector<HTMLButtonElement>("[data-add-item]");
 }

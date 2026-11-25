@@ -56,7 +56,7 @@ const meta = {
   component: ListGroups<Row>,
   render: (args) => <ControlledGroups {...args} />,
   decorators: [(Story) => <div style={{ height: 640, display: "flex", background: "var(--chrome-canvas)" }}><Story /></div>],
-  parameters: { layout: "fullscreen", docs: { description: { component: "The List view grouped by one field (Group by): one collapsible ListSection per group with the group's glyph, avatar or label swatch, its name and count, inside a ListView. Groups replace the list sections; rows keep the item sort. The host builds the groups (app/groups.ts), keeps which are collapsed (per device), and owns the drag, passing its cue back as `drop`. Empty groups appear only with “Show empty groups” and read “No items”." } } },
+  parameters: { layout: "fullscreen", docs: { description: { component: "The List view grouped by one field (Group by): one collapsible ListSection per group with the group's glyph, avatar or label swatch, its name and count, inside a ListView. Groups replace the list sections; rows keep the item sort. The host builds the groups (app/groups.ts), keeps which are collapsed (per device), and owns the drag, passing its cue back as `drop`. Empty groups appear only with “Show empty groups” and read “No items”. With `onAddItem`, a group that stands for one value has a header + whose quick-add field adds an item with that value." } } },
   args: { groups: PRIORITY, renderRow, onCollapsedChange: fn() },
 } satisfies Meta<typeof ListGroups<Row>>;
 export default meta;
@@ -127,6 +127,34 @@ export const KeyboardGroupRefused: Story = {
     await userEvent.keyboard("{Control>}{Shift>}{ArrowDown}{/Shift}{/Control}");
     await expect(args.onGroupDrop).not.toHaveBeenCalled();
     await expect(args.onAnnounce).toHaveBeenLastCalledWith("This week covers several days. Open the item to pick a date.");
+  },
+};
+/**
+ * With onAddItem, each group that stands for one value has the header + (N): its quick-add field adds an item the host
+ * gives that group's value. Overdue and This week stand for many dates, so they have none.
+ */
+export const AddInGroup: Story = {
+  args: { groups: DUE, onAddItem: fn() },
+  async play({ args, canvas, canvasElement, userEvent }) {
+    const plus = (id: string) => canvasElement.querySelector(`[data-group-id="${id}"] [data-add-item]`);
+    await expect(plus("overdue")).toBeNull();
+    await expect(plus("week")).toBeNull();
+    await expect(plus("none")).not.toBeNull();
+    // An empty group opens its field above "No items"
+    await userEvent.click(canvas.getByRole("button", { name: "Add an item to Today" }));
+    const field = await canvas.findByRole("textbox", { name: "New item in Today" });
+    await userEvent.type(field, "Refuel before the flight{Enter}");
+    await expect(args.onAddItem).toHaveBeenCalledWith(expect.objectContaining({ id: "today" }), "Refuel before the flight", expect.objectContaining({ title: "Refuel before the flight" }), "top");
+    await userEvent.keyboard("{Escape}");
+  },
+};
+/** A collapsed group opens with its field when its + is pressed. */
+export const AddInCollapsedGroup: Story = {
+  args: { groups: PRIORITY, collapsed: ["HIGH"], onAddItem: fn() },
+  async play({ args, canvas, userEvent }) {
+    await userEvent.click(canvas.getByRole("button", { name: "Add an item to High" }));
+    await expect(args.onCollapsedChange).toHaveBeenLastCalledWith([]);
+    await expect(await canvas.findByRole("textbox", { name: "New item in High" })).toBeVisible();
   },
 };
 /** A collapsed target group opens when an item moves into it. */

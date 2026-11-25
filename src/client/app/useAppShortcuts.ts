@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import { isTyping, SHORTCUTS } from "../design/core/shortcuts";
 import { useFeedback } from "./feedback";
+import { addTrigger } from "./quickAddRequest";
 
 export interface AppShortcutHandlers {
   projectId?: string;
@@ -65,11 +66,9 @@ export function useAppShortcuts(h: AppShortcutHandlers) {
         e.preventDefault();
         document.querySelector<HTMLInputElement>('.td-topnav input[aria-label="Search"]')?.focus();
       } else if (SHORTCUTS.is("new-item", e)) {
-        // N opens quick-add in the focused item's list, else the first visible add trigger.
+        // N opens quick-add in the focused item's list or group, else the first visible add trigger.
         e.preventDefault();
-        const focused = document.activeElement?.closest?.(".td-list-section, .td-list-column");
-        const btn = (focused ?? document).querySelector<HTMLButtonElement>("[data-add-item]");
-        btn?.click();
+        addTrigger(document, document.activeElement)?.click();
       } else if (SHORTCUTS.is("new-list", e)) {
         e.preventDefault();
         c.addList?.();

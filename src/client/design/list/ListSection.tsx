@@ -142,7 +142,7 @@ export function ListSection({ listId, name, count, icon, iconColor, statusRole, 
               </button>
             ) : null}
             {/* A toggle with one name: aria-pressed says whether the top add row is open. */}
-            {isGroup && !onAddItem ? null : <button type="button" className="td-list-section-addbtn td-tooltip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-side={menu ? undefined : "bottom-end"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={`Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
+            {isGroup && !onAddItem ? null : <button type="button" className="td-list-section-addbtn td-tooltip" data-tip={adding === "top" ? "Hide add row" : "Add an item"} data-tip-side={menu ? undefined : "bottom-end"} data-tip-kbd={suggestShortcuts && adding !== "top" ? hintKeysText("add-item") : undefined} aria-label={isGroup ? `Add an item to ${name}` : `Add an item at the top of ${name}`} aria-pressed={adding === "top"} data-add-item={name} onMouseDown={(e) => e.preventDefault()} onClick={() => startAdd("top")}>
               <Icon name="plus" size={16} />
             </button>}
             {menu ? (

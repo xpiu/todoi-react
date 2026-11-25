@@ -151,7 +151,7 @@ export function AppShell() {
     if (projectId) setLastProject(projectId, projectSearch);
   }, [projectId, projectSearch]);
   // Create › New item follows Settings › General › Default destination: the current project (the one on screen, else the
-  // last one open in this tab, else the Inbox), the Inbox, or a chosen project — there quick-add opens in the first list, as N does
+  // last one open in this tab, else the Inbox), the Inbox, or a chosen project — there quick-add opens where N would (addTrigger)
   const destination = usePrefs((s) => s.defaultDestination);
   const newItem = () => {
     const known = (groups.data ?? []).some((g) => g.projects.some((p) => p.id === destination));
