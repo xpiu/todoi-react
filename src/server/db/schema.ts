@@ -132,15 +132,15 @@ export const invites = pgTable(
 );
 
 /**
- * A person's private calendar feed (the Calendar's "Subscribe to calendar"). The link carries `feedId` and an
- * HMAC of it (services/calendarFeed.ts), so the secret part is never stored; "Reset link" replaces `feedId`
- * and the old link stops at once.
+ * A person's private calendar feed (the Calendar's "Subscribe to calendar"). `token` is the link's random
+ * secret (services/calendarFeed.ts), stored so the dialog can show it again and looked up by equality;
+ * "Reset link" replaces it and the old link stops at once.
  */
 export const calendarFeeds = pgTable("calendar_feeds", {
   userId: text("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
-  feedId: text("feed_id").notNull().unique(),
+  token: text("token").notNull().unique(),
   ...timestamps,
 });
 

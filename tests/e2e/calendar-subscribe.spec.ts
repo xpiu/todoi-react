@@ -22,7 +22,7 @@ test("the subscribe dialog shows a private feed link that calendar apps can read
   const dialog = page.getByRole("dialog", { name: "Subscribe to calendar" });
   await expect(dialog.getByRole("button", { name: "Done" })).toBeFocused();
   const field = dialog.getByRole("textbox", { name: "Private link" });
-  await expect(field).toHaveValue(/\/api\/feeds\/calendar\/[A-Za-z0-9_-]{64}\.ics$/);
+  await expect(field).toHaveValue(/\/api\/feeds\/calendar\/[A-Za-z0-9_-]{43}\.ics$/);
   const first = await field.inputValue();
 
   // A calendar app has no session: a fresh request context, no cookies.

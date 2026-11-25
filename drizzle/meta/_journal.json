@@ -127,6 +127,13 @@
       "when": 1795557658765,
       "tag": "0017_search_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795581430268,
+      "tag": "0018_calendar_feed_token",
+      "breakpoints": true
     }
   ]
 }
