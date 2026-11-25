@@ -506,8 +506,8 @@ html[data-theme="minimal"] .td-table-number,html[data-theme="minimal"] .td-table
 html[data-theme="minimal"] .td-table-lead .td-avatar{display:none!important}
 html[data-theme="minimal"] .td-table-lead{display:block;width:128px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-400)}
 @container (max-width:720px){html[data-theme="minimal"] .td-table-leadname{position:static;width:auto;height:auto;overflow:visible;clip-path:none}html[data-theme="minimal"] .td-table-lead{width:88px}html[data-theme="minimal"] .td-table-sub{display:block;margin-left:0}}
-/* Switch columns: 80px, both labels on two lines, the 32px switch centred on whole pixels */
-html[data-theme="minimal"] .td-table :is(th,td).td-table-link{width:80px;min-width:80px}
+/* Switch columns: 96px, both labels on two lines at 500 13px ("Checked items" is about 93px in the webfont), the 32px switch centred on whole pixels */
+html[data-theme="minimal"] .td-table :is(th,td).td-table-link{width:96px;min-width:96px}
 html[data-theme="minimal"] .td-table-link .td-switch{display:flex;width:32px;height:20px;margin:0 auto}
 /* Row tools: the 28px buttons overflow a 20px line; the last glyph ends on the column edge (28 - 16 = 12, half on each side) */
 html[data-theme="minimal"] .td-table-tools{display:flex;justify-content:flex-end;height:20px;margin-right:-6px}
