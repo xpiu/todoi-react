@@ -274,7 +274,7 @@ html[data-theme="minimal"] .td-list-section-more{opacity:1}
 html[data-theme="minimal"] .td-list-section-chevron svg,html[data-theme="minimal"] .td-list-section-addbtn svg,html[data-theme="minimal"] .td-list-section-more svg{width:14px;height:14px}
 html[data-theme="minimal"] .td-list-section-chevron:hover,html[data-theme="minimal"] .td-list-section-addbtn:hover,html[data-theme="minimal"] .td-list-section-addbtn[aria-pressed="true"],html[data-theme="minimal"] .td-list-section-more:hover,html[data-theme="minimal"] .td-list-section-more[aria-expanded="true"]{background:none;color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-section-chevron:focus-visible,html[data-theme="minimal"] .td-list-section-addbtn:focus-visible,html[data-theme="minimal"] .td-list-section-more:focus-visible{box-shadow:none;outline:1px solid var(--ink-900)}
-html[data-theme="minimal"][data-touch="true"] .td-list-section-addbtn{width:44px;height:44px;padding:14px;margin:-14px -14px -14px 0}
+html[data-theme="minimal"][data-touch="true"] .td-list-section-chevron,html[data-theme="minimal"][data-touch="true"] .td-list-section-addbtn{width:44px;height:44px;padding:14px;margin:0 0 -8px}
 html[data-theme="minimal"] .td-list-section-body{padding-bottom:0!important}
 html[data-theme="minimal"] .td-list-row-group{background:none;border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-list-row-group.is-selected{background:var(--blue-100);box-shadow:none;outline:1px solid var(--ink-900);outline-offset:-1px}

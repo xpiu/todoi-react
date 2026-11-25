@@ -61,15 +61,17 @@
   .td-list-section-addbtn[aria-pressed="true"] {
     opacity: 1;
   }
-  /* By input capability, not width (decision R4): with no hover to reveal it (html[data-touch], viewport.ts), the
-     + always shows and is a 44px target. The box grows to the left and around the 24px look (the background stays
-     on the content box); the end overhang sits under the ⋯ that follows, or in the header's padding. */
+  /* By input capability, not width (decision R4): with no hover to reveal them (html[data-touch], viewport.ts), the
+     collapse chevron and the + always show — a tappable control is never invisible — and each is a 44px target
+     around the 24px look (the background stays on the content box). The boxes sit side by side, never over each
+     other or the rows: the top 10px reach into the header's padding, and the header grows 6px to hold the rest. */
+  html[data-touch="true"] .td-list-section-chevron,
   html[data-touch="true"] .td-list-section-addbtn {
     opacity: 1;
     width: 44px;
     height: 44px;
     padding: 10px;
-    margin: -10px -10px -10px 0;
+    margin: -10px 0 -4px;
     background-clip: content-box;
   }
   /* addVisible (Inbox): the header + shows without hover */

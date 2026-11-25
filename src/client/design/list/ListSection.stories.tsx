@@ -164,13 +164,26 @@ function touchScreen() {
   };
 }
 const opacityOf = (el: HTMLElement) => getComputedStyle(el).opacity;
-/** On touch the + always shows (no hover to reveal it) and is a 44px target around the same look. */
-const expectTouchPlus = async (plus: HTMLElement) => {
-  await waitFor(() => expect(opacityOf(plus)).toBe("1"));
-  const box = plus.getBoundingClientRect();
-  await expect([box.width, box.height]).toEqual([44, 44]);
+const overlaps = (a: DOMRect, b: DOMRect) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+/**
+ * On touch the header's controls always show (no hover to reveal them; a tappable control is never invisible): the
+ * collapse chevron and the + are 44px targets around the same look, side by side, inside the header — over neither
+ * each other, the ⋯, nor the rows.
+ */
+const expectTouchHead = async (plus: HTMLElement) => {
+  const head = plus.closest<HTMLElement>(".td-list-section-head")!;
+  const chevron = head.querySelector<HTMLElement>(".td-list-section-chevron")!;
+  for (const el of [chevron, plus]) {
+    await waitFor(() => expect(opacityOf(el)).toBe("1"));
+    const box = el.getBoundingClientRect();
+    await expect([box.width, box.height]).toEqual([44, 44]);
+    await expect(box.bottom).toBeLessThanOrEqual(head.getBoundingClientRect().bottom + 0.5);
+  }
+  const more = head.querySelector<HTMLElement>(".td-list-section-more");
+  const targets = [chevron, plus, ...(more ? [more] : [])].map((el) => el.getBoundingClientRect());
+  for (const [i, a] of targets.entries()) for (const b of targets.slice(i + 1)) await expect(overlaps(a, b)).toBe(false);
 };
-/** Phone, touch: a group's + is its only add affordance (no bottom add row), so it always shows. */
+/** Phone, touch: a group's + is its only add affordance (no bottom add row), so it always shows, as does its chevron. */
 export const GroupAddItemTouchPhone: Story = {
   args: { ...groupArgs, onAddItem: fn() },
   globals: { viewport: { value: "phone", isRotated: false } },
@@ -178,10 +191,20 @@ export const GroupAddItemTouchPhone: Story = {
   async play({ canvas, canvasElement }) {
     await waitFor(() => expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-device", "phone"));
     await expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-touch", "true");
-    await expectTouchPlus(canvas.getByRole("button", { name: "Add an item to High" }));
+    await expectTouchHead(canvas.getByRole("button", { name: "Add an item to High" }));
   },
 };
-/** Tablet, touch: decided by the input, not the width — the + shows here too, and on a list's header. */
+/** Touch, collapsed: the chevron (Expand) and the + both show and keep their 44px targets apart. */
+export const GroupCollapsedTouch: Story = {
+  args: { ...groupArgs, onAddItem: fn(), defaultCollapsed: true },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  beforeEach: touchScreen,
+  async play({ canvas }) {
+    await expect(canvas.getByRole("button", { name: "Expand High" })).toHaveAttribute("aria-expanded", "false");
+    await expectTouchHead(canvas.getByRole("button", { name: "Add an item to High" }));
+  },
+};
+/** Tablet, touch: decided by the input, not the width — the chevron and + show here too, and on a list's header. */
 export const GroupAddItemTouchTablet: Story = {
   render: (args) => (
     <div style={{ display: "grid", gap: 12 }}>
@@ -196,8 +219,8 @@ export const GroupAddItemTouchTablet: Story = {
   beforeEach: touchScreen,
   async play({ canvas, canvasElement }) {
     await waitFor(() => expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-device", "tablet"));
-    await expectTouchPlus(canvas.getByRole("button", { name: "Add an item to High" }));
-    await expectTouchPlus(canvas.getByRole("button", { name: "Add an item at the top of Doing" }));
+    await expectTouchHead(canvas.getByRole("button", { name: "Add an item to High" }));
+    await expectTouchHead(canvas.getByRole("button", { name: "Add an item at the top of Doing" }));
   },
 };
 /** A phone-wide window with a mouse: hover-capable, so the + waits for hover or focus inside the group, as on desktop. */
