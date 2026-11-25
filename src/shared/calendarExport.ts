@@ -1,3 +1,5 @@
+import { itemLink } from "./accountLinks";
+
 interface CalendarItem {
   id: string;
   title: string;
@@ -44,7 +46,7 @@ export function itemsToCalendar(items: CalendarItem[], appUrl: string, now = new
     }
     const description = [item.description, item.done ? "Completed in Todoi." : null].filter(Boolean).join("\n\n");
     if (description) lines.push(`DESCRIPTION:${text(description)}`);
-    lines.push(`URL:${appUrl.replace(/\/$/, "")}${item.projectId ? `/p/${encodeURIComponent(item.projectId)}` : "/inbox"}?item=${encodeURIComponent(item.id)}`, "END:VEVENT");
+    lines.push(`URL:${itemLink(appUrl, item)}`, "END:VEVENT");
   }
   return [...lines, "END:VCALENDAR"].map(fold).join("\r\n") + "\r\n";
 }

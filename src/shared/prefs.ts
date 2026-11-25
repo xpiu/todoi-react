@@ -25,7 +25,7 @@ export const prefsSchema = z.object({
   notifyAssignments: z.boolean(),
   notifyWatched: z.boolean(),
   inboxBadge: z.boolean(),
-  /** Email as well as the Inbox, per kind (Settings › Notifications › Email notifications). Only invites are emailed so far */
+  /** Email as well as the Inbox, per kind (Settings › Notifications › Email notifications), to a confirmed address only; Comments covers watched items */
   emailMentions: z.boolean(),
   emailAssignments: z.boolean(),
   emailComments: z.boolean(),

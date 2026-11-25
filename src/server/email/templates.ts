@@ -43,7 +43,8 @@ interface EmailContent {
   /** The plain-text line above the link ("Open the invitation:") */
   linkLead: string;
   url: string;
-  expiry: Piece[];
+  /** When the link stops working; notification emails link to the item and leave it out */
+  expiry?: Piece[];
   ignore: Piece[];
   /** Why the email came, before the todoi.com · Help line */
   footer: Piece[];
@@ -63,7 +64,7 @@ function renderHtml(c: EmailContent): string {
     `${P_INK}${html(c.intro)}</p>`,
     quote,
     `<table ${TABLE} style="margin:8px 0 24px;"><tr><td class="btn" bgcolor="#111111" style="background:#111111;border-radius:2px;"><a href="${url}" style="display:block;padding:12px 24px;font:bold 16px/24px ${FONT};color:#ffffff;text-decoration:none;mso-line-height-rule:exactly;">${c.button}</a></td></tr></table>`,
-    `${P_INK}${html(c.expiry)}</p>`,
+    c.expiry ? `${P_INK}${html(c.expiry)}</p>` : "",
     `<table ${TABLE} width="100%"><tr><td class="rule" style="border-top:1px solid #d9d9d6;font-size:0;line-height:0;height:20px;">&nbsp;</td></tr></table>`,
     `${P_DIM}If the button doesn't work, copy this link into your browser:<br><a class="link" href="${url}" style="${LINK_STYLE}">${url}</a></p>`,
     `${P_DIM}${html(c.ignore)}</p>`,
@@ -122,7 +123,7 @@ function renderText(c: EmailContent): string {
     wrapText(plain(c.intro)),
     ...(c.quote ? [`${wrapText(`"${oneLine(c.quote.message)}"`, TEXT_WIDTH, "    ")}\n${wrapText(oneLine(c.quote.by), TEXT_WIDTH, "    ")}`] : []),
     `${c.linkLead}\n${c.url}`,
-    wrapText(plain(c.expiry)),
+    ...(c.expiry ? [wrapText(plain(c.expiry))] : []),
     wrapText(plain(c.ignore)),
     `--\n${wrapText(plain(c.footer))}\nTodoi - ${SITE} - Help: ${HELP}`,
   ];
@@ -222,5 +223,53 @@ export function projectInviteEmail({ email, inviterName, inviterEmail, projectNa
     expiry: ["The invitation is for ", v(email), ` and expires on ${inviteDate(expiresAt)}.`],
     ignore: ["Don't know ", v(inviterName), "? Ignore this email. You won't be added to anything."],
     footer: ["You got this email because ", v(inviterName), " (", v(inviterEmail), ") invited this address to a Todoi project."],
+  });
+}
+
+export type NotificationKind = "assignment" | "mention" | "watch";
+
+/** Each kind's switch under Settings › Notifications › Email notifications, as the recipient sees it named. */
+const SWITCHES: Record<NotificationKind, string> = { assignment: "Assignments", mention: "Mentions", watch: "Comments" };
+
+export interface NotificationEmailInput {
+  kind: NotificationKind;
+  actorName: string;
+  /** The item's key ("NT-7"), when its project group issues them */
+  itemKey?: string | null;
+  itemTitle: string;
+  projectName: string;
+  /** The comment, for a mention or a comment on a watched item */
+  excerpt?: string | null;
+  /** The item, opened over its project */
+  url: string;
+}
+
+const EXCERPT_CHARS = 400;
+const excerptOf = (text: string) => {
+  const line = oneLine(text);
+  return line.length > EXCERPT_CHARS ? `${line.slice(0, EXCERPT_CHARS - 1).trimEnd()}…` : line;
+};
+
+/** The email copy of an Inbox notification (services/notifications.ts): the same subject as the Inbox item's title. */
+export function notificationEmail({ kind, actorName, itemKey, itemTitle, projectName, excerpt, url }: NotificationEmailInput): RenderedEmail {
+  const item = itemKey ? `${itemKey}: ${itemTitle}` : itemTitle;
+  const quote = kind !== "assignment" && excerpt?.trim() ? { message: excerptOf(excerpt), by: actorName } : undefined;
+  const what: Record<NotificationKind, { subject: Piece[]; heading: Piece[]; intro: Piece[]; reason: string }> = {
+    assignment: { subject: [v(actorName), " assigned ", v(itemKey ?? "an item"), " to you: ", v(itemTitle)], heading: [v(actorName), " assigned you an item"], intro: [b(actorName), " assigned ", b(item), " to you in ", b(projectName), "."], reason: "an item in a Todoi project was assigned to you" },
+    mention: { subject: [v(actorName), " mentioned you on ", v(item)], heading: [v(actorName), " mentioned you"], intro: [b(actorName), " mentioned you in a comment on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you were @mentioned in a Todoi project" },
+    watch: { subject: [v(actorName), " commented on ", v(item)], heading: [v(actorName), " commented on an item you watch"], intro: [b(actorName), " commented on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you watch an item in a Todoi project" },
+  };
+  const w = what[kind];
+  return render({
+    subject: w.subject,
+    preheader: quote ? [v(quote.message)] : ["Open ", v(item), " in ", v(projectName), "."],
+    heading: w.heading,
+    intro: w.intro,
+    quote,
+    button: "Open item",
+    linkLead: "Open the item:",
+    url,
+    ignore: [`Don't want these emails? Turn off ${SWITCHES[kind]} under Settings › Notifications › Email notifications. The item is in your Todoi Inbox too.`],
+    footer: [`You got this email because ${w.reason} and your ${SWITCHES[kind]} emails are on.`],
   });
 }

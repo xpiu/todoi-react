@@ -19,3 +19,7 @@ export function linkSpan(minutes: number): string {
  * The refusal carries this marker in `fields.confirmEmail` so the client can offer the link again.
  */
 export const EMAIL_UNCONFIRMED = "EMAIL_UNCONFIRMED";
+
+/** An item's absolute link: opened over its project, or in the Inbox (calendar events, notification emails). */
+export const itemLink = (appUrl: string, item: { id: string; projectId: string | null }) =>
+  `${appUrl.replace(/\/$/, "")}${item.projectId ? `/p/${encodeURIComponent(item.projectId)}` : "/inbox"}?item=${encodeURIComponent(item.id)}`;

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { changeEmailEmail, escapeHtml, passwordResetEmail, projectInviteEmail, verifyEmailEmail, wrapText } from "./templates";
+import { changeEmailEmail, escapeHtml, notificationEmail, passwordResetEmail, projectInviteEmail, verifyEmailEmail, wrapText } from "./templates";
 
 const sample = (name: string) => readFileSync(new URL(`./samples/${name}`, import.meta.url), "utf8");
 const OLD = "flo@helicopterseurope.com";
@@ -88,5 +88,37 @@ describe("text helpers", () => {
     expect(wrapText("a ".repeat(50).trim()).split("\n").map((l) => l.length)).toEqual([77, 21]);
     expect(wrapText(`see ${"x".repeat(90)} now`)).toBe(`see\n${"x".repeat(90)}\nnow`);
     expect(wrapText("one two", 78, "    ")).toBe("    one two");
+  });
+});
+
+describe("notification emails (R10)", () => {
+  const base = { actorName: "Sam Verhoeven", itemKey: "WEB-7", itemTitle: "Order blades", projectName: "Website", url: "https://todoi.com/p/abc?item=def" };
+
+  it("use the Inbox item's title as the subject and link to the item", () => {
+    const assigned = notificationEmail({ ...base, kind: "assignment" });
+    expect(assigned.subject).toBe("Sam Verhoeven assigned WEB-7 to you: Order blades");
+    expect(assigned.text).toContain("Sam Verhoeven assigned WEB-7: Order blades to you in Website.");
+    expect(assigned.text).toContain("Open the item:\nhttps://todoi.com/p/abc?item=def");
+    expect(assigned.text.replace(/\s+/g, " ")).toContain("Turn off Assignments under Settings › Notifications › Email notifications.");
+    expect(assigned.html).toContain('href="https://todoi.com/p/abc?item=def"');
+    expect(notificationEmail({ ...base, itemKey: null, kind: "assignment" }).subject).toBe("Sam Verhoeven assigned an item to you: Order blades");
+    expect(notificationEmail({ ...base, kind: "mention", excerpt: "x" }).subject).toBe("Sam Verhoeven mentioned you on WEB-7: Order blades");
+    expect(notificationEmail({ ...base, kind: "watch", excerpt: "x" }).subject).toBe("Sam Verhoeven commented on WEB-7: Order blades");
+  });
+
+  it("quote the comment on one line, shortened, escaped in HTML", () => {
+    const long = `@flo <b>look</b>\n\n${"word ".repeat(200)}`;
+    const mail = notificationEmail({ ...base, kind: "mention", excerpt: long });
+    expect(mail.html).toContain("&lt;b&gt;look&lt;/b&gt;");
+    expect(mail.html).not.toContain("<b>look</b>");
+    expect(mail.text).toMatch(/"@flo <b>look<\/b> word[^"]*…"/);
+    expect(mail.text).toContain("    Sam Verhoeven");
+    // An assignment has no comment to quote.
+    expect(notificationEmail({ ...base, kind: "assignment", excerpt: "ignored" }).text).not.toContain("ignored");
+  });
+
+  it("put no expiry line in, unlike the account emails", () => {
+    const mail = notificationEmail({ ...base, kind: "assignment" });
+    expect(mail.text).not.toMatch(/expires/);
   });
 });

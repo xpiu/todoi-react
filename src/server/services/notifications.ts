@@ -1,19 +1,25 @@
 // Notifications are Inbox items (DESIGN.md › Notifications): an assignment, an @mention in a comment,
 // or a new comment on an item someone watches lands as an unread item in that person's Inbox, about
 // the project item. Never for the actor themselves, never for someone who can no longer read the item,
-// and never against the person's opt-outs (Settings › Notifications, stored in users.prefs).
+// and never against the person's opt-outs (Settings › Notifications, stored in users.prefs). Each one is
+// also emailed (work plan R10) while that kind's email switch is on and the address is confirmed (R4); the
+// email leaves after the change commits, and a failed send is logged, never the request's failure.
 import { eq, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
+import { itemLink } from "../../shared/accountLinks";
 import { prefsOf, type Prefs } from "../../shared/prefs";
 import { inboxFor } from "../auth";
 import { readableItemIds } from "../access";
-import { db, inRequestTransaction, type Tx } from "../db";
+import { afterCommit, db, inRequestTransaction, type Tx } from "../db";
 import { nextPosition } from "../db/position";
 import { groups, items, itemWatchers, members, projects, users, type ItemNotification } from "../db/schema";
+import { notificationEmail, sendEmail } from "../email";
+import { env } from "../env";
 
 type Kind = "assignment" | "mention" | "watch";
 const OPT_IN: Record<Kind, keyof Prefs> = { assignment: "notifyAssignments", mention: "notifyMentions", watch: "notifyWatched" };
+const EMAIL_OPT_IN: Record<Kind, keyof Prefs> = { assignment: "emailAssignments", mention: "emailMentions", watch: "emailComments" };
 
 interface About {
   id: string;
@@ -37,12 +43,13 @@ export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { 
   if (!about.projectId) return [];
   const ids = [...new Set(recipientIds)].filter((id) => id !== actor.userId);
   if (!ids.length) return [];
-  const people = await db.select({ id: users.id, prefs: users.prefs }).from(users).where(inArray(users.id, ids));
-  const [group] = await db.select({ keyPrefix: groups.keyPrefix }).from(projects).innerJoin(groups, eq(groups.id, projects.groupId)).where(eq(projects.id, about.projectId));
+  const people = await db.select({ id: users.id, prefs: users.prefs, email: users.email, emailVerified: users.emailVerified, isAnonymous: users.isAnonymous }).from(users).where(inArray(users.id, ids));
+  const [group] = await db.select({ keyPrefix: groups.keyPrefix, projectName: projects.name }).from(projects).innerJoin(groups, eq(groups.id, projects.groupId)).where(eq(projects.id, about.projectId));
   const key = group && about.keyNumber != null ? `${group.keyPrefix}-${about.keyNumber}` : undefined;
   const sent: string[] = [];
   for (const person of people) {
-    if (!prefsOf(person.prefs)[OPT_IN[kind]]) continue;
+    const prefs = prefsOf(person.prefs);
+    if (!prefs[OPT_IN[kind]]) continue;
     const inboxListId = await inboxFor(person.id);
     if (!(await readableItemIds({ userId: person.id, inboxListId }, [about])).has(about.id)) continue;
     const ref = key ? `${key}: ${about.title}` : about.title;
@@ -52,6 +59,11 @@ export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { 
       description: opts.excerpt ? `> ${opts.excerpt.slice(0, 400).replace(/\n/g, "\n> ")}` : null,
       notification: { kind, fromUserId: actor.userId, aboutKey: key, aboutItemId: about.id },
     });
+    if (prefs[EMAIL_OPT_IN[kind]] && person.emailVerified && !person.isAnonymous) {
+      const to = person.email;
+      const message = notificationEmail({ kind, actorName: actor.name, itemKey: key, itemTitle: about.title, projectName: group?.projectName ?? "a project", excerpt: opts.excerpt, url: itemLink(env.APP_URL, about) });
+      await afterCommit(() => sendEmail({ to, ...message }).catch((error: unknown) => console.error(`The ${kind} email to ${to} wasn't sent`, error)));
+    }
     sent.push(person.id);
   }
   return sent;

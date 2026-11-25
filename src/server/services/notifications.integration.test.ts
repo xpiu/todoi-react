@@ -2,8 +2,10 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
+import { emailsTo } from "../../../tests/integration/accounts";
 import { inboxFor } from "../auth";
 import { db } from "../db";
+import { env } from "../env";
 import { groups, items, itemWatchers, lists, members, projects, users } from "../db/schema";
 import { notifyComment, notifyPeople } from "./notifications";
 
@@ -60,5 +62,33 @@ describe("notifications", () => {
   it("Inbox items notify nobody", async () => {
     const f = await fixture();
     expect(await notifyPeople("assignment", [f.sam], f.author, { ...f.about, projectId: null })).toEqual([]);
+  });
+
+  it("emails confirmed recipients as well, per kind, after the Inbox item (R10)", async () => {
+    const f = await fixture();
+    const [sam] = await db.update(users).set({ emailVerified: true }).where(eq(users.id, f.sam)).returning({ email: users.email });
+    await notifyPeople("assignment", [f.sam], f.author, f.about);
+    const [mail] = await emailsTo(sam!.email);
+    expect(mail).toMatchObject({ subject: "Todoi assigned NT-7 to you: Order blades", link: `${env.APP_URL}/p/${f.about.projectId}?item=${f.about.id}` });
+    expect(mail!.text).toContain("Todoi assigned NT-7: Order blades to you in Rotor shop.");
+
+    // Comments on watched items are off by default; mentions are on.
+    await db.insert(itemWatchers).values({ itemId: f.about.id, userId: f.sam });
+    await notifyComment(f.author, f.about, "Ordered.");
+    expect(await emailsTo(sam!.email)).toHaveLength(1);
+    await notifyComment(f.author, f.about, "@sammy the blades shipped");
+    expect((await emailsTo(sam!.email)).map((m) => m.subject)).toEqual(["Todoi assigned NT-7 to you: Order blades", "Todoi mentioned you on NT-7: Order blades"]);
+
+    // The switch off: the Inbox item still arrives, the email doesn't.
+    await db.update(users).set({ prefs: { emailAssignments: false } }).where(eq(users.id, f.sam));
+    expect(await notifyPeople("assignment", [f.sam], f.author, f.about)).toEqual([f.sam]);
+    expect(await emailsTo(sam!.email)).toHaveLength(2);
+  });
+
+  it("never emails an address that isn't confirmed (R4)", async () => {
+    const f = await fixture();
+    const [sam] = await db.select({ email: users.email }).from(users).where(eq(users.id, f.sam));
+    expect(await notifyPeople("assignment", [f.sam], f.author, f.about)).toEqual([f.sam]);
+    expect(await emailsTo(sam!.email)).toHaveLength(0);
   });
 });
