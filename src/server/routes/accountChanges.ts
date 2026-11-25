@@ -12,10 +12,10 @@ import { z } from "zod";
 import { SUDO_REQUIRED } from "../../shared/sudo";
 import { auth, viewerOf } from "../auth";
 import { EmailNotSent } from "../email";
-import { fail, validate } from "../errors";
+import { fail, logRequest, validate } from "../errors";
 import { deleteAccount, deletionReview } from "../services/accountDeletion";
 import { cancelEmailChange, confirmEmailChangeUrl, pendingEmailChange, recordEmailChange } from "../services/emailChange";
-import { confirmSession, sudoUntil } from "../services/sudo";
+import { clearTries, confirmSession, MAX_TRIES, reserveTry, sudoUntil, TRY_WINDOW_MINUTES } from "../services/sudo";
 
 /** This request's browser session (read past the cookie cache); API tokens have none. */
 async function browserSession(c: Context) {
@@ -33,7 +33,10 @@ async function sudoRefusal(c: Context, action: string) {
   return fail(c, 403, "Confirm it's you to continue", { fields: { sudo: SUDO_REQUIRED } });
 }
 
-/** GET: whether this session is in sudo mode (`confirmedUntil`, or null). POST: confirm with the password. */
+/**
+ * GET: whether this session is in sudo mode (`confirmedUntil`, or null). POST: confirm with the password;
+ * after MAX_TRIES wrong ones in TRY_WINDOW_MINUTES, 429 with the wait under the field and in Retry-After.
+ */
 export const sudoRoute = new Hono()
   .get("/", async (c) => {
     const session = await browserSession(c);
@@ -43,13 +46,25 @@ export const sudoRoute = new Hono()
   .post("/", validate("json", z.object({ password: z.string().min(1, "Enter your password").max(256) })), async (c) => {
     const session = await browserSession(c);
     if (!session) return fail(c, 401, "Log in to continue");
+    // Wrong passwords are throttled per account (services/sudo.ts): the try counts before the check.
+    const reserved = await reserveTry(session.userId);
+    if ("retryAt" in reserved) {
+      const seconds = Math.max(1, Math.ceil((reserved.retryAt.getTime() - Date.now()) / 1000));
+      const minutes = Math.ceil(seconds / 60);
+      const message = `Too many tries. Try again in ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`;
+      logRequest("warn", c, 429, { event: "sudo-confirm-throttled", retryAt: reserved.retryAt.toISOString() });
+      c.header("Retry-After", String(seconds));
+      return fail(c, 429, message, { fields: { password: message } });
+    }
     try {
       await auth.api.verifyPassword({ body: { password: c.req.valid("json").password }, headers: c.req.raw.headers });
     } catch (error) {
       if (!isAPIError(error)) throw error;
       if (error.statusCode === 401) return fail(c, 401, "Log in to continue");
+      logRequest("warn", c, 400, { event: "sudo-confirm-wrong-password", try: reserved.try, of: MAX_TRIES, windowMinutes: TRY_WINDOW_MINUTES });
       return fail(c, 400, "That password isn't right.", { fields: { password: "That password isn't right." } });
     }
+    await clearTries(session.userId);
     const until = await confirmSession(session.id);
     return c.json({ confirmedUntil: until?.toISOString() ?? null });
   });

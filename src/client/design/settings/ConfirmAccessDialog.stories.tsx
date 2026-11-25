@@ -72,6 +72,15 @@ export const Checking: Story = {
   },
 };
 export const WrongPassword: Story = { args: { passwordError: "That password isn't right.", onPasskey: fn() } };
+/** Five wrong passwords in 15 minutes: the server answers 429 with the wait; the passkey still works. */
+export const TooManyTries: Story = {
+  args: { passwordError: "Too many tries. Try again in 14 minutes.", onPasskey: fn() },
+  async play({ canvasElement }) {
+    const d = await dialogOf(canvasElement);
+    await expect(d.getByText("Too many tries. Try again in 14 minutes.")).toBeVisible();
+    await expect(d.getByRole("button", { name: "Use a passkey" })).toBeEnabled();
+  },
+};
 export const WaitingForTheDevice: Story = {
   args: { onPasskey: fn(), busy: "passkey" },
   async play({ canvasElement }) {

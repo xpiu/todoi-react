@@ -2,7 +2,7 @@
 // `error` is the message for the person; `code` is stable for code to branch on; `fields` maps an input
 // path ("title", "lists.0.name") to what is wrong with it; `requestId` matches the server's log line.
 
-export const ERROR_CODES = ["invalid", "unauthenticated", "forbidden", "not_found", "conflict", "gone", "too_large", "unavailable", "internal"] as const;
+export const ERROR_CODES = ["invalid", "unauthenticated", "forbidden", "not_found", "conflict", "gone", "too_large", "rate_limited", "unavailable", "internal"] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
 export interface ErrorBody {
@@ -30,6 +30,8 @@ export function codeForStatus(status: number): ErrorCode {
       return "gone";
     case 413:
       return "too_large";
+    case 429:
+      return "rate_limited";
     case 502:
     case 503:
     case 504:

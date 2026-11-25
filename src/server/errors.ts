@@ -91,21 +91,17 @@ function databaseFailure(db: DbError): { status: ContentfulStatusCode; message: 
   }
 }
 
+/** One structured log line about this request (method, path, status, user, request id), never its body. */
+export function logRequest(level: "warn" | "error", c: Context, status: number, detail: Record<string, unknown>) {
+  const viewer = c.get("viewer") as { userId?: string } | null | undefined;
+  console[level](JSON.stringify({ level, at: new Date().toISOString(), requestId: requestIdOf(c), method: c.req.method, path: c.req.path, status, user: viewer?.userId, ...detail }));
+}
+
 function log(level: "warn" | "error", c: Context, status: number, err: unknown, db: DbError | null) {
   const e = err instanceof Error ? err : new Error(String(err));
-  const viewer = c.get("viewer") as { userId?: string } | null | undefined;
-  console[level](
-    JSON.stringify({
-      level,
-      at: new Date().toISOString(),
-      requestId: requestIdOf(c),
-      method: c.req.method,
-      path: c.req.path,
-      status,
-      user: viewer?.userId,
-      error: db ? { name: e.name, db: db.code, constraint: db.constraint } : { name: e.name, message: e.message, stack: e.stack?.split("\n").slice(1, 6).join("\n") },
-    }),
-  );
+  logRequest(level, c, status, {
+    error: db ? { name: e.name, db: db.code, constraint: db.constraint } : { name: e.name, message: e.message, stack: e.stack?.split("\n").slice(1, 6).join("\n") },
+  });
 }
 
 export const onError: ErrorHandler = (err, c) => {

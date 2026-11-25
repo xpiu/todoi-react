@@ -1,13 +1,13 @@
 // Sudo mode (services/sudo.ts, decisions Q6 and R1): deleting the account, changing the email and adding or
 // removing a passkey need a confirmation (password or passkey) in this session within the last 2 hours. A
-// log-in doesn't count.
+// log-in doesn't count. Wrong passwords at the confirm step are throttled per account (decision R2).
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { call, confirmIt, cookiesFrom, PASSWORD, signIn, signUp, type Person } from "../../../tests/integration/accounts";
 import { db } from "../db";
-import { passkeys, sessions, users } from "../db/schema";
+import { passkeys, sessions, users, verifications } from "../db/schema";
 
 const HOUR = 3600_000;
 const sudo = async (cookie: string) => ((await (await call("/api/me/sudo", { cookie })).json()) as { confirmedUntil: string | null }).confirmedUntil;
@@ -97,5 +97,74 @@ describe("sudo mode", () => {
     const guest = await call("/api/auth/sign-in/anonymous", { json: {} });
     const refused = await call("/api/me/sudo", { cookie: cookiesFrom(guest), json: { password: PASSWORD } });
     expect(await refused.json()).toMatchObject({ error: "Log in or create an account to continue" });
+  });
+
+  describe("wrong passwords", () => {
+    const tryPassword = (cookie: string, password: string) => call("/api/me/sudo", { cookie, json: { password } });
+    const triesOf = (p: Person) => eq(verifications.identifier, `sudo-tries:${p.id}`);
+    const quiet = () => vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    it("are throttled after five in 15 minutes: the sixth is refused with the wait, even the right password, and each one is logged", async () => {
+      const flo = await signUp("Flo");
+      const phone = await signIn(flo.email);
+      const warn = quiet();
+      try {
+        for (let i = 0; i < 5; i++) expect((await tryPassword(i % 2 ? phone : flo.cookie, `guess ${i}`)).status).toBe(400);
+        const lines = warn.mock.calls.map(([line]) => JSON.parse(String(line)) as Record<string, unknown>);
+        expect(lines).toHaveLength(5);
+        for (const [i, line] of lines.entries()) expect(line).toMatchObject({ level: "warn", path: "/api/me/sudo", status: 400, user: flo.id, event: "sudo-confirm-wrong-password", try: i + 1, of: 5 });
+        expect(warn.mock.calls.join("\n")).not.toContain("guess");
+
+        // Per account, not per session: the other device is refused too.
+        for (const cookie of [flo.cookie, phone]) {
+          const refused = await tryPassword(cookie, PASSWORD);
+          expect(refused.status).toBe(429);
+          expect(Number(refused.headers.get("retry-after"))).toBeGreaterThan(14 * 60);
+          expect(await refused.json()).toMatchObject({ code: "rate_limited", error: "Too many tries. Try again in 15 minutes.", fields: { password: "Too many tries. Try again in 15 minutes." } });
+        }
+        expect(await sudo(flo.cookie)).toBeNull();
+        expect(String(warn.mock.calls.at(-1)?.[0])).toContain(`"user":"${flo.id}"`);
+      } finally {
+        warn.mockRestore();
+      }
+      // No lockout: the account still logs in.
+      expect(await signIn(flo.email)).toBeTruthy();
+
+      // The window ends: the right password works again.
+      await db.update(verifications).set({ expiresAt: new Date(Date.now() - 1000) }).where(triesOf(flo));
+      expect((await tryPassword(flo.cookie, PASSWORD)).status).toBe(200);
+      expect(await sudo(flo.cookie)).not.toBeNull();
+    });
+
+    it("start again after the right password, and are counted per account", async () => {
+      const flo = await signUp("Flo"), sam = await signUp("Sam");
+      const warn = quiet();
+      try {
+        for (let i = 0; i < 4; i++) expect((await tryPassword(flo.cookie, "nope")).status).toBe(400);
+        expect((await tryPassword(flo.cookie, PASSWORD)).status).toBe(200);
+        expect(await db.select().from(verifications).where(triesOf(flo))).toEqual([]);
+        for (let i = 0; i < 5; i++) expect((await tryPassword(flo.cookie, "nope")).status).toBe(400);
+        expect((await tryPassword(flo.cookie, PASSWORD)).status).toBe(429);
+        // Sam's tries are his own.
+        expect((await tryPassword(sam.cookie, PASSWORD)).status).toBe(200);
+        // Under a minute left in the window: "1 minute".
+        await db.update(verifications).set({ expiresAt: new Date(Date.now() + 50_000) }).where(triesOf(flo));
+        expect(await (await tryPassword(flo.cookie, PASSWORD)).json()).toMatchObject({ error: "Too many tries. Try again in 1 minute." });
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it("can't be raced past the limit by guesses sent at once", async () => {
+      const flo = await signUp("Flo");
+      const warn = quiet();
+      try {
+        const statuses = (await Promise.all(Array.from({ length: 12 }, (_, i) => tryPassword(flo.cookie, `guess ${i}`)))).map((r) => r.status);
+        expect(statuses.filter((s) => s === 400)).toHaveLength(5);
+        expect(statuses.filter((s) => s === 429)).toHaveLength(7);
+      } finally {
+        warn.mockRestore();
+      }
+    });
   });
 });

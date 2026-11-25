@@ -94,6 +94,8 @@ describe("deleting an account", () => {
     await db.insert(passkeys).values({ id: nanoid(), name: "Laptop", userId: flo.id, publicKey: "pk", credentialID: nanoid(), counter: 0, deviceType: "singleDevice", backedUp: false });
     await call("/api/me/email-change", { cookie: flo.cookie, json: { email: `${nanoid(8).toLowerCase()}@example.test` } });
     await call("/api/auth/request-password-reset", { json: { email: flo.email, redirectTo: "/reset" } });
+    // Two wrong passwords at the confirm step (services/sudo.ts) are on the count.
+    await db.insert(verifications).values({ id: nanoid(), identifier: `sudo-tries:${flo.id}`, value: "2", expiresAt: new Date(Date.now() + 600_000) });
     expect((await emailsTo(flo.email)).map((m) => m.subject)).toContain("Reset your Todoi password");
     for (const key of [ownFile!.storageKey, inboxFile!.storageKey, floUpload!.storageKey, avatarKey]) expect(await openUpload(key)).not.toBeNull();
 
@@ -111,7 +113,7 @@ describe("deleting an account", () => {
     for (const key of [ownFile!.storageKey, inboxFile!.storageKey, avatarKey]) expect(await openUpload(key)).toBeNull();
     for (const table of [sessions, accounts, apiTokens, passkeys]) expect(await db.select().from(table).where(eq(table.userId, flo.id))).toEqual([]);
     expect(await db.select().from(operationReceipts).where(eq(operationReceipts.actorId, flo.id))).toEqual([]);
-    expect(await db.select().from(verifications).where(or(eq(verifications.identifier, `email-change:${flo.id}`), eq(verifications.value, flo.id)))).toEqual([]);
+    expect(await db.select().from(verifications).where(or(inArray(verifications.identifier, [`email-change:${flo.id}`, `sudo-tries:${flo.id}`]), eq(verifications.value, flo.id)))).toEqual([]);
     expect(await db.select().from(members).where(eq(members.userId, flo.id))).toEqual([]);
     expect(await db.select().from(itemAssignees).where(eq(itemAssignees.userId, flo.id))).toEqual([]);
     expect(await db.select().from(itemWatchers).where(eq(itemWatchers.userId, flo.id))).toEqual([]);

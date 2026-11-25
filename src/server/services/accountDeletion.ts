@@ -106,7 +106,7 @@ export async function deleteAccount(userId: string): Promise<{ removed: boolean 
     await tx.delete(sessions).where(eq(sessions.userId, userId));
     await tx.delete(accounts).where(eq(accounts.userId, userId));
     await tx.delete(passkeys).where(eq(passkeys.userId, userId));
-    await tx.delete(verifications).where(or(eq(verifications.identifier, `email-change:${userId}`), and(like(verifications.identifier, "reset-password:%"), eq(verifications.value, userId))));
+    await tx.delete(verifications).where(or(inArray(verifications.identifier, [`email-change:${userId}`, `sudo-tries:${userId}`]), and(like(verifications.identifier, "reset-password:%"), eq(verifications.value, userId))));
     await tx.delete(operationReceipts).where(eq(operationReceipts.actorId, userId));
     const avatar = avatarKey(user.image);
     if (avatar) await tx.insert(uploadCleanup).values({ storageKey: avatar }).onConflictDoNothing();
