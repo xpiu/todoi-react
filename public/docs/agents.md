@@ -23,7 +23,7 @@ JSON over HTTPS at `https://todoi.com/api`.
 - `PATCH /items/:id`: change fields; `{ "done": true }` completes it
 - `POST /items/:id/move`: `{ "listId", "position"? }`
 - `POST /items/:id/comments`: `{ "id", "body" }`
-- `GET /me/export`: everything the person can see, as one JSON file
+- `GET /me/export`: everything the person can see, as a `.zip` Todoi archive (a `todoi-archive.json` manifest, one JSON file per project, the Inbox and the attachment files); `POST /me/restore` with the zip as `file` (multipart) brings it back as new copies
 
 ## Good manners
 

@@ -141,7 +141,7 @@ Content-Type: application/json`}</pre>
                 <code>POST /items/:id/comments</code>: <code>{`{ "id", "body" }`}</code>
               </li>
               <li>
-                <code>GET /me/export</code>: everything the person can see, as one JSON file
+                <code>GET /me/export</code>: everything the person can see, as a <code>.zip</code> Todoi archive (a <code>todoi-archive.json</code> manifest, one JSON file per project, the Inbox and the attachment files); <code>POST /me/restore</code> with the zip as <code>file</code> (multipart) brings it back as new copies
               </li>
               <li>
                 <code>GET /me/calendar-feed</code>: the private calendar feed link (<code>POST /me/calendar-feed/reset</code> replaces it; the old link stops at once)

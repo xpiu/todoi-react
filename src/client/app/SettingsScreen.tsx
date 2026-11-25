@@ -37,6 +37,7 @@ import { relativeSync } from "../design/core/ConnectionStatus";
 import { useSaveState } from "./saveState";
 import { SyncRecovery, syncOperationLabel } from "./SyncRecovery";
 import { useGitSyncSettings } from "./GitSyncSettings";
+import { useRestoreArchive } from "./RestoreArchive";
 import { PasswordField } from "../design/auth/PasswordField";
 import { MonoValue, SettingsLink, SettingsShell, StatusDot, type SettingsGroup, type SettingsPage, type SettingsRow } from "../design/settings/SettingsShell";
 import { downloadAccountExport } from "./exportData";
@@ -120,13 +121,13 @@ export function SettingsScreen({ page }: { page: Page }) {
 }
 
 /** Fetches the export first, so "Exported" means the file was handed to the browser; a failure says why. */
-function ExportAllButton({ notify, format = "json" }: { notify: Notify; format?: "json" | "ics" }) {
+function ExportAllButton({ notify, format = "archive" }: { notify: Notify; format?: "archive" | "ics" }) {
   const [busy, setBusy] = useState(false);
   const run = async () => {
     setBusy(true);
     try {
       await downloadAccountExport(format);
-      notify({ message: format === "ics" ? "Exported dated items as a calendar" : "Exported everything as JSON", icon: "download" });
+      notify({ message: format === "ics" ? "Exported dated items as a calendar" : "Exported everything as a .zip", icon: "download" });
     } catch (err) {
       notifyFailure(err, "Couldn't export: ");
     } finally {
@@ -135,14 +136,15 @@ function ExportAllButton({ notify, format = "json" }: { notify: Notify; format?:
   };
   return (
     <Button icon="download" disabled={busy} onClick={() => void run()}>
-      {busy ? "Exporting…" : `Export .${format}`}
+      {busy ? "Exporting…" : `Export .${format === "archive" ? "zip" : format}`}
     </Button>
   );
 }
 
 /** The export rows appear under Settings › Storage and Account › Data alike. */
-const exportRows = (notify: Notify, navigate: UseNavigateResult<string>): SettingsRow[] => [
-  { id: "exportJson", label: "Export everything", hint: "One JSON file with your groups, projects, lists, labels and items", control: <ExportAllButton notify={notify} /> },
+const exportRows = (notify: Notify, navigate: UseNavigateResult<string>, onRestore?: () => void): SettingsRow[] => [
+  { id: "exportJson", label: "Export everything", hint: "A .zip of every project, your Inbox, comments and files. Keep it to restore later", keywords: ["backup", "archive", "download"], control: <ExportAllButton notify={notify} /> },
+  ...(onRestore ? [{ id: "restoreArchive", label: "Restore from an export", hint: "Add the projects from an Export everything .zip, as new copies", keywords: ["backup", "archive", "import"], control: <Button icon="archive-restore" onClick={onRestore}>Restore…</Button> }] : []),
   { id: "exportCalendar", label: "Export calendar", hint: "Dated items from your projects and Inbox · archived and deleted items stay out", control: <ExportAllButton notify={notify} format="ics" /> },
   { id: "exportMd", label: "Export a project", hint: "Share › Export this view on the project writes Markdown or CSV of what you see", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/projects" })}>Projects</Button> },
 ];
@@ -168,6 +170,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const labelsSection = useLabelsSection(page === "settings" ? labelProject : null, setLabelProject, page === "settings" ? projects : []);
   const registered = !!user && !user.isAnonymous;
   const git = useGitSyncSettings({ projects, currentProjectId: lastProjectId ?? null, online, enabled: registered });
+  const restore = useRestoreArchive({ email: user?.email ?? "", online });
   const account = useAccountPages(page === "account", projects, online, git.storageRow);
   const me = useMe(page === "settings" && registered);
   const confirmation = useEmailConfirmation(me.data?.email ?? user?.email ?? "");
@@ -242,8 +245,8 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             id: "impexp",
             title: "Import & export",
             rows: [
-              ...exportRows(notify, navigate),
-              { id: "importFile", label: "Import", hint: "Markdown (the Embridge format), a Trello board's JSON or a CSV — every change is reviewed before it lands", control: <Button icon="upload" onClick={() => navigate({ to: "/import" })}>Import…</Button> },
+              ...exportRows(notify, navigate, registered ? restore.start : undefined),
+              { id: "importFile", label: "Import", hint: "Markdown (Embridge), a Todoi JSON or YAML file, a Trello board or a CSV. You review everything before it lands", control: <Button icon="upload" onClick={() => navigate({ to: "/import" })}>Import…</Button> },
             ],
           },
           {
@@ -393,6 +396,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
       <>
         {account.dialogs}
         {git.dialogs}
+        {restore.dialog}
       </>
     ),
   };
@@ -512,7 +516,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
 }
 
 /** Account: profile, sign-in, tokens, security, devices, projects, data, support. */
-function useAccountPages(active: boolean, projects: Array<ProjectOption & { groupName: string; visibility: string; itemCount: number; role: string }>, online: boolean, storageRow: (p: { id: string; name: string; itemCount: number; role: string }) => SettingsRow): { page: SettingsPage; dialogs: ReactNode } {
+function useAccountPages(active: boolean, projects: Array<ProjectOption & { groupName: string; visibility: string; itemCount: number; role: string }>, online: boolean, storageRow: (p: { id: string; name: string; itemCount: number; role: string }) => SettingsRow, onRestore?: () => void): { page: SettingsPage; dialogs: ReactNode } {
   const { user } = useCurrentUser();
   const me = useMe(active);
   const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
@@ -722,7 +726,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             id: "export",
             title: "Your data",
             rows: [
-              ...exportRows(notify, navigate),
+              ...exportRows(notify, navigate, onRestore),
               { id: "archive", label: "Archive and trash", hint: `${count(archived, "entry", "entries")} waiting to be restored or removed for good`, control: <Button icon="archive" onClick={() => navigate({ to: "/archive", search: {} })}>Open</Button> },
             ],
           },

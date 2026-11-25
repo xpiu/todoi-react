@@ -5,7 +5,7 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute, savedViewsRoute } from "./routes/content";
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
-import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
+import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, restoreRoute, tokensRoute } from "./routes/account";
 import { deletionRoute, emailChangeRoute, sudoRoute } from "./routes/accountChanges";
 import { gitConnectionsRoute, gitSyncRoute, webhooksRoute } from "./routes/gitSync";
 import { itemsRoute } from "./routes/items";
@@ -51,6 +51,7 @@ export const app = new Hono()
   .use("*", invalidTokenLimit())
   .use("*", authMiddleware)
   .use("/me/export/*", rateLimit(LIMITS.export))
+  .use("/me/restore", rateLimit(LIMITS.export))
   .use("*", workspaceMutations)
   .route("/me", meRoute)
   .route("/me/sudo", sudoRoute)
@@ -59,6 +60,7 @@ export const app = new Hono()
   .route("/avatars", avatarsRoute)
   .route("/me/tokens", tokensRoute)
   .route("/me/export", exportRoute)
+  .route("/me/restore", restoreRoute)
   .route("/me/calendar-feed", calendarFeedRoute)
   .route("/invites", invitesRoute)
   .route("/projects", projectInvitesRoute)

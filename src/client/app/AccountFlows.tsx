@@ -88,7 +88,7 @@ export function useDeleteAccountFlow(email: string, online: boolean) {
       onExport={() => {
         setExportState("busy");
         setExportError(null);
-        downloadAccountExport("json").then(
+        downloadAccountExport("archive").then(
           () => setExportState("done"),
           (err: unknown) => {
             setExportState("idle");

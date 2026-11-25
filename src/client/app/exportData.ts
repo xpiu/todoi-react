@@ -76,8 +76,8 @@ export function downloadText(name: string, text: string | Blob, mime = "text/pla
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** The account export the server builds — everything as JSON, or the calendar as a one-time .ics — handed to the browser; throws the API's reason. */
-export async function downloadAccountExport(format: "json" | "ics") {
+/** The account export the server builds — everything as a restorable .zip, or the calendar as a one-time .ics — handed to the browser; throws the API's reason. */
+export async function downloadAccountExport(format: "archive" | "ics") {
   const res = await (format === "ics" ? api.api.me.export.calendar.$get() : api.api.me.export.$get());
   if (!res.ok) throw await apiError(res);
   const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `todoi-export.${format}`;

@@ -1,5 +1,5 @@
 // The signed-in person: profile (name, handle, avatar colour) and project invites.
-import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { nanoid } from "nanoid";
@@ -10,9 +10,8 @@ import { MAX_AVATAR_BYTES } from "../../shared/avatars";
 import { prefsOf, prefsPatchSchema } from "../../shared/prefs";
 import { hashToken, maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
-import { apiTokens, groups, invites, items, labels, lists, members, projects, users } from "../db/schema";
+import { apiTokens, groups, invites, items, members, projects, users } from "../db/schema";
 import { logActivity } from "../services/activity";
-import { memberProjectIds } from "../services/projects";
 import { ApiFailure, fail, idParam, validate } from "../errors";
 import { setAvatar } from "../services/avatars";
 import { calendarOf, currentFeed, feedCalendar, resetFeed } from "../services/calendarFeed";
@@ -22,6 +21,8 @@ import { inviteRequestId, requestNewInvite } from "../services/inviteRequests";
 import { emailInvite, inviteUrl } from "../services/inviteEmails";
 import { pendingEmailChange } from "../services/emailChange";
 import { requireConfirmedEmail } from "../services/confirmedEmail";
+import { ArchiveRejected, buildArchive, restoreArchive } from "../services/archive";
+import { MAX_ARCHIVE_BYTES } from "../../shared/archive";
 
 export const meRoute = new Hono()
   .post("/avatar", bodyLimit({ maxSize: MAX_AVATAR_BYTES + 65536, onError: (c) => fail(c, 413, "Choose an image up to 2 MB") }), async (c) => {
@@ -87,18 +88,24 @@ export const exportRoute = new Hono().get("/calendar", async (c) => {
   const v = viewerOf(c);
   return c.body(await calendarOf(v.userId, v.inboxListId), 200, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="todoi-calendar-${new Date().toISOString().slice(0, 10)}.ics"` });
 }).get("/", async (c) => {
+  // Everything, restorable: the Todoi archive (shared/archive.ts) — projects, Inbox, comments, files.
   const v = viewerOf(c);
-  const ids = await memberProjectIds(v.userId);
-  const ps = ids.length ? await db.select().from(projects).where(inArray(projects.id, ids)) : [];
-  const groupIds = [...new Set(ps.map((p) => p.groupId))];
-  const [gs, ls, its, lbs] = await Promise.all([
-    groupIds.length ? db.select().from(groups).where(inArray(groups.id, groupIds)) : [],
-    db.select().from(lists).where(ids.length ? or(inArray(lists.projectId, ids), eq(lists.userId, v.userId)) : eq(lists.userId, v.userId)),
-    db.select().from(items).where(ids.length ? or(inArray(items.projectId, ids), eq(items.listId, v.inboxListId)) : eq(items.listId, v.inboxListId)),
-    ids.length ? db.select().from(labels).where(inArray(labels.projectId, ids)) : [],
-  ]);
-  const doc = { exportedAt: new Date().toISOString(), user: { id: v.userId, name: v.name, email: v.email }, groups: gs, projects: ps, lists: ls, labels: lbs, items: its };
-  return c.body(JSON.stringify(doc, null, 2), 200, { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="todoi-export-${new Date().toISOString().slice(0, 10)}.json"` });
+  const zip = await buildArchive(v);
+  return c.body(zip as Uint8Array<ArrayBuffer>, 200, { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="todoi-export-${new Date().toISOString().slice(0, 10)}.zip"` });
+});
+
+/** POST /api/me/restore — a Todoi archive, restored as new groups and projects of the signed-in account. */
+export const restoreRoute = new Hono().post("/", bodyLimit({ maxSize: MAX_ARCHIVE_BYTES, onError: (c) => fail(c, 413, "The export is larger than 512 MB") }), async (c) => {
+  const body = await c.req.parseBody();
+  const file = body.file;
+  if (!(file instanceof File)) return fail(c, 400, "Choose the .zip file Export everything made");
+  try {
+    const summary = await restoreArchive(new Uint8Array(await file.arrayBuffer()), viewerOf(c));
+    return c.json(summary, 201);
+  } catch (e) {
+    if (e instanceof ArchiveRejected) return fail(c, e.status, e.message);
+    throw e;
+  }
 });
 
 /** The person's private calendar feed link (made on first read), and Reset link, which stops the old one at once. */

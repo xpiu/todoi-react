@@ -122,4 +122,36 @@
     font: 400 12px / 16px var(--font-ui);
     color: var(--ink-600);
   }
+
+  /* Restore from an export: the projects it brings back and what comes back differently. */
+  .td-restore-projects {
+    margin: 0 0 12px 34px;
+    padding: 0;
+    list-style: disc;
+    font: 400 13px / 20px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-restore-head {
+    margin: 4px 0 6px;
+    font: 500 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-restore-notes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .td-restore-notes li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font: 400 13px / 18px var(--font-ui);
+    color: var(--ink-900);
+  }
+  .td-restore-notes li > svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--ink-400);
+  }
 }

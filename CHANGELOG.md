@@ -11,6 +11,7 @@ All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.
 - Add JSON and YAML project files: one strict, deterministic shape with a JSON Schema published at `/schema/project-v1.json`, YAML restricted to a safe 1.2 subset. Import reads them as "Todoi file" and explains a refused file by path and item.
 - Add Git sync: keep a project in a file in a GitHub repository (Embridge, JSON or YAML) and sync both ways — a three-way merge, a conflict dialog or policy, sync history with undo, and signed push webhooks. Connect under Settings › Storage & sync with a fine-grained token, stored encrypted.
 - Add a durable job queue in PostgreSQL (retries with backoff, crash recovery, dedupe keys, recurring schedules) for Git syncs, upload cleanup and receipt pruning, replacing the in-process timer. The Trash now empties itself after 90 days, as promised.
+- Export everything as a restorable `.zip` (every project, the Inbox, comments, reactions, relations, saved views, activity and attachment files) and restore it as new copies, with a review step; other people's work keeps its attribution.
 - Git sync runs on a schedule too: every auto-sync connection reconciles every 10 minutes (catching missed webhooks), a stalled connection shows as Sync overdue, quiet syncs leave no history noise, and old history is pruned.
 
 - Save workspace edits and their local projection atomically in IndexedDB; replay them in order across reloads and tabs, with automatic retries for temporary failures.
