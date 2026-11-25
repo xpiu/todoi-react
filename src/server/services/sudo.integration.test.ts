@@ -91,7 +91,7 @@ describe("sudo mode", () => {
 
   it("is never available to an API token or a guest", async () => {
     const flo = await signUp("Flo");
-    const token = (await (await call("/api/me/tokens", { cookie: flo.cookie, json: { name: "CI" } })).json()) as { secret: string };
+    const token = (await (await call("/api/me/tokens", { cookie: flo.cookie, json: { name: "CI", access: "write" } })).json()) as { secret: string };
     const bearer = { authorization: `Bearer ${token.secret}` };
     expect((await call("/api/me/sudo", { headers: bearer, json: { password: PASSWORD } })).status).toBe(401);
     expect((await call("/api/me/email-change", { headers: bearer, json: { email: "x@example.test" } })).status).toBe(401);

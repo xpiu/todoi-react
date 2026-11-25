@@ -5,6 +5,7 @@ import { z } from "zod";
 import { idSchema } from "../../shared/items";
 import { importProjectSchema } from "../../shared/import";
 import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, moveProjectGroupSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
+import { grantReachesPersonal, withinGrant } from "../access";
 import { viewerOf } from "../auth";
 import { db } from "../db";
 import { nextPosition } from "../db/position";
@@ -24,10 +25,11 @@ export const groupsRoute = new Hono()
     const viewer = viewerOf(c);
     // The viewer's role per project: the client offers a move to another group only where the API allows it
     const roles = new Map((await db.select({ projectId: members.projectId, role: members.role }).from(members).where(eq(members.userId, viewer.userId))).map((m) => [m.projectId, m.role]));
-    const mine = [...roles.keys()];
+    // A token limited to some projects sees only those, in their groups (access.ts).
+    const mine = withinGrant(viewer, [...roles.keys()]);
     const ps = mine.length ? await db.select().from(projects).where(and(liveProjects, inArray(projects.id, mine))).orderBy(asc(projects.position), asc(projects.createdAt)) : [];
     const groupIds = [...new Set(ps.map((p) => p.groupId))];
-    const gs = await db.select().from(groups).where(and(liveGroups, or(eq(groups.ownerId, viewer.userId), groupIds.length ? inArray(groups.id, groupIds) : undefined))).orderBy(asc(groups.position), asc(groups.createdAt));
+    const gs = await db.select().from(groups).where(and(liveGroups, or(grantReachesPersonal(viewer) ? eq(groups.ownerId, viewer.userId) : undefined, groupIds.length ? inArray(groups.id, groupIds) : undefined))).orderBy(asc(groups.position), asc(groups.createdAt));
     const [counts, owners] = await Promise.all([
       db
         .select({ projectId: items.projectId, items: sql<number>`count(*)::int`, done: sql<number>`count(*) filter (where ${items.done})::int` })

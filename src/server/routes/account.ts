@@ -24,6 +24,8 @@ import { requireConfirmedEmail } from "../services/confirmedEmail";
 import { ArchiveRejected, buildArchive, restoreArchive } from "../services/archive";
 import { isOperator } from "./admin";
 import { MAX_ARCHIVE_BYTES } from "../../shared/archive";
+import { createTokenSchema } from "../../shared/apiTokens";
+import { memberProjectIds } from "../services/projects";
 
 export const meRoute = new Hono()
   .post("/avatar", bodyLimit({ maxSize: MAX_AVATAR_BYTES + 65536, onError: (c) => fail(c, 413, "Choose an image up to 2 MB") }), async (c) => {
@@ -67,13 +69,19 @@ export const tokensRoute = new Hono()
     const rows = await db.select().from(apiTokens).where(eq(apiTokens.userId, v.userId));
     return c.json(rows.map(({ hash: _h, ...t }) => t));
   })
-  .post("/", validate("json", z.object({ name: z.string().trim().min(1).max(80), days: z.number().int().min(1).max(365).default(90) })), async (c) => {
+  .post("/", validate("json", createTokenSchema), async (c) => {
     const v = viewerOf(c);
-    const { name, days } = c.req.valid("json");
+    const { name, days, access, projectIds: picked } = c.req.valid("json");
+    // A token reaches only projects its owner is in (and never more than the owner can do there).
+    const projectIds = picked && [...new Set(picked)];
+    if (projectIds) {
+      const mine = new Set(await memberProjectIds(v.userId));
+      if (projectIds.some((id) => !mine.has(id))) return fail(c, 400, "A token can only reach projects you're a member of", { fields: { projectIds: "Pick projects you're a member of" } });
+    }
     const secret = `tdi_${nanoid(32)}`;
     const [row] = await db
       .insert(apiTokens)
-      .values({ id: nanoid(), userId: v.userId, name, prefix: secret.slice(0, 8), hash: hashToken(secret), expiresAt: new Date(Date.now() + days * DAY) })
+      .values({ id: nanoid(), userId: v.userId, name, access, projectIds, prefix: secret.slice(0, 8), hash: hashToken(secret), expiresAt: new Date(Date.now() + days * DAY) })
       .returning();
     const { hash: _h, ...t } = row!;
     return c.json({ ...t, secret }, 201);

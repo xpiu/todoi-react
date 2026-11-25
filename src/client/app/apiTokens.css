@@ -1,0 +1,8 @@
+/* Account › API tokens: the projects a new token may reach, a checklist that scrolls past a dozen or so. */
+@layer components {
+  .td-token-projects {
+    max-height: min(360px, var(--available-height, 360px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}

@@ -12,6 +12,7 @@ import { HTTPException } from "hono/http-exception";
 import { nanoid } from "nanoid";
 
 import { EMAIL_LINK_HOURS, RESET_LINK_MINUTES } from "../shared/accountLinks";
+import type { TokenAccess } from "../shared/apiTokens";
 import { DEV_USER } from "../shared/devUser";
 import { db } from "./db";
 import { createHash } from "node:crypto";
@@ -197,6 +198,14 @@ export interface Viewer {
   email: string;
   inboxListId: string;
   isAnonymous: boolean;
+  /** Set when an API token signed the request: what that token may reach (shared/apiTokens.ts, access.ts) */
+  grant?: TokenGrant;
+}
+
+export interface TokenGrant {
+  access: TokenAccess;
+  /** null = every project the owner is in, and their Inbox */
+  projectIds: string[] | null;
 }
 
 const VIEWER = "viewer";
@@ -223,7 +232,7 @@ export const hashToken = (secret: string) => createHash("sha256").update(secret)
 const LAST_USED_GRANULARITY = 60_000;
 
 /** `Authorization: Bearer tdi_…` acts as the token's owner. */
-async function viewerFromBearer(header: string | undefined): Promise<(Viewer & { tokenId: string }) | null> {
+async function viewerFromBearer(header: string | undefined): Promise<(Viewer & { tokenId: string; grant: TokenGrant }) | null> {
   const m = /^Bearer\s+(tdi_[A-Za-z0-9_-]+)$/.exec(header ?? "");
   if (!m) return null;
   const [row] = await db.select({ token: apiTokens, user: users }).from(apiTokens).innerJoin(users, eq(users.id, apiTokens.userId)).where(eq(apiTokens.hash, hashToken(m[1]!)));
@@ -233,7 +242,7 @@ async function viewerFromBearer(header: string | undefined): Promise<(Viewer & {
   if (!row.token.lastUsedAt || now.getTime() - row.token.lastUsedAt.getTime() > LAST_USED_GRANULARITY) {
     void db.update(apiTokens).set({ lastUsedAt: now }).where(eq(apiTokens.id, row.token.id)).catch(() => undefined);
   }
-  return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id), isAnonymous: row.user.isAnonymous, tokenId: row.token.id };
+  return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id), isAnonymous: row.user.isAnonymous, grant: { access: row.token.access, projectIds: row.token.projectIds }, tokenId: row.token.id };
 }
 
 export const authMiddleware: MiddlewareHandler = async (c, next) => {
@@ -243,6 +252,7 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
     c.set(VIEWER, viewer);
     // Which token answered (rateLimit.ts counts the ones that don't).
     c.set("tokenId", tokenId);
+    if (viewer.grant.access === "read" && c.req.method !== "GET" && c.req.method !== "HEAD") return fail(c, 403, "This API token can only read. To change things, create a token with Read and write access.");
     return next();
   }
   const session = await auth.api.getSession({ headers: c.req.raw.headers });

@@ -169,6 +169,13 @@
       "when": 1795630984362,
       "tag": "0023_error_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795648129044,
+      "tag": "0024_api_token_scopes",
+      "breakpoints": true
     }
   ]
 }

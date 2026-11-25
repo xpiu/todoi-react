@@ -4,6 +4,7 @@ import type { InferResponseType } from "hono/client";
 
 import type { LabelColor } from "../../shared/enums";
 import { authClient } from "../auth";
+import type { CreateTokenInput } from "../../shared/apiTokens";
 import { api, unwrap } from "./api";
 
 export type Me = InferResponseType<typeof api.api.me.$get, 200>;
@@ -52,7 +53,7 @@ export function useAccountMutations() {
       await Promise.all([qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["project"] }), qc.invalidateQueries({ queryKey: ["activity"] }), qc.invalidateQueries({ queryKey: ["item"] })]);
     },
   });
-  const createToken = useMutation({ mutationFn: (vars: { name: string; days?: number }) => api.api.me.tokens.$post({ json: vars }).then((r) => unwrap<ApiToken & { secret: string }>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
+  const createToken = useMutation({ mutationFn: (vars: CreateTokenInput) => api.api.me.tokens.$post({ json: vars }).then((r) => unwrap<ApiToken & { secret: string }>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
   const revokeToken = useMutation({ mutationFn: (vars: { id: string }) => api.api.me.tokens[":id"].$delete({ param: vars }).then((r) => unwrap<void>(r)), onSettled: () => void qc.invalidateQueries({ queryKey: ["me", "tokens"] }) });
   /** A new feed link; the old one stops at once, so the answer replaces the cached link. `quiet`: the caller shows a failure itself. */
   const resetCalendarFeed = useMutation({ mutationFn: (_: { quiet?: boolean }) => api.api.me["calendar-feed"].reset.$post().then((r) => unwrap<CalendarFeed>(r)), onSuccess: (feed) => qc.setQueryData(["me", "calendar-feed"], feed) });

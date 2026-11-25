@@ -7,7 +7,8 @@ import { and, asc, desc, eq, exists, ilike, inArray, isNull, not, or, sql, type 
 import { alias, union } from "drizzle-orm/pg-core";
 
 import type { ItemStatus } from "../../shared/item-status";
-import { readableItemIds } from "../access";
+import { grantReachesPersonal, readableItemIds, withinGrant } from "../access";
+import type { Viewer as SessionViewer } from "../auth";
 import { db } from "../db";
 import { comments, groups, itemAssignees, items, lists, members, projects, searchDocument, users } from "../db/schema";
 import { itemArchived, itemIsLive, itemNotDeleted } from "./lifecycle";
@@ -29,7 +30,7 @@ export interface SearchHit {
   parentTitle: string | null;
 }
 
-type Viewer = { userId: string; inboxListId: string };
+type Viewer = Pick<SessionViewer, "userId" | "inboxListId" | "grant">;
 const parent = alias(items, "parent");
 
 /** `%`, `_` and `\` are literal in the query. */
@@ -43,7 +44,7 @@ function keyMatchOf(q: string): SQL | undefined {
 
 /** The viewer's Inbox and member projects in groups that aren't removed (archived groups only with `archived`). */
 const viewerScope = (viewer: Viewer, mine: string[], archived = false) =>
-  or(eq(items.listId, viewer.inboxListId), mine.length ? and(inArray(items.projectId, mine), isNull(groups.deletedAt), archived ? undefined : isNull(groups.archivedAt)) : undefined);
+  or(grantReachesPersonal(viewer) ? eq(items.listId, viewer.inboxListId) : undefined, mine.length ? and(inArray(items.projectId, mine), isNull(groups.deletedAt), archived ? undefined : isNull(groups.archivedAt)) : undefined);
 
 /** One hit's columns; both searches join items → list, project, group and parent the same way. */
 const hitColumns = {
@@ -63,7 +64,7 @@ const hitColumns = {
 export async function searchItems(viewer: Viewer, query: string, limit = SEARCH_LIMIT): Promise<SearchHit[]> {
   const q = query.trim();
   if (!q) return [];
-  const mine = await memberProjectIds(viewer.userId);
+  const mine = withinGrant(viewer, await memberProjectIds(viewer.userId));
   const keyMatch = keyMatchOf(q);
   const textMatch = ilike(items.title, `%${likeEscape(q)}%`);
   return db
@@ -88,7 +89,7 @@ export async function searchItems(viewer: Viewer, query: string, limit = SEARCH_
 
 /** The people the Assignee filter offers: everyone in the projects the viewer is a member of (the viewer too), by name. */
 export async function searchPeople(viewer: Viewer): Promise<Array<{ id: string; name: string }>> {
-  const mine = await memberProjectIds(viewer.userId);
+  const mine = withinGrant(viewer, await memberProjectIds(viewer.userId));
   if (!mine.length) return [];
   return db.selectDistinct({ id: users.id, name: users.name }).from(members).innerJoin(users, eq(users.id, members.userId)).where(inArray(members.projectId, mine)).orderBy(asc(users.name), asc(users.id));
 }
@@ -136,7 +137,7 @@ export function searchTsQuery(query: string): string | null {
 export async function fullSearch(viewer: Viewer, query: string, filters: FullSearchFilters = {}, offset = 0, limit = FULL_SEARCH_PAGE): Promise<{ hits: FullSearchHit[]; total: number }> {
   const ts = searchTsQuery(query);
   if (!ts) return { hits: [], total: 0 };
-  const mine = await memberProjectIds(viewer.userId);
+  const mine = withinGrant(viewer, await memberProjectIds(viewer.userId));
   const tsq = sql`to_tsquery('simple', ${ts})`;
   const titleDoc = searchDocument(items.title), descriptionDoc = searchDocument(items.description), commentDoc = searchDocument(comments.body);
   const keyMatch = keyMatchOf(query.trim());

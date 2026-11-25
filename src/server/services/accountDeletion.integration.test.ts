@@ -56,7 +56,7 @@ describe("deleting an account", () => {
     const stale = await remove(flo);
     expect(stale.status).toBe(403);
     expect(await stale.json()).toMatchObject({ fields: { sudo: "SUDO_REQUIRED" } });
-    const token = (await (await call("/api/me/tokens", { cookie: flo.cookie, json: { name: "CI" } })).json()) as { secret: string };
+    const token = (await (await call("/api/me/tokens", { cookie: flo.cookie, json: { name: "CI", access: "write" } })).json()) as { secret: string };
     expect((await call("/api/me/deletion", { headers: { authorization: `Bearer ${token.secret}` }, json: { email: flo.email } })).status).toBe(401);
     expect(await db.select({ id: users.id }).from(users).where(eq(users.id, flo.id))).toHaveLength(1);
   });

@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 
-import { maybeViewer, viewerOf } from "./auth";
+import { maybeViewer, viewerOf, type TokenGrant } from "./auth";
 import { db } from "./db";
 import { attachments, comments, groups, invites, items, labels, lists, members, projects, savedViews, users, type OperationScope } from "./db/schema";
 
@@ -15,21 +15,30 @@ function sameItemScope(item: ItemScope, scope: ItemScope | undefined): boolean {
   return item.projectId === scope?.projectId && (!!item.projectId || item.listId === scope?.listId);
 }
 
+// An API token limited to some projects (work plan R5) reaches only those: not the person's other projects,
+// their groups or their Inbox. Sessions and tokens for every project reach everything their owner can.
+type Reach = { grant?: TokenGrant } | null | undefined;
+export const grantReaches = (viewer: Reach, projectId: string) => !viewer?.grant?.projectIds || viewer.grant.projectIds.includes(projectId);
+export const grantReachesPersonal = (viewer: Reach) => !viewer?.grant?.projectIds;
+/** These project ids, narrowed to the ones a limited token reaches (listings across projects use it). */
+export const withinGrant = (viewer: Reach, ids: string[]) => (viewer?.grant?.projectIds ? ids.filter((id) => grantReaches(viewer, id)) : ids);
+
 /** The one read rule for a project: members, anyone for public, any signed-in account for shared. */
 const canReadProject = (visibility: string, isMember: boolean, signedIn: boolean) => isMember || visibility === "public" || (visibility === "shared" && signedIn);
 
 /** Which of these items the viewer may read (their projects, or the viewer's own Inbox) — for content that mentions other items. */
-export async function readableItemIds(viewer: { userId: string; inboxListId: string } | null, rows: Array<ItemScope & { id: string }>): Promise<Set<string>> {
+export async function readableItemIds(viewer: { userId: string; inboxListId: string; grant?: TokenGrant } | null, rows: Array<ItemScope & { id: string }>): Promise<Set<string>> {
   const projectIds = [...new Set(rows.map((r) => r.projectId).filter((id): id is string => !!id))];
   const projectRows = projectIds.length ? await db.select({ id: projects.id, visibility: projects.visibility }).from(projects).where(inArray(projects.id, projectIds)) : [];
   const memberOf = new Set(viewer && projectIds.length ? (await db.select({ projectId: members.projectId }).from(members).where(and(eq(members.userId, viewer.userId), inArray(members.projectId, projectIds)))).map((m) => m.projectId) : []);
-  const readable = new Set(projectRows.filter((p) => canReadProject(p.visibility, memberOf.has(p.id), !!viewer)).map((p) => p.id));
-  return new Set(rows.filter((r) => (r.projectId ? readable.has(r.projectId) : r.listId === viewer?.inboxListId)).map((r) => r.id));
+  const readable = new Set(projectRows.filter((p) => canReadProject(p.visibility, memberOf.has(p.id), !!viewer) && grantReaches(viewer, p.id)).map((p) => p.id));
+  return new Set(rows.filter((r) => (r.projectId ? readable.has(r.projectId) : r.listId === viewer?.inboxListId && grantReachesPersonal(viewer))).map((r) => r.id));
 }
 
 const missing = () => new HTTPException(404, { message: "Not found" });
 const forbidden = () => new HTTPException(403, { message: "You don't have access to this content" });
 const invalid = () => new HTTPException(400, { message: "Content must belong to the same project or Inbox" });
+const beyondGrant = (what: string) => new HTTPException(403, { message: `This API token can't reach ${what}. Its projects were chosen when it was created.` });
 
 /** Centralized here so the public project and attachment reads use the same policy as CRUD. */
 export const workspaceAccess: MiddlewareHandler = async (c, next) => {
@@ -53,6 +62,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     const [group] = await db.select({ ownerId: groups.ownerId }).from(groups).where(eq(groups.id, groupId));
     if (!group) throw missing();
     if (group.ownerId !== viewer?.userId) throw forbidden();
+    if (!grantReachesPersonal(viewer)) throw beyondGrant("project groups");
     scopes.push({ kind: "group", id: groupId });
   };
   const listAccess = async (listId: string, required: Permission = permission) => {
@@ -61,6 +71,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     if (list.projectId) await projectAccess(list.projectId, required);
     else {
       if (!viewer || list.userId !== viewer.userId) throw forbidden();
+      if (!grantReachesPersonal(viewer)) throw beyondGrant("the Inbox");
       scopes.push({ kind: "personal", id: viewer.userId });
     }
     return list;
@@ -70,6 +81,10 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     if (!item) throw missing();
     await listAccess(item.listId, required);
     return item;
+  };
+  // Listings across the whole account (the Inbox, exports, every Git connection) are beyond a limited token.
+  const wholeAccount = (what: string) => {
+    if (!grantReachesPersonal(viewer)) throw beyondGrant(what);
   };
   const registered = () => {
     if (!viewer || viewer.isAnonymous) throw new HTTPException(401, { message: "Log in or create an account to continue" });
@@ -196,6 +211,13 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
       if (id === "items") await itemAccess(action!);
       if (id === "projects") await projectAccess(action!, "owner");
       if (c.req.query("projectId")) await projectAccess(c.req.query("projectId")!);
+      else if (!id) wholeAccount("the whole Archive");
+      break;
+    case "inbox":
+      wholeAccount("the Inbox");
+      break;
+    case "git":
+      wholeAccount("every Git connection");
       break;
     case "invites":
       if (!read) {
@@ -210,6 +232,7 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     case "me":
       // Tokens, sudo mode, the sign-in address, deleting the account and restoring an export are for registered accounts only.
       if (id === "tokens" || id === "sudo" || id === "email-change" || id === "deletion" || id === "restore") registered();
+      if (id === "export" || id === "calendar-feed") wholeAccount("the whole account");
       break;
   }
   await next();
@@ -223,9 +246,9 @@ export async function authorizeOperationScopes(viewer: NonNullable<ReturnType<ty
     }
     if (scope.kind === "group") {
       const [group] = await db.select({ ownerId: groups.ownerId }).from(groups).where(eq(groups.id, scope.id));
-      if (!group || group.ownerId !== viewer.userId) throw forbidden();
+      if (!group || group.ownerId !== viewer.userId || !grantReachesPersonal(viewer)) throw forbidden();
     }
-    if (scope.kind === "personal" && scope.id !== viewer.userId) throw forbidden();
+    if (scope.kind === "personal" && (scope.id !== viewer.userId || !grantReachesPersonal(viewer))) throw forbidden();
     if (scope.kind === "registered" && (scope.id !== viewer.userId || viewer.isAnonymous)) throw forbidden();
   }
 }
@@ -234,6 +257,7 @@ export async function authorizeOperationScopes(viewer: NonNullable<ReturnType<ty
 async function authorizeProject(viewer: ReturnType<typeof maybeViewer>, projectId: string, permission: Permission, allowMissing = false) {
   const [project] = await db.select({ visibility: projects.visibility }).from(projects).where(eq(projects.id, projectId));
   if (!project) { if (allowMissing) return; throw missing(); }
+  if (!grantReaches(viewer, projectId)) throw beyondGrant("this project");
   const [member] = viewer ? await db.select({ role: members.role }).from(members).where(and(eq(members.projectId, projectId), eq(members.userId, viewer.userId))) : [];
   if (permission === "read" && canReadProject(project.visibility, !!member, !!viewer)) return;
   if (permission === "edit" && member && member.role !== "viewer") return;

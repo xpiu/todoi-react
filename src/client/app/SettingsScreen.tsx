@@ -6,9 +6,10 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { LABEL_COLORS, type LabelColor } from "../../shared/enums";
 import { AVATAR_HINT } from "../../shared/avatars";
+import { useApiTokensSection } from "./ApiTokens";
 import { AvatarUpload } from "./AvatarUpload";
 import { authClient } from "../auth";
-import { useAccountMutations, useMe, useSessions, useTokens } from "../data/account";
+import { useAccountMutations, useMe, useSessions } from "../data/account";
 import { errorMessage } from "../data/api";
 import { useLabelMutations } from "../data/itemContent";
 import { useArchive } from "../data/projects";
@@ -19,7 +20,6 @@ import { Button } from "../design/core/Button";
 import { Checkbox } from "../design/core/Checkbox";
 import { formatDate, formatRelative } from "../design/core/dates";
 import { Dialog } from "../design/core/Dialog";
-import { copyIcon, copyText, type CopyState } from "../design/core/clipboard";
 import type { IconName } from "../design/core/Icon";
 import { IconButton } from "../design/core/IconButton";
 import { nextLabelColor } from "../design/core/LabelPicker";
@@ -66,7 +66,6 @@ const opts = <V extends string>(pairs: ReadonlyArray<readonly [V, string]>): Opt
 const DATE_FORMATS = opts([["mdy-text", "Jan 10, 2020"], ["dmy-text", "10 Jan 2020"], ["iso", "2020-01-10"], ["mdy", "01/10/2020"], ["dmy", "10/01/2020"]] as const);
 const WEEK_STARTS = opts([["mon", "Monday"], ["sun", "Sunday"], ["sat", "Saturday"]] as const);
 const PRIORITIES = opts([["none", "None"], ["URGENT", "Urgent"], ["HIGH", "High"], ["MEDIUM", "Medium"], ["LOW", "Low"]] as const);
-const TOKEN_EXPIRIES = opts([["30", "30 days"], ["90", "90 days"], ["180", "180 days"], ["365", "1 year"]] as const);
 const STATUS_DISPLAYS = STATUS_DISPLAY_OPTIONS.map((o) => ({ value: o.id, label: o.label }));
 const LABEL_SWATCHES = LABEL_COLORS.map((c) => ({ value: c, label: c, swatch: `var(--label-${c})` }));
 const BROWSER_TZ = (() => {
@@ -524,7 +523,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const passkeys = usePasskeysFlow(online, !!user && !user.isAnonymous, me.data?.email ?? user?.email ?? "");
   const confirmEmail = useEmailConfirmation(me.data?.email ?? user?.email ?? "");
   const am = useAccountMutations();
-  const tokens = useTokens(active);
+  const tokenGroups = useApiTokensSection(active, projects);
   const archive = useArchive(undefined, active);
   const sessions = useSessions(active);
   const notify = useFeedback((s) => s.notify);
@@ -533,9 +532,6 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const session = authClient.useSession();
   const [draft, setDraft] = useState<{ name: string; nickname: string } | null>(null);
   const [pwOpen, setPwOpen] = useState(false);
-  const [tokenName, setTokenName] = useState("");
-  const [tokenDays, setTokenDays] = useState("90");
-  const [secret, setSecret] = useState<{ name: string; value: string; copied: CopyState } | null>(null);
   const [now] = useState(() => new Date());
   const m = me.data;
   const name = draft?.name ?? m?.name ?? user?.name ?? "";
@@ -627,37 +623,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
         label: "API tokens",
         title: "Sign-in and security › API tokens",
         icon: "code",
-        groups: [
-          {
-            id: "newtoken",
-            title: "New token",
-            fields: true,
-            rows: [
-              { id: "tokenName", label: "Token name", hint: "Where the token will be used, e.g. CI deploy", control: <TextField value={tokenName} aria-label="Token name" placeholder="CI deploy" onChange={(e) => setTokenName(e.target.value)} /> },
-              { id: "tokenExpiry", label: "Expires", control: <Select aria-label="Expires" value={tokenDays} options={TOKEN_EXPIRIES} onChange={(v) => v && setTokenDays(v)} placement="bottom-end" tier="detached" width={160} /> },
-              { id: "tokenCreate", label: "Create token", hint: "The token is shown once, right after you create it", control: <Button variant="primary" icon="plus" disabled={!tokenName.trim()} onClick={() => am.createToken.mutate({ name: tokenName.trim(), days: Number(tokenDays) }, { onSuccess: (t) => {
-                setSecret({ name: t.name, value: t.secret, copied: "idle" });
-                setTokenName("");
-              } })}>Create token</Button> },
-            ],
-          },
-          ...(secret ? [{ id: "secret", title: "Copy your new token now", tone: "info" as const, rows: [{ id: "secretValue", label: secret.value, mono: true, hint: secret.copied === "copied" ? "Copied. It won't be shown again." : secret.copied === "failed" ? "Couldn't copy. Select the token and copy it yourself; it won't be shown again." : "Copy it once — it won't be shown again", control: (
-            <>
-              <Button icon={copyIcon(secret.copied, "copy")} onClick={() => void copyText(secret.value).then((ok) => setSecret({ ...secret, copied: ok ? "copied" : "failed" }))}>{secret.copied === "copied" ? "Copied" : "Copy"}</Button>
-              <IconButton name="x" label="Dismiss" size={28} iconSize={16} onClick={() => setSecret(null)} />
-            </>
-          ) }] }] : []),
-          {
-            id: "tokenlist",
-            title: "Tokens",
-            empty: "No tokens yet.",
-            rows: (tokens.data ?? []).map((t) => {
-              const expired = new Date(t.expiresAt) < now;
-              const status = t.revokedAt ? "Revoked" : expired ? "Expired" : "Active";
-              return { id: `tk-${t.id}`, label: t.name, hint: `${t.prefix}… · ${expired ? `Expired ${ago(t.expiresAt)}` : `Expires ${formatDate(t.expiresAt)}`} · ${t.lastUsedAt ? `Last used ${ago(t.lastUsedAt)}` : "Never used"}`, control: status === "Active" ? <Button icon="ban" onClick={() => am.revokeToken.mutate({ id: t.id }, { onSuccess: () => notify({ message: `Revoked the token ${quote(t.name)}`, icon: "ban" }) })}>Revoke</Button> : <StatusDot label={status} /> };
-            }),
-          },
-        ],
+        groups: tokenGroups,
       },
       {
         id: "security",

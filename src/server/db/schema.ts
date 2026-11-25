@@ -6,6 +6,7 @@ import { boolean, customType, date, index, integer, jsonb, pgEnum, pgTable, text
 
 import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES, type GroupKey } from "../../shared/enums";
 import { ITEM_STATUSES } from "../../shared/item-status";
+import type { TokenAccess } from "../../shared/apiTokens";
 import type { RepeatRule } from "../../shared/items";
 import type { Prefs } from "../../shared/prefs";
 import type { FileFormat } from "../../shared/projectDoc/codecs";
@@ -132,6 +133,10 @@ export const apiTokens = pgTable(
     /** "tdi_abcd" — the visible start of the secret */
     prefix: text("prefix").notNull(),
     hash: text("hash").notNull().unique(),
+    /** Read only, or read and write (shared/apiTokens.ts); tokens from before scopes keep their full power */
+    access: text("access").$type<TokenAccess>().notNull().default("write"),
+    /** The projects it is limited to; null = every project the owner is in, and their Inbox */
+    projectIds: text("project_ids").array(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
