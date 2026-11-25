@@ -1,6 +1,6 @@
-/* AccountDialogs — the Account flows on the shared Dialog (ChangeEmailDialog, DeleteAccountDialog), from
-   Design's settings/AccountDialogs.css (2026-11-24). The two-factor, passkey and specimen-card rules stay
-   in the kit: the app has neither flow (owner decision D, 2026-11-25). Tokens only. */
+/* AccountDialogs — the Account flows on the shared Dialog (ChangeEmailDialog, DeleteAccountDialog,
+   PasskeysDialog), from Design's settings/AccountDialogs.css (2026-11-24). The two-factor and specimen-card
+   rules stay in the kit: the app has no two-factor flow (owner decision D, 2026-11-25). Tokens only. */
 @layer components {
   .td-account-dialog {
     font: 400 14px / 20px var(--font-ui);
@@ -30,7 +30,8 @@
   .td-account-field {
     margin-bottom: 12px;
   }
-  .td-account-field .td-field {
+  .td-account-field .td-field,
+  .td-account-passkey-edit .td-field {
     height: 36px;
     padding-top: 0;
     padding-bottom: 0;
@@ -91,7 +92,8 @@
     flex-basis: 100%;
   }
 
-  /* A labelled action row inside a dialog (Export first) */
+  /* A labelled action row inside a dialog (Add a passkey, Export first) */
+  .td-account-row,
   .td-account-export {
     display: flex;
     align-items: center;
@@ -101,7 +103,9 @@
     padding-top: 12px;
     border-top: 1px solid var(--border-divider);
   }
-  .td-account-export-text {
+  .td-account-row-text,
+  .td-account-export-text,
+  .td-account-passkey-text {
     flex: 1 1 200px;
     min-width: 0;
     display: flex;
@@ -109,8 +113,79 @@
     font: 400 12px / 16px var(--font-ui);
     color: var(--ink-600);
   }
-  .td-account-export-text b {
+  .td-account-row-text b,
+  .td-account-export-text b,
+  .td-account-passkey-text b {
     font: 500 14px / 20px var(--font-ui);
+    color: var(--ink-900);
+  }
+
+  /* Passkeys: rows of sibling buttons; long names end in an ellipsis; many passkeys scroll in the dialog */
+  .td-account-passkeys {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 260px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-divider);
+  }
+  .td-account-passkey {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 6px 0;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--border-divider);
+  }
+  .td-account-passkey > svg {
+    flex: none;
+    margin-right: 2px;
+    color: var(--ink-600);
+  }
+  .td-account-passkey-text b {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .td-account-passkey-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-account-passkey-edit {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .td-account-tag {
+    flex: none;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: var(--radius-xs);
+    background: var(--action-subtle);
+    font: 500 11px / 18px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-account-passkey .td-iconbtn.is-disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .td-account-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border-divider);
+    font: 400 13px / 18px var(--font-ui);
+    color: var(--ink-600);
+  }
+  .td-account-empty b {
+    font-weight: 600;
     color: var(--ink-900);
   }
 
@@ -187,8 +262,12 @@
     color: var(--ink-600);
   }
 
-  /* Touch: 44px fields */
-  html[data-touch="true"] .td-account-field .td-field {
+  /* Touch: 44px fields; phone: the rename row wraps under the name field */
+  html[data-touch="true"] .td-account-field .td-field,
+  html[data-touch="true"] .td-account-passkey-edit .td-field {
     height: 44px;
+  }
+  html[data-device="phone"] .td-account-passkey-edit {
+    flex-wrap: wrap;
   }
 }

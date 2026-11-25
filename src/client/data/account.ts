@@ -16,6 +16,25 @@ export type CalendarFeed = InferResponseType<(typeof api.api.me)["calendar-feed"
 export const useCalendarFeed = (enabled = true) => useQuery({ queryKey: ["me", "calendar-feed"], queryFn: ({ signal }) => api.api.me["calendar-feed"].$get(undefined, { init: { signal } }).then((r) => unwrap<CalendarFeed>(r)), enabled });
 /** The person's signed-in devices (Better Auth sessions). */
 export const useSessions = (enabled = true) => useQuery({ queryKey: ["me", "sessions"], queryFn: async () => (await authClient.listSessions()).data ?? [], enabled });
+/** A passkey as Better Auth's list returns it (`lastUsedAt` comes from the server's passkey-last-used plugin). */
+export interface StoredPasskey {
+  id: string;
+  name?: string | null;
+  createdAt: string | Date | null;
+  lastUsedAt?: string | Date | null;
+  credentialID: string;
+}
+/** The person's passkeys, oldest first. */
+export const usePasskeys = (enabled = true) =>
+  useQuery({
+    queryKey: ["me", "passkeys"],
+    queryFn: async () => {
+      const r = await authClient.passkey.listUserPasskeys();
+      if (r.error) throw new Error(r.error.message || "The server didn't answer");
+      return ((r.data ?? []) as unknown as StoredPasskey[]).toSorted((a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime());
+    },
+    enabled,
+  });
 
 export function useAccountMutations() {
   const qc = useQueryClient();

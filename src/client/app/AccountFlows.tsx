@@ -1,17 +1,21 @@
-// The Account flows wired to the API: change the sign-in email (Primary email row + ChangeEmailDialog)
-// and delete the account (Data › Delete account + DeleteAccountDialog). Each hook returns the Settings row
-// that opens its dialog and the dialog itself, for SettingsScreen's Account registry. Spec: DESIGN.md › Account.
-import { useQuery } from "@tanstack/react-query";
+// The Account flows wired to the API: change the sign-in email (Primary email row + ChangeEmailDialog),
+// the passkeys (Sign-in methods › Passkeys + PasskeysDialog) and delete the account (Data › Delete account +
+// DeleteAccountDialog). Each hook returns the Settings row that opens its dialog and the dialog itself, for
+// SettingsScreen's Account registry. Spec: DESIGN.md › Account.
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { authClient, forgetBrowserSession } from "../auth";
 import { api, apiError, ApiError, errorMessage, unwrap } from "../data/api";
-import { useAccountMutations, type Me } from "../data/account";
+import { useAccountMutations, usePasskeys, type Me, type StoredPasskey } from "../data/account";
 import { Button } from "../design/core/Button";
-import { count } from "../design/core/text";
+import { formatDate, formatRelative } from "../design/core/dates";
+import { count, quote } from "../design/core/text";
 import { formatBytes } from "../design/overlay/Attachments";
 import { ChangeEmailDialog, primaryEmailRow } from "../design/settings/ChangeEmailDialog";
 import { DeleteAccountDialog } from "../design/settings/DeleteAccountDialog";
+import { PasskeysDialog, passkeysRow } from "../design/settings/PasskeysDialog";
+import { describeAgent } from "./deviceName";
 import type { ConfirmationState } from "../design/settings/EmailNotifications";
 import type { SettingsRow } from "../design/settings/SettingsShell";
 import { downloadAccountExport } from "./exportData";
@@ -111,6 +115,87 @@ export function useDeleteAccountFlow(email: string, online: boolean) {
         setBusy(false);
         if (err instanceof ApiError && err.fields.session === "stale") setStale(true);
         else setError(errorMessage(err).replace(/\.$/, ""));
+      }}
+    />
+  );
+  return { row, dialog };
+}
+
+/** The reason a browser passkey ceremony gave, as the dialogs say it (the plugin's codes: SimpleWebAuthn's, or its own). */
+export function passkeyFailure(error: { code?: string; message?: string } | null | undefined): string {
+  if (error?.code === "ERROR_CEREMONY_ABORTED" || error?.code === "AUTH_CANCELLED" || error?.code === "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY") return "Your device didn't finish. Nothing was added.";
+  if (error?.code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED" || error?.code === "PREVIOUSLY_REGISTERED") return "This device already holds a passkey for your account.";
+  return (error?.message || "Something went wrong.").replace(/\.$/, "");
+}
+
+/** A name for a new passkey that none of the others has: "Chrome on macOS", then "Chrome on macOS 2". */
+function newPasskeyName(taken: string[]): string {
+  const base = describeAgent(navigator.userAgent);
+  for (let n = 1; ; n++) {
+    const name = n === 1 ? base : `${base} ${n}`;
+    if (!taken.includes(name)) return name;
+  }
+}
+
+/** Settings › Account › Sign-in methods › Passkeys: the row, and the dialog (Better Auth's passkey endpoints). */
+export function usePasskeysFlow(online: boolean, registered: boolean) {
+  const qc = useQueryClient();
+  const notify = useFeedback((s) => s.notify);
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const list = usePasskeys(registered);
+  const stored = list.data ?? [];
+  const nameOf = (p: StoredPasskey) => p.name || "Passkey";
+  const setList = (next: (ps: StoredPasskey[]) => StoredPasskey[]) => qc.setQueryData<StoredPasskey[]>(["me", "passkeys"], (ps) => next(ps ?? []));
+  const refresh = () => qc.invalidateQueries({ queryKey: ["me", "passkeys"] });
+  const row = passkeysRow({
+    count: list.data ? stored.length : null,
+    onOpen: () => {
+      setAddError(null);
+      setError(null);
+      setOpen(true);
+    },
+  });
+  const dialog = (
+    <PasskeysDialog
+      open={open}
+      onClose={() => setOpen(false)}
+      passkeys={stored.map((p) => ({ id: p.id, name: nameOf(p), added: p.createdAt ? formatDate(p.createdAt) : "today", lastUsed: p.lastUsedAt ? formatRelative(p.lastUsedAt) : undefined }))}
+      loading={list.isPending && registered}
+      listError={list.isError ? errorMessage(list.error).replace(/\.$/, "") : null}
+      supported={typeof window.PublicKeyCredential === "function"}
+      offline={!online}
+      addState={adding ? "waiting" : "idle"}
+      addError={addError}
+      error={error}
+      onAdd={async () => {
+        setAdding(true);
+        setAddError(null);
+        setError(null);
+        const name = newPasskeyName(stored.map(nameOf));
+        const r = await authClient.passkey.addPasskey({ name }).catch((err: unknown) => ({ error: { message: errorMessage(err) } }));
+        setAdding(false);
+        if (r?.error) return setAddError(passkeyFailure(r.error));
+        await refresh();
+        notify({ message: `Added the passkey ${quote(name)}`, icon: "key-round" });
+      }}
+      onRename={async (id, name) => {
+        setError(null);
+        setList((ps) => ps.map((p) => (p.id === id ? { ...p, name } : p)));
+        const r = await authClient.passkey.updatePasskey({ id, name }).catch((err: unknown) => ({ error: { message: errorMessage(err) } }));
+        if (r?.error) setError(`Couldn't rename the passkey: ${(r.error.message || "the server refused it").replace(/\.$/, "")}`);
+        await refresh();
+      }}
+      onRemove={async (id) => {
+        const gone = stored.find((p) => p.id === id);
+        setError(null);
+        setList((ps) => ps.filter((p) => p.id !== id));
+        const r = await authClient.passkey.deletePasskey({ id }).catch((err: unknown) => ({ error: { message: errorMessage(err) } }));
+        if (r?.error) setError(`Couldn't remove the passkey: ${(r.error.message || "the server refused it").replace(/\.$/, "")}`);
+        else if (gone) notify({ message: `Removed the passkey ${quote(nameOf(gone))}`, icon: "trash-2" });
+        await refresh();
       }}
     />
   );

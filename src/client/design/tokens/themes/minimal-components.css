@@ -1437,7 +1437,7 @@ html[data-theme="minimal"] .td-search-more{padding:12px 0;border-top:0}
 html[data-theme="minimal"] .td-search-dropdown-all{padding:8px 14px;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-search-dropdown-all:hover{background:var(--chrome-hover)}
 html[data-theme="minimal"] .td-search-dropdown-all>svg{display:none!important}
-/* ── Account dialogs (Design, 2026-11-24): change email and delete account — square sheets, hairlines for surfaces, one ink. The kit's two-factor, recovery-code, passkey and specimen-card rules are not ported (the app has no such flows). */
+/* ── Account dialogs (Design, 2026-11-24): change email, delete account, passkeys — square sheets, hairlines for surfaces, one ink. The kit's two-factor, recovery-code and specimen-card rules are not ported (the app has no such flows). */
 html[data-theme="minimal"] .td-account-dialog{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-account-text{color:var(--ink-900)}
 html[data-theme="minimal"] .td-account-text b,html[data-theme="minimal"] .td-account-note b{font-weight:500}
@@ -1447,11 +1447,15 @@ html[data-theme="minimal"] .td-account-state b{font:500 13px/20px var(--font-ui)
 html[data-theme="minimal"] .td-account-state p{font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-account-state p b{font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-account-state-icon,html[data-theme="minimal"] .td-account-state-icon[data-tone="success"]{color:var(--ink-900)}
-html[data-theme="minimal"] .td-account-export-text{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-account-export-text b{font:500 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-account-row-text,html[data-theme="minimal"] .td-account-export-text,html[data-theme="minimal"] .td-account-passkey-text{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-account-row-text b,html[data-theme="minimal"] .td-account-export-text b,html[data-theme="minimal"] .td-account-passkey-text b{font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-account-lists{padding:12px 0;border-radius:0;background:none;border-top:1px solid var(--border-divider);border-bottom:1px solid var(--border-divider)}
 html[data-theme="minimal"] .td-account-list-head svg{stroke:var(--ink-900)!important}
 html[data-theme="minimal"] .td-account-list-head b{font:500 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-account-list li{font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-account-list-meta{font:400 11px/20px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-account-blockers{border-radius:0}
+html[data-theme="minimal"] .td-account-passkey>svg{stroke:var(--ink-900)!important}
+html[data-theme="minimal"] .td-account-tag{height:auto;padding:0;border-radius:0;background:none;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-account-empty{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
+html[data-theme="minimal"] .td-account-empty b{font-weight:500}

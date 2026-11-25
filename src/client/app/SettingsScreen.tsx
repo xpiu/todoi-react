@@ -49,7 +49,8 @@ import { useSidebarOrder } from "./useSidebarOrder";
 import { useLastProject } from "./lastProject";
 import { SidebarOrder } from "../design/navigation/SidebarOrder";
 import { useOpenProject } from "./useOpenProject";
-import { useChangeEmailFlow, useDeleteAccountFlow, useEmailConfirmation } from "./AccountFlows";
+import { useChangeEmailFlow, useDeleteAccountFlow, useEmailConfirmation, usePasskeysFlow } from "./AccountFlows";
+import { describeAgent } from "./deviceName";
 import { emailNotificationsGroup, type EmailKind } from "../design/settings/EmailNotifications";
 
 const settingsRoute = getRouteApi("/app/settings");
@@ -502,6 +503,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
   const me = useMe(active);
   const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
   const deleteAccount = useDeleteAccountFlow(me.data?.email ?? user?.email ?? "", online);
+  const passkeys = usePasskeysFlow(online, !!user && !user.isAnonymous);
   const confirmEmail = useEmailConfirmation(me.data?.email ?? user?.email ?? "");
   const am = useAccountMutations();
   const tokens = useTokens(active);
@@ -595,6 +597,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             title: "Connected methods",
             rows: [
               { id: "m-password", label: "Email and password", hint: "Change it any time; other devices can be logged out at the same time", control: <Button icon="key-round" onClick={() => setPwOpen(true)}>Change password</Button> },
+              passkeys.row,
               { id: "m-github", label: "GitHub", hint: "Social sign-in arrives with the hosted release", control: <StatusDot label="Not available" /> },
               { id: "m-google", label: "Google", hint: "Social sign-in arrives with the hosted release", control: <StatusDot label="Not available" /> },
             ],
@@ -720,16 +723,10 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
       <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} onDone={() => notify({ message: "Password updated", icon: "check" })} />
       {changeEmail.dialog}
       {deleteAccount.dialog}
+      {passkeys.dialog}
     </>
   );
   return { page, dialogs };
-}
-
-function describeAgent(ua: string | null | undefined): string {
-  if (!ua) return "Unknown device";
-  const browser = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "Browser";
-  const os = /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac OS/.test(ua) ? "macOS" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "";
-  return os ? `${browser} on ${os}` : browser;
 }
 
 function ChangePasswordDialog({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
