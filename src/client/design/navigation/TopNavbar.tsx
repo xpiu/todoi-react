@@ -1,5 +1,5 @@
-// TopNavbar — the always-visible chrome bar: title (click to rename) left; hoisted SubNavbar,
-// connection pill, search with the ⌘K hint and its dropdown, the + create menu, the avatar menu and
+// TopNavbar — the always-visible chrome bar: title (click to rename) left; connection pill, hoisted
+// SubNavbar, search with the ⌘K hint and its dropdown, the + create menu, the avatar menu and
 // the sidebar toggle right (the toggle leads the bar when the sidebar docks left). Pages outside a project lead
 // their title with Back (`onBack`), a chevron that returns to the last project.
 // Spec: DESIGN.md › Top navbar, Responsive.
@@ -299,8 +299,9 @@ export function TopNavbar({
       {leftToggle ? toggleBtn : null}
       <NavbarTitle key={`${titleKey ?? title}:${!!onTitleChange}`} title={title} onTitleChange={onTitleChange} onBack={back} backLabel={backLabel} />
       <div className="td-topnav-spacer" />
-      {children ?? null}
+      {/* Left of the SubNavbar, so the spacer absorbs the pill coming and going and no button moves */}
       {status ? <div className="td-topnav-status">{status}</div> : null}
+      {children ?? null}
       {search ? (
         <div
           ref={searchWrapRef}

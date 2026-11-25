@@ -264,6 +264,10 @@
   .td-topnav-status:empty {
     display: none;
   }
+  /* A showing pill sits one bar gap from the docked SubNavbar; the padding it drops is on the side that grows */
+  .td-topnav-status:not(:empty) + .td-subnav {
+    padding-left: 0;
+  }
   .td-topnav .td-subnav {
     padding-right: 0;
     background: transparent;

@@ -1,7 +1,7 @@
 // ConnectionStatus — offline and queued edits in the app frame (DESIGN.md › States). `useOnline` is the
 // one navigator.onLine subscription; `connectionCopy` the one copy source (also feeds SyncNotice).
 // Connectivity is never a Toast.
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
 
 import { tipProps } from "./Tooltip";
 import { Icon, type IconName } from "./Icon";
@@ -107,22 +107,18 @@ export const SYNCED_SETTLE_MS = 2000;
 export function ConnectionStatus({ online, pending = 0, syncing = false, lastSynced, failed = 0, transientPending = 0, storageError, onClearFailed, onSyncNow, onOpenSettings, variant = "chrome", showWhenIdle = false, settledFor = SYNCED_SETTLE_MS, style, className }: ConnectionStatusProps) {
   const live = useOnline(online);
   const idle = live && !syncing && !pending && !failed && !transientPending && !storageError;
-  const wasBusy = useRef(false);
+  // "Synced" takes over in the very render the work ends, so the pill never blinks out in between.
+  const [wasIdle, setWasIdle] = useState(idle);
   const [settled, setSettled] = useState(false);
+  if (idle !== wasIdle) {
+    setWasIdle(idle);
+    setSettled(idle);
+  }
   useEffect(() => {
-    if (!idle) {
-      wasBusy.current = true;
-      return;
-    }
-    if (!wasBusy.current) return;
-    wasBusy.current = false;
-    const show = setTimeout(() => setSettled(true), 0);
+    if (!settled) return;
     const hide = setTimeout(() => setSettled(false), settledFor);
-    return () => {
-      clearTimeout(show);
-      clearTimeout(hide);
-    };
-  }, [idle, settledFor]);
+    return () => clearTimeout(hide);
+  }, [settled, settledFor]);
   if (idle && !settled && !showWhenIdle) return null;
   const c = connectionCopy({ online: live, pending, syncing, lastSynced, failed, transientPending, storageError });
   const cls = ["td-connection", variant === "card" ? "td-connection-card" : "", className ?? ""].filter(Boolean).join(" ");
