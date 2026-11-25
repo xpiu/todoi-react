@@ -146,6 +146,19 @@ export function groupPreset(key: GroupKey, groupId: string, ctx: Pick<GroupConte
   return r?.ok ? r.patch : null;
 }
 
+/**
+ * What to say after a quick-add in a group (decision R3, the inline-creation convention of Notion, Asana and Linear):
+ * nothing (null) when the new item shows in the group it was typed in, open. Otherwise one toast-worthy line: `hidden`
+ * (why the view leaves it out: filters, completed items, a hidden list), or "Added to <group>" when a typed token put it
+ * in another group, or its group is collapsed.
+ */
+export function groupAddNotice(item: Item, key: GroupKey, typedIn: string, view: { ctx: GroupContext; collapsed: readonly string[]; hidden: string | null }): string | null {
+  if (view.hidden) return `Added · ${view.hidden}`;
+  const landed = groupItems([item], key, { ...view.ctx, showEmpty: false });
+  if (landed.some((g) => g.id === typedIn && !view.collapsed.includes(g.id))) return null;
+  return `Added to ${(landed.find((g) => g.id === typedIn) ?? landed[0])?.label ?? "the project"}`;
+}
+
 /** The fields a quick-add sends besides its title and list */
 export interface AddedFields {
   priority?: ItemPriority | null;

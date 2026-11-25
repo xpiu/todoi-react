@@ -8,6 +8,7 @@ import type { ItemPriority } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
 import type { MoveRestore } from "../../shared/items";
 import type { Item, Label } from "../data/api";
+import { predictCreated } from "../data/itemOptimism";
 import { keys } from "../data/queries";
 import { useLabelMutations } from "../data/itemContent";
 import { newId, scopeOf, useCreateItem, useCreateList, useDeleteItem, useDuplicateItem, useMoveItem, useRestoreItem, useSetItemAssignees, useSetItemLabels, useUpdateItem, useUpdateList } from "../data/mutations";
@@ -107,11 +108,13 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   );
 
   /**
-   * Quick-add. `preset` is a Group by group's value (groupPreset), sent in the same create request: what the field typed
-   * wins for one-value fields (priority, due, >list), labels and assignees add up. A Status in a linked project picks the
-   * list with that role, as a Status pick does.
+   * Quick-add. In a Group by group, `group.preset` is the group's value (groupPreset), sent in the same create request:
+   * what the field typed wins for one-value fields (priority, due, >list), labels and assignees add up. A Status in a
+   * linked project picks the list with that role, as a Status pick does. No toast when the item shows where it was typed;
+   * `group.notice` says, from the predicted item, when it won't (groupAddNotice): then one toast with Undo.
    */
-  const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom", preset?: GroupPatch | null) => {
+  const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom", group?: { preset: GroupPatch | null; notice: (predicted: Item) => string | null }) => {
+    const preset = group?.preset;
     const linked = statusMovesItem(lists, project.linkStatuses, listId);
     const pick = preset && "status" in preset ? statusPick(preset.status, { lists, movesItem: linked, listId, recurring: false }) : null;
     const typedList = parsed.list ? project.lists.find((l) => l.name === parsed.list)?.id : undefined;
@@ -121,7 +124,10 @@ export function useProjectActions(projectId: string | null, project: ItemContain
     const labelIds = parsed.labels.map((pl) => labels.find((l) => l.name.toLowerCase() === pl.text.toLowerCase())?.id).filter((id): id is string => !!id);
     const assigneeIds = parsed.assignee ? people.filter((p) => p.name === parsed.assignee).map((p) => p.id) : [];
     const fields = withPreset({ priority: priorityOf(parsed), dueDate: parsed.due ?? undefined, labelIds, assigneeIds }, preset, !!parsed.priority);
-    createItem.mutate({ id: newId(), title, listId: destination, status, ...fields, position });
+    const vars = { id: newId(), title, listId: destination, status, ...fields, position };
+    createItem.mutate(vars);
+    const notice = group?.notice(predictCreated(vars, { listId: destination, projectId, statusRole: project.lists.find((l) => l.id === destination)?.statusRole ?? null }));
+    if (notice) notify({ message: `${notice} · ${quote(title)}`, icon: "plus", restore: () => deleteOne({ id: vars.id, quiet: true }) });
   };
 
   /** Move with the undo toast for cross-list moves; same-list reorders only tell screen readers where the item landed. */

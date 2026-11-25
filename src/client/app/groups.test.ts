@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item, Label } from "../data/api";
-import { dueBucket, GROUP_NONE, groupDrop, groupItems, groupPreset, withPreset } from "./groups";
+import { dueBucket, GROUP_NONE, groupAddNotice, groupDrop, groupItems, groupPreset, withPreset } from "./groups";
 
 const label = (id: string, name: string, color = "blue"): Label => ({ id, projectId: "p", name, color, createdAt: "", updatedAt: "" }) as Label;
 const item = (over: Partial<Item>): Item =>
@@ -133,5 +133,24 @@ describe("withPreset", () => {
     expect(withPreset(typed, { labelIds: ["l2"] }, false).labelIds).toEqual(["l2"]);
     expect(withPreset({ ...typed, assigneeIds: ["u1"] }, { assigneeIds: ["u2"] }, false).assigneeIds).toEqual(["u2", "u1"]);
     expect(withPreset(typed, null, false)).toBe(typed);
+  });
+});
+
+describe("groupAddNotice", () => {
+  const view = { ctx, collapsed: [] as string[], hidden: null };
+  it("says nothing when the new item shows in the group it was typed in", () => {
+    expect(groupAddNotice(item({ priority: "HIGH" }), "priority", "HIGH", view)).toBeNull();
+    // A typed label adds up: the item shows in both label groups, the typed-in one included.
+    expect(groupAddNotice(item({ labelIds: ["l1", "l2"] }), "label", "l1", view)).toBeNull();
+    expect(groupAddNotice(item({ dueDate: ctx.today }), "due", "today", view)).toBeNull();
+  });
+  it("names the group when a typed token put the item in another one, or its group is collapsed", () => {
+    expect(groupAddNotice(item({ priority: "URGENT" }), "priority", "HIGH", view)).toBe("Added to Urgent");
+    expect(groupAddNotice(item({ dueDate: "2026-10-03" }), "due", "today", view)).toBe("Added to This week");
+    expect(groupAddNotice(item({ status: "DOING" }), "status", "NEW", view)).toBe("Added to Doing");
+    expect(groupAddNotice(item({ priority: "HIGH" }), "priority", "HIGH", { ...view, collapsed: ["HIGH"] })).toBe("Added to High");
+  });
+  it("says why when the view doesn't show it at all", () => {
+    expect(groupAddNotice(item({ priority: "HIGH" }), "priority", "HIGH", { ...view, hidden: "hidden by the current filters" })).toBe("Added · hidden by the current filters");
   });
 });

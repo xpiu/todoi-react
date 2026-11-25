@@ -174,10 +174,14 @@ test("Group by Priority: an item added in a group gets that priority in its firs
   await field.fill("Inspect the rotor");
   await field.press("Enter");
   await expect(group(page, "HIGH").locator(".td-list-row", { hasText: "Inspect the rotor" })).toBeVisible();
+  // It shows where it was typed: no toast (inline creation)
+  await expect(page.locator(".td-toast")).toHaveCount(0);
   await expect.poll(async () => await byTitle(page, own.projectId, "Inspect the rotor")).toMatchObject({ priority: "HIGH", listId: own.lists[0]!.id });
-  // A typed !priority wins over the group's (the item shows up in its own group)
+  // A typed !priority wins over the group's: the item shows up in its own group, and one toast says where
   await field.fill("Wash the skids !low");
   await field.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "Added to Low · “Wash the skids”" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Undo/ })).toBeVisible();
   await field.press("Escape");
   await expect.poll(async () => (await byTitle(page, own.projectId, "Wash the skids"))?.priority).toBe("LOW");
   await expect(group(page, "LOW").locator(".td-list-row", { hasText: "Wash the skids" })).toBeVisible();
@@ -195,6 +199,26 @@ test("Group by Priority: an item added in a group gets that priority in its firs
   await page.getByRole("menuitem", { name: "Create an item" }).click();
   await expect(page.getByRole("textbox", { name: "New item in No priority" })).toBeFocused();
   await page.keyboard.press("Escape");
+});
+
+test("Group by Priority with a filter: an added item the filters hide raises one toast, and its Undo removes the item", async ({ page, own }) => {
+  await own.item("Pick the paint", { priority: "HIGH" });
+  await page.goto(`/p/${own.projectId}?v=list&g=priority&f=priority:High`);
+  await group(page, "HIGH").getByRole("button", { name: "Add an item to High" }).click();
+  const field = page.getByRole("textbox", { name: "New item in High" });
+  await field.fill("Fuel the tanks");
+  await field.press("Enter");
+  await expect(group(page, "HIGH").locator(".td-list-row", { hasText: "Fuel the tanks" })).toBeVisible();
+  await expect(page.locator(".td-toast")).toHaveCount(0);
+  // !low puts it outside the High filter: it won't show anywhere in this view
+  await field.fill("Polish the canopy !low");
+  await field.press("Enter");
+  await field.press("Escape");
+  await expect(page.getByRole("status").filter({ hasText: "Added · hidden by the current filters · “Polish the canopy”" })).toBeVisible();
+  await expect.poll(async () => (await byTitle(page, own.projectId, "Polish the canopy"))?.priority).toBe("LOW");
+  await page.getByRole("button", { name: /^Undo/ }).click();
+  await expect.poll(async () => await byTitle(page, own.projectId, "Polish the canopy")).toBeUndefined();
+  expect(await byTitle(page, own.projectId, "Fuel the tanks")).toBeTruthy();
 });
 
 test("Group by Assignee: N opens the field in the focused item's group and the new item is assigned there", async ({ page, own }) => {

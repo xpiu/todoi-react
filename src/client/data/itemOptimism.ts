@@ -3,15 +3,18 @@ import { applyCompletion, checkedMoveTarget, initialStatus, type CheckedMoveProj
 import type { ItemStatus } from "../../shared/item-status";
 import type { Item } from "./api";
 
-/**
- * The item a create will produce, predicted by the API's own rules so nothing jumps when the refetch lands:
- * a Status from the list's role (and done in a Done list), and the place among the list's top-level
- * items (`placeAmongSiblings` on the server: top or end, siblings renumbered). Subitems go last.
- */
-export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: { listId: string; projectId: string | null; statusRole: ItemStatus | null }): Item[] {
+/** Where a create lands: the list (with its Status role) and the project the API files it in */
+export interface CreateDestination {
+  listId: string;
+  projectId: string | null;
+  statusRole: ItemStatus | null;
+}
+
+/** The new item on its own, by the API's rules (Status and done from the list's role); its place is optimisticCreate's. */
+export function predictCreated(vars: CreateItemInput, dest: CreateDestination): Item {
   const now = new Date().toISOString();
   const state = initialStatus(vars.status === undefined ? dest.statusRole : vars.status);
-  const item: Item = {
+  return {
     version: 0,
     id: vars.id,
     title: vars.title,
@@ -41,6 +44,15 @@ export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: { l
     assigneeIds: vars.assigneeIds ?? [],
     attachmentCount: 0,
   };
+}
+
+/**
+ * The item a create will produce, predicted by the API's own rules so nothing jumps when the refetch lands:
+ * a Status from the list's role (and done in a Done list), and the place among the list's top-level
+ * items (`placeAmongSiblings` on the server: top or end, siblings renumbered). Subitems go last.
+ */
+export function optimisticCreate(items: Item[], vars: CreateItemInput, dest: CreateDestination): Item[] {
+  const item = predictCreated(vars, dest);
   if (vars.parentItemId) return [...items, { ...item, position: Math.max(-1, ...items.filter((it) => it.listId === dest.listId).map((it) => it.position)) + 1 }];
   const siblings = items.filter((it) => it.listId === dest.listId && !it.parentItemId).sort((x, y) => x.position - y.position || x.createdAt.localeCompare(y.createdAt));
   const at = vars.position === "top" ? 0 : siblings.length;

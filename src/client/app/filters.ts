@@ -115,10 +115,16 @@ export function matchesFilters(it: Item, filters: ViewFilter[], ctx: FilterConte
   return true;
 }
 
+/** Why the view leaves out a top-level item ("hidden by the current filters"), or null when it shows it. */
+export function hiddenReason(it: Item, filters: ViewFilter[], ctx: FilterContext, showCompleted: boolean): string | null {
+  if (!showCompleted && it.done) return "completed items are hidden";
+  return matchesFilters(it, filters, ctx) ? null : "hidden by the current filters";
+}
+
 /** Filter parent items once; their direct subitems stay with them in every view. */
 export function filterViewItems(items: Item[], filters: ViewFilter[], ctx: FilterContext, showCompleted: boolean): Item[] {
   if (!filters.length && showCompleted) return items;
-  const keep = new Set(items.filter((it) => !it.parentItemId && (showCompleted || !it.done) && matchesFilters(it, filters, ctx)).map((it) => it.id));
+  const keep = new Set(items.filter((it) => !it.parentItemId && !hiddenReason(it, filters, ctx, showCompleted)).map((it) => it.id));
   return items.filter((it) => keep.has(it.parentItemId ?? it.id));
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Item, Label } from "../data/api";
-import { availableFilters, itemComparator, matchesFilters, nextSort, sortLists, weekRange } from "./filters";
+import { availableFilters, hiddenReason, itemComparator, matchesFilters, nextSort, sortLists, weekRange } from "./filters";
 
 const label = (id: string, name: string): Label => ({ id, projectId: "p", name, color: "blue", createdAt: "", updatedAt: "" }) as Label;
 const item = (over: Partial<Item>): Item =>
@@ -93,5 +93,14 @@ describe("sort", () => {
     const lists = [{ name: "To-do", count: 2 }, { name: "Doing", count: 5 }];
     expect(sortLists(lists, { key: "name", dir: "asc" }).map((l) => l.name)).toEqual(["Doing", "To-do"]);
     expect(sortLists(lists, { key: "count", dir: "desc" }).map((l) => l.name)).toEqual(["Doing", "To-do"]);
+  });
+});
+
+describe("hiddenReason", () => {
+  it("says why the view leaves an item out: completed items hidden first, then the filters", () => {
+    expect(hiddenReason(item({ priority: "HIGH" }), [{ type: "priority", value: "High" }], ctx, false)).toBeNull();
+    expect(hiddenReason(item({ priority: "LOW" }), [{ type: "priority", value: "High" }], ctx, true)).toBe("hidden by the current filters");
+    expect(hiddenReason(item({ done: true, priority: "LOW" }), [{ type: "priority", value: "High" }], ctx, false)).toBe("completed items are hidden");
+    expect(hiddenReason(item({ done: true }), [], ctx, true)).toBeNull();
   });
 });
