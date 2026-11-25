@@ -31,14 +31,21 @@ export class ApiFailure extends HTTPException {
   }
 }
 
+/** What each `validate` middleware checks, so the OpenAPI document (openapi.ts) reads a route's inputs from the route itself. */
+const validated = new WeakMap<object, { target: keyof ValidationTargets; schema: ZodType }>();
+export const validationOf = (handler: object) => validated.get(handler);
+
 /** `zValidator` whose refusal is the shared shape: the first problem as the message, every field's problem in `fields`. */
-export const validate = <Target extends keyof ValidationTargets, T extends ZodType>(target: Target, schema: T) =>
-  zValidator(target, schema, (result) => {
+export const validate = <Target extends keyof ValidationTargets, T extends ZodType>(target: Target, schema: T) => {
+  const middleware = zValidator(target, schema, (result) => {
     if (result.success) return;
     const fields: Record<string, string> = {};
     for (const issue of result.error.issues) fields[issue.path.join(".") || target] ??= issue.message;
     throw new ApiFailure(400, result.error.issues[0]?.message ?? "That request isn't valid", fields);
   });
+  validated.set(middleware, { target, schema });
+  return middleware;
+};
 
 /** The `:id` path parameter of a route that addresses one record. */
 export const idParam = validate("param", z.object({ id: idSchema }));

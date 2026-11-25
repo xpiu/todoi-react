@@ -16,7 +16,9 @@ import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } fr
 import { workspaceMutations } from "./sync";
 import { notFound, onError } from "./errors";
 import { invalidTokenLimit, LIMITS, rateLimit } from "./rateLimit";
-import { routePath, v1Gate } from "./apiV1";
+import { routePath, V1_CONTRACT, v1Gate, viaV1 } from "./apiV1";
+import { env } from "./env";
+import { openApiDocument } from "./openapi";
 
 // Throttling (rateLimit.ts, work plan R3). One counter per rule, shared by the paths it covers.
 const signInLimit = rateLimit(LIMITS.signIn);
@@ -88,6 +90,11 @@ export const app = new Hono({ getPath: routePath })
   .route("/activity", activityRoute)
   .route("/inbox", inboxRoute)
   .route("/search", searchRoute);
+
+// The v1 contract (openapi.ts), built once from the routes above; served under /api/v1 only. Outside the
+// chain so the app's RPC type stays the app's own.
+let contract: ReturnType<typeof openApiDocument> | undefined;
+app.get(V1_CONTRACT, (c) => (viaV1(c) ? c.json((contract ??= openApiDocument(app.routes, env.APP_URL))) : notFound(c)));
 
 // One error shape for every refusal and failure (src/shared/errors.ts), with the request id the log line carries.
 app.onError(onError).notFound(notFound);

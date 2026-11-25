@@ -11,6 +11,8 @@ import { getPath } from "hono/utils/url";
 import { fail } from "./errors";
 
 export const V1_PREFIX = "/api/v1";
+/** The OpenAPI document of this surface (openapi.ts), public */
+export const V1_CONTRACT = "/openapi.json";
 
 export type V1Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 export interface V1Operation {
@@ -19,13 +21,15 @@ export interface V1Operation {
   path: string;
   tag: "Account" | "Projects" | "Lists" | "Items" | "Comments" | "Labels" | "Search" | "Attachments";
   summary: string;
+  /** What a success carries, when it isn't JSON: a file download (its own media type) */
+  returns?: { file: string };
 }
 
-const op = (method: V1Method, path: string, tag: V1Operation["tag"], summary: string): V1Operation => ({ method, path, tag, summary });
+const op = (method: V1Method, path: string, tag: V1Operation["tag"], summary: string, returns?: V1Operation["returns"]): V1Operation => ({ method, path, tag, summary, ...(returns ? { returns } : {}) });
 
 export const V1_OPERATIONS: V1Operation[] = [
   op("GET", "/me", "Account", "The person the token acts for, with their preferences and Inbox list id"),
-  op("GET", "/me/export", "Account", "Everything the person can see, as a .zip Todoi archive (not for a token limited to some projects)"),
+  op("GET", "/me/export", "Account", "Everything the person can see, as a .zip Todoi archive (not for a token limited to some projects)", { file: "application/zip" }),
   op("GET", "/groups", "Projects", "Project groups with their projects (a limited token sees only its projects)"),
   op("GET", "/projects/:id", "Projects", "A project with its lists and members"),
   op("GET", "/activity", "Projects", "A project's recent activity"),
@@ -51,7 +55,7 @@ export const V1_OPERATIONS: V1Operation[] = [
   op("GET", "/search", "Search", "Find items by title or key"),
   op("GET", "/search/full", "Search", "Search titles, descriptions and comments, with filters and paging"),
   op("GET", "/items/:id/attachments", "Attachments", "An item's attachments"),
-  op("GET", "/attachments/:id/file", "Attachments", "Download an attachment"),
+  op("GET", "/attachments/:id/file", "Attachments", "Download an attachment", { file: "application/octet-stream" }),
 ];
 
 /** Routing sees /api/v1/… as /api/…: v1 is the same handlers behind the gate below. */
@@ -70,6 +74,6 @@ export const v1OperationOf = (method: string, routedPath: string): V1Operation |
 
 /** Under /api/v1, only the listed operations answer; everything else is 404, as if it weren't there. */
 export const v1Gate: MiddlewareHandler = async (c, next) => {
-  if (viaV1(c) && !v1OperationOf(c.req.method, c.req.path)) return fail(c, 404, `That isn't part of Todoi's API v1. ${V1_PREFIX}/openapi.json lists what is.`);
+  if (viaV1(c) && c.req.path !== `/api${V1_CONTRACT}` && !v1OperationOf(c.req.method, c.req.path)) return fail(c, 404, `That isn't part of Todoi's API v1. ${V1_PREFIX}${V1_CONTRACT} lists what is.`);
   return next();
 };

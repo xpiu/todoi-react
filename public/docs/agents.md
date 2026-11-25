@@ -13,7 +13,7 @@ Content-Type: application/json
 
 ## The API
 
-JSON over HTTPS at `https://todoi.com/api/v1`. Tokens work only there; anything not part of v1 answers 404.
+JSON over HTTPS at `https://todoi.com/api/v1`. Tokens work only there; anything not part of v1 answers 404. The main operations are below; the OpenAPI 3.1 document at https://todoi.com/api/v1/openapi.json lists every one with its fields.
 
 - `GET /groups`: groups with their projects
 - `GET /projects/:id`: a project with its lists and members

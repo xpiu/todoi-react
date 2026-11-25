@@ -113,7 +113,7 @@ Content-Type: application/json`}</pre>
         body: (
           <>
             <p>
-              JSON over HTTPS at <code>{API}</code>.
+              JSON over HTTPS at <code>{API}</code>. The main operations are below; the OpenAPI document (under More) lists every one with its fields.
             </p>
             <ul>
               <li>
@@ -172,7 +172,10 @@ export function DocsScreen({ page }: { page: DocsPage }) {
   const doc = PAGES[page];
   const other = page === "people" ? { label: "Todoi for agents", hint: "Using Todoi from an AI agent or a script", to: "/docs/agents" as const } : { label: "How Todoi works", hint: "The guide for people", to: "/docs" as const };
   const more: SettingsRow[] = [{ id: "other", label: other.label, hint: other.hint, control: <Button icon="arrow-right" onClick={() => void navigate({ to: other.to })}>Open</Button> }];
-  if (page === "agents") more.push({ id: "markdown", label: "This page as Markdown", hint: "/docs/agents.md — plain text for agents, also listed in /llms.txt", control: <SettingsLink href="/docs/agents.md" /> });
+  if (page === "agents") {
+    more.push({ id: "markdown", label: "This page as Markdown", hint: "/docs/agents.md — plain text for agents, also listed in /llms.txt", control: <SettingsLink href="/docs/agents.md" /> });
+    more.push({ id: "openapi", label: "API v1 contract", hint: "/api/v1/openapi.json — every operation with its parameters and fields, as OpenAPI 3.1", control: <SettingsLink href="/api/v1/openapi.json" /> });
+  }
   return (
     <SettingsPageFrame title={doc.title} crumb={doc.crumb}>
       {doc.cards.map((c) => (

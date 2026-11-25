@@ -4,6 +4,7 @@ All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.
 
 ## Unreleased — 2026-10-06
 
+- Publish the API v1 contract as OpenAPI 3.1 at `/api/v1/openapi.json`, generated from the routes' own validators so it can't drift; the agent docs and `llms.txt` link it.
 - Add the versioned API at `/api/v1`: a listed, stable subset of the app's routes (account, projects, lists, items, comments, labels, search, attachments). API tokens work only there, so a token can no longer reach account management such as making more tokens.
 - Scope API tokens: each is read only (the default) or read and write, and reaches every project and the Inbox or only the projects picked when it is made; listings and search narrow to them.
 - Throttle abuse: per-address limits on every request, log-ins, sign-ups, guest workspaces and reset or confirmation emails; per-token limits for API tokens and a limit on tokens that don't work; capped account exports; and a per-account log-in limit that a working log-in or a password reset clears. Refusals are 429 with `Retry-After`. Set `TRUST_PROXY_HOPS` behind a reverse proxy.
