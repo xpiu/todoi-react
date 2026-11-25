@@ -20,9 +20,15 @@ const SCREENS: Screen[] = [
     ready: (page) => page.getByRole("heading", { level: 1, name: /^(Settings|Appearance)$/ }) },
 ];
 
+/** The seed's sample "today": its due dates cluster around 27 Aug 2026 (src/server/seed.ts). */
+const SAMPLE_NOW = new Date("2026-08-27T10:00:00+02:00");
+
 for (const scope of SCOPES) {
   test.describe(scope, () => {
     test.beforeEach(async ({ page }) => {
+      // Pin "today" (Playwright Clock API) to the seed's sample date, so the calendar month, the Today
+      // marks, the No date tray and relative dates match the baselines on any day the suite runs.
+      await page.clock.setFixedTime(SAMPLE_NOW);
       await useScope(page, scope);
       await signIn(page);
     });
