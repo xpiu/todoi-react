@@ -28,6 +28,7 @@ import { clearAttempts, reserveAttempt, retryIn } from "./services/attempts";
 import { createCounter } from "./rateLimit";
 import { SUDO_REQUIRED } from "../shared/sudo";
 import { fail } from "./errors";
+import { V1_PREFIX, viaV1 } from "./apiV1";
 
 /** "Last used today" in Settings › Account › Passkeys: one more field on Better Auth's passkey model, so its list returns it. */
 const passkeyLastUsed = {
@@ -246,7 +247,10 @@ async function viewerFromBearer(header: string | undefined): Promise<(Viewer & {
 }
 
 export const authMiddleware: MiddlewareHandler = async (c, next) => {
-  const bearer = await viewerFromBearer(c.req.header("authorization"));
+  // API tokens work on the versioned API only (apiV1.ts): the unversioned /api is the app's own.
+  const authorization = c.req.header("authorization");
+  if (/^Bearer\s/i.test(authorization ?? "") && !viaV1(c)) return fail(c, 401, `API tokens work on ${V1_PREFIX}, e.g. ${V1_PREFIX}/groups. See /docs/agents.`);
+  const bearer = await viewerFromBearer(authorization);
   if (bearer) {
     const { tokenId, ...viewer } = bearer;
     c.set(VIEWER, viewer);

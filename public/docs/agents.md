@@ -4,7 +4,7 @@ How an AI agent or script reads and changes Todoi on someone's behalf.
 
 ## Sign in with a token
 
-The person creates a token in Account › API tokens (https://todoi.com/account?s=tokens) and gives it to you. Send it with every request. The token acts as that person, with exactly their access, until it expires or they revoke it.
+The person creates a token in Account › API tokens (https://todoi.com/account?s=tokens) and gives it to you. Send it with every request. The token acts as that person until it expires or they revoke it, and never does more than they could: it is read only or read and write, and reaches every project and their Inbox or only the projects they picked.
 
 ```
 Authorization: Bearer tdi_…
@@ -13,7 +13,7 @@ Content-Type: application/json
 
 ## The API
 
-JSON over HTTPS at `https://todoi.com/api`.
+JSON over HTTPS at `https://todoi.com/api/v1`. Tokens work only there; anything not part of v1 answers 404.
 
 - `GET /groups`: groups with their projects
 - `GET /projects/:id`: a project with its lists and members
@@ -23,7 +23,7 @@ JSON over HTTPS at `https://todoi.com/api`.
 - `PATCH /items/:id`: change fields; `{ "done": true }` completes it
 - `POST /items/:id/move`: `{ "listId", "position"? }`
 - `POST /items/:id/comments`: `{ "id", "body" }`
-- `GET /me/export`: everything the person can see, as a `.zip` Todoi archive (a `todoi-archive.json` manifest, one JSON file per project, the Inbox and the attachment files); `POST /me/restore` with the zip as `file` (multipart) brings it back as new copies
+- `GET /me/export`: everything the person can see, as a `.zip` Todoi archive (a `todoi-archive.json` manifest, one JSON file per project, the Inbox and the attachment files); a token limited to some projects can't export
 
 ## Good manners
 

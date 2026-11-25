@@ -7,6 +7,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Hono } from "hono";
 
 import { app } from "./app";
+import { routePath } from "./apiV1";
 import { db } from "./db";
 import { env } from "./env";
 import { notFound, onError } from "./errors";
@@ -25,7 +26,7 @@ const stopJobs = await startJobs();
 
 // The API under /api; in production also the built client (CLIENT_DIR), with every other path answered
 // by index.html so a deep link (/p/…, /inbox) opens the app. Development serves the client with Vite.
-const server = new Hono().route("/", app);
+const server = new Hono({ getPath: routePath }).route("/", app);
 const isApi = (path: string) => path === "/api" || path.startsWith("/api/");
 if (env.CLIENT_DIR) {
   const index = join(env.CLIENT_DIR, "index.html");

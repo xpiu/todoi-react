@@ -16,13 +16,14 @@ import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } fr
 import { workspaceMutations } from "./sync";
 import { notFound, onError } from "./errors";
 import { invalidTokenLimit, LIMITS, rateLimit } from "./rateLimit";
+import { routePath, v1Gate } from "./apiV1";
 
 // Throttling (rateLimit.ts, work plan R3). One counter per rule, shared by the paths it covers.
 const signInLimit = rateLimit(LIMITS.signIn);
 const authEmailLimit = rateLimit(LIMITS.authEmail);
 
 // Chained so Hono can infer the full route type for the RPC client (`hc<AppType>`).
-export const app = new Hono()
+export const app = new Hono({ getPath: routePath })
   .use(requestId())
   .use(logger())
   // Browser hardening on every response, the built client included (index.ts serves it behind these):
@@ -34,6 +35,8 @@ export const app = new Hono()
   .get("/health", (c) => c.json({ ok: true }))
   // Every request from one address, then tighter limits where a request logs in, makes an account or sends email.
   .use("*", rateLimit(LIMITS.address))
+  // /api/v1 is a listed subset of these routes (apiV1.ts); anything else under it is 404.
+  .use("*", v1Gate)
   .use("/auth/sign-in/email", signInLimit)
   .use("/auth/passkey/verify-authentication", signInLimit)
   .use("/auth/sign-up/email", rateLimit(LIMITS.signUp))

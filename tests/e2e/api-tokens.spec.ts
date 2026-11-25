@@ -36,8 +36,10 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
     // The token works in its project and nowhere else (the bearer answers before the page's session cookie).
     const bearer = { Authorization: `Bearer ${secret}` };
     const api = page.request;
-    expect((await api.get(`/api/projects/${projectId}`, { headers: bearer })).status()).toBe(200);
-    expect((await api.get("/api/inbox/unread", { headers: bearer })).status()).toBe(403);
+    expect((await api.get(`/api/v1/projects/${projectId}`, { headers: bearer })).status()).toBe(200);
+    const inbox = await api.get("/api/v1/items", { headers: bearer });
+    expect(inbox.status()).toBe(403);
+    expect(((await inbox.json()) as { error: string }).error).toContain("can't reach the Inbox");
 
     await row.getByRole("button", { name: "Revoke" }).click();
     await expect(row).toContainText("Revoked");

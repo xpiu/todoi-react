@@ -18,7 +18,7 @@ interface DocsCard {
   body: ReactNode;
 }
 
-const API = "https://todoi.com/api";
+const API = "https://todoi.com/api/v1";
 
 const PAGES: Record<DocsPage, { title: string; crumb: string; cards: DocsCard[] }> = {
   people: {
@@ -100,7 +100,7 @@ const PAGES: Record<DocsPage, { title: string; crumb: string; cards: DocsCard[] 
         body: (
           <>
             <p>
-              The person creates a token in Account › API tokens and gives it to you. Send it with every request. The token acts as that person, with exactly their access, until it expires or they revoke it.
+              The person creates a token in Account › API tokens and gives it to you. Send it with every request. The token acts as that person until it expires or they revoke it, and never does more than they could: it is read only or read and write, and reaches every project and their Inbox or only the projects they picked.
             </p>
             <pre>{`Authorization: Bearer tdi_…
 Content-Type: application/json`}</pre>
@@ -141,10 +141,7 @@ Content-Type: application/json`}</pre>
                 <code>POST /items/:id/comments</code>: <code>{`{ "id", "body" }`}</code>
               </li>
               <li>
-                <code>GET /me/export</code>: everything the person can see, as a <code>.zip</code> Todoi archive (a <code>todoi-archive.json</code> manifest, one JSON file per project, the Inbox and the attachment files); <code>POST /me/restore</code> with the zip as <code>file</code> (multipart) brings it back as new copies
-              </li>
-              <li>
-                <code>GET /me/calendar-feed</code>: the private calendar feed link (<code>POST /me/calendar-feed/reset</code> replaces it; the old link stops at once)
+                <code>GET /me/export</code>: everything the person can see, as a <code>.zip</code> Todoi archive (a <code>todoi-archive.json</code> manifest, one JSON file per project, the Inbox and the attachment files); a token limited to some projects can't export
               </li>
             </ul>
           </>
