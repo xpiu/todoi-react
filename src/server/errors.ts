@@ -10,6 +10,7 @@ import { z, type ZodType } from "zod";
 
 import { codeForStatus, type ErrorBody, type ErrorCode } from "../shared/errors";
 import { idSchema } from "../shared/items";
+import { recordError } from "./services/errorTracking";
 
 const requestIdOf = (c: Context): string => (c.get("requestId") as string | undefined) ?? "";
 
@@ -102,6 +103,11 @@ function log(level: "warn" | "error", c: Context, status: number, err: unknown, 
   logRequest(level, c, status, {
     error: db ? { name: e.name, db: db.code, constraint: db.constraint } : { name: e.name, message: e.message, stack: e.stack?.split("\n").slice(1, 6).join("\n") },
   });
+  // Faults are grouped for the operator console; database ones by their code (Drizzle's message embeds parameters).
+  if (level === "error") {
+    const viewer = c.get("viewer") as { userId?: string } | null | undefined;
+    void recordError({ source: "server", kind: e.name, message: db ? `Database error ${db.code}${db.constraint ? ` on ${db.constraint}` : ""}` : e.message, where: `${c.req.method} ${c.req.routePath}`, requestId: requestIdOf(c), userId: viewer?.userId, stack: db ? null : e.stack });
+  }
 }
 
 export const onError: ErrorHandler = (err, c) => {

@@ -10,6 +10,7 @@ import { nanoid } from "nanoid";
 
 import { db } from "./db";
 import { jobs, type Job } from "./db/schema";
+import { recordError } from "./services/errorTracking";
 
 export interface JobDefinition<P> {
   run: (payload: P, job: Job) => Promise<void>;
@@ -67,7 +68,10 @@ async function finish(job: Job, error: unknown) {
   } else {
     const message = error instanceof Error ? error.message : String(error);
     const retry = job.attempts < job.maxAttempts;
-    if (!retry) console.error(JSON.stringify({ level: "error", msg: "job failed for good", kind: job.kind, jobId: job.id, attempts: job.attempts, error: message }));
+    if (!retry) {
+      console.error(JSON.stringify({ level: "error", msg: "job failed for good", kind: job.kind, jobId: job.id, attempts: job.attempts, error: message }));
+      void recordError({ source: "job", kind: error instanceof Error ? error.name : "Error", message, where: job.kind, stack: error instanceof Error ? error.stack : null });
+    }
     try {
       await db.update(jobs).set(retry ? { state: "queued", runAt: new Date(now.getTime() + backoffMs(job.attempts)), lockedUntil: null, lastError: message } : { state: "failed", finishedAt: now, lockedUntil: null, lastError: message }).where(eq(jobs.id, job.id));
     } catch {

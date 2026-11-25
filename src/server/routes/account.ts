@@ -22,6 +22,7 @@ import { emailInvite, inviteUrl } from "../services/inviteEmails";
 import { pendingEmailChange } from "../services/emailChange";
 import { requireConfirmedEmail } from "../services/confirmedEmail";
 import { ArchiveRejected, buildArchive, restoreArchive } from "../services/archive";
+import { isOperator } from "./admin";
 import { MAX_ARCHIVE_BYTES } from "../../shared/archive";
 
 export const meRoute = new Hono()
@@ -35,7 +36,7 @@ export const meRoute = new Hono()
     const v = viewerOf(c);
     const [u] = await db.select().from(users).where(eq(users.id, v.userId));
     if (!u) return fail(c, 404, "Not found");
-    return c.json({ ...u, prefs: prefsOf(u.prefs), inboxListId: v.inboxListId, pendingEmail: await pendingEmailChange(v.userId) });
+    return c.json({ ...u, prefs: prefsOf(u.prefs), inboxListId: v.inboxListId, pendingEmail: await pendingEmailChange(v.userId), operator: await isOperator(v) });
   })
   // Merge a change into the account's preferences (concurrent devices each change their own keys).
   .patch("/prefs", validate("json", prefsPatchSchema), async (c) => {

@@ -7,6 +7,7 @@ import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, restoreRoute, tokensRoute } from "./routes/account";
 import { deletionRoute, emailChangeRoute, sudoRoute } from "./routes/accountChanges";
+import { adminRoute, clientErrorsRoute } from "./routes/admin";
 import { gitConnectionsRoute, gitSyncRoute, webhooksRoute } from "./routes/gitSync";
 import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
@@ -52,6 +53,7 @@ export const app = new Hono()
   .use("*", authMiddleware)
   .use("/me/export/*", rateLimit(LIMITS.export))
   .use("/me/restore", rateLimit(LIMITS.export))
+  .use("/errors", rateLimit(LIMITS.clientErrors))
   .use("*", workspaceMutations)
   .route("/me", meRoute)
   .route("/me/sudo", sudoRoute)
@@ -69,6 +71,8 @@ export const app = new Hono()
   .route("/projects", membersRoute)
   .route("/projects", gitSyncRoute)
   .route("/git", gitConnectionsRoute)
+  .route("/admin", adminRoute)
+  .route("/errors", clientErrorsRoute)
   .route("/archive", archiveRoute)
   .route("/lists", listsRoute)
   .route("/items", itemsRoute)

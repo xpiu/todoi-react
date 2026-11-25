@@ -91,6 +91,7 @@ if (typeof window !== "undefined") (window.requestIdleCallback ?? ((cb: () => vo
   void preloadDescriptionEditor().catch(() => undefined);
 });
 const ImportScreen = lazy(() => import("./app/ImportScreen").then((m) => ({ default: m.ImportScreen })));
+const AdminScreen = lazy(() => import("./app/AdminScreen").then((m) => ({ default: m.AdminScreen })));
 const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });
 export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <SettingsScreen page="account" />, validateSearch: sectionSearch, beforeLoad: async () => {
@@ -98,6 +99,7 @@ export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: 
   if (!session.data || session.data.user.isAnonymous) throw redirect({ to: "/login", search: { next: "/account" } });
 } });
 export const importRoute = createRoute({ getParentRoute: () => appRoute, path: "/import", component: ImportScreen });
+export const adminRoute = createRoute({ getParentRoute: () => appRoute, path: "/admin", component: AdminScreen });
 const DocsScreen = lazy(() => import("./app/DocsScreen").then((m) => ({ default: m.DocsScreen })));
 export const docsRoute = createRoute({ getParentRoute: () => appRoute, path: "/docs", component: () => <DocsScreen page="people" /> });
 export const agentDocsRoute = createRoute({ getParentRoute: () => appRoute, path: "/docs/agents", component: () => <DocsScreen page="agents" /> });
@@ -115,7 +117,7 @@ export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: 
 const DesignGallery = lazy(() => import("./dev/DesignGallery").then((m) => ({ default: m.DesignGallery })));
 export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/dev/ds", component: DesignGallery });
 
-const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, searchRoute, archiveRoute, settingsRoute, accountRoute, importRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, verifyEmailRoute, confirmEmailRoute, accountDeletedRoute, inviteRoute, galleryRoute]);
+const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, searchRoute, archiveRoute, settingsRoute, accountRoute, importRoute, adminRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, verifyEmailRoute, confirmEmailRoute, accountDeletedRoute, inviteRoute, galleryRoute]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true, defaultErrorComponent: ScreenError });
 

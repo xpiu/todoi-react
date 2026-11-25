@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { DEV_USER } from "../shared/devUser";
+
 // The API's configuration rules, pure so they can be tested (src/server/env.ts applies them to process.env).
 // Development gets working defaults; production (NODE_ENV=production) must be configured explicitly and
 // refuses to start otherwise, because a known signing secret lets anyone forge sessions and the seed
@@ -37,6 +39,8 @@ export function parseEnv(source: Record<string, string | undefined>) {
       EMAIL_FROM: z.string().trim().min(3).default("Todoi <no-reply@todoi.com>"),
       /** Where the development transport writes emails (.html, .txt and .json headers) when RESEND_API_KEY is unset */
       EMAIL_DIR: z.string().default(".data/emails"),
+      /** Who may open the operator console (/admin): comma-separated sign-in addresses, confirmed ones only. Development defaults to the seeded account */
+      ADMIN_EMAILS: z.string().default(dev ? DEV_USER.email : "").transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
       /** The GitHub REST API Git sync talks to (a GitHub Enterprise or test server can stand in) */
       GITHUB_API_URL: z.url().default("https://api.github.com"),
       /** Encrypts stored GitHub tokens and webhook secrets; unset = derived from BETTER_AUTH_SECRET (rotating that then disconnects every repository) */

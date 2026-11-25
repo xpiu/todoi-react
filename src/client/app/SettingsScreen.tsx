@@ -733,7 +733,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
           { id: "danger", title: "Delete account", tone: "danger", rows: [deleteAccount.row] },
         ],
       },
-      { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How Todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> }))] }] },
+      { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How Todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> })), ...(me.data?.operator ? [{ id: "sup-admin", label: "Operator console", hint: "Errors, background jobs, Git sync health and accounts across Todoi", control: <Button icon="activity" onClick={() => navigate({ to: "/admin" })}>Open</Button> }] : [])] }] },
     ],
   };
   const dialogs = (

@@ -13,7 +13,9 @@ import "./app/app.css";
 import { queryClient } from "./queryClient";
 import { router } from "./router";
 import { initializeSync } from "./data/sync";
+import { installErrorReporting } from "./errorReporting";
 
+installErrorReporting();
 initializeSync(queryClient);
 
 createRoot(document.getElementById("root")!).render(

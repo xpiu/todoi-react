@@ -158,6 +158,8 @@ export const LIMITS = {
   token: { name: "token", limit: 600, windowMs: 10 * MINUTE, key: (c) => { const t = bearerOf(c); return t && createHash("sha256").update(t).digest("base64url"); }, message: "This API token made too many requests. Wait a few minutes and try again." },
   /** Account exports (JSON and calendar), per person */
   export: { name: "export", limit: 10, windowMs: HOUR, key: viewerId, message: "You've exported a lot in the last hour. Try again later." },
+  /** Error reports from the browser (POST /api/errors), per person; a page sends at most 20 (client/errorReporting.ts) */
+  clientErrors: { name: "client-errors", limit: 60, windowMs: 10 * MINUTE, key: viewerId },
   /** Inbound repository webhooks, per sender address and endpoint (mount on the webhook route) */
   webhook: { name: "webhook", limit: 120, windowMs: MINUTE, key: (c) => `${clientIp(c)} ${c.req.path}` },
 } satisfies Record<string, LimitRule>;

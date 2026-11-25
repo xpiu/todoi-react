@@ -672,3 +672,33 @@ export const jobs = pgTable(
   (t) => [index("jobs_due_idx").on(t.state, t.runAt), uniqueIndex("jobs_queued_key_idx").on(t.key).where(sql`${t.state} = 'queued'`)],
 );
 export type Job = typeof jobs.$inferSelect;
+
+// ── Errors ────────────────────────────────────────────────────────────────────
+/**
+ * Failures grouped by what they are (services/errorTracking.ts): server faults, errors in the browser,
+ * jobs that gave up and unexpected Git sync failures. One row per fingerprint, counting repeats, so the
+ * operator console (/admin) shows each problem once with how often and how recently it happened.
+ */
+export const errorGroups = pgTable(
+  "error_groups",
+  {
+    fingerprint: text("fingerprint").primaryKey(),
+    source: text("source").$type<"server" | "client" | "job" | "git-sync">().notNull(),
+    /** The error's name ("TypeError", "DrizzleQueryError") */
+    kind: text("kind").notNull(),
+    message: text("message").notNull(),
+    /** A route ("POST /api/items/:id"), a page path, a job kind */
+    where: text("where").notNull(),
+    count: integer("count").notNull().default(1),
+    firstSeen: timestamp("first_seen", { withTimezone: true }).notNull().defaultNow(),
+    lastSeen: timestamp("last_seen", { withTimezone: true }).notNull().defaultNow(),
+    lastRequestId: text("last_request_id"),
+    lastUserId: text("last_user_id"),
+    /** The first lines of a stack, from the latest occurrence */
+    sample: text("sample"),
+    /** Marked resolved by an operator; a new occurrence reopens it */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => [index("error_groups_last_seen_idx").on(t.lastSeen)],
+);
+export type ErrorGroup = typeof errorGroups.$inferSelect;

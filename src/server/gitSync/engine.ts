@@ -18,6 +18,7 @@ import { canonicalDoc, countItemChanges, mergeDocs, withIds, type Side } from ".
 import type { ProjectDoc } from "../../shared/projectDoc/model";
 import { db } from "../db";
 import { gitConnections, gitSyncRuns, items, projects, type GitConflictPolicy, type GitConnection, type GitSyncRun } from "../db/schema";
+import { recordError } from "../services/errorTracking";
 import { githubClient, GitHubError, type FileRef, type GitHubClient } from "./github";
 import { applyProjectDoc, readProjectDoc } from "./projectDoc";
 import { open, seal, tokenHint } from "./secrets";
@@ -127,7 +128,10 @@ export async function syncConnection(connectionId: string, trigger: SyncTrigger,
     } catch (e) {
       if (e instanceof SyncFailure && e.reason === "busy") throw e;
       const message = e instanceof GitHubError ? explainGitHub(e, c) : e instanceof SyncFailure ? e.message : e instanceof ProjectFileError ? `The file in ${repoName(c)} can't be read: ${e.problems.join("; ")}` : "The sync stopped on an unexpected error. Try again; if it keeps failing, disconnect and connect again";
-      if (!(e instanceof GitHubError || e instanceof SyncFailure || e instanceof ProjectFileError)) console.error(JSON.stringify({ level: "error", msg: "git sync failed", connectionId: c.id, error: String(e), stack: (e as Error).stack }));
+      if (!(e instanceof GitHubError || e instanceof SyncFailure || e instanceof ProjectFileError)) {
+        console.error(JSON.stringify({ level: "error", msg: "git sync failed", connectionId: c.id, error: String(e), stack: (e as Error).stack }));
+        void recordError({ source: "git-sync", kind: e instanceof Error ? e.name : "Error", message: e instanceof Error ? e.message : String(e), where: `sync ${trigger}`, userId: actorId, stack: e instanceof Error ? e.stack : null });
+      }
       await db.update(gitConnections).set({ state: "error", lastError: message }).where(eq(gitConnections.id, c.id));
       // A scheduled retry that fails the same way adds no new line to the history.
       if (trigger === "auto") {

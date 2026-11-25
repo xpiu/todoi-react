@@ -5,6 +5,7 @@ import { db } from "./db";
 import { gitConnections } from "./db/schema";
 import { pruneSyncRuns, SyncFailure, syncConnection, type SyncTrigger } from "./gitSync/engine";
 import { defineJob, enqueue, every, pruneJobs, startWorker } from "./jobs";
+import { pruneErrorGroups } from "./services/errorTracking";
 import { purgeTrash } from "./services/lifecycle";
 import { drainUploadCleanup } from "./services/uploadCleanup";
 import { pruneOperationReceipts } from "./sync";
@@ -44,6 +45,7 @@ export function defineJobs() {
       if (gone.items || gone.projects) console.log(JSON.stringify({ level: "info", msg: "trash purged", ...gone }));
       await pruneJobs();
       await pruneSyncRuns();
+      await pruneErrorGroups();
     },
   });
   defineJob("upload-cleanup", { run: async () => void (await drainUploadCleanup()) });

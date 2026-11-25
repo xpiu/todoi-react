@@ -1,0 +1,28 @@
+/* The operator console: an error's kind in mono, its stack in a scrolling block, and the row's two controls side by side. */
+@layer components {
+  .td-admin-error {
+    overflow-wrap: anywhere;
+  }
+  .td-admin-kind {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-600);
+  }
+  .td-admin-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .td-admin-stack {
+    margin: 0;
+    padding: 8px 10px;
+    max-height: 220px;
+    overflow: auto;
+    border-radius: var(--radius-md);
+    background: var(--surface-track);
+    color: var(--ink-900);
+    font: 400 12px / 17px var(--font-mono);
+    font-variant-ligatures: none;
+    white-space: pre;
+  }
+}

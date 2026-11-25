@@ -7,6 +7,10 @@ import { z } from "zod";
 import type { ErrorBody } from "../shared/errors";
 import { fail, notFound, onError, validate } from "./errors";
 
+// Faults also go to error tracking (services/errorTracking.ts), which needs the database; here it is only observed.
+const { recordError } = vi.hoisted(() => ({ recordError: vi.fn(async () => {}) }));
+vi.mock("./services/errorTracking", () => ({ recordError }));
+
 /** Drizzle wraps the driver's error and puts the SQL and its parameters in the message. */
 const drizzleError = (code: string, constraint?: string) =>
   Object.assign(new Error('Failed query: insert into "labels" values ($1)\nparams: secret label name'), { cause: Object.assign(new Error("duplicate key value"), { code, constraint }) });
@@ -35,7 +39,10 @@ const call = async (path: string, init?: RequestInit) => {
 };
 const post = (body: string) => ({ method: "POST", body, headers: { "content-type": "application/json" } });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  recordError.mockClear();
+});
 
 describe("API error envelope", () => {
   it("answers an invalid field with its message, every field's problem, and the request id", async () => {
@@ -79,5 +86,14 @@ describe("API error envelope", () => {
     expect(JSON.stringify(r.body)).not.toContain("token");
     expect(error).toHaveBeenCalledTimes(1);
     expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toMatchObject({ level: "error", requestId: r.body.requestId, status: 500, error: { name: "Error" } });
+    expect(recordError).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ source: "server", kind: "Error", message: "token=abc in a bug", where: "GET /bug", requestId: r.body.requestId }));
+  });
+
+  it("records only faults for the operator console, not refusals", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    await call("/missing");
+    await call("/forbidden");
+    await call("/duplicate");
+    expect(recordError).not.toHaveBeenCalled();
   });
 });

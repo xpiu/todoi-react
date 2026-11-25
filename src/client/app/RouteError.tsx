@@ -4,7 +4,10 @@
 // Log in. The underlying reason follows in a quieter line.
 import { useNavigate, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { SessionStartError } from "../auth";
-import { errorMessage } from "../data/api";
+import { useEffect } from "react";
+
+import { ApiError, errorMessage } from "../data/api";
+import { reportError } from "../errorReporting";
 import { EmptyState } from "../design/core/EmptyState";
 import "./screens.css";
 
@@ -26,6 +29,10 @@ function ErrorState({ title, hint, error, reset, secondary, page }: { title: str
 /** A screen failed to load or render: inside the app frame, or as a whole page (`page`). */
 export function ScreenError({ error, reset, page }: ErrorComponentProps & { page?: boolean }) {
   const navigate = useNavigate();
+  // Reported once per problem (errorReporting.ts); an API refusal is the server's to record, not a crash.
+  useEffect(() => {
+    if (!(error instanceof ApiError)) reportError(error, "Screen failed");
+  }, [error]);
   return (
     <ErrorState
       page={page}

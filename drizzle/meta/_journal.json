@@ -162,6 +162,13 @@
       "when": 1795629825178,
       "tag": "0022_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795630984362,
+      "tag": "0023_error_groups",
+      "breakpoints": true
     }
   ]
 }
