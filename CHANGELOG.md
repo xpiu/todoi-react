@@ -4,6 +4,7 @@ All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.
 
 ## Unreleased — 2026-10-06
 
+- Throttle abuse: per-address limits on every request, log-ins, sign-ups, guest workspaces and reset or confirmation emails; per-token limits for API tokens and a limit on tokens that don't work; capped account exports; and a per-account log-in limit that a working log-in or a password reset clears. Refusals are 429 with `Retry-After`. Set `TRUST_PROXY_HOPS` behind a reverse proxy.
 - Email mentions, assignments and (when switched on) comments on watched items as well as putting them in the Inbox, following the Email notifications switches. Only confirmed addresses get them.
 - Require a confirmed email address before inviting people or joining through an invite sent to an address, so nobody can take a teammate's seat by signing up with their address first. The invite page sends the confirmation link, which brings the person back to the invite.
 - Read and write spec-conformant Embridge v0.2.2 Markdown through the reference parser (`embridge` on npm) and a canonical writer, checked against the spec's conformance suite. Import now brings in descriptions, start dates, item Status, comment threads and attachment links, flattens anything deeper than subitems with a note, keeps repeated list names apart, and reviews warnings first; view exports write Embridge.

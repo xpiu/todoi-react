@@ -14,6 +14,11 @@ import { auth, authMiddleware } from "./auth";
 import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } from "./routes/projects";
 import { workspaceMutations } from "./sync";
 import { notFound, onError } from "./errors";
+import { invalidTokenLimit, LIMITS, rateLimit } from "./rateLimit";
+
+// Throttling (rateLimit.ts, work plan R3). One counter per rule, shared by the paths it covers.
+const signInLimit = rateLimit(LIMITS.signIn);
+const authEmailLimit = rateLimit(LIMITS.authEmail);
 
 // Chained so Hono can infer the full route type for the RPC client (`hc<AppType>`).
 export const app = new Hono()
@@ -26,11 +31,23 @@ export const app = new Hono()
   .use(secureHeaders({ strictTransportSecurity: "max-age=15552000" }))
   .basePath("/api")
   .get("/health", (c) => c.json({ ok: true }))
+  // Every request from one address, then tighter limits where a request logs in, makes an account or sends email.
+  .use("*", rateLimit(LIMITS.address))
+  .use("/auth/sign-in/email", signInLimit)
+  .use("/auth/passkey/verify-authentication", signInLimit)
+  .use("/auth/sign-up/email", rateLimit(LIMITS.signUp))
+  .use("/auth/sign-in/anonymous", rateLimit(LIMITS.guest))
+  .use("/auth/request-password-reset", authEmailLimit)
+  .use("/auth/send-verification-email", authEmailLimit)
   // Better Auth owns /api/auth/*; everything after resolves the session first.
   .on(["GET", "POST"], "/auth/*", (c) => auth.handler(c.req.raw))
   // Calendar apps poll the private feed without a session: the link is the secret (no cookie is read or set).
   .route("/feeds", feedsRoute)
+  // API tokens: a budget per token, and tokens that don't work count against their address (before the lookup).
+  .use("*", rateLimit(LIMITS.token))
+  .use("*", invalidTokenLimit())
   .use("*", authMiddleware)
+  .use("/me/export/*", rateLimit(LIMITS.export))
   .use("*", workspaceMutations)
   .route("/me", meRoute)
   .route("/me/sudo", sudoRoute)

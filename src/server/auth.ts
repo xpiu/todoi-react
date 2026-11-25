@@ -23,6 +23,8 @@ import { isDeletedAddress } from "./services/accountDeletion";
 import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
 import { confirmSession, sudoUntil } from "./services/sudo";
+import { clearAttempts, reserveAttempt, retryIn } from "./services/attempts";
+import { createCounter } from "./rateLimit";
 import { SUDO_REQUIRED } from "../shared/sudo";
 import { fail } from "./errors";
 
@@ -39,6 +41,21 @@ const passkeyLastUsed = {
  */
 const PASSKEY_CHANGES = ["/passkey/generate-register-options", "/passkey/delete-passkey"];
 
+/**
+ * Log-ins per account (work plan R3), on top of the per-address limits in rateLimit.ts: at most SIGN_IN_TRIES
+ * password log-ins for one email address in the window, counted before the password is checked and cleared by
+ * any log-in to the account (password or passkey) or a password reset. No lockout: a passkey and the reset
+ * link still work, and the count starts again when the window ends. Unknown addresses count the same way, so
+ * the answer doesn't tell whether an account exists.
+ */
+export const SIGN_IN_TRIES = { max: 10, windowMinutes: 15 };
+const signInTries = (email: string) => `sign-in-tries:${email.trim().toLowerCase()}`;
+/** Reset and confirmation emails per recipient address and hour, wherever they're asked for from (R3). */
+const EMAILS_PER_ADDRESS = 5;
+const authEmails = createCounter({ limit: EMAILS_PER_ADDRESS, windowMs: 3600_000 });
+const EMAIL_SENDERS = ["/request-password-reset", "/send-verification-email"];
+const tooMany = (message: string, seconds: number) => new APIError("TOO_MANY_REQUESTS", { message }, { "Retry-After": String(seconds) });
+
 /** /verify-email, keeping the asking page's `next` when it is a path in this app ("/i/abc", not "//evil.test"). */
 export function verifyLanding(asked: string | null): string {
   const landing = new URL("/verify-email", env.APP_URL);
@@ -52,6 +69,9 @@ export const auth = betterAuth({
   baseURL: env.APP_URL,
   basePath: "/api/auth",
   secret: env.BETTER_AUTH_SECRET,
+  // Throttling is rateLimit.ts's (one rule for the client address, trusted proxies included) and the per-account
+  // counts in the hooks below; Better Auth's own limiter would read X-Forwarded-For as sent, so it stays off.
+  rateLimit: { enabled: false },
   // Vite moves to the next port when 5173 is taken; in development any loopback port may call the API.
   trustedOrigins: [env.APP_URL, ...(DEV ? [`http://localhost:${env.PORT}`, "http://localhost:*", "http://127.0.0.1:*"] : [])],
   database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications, passkey: passkeys } }),
@@ -61,6 +81,8 @@ export const auth = betterAuth({
     resetPasswordTokenExpiresIn: RESET_LINK_MINUTES * 60,
     // The link opens /reset?token=… (or ?error=INVALID_TOKEN once used or expired); ResetScreen finishes there.
     sendResetPassword: async ({ user, url }) => sendEmail({ to: user.email, ...passwordResetEmail({ email: user.email, url }) }),
+    // A new password ends the log-in throttle for the account.
+    onPasswordReset: async ({ user }) => clearAttempts(signInTries(user.email)),
   },
   emailVerification: {
     sendOnSignUp: true,
@@ -113,6 +135,21 @@ export const auth = betterAuth({
   disabledPaths: ["/change-email"],
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      const email = typeof ctx.body?.email === "string" ? ctx.body.email : null;
+      if (ctx.path === "/sign-in/email" && email) {
+        const reserved = await reserveAttempt(signInTries(email), SIGN_IN_TRIES);
+        if ("retryAt" in reserved) {
+          const { seconds, words } = retryIn(reserved.retryAt);
+          console.warn(JSON.stringify({ level: "warn", at: new Date().toISOString(), event: "sign-in-throttled", path: ctx.path, retryAt: reserved.retryAt.toISOString() }));
+          throw tooMany(`Too many log-in attempts for this account. ${words} You can also reset your password or log in with a passkey.`, seconds);
+        }
+        return;
+      }
+      if (EMAIL_SENDERS.includes(ctx.path) && email && env.RATE_LIMIT) {
+        const hit = authEmails.hit(email.trim().toLowerCase());
+        if (!hit.allowed) throw tooMany("We've sent several emails to this address in the last hour. Check your inbox and spam folder, or try again later.", Math.ceil((hit.resetAt - Date.now()) / 1000));
+        return;
+      }
       if (PASSKEY_CHANGES.includes(ctx.path)) {
         const session = await getSessionFromCtx(ctx);
         if (!session) throw new APIError("UNAUTHORIZED", { message: "Log in to manage your passkeys" });
@@ -132,6 +169,8 @@ export const auth = betterAuth({
     // and the new session counts as confirmed. A log-in from the log-in page (no session, a guest's, or an
     // expired one) is only a log-in and confirms nothing.
     after: createAuthMiddleware(async (ctx) => {
+      // A log-in that worked, either way, starts the account's count again.
+      if ((ctx.path === "/sign-in/email" || ctx.path === "/passkey/verify-authentication") && ctx.context.newSession) await clearAttempts(signInTries(ctx.context.newSession.user.email));
       if (ctx.path !== "/passkey/verify-authentication") return;
       const fresh = ctx.context.newSession;
       const replaced = await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret);
@@ -184,7 +223,7 @@ export const hashToken = (secret: string) => createHash("sha256").update(secret)
 const LAST_USED_GRANULARITY = 60_000;
 
 /** `Authorization: Bearer tdi_…` acts as the token's owner. */
-async function viewerFromBearer(header: string | undefined): Promise<Viewer | null> {
+async function viewerFromBearer(header: string | undefined): Promise<(Viewer & { tokenId: string }) | null> {
   const m = /^Bearer\s+(tdi_[A-Za-z0-9_-]+)$/.exec(header ?? "");
   if (!m) return null;
   const [row] = await db.select({ token: apiTokens, user: users }).from(apiTokens).innerJoin(users, eq(users.id, apiTokens.userId)).where(eq(apiTokens.hash, hashToken(m[1]!)));
@@ -194,13 +233,16 @@ async function viewerFromBearer(header: string | undefined): Promise<Viewer | nu
   if (!row.token.lastUsedAt || now.getTime() - row.token.lastUsedAt.getTime() > LAST_USED_GRANULARITY) {
     void db.update(apiTokens).set({ lastUsedAt: now }).where(eq(apiTokens.id, row.token.id)).catch(() => undefined);
   }
-  return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id), isAnonymous: row.user.isAnonymous };
+  return { userId: row.user.id, name: row.user.name, email: row.user.email, inboxListId: await inboxFor(row.user.id), isAnonymous: row.user.isAnonymous, tokenId: row.token.id };
 }
 
 export const authMiddleware: MiddlewareHandler = async (c, next) => {
   const bearer = await viewerFromBearer(c.req.header("authorization"));
   if (bearer) {
-    c.set(VIEWER, bearer);
+    const { tokenId, ...viewer } = bearer;
+    c.set(VIEWER, viewer);
+    // Which token answered (rateLimit.ts counts the ones that don't).
+    c.set("tokenId", tokenId);
     return next();
   }
   const session = await auth.api.getSession({ headers: c.req.raw.headers });

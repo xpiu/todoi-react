@@ -27,6 +27,10 @@ export function parseEnv(source: Record<string, string | undefined>) {
       BETTER_AUTH_SECRET: dev ? z.string().min(16).default(DEV_AUTH_SECRET) : z.string({ error: "Set BETTER_AUTH_SECRET to 32+ random characters (openssl rand -base64 32)" }).min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
       /** The built client (`npm run build`) the API serves in production; empty to serve the API only */
       CLIENT_DIR: z.string().default(dev ? "" : "dist"),
+      /** Request throttling (src/server/rateLimit.ts): on in production, off in development so local runs and e2e tests aren't throttled */
+      RATE_LIMIT: z.stringbool().default(!dev),
+      /** Reverse proxies in front of the API that append to X-Forwarded-For (1 behind one proxy); 0 = use the socket's address */
+      TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
       /** Resend (resend.com) API key for account and invite emails; unset = each email is written to EMAIL_DIR instead */
       RESEND_API_KEY: z.string().trim().optional().transform((v) => v || undefined),
       /** The sender of every email; the domain must be verified at Resend */

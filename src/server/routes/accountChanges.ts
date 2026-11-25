@@ -16,6 +16,7 @@ import { fail, logRequest, validate } from "../errors";
 import { deleteAccount, deletionReview } from "../services/accountDeletion";
 import { cancelEmailChange, confirmEmailChangeUrl, pendingEmailChange, recordEmailChange } from "../services/emailChange";
 import { confirmSession, MAX_TRIES, reserveTry, sudoUntil, TRY_WINDOW_MINUTES } from "../services/sudo";
+import { retryIn } from "../services/attempts";
 
 /** This request's browser session (read past the cookie cache); API tokens have none. */
 async function browserSession(c: Context) {
@@ -49,9 +50,8 @@ export const sudoRoute = new Hono()
     // Wrong passwords are throttled per account (services/sudo.ts): the try counts before the check.
     const reserved = await reserveTry(session.userId);
     if ("retryAt" in reserved) {
-      const seconds = Math.max(1, Math.ceil((reserved.retryAt.getTime() - Date.now()) / 1000));
-      const minutes = Math.ceil(seconds / 60);
-      const message = `Too many tries. Try again in ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`;
+      const { seconds, words } = retryIn(reserved.retryAt);
+      const message = `Too many tries. ${words}`;
       logRequest("warn", c, 429, { event: "sudo-confirm-throttled", retryAt: reserved.retryAt.toISOString() });
       c.header("Retry-After", String(seconds));
       return fail(c, 429, message, { fields: { password: message } });

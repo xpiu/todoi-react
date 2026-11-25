@@ -80,7 +80,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 
 Current limits:
 
-- **Email:** account emails (password reset, email confirmation, change of address) and invites to an address go out through Resend when `RESEND_API_KEY` is set; without it they are written to `EMAIL_DIR` (see Production). Mention, assignment and comment notifications stay in the Inbox: their email switches are stored but nothing sends them yet.
+- **Email:** account emails (password reset, email confirmation, change of address) and invites to an address go out through Resend when `RESEND_API_KEY` is set; without it they are written to `EMAIL_DIR` (see Production). Mention, assignment and (when switched on) watched-item comment notifications are emailed as well as put in the Inbox, to confirmed addresses only. Inviting people and joining through an invite sent to an address need a confirmed address.
 - **Sync:** workspace JSON edits persist in IndexedDB before sending, survive reload/close and retry in order with server deduplication. Snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, preserving pending fields. Storage &amp; sync retains submitted text for conflict review; access loss purges cached content. Unsubmitted description/comment drafts use `sessionStorage`. App-shell offline caching, binary uploads and account/session actions are outside the queue. See [sync behavior](docs/sync.md).
 - **Deployment:** one API process with local attachment storage and in-process cleanup. Multiple processes would need shared persistent storage.
 - **Attachments:** 25 MiB per file; storage quotas per uploader: 100 MiB for guests, 2 GiB for accounts.
@@ -202,6 +202,8 @@ Environment variables override `.env`:
 - **`EMAIL_FROM`:** Default `Todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
 - **`EMAIL_DIR`:** Default `.data/emails`; the development transport's folder.
 - **`SYNC_SECRET_KEY`:** 32+ characters; encrypts the GitHub tokens and webhook secrets Git sync stores. Unset, a key is derived from `BETTER_AUTH_SECRET`, so rotating that secret disconnects every repository.
+- **`RATE_LIMIT`:** Default `true` in production, `false` in development. Throttles every request per client address (1200/min), log-ins (30 per 10 min per address), sign-ups (10/h), guest workspaces (30/h), reset and confirmation emails (10/h per address, 5/h per recipient), each API token (600 per 10 min), tokens that don't work (20 per 10 min per address) and account exports (10/h per person); a refusal is 429 with `Retry-After`. Counts live in memory, per instance. Wrong passwords are also throttled per account (10 log-ins per 15 min, cleared by a log-in that works or a password reset; 5 wrong ones at "Confirm it's you"), in Postgres and always on. Limits are in `src/server/rateLimit.ts`.
+- **`TRUST_PROXY_HOPS`:** Default `0` (the socket's address). Behind a reverse proxy that appends to `X-Forwarded-For`, set the number of such proxies (usually `1`), or every visitor shares the proxy's address and one budget.
 - **`GITHUB_API_URL`:** Default `https://api.github.com`; GitHub Enterprise, or the fake GitHub the tests run (`tests/fakes/fakeGithub.ts`).
 
 Production startup rejects invalid/missing configuration, development/example secrets, short secrets, non-HTTPS external URLs or enabled seeding. Development uses convenient defaults.
