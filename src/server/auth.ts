@@ -127,7 +127,7 @@ export const auth = betterAuth({
       const replaced = await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret);
       if (!fresh || !replaced || replaced === fresh.session.token) return;
       const [old] = await db.delete(sessions).where(and(eq(sessions.token, replaced), eq(sessions.userId, fresh.user.id))).returning({ expiresAt: sessions.expiresAt });
-      if (old && old.expiresAt > new Date()) await confirmSession(fresh.session.id);
+      if (old && old.expiresAt > new Date()) await confirmSession(fresh.session);
     }),
   },
   user: {

@@ -15,7 +15,7 @@ import { EmailNotSent } from "../email";
 import { fail, logRequest, validate } from "../errors";
 import { deleteAccount, deletionReview } from "../services/accountDeletion";
 import { cancelEmailChange, confirmEmailChangeUrl, pendingEmailChange, recordEmailChange } from "../services/emailChange";
-import { clearTries, confirmSession, MAX_TRIES, reserveTry, sudoUntil, TRY_WINDOW_MINUTES } from "../services/sudo";
+import { confirmSession, MAX_TRIES, reserveTry, sudoUntil, TRY_WINDOW_MINUTES } from "../services/sudo";
 
 /** This request's browser session (read past the cookie cache); API tokens have none. */
 async function browserSession(c: Context) {
@@ -64,8 +64,7 @@ export const sudoRoute = new Hono()
       logRequest("warn", c, 400, { event: "sudo-confirm-wrong-password", try: reserved.try, of: MAX_TRIES, windowMinutes: TRY_WINDOW_MINUTES });
       return fail(c, 400, "That password isn't right.", { fields: { password: "That password isn't right." } });
     }
-    await clearTries(session.userId);
-    const until = await confirmSession(session.id);
+    const until = await confirmSession(session);
     return c.json({ confirmedUntil: until?.toISOString() ?? null });
   });
 

@@ -22,15 +22,19 @@ export async function sudoUntil(sessionId: string, now = Date.now()): Promise<Da
   return until > now ? new Date(until) : null;
 }
 
-/** The person just confirmed it's them (their password, or a passkey from this browser) in this session. */
-export async function confirmSession(sessionId: string): Promise<Date | null> {
-  await db.update(sessions).set({ confirmedAt: new Date() }).where(eq(sessions.id, sessionId));
-  return sudoUntil(sessionId);
+/**
+ * The person just confirmed it's them in this session — their password, or a passkey from this browser (the
+ * one path for both): the session is stamped, and the account's wrong-password count starts again.
+ */
+export async function confirmSession(session: { id: string; userId: string }): Promise<Date | null> {
+  await db.update(sessions).set({ confirmedAt: new Date() }).where(eq(sessions.id, session.id));
+  await db.delete(verifications).where(eq(verifications.identifier, tries(session.userId)));
+  return sudoUntil(session.id);
 }
 
 // Password tries at the confirm step, throttled per account as OWASP advises (decision R2): at most
 // MAX_TRIES wrong ones in TRY_WINDOW_MINUTES, then 429 until the window ends — no lockout, a passkey still
-// works, and the right password clears the count. Better Auth's own rate limiter can't do this (it counts
+// works, and any confirmation (confirmSession) clears the count. Better Auth's own rate limiter can't do this (it counts
 // every request per IP and path, and only on its own endpoints), so the count is one row per account in its
 // verifications table, as services/emailChange.ts keeps a change in flight: value = tries in the window,
 // expiresAt = the window's end.
@@ -57,9 +61,4 @@ export async function reserveTry(userId: string, now = new Date()): Promise<{ tr
     await tx.insert(verifications).values({ id: nanoid(), identifier, value: "1", expiresAt: new Date(now.getTime() + TRY_WINDOW_MINUTES * 60_000) });
     return { try: 1 };
   });
-}
-
-/** The right password: the count starts again. */
-export async function clearTries(userId: string) {
-  await db.delete(verifications).where(eq(verifications.identifier, tries(userId)));
 }

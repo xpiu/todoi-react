@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import { call, confirmIt, cookiesFrom, PASSWORD, signIn, signUp, type Person } from "../../../tests/integration/accounts";
 import { db } from "../db";
 import { passkeys, sessions, users, verifications } from "../db/schema";
+import { confirmSession } from "./sudo";
 
 const HOUR = 3600_000;
 const sudo = async (cookie: string) => ((await (await call("/api/me/sudo", { cookie })).json()) as { confirmedUntil: string | null }).confirmedUntil;
@@ -150,6 +151,24 @@ describe("sudo mode", () => {
         // Under a minute left in the window: "1 minute".
         await db.update(verifications).set({ expiresAt: new Date(Date.now() + 50_000) }).where(triesOf(flo));
         expect(await (await tryPassword(flo.cookie, PASSWORD)).json()).toMatchObject({ error: "Too many tries. Try again in 1 minute." });
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it("start again after a passkey confirmation too: every confirmation goes through confirmSession", async () => {
+      const flo = await signUp("Flo");
+      const warn = quiet();
+      try {
+        for (let i = 0; i < 4; i++) expect((await tryPassword(flo.cookie, "nope")).status).toBe(400);
+        // The passkey confirmation, as auth.ts's /passkey/verify-authentication hook makes it for the session that
+        // replaced this browser's own (the WebAuthn ceremony itself runs end to end in tests/e2e/passkeys.spec.ts).
+        const [session] = await db.select({ id: sessions.id, userId: sessions.userId }).from(sessions).where(eq(sessions.userId, flo.id));
+        expect(await confirmSession(session!)).not.toBeNull();
+        expect(await db.select().from(verifications).where(triesOf(flo))).toEqual([]);
+        await confirmedAgo(flo, 3);
+        for (let i = 0; i < 5; i++) expect((await tryPassword(flo.cookie, "nope")).status).toBe(400);
+        expect((await tryPassword(flo.cookie, PASSWORD)).status).toBe(429);
       } finally {
         warn.mockRestore();
       }
