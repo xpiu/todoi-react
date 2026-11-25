@@ -458,7 +458,7 @@ export function AppShell() {
         onTitleChange={projectId && canManageProject ? (name) => pm.updateProject.mutate({ id: projectId, name }) : undefined}
         onBack={onBack}
         backLabel={`Back to ${backTarget?.name ?? "Projects"}`}
-        status={<ConnectionStatus online={save.online} pending={save.waiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
+        status={<ConnectionStatus online={save.online} pending={save.shownWaiting} syncing={save.online && save.slowSaving} lastSynced={save.lastSaved} failed={save.failed} transientPending={save.transientWaiting} storageError={save.storageError} onClearFailed={() => navigate({ to: "/settings", search: { s: "storage" } })} onSyncNow={save.retry} onOpenSettings={() => navigate({ to: "/settings", search: { s: "storage" } })} />}
         search
         searchSources={searchSources}
         searchStatus={navHits.status}

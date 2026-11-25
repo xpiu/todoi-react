@@ -31,19 +31,22 @@ export function useSaveState() {
   const waiting = operations.filter((operation) => operation.state === "pending").length;
   const failed = operations.length - waiting;
   const saving = transientSaving + Number(syncing);
-  // Ordinary edits land in a blink; show only saves taking a noticeable amount of time.
+  // Ordinary edits are queued and land in a blink; show only work outstanding for a noticeable amount of time.
+  const outstanding = waiting + saving > 0;
   const [slow, setSlow] = useState(false);
   useEffect(() => {
-    if (!saving) return;
+    if (!outstanding) return;
     const t = setTimeout(() => setSlow(true), SLOW_SAVE_MS);
     return () => {
       clearTimeout(t);
       setSlow(false);
     };
-  }, [saving]);
+  }, [outstanding]);
   return {
     online,
     waiting,
+    /** The queued edits worth reporting: at once while offline, online only once they're slow to land. */
+    shownWaiting: online && !slow ? 0 : waiting,
     transientWaiting,
     transientFailed,
     saving,
