@@ -5,11 +5,12 @@ import { nanoid } from "nanoid";
 
 import { initialStatus, statusChange } from "../../shared/completion";
 import { LABEL_COLORS } from "../../shared/enums";
-import type { ImportProjectInput } from "../../shared/import";
+import { importedCommentBody, type ImportProjectInput, type PlanComment } from "../../shared/import";
+import type { ItemStatus } from "../../shared/item-status";
 import type { CreateProjectInput, UpdateListInput } from "../../shared/projects";
 import { db, type Tx } from "../db";
 import { nextPosition } from "../db/position";
-import { groups, itemLabels, items, labels, lists, members, projects, type List, type Project } from "../db/schema";
+import { comments, groups, itemLabels, items, labels, lists, members, projects, type List, type Project } from "../db/schema";
 import { itemIsLive } from "./lifecycle";
 import { logActivity } from "./activity";
 
@@ -112,33 +113,55 @@ export async function createProject(input: CreateProjectInput, userId: string, o
   return outer ? run(outer) : db.transaction(run);
 }
 
-/** Import a reviewed plan as a new project — project, lists, labels, items and subitems in one transaction, keys from one counter bump. */
+/** Import a reviewed plan as a new project — project, lists, labels, items, subitems and comments in one transaction, keys from one counter bump. */
 export async function importProject({ id, groupId, name, plan }: ImportProjectInput, userId: string): Promise<{ project: Project; lists: List[]; items: number }> {
   return db.transaction(async (tx) => {
     const { project, lists: made } = await createProject({ id, groupId, name, lists: plan.lists.map((l) => [l.name, l.statusRole ?? null]) }, userId, tx);
-    const listId = new Map(made.map((l) => [l.name, l.id]));
+    // By position, not name: a file may repeat a list name.
+    const byPosition = [...made].sort((a, b) => a.position - b.position);
     const labelRows = plan.labels.length ? await tx.insert(labels).values(plan.labels.map((l, i) => ({ id: nanoid(), projectId: project.id, name: l.name, color: l.color ?? LABEL_COLORS[i % LABEL_COLORS.length]! }))).returning() : [];
     const labelId = new Map(labelRows.map((l) => [l.name.toLowerCase(), l.id]));
     const total = plan.lists.reduce((n, l) => n + l.items.reduce((m, it) => m + 1 + it.subitems.length, 0), 0);
     let key = total ? await issueKeyNumbers(tx, project.groupId, total) : 0;
     const rows: Array<typeof items.$inferInsert> = [];
     const links: Array<typeof itemLabels.$inferInsert> = [];
-    for (const l of plan.lists) {
-      const lid = listId.get(l.name);
-      if (!lid) continue;
+    const notes: Array<typeof comments.$inferInsert> = [];
+    const at = Date.now();
+    const addComments = (itemId: string, list: PlanComment[]) => {
+      const thread: Array<{ id: string; depth: number }> = [];
+      for (const c of list) {
+        const commentId = nanoid();
+        while (thread.length && thread[thread.length - 1]!.depth >= c.depth) thread.pop();
+        // A millisecond apart, so the file's order is the order comments show in.
+        notes.push({ id: commentId, itemId, authorId: userId, body: importedCommentBody(c), replyToId: thread[thread.length - 1]?.id ?? null, createdAt: new Date(at + notes.length) });
+        thread.push({ id: commentId, depth: c.depth });
+      }
+    };
+    plan.lists.forEach((l, i) => {
+      const lid = byPosition[i]?.id;
+      if (!lid) return;
+      // The item's own Status, else the list's role; a done item remembers it for reopening (the shared invariant).
+      const state = (done: boolean, status: ItemStatus | null | undefined) => {
+        const open = status && status !== "DONE" ? status : (l.statusRole ?? null);
+        return statusChange(initialStatus(open), done || status === "DONE" ? "DONE" : open);
+      };
       l.items.forEach((it, position) => {
         const itemId = nanoid();
-        // The list's role is the Status; a done item remembers it for reopening (the shared invariant).
-        const state = (done: boolean) => statusChange(initialStatus(l.statusRole ?? null), done ? "DONE" : (l.statusRole ?? null));
-        rows.push({ id: itemId, listId: lid, projectId: project.id, title: it.title, description: it.description ?? null, dueDate: it.due ?? null, priority: it.priority ?? null, ...state(it.done), keyNumber: key++, position, createdBy: userId });
+        rows.push({ id: itemId, listId: lid, projectId: project.id, title: it.title, description: it.description ?? null, startDate: it.start ?? null, dueDate: it.due ?? null, priority: it.priority ?? null, ...state(it.done, it.status), keyNumber: key++, position, createdBy: userId });
+        addComments(itemId, it.comments ?? []);
         for (const n of it.labels) {
           const lab = labelId.get(n.toLowerCase());
           if (lab) links.push({ itemId, labelId: lab });
         }
-        it.subitems.forEach((s, j) => rows.push({ id: nanoid(), listId: lid, projectId: project.id, parentItemId: itemId, title: s.title, ...state(s.done), keyNumber: key++, position: j, createdBy: userId }));
+        it.subitems.forEach((s, j) => {
+          const subId = nanoid();
+          rows.push({ id: subId, listId: lid, projectId: project.id, parentItemId: itemId, title: s.title, description: s.description ?? null, ...state(s.done, null), keyNumber: key++, position: j, createdBy: userId });
+          addComments(subId, s.comments ?? []);
+        });
       });
-    }
+    });
     for (let i = 0; i < rows.length; i += 500) await tx.insert(items).values(rows.slice(i, i + 500));
+    for (let i = 0; i < notes.length; i += 500) await tx.insert(comments).values(notes.slice(i, i + 500));
     if (links.length) await tx.insert(itemLabels).values(links).onConflictDoNothing();
     await logActivity(tx, { projectId: project.id, actorId: userId, type: "settings", text: `imported ${rows.length} item${rows.length === 1 ? "" : "s"} into ${plan.lists.length} list${plan.lists.length === 1 ? "" : "s"}` });
     return { project, lists: made, items: rows.length };

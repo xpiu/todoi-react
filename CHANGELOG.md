@@ -4,6 +4,8 @@ All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.
 
 ## Unreleased — 2026-10-06
 
+- Read and write spec-conformant Embridge v0.2.2 Markdown through the reference parser (`embridge` on npm) and a canonical writer, checked against the spec's conformance suite. Import now brings in descriptions, start dates, item Status, comment threads and attachment links, flattens anything deeper than subitems with a note, keeps repeated list names apart, and reviews warnings first; view exports write Embridge.
+
 - Save workspace edits and their local projection atomically in IndexedDB; replay them in order across reloads and tabs, with automatic retries for temporary failures.
 - Deduplicate server replay with transactional actor-scoped receipts, row versions and acknowledgments for related changes. Reject stale edits while retaining submitted text.
 - Reconcile incoming snapshots with pending edits and purge inaccessible content. Add Storage & sync recovery with copy, retry and confirmed conflict choices.

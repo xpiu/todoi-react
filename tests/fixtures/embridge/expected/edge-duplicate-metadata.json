@@ -1,0 +1,27 @@
+{
+  "documentMetadata": null,
+  "lists": [
+    {
+      "title": null,
+      "preamble": null,
+      "items": [
+        {
+          "title": "Item with two metadata lines",
+          "completed": false,
+          "marker": {
+            "type": "bullet"
+          },
+          "fields": {
+            "prio": "high",
+            "id": "abc123d",
+            "status": "doing"
+          },
+          "description": null,
+          "comments": [],
+          "subitems": []
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

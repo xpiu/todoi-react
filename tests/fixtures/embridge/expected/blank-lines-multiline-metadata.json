@@ -1,0 +1,62 @@
+{
+  "documentMetadata": {
+    "title": null,
+    "sync": null,
+    "uuid": null,
+    "lists": null,
+    "fields": null,
+    "syntax": {
+      "mode": "blank-lines"
+    },
+    "format": null
+  },
+  "lists": [
+    {
+      "title": null,
+      "preamble": null,
+      "items": [
+        {
+          "title": "First task",
+          "completed": null,
+          "marker": {
+            "type": "none"
+          },
+          "fields": {
+            "ref": "A",
+            "prio": "high"
+          },
+          "description": "First line.\nSecond line.",
+          "comments": [],
+          "subitems": []
+        },
+        {
+          "title": "Second task",
+          "completed": null,
+          "marker": {
+            "type": "none"
+          },
+          "fields": {
+            "prio": "low"
+          },
+          "description": null,
+          "comments": [
+            {
+              "replyDepth": 1,
+              "author": null,
+              "timestamp": null,
+              "text": "comment closes metadata"
+            }
+          ],
+          "subitems": []
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "line": 9,
+      "severity": "warning",
+      "message": "metadata-like line appears after metadata eligibility closed"
+    }
+  ]
+}

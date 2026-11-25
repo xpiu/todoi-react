@@ -5,6 +5,7 @@
 import { useRef, useState } from "react";
 
 import type { ImportPlan } from "../../shared/import";
+import { STATUS_NAMES } from "../../shared/item-status";
 import { newId } from "../data/mutations";
 import { useProjectMutations } from "../data/projects";
 import { useGroups } from "../data/queries";
@@ -36,10 +37,19 @@ const SOURCES: Record<Source, SourceSpec> = {
     label: "Markdown",
     icon: "file-text",
     accept: ".md,.markdown,.txt",
-    hint: "The Embridge format — what Export writes: # Project, ## List, - [ ] items",
-    placeholder: "# Project\n\n## To-do\n\n- [ ] First item — High · due 2026-10-12 · #design",
+    hint: "Embridge, the Markdown task-list format that Export writes",
+    placeholder: "# To-do\n- [ ] First item\nprio: high, due: 2026-10-12, tags: design\n  - [ ] A subitem",
     parse: parseMarkdown,
-    mapping: [["# Heading", "Project", "Name"], ["## Heading", "List", "Order kept; To-do / Doing / Done link to their statuses"], ["- [ ] line", "Item", "Title, done state, meta after —"], ["Indented - [ ]", "Subitem", "Checked state kept"], ["#label · due · priority", "Properties", "Labels are created when missing"]],
+    mapping: [
+      ["# Heading", "List", "Kept in order. Lists named like a status (Backlog, To-do, Doing, Done) link to it"],
+      ["- [ ] or 1. [ ] line", "Item", "Title and done state"],
+      ["Indented item", "Subitem", "Deeper levels become subitems of the top item"],
+      ["\"…\" or description:", "Description", "Can span several lines"],
+      ["status · prio · tags · on · due", "Properties", "Dates: on is the start, due the due date. Tags become labels"],
+      ["> comment", "Comment", "Posted by you, headed with the original author and date"],
+      ["- [name](path)", "Attachment link", "Listed in the description; files aren't copied"],
+      ["title: in the <!-- --> block", "Project name", "Else the file's name"],
+    ],
   },
   trello: {
     label: "Trello",
@@ -88,8 +98,10 @@ export function ImportScreen() {
     pm.importProject.mutate(
       { id, groupId, name: name.trim(), plan },
       {
-        onSuccess: (made) => {
-          notify({ message: `Imported ${quote(name.trim())} — ${count(made.items, "item")} in ${count(plan.lists.length, "list")}`, icon: "upload" });
+        onSuccess: () => {
+          // The counts Review showed, so the two never disagree.
+          const n = planCounts(plan);
+          notify({ message: `Imported ${quote(name.trim())}: ${[count(n.lists, "list"), count(n.items, "item"), n.subitems ? count(n.subitems, "subitem") : null].filter(Boolean).join(", ")}`, icon: "upload" });
           openProject(id);
         },
       },
@@ -97,7 +109,7 @@ export function ImportScreen() {
   };
   const counts = plan ? planCounts(plan) : null;
   return (
-    <SettingsPageFrame title="Import" crumb="A new project is created from the file. Review every change before it lands.">
+    <SettingsPageFrame title="Import" crumb="Turn a Markdown, Trello or CSV file into a new project.">
       <SettingsCard
         group={{
           id: "source",
@@ -146,7 +158,7 @@ export function ImportScreen() {
             id: "review",
             title: "Review",
             tone: plan.warnings.length ? "warn" : undefined,
-            sub: `${count(counts.lists, "list")} · ${count(counts.items, "item")} · ${count(counts.subitems, "subitem")} · ${count(counts.labels, "label")}`,
+            sub: [count(counts.lists, "list"), count(counts.items, "item"), count(counts.subitems, "subitem"), count(counts.labels, "label"), counts.comments ? count(counts.comments, "comment") : null].filter(Boolean).join(" · "),
             rows: [
               { id: "name", label: "Project name", hint: "Created in the group you pick", control: <TextField value={name} aria-label="Project name" onChange={(e) => setName(e.target.value)} /> },
               { id: "group", label: "Project group", control: <Select aria-label="Project group" value={groupId} options={(groups.data ?? []).map((g) => ({ value: g.id, label: g.name, icon: "folders" as IconName }))} onChange={(v) => setGroupId(v)} placement="bottom-end" tier="detached" width={220} /> },
@@ -154,12 +166,23 @@ export function ImportScreen() {
           }}
         >
           <div className="td-import-body">
+            {plan.warnings.length ? (
+              <>
+                <div className="td-import-head">Check before creating</div>
+                {plan.warnings.map((w) => (
+                  <div key={w} className="td-import-warn">
+                    <Icon name="circle-alert" size={14} />
+                    {w}
+                  </div>
+                ))}
+              </>
+            ) : null}
             <div className="td-import-head">Lists that will be created</div>
             <ul className="td-import-list">
-              {plan.lists.map((l) => (
-                <li key={l.name}>
+              {plan.lists.map((l, i) => (
+                <li key={i}>
                   {l.name} · {count(l.items.length, "item")}
-                  {l.statusRole ? ` · linked to ${l.statusRole}` : ""}
+                  {l.statusRole ? ` · linked to ${STATUS_NAMES[l.statusRole]}` : ""}
                 </li>
               ))}
               {!plan.lists.length ? <li>No lists found</li> : null}
@@ -183,17 +206,6 @@ export function ImportScreen() {
                 ))}
               </tbody>
             </table>
-            {plan.warnings.length ? (
-              <>
-                <div className="td-import-head">Warnings</div>
-                {plan.warnings.map((w) => (
-                  <div key={w} className="td-import-warn">
-                    <Icon name="circle-alert" size={14} />
-                    {w}
-                  </div>
-                ))}
-              </>
-            ) : null}
           </div>
         </SettingsCard>
       ) : null}
@@ -206,7 +218,7 @@ export function ImportScreen() {
               {
                 id: "confirm",
                 label: "Create the project",
-                hint: "Nothing is written until you confirm",
+                hint: "Nothing is saved until you create it",
                 control: (
                   <>
                     <Button variant="ghost" onClick={() => setPlan(null)}>

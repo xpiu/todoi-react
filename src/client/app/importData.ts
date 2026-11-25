@@ -1,8 +1,11 @@
 // Import parsers — pure: Markdown in the Embridge format (what Export writes), a Trello board's JSON
 // export, and CSV with a header row. Each yields the same plan the Review step shows and the
-// importer executes: lists with items (title, description, due, labels, assignee names, done, subitems).
+// importer executes: lists with items (title, description, dates, labels, assignee names, Status, done,
+// comments, subitems).
 import type { ItemPriority, LabelColor } from "../../shared/enums";
 import type { ImportPlan, PlanItem, PlanList } from "../../shared/import";
+import { fromEmbridge } from "../../shared/projectDoc/embridge";
+import type { DocAttachment, DocComment, DocSubitem, ProjectDoc } from "../../shared/projectDoc/model";
 import { parseDateValue, toISO } from "../design/core/dates";
 import { suggestedRoleForTitle as roleFor } from "../design/core/statuses";
 import { count } from "../design/core/text";
@@ -16,8 +19,58 @@ const addLabel = (plan: ImportPlan, name: string, color?: LabelColor) => {
   if (!plan.labels.some((l) => l.name.toLowerCase() === name.toLowerCase())) plan.labels.push({ name, color });
 };
 
-/** `# Project` · `## List` · `- [ ] KEY Title — High · due 2026-09-12 · #design` (keys are dropped) · indented `- [ ]` subitems. */
-export function parseMarkdown(text: string): ImportPlan {
+const NO_TITLE = "The file has no title, so name the project above";
+
+/** Earlier exports from this app put the project in a `# ` heading and lists in `## ` headings. */
+const isLegacyMarkdown = (text: string) => /^## \S/m.test(text) && (text.match(/^# \S/gm)?.length ?? 0) <= 1 && !/<!--[\s\S]*format:\s*embridge/i.test(text);
+
+const withAttachments = (description: string | null, attachments: DocAttachment[]) => {
+  if (!attachments.length) return description ?? undefined;
+  const links = attachments.map((a) => `- ${a.image ? "!" : ""}[${a.label || a.url}](${a.url})`).join("\n");
+  return `${description ? `${description}\n\n` : ""}Attachments:\n${links}`;
+};
+const planComments = (cs: DocComment[]) => cs.map((c) => ({ text: c.text, author: c.author, at: c.at, depth: c.depth })).filter((c) => c.text.trim());
+
+/** A project document (from any codec) as an import plan. Fields Todoi has no place for are named in the warnings. */
+export function docToPlan(doc: ProjectDoc, warnings: string[], fallbackName: string): ImportPlan {
+  const plan: ImportPlan = { ...blank(), name: doc.title || fallbackName, warnings: [...warnings] };
+  const leftOut = new Set<string>();
+  let linked = 0;
+  const sub = (s: DocSubitem) => {
+    Object.keys(s.fields).forEach((k) => leftOut.add(k));
+    linked += s.attachments.length;
+    return { title: s.title, done: s.done, description: withAttachments(s.description, s.attachments), comments: planComments(s.comments) };
+  };
+  for (const l of doc.lists) {
+    const list: PlanList = { name: l.name, statusRole: roleFor(l.name), items: [] };
+    for (const it of l.items) {
+      Object.keys(it.fields).forEach((k) => leftOut.add(k));
+      linked += it.attachments.length;
+      it.labels.forEach((n) => addLabel(plan, n));
+      list.items.push({ title: it.title, description: withAttachments(it.description, it.attachments), start: it.start, due: it.due, labels: it.labels, assignee: it.assignees[0] ?? null, priority: it.priority, status: it.status, done: it.done, comments: planComments(it.comments), subitems: it.subitems.map(sub) });
+    }
+    plan.lists.push(list);
+  }
+  if (leftOut.size) plan.warnings.push(`Fields Todoi doesn't use are left out: ${[...leftOut].sort().join(", ")}`);
+  if (linked) plan.warnings.push(`${count(linked, "attachment link")} added to descriptions; the files themselves aren't copied`);
+  return plan;
+}
+
+/** Embridge Markdown (github.com/embridge-foundation/embridge): `# List` headings, `- [ ]` items, metadata lines, `>` comments. */
+export function parseMarkdown(text: string, fileName?: string | null): ImportPlan {
+  const fallback = fileName?.replace(/\.[^.]+$/, "") ?? "";
+  if (isLegacyMarkdown(text)) {
+    const plan = parseLegacyMarkdown(text);
+    return plan.name || !fallback ? plan : { ...plan, name: fallback, warnings: plan.warnings.filter((w) => w !== NO_TITLE) };
+  }
+  const { doc, warnings } = fromEmbridge(text);
+  const plan = docToPlan(doc, warnings, fallback);
+  if (!plan.name) plan.warnings.push(NO_TITLE);
+  return plan;
+}
+
+/** The dialect this app exported before it wrote Embridge: `# Project` · `## List` · `- [ ] KEY Title — High · due 2026-09-12 · #design` (keys are dropped) · indented `- [ ]` subitems. */
+function parseLegacyMarkdown(text: string): ImportPlan {
   const plan = blank();
   let list: PlanList | null = null;
   let item: PlanItem | null = null;
@@ -58,7 +111,7 @@ export function parseMarkdown(text: string): ImportPlan {
         } else if (/^due\s+/i.test(part)) item.due = isoOf(part.replace(/^due\s+/i, ""));
         else if (PRIORITY_WORDS[part.toLowerCase()]) item.priority = PRIORITY_WORDS[part.toLowerCase()];
         else if (part.startsWith("@")) item.assignee = part.slice(1);
-        else plan.warnings.push(`Unknown meta “${part}” on “${title}”`);
+        else plan.warnings.push(`“${title}”: “${part}” isn't a property Todoi reads, so it's left out`);
       }
       list.items.push(item);
       continue;
@@ -66,7 +119,7 @@ export function parseMarkdown(text: string): ImportPlan {
     if (item && raw.trim() && !raw.startsWith("#")) item.description = `${item.description ? item.description + "\n" : ""}${raw.trim()}`;
     else if (!item && !list && raw.trim() && plan.name) plan.description = `${plan.description ? plan.description + "\n" : ""}${raw.trim()}`;
   }
-  if (!plan.name) plan.warnings.push("No “# Project” heading — the project needs a name");
+  if (!plan.name) plan.warnings.push(NO_TITLE);
   return plan;
 }
 
@@ -184,5 +237,6 @@ export function parseCsv(text: string, name = "CSV import"): ImportPlan {
 export const planCounts = (plan: ImportPlan) => {
   const items = plan.lists.reduce((n, l) => n + l.items.length, 0);
   const subitems = plan.lists.reduce((n, l) => n + l.items.reduce((m, it) => m + it.subitems.length, 0), 0);
-  return { lists: plan.lists.length, items, subitems, labels: plan.labels.length };
+  const comments = plan.lists.reduce((n, l) => n + l.items.reduce((m, it) => m + (it.comments?.length ?? 0) + it.subitems.reduce((k, s) => k + (s.comments?.length ?? 0), 0), 0), 0);
+  return { lists: plan.lists.length, items, subitems, labels: plan.labels.length, comments };
 };

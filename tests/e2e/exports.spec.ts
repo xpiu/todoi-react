@@ -52,7 +52,9 @@ for (const scope of SCOPES) test(`exports preserve visible items, sorting and co
       expect(csv.trim().split("\n").slice(1).map((row) => row.split(",")[0])).toEqual(titles);
       await expect(page.getByRole("status").filter({ hasText: "Exported" })).toContainText("3 items");
       const md = await download(page, "Markdown", 3);
-      expect(md.indexOf("## Alpha")).toBeLessThan(md.indexOf("## Zulu"));
+      // Embridge: one "# " heading per list.
+      expect(md.indexOf("\n# Alpha\n") >= 0 || md.startsWith("# Alpha\n")).toBe(true);
+      expect(md.indexOf("# Alpha")).toBeLessThan(md.indexOf("# Zulu"));
       expect(md.indexOf("Zulu amber")).toBeLessThan(md.indexOf("Zulu zebra"));
       for (const excluded of ["Completed item", "Hidden item", "Low priority", "Subitem"]) expect(md).not.toContain(excluded);
       await page.screenshot({ path: `.tmp/quick-wins/shots/${scope}-export-${view}.png` });

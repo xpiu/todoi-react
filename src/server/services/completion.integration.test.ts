@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
 import { db } from "../db";
-import { activity, groups, items, lists, members, projects, users } from "../db/schema";
+import { activity, comments, groups, items, lists, members, projects, users } from "../db/schema";
 import { ApiFailure } from "../errors";
 import { moveItem, updateItem } from "./items";
 import { importProject, updateList } from "./projects";
@@ -97,6 +97,30 @@ describe("completion on the server", () => {
     expect(state(by("In Done"))).toMatchObject({ status: "DONE", priorStatus: null, done: true });
     await updateItem(by("Finished").id, { done: false }, {}, {}, f.userId);
     expect(state(await row(by("Finished").id))).toMatchObject({ status: "DOING", done: false });
+  });
+
+  it("imports an Embridge file's Status, dates, comment threads and repeated list names", async () => {
+    const f = await fixture();
+    const { project } = await importProject({ id: nanoid(), groupId: f.groupId, name: "Embridge", plan: { name: "Embridge", lists: [
+      { name: "Work", statusRole: null, items: [{ title: "Own status", done: false, status: "DOING", start: "2026-10-01", due: "2026-10-03", labels: [], comments: [
+        { text: "First", author: "alice", at: "2026-09-20", depth: 1 },
+        { text: "Reply", author: null, at: null, depth: 2 },
+        { text: "Second", depth: 1 },
+      ], subitems: [{ title: "Sub", done: false, description: "Sub notes", comments: [{ text: "On the sub", depth: 1 }] }] }] },
+      { name: "Work", statusRole: null, items: [{ title: "In the second Work", done: false, labels: [], subitems: [] }] },
+    ], labels: [], warnings: [] } }, f.userId);
+    const made = await db.select().from(lists).where(eq(lists.projectId, project.id)).orderBy(lists.position);
+    const rows = await db.select().from(items).where(eq(items.projectId, project.id));
+    const by = (t: string) => rows.find((r) => r.title === t)!;
+    expect(made.map((l) => l.name)).toEqual(["Work", "Work"]);
+    expect(by("Own status")).toMatchObject({ listId: made[0]!.id, status: "DOING", startDate: "2026-10-01", dueDate: "2026-10-03", done: false });
+    expect(by("In the second Work").listId).toBe(made[1]!.id);
+    expect(by("Sub")).toMatchObject({ description: "Sub notes", parentItemId: by("Own status").id });
+    const notes = await db.select().from(comments).where(inArray(comments.itemId, [by("Own status").id, by("Sub").id])).orderBy(comments.createdAt);
+    expect(notes.map((c) => c.body)).toEqual(["**alice** · 2026-09-20\n\nFirst", "Reply", "Second", "On the sub"]);
+    expect(notes[1]!.replyToId).toBe(notes[0]!.id);
+    expect(notes[2]!.replyToId).toBeNull();
+    expect(new Set(notes.map((c) => c.authorId))).toEqual(new Set([f.userId]));
   });
 });
 

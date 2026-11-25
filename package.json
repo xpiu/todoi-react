@@ -49,6 +49,7 @@
     "@tiptap/starter-kit": "^3.33.1",
     "better-auth": "^1.7.20",
     "drizzle-orm": "^0.45.4",
+    "embridge": "0.2.2",
     "hono": "^4.13.18",
     "lucide-react": "^1.72.0",
     "nanoid": "^6.0.2",

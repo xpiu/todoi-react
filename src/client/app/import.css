@@ -12,6 +12,8 @@
   }
   .td-import-paste .td-field {
     font: var(--weight-regular) 13px / 18px var(--font-mono);
+    /* Source text: "-->" must read as three characters, not an arrow. */
+    font-variant-ligatures: none;
   }
   .td-import-paste-foot {
     display: flex;
@@ -53,15 +55,24 @@
     border-bottom: 1px solid var(--border-divider);
     vertical-align: top;
   }
+  /* The source column is syntax: mono, and "-->" stays three characters. */
   .td-import-strong {
     color: var(--ink-900);
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
   }
   .td-import-warn {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
     padding: 6px 0;
-    color: var(--warning);
+    color: var(--ink-900);
     font: var(--type-body);
+  }
+  /* The tone lives on the icon; the sentence stays ink so it reads on every theme. */
+  .td-import-warn > svg {
+    flex: none;
+    /* Deepened toward the ink so the glyph holds 3:1 on a light card too. */
+    color: color-mix(in oklab, var(--warning) 55%, var(--ink-900));
   }
 }

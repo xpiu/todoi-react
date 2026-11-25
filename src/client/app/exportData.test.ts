@@ -15,7 +15,7 @@ describe("export builders", () => {
     expect(md).toContain("**Flo Z** · Oct 1\n\nok");
   });
   it("writes a view as task lists per list and a CSV with quoting", () => {
-    expect(viewToMarkdown("Website", [{ name: "Doing", items: [item({})] }], ctx)).toBe('# Website\n\n## Doing\n\n- [ ] MP-12 Ship it, "now" — High · due 2026-10-03 · #design\n');
+    expect(viewToMarkdown("Website", [{ name: "Doing", items: [item({})] }], ctx)).toBe('# Doing\n- [ ] Ship it, "now"\nstatus: doing, prio: high, tags: design, assignee: @Flo Z, due: 2026-10-03, id: MP-12\n\n<!--\ntitle: Website\nformat: Embridge v0.2.2, github.com/embridge-foundation/embridge\n-->\n');
     const csv = itemsToCsv([item({})], ctx);
     expect(csv.split("\n")[0]).toBe("Title,List,Status,Priority,Due,Labels,Assignee,Key");
     expect(csv.split("\n")[1]).toBe('"Ship it, ""now""",Doing,Doing,High,2026-10-03,design,Flo Z,MP-12');

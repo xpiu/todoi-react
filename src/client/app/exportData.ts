@@ -1,7 +1,9 @@
-// Export builders — pure: an item (with subitems, description, attachments, comments) or a view (the
-// items shown, filters and sort applied) as Markdown (the Embridge format Import reads) or CSV
+// Export builders — pure: an item (with subitems, description, attachments, comments) as a Markdown
+// document, or a view (the items shown, filters and sort applied) as Embridge Markdown (what Import reads) or CSV
 // (Title, List, Status, Priority, Due, Labels, Assignee, Key). PDF goes through the browser print
 // pipeline. The account-wide exports come from the server (`downloadAccountExport`). Spec: DESIGN.md › Export & print.
+import { toEmbridge } from "../../shared/projectDoc/embridge";
+import { docItem, type ProjectDoc } from "../../shared/projectDoc/model";
 import { api, apiError, type Item, type Label } from "../data/api";
 import { STATUSES } from "../design/core/statuses";
 import { PRIORITY_LABEL, keyOf, type Person } from "./items";
@@ -35,19 +37,18 @@ export function itemToMarkdown(it: Item, ctx: ExportContext, extra: { subitems?:
   return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
 }
 
-/** A view as Markdown: one section per list, items as a task list with their key and meta. */
+/** A view as Embridge Markdown (what Import reads): one `# ` section per list, the items shown with their properties, keys as ids. */
 export function viewToMarkdown(title: string, lists: Array<{ name: string; items: Item[] }>, ctx: ExportContext): string {
-  const out = [`# ${title}`, ""];
-  for (const l of lists) {
-    out.push(`## ${l.name}`, "");
-    for (const it of l.items) {
-      const key = keyOf(it, ctx.prefix);
-      const meta = [it.priority && PRIORITY_LABEL[it.priority], it.dueDate && `due ${it.dueDate}`, ...labelNames(it, ctx).map((n) => `#${n}`)].filter(Boolean).join(" · ");
-      out.push(`- [${it.done ? "x" : " "}] ${key ? `${key} ` : ""}${it.title}${meta ? ` — ${meta}` : ""}`);
-    }
-    out.push("");
-  }
-  return out.join("\n").trimEnd() + "\n";
+  const doc: ProjectDoc = {
+    title,
+    uuid: null,
+    lists: lists.map((l) => ({
+      id: null,
+      name: l.name,
+      items: l.items.map((it) => docItem(it.title, { id: keyOf(it, ctx.prefix) ?? null, done: it.done, status: it.status, priority: it.priority, start: it.startDate, due: it.dueDate, labels: labelNames(it, ctx), assignees: assigneeNames(it, ctx), description: it.description?.trim() || null })),
+    })),
+  };
+  return toEmbridge(doc);
 }
 
 const cell = (v: string | null | undefined) => {

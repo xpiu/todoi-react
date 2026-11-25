@@ -1,6 +1,8 @@
 // Canonical Status registry for the client. Ids come from src/shared/item-status.ts (the Postgres enum);
 // names are display copy and may be renamed without breaking links. Spec: DESIGN.md › Lists & Status linking.
-import { STATUS_NAMES, type ItemStatus } from "../../../shared/item-status";
+import { STATUS_NAMES, suggestedRoleForTitle, type ItemStatus } from "../../../shared/item-status";
+
+export { suggestedRoleForTitle };
 import type { IconName } from "./Icon";
 
 export interface StatusDef {
@@ -29,15 +31,4 @@ export function resolveStatus(v: StatusLike | null | undefined): { id?: string; 
   if (v == null) return null;
   if (typeof v === "string") return statusById(v) ?? statusByName(v) ?? { name: v, icon: "circle" };
   return { ...v, icon: v.icon ?? "circle" };
-}
-
-/** Title-matching SUGGESTION for prefilling a list's Status role picker. Never a live link: roles are stored by id. */
-export function suggestedRoleForTitle(title: string | null | undefined): ItemStatus | null {
-  const t = title ?? "";
-  if (/backlog|icebox|later|someday|parked/i.test(t)) return "BACKLOG";
-  if (/done|complete|finish|shipped|closed|launched/i.test(t)) return "DONE";
-  if (/doing|progress|ongoing|wip|active/i.test(t)) return "DOING";
-  if (/to.?do\b|\bready\b|up next|next up|queued/i.test(t)) return "TODO";
-  if (/\bnew\b|inbox|incoming|request|triage|idea/i.test(t)) return "NEW";
-  return null;
 }

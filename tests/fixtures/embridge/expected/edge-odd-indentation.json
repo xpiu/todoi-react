@@ -1,0 +1,47 @@
+{
+  "documentMetadata": null,
+  "lists": [
+    {
+      "title": null,
+      "preamble": null,
+      "items": [
+        {
+          "title": "Parent item",
+          "completed": false,
+          "marker": { "type": "bullet" },
+          "fields": {},
+          "description": null,
+          "comments": [],
+          "subitems": [
+            {
+              "title": "Odd indent one space",
+              "completed": false,
+              "marker": { "type": "bullet" },
+              "fields": {},
+              "description": null,
+              "comments": [],
+              "subitems": [
+                {
+                  "title": "Odd indent three spaces",
+                  "completed": false,
+                  "marker": { "type": "bullet" },
+                  "fields": {},
+                  "description": null,
+                  "comments": [],
+                  "subitems": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "line": 2,
+      "severity": "warning",
+      "message": "non-canonical indentation (1 space); child SHOULD align to parent content column (2 spaces)"
+    }
+  ]
+}
