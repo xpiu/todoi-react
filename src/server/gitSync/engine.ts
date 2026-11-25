@@ -129,6 +129,11 @@ export async function syncConnection(connectionId: string, trigger: SyncTrigger,
       const message = e instanceof GitHubError ? explainGitHub(e, c) : e instanceof SyncFailure ? e.message : e instanceof ProjectFileError ? `The file in ${repoName(c)} can't be read: ${e.problems.join("; ")}` : "The sync stopped on an unexpected error. Try again; if it keeps failing, disconnect and connect again";
       if (!(e instanceof GitHubError || e instanceof SyncFailure || e instanceof ProjectFileError)) console.error(JSON.stringify({ level: "error", msg: "git sync failed", connectionId: c.id, error: String(e), stack: (e as Error).stack }));
       await db.update(gitConnections).set({ state: "error", lastError: message }).where(eq(gitConnections.id, c.id));
+      // A scheduled retry that fails the same way adds no new line to the history.
+      if (trigger === "auto") {
+        const [last] = await db.select().from(gitSyncRuns).where(eq(gitSyncRuns.connectionId, c.id)).orderBy(desc(gitSyncRuns.createdAt)).limit(1);
+        if (last?.outcome === "failed" && last.error === message) return last;
+      }
       return record(c, { actorId, trigger, outcome: "failed", error: message });
     }
   });
@@ -191,8 +196,8 @@ async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string,
     }
     await db.update(gitConnections).set({ base: result, fileSha, lastSyncedAt: new Date(), state: "ok", lastError: null, pending: null }).where(eq(gitConnections.id, c.id));
     const outcome = pulled && pushed ? "merged" : pulled ? "pulled" : pushed || commitSha ? "pushed" : "unchanged";
-    // A push that changed nothing here (often Todoi's own commit echoing back) leaves no line in the history.
-    if (outcome === "unchanged" && trigger === "webhook") return { id: "", connectionId: c.id, actorId: actor, trigger, outcome, pulled: 0, pushed: 0, conflicts: 0, error: null, notes, before: null, commitSha: null, createdAt: new Date() };
+    // A push or scheduled sync that changed nothing (often Todoi's own commit echoing back) leaves no line in the history.
+    if (outcome === "unchanged" && (trigger === "webhook" || trigger === "auto")) return { id: "", connectionId: c.id, actorId: actor, trigger, outcome, pulled: 0, pushed: 0, conflicts: 0, error: null, notes, before: null, commitSha: null, createdAt: new Date() };
     return record(c, { actorId: actor, trigger, outcome, pulled, pushed, conflicts: merged.conflicts.length, notes, before: pulled ? ours : null, commitSha });
   }
   throw new SyncFailure("busy", "The file and the project kept changing during the sync. Try again in a moment");
@@ -295,12 +300,23 @@ export async function undoLastSync(connectionId: string, actorId: string): Promi
     const applied = await applyIfUnchanged(c.projectId, ours, withIds(last.before!), actorId);
     if (!applied) throw new SyncFailure("busy", "The project changed while undoing. Try again");
     await db.update(gitSyncRuns).set({ before: null }).where(eq(gitSyncRuns.id, last.id));
-    // Base stays the merged document, so the next sync writes the restored state to the file.
-    await record(c, { actorId, trigger: "undo", outcome: "undone", pulled: countItemChanges(ours, last.before!) });
+    // Base stays the merged document, so this sync writes the restored state to the file; the run reads as the undo.
     const run = await syncLocked(await loadConnection(connectionId), "undo", actorId, { resolveAll: "ours" });
-    return run;
+    const [undone] = await db.update(gitSyncRuns).set({ outcome: "undone", pulled: countItemChanges(ours, last.before!), before: null }).where(eq(gitSyncRuns.id, run.id)).returning();
+    return undone ?? run;
   });
 }
 
 /** A fresh webhook secret (sealed for storage). */
 export const newHookSecret = () => randomBytes(24).toString("base64url");
+
+/** Sync history older than `days` goes, except each connection's 20 latest runs. */
+export async function pruneSyncRuns(days = 90): Promise<number> {
+  const res = await db.execute(sql`
+    delete from ${gitSyncRuns} where id in (
+      select id from (
+        select id, created_at, row_number() over (partition by connection_id order by created_at desc) as n from ${gitSyncRuns}
+      ) ranked where n > 20 and created_at < now() - ${days} * interval '1 day'
+    )`);
+  return res.rowCount ?? 0;
+}

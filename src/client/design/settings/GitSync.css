@@ -9,6 +9,19 @@
     font-family: var(--font-mono);
     font-variant-ligatures: none;
   }
+  /* A sync state that needs attention (Sync overdue, Paused, Last sync failed): tone on the glyph, deepened to hold 3:1 on light cards. */
+  .td-git-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .td-git-state > svg {
+    flex: none;
+    color: color-mix(in oklab, var(--warning) 55%, var(--ink-900));
+  }
+  .td-git-state[data-tone="danger"] > svg {
+    color: var(--danger);
+  }
   .td-git-link {
     color: var(--ink-900);
     text-decoration: underline;

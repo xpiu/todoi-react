@@ -11,7 +11,7 @@ import { db } from "../db";
 import { comments, gitConnections, gitSyncRuns, groups, itemLabels, items, labels, lists, members, projects, users } from "../db/schema";
 import { env } from "../env";
 import { updateItem } from "../services/items";
-import { connectProject, disconnectProject, syncConnection, SyncFailure, undoLastSync } from "./engine";
+import { connectProject, disconnectProject, pruneSyncRuns, syncConnection, SyncFailure, undoLastSync } from "./engine";
 
 const REPO = "acme/plans";
 let fake: Awaited<ReturnType<typeof startFakeGithub>>;
@@ -97,7 +97,7 @@ describe("connecting", () => {
 
     const [c] = await db.select().from(gitConnections).where(eq(gitConnections.projectId, f.projectId));
     const undo = await undoLastSync(c!.id, f.userId);
-    expect(undo.outcome).toBe("pushed");
+    expect(undo).toMatchObject({ outcome: "undone", trigger: "undo" });
     const restored = await db.select().from(items).where(eq(items.projectId, f.projectId));
     expect(restored.filter((i) => !i.deletedAt && !i.parentItemId).map((i) => i.title).sort()).toEqual(["Review", "Write the post"]);
     expect(JSON.parse(file("plans.json", "dev")!).lists.flatMap((l: { items?: Array<{ title: string }> }) => (l.items ?? []).map((i) => i.title)).sort()).toEqual(["Review", "Write the post"]);
@@ -198,6 +198,28 @@ describe("syncing", () => {
     await disconnectProject(f.projectId);
     expect(await db.select().from(gitConnections).where(eq(gitConnections.projectId, f.projectId))).toEqual([]);
     expect(await db.select().from(gitSyncRuns).where(inArray(gitSyncRuns.connectionId, [connection.id]))).toEqual([]);
+  });
+
+  it("keeps scheduled syncs quiet: nothing new, or the same failure again, adds no line", async () => {
+    const f = await fixture();
+    const { connection } = await connect(f);
+    const runs = async () => db.select().from(gitSyncRuns).where(eq(gitSyncRuns.connectionId, connection.id));
+    const before = (await runs()).length;
+    expect((await syncConnection(connection.id, "auto", null)).outcome).toBe("unchanged");
+    expect((await runs()).length).toBe(before);
+    await fake.control.push(REPO, "main", "todo/website.md", null);
+    expect((await syncConnection(connection.id, "auto", null)).outcome).toBe("failed");
+    expect((await syncConnection(connection.id, "auto", null)).outcome).toBe("failed");
+    expect((await runs()).length).toBe(before + 1);
+  });
+
+  it("prunes old sync history but keeps each connection's latest runs", async () => {
+    const f = await fixture();
+    const { connection } = await connect(f);
+    const old = new Date(Date.now() - 200 * 86_400_000);
+    await db.insert(gitSyncRuns).values(Array.from({ length: 30 }, (_, i) => ({ id: nanoid(), connectionId: connection.id, trigger: "manual" as const, outcome: "unchanged" as const, createdAt: new Date(old.getTime() + i * 1000) })));
+    expect(await pruneSyncRuns()).toBe(11);
+    expect(await db.select().from(gitSyncRuns).where(eq(gitSyncRuns.connectionId, connection.id))).toHaveLength(20);
   });
 
   it("round-trips YAML the same way", async () => {

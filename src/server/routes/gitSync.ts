@@ -16,6 +16,7 @@ import { gitConnections, gitSyncRuns, members, projects, type GitConnection, typ
 import { fail } from "../errors";
 import { checkTarget, connectProject, disconnectProject, SyncFailure, syncConnection, undoLastSync } from "../gitSync/engine";
 import { handleWebhook, MAX_WEBHOOK_BYTES, registerWebhook } from "../gitSync/webhooks";
+import { STALE_AFTER_MS } from "../jobKinds";
 import { seal, tokenHint } from "../gitSync/secrets";
 import { requireConfirmedEmail } from "../services/confirmedEmail";
 import { z } from "zod";
@@ -53,6 +54,7 @@ async function connectionView(c: GitConnection, projectName: string): Promise<Gi
     lastSyncedAt: c.lastSyncedAt?.toISOString() ?? null,
     conflictPolicy: c.conflictPolicy,
     autoSync: c.autoSync,
+    stale: c.autoSync && c.state === "ok" && !!c.lastSyncedAt && Date.now() - c.lastSyncedAt.getTime() > STALE_AFTER_MS,
     webhook: c.hookId !== null,
     conflicts: c.state === "conflict" ? (c.pending?.conflicts ?? []) : [],
     places: c.state === "conflict" ? placeNames([c.pending?.theirs, c.base]) : {},

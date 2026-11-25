@@ -2,6 +2,7 @@
 // run with GITHUB_API_URL=http://127.0.0.1:3199): connect a project and store it as a new file, a push to
 // GitHub arriving by webhook, a real conflict resolved in the dialog, undo, and disconnect.
 import { expect, test, type Page } from "@playwright/test";
+import { Pool } from "pg";
 
 import { freshProject, signIn, useScope, type Scope } from "./helpers";
 
@@ -60,7 +61,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await expect(panel.getByRole("button", { name: "Sync now" })).toBeVisible();
 
       // Pushes to GitHub sync on their own: the fake delivers a signed webhook to the dev API.
-      await expect(panel.getByText("Pushes to GitHub sync on their own", { exact: false })).toBeVisible();
+      await expect(panel.getByText("Syncs after each push and every 10 minutes", { exact: false })).toBeVisible();
       const md = (await fakeFile(repo, file))!.text;
       await fake("push", { fullName: repo, branch: "main", path: file, text: md.replace("- [ ] Book the venue", "- [x] Book the venue").replace("# Done\n", "# Done\n- [ ] Send the invites\n") });
       await expect.poll(async () => (await gitOf(page, project.projectId)).runs.find((r) => r.trigger === "webhook"), { timeout: 15_000 }).toMatchObject({ outcome: "pulled", pulled: 2 });
@@ -74,7 +75,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await fake("push", { fullName: repo, branch: "main", path: file, text: now.replace("- [ ] Review the copy", "- [ ] Review the copy (file)") });
       await expect.poll(async () => (await gitOf(page, project.projectId)).state, { timeout: 15_000 }).toBe("conflict");
       await page.reload();
-      await expect(panel.getByText("Paused", { exact: true })).toBeVisible();
+      await expect(panel.locator(".td-git-state").filter({ hasText: "Paused" })).toBeVisible();
       await panel.getByRole("button", { name: "Resolve conflict" }).click();
       const conflict = page.getByRole("dialog", { name: "Resolve GitHub sync conflict" });
       await expect(conflict.getByText("Title changed in Todoi and in the file")).toBeVisible();
@@ -93,8 +94,25 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await page.screenshot({ path: `.tmp/shots/git-panel-${scope}.png` });
       await runs.getByRole("button", { name: "Undo" }).click();
       await expect(page.getByRole("status").filter({ hasText: "Undid the last sync" })).toBeVisible();
+      await expect(runs.locator(".td-settings-row").first()).toContainText(/^Undid a sync and wrote \d+ changes? back to the file/);
       expect(((await (await page.request.get(`/api/items/${review}`)).json()) as { title: string }).title).toBe("Review the copy (Todoi)");
       expect((await fakeFile(repo, file))!.text).toContain("- [ ] Review the copy (Todoi)");
+
+      // A schedule keeps it in sync; one that stalls reads "Sync overdue".
+      const settings = group(page, `Sync settings · ${project.name}`);
+      const schedule = settings.getByRole("switch", { name: "Sync on a schedule" });
+      await expect(schedule).toHaveAttribute("aria-checked", "true");
+      await schedule.click();
+      await expect.poll(async () => ((await (await page.request.get(`/api/projects/${project.projectId}/git`)).json()) as { connection: { autoSync: boolean } }).connection.autoSync).toBe(false);
+      await schedule.click();
+      await expect(schedule).toHaveAttribute("aria-checked", "true");
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      await pool.query("update git_connections set last_synced_at = now() - interval '2 hours' where project_id = $1", [project.projectId]);
+      await pool.end();
+      await page.reload();
+      await expect(panel.getByText("Sync overdue", { exact: true })).toBeVisible();
+      await expect(panel.getByText("instead of every 10 minutes. Press Sync now to see why", { exact: false })).toBeVisible();
+      await page.screenshot({ path: `.tmp/shots/git-behind-${scope}.png` });
 
       // Disconnect: the file stays, the panel goes.
       await group(page, `Sync settings · ${project.name}`).getByRole("button", { name: "Disconnect" }).click();

@@ -1,5 +1,6 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 
+import { TRASH_RETENTION_DAYS } from "../../shared/enums";
 import { afterCommit, db, type Tx } from "../db";
 import { items, projects, type Item } from "../db/schema";
 import { logActivity, quote } from "./activity";
@@ -69,4 +70,20 @@ export async function destroyProject(id: string) {
   const [project] = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
   await afterCommit(drainUploadCleanup);
   return project;
+}
+
+/**
+ * The Trash keeps what's in it for TRASH_RETENTION_DAYS (the promise the UI makes), then it goes for good:
+ * items and projects whose own removal is that old, with everything under them (cascades), files included.
+ */
+export async function purgeTrash(days = TRASH_RETENTION_DAYS): Promise<{ items: number; projects: number }> {
+  const cutoff = sql`now() - ${days} * interval '1 day'`;
+  const result = await db.transaction(async (tx) => {
+    const gone = await tx.delete(projects).where(and(isNotNull(projects.deletedAt), lt(projects.deletedAt, cutoff))).returning({ id: projects.id });
+    // Deleting a parent removes its subitems too (the parent key cascades).
+    const goneItems = await tx.delete(items).where(and(isNotNull(items.deletedAt), lt(items.deletedAt, cutoff))).returning({ id: items.id });
+    return { items: goneItems.length, projects: gone.length };
+  });
+  if (result.items || result.projects) await drainUploadCleanup();
+  return result;
 }

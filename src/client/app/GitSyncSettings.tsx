@@ -7,11 +7,13 @@ import { useState, type ReactNode } from "react";
 import { errorMessage } from "../data/api";
 import { useGitConnections, useGitMutations, type GitConnectionView, type GitRunView } from "../data/gitSync";
 import { Button } from "../design/core/Button";
+import { Icon } from "../design/core/Icon";
 import { relativeSync } from "../design/core/ConnectionStatus";
 import { formatRelative } from "../design/core/dates";
 import { ConfirmDialog, Dialog } from "../design/core/Dialog";
 import { InlineError } from "../design/core/InlineError";
 import { Select } from "../design/core/Select";
+import { Switch } from "../design/core/Switch";
 import { count } from "../design/core/text";
 import { GitConflictDialog } from "../design/settings/GitConflictDialog";
 import { GitConnectDialog, type GitCheckResult } from "../design/settings/GitConnectDialog";
@@ -33,6 +35,16 @@ const POLICY_OPTIONS = [
   { value: "file", label: "The file's version wins" },
 ] as const;
 
+/** A state that needs attention: the glyph carries the tone, so it shows on every theme. */
+function StateLabel({ tone, text }: { tone: "warn" | "danger"; text: string }) {
+  return (
+    <span className="td-git-state" data-tone={tone}>
+      <Icon name="circle-alert" size={14} />
+      {text}
+    </span>
+  );
+}
+
 /** One sync run as a sentence. */
 export function runSentence(r: GitRunView): string {
   if (r.trigger === "connect") return r.outcome === "pulled" ? "Took the project from the file" : "Stored the project in the file";
@@ -48,7 +60,7 @@ export function runSentence(r: GitRunView): string {
     case "conflict":
       return `Paused on ${count(r.conflicts, "conflict")}`;
     case "undone":
-      return "Undid the last sync";
+      return r.pushed ? `Undid a sync and wrote ${count(r.pushed, "change")} back to the file` : "Undid a sync. The file already matched";
     case "failed":
       return "Sync failed";
   }
@@ -101,13 +113,19 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
         id: `gh-${c.projectId}`,
         title: `GitHub sync · ${c.projectName}`,
         sub: c.projectId === currentProjectId ? "Current project" : undefined,
-        tone: paused || failed ? "danger" : undefined,
+        tone: paused || failed ? "danger" : c.stale ? "warn" : undefined,
         rows: [
           { id: `gh-${c.projectId}-repo`, label: "Connected repository", hint: `${c.branch} · ${c.path} · ${FORMAT_NAMES[c.format]}`, control: <MonoValue value={`${c.owner}/${c.repo}`} /> },
           {
             id: `gh-${c.projectId}-sync`,
-            label: paused ? "Paused" : failed ? "Last sync failed" : c.lastSyncedAt ? "In sync" : "Not synced yet",
-            hint: paused ? `${count(c.conflicts.length, "thing")} changed in Todoi and in the file. Pick a version to sync again` : failed ? (c.lastError ?? "Try again in a minute") : `${relativeSync(c.lastSyncedAt)} · ${c.webhook ? "Pushes to GitHub sync on their own" : "After pushing to GitHub, press Sync now"}`,
+            label: paused || failed || c.stale ? <StateLabel tone={c.stale && !paused && !failed ? "warn" : "danger"} text={paused ? "Paused" : failed ? "Last sync failed" : "Sync overdue"} /> : c.lastSyncedAt ? "In sync" : "Not synced yet",
+            hint: paused
+              ? `${count(c.conflicts.length, "thing")} changed in Todoi and in the file. Pick a version to sync again`
+              : failed
+                ? (c.lastError ?? "Try again in a minute")
+                : c.stale
+                  ? `${relativeSync(c.lastSyncedAt)} instead of every 10 minutes. Press Sync now to see why`
+                  : `${relativeSync(c.lastSyncedAt)} · ${c.webhook && c.autoSync ? "Syncs after each push and every 10 minutes" : c.webhook ? "Syncs after each push to GitHub" : c.autoSync ? "Syncs every 10 minutes" : "Press Sync now after pushing to GitHub"}`,
             control: paused ? (
               <Button variant="primary" icon="git-merge" onClick={() => setConflictFor(c.projectId)}>
                 Resolve conflict
@@ -128,7 +146,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
         rows: runs.map((r) => ({
           id: `gh-run-${r.id}`,
           label: runSentence(r),
-          hint: [formatRelative(r.at), TRIGGER_WORDS[r.trigger], r.error, ...r.notes, r === undoable ? "Undo puts Todoi back to before this sync and writes that to the file" : null].filter(Boolean).join(" · "),
+          hint: [formatRelative(r.at), r.outcome === "undone" ? null : TRIGGER_WORDS[r.trigger], r.error, ...r.notes, r === undoable ? "Undo restores Todoi to before this sync and updates the file" : null].filter(Boolean).join(" · "),
           control:
             r === undoable ? (
               <Button icon="undo-2" disabled={!online || gm.undo.isPending} onClick={() => undo(c)}>
@@ -143,6 +161,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
         title: `Sync settings · ${c.projectName}`,
         rows: [
           { id: `gh-${c.projectId}-policy`, label: "When both sides change the same thing", hint: c.conflictPolicy === "ask" ? "Sync pauses until you pick a version" : "Decided without asking; the sync history says so", control: <Select aria-label="When both sides change the same thing" value={c.conflictPolicy} options={POLICY_OPTIONS} onChange={(v) => gm.update.mutate({ projectId: c.projectId, conflictPolicy: v }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} placement="bottom-end" tier="detached" width={240} /> },
+          { id: `gh-${c.projectId}-auto`, label: "Sync on a schedule", hint: c.autoSync ? `Every 10 minutes${c.webhook ? ", and after each push" : ""}` : c.webhook ? "After each push, or when you press Sync now" : "Only when you press Sync now", control: <Switch aria-label="Sync on a schedule" checked={c.autoSync} onChange={(on) => gm.update.mutate({ projectId: c.projectId, autoSync: on }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} /> },
           { id: `gh-${c.projectId}-token`, label: "GitHub token", hint: `${c.tokenHint} · Replace it before it expires`, control: <Button icon="key-round" onClick={() => {
             setNewToken("");
             setTokenError(null);

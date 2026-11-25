@@ -4,15 +4,16 @@
 // Each connection has its own webhook with its own secret (sealed at rest). A delivery is trusted only
 // when its X-Hub-Signature-256 verifies — in constant time — against a connection for that repository
 // and branch; anything else gets a bare 401. Deliveries are capped in size, repeated delivery ids are
-// dropped, Todoi's own commits are recognised and skipped, and bursts coalesce into one sync per
-// connection. Syncs run after the response (GitHub wants an answer within 10 seconds).
+// dropped, Todoi's own commits are recognised and skipped, and the sync is a durable job (jobKinds.ts),
+// coalesced per connection and retried, that runs after the response (GitHub wants one within 10 s).
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "../db";
 import { gitConnections, gitSyncRuns, type GitConnection } from "../db/schema";
 import { env } from "../env";
-import { newHookSecret, syncConnection, SyncFailure } from "./engine";
+import { enqueueGitSync } from "../jobKinds";
+import { newHookSecret } from "./engine";
 import { githubClient } from "./github";
 import { open, seal } from "./secrets";
 
@@ -66,38 +67,10 @@ const remember = (id: string) => {
   if (seen.size > 2000) seen.delete(seen.values().next().value!);
 };
 
-// One sync at a time per connection; a push during a sync asks for one more afterwards.
-const running = new Map<string, Promise<void>>();
-const again = new Set<string>();
-export function scheduleSync(connectionId: string): Promise<void> {
-  if (running.has(connectionId)) {
-    again.add(connectionId);
-    return running.get(connectionId)!;
-  }
-  const run = (async () => {
-    // A busy connection (someone pressed Sync now) is tried again after a breath, a few times at most.
-    for (let attempt = 0; attempt < 5; attempt++) {
-      again.delete(connectionId);
-      try {
-        await syncConnection(connectionId, "webhook", null);
-      } catch (e) {
-        const busy = e instanceof SyncFailure && e.reason === "busy";
-        if (busy) {
-          again.add(connectionId);
-          await new Promise((r) => setTimeout(r, 2000));
-        } else if (!(e instanceof SyncFailure)) console.error(JSON.stringify({ level: "error", msg: "webhook sync failed", connectionId, error: String(e) }));
-      }
-      if (!again.has(connectionId)) break;
-    }
-  })().finally(() => running.delete(connectionId));
-  running.set(connectionId, run);
-  return run;
-}
-
 export type WebhookOutcome = { status: 202 | 200; synced: string[] } | { status: 401 | 400 | 413 };
 
-/** Handle one delivery. `schedule` is injectable so tests can await the syncs it starts. */
-export async function handleWebhook(headers: { event?: string; delivery?: string; signature?: string }, body: string, schedule: (id: string) => Promise<void> = scheduleSync): Promise<WebhookOutcome> {
+/** Handle one delivery. `schedule` queues the sync (a durable job, coalesced per connection); tests pass their own. */
+export async function handleWebhook(headers: { event?: string; delivery?: string; signature?: string }, body: string, schedule: (id: string) => Promise<unknown> = (id) => enqueueGitSync(id, "webhook")): Promise<WebhookOutcome> {
   if (Buffer.byteLength(body) > MAX_WEBHOOK_BYTES) return { status: 413 };
   let payload: PushPayload;
   try {
@@ -133,7 +106,7 @@ export async function handleWebhook(headers: { event?: string; delivery?: string
     const [last] = await db.select({ commitSha: gitSyncRuns.commitSha }).from(gitSyncRuns).where(eq(gitSyncRuns.connectionId, c.id)).orderBy(desc(gitSyncRuns.createdAt)).limit(1);
     if (payload.after && last?.commitSha === payload.after) continue;
     synced.push(c.id);
-    void schedule(c.id);
+    await schedule(c.id);
   }
   return { status: 202, synced };
 }

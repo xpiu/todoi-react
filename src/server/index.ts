@@ -10,9 +10,8 @@ import { app } from "./app";
 import { db } from "./db";
 import { env } from "./env";
 import { notFound, onError } from "./errors";
+import { startJobs } from "./jobKinds";
 import { seedIfEmpty } from "./seed";
-import { drainUploadCleanup } from "./services/uploadCleanup";
-import { pruneOperationReceipts } from "./sync";
 
 // Development runs pending migrations on boot so the API and the schema never drift; production
 // applies them explicitly with `npm run db:migrate` (or sets MIGRATE_ON_START=true).
@@ -21,13 +20,8 @@ if (env.MIGRATE_ON_START) {
   console.log("Migrations applied");
 }
 if (env.SEED_ON_START) await seedIfEmpty();
-const housekeeping = () => {
-  void drainUploadCleanup();
-  void pruneOperationReceipts();
-};
-housekeeping();
-const cleanup = setInterval(housekeeping, 60_000);
-cleanup.unref();
+// Background work (Git syncs, the Trash purge, upload cleanup, receipt pruning) runs on the durable job queue.
+const stopJobs = await startJobs();
 
 // The API under /api; in production also the built client (CLIENT_DIR), with every other path answered
 // by index.html so a deep link (/p/…, /inbox) opens the app. Development serves the client with Vite.
@@ -63,7 +57,7 @@ function shutdown(signal: string) {
   if (closing) return;
   closing = true;
   console.log(`${signal}: finishing open requests, then exiting`);
-  clearInterval(cleanup);
+  stopJobs();
   setTimeout(() => {
     console.error("Shutdown took longer than 10s; exiting anyway");
     process.exit(1);

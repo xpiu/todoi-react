@@ -9,11 +9,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startFakeGithub } from "../../../tests/fakes/fakeGithub";
 import { app } from "../app";
 import { db } from "../db";
-import { gitConnections, gitSyncRuns, groups, items, lists, members, projects, users } from "../db/schema";
+import { gitConnections, gitSyncRuns, groups, items, jobs, lists, members, projects, users } from "../db/schema";
 import { env } from "../env";
 import { connectProject, syncConnection } from "./engine";
 import { open } from "./secrets";
-import { handleWebhook, registerWebhook, scheduleSync, webhookUrl } from "./webhooks";
+import { defineJobs, enqueueGitSync } from "../jobKinds";
+import { runDueJobs } from "../jobs";
+import { handleWebhook, registerWebhook, webhookUrl } from "./webhooks";
 
 const REPO = "acme/hooks";
 const TOKEN = "github_pat_webhook_test_0000000001";
@@ -25,6 +27,7 @@ beforeAll(async () => {
   env.APP_URL = "http://127.0.0.1:9";
   fake.control.addToken(TOKEN, { login: "flo", repos: [REPO], push: true });
   fake.control.addRepo(REPO);
+  defineJobs();
 });
 afterAll(() => fake.close());
 
@@ -115,14 +118,18 @@ describe("GitHub webhooks", () => {
     expect((await post(body, { "x-github-event": "push" })).status).toBe(401);
     const big = JSON.stringify({ repository: { full_name: REPO }, pad: "x".repeat(1024 * 1024 + 10) });
     expect((await post(big, { "x-github-event": "push", "x-hub-signature-256": sign(secret, big) })).status).toBe(413);
-    // Let the sync the 202 started finish before the database goes away.
-    await scheduleSync(c.id);
+    // The 202 queued a durable sync; the worker runs it.
+    const [queued] = await db.select().from(jobs).where(eq(jobs.key, `git-sync:${c.id}`));
+    expect(queued).toMatchObject({ kind: "git-sync", state: "queued", payload: { connectionId: c.id, trigger: "webhook" } });
+    await runDueJobs(50);
+    expect((await db.select().from(jobs).where(eq(jobs.id, queued!.id)))[0]!.state).toBe("done");
   });
 
-  it("coalesces a burst into one sync at a time", async () => {
+  it("coalesces a burst into one queued sync", async () => {
     const { c } = await connected();
-    const a = scheduleSync(c.id), b = scheduleSync(c.id);
-    expect(b).toBe(a);
-    await a;
+    expect(await enqueueGitSync(c.id, "webhook")).toBe(true);
+    expect(await enqueueGitSync(c.id, "webhook")).toBe(false);
+    expect(await db.select().from(jobs).where(eq(jobs.key, `git-sync:${c.id}`))).toHaveLength(1);
+    await runDueJobs(50);
   });
 });

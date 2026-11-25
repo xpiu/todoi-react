@@ -644,3 +644,31 @@ export const gitSyncRuns = pgTable(
   (t) => [index("git_sync_runs_connection_idx").on(t.connectionId, t.createdAt)],
 );
 export type GitSyncRun = typeof gitSyncRuns.$inferSelect;
+
+// ── Jobs ──────────────────────────────────────────────────────────────────────
+/**
+ * Durable background work (src/server/jobs.ts): due jobs are claimed with SKIP LOCKED, so any number of
+ * API processes can share the queue; a claim expires (`lockedUntil`) so a crashed process's job runs again;
+ * failures retry with backoff up to `maxAttempts`. A `key` is unique among queued jobs — a burst of the
+ * same work collapses into one — and `repeatMs` makes a job come back that long after each run.
+ */
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").notNull(),
+    key: text("key"),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    state: text("state").$type<"queued" | "running" | "done" | "failed">().notNull().default("queued"),
+    runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(5),
+    repeatMs: integer("repeat_ms"),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+    lastError: text("last_error"),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("jobs_due_idx").on(t.state, t.runAt), uniqueIndex("jobs_queued_key_idx").on(t.key).where(sql`${t.state} = 'queued'`)],
+);
+export type Job = typeof jobs.$inferSelect;

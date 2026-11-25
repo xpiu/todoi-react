@@ -83,10 +83,10 @@ Current limits:
 
 - **Email:** account emails (password reset, email confirmation, change of address) and invites to an address go out through Resend when `RESEND_API_KEY` is set; without it they are written to `EMAIL_DIR` (see Production). Mention, assignment and (when switched on) watched-item comment notifications are emailed as well as put in the Inbox, to confirmed addresses only. Inviting people and joining through an invite sent to an address need a confirmed address.
 - **Sync:** workspace JSON edits persist in IndexedDB before sending, survive reload/close and retry in order with server deduplication. Snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, preserving pending fields. Storage &amp; sync retains submitted text for conflict review; access loss purges cached content. Unsubmitted description/comment drafts use `sessionStorage`. App-shell offline caching, binary uploads and account/session actions are outside the queue. See [sync behavior](docs/sync.md).
-- **Deployment:** one API process with local attachment storage and in-process cleanup. Multiple processes would need shared persistent storage.
+- **Deployment:** one API process with local attachment storage. Background work runs on a Postgres job queue that several processes can share; multiple processes would still need shared persistent storage for uploads.
 - **Attachments:** 25 MiB per file; storage quotas per uploader: 100 MiB for guests, 2 GiB for accounts.
 - **Exports:** incomplete round-trips. Account JSON contains user details, groups, projects, lists, labels and items, excluding comments, attachments and association tables; it cannot be reimported. Back up PostgreSQL and uploads separately.
-- **Deferred:** OpenAPI, a dedicated job runner, full export/import round-trips, large-project virtualization and Linux screenshot baselines. Sequence-based deltas/SSE, Yjs collaboration and Redis remain possible later options.
+- **Deferred:** OpenAPI, full export/import round-trips, large-project virtualization and Linux screenshot baselines. Sequence-based deltas/SSE, Yjs collaboration and Redis remain possible later options.
 
 ## 👥 Visitors and accounts
 
@@ -101,7 +101,7 @@ Better Auth guest cookies last seven days, renewed during use. Refreshing/reopen
 - **API:** Node.js + Hono typed routes/RPC client, Zod validation. `/api/health` returns `{ "ok": true }`.
 - **Data:** PostgreSQL, Drizzle ORM/SQL migrations; integer positions order lists/items, row versions check stale edits, and transactional operation receipts deduplicate replay and are pruned after 30 days.
 - **Authentication:** Better Auth sessions/accounts in PostgreSQL; API tokens use `Authorization: Bearer tdi_…`.
-- **Jobs and logging:** API drains a transactional attachment-cleanup outbox. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation.
+- **Jobs and logging:** a durable job queue in PostgreSQL (`src/server/jobs.ts`, kinds and schedules in `jobKinds.ts`): due jobs are claimed with `SKIP LOCKED`, expired claims are taken over, failures retry with backoff, keys dedupe queued work. It runs Git syncs (webhooks, a reconcile every 10 minutes), the Trash purge after 90 days, the attachment-cleanup outbox and receipt pruning. Shared errors: `src/shared/errors.ts`; faults/refused database writes log JSON with request IDs. No log aggregation.
 
 ## 🎨 Design
 
@@ -228,4 +228,4 @@ APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED
 
 Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration tests, Storybook build/tests, `design-sync:check` and app Chromium tests. App screenshots use `--ignore-snapshots` until Linux baselines exist. Playwright reports: `.tmp/`, uploaded on CI failure.
 
-Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Attachment cleanup runs after commit, at startup and each minute, with retries backing off to one hour. Migrate before starting an updated API.
+Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Attachment cleanup runs after commit and as a job each minute, with retries backing off to one hour. What has been in the Trash for 90 days is deleted for good by the `trash-purge` job. Migrate before starting an updated API.

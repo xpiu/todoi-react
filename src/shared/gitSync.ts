@@ -67,6 +67,8 @@ export interface GitConnectionView {
   lastSyncedAt: string | null;
   conflictPolicy: "ask" | "todoi" | "file";
   autoSync: boolean;
+  /** Auto-sync is on but nothing synced for three scheduled rounds: something is stuck */
+  stale: boolean;
   webhook: boolean;
   conflicts: MergeConflict[];
   /** Names for the places conflicts mention: "list:<id>" → the list's name, "item:<id>" → the parent item's title */
