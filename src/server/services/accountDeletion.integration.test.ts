@@ -2,7 +2,7 @@ import { and, eq, inArray, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
-import { call, cookiesFrom, emailsTo, type Person, signIn, signUp } from "../../../tests/integration/accounts";
+import { call, confirmIt, cookiesFrom, emailsTo, type Person, signIn, signUp } from "../../../tests/integration/accounts";
 import { db } from "../db";
 import { accounts, activity, apiTokens, attachments, commentReactions, comments, groups, invites, itemAssignees, items, itemWatchers, labels, lists, members, operationReceipts, passkeys, projects, savedViews, sessions, users, verifications } from "../db/schema";
 import { inboxFor } from "../auth";
@@ -31,6 +31,7 @@ const remove = (p: Person, email = p.email) => call("/api/me/deletion", { cookie
 describe("deleting an account", () => {
   it("lists what goes and refuses while a project it owns has other members or its group holds someone else's project", async () => {
     const flo = await signUp("Flo"), sam = await signUp("Sam");
+    await confirmIt(flo.cookie);
     const solo = await project(flo, "Solo");
     await item(solo, flo, "One");
     const shared = await project(flo, "Website", [sam]);
@@ -51,8 +52,7 @@ describe("deleting an account", () => {
   it("asks for the account email and sudo mode, never an API token", async () => {
     const flo = await signUp("Flo");
     expect(await (await remove(flo, "someone@example.test")).json()).toMatchObject({ fields: { email: "Type your account email exactly" } });
-    // A log-in from three hours ago, never confirmed since: confirm it's you first (services/sudo.ts).
-    await db.update(sessions).set({ createdAt: new Date(Date.now() - 3 * 3600_000) }).where(eq(sessions.userId, flo.id));
+    // A log-in alone isn't sudo mode: confirm it's you first (services/sudo.ts).
     const stale = await remove(flo);
     expect(stale.status).toBe(403);
     expect(await stale.json()).toMatchObject({ fields: { sudo: "SUDO_REQUIRED" } });
@@ -63,6 +63,7 @@ describe("deleting an account", () => {
 
   it("removes everything only the account owns, files included, and keeps other people's data with its name on it", async () => {
     const flo = await signUp("Flo Zuallaert"), sam = await signUp("Sam Verhoeven");
+    await confirmIt(flo.cookie);
     // Flo's own project: items, a subitem, a comment, a label, a saved view, an invite, attachments.
     const own = await project(flo, "Solo");
     const ownItem = await item(own, flo, "Draft");
@@ -138,6 +139,7 @@ describe("deleting an account", () => {
 
   it("removes the account row itself when nothing else names it", async () => {
     const flo = await signUp("Flo");
+    await confirmIt(flo.cookie);
     await project(flo, "Solo");
     expect((await remove(flo)).status).toBe(204);
     expect(await db.select().from(users).where(eq(users.id, flo.id))).toEqual([]);

@@ -4,7 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { checkA11y, emailTo, freshProject, outsideSudo, trackAccounts, useScope } from "./helpers";
+import { checkA11y, confirmWithPassword, emailTo, freshProject, trackAccounts, useScope } from "./helpers";
 
 trackAccounts(test);
 const PASSWORD = "account-email-password";
@@ -13,7 +13,7 @@ async function signUp(page: Page, name = "Email test") {
   const email = `email-${nanoid(10).toLowerCase()}@example.test`;
   const r = await page.request.post("/api/auth/sign-up/email", { data: { name, email, password: PASSWORD } });
   expect(r.ok(), "sign-up").toBeTruthy();
-  return { email, id: ((await r.json()) as { user: { id: string } }).user.id };
+  return { email };
 }
 
 test("reset a forgotten password through the emailed link", async ({ page }) => {
@@ -43,10 +43,9 @@ test("reset a forgotten password through the emailed link", async ({ page }) => 
 
 test("change the sign-in email: confirm it's you, link to the new address, confirmed", async ({ page }) => {
   await useScope(page, "rounded-light");
-  const { email, id } = await signUp(page, "Change test");
+  const { email } = await signUp(page, "Change test");
   const next = `new-${nanoid(8).toLowerCase()}@example.test`;
-  // Three hours after the log-in, outside sudo mode: sending asks for the password first.
-  await outsideSudo(id);
+  // The sign-up's log-in isn't a confirmation: sending asks for the password first.
   await page.goto("/account?s=signin");
   await page.getByRole("button", { name: "Change email" }).click();
   const dialog = page.getByRole("dialog", { name: "Change email" });
@@ -101,7 +100,7 @@ test("confirm the address, then the Email notifications switches save to the acc
 
 test("delete an account: review, typed email, signed out on the deleted page", async ({ page }) => {
   await useScope(page, "rounded-dark");
-  const { email, id } = await signUp(page, "Delete test");
+  const { email } = await signUp(page, "Delete test");
   const groupId = nanoid();
   expect((await page.request.post("/api/groups", { data: { id: groupId, name: "Going away", keyPrefix: "GA" } })).status()).toBe(201);
   const f = await freshProject(page, "Doomed", { groupId });
@@ -120,6 +119,7 @@ test("delete an account: review, typed email, signed out on the deleted page", a
   await expect(remove).toBeDisabled();
   await field.fill(email.toUpperCase());
   await remove.click();
+  await confirmWithPassword(page, PASSWORD);
   await expect(page).toHaveURL(/\/account-deleted/);
   await expect(page.getByRole("heading", { name: "Your account is deleted" })).toBeVisible();
   await checkA11y(page, "account deleted");
@@ -127,5 +127,4 @@ test("delete an account: review, typed email, signed out on the deleted page", a
   expect((await page.request.get(`/api/projects/${f.projectId}`)).status()).toBe(404);
   const signIn = await page.request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
   expect(signIn.ok()).toBeFalsy();
-  void id;
 });

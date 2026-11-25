@@ -145,15 +145,12 @@ export async function emailTo(to: string, subject: string, timeout = 10_000): Pr
   }
 }
 
-/** Put every session of a test's own account outside sudo mode: logged in three hours ago, never confirmed since. */
-export async function outsideSudo(userId: string) {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  try {
-    const r = await pool.query("update sessions set created_at = now() - interval '3 hours', confirmed_at = null where user_id = $1 and user_id <> (select id from users where email = $2)", [userId, DEV_USER.email]);
-    expect(r.rowCount, "sessions aged").toBeGreaterThan(0);
-  } finally {
-    await pool.end();
-  }
+/** Sudo mode's confirm step (ConfirmAccessDialog, over the flow that asked): confirm it's you with the password. */
+export async function confirmWithPassword(page: Page, password: string) {
+  const confirm = page.getByRole("dialog", { name: "Confirm it's you" });
+  await confirm.getByLabel(/^Password/).fill(password);
+  await confirm.getByRole("button", { name: "Confirm" }).click();
+  await expect(confirm).toBeHidden();
 }
 
 /**

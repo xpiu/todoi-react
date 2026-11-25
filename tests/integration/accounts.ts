@@ -50,6 +50,12 @@ export async function signIn(email: string, password = PASSWORD): Promise<string
   return cookiesFrom(res);
 }
 
+/** Confirm it's you with the password in this session (sudo mode, services/sudo.ts): a log-in alone doesn't count. */
+export async function confirmIt(cookie: string, password = PASSWORD) {
+  const res = await call("/api/me/sudo", { cookie, json: { password } });
+  if (!res.ok) throw new Error(`Confirming failed: ${res.status} ${await res.text()}`);
+}
+
 export interface SentEmail { to: string; subject: string; html: string; text: string; link: string | undefined }
 
 /** Every email written so far to an address, oldest first; `link` is the first app link in the text part. */

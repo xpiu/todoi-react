@@ -1,18 +1,19 @@
-// Sudo mode (services/sudo.ts, decision Q6): deleting the account, changing the email and adding or removing
-// a passkey need a log-in or a confirmation (password or passkey) in this session within the last 2 hours.
+// Sudo mode (services/sudo.ts, decisions Q6 and R1): deleting the account, changing the email and adding or
+// removing a passkey need a confirmation (password or passkey) in this session within the last 2 hours. A
+// log-in doesn't count.
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
-import { call, cookiesFrom, PASSWORD, signIn, signUp, type Person } from "../../../tests/integration/accounts";
+import { call, confirmIt, cookiesFrom, PASSWORD, signIn, signUp, type Person } from "../../../tests/integration/accounts";
 import { db } from "../db";
 import { passkeys, sessions, users } from "../db/schema";
 
 const HOUR = 3600_000;
 const sudo = async (cookie: string) => ((await (await call("/api/me/sudo", { cookie })).json()) as { confirmedUntil: string | null }).confirmedUntil;
-/** Every session of the person (or only the one behind `cookie`) as if it logged in `hours` ago. */
-async function age(p: Person, hours: number, confirmedHoursAgo?: number) {
-  await db.update(sessions).set({ createdAt: new Date(Date.now() - hours * HOUR), confirmedAt: confirmedHoursAgo === undefined ? null : new Date(Date.now() - confirmedHoursAgo * HOUR) }).where(eq(sessions.userId, p.id));
+/** Every session of the person as if it last confirmed `hours` ago. */
+async function confirmedAgo(p: Person, hours: number) {
+  await db.update(sessions).set({ confirmedAt: new Date(Date.now() - hours * HOUR) }).where(eq(sessions.userId, p.id));
 }
 async function storedPasskey(owner: Person) {
   const id = nanoid();
@@ -28,32 +29,31 @@ const guarded = (p: Person, cookie = p.cookie) => ({
 });
 
 describe("sudo mode", () => {
-  it("covers a fresh log-in for two hours, then refuses every guarded action until the person confirms", async () => {
+  it("doesn't count a log-in: every guarded action is refused until the person confirms, and again after two hours", async () => {
     const flo = await signUp("Flo");
-    const until = await sudo(flo.cookie);
-    expect(new Date(until!).getTime()).toBeGreaterThan(Date.now() + 1.9 * HOUR);
-    expect((await guarded(flo).addPasskey()).status).toBe(200);
-
-    // Expired: logged in 2h01 ago, never confirmed.
-    await age(flo, 2.02);
-    expect(await sudo(flo.cookie)).toBeNull();
+    const laptop = await signIn(flo.email);
     const id = await storedPasskey(flo);
+    for (const cookie of [flo.cookie, laptop]) {
+      expect(await sudo(cookie)).toBeNull();
+      const g = guarded(flo, cookie);
+      for (const res of [await g.addPasskey(), await g.removePasskey(id), await g.changeEmail(), await g.deleteAccount()]) expect(res.status).toBe(403);
+    }
     const g = guarded(flo);
-    for (const res of [await g.addPasskey(), await g.removePasskey(id), await g.changeEmail(), await g.deleteAccount()]) expect(res.status).toBe(403);
     expect(await (await g.addPasskey()).json()).toMatchObject({ code: "SUDO_REQUIRED" });
     expect(await (await g.changeEmail()).json()).toMatchObject({ fields: { sudo: "SUDO_REQUIRED" } });
     expect(await db.select().from(passkeys).where(eq(passkeys.id, id))).toHaveLength(1);
     expect(await db.select().from(users).where(eq(users.id, flo.id))).toHaveLength(1);
 
-    // A confirmation from 2h01 ago has run out too.
-    await age(flo, 5, 2.02);
+    await confirmIt(flo.cookie);
+    expect((await g.addPasskey()).status).toBe(200);
+    // A confirmation from 2h01 ago has run out.
+    await confirmedAgo(flo, 2.02);
     expect(await sudo(flo.cookie)).toBeNull();
     expect((await g.removePasskey(id)).status).toBe(403);
   });
 
   it("is granted by the password, for two hours, and then allows each guarded action", async () => {
     const flo = await signUp("Flo");
-    await age(flo, 3);
     const wrong = await call("/api/me/sudo", { cookie: flo.cookie, json: { password: "not the password" } });
     expect(wrong.status).toBe(400);
     expect(await wrong.json()).toMatchObject({ fields: { password: "That password isn't right." } });
@@ -76,7 +76,6 @@ describe("sudo mode", () => {
     const flo = await signUp("Flo");
     const laptop = flo.cookie;
     const phone = await signIn(flo.email);
-    await age(flo, 3);
     expect((await call("/api/me/sudo", { cookie: laptop, json: { password: PASSWORD } })).status).toBe(200);
     expect(await sudo(laptop)).not.toBeNull();
     expect(await sudo(phone)).toBeNull();

@@ -1,8 +1,8 @@
 // Sudo mode in the browser (src/shared/sudo.ts): before a sensitive account action, `confirm(action)` asks
 // the server whether this session is still inside its window; if not, it opens ConfirmAccessDialog and
 // resolves once the person confirmed with their password (POST /api/me/sudo) or a passkey (a passkey log-in
-// through Better Auth, which replaces this browser's session), or false when they cancel. The flow renders
-// `dialog` in its own dialog's `stacked` slot.
+// through Better Auth from this signed-in browser: it replaces the session with a confirmed one), or false
+// when they cancel. Logging in never counts. The flow renders `dialog` in its own dialog's `stacked` slot.
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 

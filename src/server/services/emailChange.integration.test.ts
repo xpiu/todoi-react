@@ -2,9 +2,9 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
-import { call, emailsTo, openLink, PASSWORD, signIn, signUp } from "../../../tests/integration/accounts";
+import { call, confirmIt, emailsTo, openLink, PASSWORD, signIn, signUp } from "../../../tests/integration/accounts";
 import { db } from "../db";
-import { sessions, users } from "../db/schema";
+import { users } from "../db/schema";
 import { env } from "../env";
 
 const fresh = () => `${nanoid(10).toLowerCase()}@example.test`;
@@ -19,8 +19,7 @@ describe("changing the sign-in email", () => {
     const person = await signUp("Flo");
     const same = await call("/api/me/email-change", { cookie: person.cookie, json: { email: person.email.toUpperCase() } });
     expect(await same.json()).toMatchObject({ fields: { email: "That's already your email." } });
-    // A log-in from three hours ago, never confirmed since: confirm it's you first.
-    await db.update(sessions).set({ createdAt: new Date(Date.now() - 3 * 3600_000) }).where(eq(sessions.userId, person.id));
+    // A log-in alone isn't sudo mode: confirm it's you first (services/sudo.ts).
     const stale = await call("/api/me/email-change", { cookie: person.cookie, json: { email: fresh() } });
     expect(stale.status).toBe(403);
     expect(await stale.json()).toMatchObject({ fields: { sudo: "SUDO_REQUIRED" } });
@@ -33,6 +32,7 @@ describe("changing the sign-in email", () => {
 
   it("emails the new address only, waits for the link, then switches the login and confirms the address", async () => {
     const person = await signUp("Flo");
+    await confirmIt(person.cookie);
     const next = fresh();
     const asked = await call("/api/me/email-change", { cookie: person.cookie, json: { email: next } });
     expect(asked.status).toBe(200);
@@ -58,6 +58,7 @@ describe("changing the sign-in email", () => {
 
   it("sends the link again on request, and a cancelled change's link stops working", async () => {
     const person = await signUp("Sam");
+    await confirmIt(person.cookie);
     const next = fresh();
     await call("/api/me/email-change", { cookie: person.cookie, json: { email: next } });
     expect((await call("/api/me/email-change/resend", { cookie: person.cookie, method: "POST" })).status).toBe(200);
@@ -72,6 +73,7 @@ describe("changing the sign-in email", () => {
 
   it("refuses a link for an address another account took in the meantime", async () => {
     const person = await signUp("Flo");
+    await confirmIt(person.cookie);
     const next = fresh();
     await call("/api/me/email-change", { cookie: person.cookie, json: { email: next } });
     await signUp("Someone else", next);

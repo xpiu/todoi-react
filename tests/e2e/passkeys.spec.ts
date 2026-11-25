@@ -1,12 +1,13 @@
 // Passkeys end to end with Chromium's virtual authenticator (CDP WebAuthn: ctap2, internal, resident keys,
 // user verification): add one in Settings › Account, log out, log back in with it — through the email
 // field's autofill (conditional mediation) and through the button — rename it, then the sudo-mode confirm
-// step: removing it and deleting the account ask "Confirm it's you" (a passkey, or the password) once the
-// session is outside its 2-hour window. Every account here is a fresh sign-up that trackAccounts removes.
+// step: adding and removing it and deleting the account ask "Confirm it's you" (a passkey, or the password).
+// A log-in never counts as that confirmation, a passkey log-in included. Every account here is a fresh
+// sign-up that trackAccounts removes.
 import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { checkA11y, outsideSudo, trackAccounts, useScope } from "./helpers";
+import { checkA11y, confirmWithPassword, trackAccounts, useScope } from "./helpers";
 
 trackAccounts(test);
 const PASSWORD = "passkeys-e2e-password";
@@ -15,7 +16,7 @@ async function signUp(page: Page) {
   const email = `passkey-${nanoid(10).toLowerCase()}@example.test`;
   const r = await page.request.post("/api/auth/sign-up/email", { data: { name: "Passkey test", email, password: PASSWORD } });
   expect(r.ok(), "sign-up").toBeTruthy();
-  return { email, id: ((await r.json()) as { user: { id: string } }).user.id };
+  return { email };
 }
 
 /** A platform authenticator with user verification that answers every prompt by itself. */
@@ -31,20 +32,25 @@ async function logOut(page: Page) {
   await page.context().clearCookies();
 }
 const signedInAs = async (page: Page) => ((await (await page.request.get("/api/me")).json()) as { email?: string }).email;
+/** Until when this browser's session is in sudo mode, or null. */
+const sudoUntil = async (page: Page) => ((await (await page.request.get("/api/me/sudo")).json()) as { confirmedUntil: string | null }).confirmedUntil;
 
 test("passkeys: add one, log in with it by autofill and by the button, rename, remove after confirming it's you", async ({ page }) => {
   test.slow();
   await useScope(page, "rounded-light");
   const authenticator = await virtualAuthenticator(page);
-  const { email, id } = await signUp(page);
+  const { email } = await signUp(page);
 
-  // Add: a fresh log-in is inside sudo mode, so the browser prompt comes straight away.
+  // Add: the sign-up's log-in isn't a confirmation, so confirm it's you first (the password: no passkey yet).
   await page.goto("/account?s=signin");
   await expect(page.getByText("None yet · Log in with your fingerprint, face or screen lock")).toBeVisible();
   await page.getByRole("button", { name: "Manage" }).click();
   const dialog = page.getByRole("dialog", { name: "Passkeys" });
   await expect(dialog.getByText("No passkeys yet")).toBeVisible();
   await dialog.getByRole("button", { name: "Add a passkey" }).click();
+  await expect(page.getByRole("dialog", { name: "Confirm it's you" }).getByLabel(/^Password/)).toBeFocused();
+  await expect(page.getByRole("dialog", { name: "Confirm it's you" }).getByRole("button", { name: "Use a passkey" })).toHaveCount(0);
+  await confirmWithPassword(page, PASSWORD);
   await expect(page.getByText(/^Added the passkey “.+”$/)).toBeVisible();
   const row = dialog.getByRole("listitem");
   await expect(row).toHaveCount(1);
@@ -60,6 +66,8 @@ test("passkeys: add one, log in with it by autofill and by the button, rename, r
   await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "username webauthn");
   await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
   expect(await signedInAs(page)).toBe(email);
+  // A passkey log-in is a log-in, not a confirmation.
+  expect(await sudoUntil(page)).toBeNull();
 
   // Log in with the button, in a browser that offers no passkey autofill.
   await logOut(page);
@@ -71,6 +79,7 @@ test("passkeys: add one, log in with it by autofill and by the button, rename, r
   await page.getByRole("button", { name: "Log in with a passkey" }).click();
   await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
   expect(await signedInAs(page)).toBe(email);
+  expect(await sudoUntil(page)).toBeNull();
 
   // Rename in place; "Last used" shows the log-ins.
   await page.goto("/account?s=signin");
@@ -82,8 +91,7 @@ test("passkeys: add one, log in with it by autofill and by the button, rename, r
   await expect(dialog.getByText("Work laptop")).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Rename Work laptop" })).toBeFocused();
 
-  // Remove, three hours after the log-in: confirm it's you — here with the passkey itself.
-  await outsideSudo(id);
+  // Remove: the passkey log-in didn't confirm anything, so confirm it's you — here with the passkey itself.
   const sessions = async () => (await (await page.request.get("/api/auth/list-sessions")).json()) as Array<{ token: string }>;
   const before = await sessions();
   const { session: current } = (await (await page.request.get("/api/auth/get-session")).json()) as { session: { token: string } };
@@ -96,18 +104,17 @@ test("passkeys: add one, log in with it by autofill and by the button, rename, r
   await expect(confirm).toBeHidden();
   await expect(page.getByText("Removed the passkey “Work laptop”")).toBeVisible();
   await expect(dialog.getByText("No passkeys yet")).toBeVisible();
-  // The passkey confirmation was a log-in: it replaced this browser's session (one in, one out), and the new one is in sudo mode.
+  // The passkey confirmation replaced this browser's session (one in, one out), and the new one is in sudo mode.
   expect(await signedInAs(page)).toBe(email);
-  expect(((await (await page.request.get("/api/me/sudo")).json()) as { confirmedUntil: string | null }).confirmedUntil).not.toBeNull();
+  expect(await sudoUntil(page)).not.toBeNull();
   const after = await sessions();
   expect(after).toHaveLength(before.length);
   expect(after.map((s) => s.token)).not.toContain(current.token);
 });
 
-test("deleting the account outside sudo mode asks to confirm it's you with the password first", async ({ page }) => {
+test("deleting the account asks to confirm it's you with the password first, right after logging in too", async ({ page }) => {
   await useScope(page, "minimal-dark");
-  const { email, id } = await signUp(page);
-  await outsideSudo(id);
+  const { email } = await signUp(page);
   await page.goto("/account?s=data");
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Delete account" });

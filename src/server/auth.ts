@@ -22,7 +22,7 @@ import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } fro
 import { isDeletedAddress } from "./services/accountDeletion";
 import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
-import { sudoUntil } from "./services/sudo";
+import { confirmSession, sudoUntil } from "./services/sudo";
 import { SUDO_REQUIRED } from "../shared/sudo";
 import { fail } from "./errors";
 
@@ -117,14 +117,17 @@ export const auth = betterAuth({
       const refusal = await refusedChange(claims);
       if (refusal) throw ctx.redirect(confirmEmailChangeUrl(claims.updateTo, refusal));
     }),
-    // A passkey log-in from a browser already signed in to the same account (confirming it's them, sudo
-    // mode) replaces that browser's session: the old one goes, so Devices doesn't list this browser twice.
+    // A passkey log-in from a browser already signed in to the same account is the passkey way to confirm
+    // it's them (sudo mode): it replaces that browser's session, so Devices doesn't list this browser twice,
+    // and the new session counts as confirmed. A log-in from the log-in page (no session, a guest's, or an
+    // expired one) is only a log-in and confirms nothing.
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/passkey/verify-authentication") return;
       const fresh = ctx.context.newSession;
       const replaced = await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret);
       if (!fresh || !replaced || replaced === fresh.session.token) return;
-      await db.delete(sessions).where(and(eq(sessions.token, replaced), eq(sessions.userId, fresh.user.id)));
+      const [old] = await db.delete(sessions).where(and(eq(sessions.token, replaced), eq(sessions.userId, fresh.user.id))).returning({ expiresAt: sessions.expiresAt });
+      if (old && old.expiresAt > new Date()) await confirmSession(fresh.session.id);
     }),
   },
   user: {

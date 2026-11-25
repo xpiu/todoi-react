@@ -4,7 +4,7 @@
 import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
-import { call, cookiesFrom, signUp, type Person } from "../../../tests/integration/accounts";
+import { call, confirmIt, cookiesFrom, signUp, type Person } from "../../../tests/integration/accounts";
 import { db } from "../db";
 import { passkeys } from "../db/schema";
 import { env } from "../env";
@@ -19,6 +19,7 @@ async function storedPasskey(owner: Person, name: string) {
 describe("passkeys", () => {
   it("are offered to registered accounts for the app's own address, never to guests", async () => {
     const flo = await signUp("Flo");
+    await confirmIt(flo.cookie);
     const options = await call("/api/auth/passkey/generate-register-options", { cookie: flo.cookie });
     expect(options.status).toBe(200);
     expect(await options.json()).toMatchObject({ rp: { id: new URL(env.APP_URL).hostname, name: "Todoi" }, user: { name: flo.email } });
