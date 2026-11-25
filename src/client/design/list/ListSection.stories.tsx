@@ -3,6 +3,7 @@ import { expect, fn, waitFor, within } from "storybook/test";
 
 import { getAppearance, useAppearanceStore } from "../core/appearance";
 import { Button } from "../core/Button";
+import { applyViewportAttrs, getViewport } from "../core/viewport";
 import { ListRow } from "./ListRow";
 import { GroupLead, ListSection } from "./ListSection";
 
@@ -149,13 +150,84 @@ export const GroupAddItem: Story = {
     await expect(canvas.queryByRole("textbox", { name: "New item in High" })).not.toBeInTheDocument();
   },
 };
-/** Phone: no hover to reveal it, and no bottom add row in a group, so the group's + always shows. */
-export const GroupAddItemPhone: Story = {
+/**
+ * A touch screen: viewport.ts sets html[data-touch] from `(hover: none) and (pointer: coarse)`; a story forces it with
+ * html[data-force-touch] (Storybook's viewport only changes the width).
+ */
+function touchScreen() {
+  const root = document.documentElement;
+  root.setAttribute("data-force-touch", "true");
+  applyViewportAttrs(getViewport());
+  return () => {
+    root.removeAttribute("data-force-touch");
+    applyViewportAttrs(getViewport());
+  };
+}
+const opacityOf = (el: HTMLElement) => getComputedStyle(el).opacity;
+/** On touch the + always shows (no hover to reveal it) and is a 44px target around the same look. */
+const expectTouchPlus = async (plus: HTMLElement) => {
+  await waitFor(() => expect(opacityOf(plus)).toBe("1"));
+  const box = plus.getBoundingClientRect();
+  await expect([box.width, box.height]).toEqual([44, 44]);
+};
+/** Phone, touch: a group's + is its only add affordance (no bottom add row), so it always shows. */
+export const GroupAddItemTouchPhone: Story = {
+  args: { ...groupArgs, onAddItem: fn() },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  beforeEach: touchScreen,
+  async play({ canvas, canvasElement }) {
+    await waitFor(() => expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-device", "phone"));
+    await expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-touch", "true");
+    await expectTouchPlus(canvas.getByRole("button", { name: "Add an item to High" }));
+  },
+};
+/** Tablet, touch: decided by the input, not the width — the + shows here too, and on a list's header. */
+export const GroupAddItemTouchTablet: Story = {
+  render: (args) => (
+    <div style={{ display: "grid", gap: 12 }}>
+      <ListSection {...args} />
+      <ListSection name="Doing" count={3} listId="doing" onAddItem={fn()}>
+        {rows}
+      </ListSection>
+    </div>
+  ),
+  args: { ...groupArgs, onAddItem: fn() },
+  globals: { viewport: { value: "tablet", isRotated: false } },
+  beforeEach: touchScreen,
+  async play({ canvas, canvasElement }) {
+    await waitFor(() => expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-device", "tablet"));
+    await expectTouchPlus(canvas.getByRole("button", { name: "Add an item to High" }));
+    await expectTouchPlus(canvas.getByRole("button", { name: "Add an item at the top of Doing" }));
+  },
+};
+/** A phone-wide window with a mouse: hover-capable, so the + waits for hover or focus inside the group, as on desktop. */
+export const GroupAddItemNarrowWithMouse: Story = {
   args: { ...groupArgs, onAddItem: fn() },
   globals: { viewport: { value: "phone", isRotated: false } },
   async play({ canvas, canvasElement }) {
     await waitFor(() => expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-device", "phone"));
-    await waitFor(() => expect(getComputedStyle(canvas.getByRole("button", { name: "Add an item to High" })).opacity).toBe("1"));
+    const plus = canvas.getByRole("button", { name: "Add an item to High" });
+    await waitFor(() => expect(opacityOf(plus)).toBe("0"));
+    await expect(plus.getBoundingClientRect().width).toBeLessThan(44);
+  },
+};
+/** Hover-capable: the + shows on the header's hover, and while focus is anywhere in the group (:focus-within). */
+export const GroupAddItemFocusWithin: Story = {
+  args: { ...groupArgs, onAddItem: fn() },
+  async play({ canvas, userEvent }) {
+    const plus = canvas.getByRole("button", { name: "Add an item to High" });
+    await waitFor(() => expect(opacityOf(plus)).toBe("0"));
+    // Focus on a row's control, inside the group
+    const inRow = canvas.getByRole("button", { name: "Copy HE-112" });
+    inRow.focus();
+    await waitFor(() => expect(opacityOf(plus)).toBe("1"));
+    inRow.blur();
+    await waitFor(() => expect(opacityOf(plus)).toBe("0"));
+    // Tab from the chevron reaches the + and shows it (:hover can't be checked here: synthetic pointer events don't set it)
+    canvas.getByRole("button", { name: "Collapse High" }).focus();
+    await userEvent.tab();
+    await waitFor(() => expect(plus).toHaveFocus());
+    await waitFor(() => expect(opacityOf(plus)).toBe("1"));
   },
 };
 /** The host controls collapse (per device for groups): the chevron asks, the host answers. */

@@ -57,9 +57,20 @@
   .td-list-section-chevron:focus-visible,
   .td-list-section-chevron[aria-expanded="false"],
   .td-list-section-head:hover .td-list-section-addbtn,
-  .td-list-section-addbtn:focus-visible,
+  .td-list-section:focus-within .td-list-section-addbtn,
   .td-list-section-addbtn[aria-pressed="true"] {
     opacity: 1;
+  }
+  /* By input capability, not width (decision R4): with no hover to reveal it (html[data-touch], viewport.ts), the
+     + always shows and is a 44px target. The box grows to the left and around the 24px look (the background stays
+     on the content box); the end overhang sits under the ⋯ that follows, or in the header's padding. */
+  html[data-touch="true"] .td-list-section-addbtn {
+    opacity: 1;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    margin: -10px -10px -10px 0;
+    background-clip: content-box;
   }
   /* addVisible (Inbox): the header + shows without hover */
   .td-list-section[data-add-visible="true"] .td-list-section-addbtn {
@@ -276,9 +287,5 @@
   }
   html[data-device="phone"] .td-list-section-dropnote > span {
     white-space: normal;
-  }
-  /* Phone: a group's + is its only add affordance (no bottom add row) and there is no hover to reveal it */
-  html[data-device="phone"] .td-list-section[data-group-id] .td-list-section-addbtn {
-    opacity: 1;
   }
 }
