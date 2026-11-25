@@ -1,0 +1,303 @@
+// Git sync: a project kept in one file in a GitHub repository, in sync both ways.
+//
+// A sync reads the file, builds Todoi's document, and three-way merges them against the document of the
+// last sync (the connection's `base`). Todoi's side is applied in one transaction that first locks the
+// project's items and re-checks nothing moved since it was read; the file is written as a commit against
+// the blob it was read at, so a concurrent push makes the write "stale" and the whole sync runs again.
+// Conflicts follow the connection's policy: "ask" pauses until someone picks a side per conflict, "todoi"
+// and "file" decide them. Every sync is a run in git_sync_runs with Todoi's document before it applied
+// anything, which is what "Undo last sync" restores. One sync per connection at a time, across processes
+// (a Postgres advisory lock).
+import { createHash, randomBytes } from "node:crypto";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
+
+import { CODECS, type FileFormat } from "../../shared/projectDoc/codecs";
+import { ProjectFileError } from "../../shared/projectDoc/file";
+import { canonicalDoc, countItemChanges, mergeDocs, withIds, type Side } from "../../shared/projectDoc/merge";
+import type { ProjectDoc } from "../../shared/projectDoc/model";
+import { db } from "../db";
+import { gitConnections, gitSyncRuns, items, projects, type GitConflictPolicy, type GitConnection, type GitSyncRun } from "../db/schema";
+import { githubClient, GitHubError, type FileRef, type GitHubClient } from "./github";
+import { applyProjectDoc, readProjectDoc } from "./projectDoc";
+import { open, seal, tokenHint } from "./secrets";
+
+export type SyncTrigger = GitSyncRun["trigger"];
+
+/** A sync that couldn't run, in words for the person who asked. */
+export class SyncFailure extends Error {
+  constructor(
+    readonly reason: "busy" | "token" | "access" | "missing-file" | "file-exists" | "unreadable" | "github" | "not-found" | "nothing-to-undo",
+    message: string,
+  ) {
+    super(message);
+    this.name = "SyncFailure";
+  }
+}
+
+const refOf = (c: Pick<GitConnection, "owner" | "repo" | "branch" | "path">): FileRef => ({ owner: c.owner, repo: c.repo, branch: c.branch, path: c.path });
+const repoName = (c: Pick<GitConnection, "owner" | "repo">) => `${c.owner}/${c.repo}`;
+
+function clientFor(c: GitConnection): GitHubClient {
+  const token = open(c.tokenCipher);
+  if (!token) throw new SyncFailure("token", "Todoi can't read the stored GitHub token anymore. Connect the repository again with a new token");
+  return githubClient(token);
+}
+
+/** A GitHub failure as a sentence that says what to do. */
+export function explainGitHub(e: GitHubError, c: Pick<GitConnection, "owner" | "repo" | "branch" | "path">): string {
+  switch (e.reason) {
+    case "unauthorized":
+      return "GitHub didn't accept the token. It may have expired or been revoked; connect again with a new token";
+    case "forbidden":
+      return `The token can't write to ${repoName(c)}. Give it Contents: Read and write access to this repository`;
+    case "rate-limited":
+      return `GitHub's rate limit was reached. Sync again after ${e.retryAt?.toISOString().slice(11, 16) ?? "a minute"} UTC`;
+    case "not-found":
+      return `GitHub can't find ${repoName(c)} or its ${c.branch} branch, or the token can't see them`;
+    case "too-large":
+    case "not-a-file":
+      return e.message;
+    case "unavailable":
+      return "GitHub didn't answer. Try again in a minute";
+    default:
+      return `GitHub refused the change: ${e.message}`;
+  }
+}
+
+async function withConnectionLock<T>(connectionId: string, run: () => Promise<T>): Promise<T> {
+  const client = await db.$client.connect();
+  const key = createHash("sha256").update(`git-sync:${connectionId}`).digest().readBigInt64BE();
+  try {
+    const { rows } = await client.query<{ ok: boolean }>("select pg_try_advisory_lock($1) as ok", [key.toString()]);
+    if (!rows[0]?.ok) throw new SyncFailure("busy", "This project is syncing right now. Try again in a moment");
+    try {
+      return await run();
+    } finally {
+      await client.query("select pg_advisory_unlock($1)", [key.toString()]);
+    }
+  } finally {
+    client.release();
+  }
+}
+
+async function loadConnection(id: string): Promise<GitConnection> {
+  const [c] = await db.select().from(gitConnections).where(eq(gitConnections.id, id));
+  if (!c) throw new SyncFailure("not-found", "This project isn't connected to a repository anymore");
+  return c;
+}
+
+/** Todoi's document, read in a short transaction (it may record file ids). */
+const readOurs = (projectId: string) => db.transaction((tx) => readProjectDoc(tx, projectId));
+
+/** Apply `target` to the project unless Todoi changed since `expected` was read; false = it did, merge again. */
+async function applyIfUnchanged(projectId: string, expected: ProjectDoc, target: ProjectDoc, actorId: string) {
+  return db.transaction(async (tx) => {
+    // Hold the project's items still while comparing and applying.
+    await tx.select({ id: items.id }).from(items).where(eq(items.projectId, projectId)).for("update");
+    const now = await readProjectDoc(tx, projectId);
+    if (JSON.stringify(canonicalDoc(now)) !== JSON.stringify(canonicalDoc(expected))) return null;
+    return applyProjectDoc(tx, projectId, target, actorId);
+  });
+}
+
+function commitMessage(projectName: string, changed: number) {
+  return `Todoi: sync “${projectName}”${changed ? ` (${changed} item${changed === 1 ? "" : "s"})` : ""}`;
+}
+
+async function record(c: GitConnection, run: Omit<typeof gitSyncRuns.$inferInsert, "id" | "connectionId">) {
+  const [row] = await db.insert(gitSyncRuns).values({ id: nanoid(), connectionId: c.id, ...run }).returning();
+  return row!;
+}
+
+export interface SyncOptions {
+  /** Decisions for conflicts, by conflict key (from a previous run's pending conflicts) */
+  choices?: Readonly<Record<string, Side>>;
+  /** Decide every open conflict this way, whatever the connection's policy */
+  resolveAll?: Side;
+}
+
+/** Sync a connection now. Returns the run; throws SyncFailure only when it couldn't start (busy, gone). */
+export async function syncConnection(connectionId: string, trigger: SyncTrigger, actorId: string | null, opts: SyncOptions = {}): Promise<GitSyncRun> {
+  return withConnectionLock(connectionId, async () => {
+    const c = await loadConnection(connectionId);
+    const actor = actorId ?? c.createdBy ?? (await projectOwner(c.projectId));
+    try {
+      return await syncLocked(c, trigger, actor, opts);
+    } catch (e) {
+      if (e instanceof SyncFailure && e.reason === "busy") throw e;
+      const message = e instanceof GitHubError ? explainGitHub(e, c) : e instanceof SyncFailure ? e.message : e instanceof ProjectFileError ? `The file in ${repoName(c)} can't be read: ${e.problems.join("; ")}` : "The sync stopped on an unexpected error";
+      if (!(e instanceof GitHubError || e instanceof SyncFailure || e instanceof ProjectFileError)) console.error(JSON.stringify({ level: "error", msg: "git sync failed", connectionId: c.id, error: String(e), stack: (e as Error).stack }));
+      await db.update(gitConnections).set({ state: "error", lastError: message }).where(eq(gitConnections.id, c.id));
+      return record(c, { actorId, trigger, outcome: "failed", error: message });
+    }
+  });
+}
+
+async function projectOwner(projectId: string): Promise<string> {
+  const [row] = await db.execute<{ user_id: string }>(sql`select user_id from members where project_id = ${projectId} and role = 'owner' limit 1`).then((r) => r.rows);
+  if (!row) throw new SyncFailure("not-found", "The project has no owner to sync as");
+  return row.user_id;
+}
+
+async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string, opts: SyncOptions): Promise<GitSyncRun> {
+  const gh = clientFor(c);
+  const codec = CODECS[c.format];
+  const [project] = await db.select({ name: projects.name }).from(projects).where(eq(projects.id, c.projectId));
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const remote = await gh.readFile(refOf(c));
+    if (!remote) {
+      // No file: say so only once the repository and branch are known to be there and visible.
+      await gh.repo(c.owner, c.repo);
+      if (!(await gh.branchExists(c.owner, c.repo, c.branch))) throw new GitHubError("not-found", 404, "branch not found");
+    }
+    if (!remote) throw new SyncFailure("missing-file", `${c.path} is gone from ${repoName(c)} (${c.branch}). Store a new file there, or disconnect`);
+    const ours = await readOurs(c.projectId);
+    const base = c.base ?? null;
+    // An unchanged blob is the base itself; anything else is parsed (and what the codec had to say is kept on the run).
+    const parsed = remote.sha === c.fileSha && base ? null : codec.parse(remote.text);
+    const theirs = parsed?.doc ?? base!;
+    const notes = parsed?.warnings.length ? parsed.warnings : null;
+    const prefer: Side = opts.resolveAll ?? (c.conflictPolicy === "file" ? "theirs" : "ours");
+    const merged = mergeDocs(base, ours, theirs, { choices: opts.choices, prefer });
+    const undecided = c.conflictPolicy === "ask" && !opts.resolveAll ? merged.open : [];
+    if (undecided.length) {
+      await db.update(gitConnections).set({ state: "conflict", lastError: null, pending: { theirs, sha: remote.sha, conflicts: merged.conflicts } }).where(eq(gitConnections.id, c.id));
+      return record(c, { actorId: actor, trigger, outcome: "conflict", conflicts: undecided.length, notes });
+    }
+    let pulled = 0;
+    // What Todoi holds after applying is the result: its own rules (a new item takes its list's Status) are part of it.
+    let result = merged.doc;
+    if (merged.changed.ours) {
+      const applied = await applyIfUnchanged(c.projectId, ours, merged.doc, actor);
+      if (!applied) continue;
+      result = await readOurs(c.projectId);
+      pulled = countItemChanges(ours, result);
+    }
+    let fileSha = remote.sha, commitSha: string | null = null, pushed = 0;
+    const text = codec.serialize(result);
+    if (text !== remote.text) {
+      pushed = countItemChanges(theirs, result);
+      try {
+        const out = await gh.writeFile(refOf(c), text, remote.sha, commitMessage(project?.name ?? "project", pushed));
+        fileSha = out.sha;
+        commitSha = out.commitSha;
+      } catch (e) {
+        // Someone pushed since the read: start over from the new file (what was applied to Todoi stays and merges again).
+        if (e instanceof GitHubError && e.reason === "stale") continue;
+        throw e;
+      }
+    }
+    await db.update(gitConnections).set({ base: result, fileSha, lastSyncedAt: new Date(), state: "ok", lastError: null, pending: null }).where(eq(gitConnections.id, c.id));
+    const outcome = pulled && pushed ? "merged" : pulled ? "pulled" : pushed || commitSha ? "pushed" : "unchanged";
+    return record(c, { actorId: actor, trigger, outcome, pulled, pushed, conflicts: merged.conflicts.length, notes, before: pulled ? ours : null, commitSha });
+  }
+  throw new SyncFailure("busy", "The file and the project kept changing during the sync. Try again in a moment");
+}
+
+// ── Connecting ───────────────────────────────────────────────────────────────────────────────────────
+export interface ConnectInput {
+  projectId: string;
+  token: string;
+  owner: string;
+  repo: string;
+  branch: string;
+  path: string;
+  format: FileFormat;
+  /** "store": write the project to a new file; "use": the existing file becomes the project's content */
+  mode: "store" | "use";
+  conflictPolicy?: GitConflictPolicy;
+}
+
+/** Check the token, repository, branch and path for a connection, before anything is saved. */
+export async function checkTarget(input: Pick<ConnectInput, "token" | "owner" | "repo" | "branch" | "path">) {
+  const gh = githubClient(input.token);
+  const ref = { owner: input.owner, repo: input.repo, branch: input.branch, path: input.path };
+  try {
+    const repo = await gh.repo(input.owner, input.repo);
+    if (!repo.canPush) throw new SyncFailure("access", `The token can read ${repo.fullName} but not write to it. Give it Contents: Read and write access`);
+    if (!(await gh.branchExists(input.owner, input.repo, input.branch))) throw new SyncFailure("access", `${repo.fullName} has no branch named ${input.branch}`);
+    const file = await gh.readFile(ref);
+    return { repo, file };
+  } catch (e) {
+    if (e instanceof GitHubError) throw new SyncFailure(e.reason === "unauthorized" ? "token" : "github", explainGitHub(e, ref));
+    throw e;
+  }
+}
+
+export async function connectProject(input: ConnectInput, actorId: string): Promise<{ connection: GitConnection; run: GitSyncRun }> {
+  const { file } = await checkTarget(input);
+  const codec = CODECS[input.format];
+  if (input.mode === "store" && file) throw new SyncFailure("file-exists", `${input.path} already exists in ${input.owner}/${input.repo}. Use the existing file, or pick another path`);
+  if (input.mode === "use" && !file) throw new SyncFailure("missing-file", `There's no ${input.path} in ${input.owner}/${input.repo} (${input.branch}). Store a new file there instead`);
+  const parsed = file ? codec.parse(file.text) : null;
+  const theirs = parsed ? withIds(parsed.doc) : null;
+  const [existing] = await db.select({ id: gitConnections.id }).from(gitConnections).where(eq(gitConnections.projectId, input.projectId));
+  if (existing) await disconnectProject(input.projectId);
+  const [connection] = await db
+    .insert(gitConnections)
+    .values({ id: nanoid(), projectId: input.projectId, owner: input.owner, repo: input.repo, branch: input.branch, path: input.path, format: input.format, tokenCipher: seal(input.token), tokenHint: tokenHint(input.token), createdBy: actorId, conflictPolicy: input.conflictPolicy ?? "ask" })
+    .returning();
+  const c = connection!;
+  return withConnectionLock(c.id, async () => {
+    const gh = githubClient(input.token);
+    const ours = await readOurs(input.projectId);
+    let before: ProjectDoc | null = null, target = ours, pulled = 0;
+    if (input.mode === "use" && theirs) {
+      // The file becomes the project; what was there before can come back with Undo.
+      const applied = await applyIfUnchanged(input.projectId, ours, { ...theirs, title: ours.title }, actorId);
+      if (!applied) throw new SyncFailure("busy", "The project changed while connecting. Try again");
+      before = ours;
+      pulled = countItemChanges(ours, theirs);
+      target = await readOurs(input.projectId);
+    }
+    const text = codec.serialize(target);
+    let fileSha = file?.sha ?? null, commitSha: string | null = null;
+    if (!file || text !== file.text) {
+      const [project] = await db.select({ name: projects.name }).from(projects).where(eq(projects.id, input.projectId));
+      const out = await gh.writeFile(refOf(c), text, file?.sha ?? null, file ? `Todoi: link “${project?.name}” (ids added)` : `Todoi: store “${project?.name}”`);
+      fileSha = out.sha;
+      commitSha = out.commitSha;
+    }
+    const [saved] = await db.update(gitConnections).set({ base: target, fileSha, lastSyncedAt: new Date(), state: "ok" }).where(eq(gitConnections.id, c.id)).returning();
+    const run = await record(c, { actorId, trigger: "connect", outcome: input.mode === "use" ? "pulled" : "pushed", pulled, notes: parsed?.warnings.length ? parsed.warnings : null, pushed: input.mode === "store" ? countItemChanges({ ...target, lists: [] }, target) : 0, before, commitSha });
+    return { connection: saved!, run };
+  });
+}
+
+/** Stop syncing a project: the file stays in the repository, the project stays in Todoi. */
+export async function disconnectProject(projectId: string): Promise<boolean> {
+  const [c] = await db.select().from(gitConnections).where(eq(gitConnections.projectId, projectId));
+  if (!c) return false;
+  if (c.hookId) {
+    const token = open(c.tokenCipher);
+    if (token) await githubClient(token).deleteHook(c.owner, c.repo, c.hookId).catch(() => undefined);
+  }
+  await db.delete(gitConnections).where(eq(gitConnections.id, c.id));
+  return true;
+}
+
+/** Put Todoi back as it was before the last sync that changed it, then sync that to the file. */
+export async function undoLastSync(connectionId: string, actorId: string): Promise<GitSyncRun> {
+  const [last] = await db
+    .select()
+    .from(gitSyncRuns)
+    .where(and(eq(gitSyncRuns.connectionId, connectionId), isNotNull(gitSyncRuns.before)))
+    .orderBy(desc(gitSyncRuns.createdAt))
+    .limit(1);
+  if (!last) throw new SyncFailure("nothing-to-undo", "There's no sync to undo");
+  return withConnectionLock(connectionId, async () => {
+    const c = await loadConnection(connectionId);
+    const ours = await readOurs(c.projectId);
+    const applied = await applyIfUnchanged(c.projectId, ours, withIds(last.before!), actorId);
+    if (!applied) throw new SyncFailure("busy", "The project changed while undoing. Try again");
+    await db.update(gitSyncRuns).set({ before: null }).where(eq(gitSyncRuns.id, last.id));
+    // Base stays the merged document, so the next sync writes the restored state to the file.
+    await record(c, { actorId, trigger: "undo", outcome: "undone", pulled: countItemChanges(ours, last.before!) });
+    const run = await syncLocked(await loadConnection(connectionId), "undo", actorId, { resolveAll: "ours" });
+    return run;
+  });
+}
+
+/** A fresh webhook secret (sealed for storage). */
+export const newHookSecret = () => randomBytes(24).toString("base64url");

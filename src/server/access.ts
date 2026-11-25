@@ -83,7 +83,14 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     case "projects": {
       const selfRemoval = action === "members" && c.req.method === "DELETE" && c.req.path.split("/").at(-1) === viewer?.userId;
       if (selfRemoval) scopes.push({ kind: "personal", id: viewerOf(c).userId });
-      else if (id && id !== "import") {
+      else if (id && id !== "import" && action === "git") {
+        // Git sync: members only, even to look (the repository is the team's business); sync and undo
+        // are edits; connecting, settings and disconnecting are administration, for registered accounts.
+        const sub = c.req.path.split("/")[5];
+        const editing = c.req.method === "POST" && (sub === "sync" || sub === "undo");
+        if (!read && !editing) registered();
+        await projectAccess(id, read || editing ? "edit" : "admin");
+      } else if (id && id !== "import") {
         const ownerOnly = action === "ownership" || c.req.method === "DELETE" && action !== "members" || !!field("groupId");
         const administration = action === "members" || action === "invites" || !read;
         await projectAccess(id, ownerOnly ? "owner" : administration ? "admin" : "read");

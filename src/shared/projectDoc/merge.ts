@@ -89,6 +89,11 @@ export function withIds(doc: ProjectDoc, newId: () => string = newEmbridgeId): P
   };
 }
 
+const byText = (a: string, b: string) => a.localeCompare(b, "en", { sensitivity: "base" }) || (a < b ? -1 : a > b ? 1 : 0);
+const sortSets = <T extends DocSubitem>(it: T): T => ({ ...it, labels: [...it.labels].sort(byText), assignees: [...it.assignees].sort(byText) });
+/** Labels and assignees are sets: one order everywhere, so a reordered tags line is no change. */
+export const canonicalDoc = (d: ProjectDoc): ProjectDoc => ({ ...d, lists: d.lists.map((l) => ({ ...l, items: l.items.map((it) => ({ ...sortSets(it), subitems: it.subitems.map(sortSets) })) })) });
+
 /** JSON with object keys sorted, so documents built by different codecs compare by content. */
 const stable = (v: unknown): string =>
   JSON.stringify(v, (_k, x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x));
@@ -147,7 +152,7 @@ export function mergeDocs(baseDoc: ProjectDoc | null, oursDoc: ProjectDoc, their
   const newId = opts.newId ?? newEmbridgeId;
   const prefer = opts.prefer ?? "ours";
   // Ids once per side: the file's new items keep the ids they get here in everything below.
-  const baseI = withIds(baseDoc ?? { title: "", uuid: null, lists: [] }, newId), oursI = withIds(oursDoc, newId), theirsI = withIds(theirsDoc, newId);
+  const baseI = canonicalDoc(withIds(baseDoc ?? { title: "", uuid: null, lists: [] }, newId)), oursI = canonicalDoc(withIds(oursDoc, newId)), theirsI = canonicalDoc(withIds(theirsDoc, newId));
   const base = flatten(baseI), ours = flatten(oursI), theirs = flatten(theirsI);
   const conflicts: MergeConflict[] = [];
   const decide = (c: Omit<MergeConflict, "key"> & { key?: string }): Side => {
@@ -260,7 +265,7 @@ export function mergeDocs(baseDoc: ProjectDoc | null, oursDoc: ProjectDoc, their
   const listOrder = mergeOrder([...base.lists.keys()], [...ours.lists.keys()], [...theirs.lists.keys()], new Set(mergedLists.keys()));
   for (const id of mergedLists.keys()) if (!listOrder.includes(id)) listOrder.push(id);
 
-  const doc: ProjectDoc = {
+  const doc: ProjectDoc = canonicalDoc({
     // The project's title: a one-sided change wins; otherwise Todoi's.
     title: baseDoc && oursDoc.title === baseDoc.title ? theirsDoc.title || oursDoc.title : oursDoc.title || theirsDoc.title,
     uuid: oursDoc.uuid ?? theirsDoc.uuid,
@@ -269,9 +274,9 @@ export function mergeDocs(baseDoc: ProjectDoc | null, oursDoc: ProjectDoc, their
       name: mergedLists.get(lid)!.name,
       items: placeAll(`list:${lid}`).map((iid): DocItem => ({ ...merged.get(iid)!.item, subitems: placeAll(`item:${iid}`).map((sid) => merged.get(sid)!.item) })),
     })),
-  };
+  });
   const decided = new Set(Object.keys(opts.choices ?? {}));
-  const content = (d: ProjectDoc) => stable({ title: d.title, lists: d.lists });
+  const content = (d: ProjectDoc) => stable({ title: d.title, lists: canonicalDoc(d).lists });
   return {
     doc,
     conflicts,
@@ -279,4 +284,21 @@ export function mergeDocs(baseDoc: ProjectDoc | null, oursDoc: ProjectDoc, their
     // Against each side as it came in (theirs without ids counts as changed: the ids still have to be written).
     changed: { ours: content(doc) !== content(oursDoc), theirs: content(doc) !== content(theirsDoc) },
   };
+}
+
+/** How many items differ between two documents (added, removed, edited or moved), matched by id. */
+export function countItemChanges(a: ProjectDoc, b: ProjectDoc): number {
+  const index = (d: ProjectDoc) => {
+    const out = new Map<string, string>();
+    for (const l of canonicalDoc(d).lists) for (const it of l.items) {
+      out.set(it.id ?? `?${it.title}`, stable({ ...itemProps(it), place: l.id }));
+      for (const s of it.subitems) out.set(s.id ?? `?${s.title}`, stable({ ...s, place: it.id }));
+    }
+    return out;
+  };
+  const x = index(a), y = index(b);
+  let n = 0;
+  for (const [id, v] of x) if (y.get(id) !== v) n++;
+  for (const id of y.keys()) if (!x.has(id)) n++;
+  return n;
 }

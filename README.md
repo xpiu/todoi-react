@@ -201,6 +201,8 @@ Environment variables override `.env`:
 - **`RESEND_API_KEY`:** Resend API key for the account and invite emails (sent with `fetch`, no SDK). Unset, every email is written to `EMAIL_DIR` as `.html`, `.txt` and `.json` and logged instead; production warns at start.
 - **`EMAIL_FROM`:** Default `Todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
 - **`EMAIL_DIR`:** Default `.data/emails`; the development transport's folder.
+- **`SYNC_SECRET_KEY`:** 32+ characters; encrypts the GitHub tokens and webhook secrets Git sync stores. Unset, a key is derived from `BETTER_AUTH_SECRET`, so rotating that secret disconnects every repository.
+- **`GITHUB_API_URL`:** Default `https://api.github.com`; GitHub Enterprise, or the fake GitHub the tests run (`tests/fakes/fakeGithub.ts`).
 
 Production startup rejects invalid/missing configuration, development/example secrets, short secrets, non-HTTPS external URLs or enabled seeding. Development uses convenient defaults.
 

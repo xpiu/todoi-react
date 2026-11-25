@@ -8,6 +8,9 @@ import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEW
 import { ITEM_STATUSES } from "../../shared/item-status";
 import type { RepeatRule } from "../../shared/items";
 import type { Prefs } from "../../shared/prefs";
+import type { FileFormat } from "../../shared/projectDoc/codecs";
+import type { MergeConflict } from "../../shared/projectDoc/merge";
+import type { DocAttachment, DocComment, ProjectDoc } from "../../shared/projectDoc/model";
 
 /** A Postgres `time` read back as the API's "HH:MM" (the driver returns "HH:MM:SS"). */
 const minuteTime = customType<{ data: string; driverData: string }>({
@@ -248,6 +251,8 @@ export const lists = pgTable(
     statusRole: itemStatusEnum("status_role"),
     position: integer("position").notNull().default(0),
     hidden: boolean("hidden").notNull().default(false),
+    /** The list's id in the project's synced file (Git sync); null until the project is first written to one */
+    externalId: text("external_id"),
     version: integer("version").notNull().default(1),
     ...timestamps,
   },
@@ -260,6 +265,15 @@ export interface ItemCover {
   attachmentId?: string;
   /** One of the kit's sample covers (design/covers/*.svg) — seed data only, until attachments land */
   sample?: string;
+}
+/** What a synced file holds about an item that Todoi has no column for, kept so a round trip never drops it. */
+export interface ItemSyncExtra {
+  /** Custom fields, verbatim */
+  fields?: Record<string, string>;
+  /** Assignee names or handles that match no member */
+  assignees?: string[];
+  /** Attachment links and paths from the file (uploads are separate) */
+  attachments?: DocAttachment[];
 }
 export interface ItemNotification {
   kind: string;
@@ -305,12 +319,16 @@ export const items = pgTable(
     unread: boolean("unread").notNull().default(false),
     position: integer("position").notNull().default(0),
     createdBy: text("created_by").references(() => users.id),
+    /** The item's id in the project's synced file (Git sync); not unique by constraint — the sync repairs repeats */
+    externalId: text("external_id"),
+    syncExtra: jsonb("sync_extra").$type<ItemSyncExtra>(),
     ...lifecycle,
     version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (t) => [
     index("items_list_idx").on(t.listId, t.position),
+    index("items_external_idx").on(t.projectId, t.externalId),
     index("items_project_idx").on(t.projectId),
     index("items_parent_idx").on(t.parentItemId),
     uniqueIndex("items_key_per_project_idx").on(t.projectId, t.keyNumber),
@@ -415,6 +433,8 @@ export const comments = pgTable(
     body: text("body").notNull(),
     editedAt: timestamp("edited_at", { withTimezone: true }),
     replyToId: text("reply_to_id"),
+    /** The comment as a synced file wrote it, when it came from one; written back unchanged while the body is untouched */
+    fileOrigin: jsonb("file_origin").$type<DocComment>(),
     version: integer("version").notNull().default(1),
     ...timestamps,
   },
@@ -554,3 +574,73 @@ export const operationReceipts = pgTable("operation_receipts", {
   scopes: jsonb("scopes").$type<OperationScope[]>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("operation_receipts_actor_operation_idx").on(t.actorId, t.operationId), index("operation_receipts_created_idx").on(t.createdAt)]);
+
+// ── Git sync ──────────────────────────────────────────────────────────────────
+/**
+ * A project kept in a file in a GitHub repository (one file per project). `base` is the project document as
+ * it was after the last sync — the common ancestor of the three-way merge — and `fileSha` the file's blob
+ * then. A token is stored encrypted (gitSync/secrets.ts) and never sent to the client.
+ */
+export type GitConflictPolicy = "ask" | "todoi" | "file";
+export interface GitPendingMerge {
+  /** The file's document and blob when the conflict was found */
+  theirs: ProjectDoc;
+  sha: string;
+  conflicts: MergeConflict[];
+}
+export const gitConnections = pgTable("git_connections", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .unique()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  provider: text("provider").$type<"github">().notNull().default("github"),
+  owner: text("owner").notNull(),
+  repo: text("repo").notNull(),
+  branch: text("branch").notNull(),
+  path: text("path").notNull(),
+  format: text("format").$type<FileFormat>().notNull(),
+  tokenCipher: text("token_cipher").notNull(),
+  /** "github_pat_…x7Qa": enough to recognise the token, never enough to use it */
+  tokenHint: text("token_hint").notNull(),
+  createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+  fileSha: text("file_sha"),
+  base: jsonb("base").$type<ProjectDoc>(),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  state: text("state").$type<"ok" | "conflict" | "error">().notNull().default("ok"),
+  lastError: text("last_error"),
+  conflictPolicy: text("conflict_policy").$type<GitConflictPolicy>().notNull().default("ask"),
+  pending: jsonb("pending").$type<GitPendingMerge>(),
+  autoSync: boolean("auto_sync").notNull().default(true),
+  hookId: integer("hook_id"),
+  hookSecretCipher: text("hook_secret_cipher"),
+  version: integer("version").notNull().default(1),
+  ...timestamps,
+});
+export type GitConnection = typeof gitConnections.$inferSelect;
+
+/** One sync of a connection: what moved which way, and Todoi's document before (what Undo last merge restores). */
+export const gitSyncRuns = pgTable(
+  "git_sync_runs",
+  {
+    id: text("id").primaryKey(),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => gitConnections.id, { onDelete: "cascade" }),
+    actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
+    trigger: text("trigger").$type<"connect" | "manual" | "webhook" | "auto" | "resolve" | "undo">().notNull(),
+    outcome: text("outcome").$type<"pushed" | "pulled" | "merged" | "unchanged" | "conflict" | "failed" | "undone">().notNull(),
+    /** Items changed in Todoi / in the file by this run */
+    pulled: integer("pulled").notNull().default(0),
+    pushed: integer("pushed").notNull().default(0),
+    conflicts: integer("conflicts").notNull().default(0),
+    error: text("error"),
+    /** What the reader should know about the file (a flattened subitem, an unreadable date), from the codec */
+    notes: jsonb("notes").$type<string[]>(),
+    before: jsonb("before").$type<ProjectDoc>(),
+    commitSha: text("commit_sha"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("git_sync_runs_connection_idx").on(t.connectionId, t.createdAt)],
+);
+export type GitSyncRun = typeof gitSyncRuns.$inferSelect;

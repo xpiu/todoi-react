@@ -33,6 +33,10 @@ export function parseEnv(source: Record<string, string | undefined>) {
       EMAIL_FROM: z.string().trim().min(3).default("Todoi <no-reply@todoi.com>"),
       /** Where the development transport writes emails (.html, .txt and .json headers) when RESEND_API_KEY is unset */
       EMAIL_DIR: z.string().default(".data/emails"),
+      /** The GitHub REST API Git sync talks to (a GitHub Enterprise or test server can stand in) */
+      GITHUB_API_URL: z.url().default("https://api.github.com"),
+      /** Encrypts stored GitHub tokens and webhook secrets; unset = derived from BETTER_AUTH_SECRET (rotating that then disconnects every repository) */
+      SYNC_SECRET_KEY: z.string().trim().optional().transform((v) => v || undefined).pipe(z.string().min(32, "SYNC_SECRET_KEY must be at least 32 characters").optional()),
     })
     .superRefine((e, ctx) => {
       if (dev) return;

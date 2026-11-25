@@ -7,6 +7,7 @@ import { activityRoute, commentsRoute, inboxRoute, itemContentRoute, labelsRoute
 import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, tokensRoute } from "./routes/account";
 import { deletionRoute, emailChangeRoute, sudoRoute } from "./routes/accountChanges";
+import { gitConnectionsRoute, gitSyncRoute } from "./routes/gitSync";
 import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
@@ -44,6 +45,8 @@ export const app = new Hono()
   .route("/groups", groupsRoute)
   .route("/projects", projectsRoute)
   .route("/projects", membersRoute)
+  .route("/projects", gitSyncRoute)
+  .route("/git", gitConnectionsRoute)
   .route("/archive", archiveRoute)
   .route("/lists", listsRoute)
   .route("/items", itemsRoute)

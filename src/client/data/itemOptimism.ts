@@ -36,6 +36,8 @@ export function predictCreated(vars: CreateItemInput, dest: CreateDestination): 
     priorListId: null,
     position: 0,
     createdBy: null,
+    externalId: null,
+    syncExtra: null,
     archivedAt: null,
     deletedAt: null,
     createdAt: now,
