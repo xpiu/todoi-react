@@ -335,5 +335,19 @@
   html[data-device="phone"] .td-topnav-user {
     flex-shrink: 0;
   }
+  /* Phone, a title with Back (Rounded): the page name is read in full. The closed search field takes the room the
+     title leaves, between its 44px minimum and 157px; the title truncates only once the field is at 44px. Minimal
+     needs no rule: its 132px field and 13px title fit. (Design 2026-11-24) */
+  html:not([data-theme="minimal"])[data-device="phone"] .td-topnav:has(span.td-topnav-title[data-back="true"]) .td-topnav-search:not([data-open="true"]) {
+    flex: 1000 1 44px;
+    max-width: 157px;
+  }
+  /* Phone: no shortcut chip in the search field (it would cover the glyph in a narrow field), and no room kept for it */
+  html[data-device="phone"] .td-topnav-kbd {
+    display: none;
+  }
+  html[data-device="phone"] .td-topnav-field[data-kbd] {
+    padding-right: var(--sp-3);
+  }
 
 }
