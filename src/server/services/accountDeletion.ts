@@ -56,10 +56,9 @@ export async function deletionReview(userId: string, tx: Tx | typeof db = db): P
 
   const inbox = await tx.select({ id: lists.id }).from(lists).where(eq(lists.userId, userId));
   const itemScope = or(soloIds.length ? inArray(items.projectId, soloIds) : undefined, inbox.length ? inArray(items.listId, inbox.map((l) => l.id)) : undefined);
-  const [itemCounts, [files]] = await Promise.all([
-    soloIds.length ? tx.select({ projectId: items.projectId, n: count() }).from(items).where(inArray(items.projectId, soloIds)).groupBy(items.projectId) : Promise.resolve([]),
-    itemScope ? tx.select({ n: count(), bytes: sql<number>`coalesce(sum(${attachments.size}), 0)::bigint` }).from(attachments).innerJoin(items, eq(items.id, attachments.itemId)).where(itemScope) : Promise.resolve([{ n: 0, bytes: 0 }]),
-  ]);
+  // One after another: a transaction is one connection (pg 9 refuses overlapping queries on it).
+  const itemCounts = soloIds.length ? await tx.select({ projectId: items.projectId, n: count() }).from(items).where(inArray(items.projectId, soloIds)).groupBy(items.projectId) : [];
+  const [files] = itemScope ? await tx.select({ n: count(), bytes: sql<number>`coalesce(sum(${attachments.size}), 0)::bigint` }).from(attachments).innerJoin(items, eq(items.id, attachments.itemId)).where(itemScope) : [{ n: 0, bytes: 0 }];
   return {
     projects: solo.map((p) => ({ id: p.projectId, name: p.name, items: itemCounts.find((c) => c.projectId === p.projectId)?.n ?? 0 })),
     groups: ownGroups.filter((g) => !g.deletedAt).map((g) => ({ id: g.id, name: g.name, projects: filed.filter((p) => p.groupId === g.id).length })),

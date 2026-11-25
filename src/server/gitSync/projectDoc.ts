@@ -51,12 +51,11 @@ export async function readProjectDoc(tx: Tx, projectId: string, newId: () => str
   const ls = await tx.select().from(lists).where(and(eq(lists.projectId, projectId), eq(lists.kind, "project"))).orderBy(asc(lists.position), asc(lists.createdAt));
   const rows = await tx.select().from(items).where(and(eq(items.projectId, projectId), itemIsLive)).orderBy(asc(items.position), asc(items.createdAt));
   const ids = rows.map((r) => r.id);
-  const [labelRows, assigneeRows, commentRows, people] = await Promise.all([
-    ids.length ? tx.select({ itemId: itemLabels.itemId, name: labels.name }).from(itemLabels).innerJoin(labels, eq(labels.id, itemLabels.labelId)).where(inArray(itemLabels.itemId, ids)) : [],
-    ids.length ? tx.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids)) : [],
-    ids.length ? tx.select().from(comments).where(inArray(comments.itemId, ids)).orderBy(asc(comments.createdAt)) : [],
-    projectPeople(tx, projectId),
-  ]);
+  // One after another: a transaction is one connection, which runs one query at a time anyway (pg 9 refuses overlapping ones).
+  const labelRows = ids.length ? await tx.select({ itemId: itemLabels.itemId, name: labels.name }).from(itemLabels).innerJoin(labels, eq(labels.id, itemLabels.labelId)).where(inArray(itemLabels.itemId, ids)) : [];
+  const assigneeRows = ids.length ? await tx.select().from(itemAssignees).where(inArray(itemAssignees.itemId, ids)) : [];
+  const commentRows = ids.length ? await tx.select().from(comments).where(inArray(comments.itemId, ids)).orderBy(asc(comments.createdAt)) : [];
+  const people = await projectPeople(tx, projectId);
 
   // File ids: keep each row's own unless another row already has it; give fresh ones to the rest.
   const seenItems = new Set<string>(), seenLists = new Set<string>();

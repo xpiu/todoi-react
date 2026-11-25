@@ -82,6 +82,9 @@ describe("/api/projects/:id/git", () => {
     const bad = async (json: object) => (await call(`/api/projects/${projectId}/git/check`, { cookie: owner.cookie, json: { ...target, ...json } })).status;
     expect(await bad({ path: "../secrets.md" })).toBe(400);
     expect(await bad({ path: "notes.txt" })).toBe(400);
+    // In the shared error shape: a sentence, the code and the field.
+    const invalid = await call(`/api/projects/${projectId}/git/check`, { cookie: owner.cookie, json: { ...target, branch: "a..b" } });
+    expect(await invalid.json()).toMatchObject({ code: "invalid", error: expect.any(String), fields: { branch: expect.any(String) } });
     expect(await bad({ owner: "-acme" })).toBe(400);
     expect(await bad({ branch: "a..b" })).toBe(400);
     expect((await call(`/api/projects/${projectId}/git`, { cookie: owner.cookie, json: { ...target, format: "json", mode: "store" } })).status).toBe(400);

@@ -2,27 +2,22 @@
 // connect, settings, sync, undo, disconnect), and the signed-in person's connections for Settings. The
 // token goes in once and never comes back out; responses carry its hint only. Access (workspaceAccess):
 // members only, edit to sync or undo, admin to connect, change or disconnect.
-import { zValidator } from "@hono/zod-validator";
 import { desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 
 import { gitCheckSchema, gitConnectSchema, gitSettingsSchema, gitSyncSchema, type GitConnectionView, type GitRunView } from "../../shared/gitSync";
-import { idSchema } from "../../shared/items";
 import type { ProjectDoc } from "../../shared/projectDoc/model";
 import { viewerOf } from "../auth";
 import { db } from "../db";
-import { gitConnections, gitSyncRuns, members, projects, type GitConnection, type GitSyncRun } from "../db/schema";
-import { fail } from "../errors";
+import { gitConnections, gitSyncRuns, projects, type GitConnection, type GitSyncRun } from "../db/schema";
+import { fail, idParam, validate } from "../errors";
 import { checkTarget, connectProject, disconnectProject, SyncFailure, syncConnection, undoLastSync } from "../gitSync/engine";
 import { handleWebhook, MAX_WEBHOOK_BYTES, registerWebhook } from "../gitSync/webhooks";
 import { STALE_AFTER_MS } from "../jobKinds";
 import { seal, tokenHint } from "../gitSync/secrets";
 import { requireConfirmedEmail } from "../services/confirmedEmail";
-import { z } from "zod";
-
-const validate = zValidator;
-const idParam = validate("param", z.object({ id: idSchema }));
+import { memberProjectIds } from "../services/projects";
 
 const runView = (r: GitSyncRun): GitRunView => ({ id: r.id, trigger: r.trigger, outcome: r.outcome, pulled: r.pulled, pushed: r.pushed, conflicts: r.conflicts, error: r.error, notes: r.notes ?? [], undoable: !!r.before, commitSha: r.commitSha, at: r.createdAt.toISOString() });
 
@@ -142,9 +137,9 @@ export const gitSyncRoute = new Hono()
 
 /** Every connection in the signed-in person's projects, for Settings › Storage & sync. */
 export const gitConnectionsRoute = new Hono().get("/", async (c) => {
-  const mine = await db.select({ projectId: members.projectId }).from(members).where(eq(members.userId, viewerOf(c).userId));
+  const mine = await memberProjectIds(viewerOf(c).userId);
   if (!mine.length) return c.json({ connections: [] });
-  const rows = await db.select({ c: gitConnections, name: projects.name }).from(gitConnections).innerJoin(projects, eq(projects.id, gitConnections.projectId)).where(inArray(gitConnections.projectId, mine.map((m) => m.projectId)));
+  const rows = await db.select({ c: gitConnections, name: projects.name }).from(gitConnections).innerJoin(projects, eq(projects.id, gitConnections.projectId)).where(inArray(gitConnections.projectId, mine));
   return c.json({ connections: await Promise.all(rows.map((r) => connectionView(r.c, r.name))) });
 });
 
