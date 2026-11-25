@@ -73,7 +73,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 
 ## ✨ Features and limits
 
-- **Workspace:** groups, projects, lists, items/subitems, labels, assignees, watchers, relations, recurrence, covers and attachments. List/Board/Calendar views with filters, sorting and saved views; item overlay with Tiptap descriptions, comments and activity.
+- **Workspace:** Project groups, Projects, Lists, Items, Subitems, labels, assignees, watchers, relations, recurrence, covers and attachments. List/Board/Calendar views with filters, sorting and saved views; item overlay with Tiptap descriptions, comments and activity.
 - **Link Lists with Status:** a per-project switch on the Projects page (also in Project settings; default on). When on, an item created in or moved to a list with a Status role takes that Status, and the item edit modal drops its List box: it shows Status alone, and picking a Status moves the item to the list with that role. The List box returns when the switch is off, a list has no role, two lists share a role, or the item is in a hidden list or the Inbox. See [DESIGN.md](DESIGN.md) (Project automation setting).
 - **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export account JSON.
 - **Accounts:** private guest workspaces, email/password accounts, project roles and invite links, personal API tokens and account preferences stored in PostgreSQL.
