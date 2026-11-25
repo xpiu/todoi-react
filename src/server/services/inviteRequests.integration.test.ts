@@ -9,7 +9,7 @@ import { inviteRequestId, requestNewInvite } from "./inviteRequests";
 async function fixture() {
   const owner = nanoid(), actorId = nanoid(), group = nanoid(), project = nanoid(), code = nanoid();
   const actor = { userId: actorId, name: "Requester", email: `${actorId}@example.test` };
-  await db.insert(users).values([{ id: owner, name: "Owner", email: `${owner}@example.test` }, { id: actorId, name: actor.name, email: actor.email }]);
+  await db.insert(users).values([{ id: owner, name: "Owner", email: `${owner}@example.test` }, { id: actorId, name: actor.name, email: actor.email, emailVerified: true }]);
   await db.insert(groups).values({ id: group, name: "Invites", keyPrefix: "IN", ownerId: owner });
   await db.insert(projects).values({ id: project, groupId: group, name: "Invites" });
   await db.insert(members).values({ projectId: project, userId: owner, role: "owner" });
@@ -24,6 +24,13 @@ it("concurrent requests create one unread Inbox notification without granting me
   expect(notifications).toHaveLength(1);
   expect(notifications[0]).toMatchObject({ unread: true, title: "Requester requested a new invite to Invites", notification: { kind: "invite" } });
   expect((await db.select().from(members).where(eq(members.projectId, f.project))).map((m) => m.userId)).toEqual([f.owner]);
+});
+
+it("waits for the requester to confirm the address the invite was sent to", async () => {
+  const f = await fixture();
+  await db.update(users).set({ emailVerified: false }).where(eq(users.id, f.actor.userId));
+  await expect(requestNewInvite(f.code, f.actor)).rejects.toThrow("Confirm your email address");
+  expect(await db.select().from(items).where(eq(items.id, inviteRequestId(f.code, f.actor.userId)))).toHaveLength(0);
 });
 
 it("refuses wrong emails, live invites and withdrawn invites without creating a request", async () => {

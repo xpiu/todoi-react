@@ -6,7 +6,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { authClient, forgetBrowserSession } from "../auth";
+import { authClient, forgetBrowserSession, sendEmailConfirmation } from "../auth";
 import { api, apiError, errorMessage, unwrap } from "../data/api";
 import { useAccountMutations, usePasskeys, type Me, type StoredPasskey } from "../data/account";
 import { Button } from "../design/core/Button";
@@ -29,7 +29,7 @@ export function useEmailConfirmation(email: string) {
   const [state, setState] = useState<ConfirmationState>("idle");
   const send = () => {
     setState("busy");
-    authClient.sendVerificationEmail({ email, callbackURL: "/verify-email" }).then(
+    sendEmailConfirmation(email).then(
       (r) => setState(r.error ? { error: (r.error.message ?? "the server refused it").replace(/\.$/, "") } : "sent"),
       (err: unknown) => setState({ error: errorMessage(err).replace(/\.$/, "") }),
     );

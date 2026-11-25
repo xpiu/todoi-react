@@ -4,6 +4,7 @@ All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.
 
 ## Unreleased — 2026-10-06
 
+- Require a confirmed email address before inviting people or joining through an invite sent to an address, so nobody can take a teammate's seat by signing up with their address first. The invite page sends the confirmation link, which brings the person back to the invite.
 - Read and write spec-conformant Embridge v0.2.2 Markdown through the reference parser (`embridge` on npm) and a canonical writer, checked against the spec's conformance suite. Import now brings in descriptions, start dates, item Status, comment threads and attachment links, flattens anything deeper than subitems with a note, keeps repeated list names apart, and reviews warnings first; view exports write Embridge.
 - Add JSON and YAML project files: one strict, deterministic shape with a JSON Schema published at `/schema/project-v1.json`, YAML restricted to a safe 1.2 subset. Import reads them as "Todoi file" and explains a refused file by path and item.
 

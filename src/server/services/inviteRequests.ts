@@ -6,6 +6,7 @@ import { db } from "../db";
 import { invites, members, projects } from "../db/schema";
 import { env } from "../env";
 import { ApiFailure } from "../errors";
+import { requireConfirmedEmail } from "./confirmedEmail";
 import { createInboxNotification } from "./notifications";
 
 export const inviteRequestId = (code: string, userId: string) => createHash("sha256").update(JSON.stringify(["invite-request", code, userId])).digest("base64url").slice(0, 21);
@@ -20,6 +21,7 @@ export async function requestNewInvite(code: string, actor: { userId: string; na
     if (!project || project.deletedAt || project.archivedAt || !invite || invite.revokedAt || invite.acceptedAt) throw new ApiFailure(410, "This invite is no longer available");
     if (invite.expiresAt > new Date()) throw new ApiFailure(409, "This invite still works. Accept it to join.");
     if (invite.email && invite.email.toLowerCase() !== actor.email.toLowerCase()) throw new ApiFailure(403, "Log in with the email address this invite was sent to");
+    if (invite.email) await requireConfirmedEmail(actor, "ask for a new invite");
     const roster = await tx.select().from(members).where(eq(members.projectId, project.id));
     if (roster.some((m) => m.userId === actor.userId)) throw new ApiFailure(409, "You're already a project member");
     const recipient = roster.find((m) => m.userId === invite.invitedBy && ["owner", "admin"].includes(m.role)) ?? roster.find((m) => m.role === "owner");

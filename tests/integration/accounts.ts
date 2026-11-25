@@ -78,3 +78,11 @@ export async function openLink(link: string, cookie?: string): Promise<{ status:
   const res = await call(url.pathname + url.search, { cookie });
   return { status: res.status, location: res.headers.get("location"), cookie: cookiesFrom(res, cookie) };
 }
+
+/** The person opened their confirmation link: inviting and invites sent to their address need it (R4). */
+export async function confirmEmail(person: Pick<Person, "email">) {
+  const mail = (await emailsTo(person.email)).find((m) => m.subject === "Confirm your email for Todoi");
+  if (!mail?.link) throw new Error(`No confirmation email reached ${person.email}`);
+  const landing = await openLink(mail.link);
+  if (landing.status !== 302) throw new Error(`The confirmation link answered ${landing.status}`);
+}

@@ -12,3 +12,10 @@ export function linkSpan(minutes: number): string {
   const hours = Math.round(minutes / 60);
   return `${hours} hour${hours === 1 ? "" : "s"}`;
 }
+
+/**
+ * Work that relies on owning the sign-in address (work plan R4) waits until the address is confirmed:
+ * inviting people, joining or asking to rejoin through an invite sent to an address, and getting email.
+ * The refusal carries this marker in `fields.confirmEmail` so the client can offer the link again.
+ */
+export const EMAIL_UNCONFIRMED = "EMAIL_UNCONFIRMED";

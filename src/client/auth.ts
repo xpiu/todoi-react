@@ -2,10 +2,19 @@
 import { passkeyClient } from "@better-auth/passkey/client";
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient } from "better-auth/client/plugins";
+import { EMAIL_UNCONFIRMED } from "../shared/accountLinks";
+import { ApiError } from "./data/api";
 import { clearSyncOwner, openSyncOwner, restoreOfflineOwner, retrySync, useSyncState } from "./data/sync";
 
 export const authClient = createAuthClient({ baseURL: `${window.location.origin}/api/auth`, plugins: [anonymousClient(), passkeyClient()] });
 export const { useSession } = authClient;
+
+/** The "Confirm your email" link, again; `next` is where its page's Continue goes (an invite, say). */
+export const sendEmailConfirmation = (email: string, next?: string) => authClient.sendVerificationEmail({ email, callbackURL: verifyCallback(next) ?? "/verify-email" });
+/** Where a confirmation link should come back to after /verify-email, for sign-up and resends. */
+export const verifyCallback = (next?: string) => (next && next !== "/" ? `/verify-email?next=${encodeURIComponent(next)}` : undefined);
+/** The API refused because the sign-in address isn't confirmed yet (src/shared/accountLinks.ts › EMAIL_UNCONFIRMED). */
+export const emailUnconfirmed = (err: unknown) => err instanceof ApiError && err.fields.confirmEmail === EMAIL_UNCONFIRMED;
 
 let openingSession: Promise<void> | undefined;
 let sessionReady = false;

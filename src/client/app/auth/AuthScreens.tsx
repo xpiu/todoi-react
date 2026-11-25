@@ -5,7 +5,7 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import { authClient, forgetBrowserSession, syncGuestBeforeAuth } from "../../auth";
+import { authClient, emailUnconfirmed, forgetBrowserSession, sendEmailConfirmation, syncGuestBeforeAuth, verifyCallback } from "../../auth";
 import { passkeyAutofillAvailable, passkeyFailure, passkeysSupported } from "../passkeys";
 import { api, explain, unwrap, type InviteDetail } from "../../data/api";
 import { InvitePage, type InviteState } from "../../design/auth/InvitePage";
@@ -120,7 +120,8 @@ export function SignupScreen() {
         setError(null);
         const syncError = await syncGuestBeforeAuth();
         if (syncError) { setError(syncError); setBusy(false); return; }
-        const r = await authClient.signUp.email({ name, email: e, password });
+        // The confirmation email's link comes back to where the sign-up was headed (an invite to accept, say).
+        const r = await authClient.signUp.email({ name, email: e, password, callbackURL: verifyCallback(safeNext(next)) });
         setBusy(false);
         if (r.error) setError(r.error.message ?? "Couldn't create the account.");
         else window.location.assign(safeNext(next));
@@ -211,14 +212,14 @@ export function AccountDeletedScreen() {
 
 /** /verify-email: Better Auth confirmed the address and sent the person here (?error=… when it couldn't). */
 export function VerifyEmailScreen() {
-  const { error } = verifyRoute.useSearch();
+  const { error, next } = verifyRoute.useSearch();
   const { user } = useCurrentUser();
   const navigate = useNavigate();
   return (
     <VerifyEmailPage
       stage={!error ? "confirmed" : error === "TOKEN_EXPIRED" ? "expired" : "invalid"}
       email={user && !user.isAnonymous ? user.email : null}
-      onContinue={() => window.location.assign("/")}
+      onContinue={() => window.location.assign(safeNext(next))}
       onOpenAccount={() => navigate({ to: "/account", search: { s: "signin" } })}
     />
   );
@@ -231,6 +232,12 @@ export function InviteScreen() {
   const { user } = useCurrentUser();
   const invite = useQuery({ queryKey: ["invite", code], queryFn: () => api.api.invites[":code"].$get({ param: { code } }).then((r) => unwrap<InviteDetail>(r)) });
   const [accepted, setAccepted] = useState(false);
+  // An invite sent to an address waits for that address to be confirmed (R4): send the link, which comes back here.
+  const confirmFirst = async (err: unknown): Promise<never> => {
+    if (!emailUnconfirmed(err) || !user) return explain(err);
+    const sent = await sendEmailConfirmation(user.email, `/i/${code}`).then((r) => !r.error, () => false);
+    throw new Error(sent ? `confirm your email address first. We sent a link to ${user.email}: open it to come back here and join.` : "confirm your email address first. Send the link from Settings › Notifications, then come back to this invite.");
+  };
   if (invite.isError)
     return (
       <AuthShell>
@@ -250,7 +257,7 @@ export function InviteScreen() {
       signedIn={!!user && !user.isAnonymous}
       user={user && !user.isAnonymous ? { name: user.name, email: user.email, color: avatarColorVar(user.avatarColor) } : undefined}
       onAccept={async () => {
-        await api.api.invites[":code"].accept.$post({ param: { code } }).then((r) => unwrap(r)).catch(explain);
+        await api.api.invites[":code"].accept.$post({ param: { code } }).then((r) => unwrap(r)).catch(confirmFirst);
         setAccepted(true);
       }}
       onDecline={() => navigate({ to: "/" })}
@@ -262,7 +269,7 @@ export function InviteScreen() {
       })}
       onOpenProject={() => openProject(d.project.id)}
       requested={d.requested}
-      onRequestInvite={() => api.api.invites[":code"].request.$post({ param: { code } }).then((r) => unwrap(r)).catch(explain)}
+      onRequestInvite={() => api.api.invites[":code"].request.$post({ param: { code } }).then((r) => unwrap(r)).catch(confirmFirst)}
     />
   );
 }

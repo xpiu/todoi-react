@@ -39,6 +39,15 @@ const passkeyLastUsed = {
  */
 const PASSKEY_CHANGES = ["/passkey/generate-register-options", "/passkey/delete-passkey"];
 
+/** /verify-email, keeping the asking page's `next` when it is a path in this app ("/i/abc", not "//evil.test"). */
+export function verifyLanding(asked: string | null): string {
+  const landing = new URL("/verify-email", env.APP_URL);
+  let next: string | null = null;
+  try { next = asked ? new URL(asked, env.APP_URL).searchParams.get("next") : null; } catch { next = null; }
+  if (next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")) landing.searchParams.set("next", next);
+  return landing.toString();
+}
+
 export const auth = betterAuth({
   baseURL: env.APP_URL,
   basePath: "/api/auth",
@@ -61,9 +70,10 @@ export const auth = betterAuth({
       // A change of address (services/emailChange.ts): `user.email` is already the new address here.
       const claims = emailLinkClaims(token);
       if (claims?.updateTo && claims.email) return sendEmail({ to: user.email, ...changeEmailEmail({ oldEmail: claims.email, newEmail: user.email, url }) });
-      // Every confirmation link lands on /verify-email, whatever the asking page passed.
+      // Every confirmation link lands on /verify-email, whatever the asking page passed; only an in-app
+      // `next` (e.g. the invite that asked for the confirmation) rides along for its Continue button.
       const link = new URL(url);
-      link.searchParams.set("callbackURL", `${env.APP_URL}/verify-email`);
+      link.searchParams.set("callbackURL", verifyLanding(link.searchParams.get("callbackURL")));
       const send = sendEmail({ to: user.email, ...verifyEmailEmail({ email: user.email, url: link.toString() }) });
       // A sign-up never fails over its welcome email: Settings › Notifications can send it again.
       if (request && new URL(request.url).pathname.endsWith("/sign-up/email")) await send.catch((error: unknown) => console.error("The confirmation email after sign-up wasn't sent", error));

@@ -21,6 +21,7 @@ import { openUpload } from "../services/uploads";
 import { inviteRequestId, requestNewInvite } from "../services/inviteRequests";
 import { emailInvite, inviteUrl } from "../services/inviteEmails";
 import { pendingEmailChange } from "../services/emailChange";
+import { requireConfirmedEmail } from "../services/confirmedEmail";
 
 export const meRoute = new Hono()
   .post("/avatar", bodyLimit({ maxSize: MAX_AVATAR_BYTES + 65536, onError: (c) => fail(c, 413, "Choose an image up to 2 MB") }), async (c) => {
@@ -137,6 +138,7 @@ export const projectInvitesRoute = new Hono()
   })
   .post("/:id/invites", idParam, validate("json", z.object({ email: z.email().optional(), role: z.enum(["admin", "editor", "viewer"]).default("editor"), days: z.number().int().min(1).max(90).default(14) })), async (c) => {
     const v = viewerOf(c);
+    await requireConfirmedEmail(v, "invite people");
     const { id } = c.req.valid("param");
     const { email, role, days } = c.req.valid("json");
     const [row] = await db
@@ -169,6 +171,8 @@ export const invitesRoute = new Hono()
     if (inv.invite.revokedAt || inv.invite.acceptedAt || inv.invite.expiresAt < new Date()) return fail(c, 410, "This invite is no longer open");
     if (inv.invite.role === "owner") return fail(c, 410, "Ask a project admin for a new invite");
     if (inv.invite.email && inv.invite.email.toLowerCase() !== v.email.toLowerCase()) return fail(c, 403, "This invite is for a different email address");
+    // An invite to an address is that address's seat: only its confirmed owner may take it.
+    if (inv.invite.email) await requireConfirmedEmail(v, "accept an invite sent to it");
     await db.transaction(async (tx) => {
       await tx.select({ id: projects.id }).from(projects).where(eq(projects.id, inv.project.id)).for("update");
       const [current] = await tx.select().from(invites).where(eq(invites.id, inv.invite.id)).for("update");

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 
-import { call, emailsTo, openLink, PASSWORD, signIn, signUp } from "../../../tests/integration/accounts";
+import { call, confirmEmail, emailsTo, openLink, PASSWORD, signIn, signUp } from "../../../tests/integration/accounts";
 import { db } from "../db";
 import { groups, members, projects, users } from "../db/schema";
 import { env } from "../env";
@@ -48,6 +48,7 @@ describe("account emails over the API", () => {
 
   it("email an invite to an address without an account, and to an account only while Invites is on", async () => {
     const owner = await signUp("Sam Verhoeven");
+    await confirmEmail(owner);
     const projectId = await ownedProject(owner.id);
     const stranger = `${nanoid(8).toLowerCase()}@example.test`;
     const first = await call(`/api/projects/${projectId}/invites`, { cookie: owner.cookie, json: { email: stranger, role: "viewer" } });

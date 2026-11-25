@@ -10,6 +10,10 @@ async function signup(page: Page, name: string) {
   expect(response.ok()).toBeTruthy();
   const { user } = await response.json();
   accounts.own(user.id);
+  // As if they'd opened the confirmation link: inviting, and invites sent to an address, need it (R4).
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  await pool.query("update users set email_verified = true where id=$1", [user.id]);
+  await pool.end();
   return user as { id: string; email: string };
 }
 
