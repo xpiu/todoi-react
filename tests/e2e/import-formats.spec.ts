@@ -1,5 +1,6 @@
-// Import reads spec-conformant Embridge (the format's own demo file): the Review step shows the lists,
-// counts and what was left out, and Create lands items, subitems, dates, Status and comment threads.
+// Import reads spec-conformant Embridge (the format's own demo file) and Todoi project files (JSON and
+// YAML): the Review step shows the lists, counts and what was left out — or why a file was refused — and
+// Create lands items, subitems, dates, Status and comment threads.
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
@@ -39,5 +40,56 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
     expect(thread.map((c) => c.body)).toEqual(["**alice** · 2025-01-16\n\nFound the issue in paginate.js line 42", "**bob** · 2025-01-16\n\nCan you push a fix today?", "**alice** · 2025-01-17\n\nDone, see commit abc123", "verified fix works"]);
     expect(thread[1]!.replyToId).not.toBeNull();
     await page.screenshot({ path: `.tmp/shots/import-embridge-project-${scope}.png` });
+  });
+}
+
+const YAML_FILE = `format: todoi.project
+version: 1
+title: "Launch plan"
+lists:
+  - name: "To-do"
+    items:
+      - title: "Write the announcement"
+        priority: high
+        due: "2026-12-01"
+        labels:
+          - "marketing"
+        comments:
+          - author: "sam"
+            text: "Draft is in the doc"
+        subitems:
+          - title: "Pick a hero image"
+  - name: "Done"
+    items:
+      - title: "Book the venue"
+        done: true
+`;
+
+for (const scope of ["rounded-dark", "minimal-light"] as Scope[]) {
+  test(`imports a Todoi YAML file, and explains a refused JSON file, in ${scope}`, async ({ page }) => {
+    await useScope(page, scope);
+    await page.goto("/import");
+    await page.getByRole("button", { name: "Todoi file" }).click();
+    const contents = page.getByRole("textbox", { name: "Todoi file contents" });
+    await contents.fill('{"format":"todoi.project","version":1,"lists":[{"name":"L","items":[{"title":"A","subitems":[{"title":"B","subitems":[{"title":"C"}]}]}]}]}');
+    await page.getByRole("button", { name: "Review import" }).click();
+    await expect(page.locator(".td-import-warn")).toHaveText(["lists[0].items[0].subitems[0] “B”: a subitem can't have its own subitems. Make them subitems of “A” or items in the list"]);
+    await expect(page.getByRole("textbox", { name: "Project name" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Create project" })).toBeDisabled();
+    await page.locator(".td-import-warn").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `.tmp/shots/import-file-refused-${scope}.png` });
+
+    await contents.fill(YAML_FILE);
+    await page.getByRole("button", { name: "Review import" }).click();
+    await expect(page.getByRole("textbox", { name: "Project name" })).toHaveValue("Launch plan");
+    await expect(page.locator(".td-import-list li")).toHaveText(["To-do · 1 item · linked to To-do", "Done · 1 item · linked to Done"]);
+    await expect(page.locator(".td-import-warn")).toHaveCount(0);
+    await page.screenshot({ path: `.tmp/shots/import-file-review-${scope}.png` });
+    await page.getByRole("button", { name: "Create project" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Imported" })).toHaveText(/Imported “Launch plan”: 2 lists, 2 items, 1 subitem/);
+    const projectId = /\/p\/([^/?]+)/.exec(page.url())![1]!;
+    const items = (await (await page.request.get(`/api/items?projectId=${projectId}`)).json()) as Array<{ title: string; priority: string | null; dueDate: string | null; done: boolean }>;
+    expect(items.find((i) => i.title === "Write the announcement")).toMatchObject({ priority: "HIGH", dueDate: "2026-12-01", done: false });
+    expect(items.find((i) => i.title === "Book the venue")).toMatchObject({ done: true });
   });
 }

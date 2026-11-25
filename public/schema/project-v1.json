@@ -1,0 +1,547 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "format": {
+      "type": "string",
+      "const": "todoi.project"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "uuid": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lists": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "items": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "description": "Stable within the file; tools add one when they first write the item",
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "done": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "backlog",
+                            "todo",
+                            "doing",
+                            "done"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "priority": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "urgent",
+                            "high",
+                            "medium",
+                            "low"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "start": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "description": "A calendar day, YYYY-MM-DD"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "due": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "description": "A calendar day, YYYY-MM-DD"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "labels": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "assignees": {
+                      "description": "Names or handles, without @",
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "description": {
+                      "description": "Markdown",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "comments": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "author": {
+                                "description": "Who wrote it, without @",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "at": {
+                                "description": "When, as written: 2026-09-20 or 2026-09-20 14:30",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "text": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "depth": {
+                                "description": "1 (the default) for a comment, 2 for a reply to the comment above, …",
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "text"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "attachments": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "url": {
+                                "type": "string",
+                                "minLength": 1,
+                                "description": "A link or a path in the repository"
+                              },
+                              "image": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "url"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fields": {
+                      "description": "Your own values; Todoi keeps them as they are",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "subitems": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "description": "Stable within the file; tools add one when they first write the item",
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "title": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "done": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "new",
+                                      "backlog",
+                                      "todo",
+                                      "doing",
+                                      "done"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "priority": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "urgent",
+                                      "high",
+                                      "medium",
+                                      "low"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "start": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "description": "A calendar day, YYYY-MM-DD"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "due": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "description": "A calendar day, YYYY-MM-DD"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "labels": {
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "assignees": {
+                                "description": "Names or handles, without @",
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "description": {
+                                "description": "Markdown",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "comments": {
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "author": {
+                                          "description": "Who wrote it, without @",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "at": {
+                                          "description": "When, as written: 2026-09-20 or 2026-09-20 14:30",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "text": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "depth": {
+                                          "description": "1 (the default) for a comment, 2 for a reply to the comment above, …",
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "text"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "attachments": {
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "url": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "description": "A link or a path in the repository"
+                                        },
+                                        "image": {
+                                          "type": [
+                                            "boolean",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "url"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fields": {
+                                "description": "Your own values; Todoi keeps them as they are",
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "title"
+                            ],
+                            "additionalProperties": false,
+                            "description": "A subitem. Todoi has two levels, items and subitems, so a subitem has no subitems"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "title"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "lists"
+  ],
+  "additionalProperties": false,
+  "description": "A Todoi project: lists, items and subitems (todoi.com)",
+  "$id": "https://todoi.com/schema/project-v1.json",
+  "title": "Todoi project file"
+}

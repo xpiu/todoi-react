@@ -5,6 +5,9 @@
 import type { ItemPriority, LabelColor } from "../../shared/enums";
 import type { ImportPlan, PlanItem, PlanList } from "../../shared/import";
 import { fromEmbridge } from "../../shared/projectDoc/embridge";
+import { ProjectFileError } from "../../shared/projectDoc/file";
+import { fromJson } from "../../shared/projectDoc/json";
+import { fromYaml } from "../../shared/projectDoc/yaml";
 import type { DocAttachment, DocComment, DocSubitem, ProjectDoc } from "../../shared/projectDoc/model";
 import { parseDateValue, toISO } from "../design/core/dates";
 import { suggestedRoleForTitle as roleFor } from "../design/core/statuses";
@@ -121,6 +124,20 @@ function parseLegacyMarkdown(text: string): ImportPlan {
   }
   if (!plan.name) plan.warnings.push(NO_TITLE);
   return plan;
+}
+
+/** A Todoi project file (todoi.com/schema/project-v1.json) in JSON or YAML; `{` first means JSON. */
+export function parseProjectFile(text: string, fileName?: string | null): ImportPlan {
+  const fallback = fileName?.replace(/\.[^.]+$/, "") ?? "";
+  try {
+    const { doc, warnings } = /^\s*[{[]/.test(text) ? fromJson(text) : fromYaml(text);
+    const plan = docToPlan(doc, warnings, fallback);
+    if (!plan.name) plan.warnings.push(NO_TITLE);
+    return plan;
+  } catch (e) {
+    if (!(e instanceof ProjectFileError)) throw e;
+    return { ...blank(), name: fallback, warnings: e.problems };
+  }
 }
 
 interface TrelloBoard {

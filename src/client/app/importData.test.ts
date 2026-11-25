@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseCsv, parseMarkdown, parseTrello, planCounts } from "./importData";
+import { parseCsv, parseMarkdown, parseProjectFile, parseTrello, planCounts } from "./importData";
 import { viewToMarkdown } from "./exportData";
 import type { Item, Label } from "../data/api";
 
@@ -60,6 +60,16 @@ describe("import parsers", () => {
     const plan = parseMarkdown("# P\n\n## To-do\n\n- [ ] Parent\nSome notes\n  - [x] child one\n  - [ ] child two\n");
     expect(plan.lists[0]!.items[0]!.subitems).toEqual([{ title: "child one", done: true }, { title: "child two", done: false }]);
     expect(plan.lists[0]!.items[0]!.description).toBe("Some notes");
+  });
+  it("reads a Todoi project file as YAML or JSON, and explains a refusal", () => {
+    const yaml = 'format: todoi.project\nversion: 1\ntitle: "Site"\nlists:\n  - name: "Doing"\n    items:\n      - title: "Hero"\n        status: doing\n        priority: high\n        fields: { ref: "A-7" }\n        subitems:\n          - title: "Crop"\n            done: true\n';
+    const plan = parseProjectFile(yaml, "site.yaml");
+    expect(plan).toMatchObject({ name: "Site", lists: [{ name: "Doing", statusRole: "DOING", items: [{ title: "Hero", status: "DOING", priority: "HIGH", subitems: [{ title: "Crop", done: true }] }] }] });
+    expect(plan.warnings).toEqual(["Fields Todoi doesn't use are left out: ref"]);
+    const refused = parseProjectFile('{"format":"todoi.project","version":1,"lists":[{"name":"L","items":[{"title":"A","subitems":[{"title":"B","subitems":[]}]}]}]}', "deep.json");
+    expect(refused.lists).toEqual([]);
+    expect(refused.name).toBe("deep");
+    expect(refused.warnings[0]).toBe("lists[0].items[0].subitems[0] “B”: a subitem can't have its own subitems. Make them subitems of “A” or items in the list");
   });
   it("maps a Trello board", () => {
     const board = { name: "Redesign", lists: [{ id: "L1", name: "Doing", pos: 2 }, { id: "L0", name: "To Do", pos: 1 }, { id: "L9", name: "Old", closed: true }], cards: [{ id: "c1", name: "Hero", desc: "d", idList: "L1", due: "2026-09-12T10:00:00.000Z", labels: [{ name: "Design", color: "purple" }], idChecklists: ["ck1"], idMembers: ["m1", "m2"] }, { id: "c2", name: "Gone", idList: "L9" }], checklists: [{ id: "ck1", idCard: "c1", checkItems: [{ name: "crop", state: "complete" }, { name: "export", state: "incomplete" }] }], members: [{ id: "m1", fullName: "Lena" }] };

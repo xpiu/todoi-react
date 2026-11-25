@@ -17,11 +17,11 @@ import { count } from "../design/core/text";
 import { TextField } from "../design/core/TextField";
 import { SettingsCard, SettingsPageFrame } from "../design/settings/SettingsShell";
 import { quote, useFeedback } from "./feedback";
-import { parseCsv, parseMarkdown, parseTrello, planCounts } from "./importData";
+import { parseCsv, parseMarkdown, parseProjectFile, parseTrello, planCounts } from "./importData";
 import "./import.css";
 import { useOpenProject } from "./useOpenProject";
 
-type Source = "md" | "trello" | "csv";
+type Source = "md" | "file" | "trello" | "csv";
 interface SourceSpec {
   label: string;
   icon: IconName;
@@ -49,6 +49,22 @@ const SOURCES: Record<Source, SourceSpec> = {
       ["> comment", "Comment", "Posted by you, headed with the original author and date"],
       ["- [name](path)", "Attachment link", "Listed in the description; files aren't copied"],
       ["title: in the <!-- --> block", "Project name", "Else the file's name"],
+    ],
+  },
+  file: {
+    label: "Todoi file",
+    icon: "file-code",
+    accept: ".json,.yaml,.yml",
+    hint: "Todoi's JSON or YAML project format, as Git sync writes it",
+    placeholder: 'format: todoi.project\nversion: 1\ntitle: "Website"\nlists:\n  - name: "To-do"\n    items:\n      - title: "First item"\n        due: "2026-10-12"',
+    parse: parseProjectFile,
+    mapping: [
+      ["lists[].name", "List", "Kept in order. A list named after a status (To-do, Done) is linked to it"],
+      ["items[] · subitems[]", "Item · Subitem", "Subitems can't have subitems of their own"],
+      ["status · priority · start · due", "Properties", "Same values as the schema, todoi.com/schema/project-v1.json"],
+      ["labels · assignees", "Labels · Assignee", "Labels are created. Only the first assignee is kept"],
+      ["comments[]", "Comment", "Posted by you, headed with the original author and date"],
+      ["fields", "—", "Left out; listed under Check before creating"],
     ],
   },
   trello: {
@@ -108,8 +124,9 @@ export function ImportScreen() {
     );
   };
   const counts = plan ? planCounts(plan) : null;
+  const refused = !!plan && !plan.lists.length && plan.warnings.length > 0;
   return (
-    <SettingsPageFrame title="Import" crumb="Turn a Markdown, Trello or CSV file into a new project.">
+    <SettingsPageFrame title="Import" crumb="Create a project from a Markdown, JSON, YAML, Trello or CSV file.">
       <SettingsCard
         group={{
           id: "source",
@@ -158,8 +175,9 @@ export function ImportScreen() {
             id: "review",
             title: "Review",
             tone: plan.warnings.length ? "warn" : undefined,
-            sub: [count(counts.lists, "list"), count(counts.items, "item"), count(counts.subitems, "subitem"), count(counts.labels, "label"), counts.comments ? count(counts.comments, "comment") : null].filter(Boolean).join(" · "),
-            rows: [
+            // A refused file shows its reasons first: no counts, no name or group to fill in.
+            sub: refused ? undefined : [count(counts.lists, "list"), count(counts.items, "item"), count(counts.subitems, "subitem"), count(counts.labels, "label"), counts.comments ? count(counts.comments, "comment") : null].filter(Boolean).join(" · "),
+            rows: refused ? [] : [
               { id: "name", label: "Project name", hint: "Created in the group you pick", control: <TextField value={name} aria-label="Project name" onChange={(e) => setName(e.target.value)} /> },
               { id: "group", label: "Project group", control: <Select aria-label="Project group" value={groupId} options={(groups.data ?? []).map((g) => ({ value: g.id, label: g.name, icon: "folders" as IconName }))} onChange={(v) => setGroupId(v)} placement="bottom-end" tier="detached" width={220} /> },
             ],
@@ -168,7 +186,7 @@ export function ImportScreen() {
           <div className="td-import-body">
             {plan.warnings.length ? (
               <>
-                <div className="td-import-head">Check before creating</div>
+                <div className="td-import-head">{plan.lists.length ? "Check before creating" : "This file can't be imported"}</div>
                 {plan.warnings.map((w) => (
                   <div key={w} className="td-import-warn">
                     <Icon name="circle-alert" size={14} />
@@ -177,16 +195,20 @@ export function ImportScreen() {
                 ))}
               </>
             ) : null}
-            <div className="td-import-head">Lists that will be created</div>
-            <ul className="td-import-list">
-              {plan.lists.map((l, i) => (
-                <li key={i}>
-                  {l.name} · {count(l.items.length, "item")}
-                  {l.statusRole ? ` · linked to ${STATUS_NAMES[l.statusRole]}` : ""}
-                </li>
-              ))}
-              {!plan.lists.length ? <li>No lists found</li> : null}
-            </ul>
+            {plan.lists.length || !plan.warnings.length ? (
+              <>
+                <div className="td-import-head">Lists that will be created</div>
+                <ul className="td-import-list">
+                  {plan.lists.map((l, i) => (
+                    <li key={i}>
+                      {l.name} · {count(l.items.length, "item")}
+                      {l.statusRole ? ` · linked to ${STATUS_NAMES[l.statusRole]}` : ""}
+                    </li>
+                  ))}
+                  {!plan.lists.length ? <li>No lists found</li> : null}
+                </ul>
+              </>
+            ) : null}
             <div className="td-import-head">How {src.label} fields map</div>
             <table className="td-import-table">
               <thead>
