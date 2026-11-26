@@ -54,7 +54,7 @@ export function ListActionsMenu({ name, activeIcon, statusRole, onStatusRoleChan
       <>
         {roleRow(null, "None", "circle-off")}
         {STATUSES.map((s) => roleRow(s.id, s.name, s.icon, s.color))}
-        <MenuNote>Identifies the workflow stage this list represents. The project's "Link Lists with Status" setting decides whether moves update item Status.</MenuNote>
+        <MenuNote>Identifies the workflow stage this list represents. The project's "Status follows List" setting decides whether moves update item Status.</MenuNote>
         <MenuDivider />
         <MenuItem icon="link-2" onSelect={() => onManageLinks?.()}>
           Manage list–status links…

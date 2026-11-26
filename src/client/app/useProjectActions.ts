@@ -109,8 +109,8 @@ export function useProjectActions(projectId: string | null, project: ItemContain
 
   /**
    * Quick-add. In a Group by group, `preset` is the group's value (groupPreset), sent in the same create request: what
-   * the field typed wins for one-value fields (priority, due, >list), labels and assignees add up. A Status in a linked
-   * project picks the list with that role, as a Status pick does. No toast when the item shows where it was typed;
+   * the field typed wins for one-value fields (priority, due, >list), labels and assignees add up. A Status group with
+   * "Status follows List" on adds to the list with that role, as a drop into that group does. No toast when the item shows where it was typed;
    * `notice` says, from the predicted item, when it won't (groupAddNotice, addedHiddenNotice): then one toast with Undo.
    */
   const addItem = (listId: string, title: string, parsed: QuickAddResult, position: "top" | "bottom" = "bottom", { preset, notice: noticeOf }: { preset?: GroupPatch | null; notice?: (predicted: Item) => string | null } = {}) => {
@@ -491,7 +491,8 @@ export function useProjectActions(projectId: string | null, project: ItemContain
   };
   /**
    * The Board's quick pickers (CardQuickEdit): one toast with Undo per single pick (dates, priority, Status), and one per
-   * labels or assignees session, raised when the picker closes. A Status pick in a linked project is a move (its own toast).
+   * labels or assignees session, raised when the picker closes. A Status pick never moves the item; moveToList is the
+   * Group by Status drop's move.
    */
   const quickEdit = {
     setDates: (id: string, next: DatesValue, prev: DatesValue) => {

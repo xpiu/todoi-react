@@ -1,4 +1,4 @@
-// The Priority and Status pickers' options and the linked-Status rule, shared by the item overlay's rail
+// The Priority and Status pickers' options and the "Status follows List" rule, shared by the item overlay's rail
 // and the Board card's quick pickers (CardQuickEdit) so both edit an item the same way.
 // Spec: DESIGN.md › Item editing · Statuses.
 import type { ItemPriority } from "../../../shared/enums";
@@ -36,17 +36,33 @@ export interface StatusList {
 }
 
 /**
- * Linked project ("Link Lists with Status"): Status stands in for the List field and a pick moves the item. Only for an
- * item whose list is offered (not a hidden list or the Inbox), which still shows the List field.
+ * "Status follows List" (DESIGN.md › Statuses): the list sets the Status, and a Status pick never moves an item.
+ * "locked" when the project has it on, the item's list is offered (not a hidden list or the Inbox), has a role, and the
+ * item's Status is that role: the picker opens, but only to point at the List field. "hidden" when, on top of that,
+ * every offered list has a role: the List field stands for both. "free" otherwise — off, a list without a role, or a
+ * Status that differs from the role (a checked item, a role changed with "Future moves only"): editable, the item stays.
  */
+export type StatusLock = "free" | "locked" | "hidden";
+
+export function statusLock(lists: ReadonlyArray<StatusList>, linkStatuses: boolean | undefined, item: { listId: string; status: ItemStatus | null }): StatusLock {
+  const role = linkStatuses ? lists.find((l) => l.id === item.listId)?.statusRole : null;
+  if (!role || item.status !== role) return "free";
+  return lists.every((l) => l.statusRole) ? "hidden" : "locked";
+}
+
+/** A locked Status picker's options: the item's own Status, every other one disabled */
+export const lockedStatusOptions = (value: string) => STATUS_OPTIONS.map((o) => (o.value === value ? o : { ...o, disabled: true }));
+
+/** Whether a Status drop in Group by Status (or a quick-add in a Status group) is a move: on, and the item's list offered */
 export function statusMovesItem(lists: ReadonlyArray<StatusList>, linkStatuses: boolean | undefined, listId: string) {
   return !!linkStatuses && lists.some((l) => l.id === listId);
 }
 
 /**
- * What a Status pick does: in a linked project, a move to the first list (board order) with that role; otherwise a
- * Status edit. It stays a Status edit, and the item stays, when its own list already has that role (two lists sharing
- * one), when no list carries it, for None, and for Done on a recurring item, which completes its occurrence instead.
+ * What a Status drop in Group by Status does: a drag is a move, so in a project with "Status follows List" on it moves
+ * the item to the first list (board order) with that role; otherwise a Status edit. It stays a Status edit, and the item
+ * stays, when its own list already has that role (two lists sharing one), when no list carries it, for None, and for
+ * Done on a recurring item, which completes its occurrence instead. Pickers never move an item: see statusLock.
  */
 export function statusPick(v: string, o: { lists: ReadonlyArray<StatusList>; movesItem: boolean; listId: string; recurring: boolean }): { moveTo: string } | { status: ItemStatus | null } {
   const here = o.lists.find((l) => l.id === o.listId)?.statusRole;

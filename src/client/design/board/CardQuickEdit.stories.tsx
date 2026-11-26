@@ -3,7 +3,8 @@ import { useRef, useState } from "react";
 import { expect, fn, waitFor, within } from "storybook/test";
 
 import type { ItemPriority } from "../../../shared/enums";
-import type { QuickField } from "../core/itemFields";
+import type { ItemStatus } from "../../../shared/item-status";
+import type { QuickField, StatusList } from "../core/itemFields";
 import { CardQuickEdit, type QuickEditItem } from "./CardQuickEdit";
 import { ItemCard } from "./ItemCard";
 
@@ -19,8 +20,8 @@ const MEMBERS = [
 const PRIORITY_TEXT: Record<ItemPriority, "Urgent" | "High" | "Medium" | "Low"> = { URGENT: "Urgent", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
 
 /** One card with the board's quick-edit state: a quick action opens its picker at the icon, a pick writes the item. */
-function Board({ onSessionEnd, onSetPriority }: { onSessionEnd: (...a: unknown[]) => void; onSetPriority: (...a: unknown[]) => void }) {
-  const [item, setItem] = useState<QuickEditItem>({ id: "i1", itemId: "HE-115", title: "Prepare the helicopter quote", listId: "todo", start: null, due: "2026-09-12", time: null, labelIds: ["l1"], assigneeIds: [], priority: null, status: null, done: false, recurring: false });
+function Board({ onSessionEnd, onSetPriority, lists = [], linkStatuses, status = null }: { onSessionEnd: (...a: unknown[]) => void; onSetPriority: (...a: unknown[]) => void; lists?: StatusList[]; linkStatuses?: boolean; status?: ItemStatus | null }) {
+  const [item, setItem] = useState<QuickEditItem>({ id: "i1", itemId: "HE-115", title: "Prepare the helicopter quote", listId: "todo", start: null, due: "2026-09-12", time: null, labelIds: ["l1"], assigneeIds: [], priority: null, status, done: false });
   const [quick, setQuick] = useState<{ field: QuickField; via: "icon" | "badge" } | null>(null);
   const anchor = useRef<HTMLElement | null>(null);
   const patch = (p: Partial<QuickEditItem>) => setItem((cur) => ({ ...cur, ...p }));
@@ -54,15 +55,15 @@ function Board({ onSessionEnd, onSetPriority }: { onSessionEnd: (...a: unknown[]
           item={item}
           labels={LABELS}
           members={MEMBERS}
-          lists={[]}
+          lists={lists}
+          linkStatuses={linkStatuses}
           onClose={() => setQuick(null)}
           onSetDates={(_id, v) => patch({ start: v.start, due: v.due, time: v.time })}
           onSetPriority={(...a) => {
             onSetPriority(...a);
             patch({ priority: a[1] });
           }}
-          onSetStatus={(_id, status) => patch({ status })}
-          onMoveToList={(_id, listId) => patch({ listId })}
+          onSetStatus={(_id, next) => patch({ status: next })}
           onSetLabels={(_id, labelIds) => patch({ labelIds })}
           onSetAssignees={(_id, assigneeIds) => patch({ assigneeIds })}
           onSessionEnd={onSessionEnd}
@@ -103,6 +104,20 @@ export const Priority: Story = {
     await expect(args.onSetPriority).toHaveBeenCalledWith("i1", "HIGH", null);
     await waitFor(() => expect(canvas.getByTitle("Priority: High")).toBeInTheDocument());
     await expect(canvas.getByRole("listitem")).not.toHaveClass("is-quickedit");
+  },
+};
+
+/** "Status follows List" on and the card's list sets its Status: the picker opens locked, with a note to move the card. */
+export const StatusSetByList: Story = {
+  args: { linkStatuses: true, status: "TODO", lists: [{ id: "todo", statusRole: "TODO" }, { id: "ideas" }] },
+  async play({ canvas, canvasElement, userEvent }) {
+    const page = within(canvasElement.ownerDocument.body);
+    canvas.getByRole("listitem").focus();
+    await userEvent.click(canvas.getByRole("button", { name: "Item options" }));
+    await page.findByRole("menu");
+    await userEvent.click(canvas.getByRole("button", { name: "Status", hidden: true }));
+    await expect(await page.findByRole("option", { name: "Doing" })).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByText("Move the card to another list to change its Status.")).toBeVisible();
   },
 };
 

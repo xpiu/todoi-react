@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { ItemPriority } from "../../../shared/enums";
 import type { ItemStatus } from "../../../shared/item-status";
 import { DatesPicker, type DatesValue } from "../core/DatesPicker";
-import { PRIORITY_OPTIONS, STATUS_OPTIONS, priorityOf, priorityValue, statusMovesItem, statusPick, statusValue, type QuickField, type StatusList } from "../core/itemFields";
+import { NO_VALUE, PRIORITY_OPTIONS, STATUS_OPTIONS, lockedStatusOptions, priorityOf, priorityValue, statusLock, statusValue, type QuickField, type StatusList } from "../core/itemFields";
 import { LabelPicker, type LabelDraft, type PickableLabel } from "../core/LabelPicker";
 import { MemberPicker, type PickableMember } from "../core/MemberPicker";
 import type { PopoverCloseReason } from "../core/Popover";
@@ -33,8 +33,6 @@ export interface QuickEditItem {
   priority: ItemPriority | null;
   status: ItemStatus | null;
   done: boolean;
-  /** Repeats with a due date: Done completes the occurrence instead of moving the item */
-  recurring: boolean;
 }
 
 export interface CardQuickEditProps {
@@ -44,7 +42,7 @@ export interface CardQuickEditProps {
   item: QuickEditItem;
   labels: ReadonlyArray<PickableLabel>;
   members: ReadonlyArray<PickableMember>;
-  /** The project's lists with their Status roles: in a linked project a Status pick is a move */
+  /** The project's lists with their Status roles: with "Status follows List" on, a Status the card's list sets is locked */
   lists: ReadonlyArray<StatusList>;
   linkStatuses?: boolean;
   today?: string;
@@ -52,7 +50,6 @@ export interface CardQuickEditProps {
   onSetDates: (id: string, next: DatesValue, prev: DatesValue) => void;
   onSetPriority: (id: string, next: ItemPriority | null, prev: ItemPriority | null) => void;
   onSetStatus: (id: string, next: ItemStatus | null, prev: ItemStatus | null) => void;
-  onMoveToList: (id: string, listId: string) => void;
   /** Every toggle, saved at once */
   onSetLabels: (id: string, labelIds: string[]) => void;
   onSetAssignees: (id: string, userIds: string[]) => void;
@@ -65,7 +62,7 @@ export interface CardQuickEditProps {
 
 const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
 
-export function CardQuickEdit({ field, anchorRef, item, labels, members, lists, linkStatuses, today, onClose, onSetDates, onSetPriority, onSetStatus, onMoveToList, onSetLabels, onSetAssignees, onSessionEnd, onCreateLabel, onEditLabel, onDeleteLabel }: CardQuickEditProps) {
+export function CardQuickEdit({ field, anchorRef, item, labels, members, lists, linkStatuses, today, onClose, onSetDates, onSetPriority, onSetStatus, onSetLabels, onSetAssignees, onSessionEnd, onCreateLabel, onEditLabel, onDeleteLabel }: CardQuickEditProps) {
   const id = item.id;
   // The multi-select session: the set when the picker opened, and the set now (null: untouched).
   const [before] = useState(() => (field === "labels" ? item.labelIds : item.assigneeIds));
@@ -126,19 +123,18 @@ export function CardQuickEdit({ field, anchorRef, item, labels, members, lists, 
     return <Select {...common} value={priorityValue(item.priority)} width={184} placeholder="Priority" options={PRIORITY_OPTIONS} onChange={(v) => onSetPriority(id, priorityOf(v), item.priority)} />;
   }
   if (field === "status") {
-    const movesItem = statusMovesItem(lists, linkStatuses, item.listId);
+    // "Status follows List": a Status set by the card's list stays locked here; moving the card changes it.
+    const value = statusValue(item.status, item.done);
+    const locked = statusLock(lists, linkStatuses, item) !== "free";
     return (
       <Select
         {...common}
-        value={statusValue(item.status, item.done)}
+        value={value}
         width={200}
         placeholder="Status"
-        options={STATUS_OPTIONS}
-        onChange={(v) => {
-          const pick = statusPick(v, { lists, movesItem, listId: item.listId, recurring: item.recurring });
-          if ("moveTo" in pick) onMoveToList(id, pick.moveTo);
-          else onSetStatus(id, pick.status, item.status);
-        }}
+        options={locked ? lockedStatusOptions(value) : STATUS_OPTIONS}
+        footer={locked ? <><div className="td-menu-divider" role="separator" /><div className="td-menu-note">Move the card to another list to change its Status.</div></> : undefined}
+        onChange={(v) => onSetStatus(id, v === NO_VALUE ? null : (v as ItemStatus), item.status)}
       />
     );
   }

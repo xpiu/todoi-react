@@ -249,36 +249,42 @@ export const MakeSubitemBlocked: Story = {
     await expect(row).toHaveTextContent("has subitems");
   },
 };
-/** "Link Lists with Status" on: Status stands in for the List field, and a pick moves the item. */
-export const LinkedProject: Story = {
-  args: { linkStatuses: true, onManageLinks: fn(), lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Done", statusRole: "DONE" }] },
+/** "Status follows List" on, the item's Status set by its list: the List field moves the item, and Status reads
+ * "Doing · set by list". It opens, but only the current Status is enabled; "Change list…" hands over to the List field. */
+export const StatusFollowsList: Story = {
+  args: { linkStatuses: true, lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Ideas" }] },
   async play({ args, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
-    await expect(within(dialog).queryByRole("combobox", { name: "Move to list" })).not.toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Status" }));
-    const linked = await page.findByRole("button", { name: "Lists linked with Status" });
-    await waitFor(() => expect(linked).toBeVisible());
-    await expect(page.queryByText("Lists are linked to Status here. Picking a Status moves the item to its list.")).not.toBeInTheDocument();
-    await userEvent.click(await page.findByRole("option", { name: "Done" }));
-    await expect(args.onMoveToList).toHaveBeenCalledWith("l3");
+    const status = within(dialog).getByRole("combobox", { name: "Status" });
+    await expect(status).toHaveTextContent("Doing · set by list");
+    await userEvent.click(status);
+    await expect(await page.findByRole("option", { name: "Done" })).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(await page.findByRole("button", { name: "Change list…" }));
+    await userEvent.click(await page.findByRole("option", { name: "To do" }));
+    await expect(args.onMoveToList).toHaveBeenCalledWith("l1");
     await expect(args.onSetStatus).not.toHaveBeenCalled();
   },
 };
-/** Two lists share a role, and one list has none: Status still stands in for List. A pick moves the item to the first list
- * with that role, unless its own list already carries it (a Status edit, the item stays). */
-export const LinkedProjectSharedRole: Story = {
-  args: { linkStatuses: true, item: { ...ITEM, status: null }, lists: [{ id: "l1", name: "Ideas" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Also doing", statusRole: "DOING" }, { id: "l4", name: "Done", statusRole: "DONE" }] },
+/** Every visible list has a role: the Status field is hidden and the List field stands for both. */
+export const StatusFollowsListEveryRole: Story = {
+  args: { linkStatuses: true, lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Done", statusRole: "DONE" }] },
+  async play({ canvasElement }) {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
+    await expect(within(dialog).getByRole("combobox", { name: "Move to list" })).toBeInTheDocument();
+    await expect(within(dialog).queryByRole("combobox", { name: "Status" })).not.toBeInTheDocument();
+  },
+};
+/** A Status that differs from the list's role (here None in the Doing list) stays editable, and a pick never moves the item. */
+export const StatusFollowsListDiffers: Story = {
+  args: { linkStatuses: true, item: { ...ITEM, status: null }, lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Done", statusRole: "DONE" }] },
   async play({ args, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
-    await expect(within(dialog).queryByRole("combobox", { name: "Move to list" })).not.toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "Status" }));
-    await userEvent.click(await page.findByRole("option", { name: "Doing" }));
-    await expect(args.onSetStatus).toHaveBeenCalledWith("DOING");
-    await expect(args.onMoveToList).not.toHaveBeenCalled();
     await userEvent.click(within(dialog).getByRole("combobox", { name: "Status" }));
     await userEvent.click(await page.findByRole("option", { name: "Done" }));
-    await expect(args.onMoveToList).toHaveBeenCalledWith("l4");
+    await expect(args.onSetStatus).toHaveBeenCalledWith("DONE");
+    await expect(args.onMoveToList).not.toHaveBeenCalled();
   },
 };

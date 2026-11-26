@@ -30,7 +30,7 @@ import { RepeatPicker } from "../core/RepeatPicker";
 import { useReturnFocus } from "../core/returnFocus";
 import { Select } from "../core/Select";
 import { SHORTCUTS } from "../core/shortcuts";
-import { PRIORITY_OPTIONS, STATUS_OPTIONS, priorityOf, priorityValue, statusMovesItem, statusPick, statusValue } from "../core/itemFields";
+import { NO_VALUE, PRIORITY_OPTIONS, STATUS_OPTIONS, lockedStatusOptions, priorityOf, priorityValue, statusLock, statusValue } from "../core/itemFields";
 import { TextField } from "../core/TextField";
 import { Checklist, ChecklistAddRow, type ChecklistItem } from "./Checklist";
 import { Comment, type CommentReaction } from "./Comment";
@@ -112,11 +112,11 @@ export interface ItemOverlayProps {
   /** An Inbox item: "Move to project…" (filing) takes the list select's place; labels and assignees,
    * which belong to a project, are left out */
   inbox?: boolean;
-  /** The project's "Link Lists with Status" (Projects page). When on, the List field is hidden and Status stands in
-   * for it: picking a Status calls onMoveToList with the first list (board order) that has that role (the move sets
-   * the Status). A Status the item's own list already carries, a Status no list carries, None and Done on a recurring
-   * item call onSetStatus and leave the item where it is. Off, or an item in a hidden list (not in `lists`) or the
-   * Inbox: List and Status both show and a Status edit never moves the item. */
+  /** The project's "Status follows List" (Projects page). The List field always shows and is the only control that
+   * moves the item (the move sets the Status). On, an item whose list has a role and whose Status is that role gets a
+   * locked Status ("Doing · set by list") that only points at the List field, or none at all when every list in `lists`
+   * has a role. Any other case — off, a list without a role, a hidden list (not in `lists`), the Inbox, a Status that
+   * differs from the role — keeps Status editable, and onSetStatus never moves the item. See statusLock. */
   linkStatuses?: boolean;
   /** The E shortcut: open with the title in edit */
   autoEditTitle?: boolean;
@@ -200,6 +200,9 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const saveDescription = useRef<(() => Promise<boolean>) | null>(null);
   const [titleEdit, setTitleEdit] = useState<string | null>(p.autoEditTitle ? item.title : null);
   const [subDraft, setSubDraft] = useState("");
+  // Controlled so a locked Status's "Change list…" can hand over to the List field
+  const [listOpen, setListOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -279,15 +282,12 @@ export function ItemOverlay(p: ItemOverlayProps) {
     return { value: l.id, label: l.name, icon: (l.icon as IconName | undefined) ?? auto.icon, iconColor: auto.color };
   });
   const status = statusValue(item.status, item.done);
-  // Linked project: Status stands in for the List field.
-  const currentList = p.lists.find((l) => l.id === item.listId);
-  const statusOnly = !p.inbox && statusMovesItem(p.lists, p.linkStatuses, item.listId);
-  const pickStatus = (v: string) => {
-    const pick = statusPick(v, { lists: p.lists, movesItem: statusOnly, listId: item.listId, recurring: !!(item.repeat && item.due) });
-    if ("moveTo" in pick) p.onMoveToList(pick.moveTo);
-    else p.onSetStatus(pick.status);
+  // "Status follows List": the list sets the Status; a locked Status only points at the List field.
+  const lock = p.inbox ? "free" : statusLock(p.lists, p.linkStatuses, item);
+  const changeList = () => {
+    setStatusOpen(false);
+    setListOpen(true);
   };
-  const statusTitle = statusOnly && currentList && currentList.statusRole !== item.status ? `Status · in list ${currentList.name}` : "Status";
   const others = p.projectItems.filter((it) => it.id !== item.id);
   // An item with subitems can't become one ("has subitems" trails its row); Design's menu widths per view
   const subitemBlocked = item.subitems.length > 0;
@@ -447,37 +447,50 @@ export function ItemOverlay(p: ItemOverlayProps) {
                 {transferPicker("move", undefined, filing.close)}
               </Popover>
             ) : null
-          ) : statusOnly ? null : (
-            <Select block tier="detached" aria-label="Move to list" title="Move to list" value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined} />
+          ) : (
+            <Select block tier="detached" aria-label="Move to list" title="Move to list" open={listOpen} onOpenChange={setListOpen} value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined} />
           )}
-          <Select
-            block
-            tier="detached"
-            aria-label="Status"
-            title={statusTitle}
-            value={status}
-            options={STATUS_OPTIONS}
-            width={200}
-            onChange={pickStatus}
-            footer={
-              statusOnly ? (
-                p.onManageLinks ? (
-                  <>
-                    <div className="td-menu-divider" role="separator" />
-                    <button type="button" className="td-menu-item td-select-foot" title="This project links lists to Status. Turn the link off on the Projects page to show the List field and move items without changing their Status." onClick={p.onManageLinks}>
-                    <Icon name="link-2" size={15} />
-                    Lists linked with Status
+          {lock === "hidden" ? null : lock === "locked" ? (
+            <Select
+              block
+              tier="detached"
+              aria-label="Status"
+              title="Status · set by list"
+              open={statusOpen}
+              onOpenChange={setStatusOpen}
+              value={status}
+              options={lockedStatusOptions(status)}
+              width={200}
+              renderValue={(o) => `${o?.label ?? "None"} · set by list`}
+              footer={
+                <>
+                  <div className="td-menu-divider" role="separator" />
+                  <div className="td-menu-note">Move the item to another list to change its Status.</div>
+                  <button type="button" className="td-menu-item td-select-foot" onClick={changeList}>
+                    <Icon name="arrow-right" size={15} />
+                    Change list…
                   </button>
-                  </>
-                ) : null
-              ) : (
+                </>
+              }
+            />
+          ) : (
+            <Select
+              block
+              tier="detached"
+              aria-label="Status"
+              title="Status"
+              value={status}
+              options={STATUS_OPTIONS}
+              width={200}
+              onChange={(v) => p.onSetStatus(v === NO_VALUE ? null : (v as ItemStatus))}
+              footer={
                 <>
                   <div className="td-menu-divider" role="separator" />
                   <div className="td-menu-note" title="A list can carry a Status role. Editing Status directly never moves the item.">Status is set here or by a linked list move. Editing it never moves the item.</div>
                 </>
-              )
-            }
-          />
+              }
+            />
+          )}
           <Select block tier="detached" aria-label="Priority" title="Priority" placeholder="Priority" icon="flag" value={priorityValue(item.priority)} width={184} options={PRIORITY_OPTIONS} onChange={(v) => p.onSetPriority(priorityOf(v))} />
           <div className="td-aside-divider" />
           <DatesPicker block tier="detached" start={item.start} due={item.due} time={item.dueTime} state={item.dueState ?? (item.done ? "complete" : undefined)} today={p.today} onChange={p.onSetDates} />

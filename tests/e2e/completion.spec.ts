@@ -43,8 +43,8 @@ async function read(page: Page, f: Fixture) {
 test("a recurring item advances identically from every surface, and Undo restores it", async ({ page, fixture: f }) => {
   const toast = page.locator(".td-toast");
   const row = () => page.locator(`[data-drag-id="${f.id}"]`);
-  const expectAdvanced = async (n: number) => {
-    await expect.poll(() => read(page, f)).toEqual({ dueDate: plusWeeks(n), repeatCount: n, done: false, status: "TODO" });
+  const expectAdvanced = async (n: number, status: string | null = "TODO") => {
+    await expect.poll(() => read(page, f)).toEqual({ dueDate: plusWeeks(n), repeatCount: n, done: false, status });
   };
   const expectToast = async (n: number) => {
     await expect(toast).toContainText(`Completed “${f.title}” — next due ${short(plusWeeks(n))}`);
@@ -69,14 +69,17 @@ test("a recurring item advances identically from every surface, and Undo restore
   await expectToast(2);
   await expectAdvanced(2);
 
-  // 3. The overlay's Status picker: Done completes the occurrence like the checkbox.
+  // 3. The overlay's Status picker: Done completes the occurrence like the checkbox. With "Status follows List" on, the
+  // list's role locks a matching Status, so the item first gets a Status that differs from it (editable, the item stays).
+  expect((await page.request.patch(`/api/items/${f.id}`, { data: { status: null } })).ok()).toBeTruthy();
   await page.goto(`/p/${f.projectId}?v=list&item=${f.id}`);
   await page.getByRole("dialog").getByRole("combobox", { name: "Status" }).click();
   await page.getByRole("option", { name: "Done" }).click();
   await expectToast(3);
   await page.screenshot({ path: ".tmp/test-results/completion-overlay-toast.png" });
-  await expectAdvanced(3);
+  await expectAdvanced(3, null);
   await page.keyboard.press("Escape");
+  expect((await page.request.patch(`/api/items/${f.id}`, { data: { status: "TODO" } })).ok()).toBeTruthy();
 
   // 4. The BulkBar.
   await page.goto(`/p/${f.projectId}?v=list`);

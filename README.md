@@ -76,7 +76,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 ## ✨ Features and limits
 
 - **Workspace:** Project groups, Projects, Lists, Items, Subitems, labels, assignees, watchers, relations, recurrence, covers and attachments. List/Board/Calendar views with filters, sorting and saved views; item overlay with Tiptap descriptions, comments and activity.
-- **Status follows List** (was "Link Lists with Status"): a per-project switch on the Projects page (also in Project settings; default on). Intended behavior: [User flow, UI and UX](#-user-flow-ui-and-ux). The code still runs the old rule (the item window shows Status alone, and a Status pick moves the item), and [DESIGN.md](DESIGN.md) (Project automation setting) still describes it.
+- **Status follows List** (was "Link Lists with Status"): a per-project switch on the Projects page (also in Project settings; default on). See [User flow, UI and UX](#-user-flow-ui-and-ux) and [DESIGN.md](DESIGN.md) (Project automation setting).
 - **Git sync:** a project kept in a file (Embridge Markdown, JSON or YAML) in a GitHub repository, synced both ways: three-way merge, a conflict dialog or a conflict policy, sync history with undo, and push webhooks. Connect under Settings › Storage & sync with a fine-grained token.
 - **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), Todoi JSON/YAML project files, Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export everything as a restorable `.zip`.
 - **Accounts:** private guest workspaces, email/password accounts, project roles and invite links, personal API tokens and account preferences stored in PostgreSQL.
@@ -92,7 +92,7 @@ Current limits:
 
 ## 🧭 User flow, UI and UX
 
-Decided rules for how the app behaves for users. Where the code differs, these rules are the target.
+How the app behaves for users.
 
 ### Status follows List
 
@@ -103,11 +103,12 @@ The per-project setting was renamed from "Link Lists with Status"; the stored fi
 **On:**
 
 - **List field:** always shown in the item window. It is the only control that moves an item, and a move sets the Status from the list's role.
-- **Status, list has a role:** locked, reads "Doing · set by list". It opens, but the other options are disabled and a note says to move the item.
+- **Status, list has a role:** locked, reads "Doing · set by list". It opens, but the other options are disabled, a note says to move the item, and "Change list…" opens the List field. A Board card's Status picker locks the same way.
 - **Status, every visible list has a role:** hidden; the List field stands for both. It returns, locked, as soon as one list has no role.
 - **Status, list without a role, hidden list or Inbox:** editable, and the item stays put.
 - **Status differs from the list's role** (a checked item, or a role changed with "Future moves only"): shown and editable.
 - **Two lists share a role, or a status has no list:** no special handling.
+- **Group by Status:** dropping an item into another Status group, or adding inside one, is a move to the list with that role.
 
 **Off:** List and Status are both shown, both editable and independent.
 

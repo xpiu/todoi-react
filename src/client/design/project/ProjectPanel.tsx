@@ -310,7 +310,7 @@ function PanelBody({ project, members, activity, archivedCount, currentUserId, s
       {sec("defaults", "Defaults", (
         <>
           {row("view", "Default view", "What the project opens in for people who haven't picked a view", <Select aria-label="Default view" value={project.defaultView} options={VIEW_OPTS} onChange={(v) => onChange({ defaultView: v })} placement="bottom-end" tier="detached" width={180} disabled={!isAdmin} />)}
-          {row("linkStatuses", "Link Lists with Status", "An item created in or moved to a list with a Status role takes that Status", <Switch aria-label="Link Lists with Status" checked={project.linkStatuses} disabled={!isAdmin} onChange={(v) => onChange({ linkStatuses: v })} />)}
+          {row("linkStatuses", "Status follows List", "An item created in or moved to a list with a Status role takes that Status", <Switch aria-label="Status follows List" checked={project.linkStatuses} disabled={!isAdmin} onChange={(v) => onChange({ linkStatuses: v })} />)}
           {row("checkedMove", "Checked items move to Done", "Checking an item also moves it to the list with the Done role; unchecking sends it back", <Switch aria-label="Checked items move to Done" checked={project.checkedMove ?? project.linkStatuses} disabled={!isAdmin} onChange={(v) => onChange({ checkedMove: v })} />)}
           {project.keyPrefix ? row("abbr", <button type="button" className="td-project-panel-linkbtn" onClick={() => onAction("open-group-settings")}>Change the Item ID prefix set at Group level</button>, null, <span className="td-project-panel-mono">{project.keyPrefix}-</span>) : null}
         </>

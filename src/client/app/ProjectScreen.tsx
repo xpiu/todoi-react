@@ -749,7 +749,7 @@ function ProjectBoard(props: ViewProps) {
           key={`${qe.quick.id}:${qe.quick.field}`}
           field={qe.quick.field}
           anchorRef={qe.anchor}
-          item={{ id: quickItem.id, itemId: keyOf(quickItem, props.project.keyPrefix), title: quickItem.title, listId: quickItem.listId, start: quickItem.startDate, due: quickItem.dueDate, time: quickItem.dueTime, labelIds: quickItem.labelIds, assigneeIds: quickItem.assigneeIds, priority: quickItem.priority, status: quickItem.status, done: quickItem.done, recurring: !!(quickItem.repeatRule && quickItem.dueDate) }}
+          item={{ id: quickItem.id, itemId: keyOf(quickItem, props.project.keyPrefix), title: quickItem.title, listId: quickItem.listId, start: quickItem.startDate, due: quickItem.dueDate, time: quickItem.dueTime, labelIds: quickItem.labelIds, assigneeIds: quickItem.assigneeIds, priority: quickItem.priority, status: quickItem.status, done: quickItem.done }}
           labels={props.labels}
           members={members}
           lists={actions.lists}
@@ -759,7 +759,6 @@ function ProjectBoard(props: ViewProps) {
           onSetDates={actions.quickEdit.setDates}
           onSetPriority={actions.quickEdit.setPriority}
           onSetStatus={actions.quickEdit.setStatus}
-          onMoveToList={actions.quickEdit.moveToList}
           onSetLabels={actions.quickEdit.setLabels}
           onSetAssignees={actions.quickEdit.setAssignees}
           onSessionEnd={actions.quickEdit.endSession}

@@ -83,7 +83,7 @@ describe("checked items move to Done", () => {
   });
   const item = { listId: "todo", parentItemId: null, priorListId: null, done: false };
 
-  it("follows Link Lists with Status until it is set", () => {
+  it("follows the Status follows List setting until it is set", () => {
     expect(movesOnCheck({ checkedMove: null, linkStatuses: true })).toBe(true);
     expect(movesOnCheck({ checkedMove: null, linkStatuses: false })).toBe(false);
     expect(movesOnCheck({ checkedMove: true, linkStatuses: false })).toBe(true);

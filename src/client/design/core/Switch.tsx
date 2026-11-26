@@ -11,7 +11,7 @@ export interface SwitchProps extends Omit<ComponentPropsWithRef<"button">, "type
   label?: string;
   /** Required when there is no visible label */
   "aria-label"?: string;
-  /** "link": two woven chain links in the knob while on (Link Lists with Status). Same 32×18 track */
+  /** "link": two woven chain links in the knob while on (Status follows List). Same 32×18 track */
   glyph?: "link";
 }
 

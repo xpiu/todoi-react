@@ -1,5 +1,5 @@
 // Projects — every project across groups in one table: icon, name (rename inline), lead, items,
-// completed %, the per-project "Link Lists with Status" switch, and a ⋯ with the lifecycle rows.
+// completed %, the per-project "Status follows List" switch, and a ⋯ with the lifecycle rows.
 import { useState } from "react";
 
 import { movesOnCheck } from "../../shared/completion";
@@ -54,10 +54,10 @@ export function ProjectsScreen() {
                 <th>Lead</th>
                 <th className="td-table-number">Items</th>
                 <th className="td-table-number">Completed</th>
-                <th className="td-table-link" title="Link Lists with Status: when on, an item created in or moved to a list with a Status role takes that Status. The item window then shows Status alone, and picking a Status there moves the item to its list.">
-                  Link Lists with Status
+                <th className="td-table-link" title="Status follows List: when on, an item created in or moved to a list with a Status role takes that Status. Moving the item is the only way to change a Status its list sets.">
+                  Status follows List
                 </th>
-                <th className="td-table-link" title="When on, checking an item also moves it to the list with the Done role, and unchecking sends it back. Follows Link Lists with Status until it is set. Subitems stay with their item.">
+                <th className="td-table-link" title="When on, checking an item also moves it to the list with the Done role, and unchecking sends it back. Follows the Status follows List setting until it is set. Subitems stay with their item.">
                   Checked items move to Done
                 </th>
                 <th>
@@ -112,7 +112,7 @@ export function ProjectsScreen() {
                     <td className="td-table-number">{p.itemCount}</td>
                     <td className="td-table-number">{pct != null ? `${pct}%` : <span className="td-table-dim">—</span>}</td>
                     <td className="td-table-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      <Switch glyph="link" checked={p.linkStatuses} aria-label={`Linked statuses for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, linkStatuses: v })} />
+                      <Switch glyph="link" checked={p.linkStatuses} aria-label={`Status follows List for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, linkStatuses: v })} />
                     </td>
                     <td className="td-table-link" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <Switch checked={movesOnCheck(p)} aria-label={`Checked items move to Done for ${p.name}`} onChange={(v) => m.updateProject.mutate({ id: p.id, checkedMove: v })} />

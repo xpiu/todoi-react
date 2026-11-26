@@ -33,11 +33,11 @@ export const Off: Story = {
   },
 };
 export const On: Story = { args: { checked: true } };
-/** glyph="link" (Link Lists with Status): two woven chain links ride in the knob while on; off is the plain switch. */
+/** glyph="link" (Status follows List): two woven chain links ride in the knob while on; off is the plain switch. */
 export const LinkGlyph: Story = {
-  args: { glyph: "link", checked: true, label: "Link Lists with Status" },
+  args: { glyph: "link", checked: true, label: "Status follows List" },
   async play({ canvas, canvasElement, userEvent }) {
-    const toggle = canvas.getByRole("switch", { name: "Link Lists with Status" });
+    const toggle = canvas.getByRole("switch", { name: "Status follows List" });
     const glyph = () => canvasElement.querySelector(".td-switch-glyph")!;
     await expect(glyph()).toHaveAttribute("aria-hidden", "true");
     await waitFor(() => expect(getComputedStyle(glyph()).opacity).toBe("1"));
