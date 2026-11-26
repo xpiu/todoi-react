@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { serve } from "@hono/node-server";
@@ -8,6 +8,7 @@ import { Hono } from "hono";
 
 import { app } from "./app";
 import { routePath } from "./apiV1";
+import { contentSecurityPolicy } from "./csp";
 import { db } from "./db";
 import { env } from "./env";
 import { notFound, onError } from "./errors";
@@ -43,6 +44,12 @@ if (env.CLIENT_DIR) {
     console.error(`Todoi can't start: ${index} is missing. Run \`npm run build\` first, or set CLIENT_DIR= to serve the API only.`);
     process.exit(1);
   }
+  // Every page the client serves carries the report-only Content-Security-Policy (csp.ts).
+  const policy = contentSecurityPolicy(readFileSync(index, "utf8"));
+  server.use("*", async (c, next) => {
+    await next();
+    if (!isApi(c.req.path) && c.res.headers.get("Content-Type")?.startsWith("text/html")) c.header("Content-Security-Policy-Report-Only", policy);
+  });
   // Hashed build assets never change; index.html and deep links revalidate so a deploy shows at once.
   const files = serveStatic({ root: env.CLIENT_DIR, onFound: (path, c) => c.header("Cache-Control", path.includes("/assets/") ? "public, max-age=31536000, immutable" : "no-cache") });
   const page = serveStatic({ path: index, onFound: (_path, c) => c.header("Cache-Control", "no-cache") });

@@ -12,6 +12,9 @@
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#141415" media="(prefers-color-scheme: dark)" />
     <script>
+      // Zod parses without compiling (`Function(…)`), which the Content-Security-Policy (src/server/csp.ts)
+      // doesn't allow; set here because a module-level z.config() can run after the first parse.
+      globalThis.__zod_globalConfig = { jitless: true };
       // Pre-paint: apply the stored theme, mode and favicon before any CSS resolves, so there is no flash.
       // The appearance store (src/client/design/core/appearance.ts) owns these attributes once it loads.
       (function () {

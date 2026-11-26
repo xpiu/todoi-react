@@ -8,6 +8,7 @@ import { attachmentsRoute, itemAttachmentsRoute } from "./routes/attachments";
 import { avatarsRoute, calendarFeedRoute, exportRoute, feedsRoute, invitesRoute, meRoute, projectInvitesRoute, restoreRoute, tokensRoute } from "./routes/account";
 import { deletionRoute, emailChangeRoute, sudoRoute } from "./routes/accountChanges";
 import { adminRoute, clientErrorsRoute } from "./routes/admin";
+import { cspReportsRoute } from "./routes/cspReports";
 import { gitConnectionsRoute, gitSyncRoute, webhooksRoute } from "./routes/gitSync";
 import { itemsRoute } from "./routes/items";
 import { searchRoute } from "./routes/search";
@@ -54,6 +55,9 @@ export const app = new Hono({ getPath: routePath })
   // GitHub calls this without a session: each delivery is verified by its signature (gitSync/webhooks.ts).
   .use("/webhooks/*", rateLimit(LIMITS.webhook))
   .route("/webhooks", webhooksRoute)
+  // Browsers report CSP violations without cookies (csp.ts), so before authentication.
+  .use("/csp-reports", rateLimit(LIMITS.cspReports))
+  .route("/csp-reports", cspReportsRoute)
   // API tokens: a budget per token, and tokens that don't work count against their address (before the lookup).
   .use("*", rateLimit(LIMITS.token))
   .use("*", invalidTokenLimit())
