@@ -43,6 +43,7 @@
     cursor: pointer;
     transition:
       opacity var(--duration-fast) var(--ease-standard),
+      transform var(--duration-base) var(--ease-standard),
       background var(--duration-fast) var(--ease-standard),
       color var(--duration-fast) var(--ease-standard);
   }
@@ -53,8 +54,9 @@
   .td-list-section-addbtn {
     opacity: 0;
   }
+  /* Count, chevron and + reveal together: one trigger (header hover or focus inside the section), one opacity timing */
   .td-list-section-head:hover .td-list-section-chevron,
-  .td-list-section-chevron:focus-visible,
+  .td-list-section:focus-within .td-list-section-chevron,
   .td-list-section-chevron[aria-expanded="false"],
   .td-list-section-head:hover .td-list-section-addbtn,
   .td-list-section:focus-within .td-list-section-addbtn,
@@ -78,8 +80,9 @@
   .td-list-section[data-add-visible="true"] .td-list-section-addbtn {
     opacity: 1;
   }
-  .td-list-section-chevron[aria-expanded="false"] {
-    transform: rotate(-90deg);
+  /* The chevron-down glyph points up while expanded (collapse) and down while collapsed (expand) */
+  .td-list-section-chevron[aria-expanded="true"] {
+    transform: rotate(180deg);
   }
   .td-list-section-chevron:hover,
   .td-list-section-addbtn:hover,
@@ -115,7 +118,8 @@
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-standard);
   }
-  .td-list-section:hover .td-list-section-count {
+  .td-list-section-head:hover .td-list-section-count,
+  .td-list-section:focus-within .td-list-section-count {
     opacity: 1;
   }
   .td-list-section-rename {
