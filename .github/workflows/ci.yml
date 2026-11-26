@@ -67,9 +67,8 @@ jobs:
       - run: cp .env.example .env
       - run: npm run test:integration
       - uses: ./.github/actions/playwright-chromium
-      # Visual baselines are recorded per platform; until linux baselines are committed the snapshots
-      # are skipped here and only the scope, axe and motion assertions gate the build.
-      - run: npm run test:e2e -- --ignore-snapshots
+      # Visual baselines are recorded per platform: the linux ones by the linux-baselines workflow, on this image.
+      - run: npm run test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { SCOPES, trackAccounts, useScope } from "./helpers";
+import { fontsLoaded, SCOPES, trackAccounts, useScope } from "./helpers";
 import { apiOffline, guestItem, serverItems } from "./sync-helpers";
 
 const { watch } = trackAccounts(test);
@@ -15,6 +15,7 @@ for (const scope of SCOPES) test(`item creation latency in ${scope}`, async ({ p
   const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await expect(list.getByText("Sync fixture", { exact: true })).toBeVisible();
   await page.waitForLoadState("networkidle");
+  await fontsLoaded(page);
   const requests: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
@@ -76,6 +77,7 @@ test("a pending item keeps its place while typing the next item", async ({ page 
   await page.goto(`/p/${fixture.projectId}?v=board`);
   const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await expect(list.getByText("Sync fixture", { exact: true })).toBeVisible();
+  await fontsLoaded(page);
   let release!: () => void;
   const held = new Promise<void>((resolve) => { release = resolve; });
   await page.route("**/api/items", async (route) => {
@@ -213,6 +215,7 @@ for (const scope of SCOPES) test(`pending ID stays stable on a phone in ${scope}
   await page.setViewportSize({ width: 390, height: 844 });
   const fixture = await guestItem(page);
   await page.goto(`/p/${fixture.projectId}?v=board`);
+  await fontsLoaded(page);
   const reconnect = await apiOffline(context);
   const list = page.locator(`.td-list-column[data-list-id="${fixture.listId}"]`);
   await list.scrollIntoViewIfNeeded();

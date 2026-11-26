@@ -52,8 +52,10 @@ export const WithSubNavbar: Story = {
 export const RenameTitle: Story = {
   async play({ args, canvas, userEvent }) {
     const search = canvas.getByRole("combobox", { name: "Search" });
-    // Measure once the fonts are in: a late webfont resizes the controls to the right and moves the field.
+    // Measure once the fonts are in and the search field's width transition has settled (it is still easing to its
+    // Ctrl K width on Windows and Linux): either would move the field after the first measurement.
     await document.fonts.ready;
+    await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined)));
     const searchLeft = search.getBoundingClientRect().left;
     // Every control's box in the bar, for the failure message when the field does push them
     const bar = () => [...canvas.getByRole("banner").querySelectorAll(":scope > *, :scope > * > *")].map((n) => { const r = n.getBoundingClientRect(); return `${n.tagName.toLowerCase()}.${n.className} ${r.left.toFixed(1)}+${r.width.toFixed(1)}`; }).join("\n");

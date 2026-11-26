@@ -30,6 +30,17 @@ export async function useScope(page: Page, scope: Scope) {
   );
 }
 
+/**
+ * Every declared font face loaded: the browser fetches a face only when text first needs it (Geist Mono with the
+ * first item key), so on a cold dev server (CI) a layout measured earlier shifts when the face swaps in.
+ */
+export async function fontsLoaded(page: Page) {
+  await page.evaluate(async () => {
+    await Promise.all([...document.fonts].map((face) => face.load().catch(() => undefined)));
+    await document.fonts.ready;
+  });
+}
+
 export async function expectScope(page: Page, scope: Scope) {
   const [theme, mode] = scope.split("-");
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme!);
