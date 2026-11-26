@@ -35,18 +35,22 @@ export interface StatusList {
   statusRole?: ItemStatus | null;
 }
 
-/** Linked project: every list carries its own Status role, so Status stands in for the List field (a pick moves the item). */
+/**
+ * Linked project ("Link Lists with Status"): Status stands in for the List field and a pick moves the item. Only for an
+ * item whose list is offered (not a hidden list or the Inbox), which still shows the List field.
+ */
 export function statusMovesItem(lists: ReadonlyArray<StatusList>, linkStatuses: boolean | undefined, listId: string) {
-  const roles = lists.map((l) => l.statusRole ?? null);
-  return !!linkStatuses && roles.length > 0 && roles.every(Boolean) && new Set(roles).size === roles.length && lists.some((l) => l.id === listId);
+  return !!linkStatuses && lists.some((l) => l.id === listId);
 }
 
 /**
- * What a Status pick does: a move to the list with that role (linked projects), or a Status edit.
- * A recurring item set to Done completes its occurrence instead, and stays in its list.
+ * What a Status pick does: in a linked project, a move to the first list (board order) with that role; otherwise a
+ * Status edit. It stays a Status edit, and the item stays, when its own list already has that role (two lists sharing
+ * one), when no list carries it, for None, and for Done on a recurring item, which completes its occurrence instead.
  */
 export function statusPick(v: string, o: { lists: ReadonlyArray<StatusList>; movesItem: boolean; listId: string; recurring: boolean }): { moveTo: string } | { status: ItemStatus | null } {
-  const dest = o.movesItem && v !== NO_VALUE ? o.lists.find((l) => l.statusRole === v) : null;
+  const here = o.lists.find((l) => l.id === o.listId)?.statusRole;
+  const dest = o.movesItem && v !== NO_VALUE && here !== v ? o.lists.find((l) => l.statusRole === v) : null;
   if (dest && dest.id !== o.listId && !(v === "DONE" && o.recurring)) return { moveTo: dest.id };
   return { status: v === NO_VALUE ? null : (v as ItemStatus) };
 }

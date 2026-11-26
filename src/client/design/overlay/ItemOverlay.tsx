@@ -112,11 +112,11 @@ export interface ItemOverlayProps {
   /** An Inbox item: "Move to project…" (filing) takes the list select's place; labels and assignees,
    * which belong to a project, are left out */
   inbox?: boolean;
-  /** The project's "Link Lists with Status". When on and every list carries its own Status role (none missing,
-   * none shared), the List field is hidden and Status stands in for it: picking a Status calls onMoveToList with the
-   * list that has that role (the move sets the Status). None, a Status no list carries and Done on a recurring item
-   * call onSetStatus and leave the item where it is. Off, a list without a role, two lists sharing one, or an item
-   * in a hidden list (not in `lists`) or the Inbox: List and Status both show and a Status edit never moves the item. */
+  /** The project's "Link Lists with Status" (Projects page). When on, the List field is hidden and Status stands in
+   * for it: picking a Status calls onMoveToList with the first list (board order) that has that role (the move sets
+   * the Status). A Status the item's own list already carries, a Status no list carries, None and Done on a recurring
+   * item call onSetStatus and leave the item where it is. Off, or an item in a hidden list (not in `lists`) or the
+   * Inbox: List and Status both show and a Status edit never moves the item. */
   linkStatuses?: boolean;
   /** The E shortcut: open with the title in edit */
   autoEditTitle?: boolean;
@@ -279,7 +279,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
     return { value: l.id, label: l.name, icon: (l.icon as IconName | undefined) ?? auto.icon, iconColor: auto.color };
   });
   const status = statusValue(item.status, item.done);
-  // Linked project: Status names every list (each carries its own role), so it stands in for the List field.
+  // Linked project: Status stands in for the List field.
   const currentList = p.lists.find((l) => l.id === item.listId);
   const statusOnly = !p.inbox && statusMovesItem(p.lists, p.linkStatuses, item.listId);
   const pickStatus = (v: string) => {
