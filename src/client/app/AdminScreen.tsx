@@ -114,7 +114,7 @@ export function AdminScreen() {
           sub: q.trim() ? undefined : "Newest first",
           rows: [
             { id: "search", label: "Find an account", hint: "By email address or name", control: <TextField icon="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label="Find an account" /> },
-            ...(accounts.data ?? []).map((a) => ({ id: `acct-${a.id}`, label: a.guest ? "Guest workspace" : `${a.name} · ${a.email}`, hint: [a.guest ? null : a.verified ? "Confirmed" : "Not confirmed yet", count(a.projects, "project"), `joined ${ago(a.createdAt)}`, `last seen ${ago(a.lastSeen)}`].filter(Boolean).join(" · ") })),
+            ...(accounts.data ?? []).map((a) => ({ id: `acct-${a.id}`, label: a.guest ? "Guest workspace" : `${a.name} · ${a.email}`, hint: [a.guest ? null : a.verified ? "Confirmed" : "Not confirmed yet", count(a.projects, "project"), `joined ${ago(a.createdAt)}`, `last seen ${ago(a.lastSeen)}`].filter(Boolean).join(" · "), control: a.guest || a.verified ? undefined : <Button icon="check" onClick={() => am.confirmEmail.mutate(a.id, { onSuccess: () => notify({ message: `Confirmed ${a.email}`, icon: "check" }), onError: failed("confirm it") })}>Mark confirmed</Button> })),
             ...(accounts.data && !accounts.data.length ? [{ id: "none", label: "No accounts match" }] : []),
           ],
         }}

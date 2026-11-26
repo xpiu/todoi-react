@@ -15,5 +15,6 @@ export function useAdminMutations() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin", "overview"] });
   const resolveError = useMutation({ mutationFn: (fingerprint: string) => api.api.admin.errors[":fingerprint"].resolve.$post({ param: { fingerprint } }).then((r) => unwrap<void>(r)), onSettled: refresh });
   const retryJob = useMutation({ mutationFn: (id: string) => api.api.admin.jobs[":id"].retry.$post({ param: { id } }).then((r) => unwrap<void>(r)), onSettled: refresh });
-  return { resolveError, retryJob };
+  const confirmEmail = useMutation({ mutationFn: (id: string) => api.api.admin.accounts[":id"]["confirm-email"].$post({ param: { id } }).then((r) => unwrap<void>(r)), onSettled: () => qc.invalidateQueries({ queryKey: ["admin"] }) });
+  return { resolveError, retryJob, confirmEmail };
 }

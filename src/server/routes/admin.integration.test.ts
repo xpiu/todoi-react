@@ -8,7 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { call, confirmEmail, signUp, type Person } from "../../../tests/integration/accounts";
 import { db } from "../db";
-import { errorGroups, gitConnections, groups, jobs, projects } from "../db/schema";
+import { errorGroups, gitConnections, groups, jobs, projects, users } from "../db/schema";
 import { env } from "../env";
 import { onError } from "../errors";
 import { fingerprintOf, normalizeMessage, recordError } from "../services/errorTracking";
@@ -88,5 +88,15 @@ describe("operator console", () => {
 
     const found = await (await call(`/api/admin/accounts?q=${encodeURIComponent(member.email)}`, { cookie: operator.cookie })).json();
     expect(found.accounts).toEqual([expect.objectContaining({ email: member.email, guest: false, projects: 0 })]);
+  });
+
+  it("lets an operator confirm an address by hand, once, while email can't be delivered", async () => {
+    const tester = await signUp("Tester");
+    const confirm = (cookie: string) => call(`/api/admin/accounts/${tester.id}/confirm-email`, { cookie, method: "POST" });
+    expect((await confirm(member.cookie)).status).toBe(403);
+    expect((await confirm(operator.cookie)).status).toBe(204);
+    expect((await confirm(operator.cookie)).status).toBe(404);
+    const [row] = await db.select({ verified: users.emailVerified }).from(users).where(eq(users.id, tester.id));
+    expect(row?.verified).toBe(true);
   });
 });

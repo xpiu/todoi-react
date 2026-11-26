@@ -1,6 +1,6 @@
 // The operator console's API (work plan R8), for confirmed accounts listed in ADMIN_EMAILS: an overview
-// (accounts, content, the job queue, Git sync health, grouped errors), the account list, marking an error
-// resolved and retrying a failed job. And /api/errors, where the browser reports what broke there.
+// (accounts, content, the job queue, Git sync health, grouped errors), the account list, confirming an
+// account's address by hand, marking an error resolved and retrying a failed job. And /api/errors, where the browser reports what broke there.
 import { and, count, desc, eq, ilike, isNull, lt, or, sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
 import { z } from "zod";
@@ -65,6 +65,14 @@ export const adminRoute = new Hono()
   .post("/errors/:fingerprint/resolve", validate("param", z.object({ fingerprint: z.string().regex(/^[0-9a-f]{32}$/) })), async (c) => {
     const [row] = await db.update(errorGroups).set({ resolvedAt: new Date() }).where(and(eq(errorGroups.fingerprint, c.req.valid("param").fingerprint), isNull(errorGroups.resolvedAt))).returning({ fingerprint: errorGroups.fingerprint });
     return row ? c.body(null, 204) : fail(c, 404, "That error is already resolved or gone");
+  })
+  // While email can't be delivered (no RESEND_API_KEY yet), an operator who knows the person vouches for
+  // the address instead of a confirmation link: what R4 waits for (inviting, joining by address) unlocks.
+  .post("/accounts/:id/confirm-email", validate("param", z.object({ id: z.string().min(1).max(64) })), async (c) => {
+    const [row] = await db.update(users).set({ emailVerified: true, updatedAt: new Date() }).where(and(eq(users.id, c.req.valid("param").id), eq(users.isAnonymous, false), eq(users.emailVerified, false))).returning({ email: users.email });
+    if (!row) return fail(c, 404, "That account is already confirmed, or is a guest workspace");
+    console.log(JSON.stringify({ level: "info", at: new Date().toISOString(), event: "email-confirmed-by-operator", operator: viewerOf(c).userId, user: c.req.valid("param").id }));
+    return c.body(null, 204);
   })
   .post("/jobs/:id/retry", validate("param", z.object({ id: z.string().min(1).max(64) })), async (c) => {
     const [row] = await db.update(jobs).set({ state: "queued", attempts: 0, runAt: new Date(), finishedAt: null, lastError: null }).where(and(eq(jobs.id, c.req.valid("param").id), eq(jobs.state, "failed"))).returning({ id: jobs.id });
