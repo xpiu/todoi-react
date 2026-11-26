@@ -223,7 +223,7 @@ Environment variables override `.env`:
 - **`MIGRATE_ON_START`:** Default `false`; `true` applies pending migrations with the runtime migrator. Keep `drizzle/` in the deployment.
 - **`SEED_ON_START`:** Must be `false` (production default); demo accounts have a published password.
 - **`CLIENT_DIR`:** Default `dist`; empty serves only the API.
-- **`RESEND_API_KEY`:** Resend API key for the account and invite emails (sent with `fetch`, no SDK). Unset, every email is written to `EMAIL_DIR` as `.html`, `.txt` and `.json` and logged instead; production warns at start.
+- **`RESEND_API_KEY`:** Resend API key for the account and invite emails (sent with `fetch`, no SDK). Unset, every email is written to `EMAIL_DIR` as `.html`, `.txt` and `.json` and logged instead; production warns at start. Until it is set, an operator can mark a person's address confirmed in `/admin` › Accounts, which unlocks what R4 waits for (inviting, joining by address).
 - **`EMAIL_FROM`:** Default `Todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
 - **`EMAIL_DIR`:** Default `.data/emails`; the development transport's folder.
 - **`SYNC_SECRET_KEY`:** 32+ characters; encrypts the GitHub tokens and webhook secrets Git sync stores. Unset, a key is derived from `BETTER_AUTH_SECRET`, so rotating that secret disconnects every repository.
