@@ -30,7 +30,10 @@ for (const scope of SCOPES) test(`styled connection and unclipped picker hints i
     await page.keyboard.press("End");
     await expect(last).toBeFocused();
     await expect(hint).toBeVisible();
+    // The icon change must reach the server before going offline, or the pill counts it as a saved edit.
+    const saved = page.waitForResponse((r) => r.url().includes("/api/lists/") && r.request().method() === "PATCH");
     await page.keyboard.press("Enter");
+    await saved;
     await expect(page.locator(".td-icon-picker")).toHaveCount(0);
     await expect(hint).toHaveCount(0);
     await context.setOffline(true);

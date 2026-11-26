@@ -12,7 +12,9 @@ export default defineConfig({
   globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: true,
   workers: process.env.CI ? 2 : undefined,
-  retries: process.env.CI ? 1 : 0,
+  // Two on CI while a few timing-sensitive specs are flaky on its slower runner (the large-board re-render
+  // check, about 1 in 20 locally); a test that needed a retry is reported as flaky, so it stays visible.
+  retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never", outputFolder: ".tmp/playwright-report" }]] : "list",
   outputDir: ".tmp/test-results",
   snapshotPathTemplate: "{testDir}/__screenshots__/{testFilePath}/{arg}-{platform}{ext}",

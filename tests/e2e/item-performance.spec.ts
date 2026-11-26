@@ -120,7 +120,14 @@ test("acknowledging a new item skips unchanged cards on a large board", async ({
           if (!fiber) return;
           current.add(fiber);
           // Bailouts reuse fibers whose old PerformedWork flag is still set.
-          if (!previous.has(fiber) && fiber.type?.name === "ItemCard" && (fiber.flags & 1)) (window as any).cardRenders.push(fiber.memoizedProps.dragId);
+          if (!previous.has(fiber) && fiber.type?.name === "ItemCard" && (fiber.flags & 1)) {
+            (window as any).cardRenders.push(fiber.memoizedProps.dragId);
+            // Which props changed, so a failure says what made unchanged cards render
+            const before = fiber.alternate?.memoizedProps;
+            const why = before ? Object.keys(fiber.memoizedProps).filter((k) => fiber.memoizedProps[k] !== before[k]).join(",") || "parent or context" : "mounted";
+            const changed = ((window as any).cardChanges ??= {}) as Record<string, number>;
+            changed[why] = (changed[why] ?? 0) + 1;
+          }
           visit(fiber.child);
           visit(fiber.sibling);
         };
@@ -139,7 +146,7 @@ test("acknowledging a new item skips unchanged cards on a large board", async ({
   await expect(list.locator(".td-card")).toHaveCount(101);
   await page.waitForLoadState("networkidle");
   expect(await page.evaluate(() => (window as any).cardRenders.length)).toBeGreaterThanOrEqual(101);
-  await page.evaluate(() => { (window as any).cardRenders = []; });
+  await page.evaluate(() => { (window as any).cardRenders = []; (window as any).cardChanges = {}; });
   await list.getByRole("button", { name: "Add an item", exact: true }).click();
   const input = list.getByRole("textbox", { name: /^New item in / });
   await input.fill("Only this card should render");
@@ -150,7 +157,9 @@ test("acknowledging a new item skips unchanged cards on a large board", async ({
   await page.waitForLoadState("networkidle");
   const id = await card.getAttribute("data-drag-id");
   const renders = await page.evaluate(() => (window as any).cardRenders as string[]);
-  await testInfo.attach("card-renders", { body: JSON.stringify({ existingCards: 101, renders, newItemId: id }), contentType: "application/json" });
+  const changes = await page.evaluate(() => (window as any).cardChanges);
+  await testInfo.attach("card-renders", { body: JSON.stringify({ existingCards: 101, renders, newItemId: id, changes }), contentType: "application/json" });
+  if (new Set(renders).size > 1) console.log("card renders by changed props:", JSON.stringify(changes));
   expect(renders.length).toBeGreaterThan(0);
   expect([...new Set(renders)]).toEqual([id]);
   // The stable delete callback must still target the current item and offer the normal Undo.

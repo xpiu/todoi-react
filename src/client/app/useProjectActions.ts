@@ -350,7 +350,10 @@ export function useProjectActions(projectId: string | null, project: ItemContain
 
   /** The BulkBar's actions for the current selection. */
   /** The Move to choices (BulkBar, a board card's ⋯): this project's visible lists, then another project. */
-  const moveOptions = useCallback((currentListId?: string): BulkOption[] => [...lists.map((l) => ({ value: l.id, label: l.name, checked: l.id === currentListId, icon: listIconFor(l.name).icon, iconColor: listIconFor(l.name).color })), { value: null, label: "", divider: true }, { value: "__move", label: "Move to another project…", icon: "folder-input" }, { value: "__copy", label: "Copy to another project…", icon: "folder-output" }], [lists]);
+  // Keyed by the lists' ids and names, not the lists array: a refetched project with the same lists keeps the same
+  // function, so every board card can skip that update (item-performance.spec › acknowledging a new item).
+  const moveLists = JSON.stringify(lists.map((l) => [l.id, l.name]));
+    const moveOptions = useCallback((currentListId?: string): BulkOption[] => [...(JSON.parse(moveLists) as Array<[string, string]>).map(([id, name]) => ({ value: id, label: name, checked: id === currentListId, icon: listIconFor(name).icon, iconColor: listIconFor(name).color })), { value: null, label: "", divider: true }, { value: "__move", label: "Move to another project…", icon: "folder-input" }, { value: "__copy", label: "Copy to another project…", icon: "folder-output" }], [moveLists]);
   const bulkActions = (selectedIds: string[]): BulkAction[] => {
     const sel = selectedIds.map(byId).filter((x): x is Item => !!x);
     return [
