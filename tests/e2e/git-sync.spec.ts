@@ -22,7 +22,7 @@ test.beforeAll(async () => {
 /** Let a dialog finish opening (its fade) before a screenshot. */
 const settle = (page: Page) => page.waitForTimeout(350);
 const gitOf = async (page: Page, projectId: string) => ((await (await page.request.get(`/api/projects/${projectId}/git`)).json()) as { connection: { state: string; runs: Array<{ trigger: string; outcome: string; pulled: number }> } }).connection;
-const group = (page: Page, title: string) => page.locator(".td-settings-group").filter({ has: page.getByRole("heading", { name: title }) });
+const group = (page: Page, title: string) => page.locator(".td-settings-group").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
 
 for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
   test(`connects, syncs both ways, resolves a conflict, undoes and disconnects in ${scope}`, async ({ page }) => {
@@ -39,6 +39,8 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       const review = await project.item("Review the copy", { priority: "HIGH" });
       await project.item("Book the venue");
       await page.goto("/settings?s=storage");
+      await expect(page.getByRole("heading", { level: 2, name: "Synchronization" })).toBeVisible();
+      await expect(group(page, "Not synced").locator(".td-settings-row").filter({ hasText: project.name })).toContainText("Only in Todoi");
 
       // Connect: check the repository, then store the project as a new file.
       await page.locator(".td-settings-row").filter({ hasText: project.name }).getByRole("button", { name: "Connect" }).click();
@@ -57,7 +59,11 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await expect(page.getByRole("status").filter({ hasText: "Stored" })).toContainText(`Stored “${project.name}” in ${repo}`);
       const file = path!.replace(/^No | yet$/g, "");
       expect((await fakeFile(repo, file))?.text).toContain("- [ ] Review the copy\nstatus: todo, prio: high");
-      const panel = group(page, `GitHub sync · ${project.name}`);
+      // One card per connected project, titled by the project alone.
+      const panel = group(page, project.name);
+      const repoRow = panel.locator(".td-settings-row").first();
+      await expect(repoRow.locator(".td-settings-rowlabel")).toHaveText("Repository");
+      await expect(repoRow).toContainText(repo);
       await expect(panel.getByRole("button", { name: "Sync now" })).toBeVisible();
 
       // Pushes to GitHub sync on their own: the fake delivers a signed webhook to the dev API.
@@ -75,7 +81,8 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await fake("push", { fullName: repo, branch: "main", path: file, text: now.replace("- [ ] Review the copy", "- [ ] Review the copy (file)") });
       await expect.poll(async () => (await gitOf(page, project.projectId)).state, { timeout: 15_000 }).toBe("conflict");
       await page.reload();
-      await expect(panel.locator(".td-git-state").filter({ hasText: "Paused" })).toBeVisible();
+      await expect(panel.locator(".td-git-state").filter({ hasText: "Paused · 1 thing changed in both places" })).toBeVisible();
+      await expect(panel.getByRole("button", { name: "Sync now" })).toHaveCount(0);
       await panel.getByRole("button", { name: "Resolve conflict" }).click();
       const conflict = page.getByRole("dialog", { name: "Resolve GitHub sync conflict" });
       await expect(conflict.getByText("Title changed in Todoi and in the file")).toBeVisible();
@@ -88,19 +95,19 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       expect(((await (await page.request.get(`/api/items/${review}`)).json()) as { title: string }).title).toBe("Review the copy (file)");
 
       // The history lists every run; Undo puts Todoi back as it was before the last sync that changed it.
-      const runs = group(page, `Recent syncs · ${project.name}`);
-      await expect(runs.locator(".td-settings-row").first()).toContainText("Brought in 1 change from the file");
+      // The recent syncs are rows of the same card, right after the state row.
+      const newestRun = panel.locator(".td-settings-row").nth(2);
+      await expect(newestRun).toContainText("Brought in 1 change from the file");
       await settle(page);
       await page.screenshot({ path: `.tmp/shots/git-panel-${scope}.png` });
-      await runs.getByRole("button", { name: "Undo" }).click();
+      await panel.getByRole("button", { name: "Undo" }).click();
       await expect(page.getByRole("status").filter({ hasText: "Undid the last sync" })).toBeVisible();
-      await expect(runs.locator(".td-settings-row").first()).toContainText(/^Undid a sync and wrote \d+ changes? back to the file/);
+      await expect(newestRun).toContainText(/^Undid a sync and wrote \d+ changes? back to the file/);
       expect(((await (await page.request.get(`/api/items/${review}`)).json()) as { title: string }).title).toBe("Review the copy (Todoi)");
       expect((await fakeFile(repo, file))!.text).toContain("- [ ] Review the copy (Todoi)");
 
       // A schedule keeps it in sync; one that stalls reads "Sync overdue".
-      const settings = group(page, `Sync settings · ${project.name}`);
-      const schedule = settings.getByRole("switch", { name: "Sync on a schedule" });
+      const schedule = panel.getByRole("switch", { name: "Sync on a schedule" });
       await expect(schedule).toHaveAttribute("aria-checked", "true");
       await schedule.click();
       await expect.poll(async () => ((await (await page.request.get(`/api/projects/${project.projectId}/git`)).json()) as { connection: { autoSync: boolean } }).connection.autoSync).toBe(false);
@@ -115,10 +122,10 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await page.screenshot({ path: `.tmp/shots/git-behind-${scope}.png` });
 
       // Disconnect: the file stays, the panel goes.
-      await group(page, `Sync settings · ${project.name}`).getByRole("button", { name: "Disconnect" }).click();
+      await panel.getByRole("button", { name: "Disconnect" }).click();
       await page.getByRole("alertdialog").getByRole("button", { name: "Disconnect" }).click();
       await expect(page.getByRole("status").filter({ hasText: "Disconnected" })).toBeVisible();
-      await expect(group(page, `GitHub sync · ${project.name}`)).toHaveCount(0);
+      await expect(panel).toHaveCount(0);
       expect(await fakeFile(repo, file)).not.toBeNull();
     } finally {
       await project.cleanup();

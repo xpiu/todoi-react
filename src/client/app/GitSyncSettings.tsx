@@ -1,6 +1,7 @@
-// Git sync in Settings and Account: one "GitHub sync" panel per connected project (Storage & sync), the
-// projects without a file copy, the Storage row of Account › Projects, the Integrations list — and the
-// dialogs they open (connect, resolve a conflict, replace the token, disconnect). Data: data/gitSync.ts.
+// Git sync in Settings and Account: one card per connected project, titled by the project (Storage & sync ›
+// Synchronization: repository, sync state, recent syncs, sync settings), the projects that are not synced,
+// the Storage row of Account › Projects, the Integrations list — and the dialogs they open (connect,
+// resolve a conflict, replace the token, disconnect). Data: data/gitSync.ts.
 // Spec: DESIGN.md › Storage & sync › Git sync.
 import { useState, type ReactNode } from "react";
 
@@ -28,7 +29,6 @@ interface ProjectLite {
   role: string;
 }
 
-const FORMAT_NAMES = { embridge: "Markdown", json: "JSON", yaml: "YAML" } as const;
 const POLICY_OPTIONS = [
   { value: "ask", label: "Ask me each time" },
   { value: "todoi", label: "Todoi's version wins" },
@@ -103,47 +103,52 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
   const undo = (c: GitConnectionView) =>
     gm.undo.mutate({ projectId: c.projectId }, { onSuccess: () => notify({ message: `Undid the last sync of ${quote(c.projectName)}. The file has Todoi's version again`, icon: "undo-2" }), onError: (err) => notify({ message: `Couldn't undo: ${errorMessage(err)}`, icon: "circle-alert" }) });
 
-  const panel = (c: GitConnectionView): SettingsGroup[] => {
+  /** A connection's settings, for project owners and admins. */
+  const syncSettingsRows = (c: GitConnectionView): SettingsRow[] => [
+    { id: `gh-${c.projectId}-policy`, label: "When both sides change the same thing", hint: c.conflictPolicy === "ask" ? "Sync pauses until you pick a version" : "Decided without asking; the sync history says so", control: <Select aria-label="When both sides change the same thing" value={c.conflictPolicy} options={POLICY_OPTIONS} onChange={(v) => gm.update.mutate({ projectId: c.projectId, conflictPolicy: v }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} placement="bottom-end" tier="detached" width={240} /> },
+    { id: `gh-${c.projectId}-auto`, label: "Sync on a schedule", hint: c.autoSync ? `Every 10 minutes${c.webhook ? ", and after each push" : ""}` : c.webhook ? "After each push, or when you press Sync now" : "Only when you press Sync now", control: <Switch aria-label="Sync on a schedule" checked={c.autoSync} onChange={(on) => gm.update.mutate({ projectId: c.projectId, autoSync: on }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} /> },
+    { id: `gh-${c.projectId}-token`, label: "GitHub token", hint: `${c.tokenHint} · Replace it before it expires`, control: <Button icon="key-round" onClick={() => {
+      setNewToken("");
+      setTokenError(null);
+      setTokenFor(c.projectId);
+    }}>Replace token</Button> },
+    { id: `gh-${c.projectId}-disconnect`, label: "Stop syncing", hint: "The file stays in the repository and the project stays in Todoi", control: <Button icon="unplug" onClick={() => setDisconnectFor(c.projectId)}>Disconnect</Button> },
+  ];
+  /** One card per connected project, titled by the project: where the file lives, one state row with the action that state needs, the recent syncs, then its settings. */
+  const panel = (c: GitConnectionView): SettingsGroup => {
     const paused = c.state === "conflict", failed = c.state === "error";
     const syncing = gm.sync.isPending && gm.sync.variables?.projectId === c.projectId;
     const runs = c.runs.slice(0, 5);
     const undoable = runs.find((r) => r.undoable);
-    const groups: SettingsGroup[] = [
-      {
-        id: `gh-${c.projectId}`,
-        title: `GitHub sync · ${c.projectName}`,
-        sub: c.projectId === currentProjectId ? "Current project" : undefined,
-        tone: paused || failed ? "danger" : c.stale ? "warn" : undefined,
-        rows: [
-          { id: `gh-${c.projectId}-repo`, label: "Connected repository", hint: `${c.branch} · ${c.path} · ${FORMAT_NAMES[c.format]}`, control: <MonoValue value={`${c.owner}/${c.repo}`} /> },
-          {
-            id: `gh-${c.projectId}-sync`,
-            label: paused || failed || c.stale ? <StateLabel tone={c.stale && !paused && !failed ? "warn" : "danger"} text={paused ? "Paused" : failed ? "Last sync failed" : "Sync overdue"} /> : c.lastSyncedAt ? "In sync" : "Not synced yet",
-            hint: paused
-              ? `${count(c.conflicts.length, "thing")} changed in Todoi and in the file. Pick a version to sync again`
-              : failed
-                ? (c.lastError ?? "Try again in a minute")
-                : c.stale
-                  ? `${relativeSync(c.lastSyncedAt)} instead of every 10 minutes. Press Sync now to see why`
-                  : `${relativeSync(c.lastSyncedAt)} · ${c.webhook && c.autoSync ? "Syncs after each push and every 10 minutes" : c.webhook ? "Syncs after each push to GitHub" : c.autoSync ? "Syncs every 10 minutes" : "Press Sync now after pushing to GitHub"}`,
-            control: paused ? (
-              <Button variant="primary" icon="git-merge" onClick={() => setConflictFor(c.projectId)}>
-                Resolve conflict
-              </Button>
-            ) : (
-              <Button icon="refresh-cw" disabled={!online || syncing} onClick={() => syncNow(c)}>
-                {syncing ? "Syncing…" : failed ? "Try again" : "Sync now"}
-              </Button>
-            ),
-          },
-        ],
-      },
-    ];
-    if (runs.length)
-      groups.push({
-        id: `gh-${c.projectId}-runs`,
-        title: `Recent syncs · ${c.projectName}`,
-        rows: runs.map((r) => ({
+    const [only] = c.conflicts.length === 1 ? c.conflicts : [];
+    return {
+      id: `gh-${c.projectId}`,
+      title: c.projectName,
+      sub: c.projectId === currentProjectId ? "Current project" : undefined,
+      tone: paused || failed ? "danger" : c.stale ? "warn" : undefined,
+      rows: [
+        { id: `gh-${c.projectId}-repo`, label: "Repository", hint: `${c.branch} · ${c.path}`, control: <MonoValue value={`${c.owner}/${c.repo}`} /> },
+        {
+          id: `gh-${c.projectId}-sync`,
+          label: paused || failed || c.stale ? <StateLabel tone={c.stale && !paused && !failed ? "warn" : "danger"} text={paused ? `Paused · ${count(c.conflicts.length, "thing")} changed in both places` : failed ? "Last sync failed" : "Sync overdue"} /> : c.lastSyncedAt ? "In sync" : "Not synced yet",
+          hint: paused
+            ? only ? `${quote(only.title)} differs between Todoi and the file. Pick a version to sync again` : "Pick a version for each to sync again"
+            : failed
+              ? (c.lastError ?? "Try again in a minute")
+              : c.stale
+                ? `${relativeSync(c.lastSyncedAt)} instead of every 10 minutes. Press Sync now to see why`
+                : `${relativeSync(c.lastSyncedAt)} · ${c.webhook && c.autoSync ? "Syncs after each push and every 10 minutes" : c.webhook ? "Syncs after each push to GitHub" : c.autoSync ? "Syncs every 10 minutes" : "Press Sync now after pushing to GitHub"}`,
+          control: paused ? (
+            <Button variant="primary" icon="git-merge" onClick={() => setConflictFor(c.projectId)}>
+              Resolve conflict
+            </Button>
+          ) : (
+            <Button icon="refresh-cw" disabled={!online || syncing} onClick={() => syncNow(c)}>
+              {syncing ? "Syncing…" : failed ? "Try again" : "Sync now"}
+            </Button>
+          ),
+        },
+        ...runs.map((r) => ({
           id: `gh-run-${r.id}`,
           label: runSentence(r),
           hint: [formatRelative(r.at), r.outcome === "undone" ? null : TRIGGER_WORDS[r.trigger], r.error, ...r.notes, r === undoable ? "Undo restores Todoi to before this sync and updates the file" : null].filter(Boolean).join(" · "),
@@ -154,39 +159,16 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
               </Button>
             ) : undefined,
         })),
-      });
-    if (canAdmin(c.projectId))
-      groups.push({
-        id: `gh-${c.projectId}-settings`,
-        title: `Sync settings · ${c.projectName}`,
-        rows: [
-          { id: `gh-${c.projectId}-policy`, label: "When both sides change the same thing", hint: c.conflictPolicy === "ask" ? "Sync pauses until you pick a version" : "Decided without asking; the sync history says so", control: <Select aria-label="When both sides change the same thing" value={c.conflictPolicy} options={POLICY_OPTIONS} onChange={(v) => gm.update.mutate({ projectId: c.projectId, conflictPolicy: v }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} placement="bottom-end" tier="detached" width={240} /> },
-          { id: `gh-${c.projectId}-auto`, label: "Sync on a schedule", hint: c.autoSync ? `Every 10 minutes${c.webhook ? ", and after each push" : ""}` : c.webhook ? "After each push, or when you press Sync now" : "Only when you press Sync now", control: <Switch aria-label="Sync on a schedule" checked={c.autoSync} onChange={(on) => gm.update.mutate({ projectId: c.projectId, autoSync: on }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} /> },
-          { id: `gh-${c.projectId}-token`, label: "GitHub token", hint: `${c.tokenHint} · Replace it before it expires`, control: <Button icon="key-round" onClick={() => {
-            setNewToken("");
-            setTokenError(null);
-            setTokenFor(c.projectId);
-          }}>Replace token</Button> },
-          { id: `gh-${c.projectId}-disconnect`, label: "Stop syncing", hint: "The file stays in the repository and the project stays in Todoi", control: <Button icon="unplug" onClick={() => setDisconnectFor(c.projectId)}>Disconnect</Button> },
-        ],
-      });
-    return groups;
+        ...(canAdmin(c.projectId) ? syncSettingsRows(c) : []),
+      ],
+    };
   };
 
   const ordered = [...list].sort((a, b) => Number(b.projectId === currentProjectId) - Number(a.projectId === currentProjectId) || a.projectName.localeCompare(b.projectName));
   const unset = projects.filter((p) => !byProject.has(p.id) && canAdmin(p.id));
   const storageGroups: SettingsGroup[] = [
-    ...ordered.flatMap(panel),
-    ...(unset.length
-      ? [{
-          id: "gh-unset",
-          title: list.length ? "Not synced to a file" : "GitHub sync",
-          rows: [
-            ...(list.length ? [] : [{ id: "gh-intro", label: "Keep a project in a GitHub file", hint: "Next to your code, in Markdown, JSON or YAML. Edits in Todoi and in the file sync both ways" }]),
-            ...unset.map((p) => ({ id: `gh-unset-${p.id}`, label: p.name, hint: "Only in Todoi", control: <Button icon="git-branch" disabled={!online} onClick={() => openConnect(p.id)}>Connect</Button> })),
-          ],
-        }]
-      : []),
+    ...ordered.map(panel),
+    ...(unset.length ? [{ id: "gh-unset", title: "Not synced", rows: unset.map((p) => ({ id: `gh-unset-${p.id}`, label: p.name, hint: "Only in Todoi", control: <Button icon="git-branch" disabled={!online} onClick={() => openConnect(p.id)}>Connect</Button> })) }] : []),
   ];
 
   /** Account › Projects and storage: where one project's data lives. */

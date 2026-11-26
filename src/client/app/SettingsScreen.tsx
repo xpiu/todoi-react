@@ -236,13 +236,16 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         title: "Storage & sync",
         icon: "refresh-cw",
         groups: [
-          // Git sync first (one panel per connected project), then the files you move by hand, then this device.
+          // Three subsections, each opened by a heading on its first card: Synchronization (one card per connected project, then the
+          // projects that aren't synced), Import & export (the files you move by hand), This device.
           ...(registered
             ? git.storageGroups
-            : [{ id: "gh-signedout", title: "GitHub sync", tone: "info" as const, rows: [{ id: "ghSignIn", label: "Log in to sync", hint: "Sync keeps a project in a file in a GitHub repository. Guest workspaces stay in Todoi", control: <Button icon="log-in" onClick={() => navigate({ to: "/login", search: { next: "/settings?s=storage" } })}>Log in</Button> }] }]),
+            : [{ id: "gh-signedout", title: "Projects", tone: "info" as const, rows: [{ id: "ghSignIn", label: "Log in to sync", hint: "Guest workspaces stay in Todoi", control: <Button icon="log-in" onClick={() => navigate({ to: "/login", search: { next: "/settings?s=storage" } })}>Log in</Button> }] }]
+          ).map((g, i) => (i ? g : { ...g, heading: "Synchronization", headingNote: "Each project can keep a copy in a Markdown file in a GitHub repository. Edits sync both ways" })),
           {
             id: "impexp",
-            title: "Import & export",
+            title: "Your data",
+            heading: "Import & export",
             rows: [
               ...exportRows(notify, navigate, registered ? restore.start : undefined),
               { id: "importFile", label: "Import", hint: "Markdown (Embridge), a Todoi JSON or YAML file, a Trello board or a CSV. You review everything before it lands", control: <Button icon="upload" onClick={() => navigate({ to: "/import" })}>Import…</Button> },
@@ -251,6 +254,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
           {
             id: "offline",
             title: "Offline editing",
+            heading: "This device",
             rows: [
               { id: "online", label: "Connection", hint: "Workspace edits are saved on this device before syncing. Queued changes survive closing the tab and sync when you reconnect; uploads and account actions need a connection", control: <StatusDot on={online} label={online ? "Online" : "Offline"} /> },
               { id: "pending", label: "Saved on this device", hint: save.waiting ? `${save.waiting === 1 ? "1 edit is" : `${save.waiting} edits are`} waiting to sync to the server` : save.failed ? `${save.failed === 1 ? "1 edit needs" : `${save.failed} edits need`} review below. Saved drafts stay on this device until you resolve them` : `No changes waiting to sync · ${relativeSync(save.lastSaved)}`, control: <Button icon="refresh-cw" disabled={!online || !!save.saving || !save.waiting} onClick={save.retry}>{save.saving ? "Syncing…" : "Sync now"}</Button> },
