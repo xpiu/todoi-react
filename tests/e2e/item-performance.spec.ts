@@ -208,7 +208,7 @@ test("a queued create cannot write under a different account", async ({ page, co
   } finally { await other.close(); }
 });
 
-for (const scope of SCOPES) test(`pending ID stays stable on a phone in ${scope}`, async ({ page, context }) => {
+for (const scope of SCOPES) test(`pending ID stays stable on a phone in ${scope}`, async ({ page, context }, testInfo) => {
   await useScope(page, scope);
   await page.setViewportSize({ width: 390, height: 844 });
   const fixture = await guestItem(page);
@@ -225,8 +225,12 @@ for (const scope of SCOPES) test(`pending ID stays stable on a phone in ${scope}
   await expect(card.locator(".td-card-id")).toHaveAttribute("aria-label", "Item ID pending");
   const before = await card.boundingBox();
   await page.screenshot({ path: `.tmp/shots/item-phone-pending-${scope}.png`, animations: "disabled" });
+  const layout = () => card.evaluate((el) => [...el.querySelectorAll("*")].map((n) => { const r = n.getBoundingClientRect(); return `${n.tagName.toLowerCase()}.${[...n.classList].join(".")} ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}×${Math.round(r.height)} "${(n.textContent ?? "").slice(0, 24)}"`; }));
+  const pendingLayout = await layout();
   await reconnect();
   await expect(card.locator(".td-card-id")).toHaveText(/\d+$/);
-  expect(await card.boundingBox()).toEqual(before);
   await page.screenshot({ path: `.tmp/shots/item-phone-confirmed-${scope}.png`, animations: "disabled" });
+  // Where the height went, when it changes (a key that wraps, a details row that shows)
+  await testInfo.attach("card-layout", { body: JSON.stringify({ pending: pendingLayout, confirmed: await layout() }, null, 2), contentType: "application/json" });
+  expect(await card.boundingBox()).toEqual(before);
 });

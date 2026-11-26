@@ -52,17 +52,18 @@ export const WithSubNavbar: Story = {
 export const RenameTitle: Story = {
   async play({ args, canvas, userEvent }) {
     const search = canvas.getByRole("combobox", { name: "Search" });
-    // Measure once every font face is in: fonts.ready only waits for faces already requested, and a face the
-    // rename field asks for first would load after the click and move the controls (seen on Linux CI).
-    await Promise.all([...document.fonts].map((face) => face.load().catch(() => undefined)));
+    // Measure once the fonts are in: a late webfont resizes the controls to the right and moves the field.
     await document.fonts.ready;
     const searchLeft = search.getBoundingClientRect().left;
+    // Every control's box in the bar, for the failure message when the field does push them
+    const bar = () => [...canvas.getByRole("banner").querySelectorAll(":scope > *, :scope > * > *")].map((n) => { const r = n.getBoundingClientRect(); return `${n.tagName.toLowerCase()}.${n.className} ${r.left.toFixed(1)}+${r.width.toFixed(1)}`; }).join("\n");
+    const barBefore = bar();
     await userEvent.click(canvas.getByRole("button", { name: "Rename project: Helicopter sales" }));
     const field = canvas.getByRole<HTMLInputElement>("textbox", { name: "Project name" });
     await expect(field).toHaveFocus();
     // The field takes the spacer's free space without pushing the controls to its right.
     await expect(field.getBoundingClientRect().width).toBeGreaterThan(280);
-    await expect(search.getBoundingClientRect().left).toBeCloseTo(searchLeft, 0);
+    await expect(search.getBoundingClientRect().left, `before:\n${barBefore}\nafter:\n${bar()}`).toBeCloseTo(searchLeft, 0);
     // --td-title-line (Minimal's underline) follows the typed text, floored at 24px and capped at the field.
     const line = () => parseFloat(field.style.getPropertyValue("--td-title-line"));
     await userEvent.clear(field);
