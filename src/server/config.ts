@@ -35,6 +35,8 @@ export function parseEnv(source: Record<string, string | undefined>) {
       RATE_LIMIT: z.stringbool().default(!dev),
       /** Reverse proxies in front of the API that append to X-Forwarded-For (1 behind one proxy); 0 = use the socket's address */
       TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
+      /** Behind Cloudflare: a request whose proxy-reported address is Cloudflare's counts as its CF-Connecting-IP (rateLimit.ts) */
+      TRUST_CLOUDFLARE: z.stringbool().default(false),
       /** Resend (resend.com) API key for account and invite emails; unset = each email is written to EMAIL_DIR instead */
       RESEND_API_KEY: optionalValue,
       /** The sender of every email; the domain must be verified at Resend */
@@ -43,6 +45,10 @@ export function parseEnv(source: Record<string, string | undefined>) {
       EMAIL_DIR: z.string().default(".data/emails"),
       /** Who may open the operator console (/admin): comma-separated sign-in addresses, confirmed ones only. Development defaults to the seeded account */
       ADMIN_EMAILS: z.string().default(dev ? DEV_USER.email : "").transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
+      /** Who may create an account: `open` (anyone, and every visitor gets a guest workspace) or `invite` (no guests; invited addresses only, services/signUpGate.ts) */
+      SIGN_UP: z.enum(["open", "invite"]).default("open"),
+      /** With SIGN_UP=invite: comma-separated addresses that may sign up without a project invite (testers) */
+      SIGN_UP_EMAILS: z.string().default("").transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
       /** Social sign-in OAuth apps (shared/socialSignIn.ts). Unused while a provider is switched off there, which both are for now */
       GITHUB_CLIENT_ID: optionalValue,
       GITHUB_CLIENT_SECRET: optionalValue,

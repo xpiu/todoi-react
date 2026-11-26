@@ -24,6 +24,7 @@ import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } fro
 import { isDeletedAddress } from "./services/accountDeletion";
 import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
+import { GUESTS_OFF_MESSAGE, INVITE_ONLY, maySignUp, NOT_INVITED_MESSAGE } from "./services/signUpGate";
 import { socialProvidersFor } from "./socialSignIn";
 import { confirmSession, sudoUntil } from "./services/sudo";
 import { clearAttempts, reserveAttempt, retryIn } from "./services/attempts";
@@ -142,6 +143,10 @@ export const auth = betterAuth({
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       const email = typeof ctx.body?.email === "string" ? ctx.body.email : null;
+      if (env.SIGN_UP === "invite") {
+        if (ctx.path === "/sign-in/anonymous") throw new APIError("FORBIDDEN", { message: GUESTS_OFF_MESSAGE, code: INVITE_ONLY });
+        if (ctx.path === "/sign-up/email" && !(email && (await maySignUp(email, ctx.body?.callbackURL)))) throw new APIError("FORBIDDEN", { message: NOT_INVITED_MESSAGE, code: INVITE_ONLY });
+      }
       if (ctx.path === "/sign-in/email" && email) {
         const reserved = await reserveAttempt(signInTries(email), SIGN_IN_TRIES);
         if ("retryAt" in reserved) {

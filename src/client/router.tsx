@@ -11,7 +11,7 @@ import { AppShell } from "./app/AppShell";
 import { preloadDescriptionEditor } from "./design/overlay/DescriptionEditor";
 import { ScreenError, SessionError } from "./app/RouteError";
 import { AccountDeletedScreen, ConfirmEmailChangeScreen, InviteScreen, LoginScreen, ResetScreen, SignupScreen, VerifyEmailScreen } from "./app/auth/AuthScreens";
-import { authClient, ensureBrowserSession } from "./auth";
+import { authClient, ensureBrowserSession, SignInRequired } from "./auth";
 import { InboxScreen } from "./app/InboxScreen";
 import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
@@ -42,7 +42,12 @@ export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "app",
   component: AppShell,
-  beforeLoad: ensureBrowserSession,
+  // Invite-only servers make no guest workspaces: a visitor without a session logs in, then comes back here.
+  beforeLoad: ({ location }) =>
+    ensureBrowserSession().catch((e: unknown) => {
+      if (e instanceof SignInRequired) throw redirect({ to: "/login", search: { next: location.href === "/" ? undefined : location.href } });
+      throw e;
+    }),
   // The frame never rendered: no session. Its screens' own failures render inside it (ScreenError).
   errorComponent: SessionError,
 });

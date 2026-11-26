@@ -19,6 +19,8 @@ export function linkSpan(minutes: number): string {
  * The refusal carries this marker in `fields.confirmEmail` so the client can offer the link again.
  */
 export const EMAIL_UNCONFIRMED = "EMAIL_UNCONFIRMED";
+/** The error code when sign-up is invite-only (SIGN_UP=invite) and this guest or address wasn't invited */
+export const INVITE_ONLY = "INVITE_ONLY";
 
 /** An item's absolute link: opened over its project, or in the Inbox (calendar events, notification emails). */
 export const itemLink = (appUrl: string, item: { id: string; projectId: string | null }) =>

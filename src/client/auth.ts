@@ -2,7 +2,7 @@
 import { passkeyClient } from "@better-auth/passkey/client";
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient } from "better-auth/client/plugins";
-import { EMAIL_UNCONFIRMED } from "../shared/accountLinks";
+import { EMAIL_UNCONFIRMED, INVITE_ONLY } from "../shared/accountLinks";
 import { ApiError } from "./data/api";
 import { clearSyncOwner, openSyncOwner, restoreOfflineOwner, retrySync, useSyncState } from "./data/sync";
 
@@ -20,6 +20,8 @@ let openingSession: Promise<void> | undefined;
 let sessionReady = false;
 /** The browser session (a guest workspace on first visit) could not be opened; the app frame's error screen says so. */
 export class SessionStartError extends Error {}
+/** No session, and this server makes no guest workspaces (SIGN_UP=invite): the visitor logs in or follows an invite. */
+export class SignInRequired extends SessionStartError {}
 /** The reason a session step failed, for the error screen's detail line ("Session check: 503 Service Unavailable"). */
 const failure = (step: "session" | "guest", e: { message?: string; status?: number; statusText?: string }) =>
   `${step === "session" ? "Session check" : "Guest workspace"}: ${e.message || [e.status, e.statusText].filter(Boolean).join(" ") || "no answer"}`;
@@ -39,6 +41,7 @@ export function ensureBrowserSession(): Promise<void> {
       return;
     }
     const result = await authClient.signIn.anonymous();
+    if (result.error?.code === INVITE_ONLY) throw new SignInRequired(result.error.message);
     if (result.error) throw new SessionStartError(failure("guest", result.error));
     const ready = await authClient.getSession();
     if (!ready.data) throw new SessionStartError("Couldn't open your guest workspace.");
