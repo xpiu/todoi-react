@@ -4,6 +4,7 @@ All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.
 
 ## Unreleased — 2026-10-06
 
+- Show "Continue with GitHub" and "Continue with Google" on the log-in and sign-up pages, disabled for now with "GitHub login temporarily unavailable" and "Google login temporarily unavailable" until the providers' OAuth apps are set up. The server side is wired behind the same switch (`src/shared/socialSignIn.ts`) and the `GITHUB_CLIENT_*` / `GOOGLE_CLIENT_*` variables.
 - Publish the API v1 contract as OpenAPI 3.1 at `/api/v1/openapi.json`, generated from the routes' own validators so it can't drift; the agent docs and `llms.txt` link it.
 - Add the versioned API at `/api/v1`: a listed, stable subset of the app's routes (account, projects, lists, items, comments, labels, search, attachments). API tokens work only there, so a token can no longer reach account management such as making more tokens.
 - Scope API tokens: each is read only (the default) or read and write, and reaches every project and the Inbox or only the projects picked when it is made; listings and search narrow to them.

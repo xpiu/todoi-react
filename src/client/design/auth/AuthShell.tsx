@@ -1,7 +1,9 @@
 // AuthShell — the canvas behind every page before a person is inside a project: chrome colour edge to
 // edge, the wordmark in plain type, one white card centred, a quiet footer line. Spec: DESIGN.md › Sign-in.
-import type { ComponentPropsWithRef, CSSProperties, ReactNode } from "react";
+import { useId, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from "react";
 
+import { unavailableMessage, type SocialProvider, type SocialProviderId } from "../../../shared/socialSignIn";
+import { Button } from "../core/Button";
 import { Icon, type IconName } from "../core/Icon";
 import { InlineError } from "../core/InlineError";
 import "./AuthShell.css";
@@ -52,4 +54,28 @@ export const AuthLink = ({ label, onClick, ...rest }: { label: string; onClick?:
 
 export function AuthError({ error }: { error?: string | null }) {
   return <InlineError message={error} className="td-auth-error" />;
+}
+
+/**
+ * "Continue with GitHub" / "Continue with Google": one 40px outline button per provider, text only (no brand
+ * marks). A provider that isn't available keeps its button, disabled, with a warning dot and "<Name> login
+ * temporarily unavailable" under it. For now that is both of them: we are disabling these login features until
+ * our human lead developer finds enough time to guide us through the slow GUI processes of these social login
+ * providers (shared/socialSignIn.ts).
+ */
+export function AuthProviders({ providers, onPick, disabled }: { providers: readonly SocialProvider[]; onPick?: (id: SocialProviderId) => void; disabled?: boolean }) {
+  const id = useId();
+  return providers.map((p) => (
+    <div key={p.id} className="td-auth-provider">
+      <Button variant="outline" size="lg" disabled={disabled || !p.available || !onPick} aria-describedby={p.available ? undefined : `${id}-${p.id}`} onClick={() => onPick?.(p.id)}>
+        Continue with {p.name}
+      </Button>
+      {p.available ? null : (
+        <p id={`${id}-${p.id}`} className="td-auth-provider-note">
+          <span className="td-auth-provider-dot" aria-hidden />
+          {unavailableMessage(p)}
+        </p>
+      )}
+    </div>
+  ));
 }

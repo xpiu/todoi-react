@@ -97,6 +97,32 @@
   .td-auth-form {
     margin-top: var(--sp-4);
   }
+  /* A social provider's button (AuthProviders); an unavailable one keeps a warning-tinted outline and says why under it */
+  .td-auth-provider {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  /* Deepened with ink: the disabled button is drawn at half opacity, and Rounded's warning yellow is pale on white */
+  .td-auth-provider:has(.td-auth-provider-note) .td-btn {
+    border-color: color-mix(in oklab, var(--warning) 70%, var(--ink-900));
+  }
+  .td-auth-provider-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    font: var(--type-small);
+    color: color-mix(in oklab, var(--warning) 55%, var(--ink-900));
+  }
+  .td-auth-provider-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--warning);
+  }
   /* The "or" rule already carries the gap under it; the form adds none */
   .td-auth-or + .td-auth-form,
   .td-auth-or + .td-auth-stack {

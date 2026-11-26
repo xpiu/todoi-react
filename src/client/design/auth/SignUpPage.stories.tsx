@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn } from "storybook/test";
 
+import { SOCIAL_PROVIDERS } from "../../../shared/socialSignIn";
 import { SignUpPage } from "./SignUpPage";
 
 const meta = {
@@ -53,5 +54,15 @@ export const Busy: Story = {
   args: { defaultName: "Todoi", defaultEmail: "info@todoi.org", busy: true },
   async play({ canvas }) {
     await expect(canvas.getByRole("button", { name: "Creating your account…" })).toBeDisabled();
+  },
+};
+
+/** GitHub and Google under the form: switched off for now (shared/socialSignIn.ts), disabled with why. */
+export const WithProvidersUnavailable: Story = {
+  args: { providers: SOCIAL_PROVIDERS, onProvider: fn() },
+  parameters: legalLinksTodo,
+  async play({ canvas }) {
+    await expect(canvas.getByRole("button", { name: "Continue with GitHub" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Continue with Google" })).toHaveAccessibleDescription("Google login temporarily unavailable");
   },
 };

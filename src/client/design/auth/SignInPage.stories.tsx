@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn } from "storybook/test";
 
+import { SOCIAL_PROVIDERS } from "../../../shared/socialSignIn";
 import { SignInPage } from "./SignInPage";
 
 const meta = {
@@ -73,3 +74,26 @@ export const WaitingForThePasskey: Story = {
   },
 };
 export const PasskeyDidNotFinish: Story = { args: { onPasskey: fn(), error: "Your device didn't finish. Try again, or log in with your password." } };
+
+/** GitHub and Google under the passkey: switched off for now (shared/socialSignIn.ts), so each button is
+ *  disabled with a warning dot and "<Name> login temporarily unavailable" as its description. */
+export const WithProvidersUnavailable: Story = {
+  args: { onPasskey: fn(), providers: SOCIAL_PROVIDERS, onProvider: fn() },
+  async play({ canvas }) {
+    for (const name of ["GitHub", "Google"]) {
+      const button = canvas.getByRole("button", { name: `Continue with ${name}` });
+      await expect(button).toBeDisabled();
+      await expect(button).toHaveAccessibleDescription(`${name} login temporarily unavailable`);
+    }
+    await expect(canvas.getByRole("button", { name: "Log in with a passkey" })).toBeEnabled();
+  },
+};
+/** Once a provider is switched on, its button continues with it. */
+export const WithProvidersAvailable: Story = {
+  args: { providers: SOCIAL_PROVIDERS.map((p) => ({ ...p, available: true })), onProvider: fn() },
+  async play({ args, canvas, userEvent }) {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue with GitHub" }));
+    await expect(args.onProvider).toHaveBeenCalledWith("github");
+    await expect(canvas.queryByText(/temporarily unavailable/)).toBeNull();
+  },
+};

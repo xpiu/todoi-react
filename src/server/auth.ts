@@ -1,4 +1,5 @@
-// Who is calling. Better Auth (email + password, or a passkey; sessions in Postgres) answers that per request; the
+// Who is calling. Better Auth (email + password, or a passkey; GitHub and Google once switched on, see
+// socialSignIn.ts; sessions in Postgres) answers that per request; the
 // `authMiddleware` resolves the session once and stores the viewer on the context. Visitors receive
 // an anonymous session; resource permissions also cover direct public reads without a session.
 import { passkey } from "@better-auth/passkey";
@@ -23,6 +24,7 @@ import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } fro
 import { isDeletedAddress } from "./services/accountDeletion";
 import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
+import { socialProvidersFor } from "./socialSignIn";
 import { confirmSession, sudoUntil } from "./services/sudo";
 import { clearAttempts, reserveAttempt, retryIn } from "./services/attempts";
 import { createCounter } from "./rateLimit";
@@ -77,6 +79,8 @@ export const auth = betterAuth({
   // Vite moves to the next port when 5173 is taken; in development any loopback port may call the API.
   trustedOrigins: [env.APP_URL, ...(DEV ? [`http://localhost:${env.PORT}`, "http://localhost:*", "http://127.0.0.1:*"] : [])],
   database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications, passkey: passkeys } }),
+  // GitHub and Google (work plan R9): none registered for now, see socialSignIn.ts.
+  socialProviders: socialProvidersFor(env),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 10,

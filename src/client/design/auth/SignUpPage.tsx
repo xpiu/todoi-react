@@ -1,10 +1,13 @@
 // SignUpPage — "Create an account": Name · Email · Password and a primary Create account; the legal
-// line under the button, "Log in" under the card. An invite locks the address it was sent to.
+// line under the button; under an "or" rule the provider buttons (AuthProviders, unavailable for now);
+// "Log in" under the card. An invite locks the address it was sent to.
 import { useState } from "react";
+
+import type { SocialProvider, SocialProviderId } from "../../../shared/socialSignIn";
 
 import { validEmail } from "../core/text";
 import { Button } from "../core/Button";
-import { AuthLink, AuthShell } from "./AuthShell";
+import { AuthLink, AuthProviders, AuthShell } from "./AuthShell";
 import { PasswordField } from "./PasswordField";
 
 export interface SignUpPageProps {
@@ -14,12 +17,15 @@ export interface SignUpPageProps {
   lockEmail?: boolean;
   onSignUp: (v: { name: string; email: string; password: string }) => void;
   onLogin?: () => void;
+  /** Social sign-up buttons under the form; an unavailable provider shows disabled with why */
+  providers?: readonly SocialProvider[];
+  onProvider?: (id: SocialProviderId) => void;
   error?: string | null;
   busy?: boolean;
   minLength?: number;
 }
 
-export function SignUpPage({ context, defaultName = "", defaultEmail = "", lockEmail = false, onSignUp, onLogin, error, busy, minLength = 10 }: SignUpPageProps) {
+export function SignUpPage({ context, defaultName = "", defaultEmail = "", lockEmail = false, onSignUp, onLogin, providers = [], onProvider, error, busy, minLength = 10 }: SignUpPageProps) {
   const [name, setName] = useState(defaultName);
   const [email, setEmail] = useState(defaultEmail);
   const [pw, setPw] = useState("");
@@ -56,6 +62,14 @@ export function SignUpPage({ context, defaultName = "", defaultEmail = "", lockE
           By creating an account you agree to the <a href="https://todoi.com/terms">Terms</a> and <a href="https://todoi.com/privacy">Privacy policy</a>.
         </p>
       </form>
+      {providers.length ? (
+        <>
+          <div className="td-auth-or">or</div>
+          <div className="td-auth-stack">
+            <AuthProviders providers={providers} onPick={onProvider} disabled={busy} />
+          </div>
+        </>
+      ) : null}
       {onLogin ? (
         <div className="td-auth-links is-center">
           Already have an account? <AuthLink label="Log in" onClick={onLogin} />

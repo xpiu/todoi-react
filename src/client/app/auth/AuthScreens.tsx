@@ -1,10 +1,12 @@
-// The auth pages on Better Auth: log in (password or passkey), create an account, reset a password (request and the emailed
+// The auth pages on Better Auth: log in (password or passkey; GitHub and Google shown but switched off for now,
+// shared/socialSignIn.ts), create an account, reset a password (request and the emailed
 // link's landing), confirm an email address or a change of address, the invite landing, and the page
 // after an account is deleted.
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { SOCIAL_PROVIDERS, type SocialProviderId } from "../../../shared/socialSignIn";
 import { authClient, emailUnconfirmed, forgetBrowserSession, sendEmailConfirmation, syncGuestBeforeAuth, verifyCallback } from "../../auth";
 import { passkeyAutofillAvailable, passkeyFailure, passkeysSupported } from "../passkeys";
 import { api, explain, unwrap, type InviteDetail } from "../../data/api";
@@ -51,6 +53,25 @@ async function signInWithPasskey(autoFill: boolean): Promise<string | null> {
   return r.error ? passkeyFailure(r.error, "login") : null;
 }
 
+/**
+ * Log in or sign up with GitHub or Google: the browser leaves for the provider and comes back to `next` (or to
+ * /login with ?error=… when it fails). Unreachable for now: both providers are switched off until our human lead
+ * developer finds enough time to guide us through the slow GUI processes of these social login providers
+ * (shared/socialSignIn.ts), so their buttons stay disabled. Null, or why not.
+ */
+async function signInWithProvider(provider: SocialProviderId, next: string | undefined): Promise<string | null> {
+  const syncError = await syncGuestBeforeAuth();
+  if (syncError) return syncError;
+  const r = await authClient.signIn.social({ provider, callbackURL: safeNext(next), errorCallbackURL: "/login" });
+  return r.error ? (r.error.message ?? "Couldn't reach the provider. Try again, or log in with your email.") : null;
+}
+
+/** The log-in and sign-up pages' provider buttons: a failure shows as the page's error line. */
+const continueWith = (next: string | undefined, setError: (e: string | null) => void) => async (provider: SocialProviderId) => {
+  setError(null);
+  setError(await signInWithProvider(provider, next));
+};
+
 export function LoginScreen() {
   const { next, email } = loginRoute.useSearch();
   const navigate = useNavigate();
@@ -89,6 +110,8 @@ export function LoginScreen() {
           : undefined
       }
       passkeyBusy={passkeyBusy}
+      providers={SOCIAL_PROVIDERS}
+      onProvider={continueWith(next, setError)}
       onSignIn={async ({ email: e, password }) => {
         setBusy(true);
         setError(null);
@@ -127,6 +150,8 @@ export function SignupScreen() {
         else window.location.assign(safeNext(next));
       }}
       onLogin={() => navigate({ to: "/login", search: { next, email: email ?? undefined } })}
+      providers={SOCIAL_PROVIDERS}
+      onProvider={continueWith(next, setError)}
     />
   );
 }

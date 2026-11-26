@@ -10,6 +10,8 @@ import { DEV_USER } from "../shared/devUser";
 /** The development signing secret in `.env.example`; never accepted in production. */
 export const DEV_AUTH_SECRET = "todoi-dev-secret-change-me-please";
 const LOOPBACK = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+/** An optional value where an empty string counts as unset (`KEY=` in a .env file) */
+const optionalValue = z.string().trim().optional().transform((v) => v || undefined);
 
 export function parseEnv(source: Record<string, string | undefined>) {
   const dev = source.NODE_ENV !== "production";
@@ -34,17 +36,22 @@ export function parseEnv(source: Record<string, string | undefined>) {
       /** Reverse proxies in front of the API that append to X-Forwarded-For (1 behind one proxy); 0 = use the socket's address */
       TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
       /** Resend (resend.com) API key for account and invite emails; unset = each email is written to EMAIL_DIR instead */
-      RESEND_API_KEY: z.string().trim().optional().transform((v) => v || undefined),
+      RESEND_API_KEY: optionalValue,
       /** The sender of every email; the domain must be verified at Resend */
       EMAIL_FROM: z.string().trim().min(3).default("Todoi <no-reply@todoi.com>"),
       /** Where the development transport writes emails (.html, .txt and .json headers) when RESEND_API_KEY is unset */
       EMAIL_DIR: z.string().default(".data/emails"),
       /** Who may open the operator console (/admin): comma-separated sign-in addresses, confirmed ones only. Development defaults to the seeded account */
       ADMIN_EMAILS: z.string().default(dev ? DEV_USER.email : "").transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
+      /** Social sign-in OAuth apps (shared/socialSignIn.ts). Unused while a provider is switched off there, which both are for now */
+      GITHUB_CLIENT_ID: optionalValue,
+      GITHUB_CLIENT_SECRET: optionalValue,
+      GOOGLE_CLIENT_ID: optionalValue,
+      GOOGLE_CLIENT_SECRET: optionalValue,
       /** The GitHub REST API Git sync talks to (a GitHub Enterprise or test server can stand in) */
       GITHUB_API_URL: z.url().default("https://api.github.com"),
       /** Encrypts stored GitHub tokens and webhook secrets; unset = derived from BETTER_AUTH_SECRET (rotating that then disconnects every repository) */
-      SYNC_SECRET_KEY: z.string().trim().optional().transform((v) => v || undefined).pipe(z.string().min(32, "SYNC_SECRET_KEY must be at least 32 characters").optional()),
+      SYNC_SECRET_KEY: optionalValue.pipe(z.string().min(32, "SYNC_SECRET_KEY must be at least 32 characters").optional()),
     })
     .superRefine((e, ctx) => {
       if (dev) return;

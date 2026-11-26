@@ -1,12 +1,15 @@
-// SignInPage — one card, email + password with "Log in", and "Log in with a passkey" under an "or" rule;
+// SignInPage — one card, email + password with "Log in", then under an "or" rule "Log in with a passkey" and
+// the provider buttons (Continue with GitHub · Google; AuthProviders, unavailable for now);
 // `context` says why the person is here. With passkeys offered, the email field also takes the browser's
 // passkey autofill (`autocomplete="username webauthn"`; the screen starts WebAuthn conditional mediation).
-// (Provider buttons and magic links come with their backends.) Spec: DESIGN.md › Sign-in.
+// (Magic links come with their backend.) Spec: DESIGN.md › Sign-in.
 import { useState } from "react";
+
+import type { SocialProvider, SocialProviderId } from "../../../shared/socialSignIn";
 
 import { validEmail } from "../core/text";
 import { Button } from "../core/Button";
-import { AuthError, AuthLink, AuthShell } from "./AuthShell";
+import { AuthError, AuthLink, AuthProviders, AuthShell } from "./AuthShell";
 
 export interface SignInPageProps {
   context?: string;
@@ -16,13 +19,16 @@ export interface SignInPageProps {
   onPasskey?: () => void;
   /** The passkey prompt is up: "Waiting for your device…" */
   passkeyBusy?: boolean;
+  /** Social sign-in buttons, after the passkey; an unavailable provider shows disabled with why */
+  providers?: readonly SocialProvider[];
+  onProvider?: (id: SocialProviderId) => void;
   onForgotPassword?: (email: string) => void;
   onCreateAccount?: () => void;
   error?: string | null;
   busy?: boolean;
 }
 
-export function SignInPage({ context, defaultEmail = "", onSignIn, onPasskey, passkeyBusy = false, onForgotPassword, onCreateAccount, error, busy }: SignInPageProps) {
+export function SignInPage({ context, defaultEmail = "", onSignIn, onPasskey, passkeyBusy = false, providers = [], onProvider, onForgotPassword, onCreateAccount, error, busy }: SignInPageProps) {
   const [email, setEmail] = useState(defaultEmail);
   const [pw, setPw] = useState("");
   const validMail = validEmail(email);
@@ -56,13 +62,16 @@ export function SignInPage({ context, defaultEmail = "", onSignIn, onPasskey, pa
           </Button>
         </div>
       </form>
-      {onPasskey ? (
+      {onPasskey || providers.length ? (
         <>
           <div className="td-auth-or">or</div>
           <div className="td-auth-stack">
-            <Button variant="outline" size="lg" icon="key-round" disabled={passkeyBusy || busy} onClick={onPasskey}>
-              {passkeyBusy ? "Waiting for your device…" : "Log in with a passkey"}
-            </Button>
+            {onPasskey ? (
+              <Button variant="outline" size="lg" icon="key-round" disabled={passkeyBusy || busy} onClick={onPasskey}>
+                {passkeyBusy ? "Waiting for your device…" : "Log in with a passkey"}
+              </Button>
+            ) : null}
+            <AuthProviders providers={providers} onPick={onProvider} disabled={passkeyBusy || busy} />
           </div>
         </>
       ) : null}
