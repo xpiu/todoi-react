@@ -55,7 +55,7 @@ interface ThemePrefs {
 }
 
 const THEME_PREF_DEFAULTS: Record<ThemeId, ThemePrefs> = {
-  rounded: { colorizeColumns: true, suggestShortcuts: true, sidebarLeft: false, rowDividers: true },
+  rounded: { colorizeColumns: true, suggestShortcuts: false, sidebarLeft: false, rowDividers: true },
   minimal: { colorizeColumns: false, suggestShortcuts: false, sidebarLeft: false, rowDividers: true },
 };
 /** Each per-theme preference with the design-system kit's key stem (`<stem>-<theme>`), for the one-time import. */
