@@ -1,10 +1,13 @@
-// The app-wide Content-Security-Policy, report-only for now: browsers report what it would block to
-// /api/csp-reports (grouped in the operator console as CSP errors) without blocking anything. Once a round
-// of testers has run without reports, send the same policy as Content-Security-Policy. Attachments keep
-// their own enforced sandbox policy (services/attachmentResponse.ts).
+// The app-wide Content-Security-Policy, enforced (CSP=enforce, the default): browsers block what it doesn't
+// allow and report it to /api/csp-reports (grouped in the operator console as CSP errors). CSP=report-only
+// sends it as Content-Security-Policy-Report-Only instead: reports without blocking, the way back if a page
+// breaks. Attachments keep their own sandbox policy (services/attachmentResponse.ts).
 import { createHash } from "node:crypto";
 
 export const CSP_REPORT_PATH = "/api/csp-reports";
+
+/** The response header for each mode */
+export const cspHeader = (mode: "enforce" | "report-only") => (mode === "enforce" ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only");
 
 /** The policy for the built client: scripts from this origin plus index.html's inline scripts, by hash. */
 export function contentSecurityPolicy(indexHtml: string): string {

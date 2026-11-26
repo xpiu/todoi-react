@@ -45,6 +45,8 @@ export function parseEnv(source: Record<string, string | undefined>) {
       EMAIL_DIR: z.string().default(".data/emails"),
       /** Who may open the operator console (/admin): comma-separated sign-in addresses, confirmed ones only. Development defaults to the seeded account */
       ADMIN_EMAILS: z.string().default(dev ? DEV_USER.email : "").transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
+      /** The pages' Content-Security-Policy (csp.ts): enforced, or `report-only` to only report what it would block */
+      CSP: z.enum(["enforce", "report-only"]).default("enforce"),
       /** Who may create an account: `open` (anyone, and every visitor gets a guest workspace) or `invite` (no guests; invited addresses only, services/signUpGate.ts) */
       SIGN_UP: z.enum(["open", "invite"]).default("open"),
       /** With SIGN_UP=invite: comma-separated addresses that may sign up without a project invite (testers) */
