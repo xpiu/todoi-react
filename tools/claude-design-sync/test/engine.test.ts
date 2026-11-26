@@ -76,9 +76,11 @@ describe("renameClasses", () => {
     expect(r.text).toBe(".td-list-row{top:1px}\n.td-list-row-key{left:0}\n");
     expect(r.conflicts).toEqual([]);
   });
-  it("pairs every kit name in class-names.json with one App name", () => {
+  it("gives every App name in class-names.json one kit spelling that maps back to it", () => {
+    // The kit has aliases (td-dp and td-dts are both the App's td-date-picker); App → kit picks one of them.
     const real = loadClassNames(join(TOOL_DIR, "class-names.json"));
-    expect(real.toKit.size).toBe(real.toApp.size);
+    expect(real.toKit.size).toBe(new Set(real.toApp.values()).size);
+    for (const [app, kit] of real.toKit) expect(real.toApp.get(kit)).toBe(app);
   });
 });
 
