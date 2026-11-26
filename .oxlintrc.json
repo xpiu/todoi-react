@@ -42,7 +42,8 @@
       {
         "allow": [
           "__todoi",
-          "__syncVersions"
+          "__syncVersions",
+          "__TODOI_BUILD__"
         ]
       }
     ]

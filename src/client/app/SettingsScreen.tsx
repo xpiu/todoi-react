@@ -6,6 +6,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { LABEL_COLORS, type LabelColor } from "../../shared/enums";
 import { AVATAR_HINT } from "../../shared/avatars";
+import { BUILD, shortSha } from "../../shared/build";
 import { useApiTokensSection } from "./ApiTokens";
 import { AvatarUpload } from "./AvatarUpload";
 import { authClient } from "../auth";
@@ -358,7 +359,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             ],
           },
           { id: "help-topics", title: "Topics", rows: [{ id: "helpSearch", label: "Search help", hint: helpQ.trim() ? `${count(topics.length, "topic")} match` : "Type to filter the topics below", control: <TextField icon="search" value={helpQ} onChange={(e) => setHelpQ(e.target.value)} placeholder="Search" aria-label="Search help" /> }, ...topics.map((t) => ({ id: t.id, label: t.label, hint: t.hint, bodyText: t.body, body: expanded === t.id ? t.body : undefined, control: <IconButton name="chevron-down" label={`${expanded === t.id ? "Collapse" : "Expand"} ${t.label}`} size={28} iconSize={16} aria-expanded={expanded === t.id} onClick={() => setExpanded((e) => (e === t.id ? null : t.id))} /> }))] },
-          { id: "legal", title: "About", rows: ABOUT_LINKS.map(([id, label, href]) => ({ id, label, hint: id === "licences" ? "Open-source software used in Todoi" : undefined, control: <SettingsLink href={href} /> })) },
+          { id: "legal", title: "About", rows: [{ id: "version", label: "Version", hint: BUILD.builtAt ? `Built ${new Date(BUILD.builtAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}` : "Development build", keywords: [BUILD.sha], control: <MonoValue value={shortSha(BUILD.sha)} /> }, ...ABOUT_LINKS.map(([id, label, href]) => ({ id, label, hint: id === "licences" ? "Open-source software used in Todoi" : undefined, control: <SettingsLink href={href} /> }))] },
         ],
       },
       {

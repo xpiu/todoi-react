@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { BUILD } from "../shared/build";
 import { app } from "./app";
 
 describe("the API's response headers", () => {
@@ -14,5 +15,14 @@ describe("the API's response headers", () => {
         "strict-transport-security": "max-age=15552000",
       });
     }
+  });
+});
+
+describe("/api/health", () => {
+  it("names the running build, so a deploy and a bug report can be matched to a commit", async () => {
+    const res = await app.request("/api/health");
+    // The image's build stamps the commit and time (vite.config.ts); unbundled, as here, it reads "dev".
+    expect(await res.json()).toEqual({ ok: true, build: BUILD });
+    expect(BUILD.sha).toBeTruthy();
   });
 });

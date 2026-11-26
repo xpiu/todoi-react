@@ -1,5 +1,9 @@
 # Local state and build output never enter the image; the Dockerfile builds from source.
 .git
+# …except HEAD and the refs: vite.config.ts reads the commit being built from them (Settings › About, /api/health).
+!.git/HEAD
+!.git/refs/heads
+!.git/packed-refs
 **/node_modules
 **/dist
 **/dist-server

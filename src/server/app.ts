@@ -17,6 +17,7 @@ import { workspaceMutations } from "./sync";
 import { notFound, onError } from "./errors";
 import { invalidTokenLimit, LIMITS, rateLimit } from "./rateLimit";
 import { routePath, V1_CONTRACT, v1Gate, viaV1 } from "./apiV1";
+import { BUILD } from "../shared/build";
 import { env } from "./env";
 import { openApiDocument } from "./openapi";
 
@@ -34,7 +35,7 @@ export const app = new Hono({ getPath: routePath })
   // Content-Security-Policy yet: index.html applies the stored theme with an inline script.
   .use(secureHeaders({ strictTransportSecurity: "max-age=15552000" }))
   .basePath("/api")
-  .get("/health", (c) => c.json({ ok: true }))
+  .get("/health", (c) => c.json({ ok: true, build: BUILD }))
   // Every request from one address, then tighter limits where a request logs in, makes an account or sends email.
   .use("*", rateLimit(LIMITS.address))
   // /api/v1 is a listed subset of these routes (apiV1.ts); anything else under it is 404.
