@@ -230,6 +230,9 @@ Environment variables override `.env`:
 - **`RATE_LIMIT`:** Default `true` in production, `false` in development. Throttles every request per client address (1200/min), log-ins (30 per 10 min per address), sign-ups (10/h), guest workspaces (30/h), reset and confirmation emails (10/h per address, 5/h per recipient), each API token (600 per 10 min), tokens that don't work (20 per 10 min per address) and account exports (10/h per person), browser error reports (60 per 10 min per person) and GitHub webhooks (120/min per address); a refusal is 429 with `Retry-After`. Counts live in memory, per instance. Wrong passwords are also throttled per account (10 log-ins per 15 min, cleared by a log-in that works or a password reset; 5 wrong ones at "Confirm it's you"), in Postgres and always on. Limits are in `src/server/rateLimit.ts`.
 - **`ADMIN_EMAILS`:** Comma-separated sign-in addresses that may open the operator console at `/admin` (errors, the job queue, Git sync health, accounts), once the address is confirmed. Default: none in production, the seeded `info@todoi.org` in development.
 - **`TRUST_PROXY_HOPS`:** Default `0` (the socket's address). Behind a reverse proxy that appends to `X-Forwarded-For`, set the number of such proxies (usually `1`), or every visitor shares the proxy's address and one budget.
+- **`SIGN_UP`:** Default `open`: anyone may create an account, and every visitor first gets a guest workspace. `invite` (staging.todoi.com while a few testers try Todoi) makes no guest workspaces (a visitor without a session is sent to the log-in page) and creates an account only for an address in `SIGN_UP_EMAILS` or `ADMIN_EMAILS`, an address with an open project invite, or whoever signs up from an open invite link (`/i/:code`) that isn't locked to another address. Existing accounts log in as usual. Social sign-in isn't gated yet: keep it switched off while `invite` is on.
+- **`SIGN_UP_EMAILS`:** With `SIGN_UP=invite`, comma-separated addresses that may sign up without a project invite (the testers).
+- **`TRUST_CLOUDFLARE`:** Default `false`. Behind Cloudflare, `true` counts a request whose address (after `TRUST_PROXY_HOPS`) is one of Cloudflare's edge ranges as its `CF-Connecting-IP`; without it every visitor routed through the same Cloudflare data centre shares one budget. A request that reaches the origin directly can't claim an address this way.
 - **`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`:** The OAuth apps behind social sign-in, callback `<APP_URL>/api/auth/callback/github` or `/google`. **Unused for now:** both providers are switched off in `src/shared/socialSignIn.ts` until the lead developer has set up their OAuth apps, so the log-in and sign-up pages show "GitHub login temporarily unavailable" and "Google login temporarily unavailable" under disabled buttons. A provider works once it is switched on there and both of its variables are set.
 - **`GITHUB_API_URL`:** Default `https://api.github.com`; GitHub Enterprise, or the fake GitHub the tests run (`tests/fakes/fakeGithub.ts`).
 
@@ -237,7 +240,22 @@ Production startup rejects invalid/missing configuration, development/example se
 
 Non-API GET deep links serve HTML; hashed `/assets/*` cache for a year, HTML revalidates. Every response carries baseline security headers (no MIME sniffing, same-origin framing and embedding, no referrer, HSTS for this host); there is no Content-Security-Policy yet. `SIGTERM`/`SIGINT` stop new connections and close the database pool, with a 10-second shutdown limit. Fault/refused-write logs carry the client's “ref …” `requestId`.
 
-**Docker (staging):** the `Dockerfile` builds with every dependency and ships a non-root `node:22-slim` image with production dependencies, `dist/`, `dist-server/` and `drizzle/`. It defaults `UPLOAD_DIR=/data/uploads` (mount a named volume at `/data`, one replica) and health-checks `/api/health`. On Dokploy set `DATABASE_URL`, `APP_URL`, `BETTER_AUTH_SECRET` and `MIGRATE_ON_START=true`, and keep Autodeploy off: the CI `deploy-staging` job deploys `main` through the Dokploy API once all checks pass (secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_STAGING_APP_ID`).
+**Docker (staging):** the `Dockerfile` builds with every dependency and ships a non-root `node:22-slim` image with production dependencies, `dist/`, `dist-server/` and `drizzle/`. It defaults `UPLOAD_DIR=/data/uploads` (mount a named volume at `/data`, one replica) and health-checks `/api/health`, which also names the build (`{ ok, build: { sha, builtAt } }`, shown in Settings › Help › About).
+
+**Deploys (staging.todoi.com):** CI's `deploy-staging` job fast-forwards the `staging` branch to a `main` commit once every gate has passed, and Dokploy (GitHub provider, branch `staging`, Autodeploy on push) builds that branch; a push to `main` alone never deploys. Rules once testers hold real data: never reseed or wipe staging; `src/server/db/migrations.test.ts` (in `npm run check`) refuses a new migration that drops, renames or tightens a column without a `-- reviewed: …` line saying why it's safe; take a dump before deploying such a migration (`docker exec <db container> pg_dump -U <user> -Fc <db> > before-<sha>.dump` on the VPS; the VPS backup job also dumps every Postgres daily); and a migration must accept edits that older clients replay from their offline outbox. To roll back, point `staging` at the previous good commit (`git push --force origin <sha>:staging`); a migration that already ran stays, so roll back code only past additive migrations.
+
+Staging environment (Dokploy › Environment), names only:
+
+| Key | Staging value |
+| --- | --- |
+| `NODE_ENV`, `PORT`, `CLIENT_DIR`, `UPLOAD_DIR` | `production`, `3000`, `dist`, `/data/uploads` |
+| `APP_URL` | `https://staging.todoi.com` |
+| `DATABASE_URL`, `BETTER_AUTH_SECRET`, `SYNC_SECRET_KEY` | secrets; `SYNC_SECRET_KEY` separate from the auth secret |
+| `MIGRATE_ON_START`, `SEED_ON_START` | `true`, `false` |
+| `TRUST_PROXY_HOPS`, `TRUST_CLOUDFLARE` | `1` (Traefik), `true` |
+| `ADMIN_EMAILS` | the operators' sign-in addresses |
+| `SIGN_UP` | `invite` (see below) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | once todoi.com is verified at Resend |
 
 Local production smoke test (PostgreSQL required):
 
