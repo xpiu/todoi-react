@@ -4,7 +4,7 @@
 // an account search. Built from the settings shell's cards. Operators only (ADMIN_EMAILS).
 import { useState } from "react";
 
-import { useAdminAccounts, useAdminMutations, useAdminOverview, type AdminOverview } from "../data/admin";
+import { useAdminAccounts, useAdminMutations, useAdminOutbox, useAdminOverview, type AdminOverview } from "../data/admin";
 import { ApiError, errorMessage } from "../data/api";
 import { Button } from "../design/core/Button";
 import { formatRelative } from "../design/core/dates";
@@ -13,7 +13,7 @@ import { IconButton } from "../design/core/IconButton";
 import { count } from "../design/core/text";
 import { TextField } from "../design/core/TextField";
 import { SettingsCard, SettingsPageFrame, StatusDot, type SettingsRow } from "../design/settings/SettingsShell";
-import { useFeedback } from "./feedback";
+import { copyAndNotify, useFeedback } from "./feedback";
 import "./admin.css";
 
 const SOURCE_NAMES = { server: "Server", client: "Browser", job: "Background job", "git-sync": "Git sync" } as const;
@@ -24,6 +24,7 @@ export function AdminScreen() {
   const overview = useAdminOverview();
   const [q, setQ] = useState("");
   const accounts = useAdminAccounts(q.trim());
+  const outbox = useAdminOutbox();
   const [open, setOpen] = useState<string | null>(null);
   const am = useAdminMutations();
   const notify = useFeedback((s) => s.notify);
@@ -107,6 +108,18 @@ export function AdminScreen() {
             : [],
         }}
       />
+      {outbox.data && !outbox.data.sending ? (
+        <SettingsCard
+          group={{
+            id: "outbox",
+            title: "Outbox",
+            sub: "Not sent: RESEND_API_KEY isn't set. Pass a link to its person yourself (confirm, reset, invite)",
+            tone: "warn",
+            empty: "No emails yet",
+            rows: outbox.data.emails.map((e, i) => ({ id: `mail-${i}`, label: `${e.subject} · ${e.to}`, hint: ago(e.date), control: e.link ? <Button icon="link" onClick={() => void copyAndNotify(e.link!, `Copied the link for ${e.to}`)}>Copy link</Button> : undefined })),
+          }}
+        />
+      ) : null}
       <SettingsCard
         group={{
           id: "accounts",

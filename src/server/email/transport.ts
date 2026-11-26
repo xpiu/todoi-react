@@ -1,7 +1,7 @@
 // How an email leaves: Resend's REST API (POST https://api.resend.com/emails, no SDK) when a key is
 // configured; otherwise a development transport that writes the message to a folder (.html, .txt and
 // a .json of its headers) and logs one line, so links can be opened locally and by the e2e tests.
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { nanoid } from "nanoid";
 
@@ -63,4 +63,30 @@ export function createMailer(config: MailerConfig, deps: { fetch?: typeof fetch;
     ]);
     log(`Email to ${to} · ${subject} → ${stem}.html (RESEND_API_KEY is unset, so it was not sent)`);
   };
+}
+
+export interface WrittenEmail {
+  to: string;
+  subject: string;
+  date: string;
+  /** The first link into the app in the text part (confirm, reset, invite, the item), if any */
+  link: string | null;
+}
+
+/**
+ * The newest emails the development transport wrote to `dir`, for the operator console's outbox: while
+ * RESEND_API_KEY is unset an operator hands a tester the confirmation, reset or invite link by hand.
+ */
+export async function writtenEmails(dir: string, appUrl: string, limit = 30): Promise<WrittenEmail[]> {
+  const names = (await readdir(dir).catch(() => [] as string[])).filter((n) => n.endsWith(".json")).sort().reverse().slice(0, limit);
+  const origin = appUrl.replace(/\/$/, "");
+  return Promise.all(
+    names.map(async (name) => {
+      const stem = join(dir, name.slice(0, -".json".length));
+      const head = JSON.parse(await readFile(`${stem}.json`, "utf8")) as { to: string; subject: string; date: string };
+      const text = await readFile(`${stem}.txt`, "utf8").catch(() => "");
+      const link = text.split(/\s+/).find((word) => word.startsWith(origin)) ?? null;
+      return { to: head.to, subject: head.subject, date: head.date, link };
+    }),
+  );
 }

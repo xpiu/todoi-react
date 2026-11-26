@@ -99,4 +99,14 @@ describe("operator console", () => {
     const [row] = await db.select({ verified: users.emailVerified }).from(users).where(eq(users.id, tester.id));
     expect(row?.verified).toBe(true);
   });
+
+  it("lists unsent emails with their links for operators, while RESEND_API_KEY is unset", async () => {
+    const newcomer = await signUp("Newcomer");
+    expect((await call("/api/admin/emails", { cookie: member.cookie })).status).toBe(403);
+    const outbox = await (await call("/api/admin/emails", { cookie: operator.cookie })).json();
+    expect(outbox.sending).toBe(false);
+    const confirmation = outbox.emails.find((e: { to: string }) => e.to === newcomer.email);
+    expect(confirmation).toMatchObject({ subject: expect.any(String), date: expect.any(String) });
+    expect(confirmation.link).toContain(env.APP_URL);
+  });
 });

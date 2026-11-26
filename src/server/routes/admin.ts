@@ -1,6 +1,6 @@
 // The operator console's API (work plan R8), for confirmed accounts listed in ADMIN_EMAILS: an overview
 // (accounts, content, the job queue, Git sync health, grouped errors), the account list, confirming an
-// account's address by hand, marking an error resolved and retrying a failed job. And /api/errors, where the browser reports what broke there.
+// account's address by hand, the outbox of unsent emails, marking an error resolved and retrying a failed job. And /api/errors, where the browser reports what broke there.
 import { and, count, desc, eq, ilike, isNull, lt, or, sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import { errorGroups, gitConnections, items, jobs, members, projects, sessions, 
 import { env } from "../env";
 import { fail, validate } from "../errors";
 import { STALE_AFTER_MS } from "../jobKinds";
+import { writtenEmails } from "../email";
 import { emailConfirmed } from "../services/confirmedEmail";
 import { recordError } from "../services/errorTracking";
 
@@ -66,6 +67,8 @@ export const adminRoute = new Hono()
     const [row] = await db.update(errorGroups).set({ resolvedAt: new Date() }).where(and(eq(errorGroups.fingerprint, c.req.valid("param").fingerprint), isNull(errorGroups.resolvedAt))).returning({ fingerprint: errorGroups.fingerprint });
     return row ? c.body(null, 204) : fail(c, 404, "That error is already resolved or gone");
   })
+  // The outbox: with RESEND_API_KEY unset nothing is sent, so an operator passes a tester their link by hand.
+  .get("/emails", async (c) => c.json({ sending: !!env.RESEND_API_KEY, emails: env.RESEND_API_KEY ? [] : await writtenEmails(env.EMAIL_DIR, env.APP_URL) }))
   // While email can't be delivered (no RESEND_API_KEY yet), an operator who knows the person vouches for
   // the address instead of a confirmation link: what R4 waits for (inviting, joining by address) unlocks.
   .post("/accounts/:id/confirm-email", validate("param", z.object({ id: z.string().min(1).max(64) })), async (c) => {

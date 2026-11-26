@@ -8,6 +8,9 @@ export type AdminOverview = InferResponseType<typeof api.api.admin.overview.$get
 export type AdminAccount = InferResponseType<typeof api.api.admin.accounts.$get, 200>["accounts"][number];
 
 export const useAdminOverview = () => useQuery({ queryKey: ["admin", "overview"], queryFn: ({ signal }) => api.api.admin.overview.$get(undefined, { init: { signal } }).then((r) => unwrap<AdminOverview>(r)), refetchInterval: 30_000 });
+export type AdminOutbox = InferResponseType<typeof api.api.admin.emails.$get, 200>;
+/** Emails written instead of sent while RESEND_API_KEY is unset: the operator hands testers their links */
+export const useAdminOutbox = () => useQuery({ queryKey: ["admin", "emails"], queryFn: ({ signal }) => api.api.admin.emails.$get(undefined, { init: { signal } }).then((r) => unwrap<AdminOutbox>(r)), refetchInterval: 30_000 });
 export const useAdminAccounts = (q: string) => useQuery({ queryKey: ["admin", "accounts", q], queryFn: ({ signal }) => api.api.admin.accounts.$get({ query: { q: q || undefined } }, { init: { signal } }).then((r) => unwrap<{ accounts: AdminAccount[] }>(r)).then((r) => r.accounts) });
 
 export function useAdminMutations() {

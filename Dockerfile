@@ -16,7 +16,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
 FROM node:22.23.5-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
-ENV NODE_ENV=production PORT=3000 UPLOAD_DIR=/data/uploads
+# EMAIL_DIR: where emails are written while RESEND_API_KEY is unset (the operator console's outbox); /app isn't writable.
+ENV NODE_ENV=production PORT=3000 UPLOAD_DIR=/data/uploads EMAIL_DIR=/data/emails
 WORKDIR /app
 # package.json carries "type": "module" for dist-server; drizzle/ feeds MIGRATE_ON_START.
 COPY package.json ./
