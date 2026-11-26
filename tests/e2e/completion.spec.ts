@@ -73,7 +73,8 @@ test("a recurring item advances identically from every surface, and Undo restore
   // list's role locks a matching Status, so the item first gets a Status that differs from it (editable, the item stays).
   expect((await page.request.patch(`/api/items/${f.id}`, { data: { status: null } })).ok()).toBeTruthy();
   await page.goto(`/p/${f.projectId}?v=list&item=${f.id}`);
-  await page.getByRole("dialog").getByRole("combobox", { name: "Status" }).click();
+  // Exact: while the cached item still reads Status = To-do the field is hidden and the List field's label says "Sets Status".
+  await page.getByRole("dialog").getByRole("combobox", { name: "Status", exact: true }).click();
   await page.getByRole("option", { name: "Done" }).click();
   await expectToast(3);
   await page.screenshot({ path: ".tmp/test-results/completion-overlay-toast.png" });
