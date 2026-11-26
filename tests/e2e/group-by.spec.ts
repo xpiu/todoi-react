@@ -128,18 +128,15 @@ test("the group is part of a saved view and its link", async ({ page, own }) => 
   const view = saved.find((v) => v.name === "By label")!;
   expect(view.definition.group).toBe("label");
 
-  // A fresh visit through the saved view's link groups again; Board keeps the pick but shows its lists
+  // A fresh visit through the saved view's link groups again; Board has no Group button but keeps the pick for List
   await page.goto(`/p/${own.projectId}?view=${view.id}&v=list`);
   await expect(group(page, "__none")).toBeVisible();
   await page.goto(`/p/${own.projectId}?view=${view.id}&v=board`);
-  await groupButton(page).click();
-  const menu = page.getByRole("dialog", { name: "Group options" });
-  await expect(menu.getByRole("note")).toContainText("Groups show in List view.");
-  await expect(menu.getByRole("radio", { name: "Label" })).toBeDisabled();
-  await expect(menu.getByRole("radio", { name: "Label" })).toHaveAttribute("aria-checked", "true");
-  await menu.getByRole("button", { name: "Open List view" }).click();
-  await expect(page).toHaveURL(/[?&]v=list/);
+  await expect(page.getByRole("toolbar", { name: "Project views and actions" })).toBeVisible();
+  await expect(groupButton(page)).toHaveCount(0);
+  await page.goto(`/p/${own.projectId}?view=${view.id}&v=list`);
   await expect(group(page, "__none")).toBeVisible();
+  await expect(groupButton(page)).toBeVisible();
 });
 
 test("Group by Label: a drop swaps the source label for the target's and keeps the others, with Undo", async ({ page, own }) => {

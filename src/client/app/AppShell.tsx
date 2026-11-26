@@ -391,28 +391,21 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  // In Board and Calendar the rows are disabled: groups show in List view (the pick is kept for the next visit there).
-  const groupMenu = (
-    <GroupMenu
-      group={group}
-      onSelect={selectGroup}
-      onReset={() => selectGroup("none")}
-      showEmpty={showEmptyGroups}
-      onShowEmptyChange={setShowEmptyGroups}
-      allCollapsed={groupIds.length > 0 && groupIds.every((id) => collapsedGroups.includes(id))}
-      onCollapseAll={(shut) => projectId && group && setCollapsedGroups(projectId, group, shut ? groupIds : [])}
-      disabled={view !== "list"}
-      note={view !== "list" ? "Groups show in List view." : undefined}
-      onOpenList={
-        view !== "list"
-          ? () => {
-              setOpenMenu(null);
-              setView("list");
-            }
-          : undefined
-      }
-    />
-  );
+  // Group by is List view's alone: Board and Calendar have no Group button (the pick is kept for the next visit there),
+  // and a Group menu left open closes when the view changes.
+  if (openMenu === "group" && view !== "list") setOpenMenu(null);
+  const groupMenu =
+    view === "list" ? (
+      <GroupMenu
+        group={group}
+        onSelect={selectGroup}
+        onReset={() => selectGroup("none")}
+        showEmpty={showEmptyGroups}
+        onShowEmptyChange={setShowEmptyGroups}
+        allCollapsed={groupIds.length > 0 && groupIds.every((id) => collapsedGroups.includes(id))}
+        onCollapseAll={(shut) => projectId && group && setCollapsedGroups(projectId, group, shut ? groupIds : [])}
+      />
+    ) : undefined;
   const pd = project.data;
   const membersMenu = pd ? (
     <MembersMenu
