@@ -86,7 +86,8 @@ describe("API error envelope", () => {
     expect(JSON.stringify(r.body)).not.toContain("token");
     expect(error).toHaveBeenCalledTimes(1);
     expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toMatchObject({ level: "error", requestId: r.body.requestId, status: 500, error: { name: "Error" } });
-    expect(recordError).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ source: "server", kind: "Error", message: "token=abc in a bug", where: "GET /bug", requestId: r.body.requestId }));
+    // The tracker loads on first fault (errors.ts), so the record lands a tick after the response.
+    await vi.waitFor(() => expect(recordError).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ source: "server", kind: "Error", message: "token=abc in a bug", where: "GET /bug", requestId: r.body.requestId })));
   });
 
   it("records only faults for the operator console, not refusals", async () => {
@@ -94,6 +95,7 @@ describe("API error envelope", () => {
     await call("/missing");
     await call("/forbidden");
     await call("/duplicate");
+    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(recordError).not.toHaveBeenCalled();
   });
 });
