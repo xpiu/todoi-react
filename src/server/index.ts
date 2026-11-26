@@ -26,7 +26,16 @@ const stopJobs = await startJobs();
 
 // The API under /api; in production also the built client (CLIENT_DIR), with every other path answered
 // by index.html so a deep link (/p/…, /inbox) opens the app. Development serves the client with Vite.
-const server = new Hono({ getPath: routePath }).route("/", app);
+const server = new Hono({ getPath: routePath });
+// An invite-only deployment (the tester staging) is not for search engines: every response says so.
+if (env.SIGN_UP === "invite") {
+  server.use("*", async (c, next) => {
+    await next();
+    c.header("X-Robots-Tag", "noindex, nofollow");
+  });
+  server.get("/robots.txt", (c) => c.text("User-agent: *\nDisallow: /\n"));
+}
+server.route("/", app);
 const isApi = (path: string) => path === "/api" || path.startsWith("/api/");
 if (env.CLIENT_DIR) {
   const index = join(env.CLIENT_DIR, "index.html");
