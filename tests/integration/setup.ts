@@ -25,6 +25,11 @@ afterAll(async () => {
   // pool.end() resolves once its clients are told to close, not once their sockets are gone; dropping the
   // database first terminates them mid-close (57P01) and the pool reports that as an uncaught error.
   const pool = db.$client;
+  // A connection still open when the database is dropped (a fault's late error-tracking write, say) is
+  // terminated with 57P01: expected here, so only other errors surface.
+  pool.on("error", (error: Error & { code?: string }) => {
+    if (error.code !== "57P01") throw error;
+  });
   let open = pool.totalCount;
   const closed = new Promise<void>((resolve) => {
     if (!open) resolve();
