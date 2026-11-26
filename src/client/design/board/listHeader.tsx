@@ -34,7 +34,11 @@ export function useListRename(name: string, onRename?: (name: string) => void) {
     onBlur: commit,
     onKeyDown: (e) => {
       e.stopPropagation();
-      if (e.key === "Enter") commit();
+      // preventDefault stops the keypress: a header that hands focus back to its name button would otherwise "click" it and reopen the field
+      if (e.key === "Enter") {
+        e.preventDefault();
+        commit();
+      }
       else if (e.key === "Escape") setRenaming(false);
     },
   } satisfies InputHTMLAttributes<HTMLInputElement>;

@@ -85,6 +85,44 @@ export const RenameCancel: Story = {
     await expect(args.onRename).not.toHaveBeenCalled();
   },
 };
+export const RenameByClickingTheName: Story = {
+  async play({ args, canvas, userEvent }) {
+    // The name itself starts the same inline rename as ⋯ › Rename; after Enter focus returns to the name.
+    await userEvent.click(canvas.getByRole("button", { name: "Doing, rename list" }));
+    const field = await canvas.findByRole("textbox", { name: "List name" });
+    await waitFor(() => expect(field).toHaveFocus());
+    await expect(field).toHaveValue("Doing");
+    await userEvent.clear(field);
+    await userEvent.type(field, "In progress{Enter}");
+    await expect(args.onRename).toHaveBeenCalledWith("In progress");
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Doing, rename list" })).toHaveFocus());
+  },
+};
+export const RenameFromKeyboard: Story = {
+  async play({ args, canvas, userEvent }) {
+    const name = canvas.getByRole("button", { name: "Doing, rename list" });
+    name.focus();
+    await userEvent.keyboard("{Enter}");
+    const field = await canvas.findByRole("textbox", { name: "List name" });
+    await waitFor(() => expect(field).toHaveFocus());
+    await userEvent.keyboard("{Escape}");
+    await expect(canvas.queryByRole("textbox", { name: "List name" })).not.toBeInTheDocument();
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Doing, rename list" })).toHaveFocus());
+    // Space opens it too
+    await userEvent.keyboard(" ");
+    await expect(await canvas.findByRole("textbox", { name: "List name" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await expect(args.onRename).not.toHaveBeenCalled();
+  },
+};
+/** Without onRename (a read-only board) the name is plain text, not a button. */
+export const ReadOnlyName: Story = {
+  args: { onRename: undefined },
+  async play({ canvas }) {
+    await expect(canvas.queryByRole("button", { name: "Doing, rename list" })).toBeNull();
+    await expect(canvas.getByText("Doing", { selector: ".td-list-column-name" }).tagName).toBe("SPAN");
+  },
+};
 export const ChangeIcon: Story = {
   async play({ args, canvas, canvasElement, globals, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);

@@ -60,6 +60,24 @@
     flex: 1;
     font: var(--type-list-name);
   }
+  /* With onRename the name is a button: click, Enter or Space starts the inline rename. It keeps the look of the plain
+     name (no box, no hover wash); the text cursor says it can be edited. */
+  button.td-list-column-name {
+    appearance: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: text;
+    border-radius: var(--radius-xs);
+  }
+  button.td-list-column-name:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
   .td-list-column-count {
     font: var(--type-body);
     color: var(--ink-600);

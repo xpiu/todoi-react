@@ -32,3 +32,10 @@ export const inboxContainer = (user: SessionUser | null): ItemContainer => ({ ke
 export function peopleOf(project: Pick<ItemContainer, "members"> | null | undefined): Person[] {
   return (project?.members ?? []).map((m) => ({ id: m.userId, name: m.name, nickname: m.nickname, avatarColor: m.avatarColor, image: m.image }));
 }
+
+/** Members edit unless their role is Viewer; nonmembers (a public project's guests) read only. */
+export function useProjectReadOnly(project: Pick<ProjectDetail, "members">): boolean {
+  const { user } = useCurrentUser();
+  const role = project.members.find((m) => m.userId === user?.id)?.role;
+  return !role || role === "viewer";
+}

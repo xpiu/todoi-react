@@ -1,7 +1,7 @@
 // ListColumn — a board list: header (icon → IconPicker, name, count, ⋯ list actions), the card stack,
 // and the "Add an item" composer. Exposes data-status-role so "Colorize Board columns" can tint it.
 // Spec: DESIGN.md › Board, Lists & Status linking.
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import type { ItemStatus } from "../../../shared/item-status";
 import { Icon, type IconName } from "../core/Icon";
@@ -26,6 +26,8 @@ export interface ListColumnProps {
   /** The foot "Add an item" appends (position "bottom"); ⋯ › Add an item opens the composer above the first card and the item lands first ("top") */
   onAddItem?: (title: string, parsed: QuickAddResult, position: AddPosition) => void;
   quickAdd?: QuickAddOptions;
+  /** Rename, from ⋯ › Rename or by clicking the name: called with the trimmed new name on commit. With it the name is a
+   *  button (click, Enter or Space starts the inline rename); without it (a read-only board) the name is a plain span. */
   onRename?: (name: string) => void;
   onIconChange?: (icon: IconName | null) => void;
   onSelectAll?: () => void;
@@ -41,6 +43,14 @@ export interface ListColumnProps {
 
 export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onRename, onIconChange, onSelectAll, onHide, dropTarget, rootProps, listId, style }: ListColumnProps) {
   const rename = useListRename(name, onRename);
+  // When the field closes with focus left nowhere (Enter, Escape), focus returns to the name; a click elsewhere keeps its own focus.
+  const nameRef = useRef<HTMLButtonElement>(null);
+  const wasRenaming = useRef(false);
+  useEffect(() => {
+    const active = document.activeElement;
+    if (wasRenaming.current && !rename.renaming && (!active || active === document.body)) nameRef.current?.focus();
+    wasRenaming.current = rename.renaming;
+  }, [rename.renaming]);
   // adding: "top" (⋯ › Add an item, new items land first) | "bottom" (foot "Add an item", new items append)
   const [adding, setAdding] = useState<AddPosition | false>(false);
   const commitAdd = (parsed: QuickAddResult, keep: boolean) => {
@@ -62,7 +72,15 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
     <div className={"td-list-column" + (dropTarget ? " is-drop-target" : "")} data-status-role={effRole} data-list-name={name} data-list-id={listId} style={style} {...rootProps}>
       <div className="td-list-column-head">
         <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-column-iconbtn" size={16} />
-        {rename.renaming ? <input className="td-list-column-rename" {...rename.inputProps} /> : <span className="td-list-column-name">{name}</span>}
+        {rename.renaming ? (
+          <input className="td-list-column-rename" {...rename.inputProps} />
+        ) : onRename ? (
+          <button type="button" ref={nameRef} className="td-list-column-name" aria-label={`${name}, rename list`} onClick={rename.startRename}>
+            {name}
+          </button>
+        ) : (
+          <span className="td-list-column-name">{name}</span>
+        )}
         {!rename.renaming && count != null ? <span className="td-list-column-count">{count}</span> : null}
         <ListActionsPopover
           label={`Actions for ${name}`}

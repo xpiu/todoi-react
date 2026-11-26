@@ -52,7 +52,7 @@ import { formatDate } from "../design/core/dates";
 import { usePrefs } from "./prefs";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
-import { peopleOf, useCurrentUser } from "./session";
+import { peopleOf, useProjectReadOnly } from "./session";
 import { usePersistedFlag } from "./usePersistedFlag";
 import { useToday } from "./today";
 import { useProjectActions, type ProjectActions } from "./useProjectActions";
@@ -702,6 +702,8 @@ function ProjectBoard(props: ViewProps) {
   const today = useToday();
   const quickItem = qe.quick ? v.itemsById.get(qe.quick.id) : undefined;
   const members = useMemo(() => actions.people.map(pickableMember), [actions.people]);
+  // A read-only board shows the list name as plain text: clicking it would otherwise start a rename
+  const readOnly = useProjectReadOnly(props.project);
   if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
@@ -709,8 +711,9 @@ function ProjectBoard(props: ViewProps) {
       <BoardView ref={root} onAddList={() => actions.addList()} after={v.hiddenMenu} onItemKey={v.onItemKey} onMoveItem={actions.onMoveItemKey} onItemSelect={v.onItemSelect} onKeyDown={qe.onKey} rootProps={v.dnd.rootProps}>
         {v.lists.map((list) => {
           const rows = v.rowsOf(list.id);
+          const callbacks = listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole);
           return (
-            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => v.addInList(list.id, title, parsed, position)} {...listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole)}>
+            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => v.addInList(list.id, title, parsed, position)} {...callbacks} onRename={readOnly ? undefined : callbacks.onRename}>
               {rows.map((r) => {
                 const it = v.itemsById.get(r.id)!;
                 return (
@@ -777,9 +780,7 @@ function ProjectCalendar({ projectId, project, items, labels, filters, openItem 
   const ctx = useFilterContext(project, labels);
   const { today } = ctx;
   const showCompleted = usePrefs((s) => s.showCompleted);
-  const { user } = useCurrentUser();
-  const role = project.members.find((m) => m.userId === user?.id)?.role;
-  const readOnly = !role || role === "viewer";
+  const readOnly = useProjectReadOnly(project);
   const phone = useViewport().device === "phone";
   const [trayOpen, setTrayOpen] = usePersistedFlag(CALENDAR_TRAY_KEY, !phone);
   const [subscribing, setSubscribing] = useState(false);
