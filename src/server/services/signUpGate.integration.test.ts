@@ -5,7 +5,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { call, PASSWORD, signIn, signUp, type Person } from "../../../tests/integration/accounts";
 import { db } from "../db";
-import { groups, invites, projects } from "../db/schema";
+import { eq } from "drizzle-orm";
+
+import { groups, invites, items, members, projects } from "../db/schema";
+import { STARTER_PLAN, STARTER_PROJECT } from "./starter";
 import { env } from "../env";
 
 const signUpAs = (email: string, callbackURL?: string) => call("/api/auth/sign-up/email", { json: { name: "Tester", email, password: PASSWORD, ...(callbackURL ? { callbackURL } : {}) } });
@@ -48,8 +51,14 @@ describe("invite-only sign-up", () => {
     expect(await signIn(owner.email)).toContain("session_token");
   });
 
-  it("lets in SIGN_UP_EMAILS, whatever the case", async () => {
-    expect((await signUpAs("Tester@Example.test")).status).toBe(200);
+  it("lets in SIGN_UP_EMAILS, whatever the case, with the Getting started project instead of a guest workspace", async () => {
+    const res = await signUpAs("Tester@Example.test");
+    expect(res.status).toBe(200);
+    const { user } = (await res.json()) as { user: { id: string } };
+    const owned = await db.select({ id: projects.id, name: projects.name }).from(members).innerJoin(projects, eq(projects.id, members.projectId)).where(eq(members.userId, user.id));
+    expect(owned.map((p) => p.name)).toEqual([STARTER_PROJECT]);
+    const starterItems = STARTER_PLAN.lists.reduce((n, l) => n + l.items.reduce((m, item) => m + 1 + item.subitems.length, 0), 0);
+    expect(await db.$count(items, eq(items.projectId, owned[0]!.id))).toBe(starterItems);
   });
 
   it("lets in an address with an open invite, not a used, revoked or expired one", async () => {

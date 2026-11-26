@@ -24,6 +24,7 @@ import { changeEmailEmail, passwordResetEmail, sendEmail, verifyEmailEmail } fro
 import { isDeletedAddress } from "./services/accountDeletion";
 import { confirmEmailChangeUrl, emailLinkClaims, refusedChange, settleEmailChange } from "./services/emailChange";
 import { createGuestWorkspace, transferGuestWorkspace } from "./services/guests";
+import { createStarterWorkspace } from "./services/starter";
 import { GUESTS_OFF_MESSAGE, INVITE_ONLY, maySignUp, NOT_INVITED_MESSAGE } from "./services/signUpGate";
 import { socialProvidersFor } from "./socialSignIn";
 import { confirmSession, sudoUntil } from "./services/sudo";
@@ -131,8 +132,11 @@ export const auth = betterAuth({
     },
   })],
   databaseHooks: { user: {
+    // A guest starts with an empty project, which signing up keeps. An invite-only server makes no guests,
+    // so each new account starts with the Getting started project instead (services/starter.ts).
     create: { after: async (user) => {
       if (user.isAnonymous) await createGuestWorkspace(user.id);
+      else if (env.SIGN_UP === "invite") await createStarterWorkspace(user.id);
     } },
     // A change-of-address link was opened: clear the pending change and count the new address as confirmed.
     update: { after: async (user) => settleEmailChange(user) },
