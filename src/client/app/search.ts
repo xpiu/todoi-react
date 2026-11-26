@@ -71,7 +71,8 @@ export function useFullSearch(query: string, filters: PageSearchFilters) {
     hits: q.length < SEARCH_MIN_QUERY ? [] : hits,
     total,
     status,
-    offline: offline && !res.data,
+    // Offline means no fresh answer for this query: the previous query's kept results don't count
+    offline: offline && (!res.data || res.isPlaceholderData),
     error: res.isError && !res.isFetchNextPageError ? errorMessage(res.error) : undefined,
     retry: () => void res.refetch(),
     more: () => void res.fetchNextPage(),

@@ -113,3 +113,22 @@ test("Show more loads the next page and focuses its first result", async ({ page
     await p.cleanup();
   }
 });
+
+test("offline, a new query says so instead of showing the previous query's results", async ({ page, context }) => {
+  const p = await freshProject(page, "Search offline");
+  try {
+    const tag = tagOf();
+    await p.item(`Offline ${tag} report`);
+    await page.goto(`/search?q=${tag}`);
+    await expect(statusLine(page)).toHaveText("1 result");
+    await context.setOffline(true);
+    await field(page).fill(`${tag} other`);
+    await expect(page.getByText("You're offline")).toBeVisible();
+    await expect(results(page)).toHaveCount(0);
+    await context.setOffline(false);
+    await expect(statusLine(page)).toHaveText("No results");
+  } finally {
+    await context.setOffline(false);
+    await p.cleanup();
+  }
+});

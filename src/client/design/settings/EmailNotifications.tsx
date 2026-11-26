@@ -11,7 +11,7 @@ import type { SettingsGroup, SettingsRow } from "./SettingsShell";
 export const EMAIL_KINDS = [
   { key: "emailMentions", label: "Mentions", hint: "When someone @mentions you in a comment" },
   { key: "emailAssignments", label: "Assignments", hint: "When an item is assigned to you" },
-  { key: "emailComments", label: "Comments", hint: "New comments on items you watch or are assigned to" },
+  { key: "emailComments", label: "Comments", hint: "New comments on items you watch" },
   { key: "emailInvites", label: "Invites", hint: "When someone invites you to a project" },
 ] as const;
 export type EmailKind = (typeof EMAIL_KINDS)[number]["key"];
