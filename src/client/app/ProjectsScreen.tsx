@@ -54,7 +54,7 @@ export function ProjectsScreen() {
                 <th>Lead</th>
                 <th className="td-table-number">Items</th>
                 <th className="td-table-number">Completed</th>
-                <th className="td-table-link" title="Status follows List: when on, an item created in or moved to a list with a Status role takes that Status. Moving the item is the only way to change a Status its list sets.">
+                <th className="td-table-link" title="Status follows List: when on, an item created in or moved to a list with a Status role takes that Status. The item window shows that Status as set by the list; move the item to change it.">
                   Status follows List
                 </th>
                 <th className="td-table-link" title="When on, checking an item also moves it to the list with the Done role, and unchecking sends it back. Follows the Status follows List setting until it is set. Subitems stay with their item.">

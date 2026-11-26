@@ -31,6 +31,7 @@ import { useReturnFocus } from "../core/returnFocus";
 import { Select } from "../core/Select";
 import { SHORTCUTS } from "../core/shortcuts";
 import { NO_VALUE, PRIORITY_OPTIONS, STATUS_OPTIONS, lockedStatusOptions, priorityOf, priorityValue, statusLock, statusValue } from "../core/itemFields";
+import { labelWithValue } from "../core/text";
 import { TextField } from "../core/TextField";
 import { Checklist, ChecklistAddRow, type ChecklistItem } from "./Checklist";
 import { Comment, type CommentReaction } from "./Comment";
@@ -284,6 +285,8 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const status = statusValue(item.status, item.done);
   // "Status follows List": the list sets the Status; a locked Status only points at the List field.
   const lock = p.inbox ? "free" : statusLock(p.lists, p.linkStatuses, item);
+  const listName = p.lists.find((l) => l.id === item.listId)?.name ?? "";
+  const statusName = STATUS_OPTIONS.find((o) => o.value === status)?.label ?? "None";
   const changeList = () => {
     setStatusOpen(false);
     setListOpen(true);
@@ -448,20 +451,20 @@ export function ItemOverlay(p: ItemOverlayProps) {
               </Popover>
             ) : null
           ) : (
-            <Select block tier="detached" aria-label="Move to list" title="Move to list" open={listOpen} onOpenChange={setListOpen} value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. A project setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined} />
+            <Select block tier="detached" aria-label={lock === "hidden" ? `Move to list. Sets Status, now ${statusName}` : "Move to list"} title={lock === "hidden" ? "Move to list · sets Status" : "Move to list"} open={listOpen} onOpenChange={setListOpen} value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. The project's Status follows List setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined} />
           )}
           {lock === "hidden" ? null : lock === "locked" ? (
             <Select
               block
               tier="detached"
-              aria-label="Status"
-              title="Status · set by list"
+              aria-label={labelWithValue("Status", `${statusName} · set by list`)}
+              title={`Status · set by the list ${listName}`}
               open={statusOpen}
               onOpenChange={setStatusOpen}
               value={status}
               options={lockedStatusOptions(status)}
-              width={200}
-              renderValue={(o) => `${o?.label ?? "None"} · set by list`}
+              width={220}
+              renderValue={() => <>{statusName}<span className="td-select-value-suffix"> · set by list</span></>}
               footer={
                 <>
                   <div className="td-menu-divider" role="separator" />
@@ -486,7 +489,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
               footer={
                 <>
                   <div className="td-menu-divider" role="separator" />
-                  <div className="td-menu-note" title="A list can carry a Status role. Editing Status directly never moves the item.">Status is set here or by a linked list move. Editing it never moves the item.</div>
+                  <div className="td-menu-note" title="A list can carry a Status role. The project's Status follows List setting decides whether moving an item also updates its Status. Editing Status directly never moves the item.">{p.linkStatuses ? "Editing Status never moves the item. A list with a Status role sets it when the item moves there." : "Status is set here or by a linked list move. Editing it never moves the item."}</div>
                 </>
               }
             />

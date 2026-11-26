@@ -130,7 +130,7 @@ export function CardQuickEdit({ field, anchorRef, item, labels, members, lists, 
       <Select
         {...common}
         value={value}
-        width={200}
+        width={locked ? 220 : 200}
         placeholder="Status"
         options={locked ? lockedStatusOptions(value) : STATUS_OPTIONS}
         footer={locked ? <><div className="td-menu-divider" role="separator" /><div className="td-menu-note">Move the card to another list to change its Status.</div></> : undefined}

@@ -19,6 +19,11 @@
     color: var(--ink-600);
     font-weight: var(--weight-regular);
   }
+  /* A quiet tail on the trigger text ("Doing · set by list") */
+  .td-select-value-suffix {
+    color: var(--text-subtle);
+    font-weight: var(--weight-regular);
+  }
   .td-btn-chrome .td-select-value[data-placeholder="true"],
   .td-btn-chrome-ghost .td-select-value[data-placeholder="true"] {
     color: var(--chrome-text-dim);
