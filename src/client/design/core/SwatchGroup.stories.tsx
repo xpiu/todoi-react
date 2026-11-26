@@ -23,9 +23,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Backgrounds: Story = {
   async play({ args, canvas, userEvent }) {
-    await expect(canvas.getByRole("button", { name: "Butter" })).toHaveAttribute("aria-pressed", "true");
+    await expect(canvas.getByRole("button", { name: "Powder" })).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(canvas.getByRole("button", { name: "Mint" }));
-    await expect(args.onChange).toHaveBeenCalledWith(ROUNDED_LIGHT_BACKGROUNDS[3]!.value);
+    await expect(args.onChange).toHaveBeenCalledWith(ROUNDED_LIGHT_BACKGROUNDS.find((o) => o.label === "Mint")!.value);
     await expect(canvas.getByRole("button", { name: "Mint" })).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(canvas.getByRole("button", { name: "Mint" }));
     await expect(args.onChange).toHaveBeenCalledOnce();

@@ -65,8 +65,10 @@ export interface ThemeDefinition {
 // ── Rounded ──────────────────────────────────────────────────────────────────────
 // Light backgrounds all take navy ink at ≥5:1.
 export const ROUNDED_LIGHT_BACKGROUNDS: ThemeBackground[] = [
-  { value: "#f6d653", label: "Butter" },
+  { value: "#a9c9ea", label: "Powder" },
+  { value: "#6fb0ee", label: "Azure" },
   { value: "#7c9fff", label: "Cornflower" },
+  { value: "#f6d653", label: "Butter" },
   { value: "#b191ea", label: "Lavender" },
   { value: "#5ed8a9", label: "Mint" },
   { value: "#fca676", label: "Peach" },
