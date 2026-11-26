@@ -1,5 +1,6 @@
 // ListColumn — a board list: header (icon → IconPicker, name, count, ⋯ list actions), the card stack,
-// and the "Add an item" composer. Exposes data-status-role so "Colorize Board columns" can tint it.
+// and the "Add an item" composer. Exposes data-status-role (or, with no role, data-column-tint) so "Colorize Board
+// columns" can tint it.
 // Spec: DESIGN.md › Board, Lists & Status linking.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
@@ -9,6 +10,7 @@ import { IconButton } from "../core/IconButton";
 import { AddItemKey } from "../core/ShortcutHint";
 import type { QuickAddOptions, QuickAddResult } from "../core/quickAdd";
 import { QuickAddInput } from "../core/QuickAddInput";
+import { ColumnTints } from "../core/columnTints";
 import { suggestedRoleForTitle } from "../core/statuses";
 import type { AddPosition } from "../list/ListSection";
 import { ListActionsPopover, ListIconButton, useListRename } from "./listHeader";
@@ -38,10 +40,14 @@ export interface ListColumnProps {
   rootProps?: Record<string, unknown>;
   /** Identifies the column for drop handlers */
   listId?: string;
+  /** Colorize pool tint for a list with no Status role: 1 to 20 (larger whole numbers wrap). Ignored while the list has an
+   *  effective role (set or suggested by its title), Backlog included. Rendered as data-column-tint; painted only while
+   *  <html data-colorize-columns="true">. Take it from ColumnTints.assign. */
+  tint?: number | null;
   style?: CSSProperties;
 }
 
-export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onRename, onIconChange, onSelectAll, onHide, dropTarget, rootProps, listId, style }: ListColumnProps) {
+export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, iconColor, statusRole, onStatusRoleChange, onManageLinks, onRename, onIconChange, onSelectAll, onHide, dropTarget, rootProps, listId, tint, style }: ListColumnProps) {
   const rename = useListRename(name, onRename);
   // When the field closes with focus left nowhere (Enter, Escape), focus returns to the name; a click elsewhere keeps its own focus.
   const nameRef = useRef<HTMLButtonElement>(null);
@@ -66,10 +72,10 @@ export function ListColumn({ name, count, children, onAddItem, quickAdd, icon, i
       <QuickAddInput {...quickAdd} placeholder="Item title" aria-label={where === "top" ? `New first item in ${name}` : `New item in ${name}`} onSubmit={(p) => commitAdd(p, true)} onCancel={() => setAdding(false)} onBlur={(p) => commitAdd(p, false)} />
     </div>
   );
-  // Effective role (set role, else the title suggestion) drives the Colorize-columns tint.
+  // Effective role (set role, else the title suggestion) drives the Colorize-columns tint; a list with no role takes its pool tint.
   const effRole = statusRole ?? suggestedRoleForTitle(name) ?? undefined;
   return (
-    <div className={"td-list-column" + (dropTarget ? " is-drop-target" : "")} data-status-role={effRole} data-list-name={name} data-list-id={listId} style={style} {...rootProps}>
+    <div className={"td-list-column" + (dropTarget ? " is-drop-target" : "")} data-status-role={effRole} data-column-tint={effRole ? undefined : (ColumnTints.index(tint) ?? undefined)} data-list-name={name} data-list-id={listId} style={style} {...rootProps}>
       <div className="td-list-column-head">
         <ListIconButton name={name} icon={icon} iconColor={iconColor} onIconChange={onIconChange} className="td-list-column-iconbtn" size={16} />
         {rename.renaming ? (

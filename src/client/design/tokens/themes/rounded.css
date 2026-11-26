@@ -36,6 +36,9 @@
    NEW is a cool pearl lift in dark mode (the column sits a step lighter than its neutral neighbours) */
 --status-new-hue:#dcd9e8;--status-new-list:color-mix(in srgb,var(--surface-list) 90%,var(--status-new-hue));--status-new-card:color-mix(in srgb,var(--surface-card) 91%,var(--status-new-hue));--status-new-card-ring:transparent;
 --status-todo-hue:#7db0ff;--status-todo-list:color-mix(in srgb,var(--surface-list) 89%,var(--status-todo-hue));--status-todo-card:color-mix(in srgb,var(--surface-card) 92%,var(--status-todo-hue));--status-doing-hue:#3d84ff;--status-doing-list:color-mix(in srgb,var(--surface-list) 84%,var(--status-doing-hue));--status-doing-card:color-mix(in srgb,var(--surface-card) 87%,var(--status-doing-hue));--status-done-line:var(--success-icon);--status-done-list:color-mix(in srgb,var(--surface-list) 88%,var(--success-icon));--status-done-card:color-mix(in srgb,var(--surface-card) 90%,var(--success-icon));
+/* Column tint pool (Colorize Board columns, lists with no Status role): 20 hues, taken in order 1 to 20. ListColumn.css mixes the list and card surfaces from them; the two -mix values are the share of the surface that is kept */
+--column-tint-list-mix:88%;--column-tint-card-mix:90%;
+--column-tint-1:#b3a0ff;--column-tint-2:#ff9f62;--column-tint-3:#00ccbf;--column-tint-4:#eb8ccd;--column-tint-5:#b3d063;--column-tint-6:#20c2f4;--column-tint-7:#fd8c7e;--column-tint-8:#d494ed;--column-tint-9:#00c9d1;--column-tint-10:#fca954;--column-tint-11:#a2a8ff;--column-tint-12:#fa89a7;--column-tint-13:#1ecdaa;--column-tint-14:#e18fde;--column-tint-15:#ff956f;--column-tint-16:#00c6e3;--column-tint-17:#c499f9;--column-tint-18:#fd8993;--column-tint-19:#4dbcff;--column-tint-20:#f48aba;
 }
 
 /* ── Rounded · light ── */
@@ -60,4 +63,7 @@
 /* NEW in light mode lifts toward paper white on the cream ("unread = brighter"); cards stay white and take a hairline ring so they still read as cards */
 --status-new-hue:#ffffff;--status-new-list:color-mix(in srgb,var(--surface-list) 40%,var(--status-new-hue));--status-new-card:#ffffff;--status-new-card-ring:rgba(7,26,69,.07);
 --status-todo-hue:#7db0ff;--status-todo-list:color-mix(in srgb,var(--surface-list) 84%,var(--status-todo-hue));--status-todo-card:color-mix(in srgb,var(--surface-card) 91%,var(--status-todo-hue));--status-doing-hue:#ffd024;--status-doing-list:color-mix(in srgb,var(--surface-list) 82%,var(--status-doing-hue));--status-doing-card:color-mix(in srgb,var(--surface-card) 90%,var(--status-doing-hue));--status-done-line:var(--success-icon);--status-done-list:color-mix(in srgb,var(--surface-list) 90%,var(--success-icon));--status-done-card:color-mix(in srgb,var(--surface-card) 93%,var(--success-icon));
+/* Column tint pool (Colorize Board columns, lists with no Status role): 20 hues, taken in order 1 to 20. ListColumn.css mixes the list and card surfaces from them; the two -mix values are the share of the surface that is kept */
+--column-tint-list-mix:85%;--column-tint-card-mix:91%;
+--column-tint-1:#a88fff;--column-tint-2:#ff944c;--column-tint-3:#00bdb2;--column-tint-4:#e579c4;--column-tint-5:#afd04d;--column-tint-6:#00b5e6;--column-tint-7:#f9786a;--column-tint-8:#cb82e7;--column-tint-9:#00bbc3;--column-tint-10:#ffa23a;--column-tint-11:#9398ff;--column-tint-12:#f47599;--column-tint-13:#00c09e;--column-tint-14:#d97dd7;--column-tint-15:#fe8458;--column-tint-16:#00b8d3;--column-tint-17:#bb88f5;--column-tint-18:#f87582;--column-tint-19:#0eb0fd;--column-tint-20:#ee76af;
 }

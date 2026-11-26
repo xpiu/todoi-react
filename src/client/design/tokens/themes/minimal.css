@@ -31,6 +31,9 @@
    --status-done-line is the Done hue for the wash and the hairline: --success-icon cannot serve because Done is ink in Minimal, and there is no --status-done-hue */
 --status-new-hue:#c9c4de;--status-new-list:color-mix(in srgb,var(--surface-list) 91%,var(--status-new-hue));--status-new-card:transparent;--status-new-card-ring:transparent;
 --status-todo-hue:#5c9dff;--status-todo-list:color-mix(in srgb,var(--surface-list) 91%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#ffd83d;--status-doing-list:color-mix(in srgb,var(--surface-list) 92%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-line:#21e389;--status-done-list:color-mix(in srgb,var(--surface-list) 92%,var(--status-done-line));--status-done-card:transparent;
+/* Column tint pool (Colorize Board columns, lists with no Status role): 20 hues, taken in order 1 to 20. ListColumn.css mixes the list and card surfaces from them; the two -mix values are the share of the surface that is kept */
+--column-tint-list-mix:91%;--column-tint-card-mix:100%;
+--column-tint-1:#b9a9ff;--column-tint-2:#ffa974;--column-tint-3:#00d3c6;--column-tint-4:#f292d3;--column-tint-5:#b9d669;--column-tint-6:#2dc9fb;--column-tint-7:#ff9689;--column-tint-8:#da9af3;--column-tint-9:#00d0d9;--column-tint-10:#ffb265;--column-tint-11:#a9afff;--column-tint-12:#ff90ad;--column-tint-13:#2cd4b1;--column-tint-14:#e796e5;--column-tint-15:#ff9f7e;--column-tint-16:#00cdeb;--column-tint-17:#cba0ff;--column-tint-18:#ff939b;--column-tint-19:#61c2ff;--column-tint-20:#fb90c1;
 }
 
 /* ── Minimal · light ── white paper, black ink for everything (--ink-600/-400 and --chrome-text-dim resolve to it), 12% hairlines, red #e8453a overdue */
@@ -57,6 +60,9 @@
 /* Status tints (Colorize Board columns, off by default here): a faint wash on the column and a status-hued hairline under its name; cards stay bare rows */
 --status-new-hue:#8a80b8;--status-new-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-new-hue));--status-new-card:transparent;--status-new-card-ring:transparent;
 --status-todo-hue:#3d7efc;--status-todo-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-todo-hue));--status-todo-card:transparent;--status-doing-hue:#c99700;--status-doing-list:color-mix(in srgb,var(--surface-list) 93%,var(--status-doing-hue));--status-doing-card:transparent;--status-done-line:#1a9c5e;--status-done-list:color-mix(in srgb,var(--surface-list) 94%,var(--status-done-line));--status-done-card:transparent;
+/* Column tint pool (Colorize Board columns, lists with no Status role): 20 hues, taken in order 1 to 20. ListColumn.css mixes the list and card surfaces from them; the two -mix values are the share of the surface that is kept */
+--column-tint-list-mix:93%;--column-tint-card-mix:100%;
+--column-tint-1:#846ad6;--column-tint-2:#d46a0e;--column-tint-3:#00948b;--column-tint-4:#bc549e;--column-tint-5:#85a40c;--column-tint-6:#008db4;--column-tint-7:#ce5247;--column-tint-8:#a55dbf;--column-tint-9:#009298;--column-tint-10:#ce7a00;--column-tint-11:#7071dd;--column-tint-12:#ca4f75;--column-tint-13:#00967b;--column-tint-14:#b158b0;--column-tint-15:#d25d30;--column-tint-16:#0090a5;--column-tint-17:#9563cd;--column-tint-18:#ce4f5f;--column-tint-19:#0089c7;--column-tint-20:#c4508a;
 }
 
 /* ── Minimal · shape & density ──

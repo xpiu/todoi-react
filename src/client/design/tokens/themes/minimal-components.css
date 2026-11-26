@@ -1466,3 +1466,14 @@ html[data-theme="minimal"] .td-account-passkey>svg{stroke:var(--ink-900)!importa
 html[data-theme="minimal"] .td-account-tag{height:auto;padding:0;border-radius:0;background:none;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-account-empty{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-account-empty b{font-weight:500}
+/* ── Design, 2026-11-25: Colorize Board columns, the pool of 20 column tints (ListColumn `tint` → data-column-tint). A list with no Status role gets the same wash, name hairline and row rules as the status roles; --td-wash and --td-wash-line are set in board/ListColumn.css */
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]){position:relative;isolation:isolate;background:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role])::before{content:"";position:absolute;z-index:-1;inset:-10px -8px 0;background:var(--td-wash);border-radius:var(--radius-lg);pointer-events:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]):not(:has(>.td-list-column-foot,>.td-list-column-composer))::before{bottom:-10px}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-card-more{background:var(--td-wash);box-shadow:-6px 0 4px -2px var(--td-wash)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) :is(.td-card,.td-card:hover,.td-card:focus-visible){background:none;box-shadow:none}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role])>.td-list-column-head{border-bottom-color:color-mix(in srgb,var(--td-wash-line) 60%,transparent)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column.is-drop-target[data-column-tint]:not([data-status-role])>.td-list-column-head{border-bottom-color:var(--ink-900)}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-list-column-cards{padding:0 8px 0 4px;margin:0 -8px 0 -4px}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-list-column-cards>.td-list-cue{left:4px!important;right:8px!important}
+html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-card::before{left:-4px;right:-4px}

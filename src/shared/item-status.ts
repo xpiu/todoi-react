@@ -7,6 +7,9 @@ export const STATUS_NAMES: Record<ItemStatus, string> = { NEW: "New", BACKLOG: "
 /** Title-matching SUGGESTION: prefills a list's Status role picker and reads Status words in imported files. Never a live link: roles are stored by id. */
 export function suggestedRoleForTitle(title: string | null | undefined): ItemStatus | null {
   const t = title ?? "";
+  // A just-added list's placeholder name ("List 3" in the app, "New list" / "New list 2" elsewhere) is not the New
+  // status: no role, so Colorize gives it a pool tint and the Status role picker suggests nothing.
+  if (/^\s*(?:new\s+)?list(?:\s+\d+)?\s*$/i.test(t)) return null;
   if (/backlog|icebox|later|someday|parked/i.test(t)) return "BACKLOG";
   if (/done|complete|finish|shipped|closed|launched/i.test(t)) return "DONE";
   if (/doing|progress|ongoing|wip|active/i.test(t)) return "DOING";

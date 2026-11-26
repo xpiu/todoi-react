@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor, within } from "storybook/test";
 
+import { useAppearanceStore } from "../core/appearance";
+import { ColumnTints } from "../core/columnTints";
 import { ItemCard } from "./ItemCard";
 import { ListColumn } from "./ListColumn";
 
@@ -83,6 +85,37 @@ export const RenameCancel: Story = {
     await userEvent.keyboard("{Escape}");
     await expect(canvas.queryByRole("textbox", { name: "List name" })).not.toBeInTheDocument();
     await expect(args.onRename).not.toHaveBeenCalled();
+  },
+};
+/** Colorize Board columns: lists with no Status role take pool tints in order (ColumnTints.assign); a role wins over a tint. */
+export const ColumnTintPool: Story = {
+  beforeEach() {
+    // Colorize is remembered per theme; turn it on in both so every theme × mode shows the pool.
+    for (const theme of ["rounded", "minimal"] as const) useAppearanceStore.getState().set({ theme, colorizeColumns: true });
+  },
+  render: (args) => {
+    const lists = [{ id: "clients", name: "Clients" }, { id: "doing", name: "Doing" }, { id: "vendors", name: "Vendors" }, { id: "new-list", name: "List 4" }];
+    const tints = ColumnTints.assign(lists);
+    return (
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+        {lists.map((l) => (
+          <ListColumn key={l.id} {...args} listId={l.id} name={l.name} count={1} tint={tints[l.id]}>
+            <ItemCard dragId={`${l.id}-1`} itemId="HE-120" title={`A card in ${l.name}`} labels={[{ color: "blue", text: "Ops" }]} />
+          </ListColumn>
+        ))}
+      </div>
+    );
+  },
+  async play({ canvasElement }) {
+    const col = (id: string) => canvasElement.querySelector(`.td-list-column[data-list-id="${id}"]`);
+    await expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("data-colorize-columns", "true");
+    await expect(col("clients")).toHaveAttribute("data-column-tint", "1");
+    await expect(col("doing")).toHaveAttribute("data-status-role", "DOING");
+    await expect(col("doing")).not.toHaveAttribute("data-column-tint");
+    await expect(col("vendors")).toHaveAttribute("data-column-tint", "2");
+    // The app's placeholder name for a new list is not the New status: it takes the next tint
+    await expect(col("new-list")).not.toHaveAttribute("data-status-role");
+    await expect(col("new-list")).toHaveAttribute("data-column-tint", "3");
   },
 };
 export const RenameByClickingTheName: Story = {

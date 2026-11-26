@@ -1,4 +1,5 @@
-/* ListColumn — fixed-width column; Colorize columns tints by data-status-role via the --status-* tokens. */
+/* ListColumn — fixed-width column; Colorize columns tints by data-status-role via the --status-* tokens, and a list
+   with no role by data-column-tint via the --column-tint-* pool. */
 @layer components {
   .td-list-column {
     position: relative;
@@ -47,6 +48,80 @@
   }
   html[data-colorize-columns="true"] .td-list-column[data-status-role="DONE"] .td-card {
     background: var(--status-done-card);
+  }
+  /* Colorize pool: a list with no Status role takes one of 20 column tints (tint → data-column-tint; tokens
+     --column-tint-1 … -20 per theme × mode). The attribute names the hue once (--td-wash-line) and the list and card
+     surfaces are mixed from it; Minimal reads the same --td-wash / --td-wash-line in minimal-components.css. */
+  [data-column-tint] {
+    --td-wash: color-mix(in srgb, var(--surface-list) var(--column-tint-list-mix), var(--td-wash-line));
+    --td-wash-card: color-mix(in srgb, var(--surface-card) var(--column-tint-card-mix), var(--td-wash-line));
+  }
+  [data-column-tint="1"] {
+    --td-wash-line: var(--column-tint-1);
+  }
+  [data-column-tint="2"] {
+    --td-wash-line: var(--column-tint-2);
+  }
+  [data-column-tint="3"] {
+    --td-wash-line: var(--column-tint-3);
+  }
+  [data-column-tint="4"] {
+    --td-wash-line: var(--column-tint-4);
+  }
+  [data-column-tint="5"] {
+    --td-wash-line: var(--column-tint-5);
+  }
+  [data-column-tint="6"] {
+    --td-wash-line: var(--column-tint-6);
+  }
+  [data-column-tint="7"] {
+    --td-wash-line: var(--column-tint-7);
+  }
+  [data-column-tint="8"] {
+    --td-wash-line: var(--column-tint-8);
+  }
+  [data-column-tint="9"] {
+    --td-wash-line: var(--column-tint-9);
+  }
+  [data-column-tint="10"] {
+    --td-wash-line: var(--column-tint-10);
+  }
+  [data-column-tint="11"] {
+    --td-wash-line: var(--column-tint-11);
+  }
+  [data-column-tint="12"] {
+    --td-wash-line: var(--column-tint-12);
+  }
+  [data-column-tint="13"] {
+    --td-wash-line: var(--column-tint-13);
+  }
+  [data-column-tint="14"] {
+    --td-wash-line: var(--column-tint-14);
+  }
+  [data-column-tint="15"] {
+    --td-wash-line: var(--column-tint-15);
+  }
+  [data-column-tint="16"] {
+    --td-wash-line: var(--column-tint-16);
+  }
+  [data-column-tint="17"] {
+    --td-wash-line: var(--column-tint-17);
+  }
+  [data-column-tint="18"] {
+    --td-wash-line: var(--column-tint-18);
+  }
+  [data-column-tint="19"] {
+    --td-wash-line: var(--column-tint-19);
+  }
+  [data-column-tint="20"] {
+    --td-wash-line: var(--column-tint-20);
+  }
+  html[data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) {
+    background: var(--td-wash);
+  }
+  html[data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-card,
+  html[data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-card-more {
+    background: var(--td-wash-card);
   }
   .td-list-column-head {
     position: relative;

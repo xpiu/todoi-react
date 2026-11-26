@@ -14,6 +14,7 @@ import { ItemCard, type CardMenuAction } from "../design/board/ItemCard";
 import type { BulkOption } from "../design/core/BulkBar";
 import { MakeSubitemDrill } from "../design/core/ItemPicker";
 import { ListColumn } from "../design/board/ListColumn";
+import { ColumnTints } from "../design/core/columnTints";
 import { useItemDnd, type GroupDndOptions, type ItemDnd } from "../design/board/useItemDnd";
 import { isReadOnly } from "../design/auth/GuestBar";
 import { CalendarView } from "../design/calendar/CalendarView";
@@ -704,6 +705,9 @@ function ProjectBoard(props: ViewProps) {
   const members = useMemo(() => actions.people.map(pickableMember), [actions.people]);
   // A read-only board shows the list name as plain text: clicking it would otherwise start a rename
   const readOnly = useProjectReadOnly(props.project);
+  // Colorize pool: lists with no Status role take tints in the project's list order (creation order; hidden lists count,
+  // so hiding one moves no colour). Derived here on the device, not stored.
+  const tints = useMemo(() => ColumnTints.assign(props.project.lists), [props.project.lists]);
   if (!v.lists.length) return <NoLists actions={actions} />;
   if (v.allFiltered) return <NoMatches hidden={v.hiddenCount} onReset={props.clearFilters} />;
   return (
@@ -713,7 +717,7 @@ function ProjectBoard(props: ViewProps) {
           const rows = v.rowsOf(list.id);
           const callbacks = listCallbacks(actions, list, () => v.onItemSelect(rows.map((r) => r.id), "all"), v.requestRole);
           return (
-            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => v.addInList(list.id, title, parsed, position)} {...callbacks} onRename={readOnly ? undefined : callbacks.onRename}>
+            <ListColumn key={list.id} listId={list.id} name={list.name} count={list.countLabel} icon={list.icon} statusRole={list.statusRole} quickAdd={actions.quickAdd} onAddItem={(title, parsed, position) => v.addInList(list.id, title, parsed, position)} {...callbacks} onRename={readOnly ? undefined : callbacks.onRename} tint={tints[list.id]}>
               {rows.map((r) => {
                 const it = v.itemsById.get(r.id)!;
                 return (

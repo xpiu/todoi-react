@@ -18,7 +18,8 @@
   }
   .td-card.is-selected,
   .td-card.is-selected:hover,
-  html[data-colorize-columns] .td-list-column[data-status-role] .td-card.is-selected {
+  html[data-colorize-columns] .td-list-column[data-status-role] .td-card.is-selected,
+  html[data-colorize-columns] .td-list-column[data-column-tint]:not([data-status-role]) .td-card.is-selected {
     background: var(--blue-100);
     box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
   }
@@ -205,7 +206,8 @@
   /* Quick edit (CardQuickEdit): the card keeps its ring while one of its pickers is open, the open icon reads pressed */
   .td-card.is-quickedit,
   .td-card.is-quickedit:hover,
-  html[data-colorize-columns] .td-list-column[data-status-role] .td-card.is-quickedit {
+  html[data-colorize-columns] .td-list-column[data-status-role] .td-card.is-quickedit,
+  html[data-colorize-columns] .td-list-column[data-column-tint]:not([data-status-role]) .td-card.is-quickedit {
     box-shadow: var(--shadow-card), 0 0 0 2px var(--blue-500);
   }
   .td-card-qa[aria-expanded="true"],
