@@ -110,7 +110,7 @@
     font: var(--weight-medium) 11px / 16px var(--font-mono);
     text-transform: uppercase;
     color: var(--ink-400);
-    letter-spacing: 0.04em;
+    letter-spacing: 0; /* mono needs no tracking (Design 2026-11-23) */
     margin-left: auto;
     cursor: pointer;
     flex: 0 0 auto;

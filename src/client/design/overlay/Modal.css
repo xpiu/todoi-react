@@ -146,7 +146,7 @@
     border-radius: var(--radius-xs);
     font: var(--weight-medium) var(--text-xs) / var(--lh-xs) var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0; /* mono needs no tracking (Design 2026-11-23) */
     white-space: nowrap;
     cursor: pointer;
     color: var(--ink-600);

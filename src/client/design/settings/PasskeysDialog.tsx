@@ -22,8 +22,6 @@ export interface Passkey {
   added: string;
   /** "today", "2 hours ago"; none = "Never used" */
   lastUsed?: string;
-  /** Tagged "This device" */
-  thisDevice?: boolean;
 }
 
 export interface PasskeysDialogProps {
@@ -47,8 +45,6 @@ export interface PasskeysDialogProps {
   onRemove?: (id: string) => void;
   /** A rename or removal failed: the reason, under the list */
   error?: string | null;
-  /** Why no passkey can be removed right now; disables every Remove */
-  removeBlocked?: string;
   offline?: boolean;
   /** Stories: open with this passkey in rename / remove-confirm */
   defaultEditing?: string;
@@ -59,7 +55,7 @@ export interface PasskeysDialogProps {
 
 type Focus = { id: string; action: "rename" | "remove" | "field" } | "add" | null;
 
-export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, listError, supported = true, onAdd, addState = "idle", addError, onRename, onRemove, error, removeBlocked, offline = false, defaultEditing, defaultRemoving, stacked }: PasskeysDialogProps) {
+export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, listError, supported = true, onAdd, addState = "idle", addError, onRename, onRemove, error, offline = false, defaultEditing, defaultRemoving, stacked }: PasskeysDialogProps) {
   const [editing, setEditing] = useState<string | null>(defaultEditing ?? null);
   const [name, setName] = useState(() => passkeys.find((p) => p.id === defaultEditing)?.name ?? "");
   const [removing, setRemoving] = useState<string | null>(defaultRemoving ?? null);
@@ -100,7 +96,6 @@ export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, 
     setFocus({ id: p.id, action: "rename" });
   };
   const startRemove = (p: Passkey) => {
-    if (removeBlocked) return;
     setEditing(null);
     setRemoving(p.id);
     setFocus({ id: p.id, action: "remove" });
@@ -179,12 +174,11 @@ export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, 
                   <div className="td-account-passkey-text">
                     <b title={p.name}>
                       <span className="td-account-passkey-name">{p.name}</span>
-                      {p.thisDevice ? <span className="td-account-tag">This device</span> : null}
                     </b>
                     <span>{[`Added ${p.added}`, p.lastUsed ? `Last used ${p.lastUsed}` : "Never used"].join(" · ")}</span>
                   </div>
                   <IconButton name="pencil" label={`Rename ${p.name}`} tooltip="Rename" size={28} iconSize={16} data-action="rename" onClick={() => startEdit(p)} />
-                  <IconButton name="trash-2" label={`Remove ${p.name}`} tooltip={removeBlocked ? undefined : "Remove"} size={28} iconSize={16} data-action="remove" aria-disabled={removeBlocked ? true : undefined} className={removeBlocked ? "is-disabled" : undefined} onClick={() => startRemove(p)} />
+                  <IconButton name="trash-2" label={`Remove ${p.name}`} tooltip="Remove" size={28} iconSize={16} data-action="remove" onClick={() => startRemove(p)} />
                 </>
               )}
             </li>
@@ -197,7 +191,6 @@ export function PasskeysDialog({ open, onClose, passkeys = [], loading = false, 
         </div>
       )}
       <InlineError message={listError ? `Couldn't load your passkeys: ${listError}` : error ?? null} />
-      {removeBlocked ? <p className="td-account-note">{removeBlocked}</p> : null}
       <div className="td-account-row">
         <div className="td-account-row-text">
           <b>Add a passkey</b>

@@ -107,8 +107,8 @@ function ChecklistRowMenu({ item: it, onOpenItem, onConvertItem, onMoveItem, mov
         ) : (
           <>
             {onOpenItem && it.itemId ? (
-              <MenuItem icon="square-arrow-out-up-right" trailing={it.itemId} onSelect={() => onOpenItem(it.id)}>
-                Open
+              <MenuItem icon="square-arrow-out-up-right" onSelect={() => onOpenItem(it.id)}>
+                Open <span className="td-checklist-open-key">{it.itemId}</span>
               </MenuItem>
             ) : null}
             {onConvertItem ? (

@@ -188,4 +188,9 @@
   .td-checklist-add-input::placeholder {
     color: var(--ink-400);
   }
+  /* The subitem's key inside "Open MP-113" */
+  .td-checklist-open-key {
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
 }

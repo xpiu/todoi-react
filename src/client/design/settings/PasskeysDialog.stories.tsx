@@ -7,7 +7,7 @@ import { PasskeysDialog, passkeysRow, type Passkey, type PasskeysDialogProps } f
 import { SettingsCard } from "./SettingsShell";
 
 const KEYS: Passkey[] = [
-  { id: "pk1", name: "Chrome on macOS", added: "Nov 2, 2026", lastUsed: "2 hours ago", thisDevice: true },
+  { id: "pk1", name: "Chrome on macOS", added: "Nov 2, 2026", lastUsed: "2 hours ago" },
   { id: "pk2", name: "iPhone", added: "Oct 14, 2026" },
 ];
 
@@ -63,7 +63,6 @@ const dialogOf = async (canvasElement: HTMLElement) => {
 export const YourPasskeys: Story = {
   async play({ canvasElement }) {
     const d = await dialogOf(canvasElement);
-    await expect(d.getByText("This device")).toBeVisible();
     await expect(d.getByText("Added Nov 2, 2026 · Last used 2 hours ago")).toBeVisible();
     await expect(d.getByText("Added Oct 14, 2026 · Never used")).toBeVisible();
     await waitFor(() => expect(d.getByRole("button", { name: "Done" })).toHaveFocus());
@@ -142,11 +141,10 @@ export const UnsupportedBrowser: Story = {
   },
 };
 export const Offline: Story = { args: { offline: true } };
-export const RemoveBlocked: Story = { args: { removeBlocked: "This passkey is your only way to log in. Add a password or another passkey first." } };
 export const ManyAndLongNames: Story = {
   args: {
     passkeys: [
-      { id: "l1", name: "Florentine's MacBook Pro 16-inch (work, the one with the cracked corner)", added: "Nov 2, 2026", lastUsed: "today", thisDevice: true },
+      { id: "l1", name: "Florentine's MacBook Pro 16-inch (work, the one with the cracked corner)", added: "Nov 2, 2026", lastUsed: "today" },
       ...Array.from({ length: 7 }, (_, i) => ({ id: `m${i}`, name: `YubiKey ${i + 1}`, added: "Sep 30, 2026", lastUsed: i % 2 ? "Oct 30" : undefined })),
     ],
   },

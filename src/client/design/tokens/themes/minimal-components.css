@@ -1463,7 +1463,6 @@ html[data-theme="minimal"] .td-account-list li{font:400 13px/20px var(--font-ui)
 html[data-theme="minimal"] .td-account-list-meta{font:400 11px/20px var(--font-mono);color:var(--ink-400)}
 html[data-theme="minimal"] .td-account-blockers{border-radius:0}
 html[data-theme="minimal"] .td-account-passkey>svg{stroke:var(--ink-900)!important}
-html[data-theme="minimal"] .td-account-tag{height:auto;padding:0;border-radius:0;background:none;font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-account-empty{font:400 13px/20px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-account-empty b{font-weight:500}
 /* ── Design, 2026-11-25: Colorize Board columns, the pool of 20 column tints (ListColumn `tint` → data-column-tint). A list with no Status role gets the same wash, name hairline and row rules as the status roles; --td-wash and --td-wash-line are set in board/ListColumn.css */

@@ -162,19 +162,6 @@
     align-items: center;
     gap: 8px;
   }
-  .td-account-tag {
-    flex: none;
-    height: 18px;
-    padding: 0 6px;
-    border-radius: var(--radius-xs);
-    background: var(--action-subtle);
-    font: 500 11px / 18px var(--font-ui);
-    color: var(--ink-600);
-  }
-  .td-account-passkey .td-iconbtn.is-disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
   .td-account-empty {
     display: flex;
     flex-direction: column;

@@ -61,7 +61,7 @@ export function ProjectPicker({ projects, current, action = "move", count = 1, o
   }, []);
   const verb = action === "copy" ? "Copy" : "Move";
   const title = heading ?? `${verb} to project`;
-  const noteText = note !== undefined ? note : action === "copy" ? (count === 1 ? "The copy gets its own key and starts without comments or activity." : "Each copy gets its own key and starts without comments or activity.") : `Subitems, attachments and comments move along; labels match by name. ${count === 1 ? "The key changes" : "Keys change"} if the group differs. Non-member assignees and relations to items left behind are removed.`;
+  const noteText = note !== undefined ? note : action === "copy" ? (count === 1 ? "The copy gets its own key and starts without comments or activity." : "Each copy gets its own key and starts without comments or activity.") : `Subitems, attachments and comments move along. ${count === 1 ? "The key changes" : "Keys change"} if the group differs. Labels are matched by name. Assignees who aren't members of the new project are removed, and so are relations to items left behind.`;
   useEffect(() => {
     if (!proj || proj.lists) return;
     let live = true;
