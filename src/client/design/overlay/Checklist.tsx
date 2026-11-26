@@ -261,13 +261,13 @@ export function Checklist({ items, onToggle, onReorder, onAddItem, addOpen, onAd
             >
               {before ? <span className="td-checklist-line is-before" aria-hidden /> : null}
               {after ? <span className="td-checklist-line is-after" aria-hidden /> : null}
-              {onReorder ? (
-                <span className="td-checklist-grip" aria-hidden>
-                  <Icon name="grip-vertical" size={12} />
-                </span>
-              ) : null}
               <Checkbox checked={it.done} aria-label={it.text} onChange={(v) => onToggle?.(it.id, v)} />
               <span className={"td-checklist-row-text" + (it.done ? " td-checklist-row-done" : "")}>{it.text}</span>
+              {onReorder ? (
+                <span className="td-checklist-grip" aria-hidden>
+                  <Icon name="grip-vertical" size={14} />
+                </span>
+              ) : null}
               {rowMenu ? <ChecklistRowMenu item={it} onOpenItem={onOpenItem} onConvertItem={onConvertItem} onMoveItem={onMoveItem} moveTargets={moveTargets} onDeleteItem={onDeleteItem} /> : null}
             </div>
           );

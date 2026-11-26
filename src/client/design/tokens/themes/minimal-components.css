@@ -1335,7 +1335,8 @@ html[data-theme="minimal"] .td-appearance-menu .td-appearance-example{padding:0;
 /* Footer: a 40px row under its hairline, square, its words on the label column (14px glyph + 10px = the 16px box + 8px) */
 html[data-theme="minimal"] .td-appearance-menu .td-appearance-more{gap:10px;width:calc(100% + 28px);margin:16px -14px -14px;padding:10px 14px;border-radius:0;font:400 13px/20px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] ::placeholder{color:color-mix(in srgb,var(--ink-900) 55%,transparent)!important}
-html[data-theme="minimal"] .td-checklist-grip{color:var(--ink-900)}
+html[data-theme="minimal"] .td-checklist-grip{color:var(--ink-400)}
+html[data-theme="minimal"] .td-checklist-grip:hover{color:var(--ink-900)}
 /* ── SidebarOrder (Settings › Appearance › Sidebar order): ledger rows over hairlines on the 41px pitch, no glyphs, groups in 500, projects indented 16px; the handle and the move arrows are grey glyphs that go ink; the landing line is 1px ink over the row hairline. */
 html[data-theme="minimal"] .td-sbo{border-top:0}
 @keyframes td-sbo-moved-ma{0%,35%{background:var(--n-a06)}100%{background:transparent}}

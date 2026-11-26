@@ -65,19 +65,30 @@
     text-decoration: line-through;
     color: var(--ink-300);
   }
+  /* Drag handle: in the row's trailing hover cluster, beside the ⋯ (grip, then ⋯), on the first text line. Pointer only; the whole row still drags. */
   .td-checklist-grip {
-    position: absolute;
-    left: -16px;
-    top: 0;
-    bottom: 0;
-    width: 16px;
+    flex: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--ink-300);
+    width: 20px;
+    height: 24px;
+    margin: -2px 0;
+    color: var(--ink-400);
     opacity: 0;
     cursor: grab;
-    transition: opacity var(--duration-fast) var(--ease-standard);
+    transition:
+      opacity var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+  .td-checklist-grip:not(:last-child) {
+    margin-right: -6px;
+  }
+  .td-checklist-grip:hover {
+    color: var(--ink-900);
+  }
+  .td-checklist-grip:active {
+    cursor: grabbing;
   }
   .td-checklist-row:hover .td-checklist-grip {
     opacity: 1;
@@ -96,8 +107,8 @@
     opacity: 0.4;
   }
   .td-checklist-row-more {
-    margin-left: auto;
     flex: none;
+    margin: -2px 0;
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-standard);
   }
