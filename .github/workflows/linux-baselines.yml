@@ -1,0 +1,40 @@
+name: Linux screenshot baselines
+
+# Records the screenshot gates' Linux baselines on the same runner image CI compares them on (fonts and
+# rendering differ per platform, so they can't be made on a Mac). Run it from Actions › Run workflow after
+# an intentional visual change, download the `linux-baselines` artifact into tests/e2e/__screenshots__/,
+# review and commit it.
+on:
+  workflow_dispatch:
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: todoi
+          POSTGRES_PASSWORD: todoi
+          POSTGRES_DB: todoi_react
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U todoi" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://todoi:todoi@localhost:5432/todoi_react
+      BETTER_AUTH_SECRET: ci-only-secret-not-for-production-use
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: cp .env.example .env
+      - uses: ./.github/actions/playwright-chromium
+      - run: npx playwright test tests/e2e/scopes.spec.ts tests/e2e/saved-views.spec.ts --update-snapshots=all
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-baselines
+          path: tests/e2e/__screenshots__/**/*-linux.png
+          retention-days: 7
