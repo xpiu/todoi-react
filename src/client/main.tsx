@@ -14,6 +14,8 @@ import { queryClient } from "./queryClient";
 import { router } from "./router";
 import { initializeSync } from "./data/sync";
 import { installErrorReporting } from "./errorReporting";
+// Keeps the browser's install prompt for Settings › Install app (it fires once, before Settings loads).
+import "./install";
 
 installErrorReporting();
 initializeSync(queryClient);

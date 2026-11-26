@@ -7,6 +7,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { LABEL_COLORS, type LabelColor } from "../../shared/enums";
 import { AVATAR_HINT } from "../../shared/avatars";
 import { BUILD, shortSha } from "../../shared/build";
+import { INSTALL_HINT, useInstallState } from "../install";
 import { useApiTokensSection } from "./ApiTokens";
 import { AvatarUpload } from "./AvatarUpload";
 import { authClient } from "../auth";
@@ -156,6 +157,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
   const save = useSaveState();
+  const install = useInstallState();
   const online = save.online;
   const groups = useGroups();
   const projects = useMemo(() => projectsOf(groups.data), [groups.data]);
@@ -262,7 +264,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
               ...(save.storageError ? [{ id: "deviceError", label: "Device save failed", hint: "Keep this tab open. Check available browser storage and try your change again. " + save.storageError }] : []),
               ...(save.transientWaiting ? [{ id: "transientPending", label: "Waiting in this tab", hint: `${save.transientWaiting} ${save.transientWaiting === 1 ? "action hasn't" : "actions haven't"} been saved on this device. Keep this tab open until they finish` }] : []),
               ...(save.transientFailed && !save.failed ? [{ id: "transientFailed", label: "An action didn't save", hint: "The action failed before it could be saved. Check the error message and try your change again" }] : []),
-              { id: "install", label: "Install app", hint: "Opens Todoi in its own window and keeps working offline — available once the app ships as a PWA", control: <Button icon="monitor-down" disabled>Install</Button> },
+              { id: "install", label: "Install app", hint: install.state === "installed" ? "Todoi is open in its own window" : install.state === "prompt" ? "Opens Todoi in its own window, from your home screen or dock" : INSTALL_HINT, control: install.state === "installed" ? <StatusDot on label="Installed" /> : <Button icon="monitor-down" disabled={install.state !== "prompt"} onClick={() => void install.install()}>Install</Button> },
             ],
           },
           ...(save.operations.length ? [{

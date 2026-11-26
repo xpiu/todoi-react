@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Todoi</title>
     <link rel="icon" type="image/png" href="/favicon/minimal-light.png" data-td-favicon />
+    <!-- Home-screen install (public/manifest.webmanifest; icons rendered from the Minimal light favicon). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Todoi" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141415" media="(prefers-color-scheme: dark)" />
     <script>
       // Pre-paint: apply the stored theme, mode and favicon before any CSS resolves, so there is no flash.
       // The appearance store (src/client/design/core/appearance.ts) owns these attributes once it loads.
