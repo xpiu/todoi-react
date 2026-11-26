@@ -248,9 +248,9 @@ export function TopNavbar({
       }
     : undefined;
   const showKbd = !sFocus && !sOpen && !sQ;
-  // Minimal shows the right-hand toggle at 16px (CSS). The pixel-snapped glyph must be drawn at that size: drawn for 20px and scaled down, its rules land between pixels and antialias to grey.
+  // Minimal shows the toggle at 16px on either side (CSS), like every other glyph in the bar. The pixel-snapped glyph must
+  // be drawn at that size: drawn for 20px its 1.46px rules spread over two pixels and its corners round by 2px.
   const minimal = useAppearanceStore((s) => s.theme) === "minimal";
-  const minimalRightToggle = minimal && !leftToggle;
   const toggleBtn = onToggleSidebar ? (
     <IconButton
       name={leftToggle ? "panel-left" : "panel-right"}
@@ -259,7 +259,7 @@ export function TopNavbar({
       tooltipSide={leftToggle ? "bottom-start" : "bottom-end"}
       variant="chrome"
       className={leftToggle ? "td-topnav-sbtoggle-left" : undefined}
-      iconSize={minimalRightToggle ? 16 : undefined}
+      iconSize={minimal ? 16 : undefined}
       aria-expanded={sidebarOpen}
       onClick={() => onToggleSidebar(!sidebarOpen)}
     />

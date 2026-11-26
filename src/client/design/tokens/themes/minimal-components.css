@@ -59,6 +59,9 @@ html[data-theme="minimal"] .td-topnav-avatarbtn .td-topnav-guest svg{width:16px;
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn{width:16px!important;height:16px!important;margin-left:0;border-radius:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn svg{width:16px;height:16px}
 html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:hover,html[data-theme="minimal"] .td-topnav-user>.td-iconbtn:active{background:none;color:var(--ink-400)}
+html[data-theme="minimal"] button.td-topnav-sbtoggle-left{width:16px!important;height:16px!important;margin:0;border-radius:0;color:var(--ink-900)}
+html[data-theme="minimal"] button.td-topnav-sbtoggle-left svg{width:16px;height:16px}
+html[data-theme="minimal"] button.td-topnav-sbtoggle-left:hover,html[data-theme="minimal"] button.td-topnav-sbtoggle-left:active{background:none;color:var(--ink-400)}
 html[data-theme="minimal"] .td-topnav-status .td-connection-status,html[data-theme="minimal"] .td-topnav-status>*{color:var(--ink-900)}
 /* ── Sidebar: white, one vertical hairline, group header flush with rows (chevron trailing), plain rows without icons or dividers, all in ink (no grey rest state); the open row is bolder with a hairline */
 html[data-theme="minimal"] .td-sidebar:not([data-hidden="true"]){width:196px!important;background:var(--chrome-canvas)}
