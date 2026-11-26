@@ -6,6 +6,7 @@ import { gitConnections } from "./db/schema";
 import { pruneSyncRuns, SyncFailure, syncConnection, type SyncTrigger } from "./gitSync/engine";
 import { defineJob, enqueue, every, pruneJobs, startWorker } from "./jobs";
 import { pruneErrorGroups } from "./services/errorTracking";
+import { purgeIdleGuests } from "./services/guests";
 import { purgeTrash } from "./services/lifecycle";
 import { drainUploadCleanup } from "./services/uploadCleanup";
 import { pruneOperationReceipts } from "./sync";
@@ -43,6 +44,8 @@ export function defineJobs() {
     run: async () => {
       const gone = await purgeTrash();
       if (gone.items || gone.projects) console.log(JSON.stringify({ level: "info", msg: "trash purged", ...gone }));
+      const guests = await purgeIdleGuests();
+      if (guests.removed || guests.kept) console.log(JSON.stringify({ level: "info", msg: "idle guest workspaces purged", ...guests }));
       await pruneJobs();
       await pruneSyncRuns();
       await pruneErrorGroups();
