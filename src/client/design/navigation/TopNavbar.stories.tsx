@@ -52,7 +52,9 @@ export const WithSubNavbar: Story = {
 export const RenameTitle: Story = {
   async play({ args, canvas, userEvent }) {
     const search = canvas.getByRole("combobox", { name: "Search" });
-    // Measure once the fonts are in: a late webfont resizes the controls to the right and moves the field.
+    // Measure once every font face is in: fonts.ready only waits for faces already requested, and a face the
+    // rename field asks for first would load after the click and move the controls (seen on Linux CI).
+    await Promise.all([...document.fonts].map((face) => face.load().catch(() => undefined)));
     await document.fonts.ready;
     const searchLeft = search.getBoundingClientRect().left;
     await userEvent.click(canvas.getByRole("button", { name: "Rename project: Helicopter sales" }));

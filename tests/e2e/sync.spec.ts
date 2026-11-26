@@ -83,6 +83,8 @@ test("acknowledged create, edit and comment survive offline reload without a fol
 test("a queued new comment edit uses its creation version and preserves text after a remote conflict", async ({ page, context }) => {
   const fixture = await guestItem(page);
   await openRow(page, "Sync fixture");
+  // The comment needs the item's details loaded; going offline first leaves the composer with nowhere to post (slower CI runners).
+  await expect(page.getByText("Loading comments, files and links")).toHaveCount(0);
   const reconnect = await apiOffline(context);
   const composer = page.getByRole("textbox", { name: "Comment", exact: true });
   await composer.fill("Comment created offline");

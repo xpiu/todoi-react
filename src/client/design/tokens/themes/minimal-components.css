@@ -179,11 +179,11 @@ html[data-theme="minimal"] .td-prio-text{display:inline;text-transform:capitaliz
 /* Urgent is pinned to the plain ink and red stays with overdue. Under one ink every meta word already is ink, so this only holds the hierarchy if metadata is ever dimmed again */
 html[data-theme="minimal"] .td-card-badge[data-priority="urgent"],html[data-theme="minimal"] .td-list-row-badge[data-priority="urgent"]{color:var(--ink-900)!important}
 html[data-theme="minimal"] .td-card-id,html[data-theme="minimal"] .td-list-row-key,html[data-theme="minimal"] .td-calendar-chip-key{font:400 11px/16px var(--font-mono);text-transform:none;letter-spacing:0;color:var(--ink-400)}
-/* The key never takes a line of its own: the meta words wrap short of a slot reserved for it (key width from --td-key-ch, set by ItemCard, at the mono advance of .6em) and the key hangs into that slot at the end of the last line. The title keeps the full width. */
-html[data-theme="minimal"] .td-card-body:has(.td-card-id){padding-right:calc(var(--td-key-ch,6)*6.6px + 10px)!important}
-html[data-theme="minimal"] .td-card-body:has(.td-card-id)>.td-card-title{width:calc(100% + (var(--td-key-ch,6)*6.6px + 10px));margin-right:calc(-1*(var(--td-key-ch,6)*6.6px + 10px))}
-html[data-theme="minimal"] .td-card-id{order:10;margin-left:auto;margin-right:calc(-1*(var(--td-key-ch,6)*6.6px + 10px))}
-html[data-theme="minimal"][data-touch="true"] .td-card-id{padding:4px 0;margin:-4px calc(-1*(var(--td-key-ch,6)*6.6px + 10px)) -4px auto}
+/* The key never takes a line of its own: the meta words wrap short of a slot reserved for it (key width from --td-key-ch, set by ItemCard, at the mono advance of .6em) and the key hangs into that slot at the end of the last line. The title keeps the full width. The slot has 1px to spare: a mono advance can round a sub-pixel wide (Linux), and a key that overflows its slot drops to a line of its own. */
+html[data-theme="minimal"] .td-card-body:has(.td-card-id){padding-right:calc(var(--td-key-ch,6)*6.6px + 11px)!important}
+html[data-theme="minimal"] .td-card-body:has(.td-card-id)>.td-card-title{width:calc(100% + (var(--td-key-ch,6)*6.6px + 11px));margin-right:calc(-1*(var(--td-key-ch,6)*6.6px + 11px))}
+html[data-theme="minimal"] .td-card-id{order:10;margin-left:auto;margin-right:calc(-1*(var(--td-key-ch,6)*6.6px + 11px))}
+html[data-theme="minimal"][data-touch="true"] .td-card-id{padding:4px 0;margin:-4px calc(-1*(var(--td-key-ch,6)*6.6px + 11px)) -4px auto}
 html[data-theme="minimal"] .td-card-id:hover,html[data-theme="minimal"] .td-list-row-key:hover{color:var(--ink-900)}
 html[data-theme="minimal"] .td-card-more{top:10px;right:0;width:16px;height:18px;border-radius:0;background:var(--chrome-canvas);box-shadow:-6px 0 4px -2px var(--chrome-canvas);color:var(--ink-400)}
 html[data-theme="minimal"] .td-card-more:hover,html[data-theme="minimal"] .td-card-more[aria-expanded="true"]{color:var(--ink-900)}
