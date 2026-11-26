@@ -1,9 +1,10 @@
 // SettingsShell — the secondary-page shell shared by /settings and /account: a page nav on the chrome
 // (left) and one white card per group of 48px rows (right). Vocabulary: Page › Section › Group › Row;
-// a row is a label + optional hint and exactly one control. Search filters every row on every page
-// and renders matches as the same cards with a Page › Section breadcrumb. SettingsPageFrame and
+// a row is a label + optional hint and exactly one control; a group's `heading` opens a subsection above
+// its card. Search filters every row on every page (and matches group titles and headings) and renders
+// matches as the same cards with a Page › Section breadcrumb. SettingsPageFrame and
 // SettingsCard are the same canvas and card for a page without the nav (Import). Spec: DESIGN.md › Secondary pages.
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 
 import { Icon, type IconName } from "../core/Icon";
 import { count, Mark } from "../core/text";
@@ -29,6 +30,10 @@ export interface SettingsRow {
 export interface SettingsGroup {
   id: string;
   title: string;
+  /** Opens a subsection: a heading on the chrome above this card, e.g. "Synchronization" above the per-project cards of Storage & sync. Section view only; searchable */
+  heading?: string;
+  /** One quiet line under `heading` */
+  headingNote?: string;
   /** Quiet text at the trailing edge of the head */
   sub?: string;
   rows: SettingsRow[];
@@ -134,6 +139,7 @@ export function SettingsPageFrame({ title, crumb, children }: { title: string; c
 }
 
 const rowText = (r: SettingsRow) => [typeof r.label === "string" ? r.label : "", r.hint ?? "", r.bodyText ?? "", ...(r.keywords ?? [])].join(" ").toLowerCase();
+const groupText = (g: SettingsGroup) => [g.title, g.heading ?? ""].join(" ").toLowerCase();
 
 export function SettingsShell({ pages, page, section, onNavigate }: SettingsShellProps) {
   const [q, setQ] = useState("");
@@ -145,7 +151,7 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
     ? pages.flatMap((p) =>
         p.sections.flatMap((s) =>
           s.groups
-            .map((g) => ({ page: p, section: s, group: { ...g, rows: g.rows.filter((r) => (rowText(r) + " " + g.title.toLowerCase() + " " + s.label.toLowerCase()).includes(query)) } }))
+            .map((g) => ({ page: p, section: s, group: { ...g, rows: g.rows.filter((r) => (rowText(r) + " " + groupText(g) + " " + s.label.toLowerCase()).includes(query)) } }))
             .filter((x) => x.group.rows.length),
         ),
       )
@@ -249,7 +255,15 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
                 ) : null}
               </div>
               {sec.groups.map((g) => (
-                <SettingsCard key={g.id} group={g} hit={hit} />
+                <Fragment key={g.id}>
+                  {g.heading ? (
+                    <div className="td-settings-subsection">
+                      <h2 className="td-settings-subsection-title">{g.heading}</h2>
+                      {g.headingNote ? <p className="td-settings-subsection-note">{g.headingNote}</p> : null}
+                    </div>
+                  ) : null}
+                  <SettingsCard group={g} hit={hit} />
+                </Fragment>
               ))}
             </>
           )}

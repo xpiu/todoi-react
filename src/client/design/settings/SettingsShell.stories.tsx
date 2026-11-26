@@ -49,6 +49,8 @@ const PAGES: SettingsPage[] = [
           {
             id: "offline",
             title: "Offline editing",
+            heading: "This device",
+            headingNote: "Edits wait here while you're offline",
             rows: [
               { id: "online", label: "Connection", hint: "Workspace edits are saved on this device before syncing", control: <StatusDot on label="Online" /> },
               { id: "install", label: "Install app", hint: "Available once the app ships as a PWA", control: <Button icon="monitor-down" disabled>Install</Button> },
@@ -151,6 +153,9 @@ export const Navigate: Story = {
     // The crumb line is hidden in Minimal, so assert presence rather than visibility.
     await expect(canvas.getByText("Storage & sync · Where your work lives")).toBeInTheDocument();
     await expect(canvas.getByText("Nothing waiting for review.")).toBeVisible();
+    // A group's heading opens a subsection above its card.
+    await expect(canvas.getByRole("heading", { level: 2, name: "This device" })).toBeVisible();
+    await expect(canvas.getByText("Edits wait here while you're offline")).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "Profile" }));
     await expect(args.onNavigate).toHaveBeenLastCalledWith("account", "profile");
     await expect(canvas.getByRole("heading", { level: 1, name: "Account" })).toBeVisible();
@@ -174,6 +179,12 @@ export const Search: Story = {
 export const SearchKeyboard: Story = {
   async play({ args, canvas, userEvent }) {
     const field = canvas.getByRole("textbox", { name: "Search settings" });
+    // A subsection heading is searchable, but search results show only the cards.
+    await userEvent.type(field, "this device");
+    await expect(canvas.getByRole("heading", { level: 2, name: "Offline editing" })).toBeVisible();
+    await expect(canvas.getByText("Install app")).toBeVisible();
+    await expect(canvas.queryByRole("heading", { level: 2, name: "This device" })).toBeNull();
+    await userEvent.clear(field);
     await userEvent.type(field, "zeppelin");
     await expect(canvas.getByText("No settings match “zeppelin”")).toBeVisible();
     await userEvent.keyboard("{Escape}");

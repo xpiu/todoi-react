@@ -166,6 +166,21 @@
     font: var(--type-small);
     color: var(--chrome-text-dim);
   }
+  /* A subsection heading on the chrome above a group's card (Storage & sync: Synchronization, Import & export, This device). The negative bottom margin pulls the card closer than the column gap */
+  .td-settings-subsection {
+    margin: 4px 0 -10px;
+  }
+  .td-settings-subsection-title {
+    margin: 0;
+    font: 600 14px/20px var(--font-ui, sans-serif);
+    color: var(--chrome-text);
+  }
+  .td-settings-subsection-note {
+    margin: 2px 0 0;
+    font: var(--type-small);
+    color: var(--chrome-text-dim);
+    text-wrap: pretty;
+  }
   .td-settings-group {
     background: var(--surface-card);
     border-radius: var(--radius-lg);
