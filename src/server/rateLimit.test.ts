@@ -1,7 +1,7 @@
 import { Hono, type MiddlewareHandler } from "hono";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./env", () => ({ env: { RATE_LIMIT: true, TRUST_PROXY_HOPS: 0 }, DEV: false }));
+vi.mock("./env", () => ({ env: { RATE_LIMIT: true, TRUST_PROXY_HOPS: 0, TRUST_CLOUDFLARE: false }, DEV: false }));
 const { addressKey, clientIp, createCounter, invalidTokenLimit, INVALID_TOKENS, rateLimit } = await import("./rateLimit");
 const { onError } = await import("./errors");
 
@@ -64,6 +64,17 @@ describe("addresses", () => {
     await app(5).request("/", { headers: xff });
     // No socket under app.request(): "unknown". One proxy: its entry; two: the one before. Never the client's own claim.
     expect(seen).toEqual(["unknown", "10.0.0.2", "198.51.100.7", "unknown"]);
+  });
+
+  it("take Cloudflare's CF-Connecting-IP only from Cloudflare's edge", async () => {
+    const seen: string[] = [];
+    const app = new Hono().get("/", (c) => { seen.push(clientIp(c, 1, true)); return c.text("ok"); });
+    // Traefik reports the sender: a Cloudflare edge address, then an address outside Cloudflare (a direct hit).
+    await app.request("/", { headers: { "x-forwarded-for": "162.158.1.2", "cf-connecting-ip": "203.0.113.9" } });
+    await app.request("/", { headers: { "x-forwarded-for": "2a06:98c0::1", "cf-connecting-ip": "2001:db8:5::7" } });
+    await app.request("/", { headers: { "x-forwarded-for": "198.51.100.7", "cf-connecting-ip": "203.0.113.9" } });
+    await app.request("/", { headers: { "x-forwarded-for": "162.158.1.2", "cf-connecting-ip": "not an address" } });
+    expect(seen).toEqual(["203.0.113.9", "2001:db8:5:0::/64", "198.51.100.7", "162.158.1.2"]);
   });
 });
 
