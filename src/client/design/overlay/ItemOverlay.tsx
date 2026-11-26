@@ -286,7 +286,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
   // "Status follows List": the list sets the Status; a locked Status only points at the List field.
   const lock = p.inbox ? "free" : statusLock(p.lists, p.linkStatuses, item);
   const listName = p.lists.find((l) => l.id === item.listId)?.name ?? "";
-  const statusName = STATUS_OPTIONS.find((o) => o.value === status)?.label ?? "None";
+  const statusName = STATUS_OPTIONS.find((o) => o.value === status)?.label ?? "No status";
   const changeList = () => {
     setStatusOpen(false);
     setListOpen(true);

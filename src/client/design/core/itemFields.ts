@@ -22,7 +22,7 @@ const PRIORITY_DEFS: ReadonlyArray<{ value: ItemPriority; label: string; color: 
 
 export const PRIORITY_OPTIONS: ReadonlyArray<SelectOption<string>> = [...PRIORITY_DEFS.map((p) => ({ value: p.value as string, label: p.label, icon: "flag" as IconName, iconColor: p.color })), { value: NO_VALUE, label: "No priority", icon: "flag-off" as IconName }];
 
-export const STATUS_OPTIONS: ReadonlyArray<SelectOption<string>> = [{ value: NO_VALUE, label: "None", icon: "circle-off" as IconName }, ...STATUSES.map((s) => ({ value: s.id as string, label: s.name, icon: s.icon, iconColor: s.color }))];
+export const STATUS_OPTIONS: ReadonlyArray<SelectOption<string>> = [{ value: NO_VALUE, label: "No status", icon: "circle-off" as IconName }, ...STATUSES.map((s) => ({ value: s.id as string, label: s.name, icon: s.icon, iconColor: s.color }))];
 
 /** The Priority Select's value for an item */
 export const priorityValue = (p: ItemPriority | null | undefined) => p ?? NO_VALUE;

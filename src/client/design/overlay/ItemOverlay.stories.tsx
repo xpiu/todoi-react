@@ -283,7 +283,10 @@ export const StatusFollowsListDiffers: Story = {
   async play({ args, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
+    // No Status assigned: the field reads "No status", and so does the picker's first option
+    await expect(within(dialog).getByRole("combobox", { name: "Status" })).toHaveTextContent("No status");
     await userEvent.click(within(dialog).getByRole("combobox", { name: "Status" }));
+    await expect(await page.findByRole("option", { name: "No status" })).toBeInTheDocument();
     await userEvent.click(await page.findByRole("option", { name: "Done" }));
     await expect(args.onSetStatus).toHaveBeenCalledWith("DONE");
     await expect(args.onMoveToList).not.toHaveBeenCalled();
