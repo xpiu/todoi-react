@@ -128,6 +128,14 @@ Decided 2026-11-27:
 
 In the app since 2026-11-27: the database makes the slug (migration `0025`), every link the app writes uses it (address bar, Copy link, emails, calendar feed), and links from before (`/p/<id>`, `?item=<id>`) still open and are rewritten. The rules are in `src/shared/projectLinks.ts`.
 
+**The slug is an address, not a secret, and nothing in it is encrypted.** It is random, not derived from the database id or the project's name, so it reveals neither and can't be decoded.
+
+- **Entropy:** 10 characters × 5 bits = 50 bits; requiring a digit removes 5.6%, leaving about 1.06 × 10¹⁵ slugs (2^49.9).
+- **Source:** PostgreSQL's `gen_random_uuid()` (the operating system's cryptographic generator); 256 divides evenly by the 32 characters, so none is favoured. A unique index and a retry rule out duplicates.
+- **Protection:** the project's read rule, checked on the server for every request (`src/server/access.ts`). A private project stays closed to someone who has its link.
+- **Guessing:** an unknown slug answers 404 and a private project 403, so a hit shows only that a project exists. With a million projects, one guess in a billion hits; an address gets 1,200 requests a minute.
+- **Not for secrets:** a link that grants access by itself (the private calendar feed) carries its own 256-bit token.
+
 **Rule for new routes:** no top-level route of exactly 10 characters that contains a digit from 2 to 9, so a route can never be mistaken for a project.
 
 ## 👥 Visitors and accounts
