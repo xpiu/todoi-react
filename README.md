@@ -115,28 +115,48 @@ The per-project setting was renamed from "Link Lists with Status"; the stored fi
 
 ### Links
 
-A project's link is its short public id at the root, and an open item is named by its key: `https://todoi.com/epd5vjxy38?v=board&item=MP-102`.
+A project opens at its short public id (the slug) at the root, and an open item is named by its key:
 
-Decided 2026-11-27:
+```text
+https://todoi.com/epd5vjxy38?v=board&item=MP-102
+                  └ project   └ view  └ open item
+```
 
-- **Project path:** `/<slug>`. The slug is separate from the database id: 10 characters from lowercase letters and digits without `o`, `0`, `1` and `l`, always with a digit.
+| Part | Form | Notes |
+| --- | --- | --- |
+| Project | `/<slug>` | 10 characters, see below. Separate from the database id. |
+| View | `v=` | `view=` is taken: it names a saved view. |
+| Open item | `item=<key>` | The item's id while it has no key (Inbox items). Upper or lower case, and an old key prefix, still open the item. |
+
+Every link the app writes has this form: address bar, Copy link, the share menu, emails and the calendar feed. Links from before 2026-11-27 (`/p/<id>`, `?item=<id>`) still open, and the address is rewritten to the new form. The rules live in `src/shared/projectLinks.ts`.
+
+#### The slug
+
+- **Form:** 10 characters from 32: lowercase letters and digits without `o`, `0`, `1` and `l` (easy to read aloud and retype), always with at least one digit from 2 to 9.
+- **Made by:** the database, when a project is created (`project_slug()`, migration `0025`). The client never makes one.
+- **Random source:** PostgreSQL's `gen_random_uuid()`, which draws from the operating system's cryptographic generator. Each byte picks one of 32 characters, and 256 divides evenly by 32, so no character is favoured.
+- **Entropy:** 10 × 5 bits = 50 bits. Requiring a digit removes 5.6%, which leaves about 1.06 × 10¹⁵ slugs (2^49.9).
+- **Unique:** a unique index, and the function retries on a slug already in use.
+- **Not encrypted, not derived:** the slug is random, so it reveals neither the database id nor the project's name, and there is nothing to decode.
+
+#### Access
+
+The slug is an address, not a secret. What protects a project is its read rule, checked on the server for every request (`src/server/access.ts`):
+
+- **A private project stays closed** to someone who has its link.
+- **Guessing:** an unknown slug answers 404 and a private project 403, so a correct guess shows only that a project exists. With a million projects, one guess in a billion hits, and one address gets 1,200 requests a minute.
+- **Links that are secrets** carry their own token: the private calendar feed uses 256 random bits.
+
+#### Rule for new routes
+
+No top-level route of exactly 10 characters that contains a digit from 2 to 9, so a route can never be mistaken for a project.
+
+#### Decisions (2026-11-27)
+
+- **Project path:** the slug at the root, not `/p/<id>` or a readable name.
 - **Host:** the React app has its host to itself. The Next.js build at s.todoi.com is an older prototype without public data, so none of its links are carried over.
-- **Open item:** `?item=<key>`, or the item's id while it has no key (Inbox items).
-- **View:** `v=` stays (`view=` names a saved view).
 - **Timing:** done before the first testing round, so no shared link needs a redirect later.
 - **Resetting a project's link:** not built. The separate slug makes it possible later.
-
-In the app since 2026-11-27: the database makes the slug (migration `0025`), every link the app writes uses it (address bar, Copy link, emails, calendar feed), and links from before (`/p/<id>`, `?item=<id>`) still open and are rewritten. The rules are in `src/shared/projectLinks.ts`.
-
-**The slug is an address, not a secret, and nothing in it is encrypted.** It is random, not derived from the database id or the project's name, so it reveals neither and can't be decoded.
-
-- **Entropy:** 10 characters × 5 bits = 50 bits; requiring a digit removes 5.6%, leaving about 1.06 × 10¹⁵ slugs (2^49.9).
-- **Source:** PostgreSQL's `gen_random_uuid()` (the operating system's cryptographic generator); 256 divides evenly by the 32 characters, so none is favoured. A unique index and a retry rule out duplicates.
-- **Protection:** the project's read rule, checked on the server for every request (`src/server/access.ts`). A private project stays closed to someone who has its link.
-- **Guessing:** an unknown slug answers 404 and a private project 403, so a hit shows only that a project exists. With a million projects, one guess in a billion hits; an address gets 1,200 requests a minute.
-- **Not for secrets:** a link that grants access by itself (the private calendar feed) carries its own 256-bit token.
-
-**Rule for new routes:** no top-level route of exactly 10 characters that contains a digit from 2 to 9, so a route can never be mistaken for a project.
 
 ## 👥 Visitors and accounts
 
