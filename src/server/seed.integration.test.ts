@@ -1,14 +1,35 @@
+import { verifyPassword } from "better-auth/crypto";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { expect, it } from "vitest";
 
 import { DEV_USER, GATE_USER } from "../shared/devUser";
 import { db } from "./db";
-import { comments, groups, itemAssignees, items, lists, members, projects, users } from "./db/schema";
+import { accounts, comments, groups, itemAssignees, items, lists, members, projects, users } from "./db/schema";
 import { resetGateWorkspace, seedIfEmpty } from "./seed";
 
 const idOf = async (email: string) => (await db.select({ id: users.id }).from(users).where(eq(users.email, email)))[0]!.id;
 const nameOf = async (id: string) => (await db.select({ name: users.name }).from(users).where(eq(users.id, id)))[0]?.name;
+
+it("adds the todoi.com dev sign-ins to older databases and preserves existing credentials on restart", async () => {
+  const legacyId = "seed_user_flo_000000a";
+  await db.insert(users).values({ id: legacyId, name: "todoi", email: DEV_USER.email });
+  const emails = ["flo@todoi.com", "info@todoi.com"];
+  const signIns = () => db.select({ email: users.email, verified: users.emailVerified, password: accounts.password })
+    .from(users)
+    .innerJoin(accounts, and(eq(accounts.userId, users.id), eq(accounts.providerId, "credential")))
+    .where(inArray(users.email, emails))
+    .orderBy(asc(users.email));
+
+  await seedIfEmpty();
+  const created = await signIns();
+  expect(created.map(({ email, verified }) => ({ email, verified }))).toEqual(emails.map((email) => ({ email, verified: true })));
+  for (const { password } of created) expect(await verifyPassword({ hash: password!, password: DEV_USER.password })).toBe(true);
+
+  await seedIfEmpty();
+  expect(await signIns()).toEqual(created);
+  expect(await idOf(DEV_USER.email)).toBe(legacyId);
+});
 
 /** What the screens show of an account's workspace, by name (ids differ between copies) */
 async function workspace(email: string) {

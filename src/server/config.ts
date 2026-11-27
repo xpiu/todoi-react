@@ -21,7 +21,7 @@ export function parseEnv(source: Record<string, string | undefined>) {
       PORT: z.coerce.number().int().positive().default(3000),
       /** Apply pending Drizzle migrations when the API boots (development default; production runs `npm run db:migrate` or sets this) */
       MIGRATE_ON_START: z.stringbool().default(dev),
-      /** Seed the kit's sample workspace and its two dev accounts (development only) */
+      /** Seed the kit's sample workspace and development accounts (development only) */
       SEED_ON_START: z.stringbool().default(dev),
       /** Where uploaded attachment bytes live; a persistent volume in production */
       UPLOAD_DIR: z.string().default(".data/uploads"),

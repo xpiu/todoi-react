@@ -236,7 +236,7 @@ export PATH="$(brew --prefix postgresql@18)/bin:$PATH"  # also add to ~/.zshrc
 
 The API runs on `:3000`, migrating/seeding on development boot. Vite serves `http://localhost:5173`, proxying `/api` to `:3000`; update `vite.config.ts` when changing the API port. API scripts read `.env`; Vite also reads `.env.local`.
 
-Seeded accounts: `info@todoi.org` and `sam@helicopterseurope.com`, verified, password `todoi-dev-password`. todoi's samples include Helicopters Europe projects, MP-115 photos, Sam's comments and a filled Inbox; seeded starts replenish missing samples. Sign up at `/signup`; copy invites in **Project settings → Members**. Component gallery: `/dev/ds`.
+The development seed creates verified accounts for `info@todoi.com`, `flo@todoi.com`, `info@todoi.org` and `sam@helicopterseurope.com` with the password `todoi-dev-password`. The `info@todoi.org` sample workspace includes Helicopters Europe projects, MP-115 photos, Sam's comments and a filled Inbox. Seeded starts replenish missing samples. Sign up at `/signup`. Copy invites in **Project settings → Members**. The component gallery is at `/dev/ds`.
 
 Common commands:
 

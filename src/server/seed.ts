@@ -12,7 +12,7 @@ import type { ItemStatus } from "../shared/item-status";
 import { DEV_USER, GATE_USER } from "../shared/devUser";
 import { DEV_PASSWORD, inboxFor, LOCAL_USER_ID } from "./auth";
 import { hashPassword } from "better-auth/crypto";
-import { db } from "./db";
+import { db, type Tx } from "./db";
 import { nextPosition } from "./db/position";
 import { accounts, attachments, comments, groups, itemAssignees, itemLabels, itemRelations, items, labels, lists, members, projects, savedViews, users, type Project } from "./db/schema";
 import { createProject } from "./services/projects";
@@ -324,6 +324,13 @@ async function ensureInbox(cast: Cast, aboutOf: (key: number) => { aboutKey?: st
 
 /** Email + password sign-in for the seed people (development only): the password is DEV_PASSWORD. */
 async function ensureDevAccounts() {
+  await db.transaction(async (tx) => {
+    const created = await tx.insert(users).values([
+      { id: nanoid(), name: "todoi", email: "info@todoi.com", emailVerified: true },
+      { id: nanoid(), name: "Flo", email: "flo@todoi.com", emailVerified: true },
+    ]).onConflictDoNothing({ target: users.email }).returning({ id: users.id });
+    for (const { id } of created) await ensurePassword(id, tx);
+  });
   await db.insert(users).values([
     { id: DEMO, name: "todoi", email: DEV_USER.email, emailVerified: true, nickname: "todoi", avatarColor: "blue" },
     { id: SAM, name: "Sam Verhoeven", email: "sam@helicopterseurope.com", emailVerified: true, nickname: "sam", avatarColor: "orange" },
@@ -336,10 +343,10 @@ async function ensureDevAccounts() {
   return demo.id;
 }
 
-async function ensurePassword(userId: string) {
-  const [acc] = await db.select({ id: accounts.id }).from(accounts).where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
+async function ensurePassword(userId: string, connection: Tx | typeof db = db) {
+  const [acc] = await connection.select({ id: accounts.id }).from(accounts).where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
   if (acc) return;
-  await db.insert(accounts).values({ id: nanoid(), userId, accountId: userId, providerId: "credential", password: await hashPassword(DEV_PASSWORD) });
+  await connection.insert(accounts).values({ id: nanoid(), userId, accountId: userId, providerId: "credential", password: await hashPassword(DEV_PASSWORD) });
 }
 
 /** Move the original kit examples to todoi's registered account without copying projects or items. */
