@@ -82,6 +82,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 - **Status follows List** (was "Link Lists with Status"): a per-project switch on the Projects page (also in Project settings; default on). See [User flow, UI and UX](#-user-flow-ui-and-ux) and [DESIGN.md](DESIGN.md) (Project automation setting).
 - **Git sync:** a project kept in a file (Embridge Markdown, JSON or YAML) in a GitHub repository, synced both ways: three-way merge, a conflict dialog or a conflict policy, sync history with undo, and push webhooks. Connect under Settings › Storage & sync with a fine-grained token.
 - **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), todoi JSON/YAML project files, Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export everything as a restorable `.zip`.
+- **QA notes.** With a confirmed `@todoi.com` account, press Ctrl+Shift+F (⌃⇧F on macOS) on any screen to report an issue with an annotated screenshot. See [QA notes](#qa-notes).
 - **Accounts:** private guest workspaces, email/password accounts, project roles and invite links, personal API tokens and account preferences stored in PostgreSQL.
 
 Current limits:
