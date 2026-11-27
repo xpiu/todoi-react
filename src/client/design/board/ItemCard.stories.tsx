@@ -20,7 +20,26 @@ export const Detailed: Story = {
   args: { labels: [{ color: "var(--label-blue)", text: "Sales" }], due: "12 Sep", dueState: "overdue", priority: "High", badges: { description: true, checklist: { done: 2, total: 6 }, attachments: 3 }, assignees: ["todoi", "Sam Verhoeven"] },
 };
 export const Completed: Story = { args: { done: true, badges: { checklist: { done: 6, total: 6 } } } };
-export const LongTitle: Story = { args: { title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment, maintenance, training, and payment terms" } };
+/** The key never sits over the title's words: beside or below them, and never above the title's last line. */
+const keyClearOfTitle: Story["play"] = async ({ canvas }) => {
+  await Promise.all([...document.fonts].map((face) => face.load().catch(() => undefined)));
+  const card = canvas.getByRole("listitem");
+  const key = card.querySelector(".td-card-id")!.getBoundingClientRect();
+  const words = document.createRange();
+  words.selectNodeContents(card.querySelector(".td-card-title > span")!);
+  const lines = [...words.getClientRects()].filter((line) => line.width > 0);
+  for (const line of lines) await expect(line.right <= key.left || line.bottom <= key.top + 2 || line.top >= key.bottom - 2, "a line of the title runs under the key").toBe(true);
+  await expect(key.bottom).toBeGreaterThan(lines.at(-1)!.top);
+};
+export const LongTitle: Story = { args: { title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment, maintenance, training, and payment terms" }, play: keyClearOfTitle };
+/** Minimal lays a bare title and its key on one line: a title that reaches the key keeps its words clear of it (QA note 2026-11-27). */
+export const TitleReachingTheKey: Story = {
+  args: { title: "just another list ok, you've got this", itemId: "PRO-11" },
+  decorators: [(Story) => <div style={{ width: 196 }}><Story /></div>],
+  play: keyClearOfTitle,
+};
+/** One line of title, too full for the key to share: the key takes the line below, at the right edge. */
+export const TitleFillingItsLine: Story = { ...TitleReachingTheKey, args: { title: "just another list ok, you've", itemId: "PRO-12" } };
 export const Selected: Story = { args: { selected: true } };
 export const KeyboardAndMenu: Story = {
   async play({ args, canvas, canvasElement, userEvent }) {
