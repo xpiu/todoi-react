@@ -15,7 +15,7 @@ const LABELS = [
 ];
 const MEMBERS = [
   { id: "u1", name: "Sam Verhoeven" },
-  { id: "u2", name: "Todoi" },
+  { id: "u2", name: "todoi" },
 ];
 const PRIORITY_TEXT: Record<ItemPriority, "Urgent" | "High" | "Medium" | "Low"> = { URGENT: "Urgent", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
 

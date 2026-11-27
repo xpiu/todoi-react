@@ -12,7 +12,7 @@ const meta = {
     autoFocus: false,
     today: "2026-10-07",
     labels: [{ text: "bug", color: "red" }, { text: "sales", color: "blue" }],
-    members: [{ name: "Todoi", nickname: "todoi" }, "Sam Verhoeven"],
+    members: [{ name: "todoi", nickname: "todoi" }, "Sam Verhoeven"],
     lists: ["To-do", "Doing", "Done"],
     onSubmit: fn(),
     onCancel: fn(),
@@ -33,7 +33,7 @@ export const SubmitThenCancel: Story = {
     await userEvent.click(field);
     await userEvent.type(field, "Fix login bug #bug @todoi !high due fri >Doing{Enter}");
     await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Fix login bug", assignee: "Todoi", priority: "High", due: "2026-10-09", list: "Doing", labels: [{ text: "bug", color: "red", isNew: false }] }),
+      expect.objectContaining({ title: "Fix login bug", assignee: "todoi", priority: "High", due: "2026-10-09", list: "Doing", labels: [{ text: "bug", color: "red", isNew: false }] }),
       "Fix login bug #bug @todoi !high due fri >Doing",
     );
     await expect(field).toHaveValue("");

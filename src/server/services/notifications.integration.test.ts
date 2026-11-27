@@ -13,7 +13,7 @@ import { notifyComment, notifyPeople } from "./notifications";
 async function fixture() {
   const author = nanoid(), sam = nanoid(), quiet = nanoid(), outsider = nanoid();
   await db.insert(users).values([
-    { id: author, name: "Todoi", email: `${author}@example.test` },
+    { id: author, name: "todoi", email: `${author}@example.test` },
     { id: sam, name: "Sam Verhoeven", nickname: "sammy", email: `${sam}@example.test` },
     { id: quiet, name: "Quinn Quiet", email: `${quiet}@example.test`, prefs: { notifyWatched: false, notifyAssignments: false } },
     { id: outsider, name: "Olga Outside", email: `${outsider}@example.test` },
@@ -25,7 +25,7 @@ async function fixture() {
   await db.insert(members).values([author, sam, quiet].map((userId) => ({ projectId: project, userId, role: "editor" as const })));
   await db.insert(items).values({ id: item, projectId: project, listId: list, title: "Order blades", keyNumber: 7 });
   const [about] = await db.select().from(items).where(eq(items.id, item));
-  return { author: { userId: author, name: "Todoi" }, sam, quiet, outsider, about: about!, slug };
+  return { author: { userId: author, name: "todoi" }, sam, quiet, outsider, about: about!, slug };
 }
 const inboxOf = async (userId: string) => db.select().from(items).where(and(eq(items.listId, await inboxFor(userId)), isNotNull(items.notification)));
 
@@ -35,7 +35,7 @@ describe("notifications", () => {
     const sent = await notifyPeople("assignment", [f.sam, f.quiet, f.outsider, f.author.userId], f.author, f.about);
     expect(sent).toEqual([f.sam]);
     const [n] = await inboxOf(f.sam);
-    expect(n).toMatchObject({ title: "Todoi assigned NT-7 to you: Order blades", unread: true, notification: { kind: "assignment", fromUserId: f.author.userId, aboutKey: "NT-7", aboutItemId: f.about.id } });
+    expect(n).toMatchObject({ title: "todoi assigned NT-7 to you: Order blades", unread: true, notification: { kind: "assignment", fromUserId: f.author.userId, aboutKey: "NT-7", aboutItemId: f.about.id } });
     expect(await inboxOf(f.quiet)).toHaveLength(0);
     expect(await inboxOf(f.outsider)).toHaveLength(0);
     expect(await inboxOf(f.author.userId)).toHaveLength(0);
@@ -47,7 +47,7 @@ describe("notifications", () => {
     await notifyComment(f.author, f.about, "@sammy can you check the price? cc @olga");
     const samInbox = await inboxOf(f.sam);
     expect(samInbox.map((n) => n.notification?.kind)).toEqual(["mention"]);
-    expect(samInbox[0]).toMatchObject({ title: "Todoi mentioned you on NT-7: Order blades", description: "> @sammy can you check the price? cc @olga" });
+    expect(samInbox[0]).toMatchObject({ title: "todoi mentioned you on NT-7: Order blades", description: "> @sammy can you check the price? cc @olga" });
     // The watcher opted out of watched items; the outsider is not a member; the author never notifies themself.
     expect(await inboxOf(f.quiet)).toHaveLength(0);
     expect(await inboxOf(f.outsider)).toHaveLength(0);
@@ -55,7 +55,7 @@ describe("notifications", () => {
 
     await db.update(users).set({ prefs: { notifyWatched: true } }).where(eq(users.id, f.quiet));
     await notifyComment(f.author, f.about, "Ordered.");
-    expect((await inboxOf(f.quiet)).map((n) => n.title)).toEqual(["Todoi commented on NT-7: Order blades"]);
+    expect((await inboxOf(f.quiet)).map((n) => n.title)).toEqual(["todoi commented on NT-7: Order blades"]);
     expect(await inboxOf(f.sam)).toHaveLength(2);
   });
 
@@ -69,15 +69,15 @@ describe("notifications", () => {
     const [sam] = await db.update(users).set({ emailVerified: true }).where(eq(users.id, f.sam)).returning({ email: users.email });
     await notifyPeople("assignment", [f.sam], f.author, f.about);
     const [mail] = await emailsTo(sam!.email);
-    expect(mail).toMatchObject({ subject: "Todoi assigned NT-7 to you: Order blades", link: `${env.APP_URL}/${f.slug}?item=NT-7` });
-    expect(mail!.text).toContain("Todoi assigned NT-7: Order blades to you in Rotor shop.");
+    expect(mail).toMatchObject({ subject: "todoi assigned NT-7 to you: Order blades", link: `${env.APP_URL}/${f.slug}?item=NT-7` });
+    expect(mail!.text).toContain("todoi assigned NT-7: Order blades to you in Rotor shop.");
 
     // Comments on watched items are off by default; mentions are on.
     await db.insert(itemWatchers).values({ itemId: f.about.id, userId: f.sam });
     await notifyComment(f.author, f.about, "Ordered.");
     expect(await emailsTo(sam!.email)).toHaveLength(1);
     await notifyComment(f.author, f.about, "@sammy the blades shipped");
-    expect((await emailsTo(sam!.email)).map((m) => m.subject)).toEqual(["Todoi assigned NT-7 to you: Order blades", "Todoi mentioned you on NT-7: Order blades"]);
+    expect((await emailsTo(sam!.email)).map((m) => m.subject)).toEqual(["todoi assigned NT-7 to you: Order blades", "todoi mentioned you on NT-7: Order blades"]);
 
     // The switch off: the Inbox item still arrives, the email doesn't.
     await db.update(users).set({ prefs: { emailAssignments: false } }).where(eq(users.id, f.sam));

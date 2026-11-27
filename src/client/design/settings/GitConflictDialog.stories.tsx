@@ -16,7 +16,7 @@ const meta = {
   component: GitConflictDialog,
   args: { open: true, repoName: "acme/plans", conflicts: CONFLICTS, places: { "list:doing": "Doing", "list:todo": "To-do" }, onClose: fn(), onApply: fn() },
   parameters: {
-    docs: { description: { component: "Resolve GitHub sync conflict: each thing that changed in todoi and in the file since the last sync, with its three versions and a choice per conflict (or one side for all). Apply stays disabled until every conflict is decided; Leave paused keeps the sync paused. Values read as Todoi shows them." } },
+    docs: { description: { component: "Resolve GitHub sync conflict: each thing that changed in todoi and in the file since the last sync, with its three versions and a choice per conflict (or one side for all). Apply stays disabled until every conflict is decided; Leave paused keeps the sync paused. Values read as todoi shows them." } },
   },
 } satisfies Meta<typeof GitConflictDialog>;
 export default meta;

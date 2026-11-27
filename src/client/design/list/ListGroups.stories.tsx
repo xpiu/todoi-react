@@ -7,7 +7,7 @@ import { ListRow, type ListRowProps } from "./ListRow";
 
 type Row = ListRowProps & { id: string };
 const r1: Row = { id: "r1", itemId: "HE-120", title: "Renew the airworthiness certificate", labels: [{ color: "red", text: "Compliance" }], due: "Oct 14, 2026", priority: "Urgent" };
-const r2: Row = { id: "r2", itemId: "HE-115", title: "Prepare the helicopter quote", labels: [{ color: "orange", text: "Sales" }], due: "Oct 2, 2026", dueState: "overdue", priority: "High", assignees: ["Todoi"] };
+const r2: Row = { id: "r2", itemId: "HE-115", title: "Prepare the helicopter quote", labels: [{ color: "orange", text: "Sales" }], due: "Oct 2, 2026", dueState: "overdue", priority: "High", assignees: ["todoi"] };
 const r3: Row = { id: "r3", itemId: "HE-118", title: "Send the pilot roster", attachments: 2, priority: "High" };
 const r4: Row = { id: "r4", itemId: "HE-121", title: "Order spare rotor blades", assignees: ["Ana Peeters"] };
 
@@ -18,7 +18,7 @@ const PRIORITY: Array<ItemGroup<Row>> = [
   { id: "__none", label: "No priority", icon: "flag-off", accepts: true, items: [r4] },
 ];
 const ASSIGNEE: Array<ItemGroup<Row>> = [
-  { id: "u1", label: "Todoi", avatar: { name: "Todoi" }, accepts: true, items: [r2] },
+  { id: "u1", label: "todoi", avatar: { name: "todoi" }, accepts: true, items: [r2] },
   { id: "u2", label: "Ana Peeters", avatar: { name: "Ana Peeters" }, accepts: true, items: [r4] },
   { id: "__none", label: "Unassigned", icon: "user-x", accepts: true, items: [r1, r3] },
 ];

@@ -25,8 +25,8 @@ describe("renderMarkdown", () => {
   });
   it("renders the inline subset", () => {
     expect(html("**b** *i* _i_ ~~s~~ `c`")).toBe("<p><strong>b</strong> <em>i</em> <em>i</em> <del>s</del> <code>c</code></p>");
-    expect(html("[Todoi](https://todoi.com) and https://x.y/z")).toBe(
-      '<p><a href="https://todoi.com" target="_blank" rel="noopener noreferrer">Todoi</a> and <a href="https://x.y/z" target="_blank" rel="noopener noreferrer">x.y/z</a></p>',
+    expect(html("[todoi](https://todoi.com) and https://x.y/z")).toBe(
+      '<p><a href="https://todoi.com" target="_blank" rel="noopener noreferrer">todoi</a> and <a href="https://x.y/z" target="_blank" rel="noopener noreferrer">x.y/z</a></p>',
     );
   });
   it("leaves trailing punctuation out of bare URLs unless a ) closes one inside", () => {
@@ -36,7 +36,7 @@ describe("renderMarkdown", () => {
     expect(html("https://en.wikipedia.org/wiki/Bell_(helicopter), or")).toBe(`<p>${a("https://en.wikipedia.org/wiki/Bell_(helicopter)", "en.wikipedia.org/wiki/Bell_(helicopter)")}, or</p>`);
   });
   it("highlights only known mentions and marks item keys", () => {
-    const members = [{ name: "Todoi", nickname: "todoi" }];
+    const members = [{ name: "todoi", nickname: "todoi" }];
     expect(html("hi @todoi and @nobody", { members })).toBe('<p>hi <span class="td-markdown-mention">@todoi</span> and @nobody</p>');
     expect(html("see MP-112 now")).toBe('<p>see <span class="td-markdown-key">MP-112</span> now</p>');
     expect(html("see MP-112 now", { onOpenKey: () => {} })).toContain('role="link"');

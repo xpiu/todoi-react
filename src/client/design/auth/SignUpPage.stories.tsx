@@ -22,14 +22,14 @@ export const Empty: Story = {
   parameters: legalLinksTodo,
   async play({ args, canvas, userEvent }) {
     const submit = canvas.getByRole("button", { name: "Create account" });
-    await userEvent.type(canvas.getByLabelText("Name"), "Todoi");
+    await userEvent.type(canvas.getByLabelText("Name"), "todoi");
     await userEvent.type(canvas.getByLabelText("Email"), "info@todoi.org");
     await userEvent.type(canvas.getByLabelText(/^Password/), "short");
     await expect(submit).toBeDisabled();
     await userEvent.type(canvas.getByLabelText(/^Password/), " but now long");
     await expect(submit).toBeEnabled();
     await userEvent.click(submit);
-    await expect(args.onSignUp).toHaveBeenCalledWith({ name: "Todoi", email: "info@todoi.org", password: "short but now long" });
+    await expect(args.onSignUp).toHaveBeenCalledWith({ name: "todoi", email: "info@todoi.org", password: "short but now long" });
     await userEvent.click(canvas.getByRole("button", { name: "Log in" }));
     await expect(args.onLogin).toHaveBeenCalledOnce();
   },
@@ -44,14 +44,14 @@ export const FromInvite: Story = {
 };
 export const ServerError: Story = {
   parameters: legalLinksTodo,
-  args: { defaultName: "Todoi", defaultEmail: "info@todoi.org", error: "An account with this email already exists." },
+  args: { defaultName: "todoi", defaultEmail: "info@todoi.org", error: "An account with this email already exists." },
   async play({ canvas }) {
     await expect(canvas.getByRole("alert")).toHaveTextContent("already exists");
   },
 };
 export const Busy: Story = {
   parameters: legalLinksTodo,
-  args: { defaultName: "Todoi", defaultEmail: "info@todoi.org", busy: true },
+  args: { defaultName: "todoi", defaultEmail: "info@todoi.org", busy: true },
   async play({ canvas }) {
     await expect(canvas.getByRole("button", { name: "Creating your account…" })).toBeDisabled();
   },

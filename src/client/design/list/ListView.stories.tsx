@@ -27,7 +27,7 @@ const LISTS: Array<{ id: string; name: string; rows: Row[] }> = [
         labels: [{ color: "orange", text: "Sales" }],
         due: "Oct 2, 2026",
         dueState: "overdue",
-        assignees: ["Todoi"],
+        assignees: ["todoi"],
         subitems: [
           { title: "Collect the engine hours", itemId: "HE-116", done: true, dragId: "r3/s1" },
           { title: "Price the optional floats", itemId: "HE-117", dragId: "r3/s2" },

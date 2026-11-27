@@ -6,7 +6,7 @@ import { Avatar, AvatarStack } from "./Avatar";
 // Inline image so the story never touches the network.
 const PHOTO = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#7aa2d6"/><circle cx="16" cy="13" r="6" fill="#f4e3d3"/><path d="M5 31c1.5-7 6-10 11-10s9.5 3 11 10z" fill="#f4e3d3"/></svg>');
 const MEMBERS = [
-  { id: "u1", name: "Todoi" },
+  { id: "u1", name: "todoi" },
   { id: "u2", name: "Sam Verhoeven" },
   { id: "u3", name: "Marit Olsen", color: "var(--label-teal)" },
   { id: "u4", name: "Jonas Berg" },
@@ -16,7 +16,7 @@ const MEMBERS = [
 const meta = {
   title: "Core/Avatar",
   component: Avatar,
-  args: { name: "Todoi" },
+  args: { name: "todoi" },
   parameters: { docs: { description: { component: "A person's face: the image when `src` is set, otherwise initials on a label-palette token picked from the name (or `color`). Use 32px in comments, 28px in the top bar and 20px on rows. AvatarStack overlaps several avatars for assignees and members and collapses the rest into “+n”." } } },
 } satisfies Meta<typeof Avatar>;
 export default meta;
@@ -25,7 +25,7 @@ type Story = StoryObj<typeof meta>;
 export const Initials: Story = {
   async play({ canvas }) {
     // Screen readers hear the name; the initials are drawn as part of the picture, never as text.
-    const avatar = canvas.getByRole("img", { name: "Todoi" });
+    const avatar = canvas.getByRole("img", { name: "todoi" });
     await expect(avatar).toHaveAttribute("data-initials", "T");
     await expect(avatar).toHaveTextContent("");
     await expect(getComputedStyle(avatar, "::after").content).toBe('"T"');
@@ -34,7 +34,7 @@ export const Initials: Story = {
 export const Photo: Story = {
   args: { src: PHOTO },
   async play({ canvas }) {
-    await expect(canvas.getByRole("img", { name: "Todoi" })).toHaveAttribute("src", PHOTO);
+    await expect(canvas.getByRole("img", { name: "todoi" })).toHaveAttribute("src", PHOTO);
   },
 };
 export const CustomColor: Story = { args: { name: "Marit Olsen", color: "var(--label-teal)", size: 28 } };
@@ -56,7 +56,7 @@ export const BesideName: Story = {
   async play({ canvas }) {
     // The visible name already says who it is; the avatar stays out of the accessibility tree.
     await expect(canvas.queryByRole("img")).not.toBeInTheDocument();
-    await expect(canvas.getByTitle("Todoi")).toHaveAttribute("aria-hidden", "true");
+    await expect(canvas.getByTitle("todoi")).toHaveAttribute("aria-hidden", "true");
   },
 };
 export const UnknownPerson: Story = { args: { name: undefined } };
@@ -70,8 +70,8 @@ export const Stack: Story = {
   ),
   async play({ canvas, canvasElement }) {
     // Five people, three faces, then the overflow disc; each stack is one image named by everyone in it.
-    await expect(canvas.getAllByRole("img", { name: "Todoi, Sam Verhoeven, Marit Olsen, Jonas Berg, Ana Lopes" })).toHaveLength(2);
-    await expect(canvas.getByRole("img", { name: "Todoi, Sam Verhoeven" })).toBeVisible();
+    await expect(canvas.getAllByRole("img", { name: "todoi, Sam Verhoeven, Marit Olsen, Jonas Berg, Ana Lopes" })).toHaveLength(2);
+    await expect(canvas.getByRole("img", { name: "todoi, Sam Verhoeven" })).toBeVisible();
     const more = (n: number) => canvasElement.querySelector(`.td-avatar-stack-more[data-more="+${n}"]`)!;
     await expect(more(2)).toBeVisible();
     await expect(getComputedStyle(more(3), "::after").content).toBe('"+3"');

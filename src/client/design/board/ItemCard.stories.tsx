@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Basic: Story = {};
 export const Detailed: Story = {
-  args: { labels: [{ color: "var(--label-blue)", text: "Sales" }], due: "12 Sep", dueState: "overdue", priority: "High", badges: { description: true, checklist: { done: 2, total: 6 }, attachments: 3 }, assignees: ["Todoi", "Sam Verhoeven"] },
+  args: { labels: [{ color: "var(--label-blue)", text: "Sales" }], due: "12 Sep", dueState: "overdue", priority: "High", badges: { description: true, checklist: { done: 2, total: 6 }, attachments: 3 }, assignees: ["todoi", "Sam Verhoeven"] },
 };
 export const Completed: Story = { args: { done: true, badges: { checklist: { done: 6, total: 6 } } } };
 export const LongTitle: Story = { args: { title: "Prepare a detailed helicopter quote covering delivery dates, optional equipment, maintenance, training, and payment terms" } };
@@ -189,7 +189,7 @@ export const CrowdedMetadata: Story = {
   args: {
     due: "Oct 20, 2026", repeat: "Every week", priority: "High", status: "DOING",
     badges: { description: true, checklist: { done: 12, total: 16 }, attachments: 8 },
-    assignees: ["Todoi", "Sam Verhoeven", "Ana Peeters", "Jonas Claes"],
+    assignees: ["todoi", "Sam Verhoeven", "Ana Peeters", "Jonas Claes"],
   },
   decorators: [(Story) => <div style={{ width: 220 }}><Story /></div>],
   async play({ canvas }) {

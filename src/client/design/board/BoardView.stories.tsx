@@ -20,7 +20,7 @@ const BOARD: Array<{ id: string; name: string; cards: Card[] }> = [
     id: "doing",
     name: "Doing",
     cards: [
-      { id: "c3", itemId: "HE-115", title: "Prepare the helicopter quote", labels: [{ color: "orange", text: "Sales" }], due: "Oct 2, 2026", dueState: "overdue", badges: { checklist: { done: 2, total: 5 } }, assignees: ["Todoi"] },
+      { id: "c3", itemId: "HE-115", title: "Prepare the helicopter quote", labels: [{ color: "orange", text: "Sales" }], due: "Oct 2, 2026", dueState: "overdue", badges: { checklist: { done: 2, total: 5 } }, assignees: ["todoi"] },
       { id: "c4", itemId: "HE-118", title: "Send the pilot roster", assignees: ["Sam Verhoeven"], badges: { attachments: 2 } },
       { id: "c5", itemId: "HE-119", title: "Schedule the 100-hour inspection", cover: { color: "var(--label-blue)" } },
     ],

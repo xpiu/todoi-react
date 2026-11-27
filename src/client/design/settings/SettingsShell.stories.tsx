@@ -91,8 +91,8 @@ const PAGES: SettingsPage[] = [
             title: "Profile",
             lead: (
               <div style={{ display: "flex", gap: 12, alignItems: "center", padding: 16 }}>
-                <Avatar name="Todoi" color="var(--label-teal)" size={40} decorative />
-                <b>Todoi</b>
+                <Avatar name="todoi" color="var(--label-teal)" size={40} decorative />
+                <b>todoi</b>
               </div>
             ),
             rows: [{ id: "email", label: "Email", hint: "Used to sign in", control: <MonoValue value="info@todoi.org" /> }],

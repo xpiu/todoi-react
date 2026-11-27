@@ -9,7 +9,7 @@ import { GroupLead, ListSection } from "./ListSection";
 
 const rows = (
   <>
-    <ListRow dragId="r1" itemId="HE-112" title="Confirm the hangar slot for October" labels={[{ color: "blue", text: "Ops" }]} due="Oct 9, 2026" assignees={["Todoi"]} />
+    <ListRow dragId="r1" itemId="HE-112" title="Confirm the hangar slot for October" labels={[{ color: "blue", text: "Ops" }]} due="Oct 9, 2026" assignees={["todoi"]} />
     <ListRow dragId="r2" itemId="HE-115" title="Prepare the helicopter quote" labels={[{ color: "orange", text: "Sales" }]} due="Oct 2, 2026" dueState="overdue" priority="High" />
     <ListRow dragId="r3" itemId="HE-118" title="Send the pilot roster" attachments={2} assignees={["Sam Verhoeven"]} />
   </>

@@ -1,6 +1,6 @@
 // Development seed: the UI kit's sample workspace (docs/design/kit-walkthrough.md) so every view has
 // realistic data from the first run. The skeleton (groups, projects, lists) is created only while the
-// database has no groups; the examples themselves (items, comments, photos, Todoi's Inbox) are filled in
+// database has no groups; the examples themselves (items, comments, photos, todoi's Inbox) are filled in
 // on every start, so a database seeded by an older version catches up without a reset. The browser
 // screenshot gates get their own copy (GATE_USER), reset to exactly this before every run.
 import { and, count, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
@@ -23,7 +23,7 @@ const SAM_ID = "seed_user_sam_000000a";
 const DEMO = "seed_user_todoi_0000a";
 const SAM = SAM_ID;
 
-/** The sample's two people: its owner (Todoi) and Sam, who edits the main project with them */
+/** The sample's two people: its owner (todoi) and Sam, who edits the main project with them */
 interface Cast {
   owner: string;
   sam: string;
@@ -33,7 +33,7 @@ const play = (cast: Cast, id: string) => (id === DEMO ? cast.owner : id === SAM 
 /** The screenshot gates' copy (GATE_USER): the same names and colours, so it renders as the dev account's did when seeded */
 const GATE: Cast = { owner: "seed_user_gate_todoi", sam: "seed_user_gate_sam" };
 const MAIN = "Helicopters Europe website";
-const MAIN_DESCRIPTION = "The shop and the public pages for both dealers. Sam takes the shop side, Todoi takes the pages.";
+const MAIN_DESCRIPTION = "The shop and the public pages for both dealers. Sam takes the shop side, todoi takes the pages.";
 
 interface SeedItem {
   project: string;
@@ -105,7 +105,7 @@ const SAMPLE_ITEMS: SeedItem[] = [
   { project: MAIN, key: 108, list: "Done", title: "Settled on the name: Helicopters Europe", done: true, due: "2020-01-10", assignees: [DEMO], created: "2026-06-30" },
   { project: MAIN, key: 110, list: "Done", title: "Bought the domain", done: true, due: "2019-12-18", assignees: [SAM], created: "2026-06-24" },
   { project: MAIN, key: 106, list: "Backlog", title: "Sort out what the labels mean before we both invent our own", labels: ["photos", "broken", "design", "shop", "paperwork"], description: "Two people, five labels. Anything more and we'll stop using them.", priority: "LOW", assignees: [DEMO], created: "2026-07-03" },
-  { project: MAIN, key: 101, list: "Backlog", title: "Helicopters Europe launch plan", due: "2026-09-18", priority: "HIGH", assignees: [SAM, DEMO], description: "Everything that has to be finished before the shop goes live. Sam takes the shop side, Todoi takes the pages.", created: "2026-07-05", subitems: [{ key: 120, title: "Get the helicopter list and prices from both dealers", done: true }, { key: 122, title: "Decide which models we sell online", done: true }, { key: 123, title: "Finish the checkout flow" }, { key: 125, title: "Photos for all twelve helicopters" }, { key: 128, title: "Test a full order end to end" }, { key: 130, title: "Go live" }] },
+  { project: MAIN, key: 101, list: "Backlog", title: "Helicopters Europe launch plan", due: "2026-09-18", priority: "HIGH", assignees: [SAM, DEMO], description: "Everything that has to be finished before the shop goes live. Sam takes the shop side, todoi takes the pages.", created: "2026-07-05", subitems: [{ key: 120, title: "Get the helicopter list and prices from both dealers", done: true }, { key: 122, title: "Decide which models we sell online", done: true }, { key: 123, title: "Finish the checkout flow" }, { key: 125, title: "Photos for all twelve helicopters" }, { key: 128, title: "Test a full order end to end" }, { key: 130, title: "Go live" }] },
   { project: MAIN, key: 135, list: "Backlog", title: "Financing calculator", priority: "LOW", created: "2026-08-10" },
   { project: MAIN, key: 136, list: "Backlog", title: "Spare parts shop, later", priority: "LOW", created: "2026-08-12" },
   { project: "Social Media", key: 205, list: "Planned", title: "Announce the shop on the day it goes live", labels: ["design"], assignees: [DEMO], created: "2026-08-20" },
@@ -113,9 +113,9 @@ const SAMPLE_ITEMS: SeedItem[] = [
   { project: "Spare parts", key: 202, list: "To-do", title: "Find tail rotor blades for the 2009 R44", assignees: [DEMO], created: "2026-08-22" },
 ];
 
-// Todoi's Inbox as the kit shows it: notifications about the main project and two loose items.
+// todoi's Inbox as the kit shows it: notifications about the main project and two loose items.
 const INBOX: SeedInboxItem[] = [
-  { kind: "mention", from: SAM, about: 112, title: "Sam Verhoeven mentioned you on MP-112: Pricing page: do we show the price", created: "2026-08-25", unread: true, description: "> @Todoi both dealers want the price hidden on the new models — fine with you before I change the copy?" },
+  { kind: "mention", from: SAM, about: 112, title: "Sam Verhoeven mentioned you on MP-112: Pricing page: do we show the price", created: "2026-08-25", unread: true, description: "> @todoi both dealers want the price hidden on the new models — fine with you before I change the copy?" },
   { kind: "assignment", from: SAM, about: 126, title: "Sam Verhoeven assigned MP-126 to you: Cut the helicopter photos to the right sizes", created: "2026-08-25", unread: true },
   { kind: "sync", from: null, about: 112, title: "Sync conflict on MP-112 — changed in todoi and on GitHub", created: "2026-08-24", unread: true, description: "The title and due date differ between the two copies. Keep one version in Settings › Storage & sync; nothing syncs for this project until you do." },
   { title: "Call the insurance broker back about hull coverage", created: "2026-08-24" },
@@ -146,7 +146,7 @@ export async function seedIfEmpty() {
  */
 export async function resetGateWorkspace() {
   await db.insert(users).values([
-    { id: GATE.owner, name: "Todoi", email: GATE_USER.email, emailVerified: true, nickname: "todoi", avatarColor: "blue" },
+    { id: GATE.owner, name: "todoi", email: GATE_USER.email, emailVerified: true, nickname: "todoi", avatarColor: "blue" },
     { id: GATE.sam, name: "Sam Verhoeven", email: "sam.gates@todoi.org", emailVerified: true, nickname: "sam", avatarColor: "orange" },
   ]).onConflictDoNothing();
   await ensurePassword(GATE.owner);
@@ -293,7 +293,7 @@ async function ensureComments(itemId: string, list: SeedItem["comments"] & {}, c
   return list.length;
 }
 
-/** Todoi's account-level Inbox: notifications link back ("related") to the item they are about. */
+/** todoi's account-level Inbox: notifications link back ("related") to the item they are about. */
 async function ensureInbox(cast: Cast, aboutOf: (key: number) => { aboutKey?: string; aboutItemId?: string }) {
   const demo = cast.owner;
   const listId = await inboxFor(demo);
@@ -325,7 +325,7 @@ async function ensureInbox(cast: Cast, aboutOf: (key: number) => { aboutKey?: st
 /** Email + password sign-in for the seed people (development only): the password is DEV_PASSWORD. */
 async function ensureDevAccounts() {
   await db.insert(users).values([
-    { id: DEMO, name: "Todoi", email: DEV_USER.email, emailVerified: true, nickname: "todoi", avatarColor: "blue" },
+    { id: DEMO, name: "todoi", email: DEV_USER.email, emailVerified: true, nickname: "todoi", avatarColor: "blue" },
     { id: SAM, name: "Sam Verhoeven", email: "sam@helicopterseurope.com", emailVerified: true, nickname: "sam", avatarColor: "orange" },
   ]).onConflictDoNothing();
   const [demo] = await db.select({ id: users.id }).from(users).where(eq(users.email, DEV_USER.email));
@@ -342,7 +342,7 @@ async function ensurePassword(userId: string) {
   await db.insert(accounts).values({ id: nanoid(), userId, accountId: userId, providerId: "credential", password: await hashPassword(DEV_PASSWORD) });
 }
 
-/** Move the original kit examples to Todoi's registered account without copying projects or items. */
+/** Move the original kit examples to todoi's registered account without copying projects or items. */
 async function assignExistingSamples(demo: string) {
   await db.transaction(async (tx) => {
     const legacyGroups = await tx.select({ id: groups.id }).from(groups).where(and(eq(groups.ownerId, LOCAL_USER_ID), inArray(groups.name, SAMPLE_GROUPS.map(([name]) => name))));

@@ -6,10 +6,10 @@ import { ActivityLog, type ActivityEntryView } from "./ActivityLog";
 // Local times with a fixed `now` keep the day groups and relative times deterministic.
 const NOW = new Date("2026-10-07T15:00:00").getTime();
 const ENTRIES: ActivityEntryView[] = [
-  { id: "a1", type: "item", actor: "Todoi", actorColor: "var(--label-teal)", text: "moved the quote to Doing", key: "HE-115", time: "2026-10-07T14:52:00" },
+  { id: "a1", type: "item", actor: "todoi", actorColor: "var(--label-teal)", text: "moved the quote to Doing", key: "HE-115", time: "2026-10-07T14:52:00" },
   { id: "a2", type: "comment", actor: "Sam Verhoeven", actorColor: "var(--label-orange)", text: "commented on", key: "HE-112", time: "2026-10-07T11:20:00" },
-  { id: "a3", type: "list", actor: "Todoi", actorColor: "var(--label-teal)", text: "added the list Backlog", time: "2026-10-06T16:05:00" },
-  { id: "a4", type: "member", actor: "Todoi", actorColor: "var(--label-teal)", text: "invited noor@todoi.com as an editor", time: "2026-10-03T09:30:00" },
+  { id: "a3", type: "list", actor: "todoi", actorColor: "var(--label-teal)", text: "added the list Backlog", time: "2026-10-06T16:05:00" },
+  { id: "a4", type: "member", actor: "todoi", actorColor: "var(--label-teal)", text: "invited noor@todoi.com as an editor", time: "2026-10-03T09:30:00" },
   { id: "a5", type: "settings", actor: "Sam Verhoeven", actorColor: "var(--label-orange)", text: "made the project shared", time: "2026-09-12T10:00:00" },
   { id: "a6", type: "item", actor: "Sam Verhoeven", actorColor: "var(--label-orange)", text: "completed", key: "HE-98", time: "2025-12-18T08:45:00" },
 ];
@@ -40,7 +40,7 @@ export const FilterByKind: Story = {
     await userEvent.click(await page.findByRole("option", { name: "Comments" }));
     await expect(canvas.getByText("1 entry · filtered")).toBeVisible();
     await userEvent.click(canvas.getByRole("combobox", { name: "Person" }));
-    await userEvent.click(await page.findByRole("option", { name: "Todoi" }));
+    await userEvent.click(await page.findByRole("option", { name: "todoi" }));
     await expect(canvas.getByText("Nothing matches these filters")).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "Show all activity" }));
     await expect(canvas.getByText("6 entries")).toBeVisible();

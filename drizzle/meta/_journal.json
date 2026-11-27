@@ -183,6 +183,13 @@
       "when": 1795774490345,
       "tag": "0025_project_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795780513949,
+      "tag": "0026_sample_account_lower_case",
+      "breakpoints": true
     }
   ]
 }

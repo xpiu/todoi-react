@@ -10,7 +10,7 @@ const PROJECTS = [
 ];
 const MEMBERS = [
   { id: "u1", name: "Sam Verhoeven" },
-  { id: "u2", name: "Todoi" },
+  { id: "u2", name: "todoi" },
 ];
 const RESULTS: SearchResult[] = [
   { id: "a", itemId: "MP-112", title: "Pricing page: do we show the price or only “request a quote”?", projectName: "Helicopters Europe website", listName: "Doing", match: { field: "title" } },

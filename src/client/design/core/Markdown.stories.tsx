@@ -3,7 +3,7 @@ import { expect, fn } from "storybook/test";
 
 import { Markdown } from "./Markdown";
 
-const MEMBERS = [{ name: "Todoi", nickname: "todoi" }, { name: "Sam Verhoeven" }];
+const MEMBERS = [{ name: "todoi", nickname: "todoi" }, { name: "Sam Verhoeven" }];
 
 const meta = {
   title: "Core/Markdown",
@@ -12,7 +12,7 @@ const meta = {
   args: {
     members: MEMBERS,
     onOpenKey: fn(),
-    text: "# Launch plan\nEverything before the shop goes live. @todoi takes the pages, see MP-112.\n\n- [x] Get the list from both dealers\n- [ ] Decide which models we sell **online**\n\n> Both dealers want the price hidden on the new models.\n\n`npm run dev` · ~~old~~ · [Todoi](https://todoi.com)",
+    text: "# Launch plan\nEverything before the shop goes live. @todoi takes the pages, see MP-112.\n\n- [x] Get the list from both dealers\n- [ ] Decide which models we sell **online**\n\n> Both dealers want the price hidden on the new models.\n\n`npm run dev` · ~~old~~ · [todoi](https://todoi.com)",
   },
   parameters: { docs: { description: { component: "Read-only renderer for item descriptions and comments: the Markdown subset the GitHub / Embridge sync writes (headings, lists, tasks, quotes, fences, inline emphasis, links, @mentions and item keys); no raw HTML, images or tables. Pass members so only real @names render as mentions, and onOpenKey to make item keys like MP-112 open the item. Use renderMarkdown when you need the blocks without the wrapper." } } },
 } satisfies Meta<typeof Markdown>;
@@ -24,7 +24,7 @@ export const Description: Story = {
   parameters: { a11y: { test: "todo" } },
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByRole("heading", { level: 1, name: "Launch plan" })).toBeVisible();
-    await expect(canvas.getByRole("link", { name: "Todoi" })).toHaveAttribute("href", "https://todoi.com");
+    await expect(canvas.getByRole("link", { name: "todoi" })).toHaveAttribute("href", "https://todoi.com");
     const key = canvas.getByRole("link", { name: "MP-112" });
     await userEvent.click(key);
     await expect(args.onOpenKey).toHaveBeenCalledWith("MP-112");

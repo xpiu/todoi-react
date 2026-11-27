@@ -9,7 +9,7 @@ const SECTIONS: ReadonlyArray<[string, string]> = [["Labels", "label"], ["Assign
 const AVAILABLE: FilterMenuOption[] = [
   { type: "label", value: "Sales", color: "var(--label-blue)" },
   { type: "label", value: "Urgent", color: "var(--label-red)" },
-  { type: "assignee", value: "Todoi", icon: "user" },
+  { type: "assignee", value: "todoi", icon: "user" },
   { type: "assignee", value: "Unassigned", icon: "user-x" },
   { type: "due", value: "Overdue", icon: "clock" },
   { type: "due", value: "Today", icon: "calendar-check" },
@@ -17,7 +17,7 @@ const AVAILABLE: FilterMenuOption[] = [
   { type: "due", value: "No date", icon: "calendar-off" },
   { type: "priority", value: "High", icon: "flag", iconColor: "var(--label-orange)" },
 ];
-const COUNTS = { "label:Sales": 12, "label:Urgent": 3, "assignee:Todoi": 8, "assignee:Unassigned": 5, "due:Overdue": 2, "due:Today": 1, "due:This week": 6, "due:No date": 9, "priority:High": 4 };
+const COUNTS = { "label:Sales": 12, "label:Urgent": 3, "assignee:todoi": 8, "assignee:Unassigned": 5, "due:Overdue": 2, "due:Today": 1, "due:This week": 6, "due:No date": 9, "priority:High": 4 };
 
 // Story state models the host; in the app this body sits in the SubNavbar's Filter Popover.
 function ControlledFilterMenu(args: FilterMenuProps) {

@@ -5,7 +5,7 @@ import { expect, fn, waitFor, within } from "storybook/test";
 import { MemberPicker, type MemberPickerProps, type PickableMember } from "./MemberPicker";
 
 const MEMBERS: PickableMember[] = [
-  { id: "u1", name: "Todoi", nickname: "todoi" },
+  { id: "u1", name: "todoi", nickname: "todoi" },
   { id: "u2", name: "Sam Verhoeven", nickname: "sam" },
   { id: "u3", name: "Marit Olsen", email: "marit@example.com" },
   { id: "u4", name: "Jonas Berg", email: "jonas@example.com", color: "var(--label-teal)" },
@@ -82,7 +82,7 @@ export const MaxOne: Story = {
     // At the cap the other rows are disabled, say why, and a pick leaves the selection unchanged.
     await expect(jonas).toHaveAttribute("aria-disabled", "true");
     await expect(jonas).toHaveAccessibleDescription("One person at most. Remove them to pick someone else.");
-    await expect(page.getByRole("checkbox", { name: "Todoi" })).not.toHaveAttribute("aria-disabled");
+    await expect(page.getByRole("checkbox", { name: "todoi" })).not.toHaveAttribute("aria-disabled");
     await userEvent.click(jonas);
     await expect(args.onChange).not.toHaveBeenCalled();
     await userEvent.keyboard("{Escape}");
