@@ -1,4 +1,4 @@
-// Todoi's versioned public API (work plan R5). /api/v1/… is a stable, documented subset of the app's own
+// todoi's versioned public API (work plan R5). /api/v1/… is a stable, documented subset of the app's own
 // routes: the same handlers, permissions and errors, reached through a second prefix — routing sees
 // /api/v1/items as /api/items (`routePath`, the Hono `getPath` of app.ts and index.ts). Only the operations
 // listed here answer under /api/v1, and API tokens work there only, so a token never reaches account
@@ -29,7 +29,7 @@ const op = (method: V1Method, path: string, tag: V1Operation["tag"], summary: st
 
 export const V1_OPERATIONS: V1Operation[] = [
   op("GET", "/me", "Account", "The person the token acts for, with their preferences and Inbox list id"),
-  op("GET", "/me/export", "Account", "Everything the person can see, as a .zip Todoi archive (not for a token limited to some projects)", { file: "application/zip" }),
+  op("GET", "/me/export", "Account", "Everything the person can see, as a .zip todoi archive (not for a token limited to some projects)", { file: "application/zip" }),
   op("GET", "/groups", "Projects", "Project groups with their projects (a limited token sees only its projects)"),
   op("GET", "/projects", "Projects", "The project behind a link's short id (?slug=, the path of its link)"),
   op("GET", "/projects/:id", "Projects", "A project with its lists and members"),
@@ -76,6 +76,6 @@ export const v1OperationOf = (method: string, routedPath: string): V1Operation |
 
 /** Under /api/v1, only the listed operations answer; everything else is 404, as if it weren't there. */
 export const v1Gate: MiddlewareHandler = async (c, next) => {
-  if (viaV1(c) && c.req.path !== `/api${V1_CONTRACT}` && !v1OperationOf(c.req.method, c.req.path)) return fail(c, 404, `That isn't part of Todoi's API v1. ${V1_PREFIX}${V1_CONTRACT} lists what is.`);
+  if (viaV1(c) && c.req.path !== `/api${V1_CONTRACT}` && !v1OperationOf(c.req.method, c.req.path)) return fail(c, 404, `That isn't part of todoi's API v1. ${V1_PREFIX}${V1_CONTRACT} lists what is.`);
   return next();
 };

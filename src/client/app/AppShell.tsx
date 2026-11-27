@@ -174,7 +174,7 @@ export function AppShell() {
       : backTarget
         ? () => void goToProject(backTarget.id, backTarget.id === lastProjectId ? getLastProjectView() : {})
         : () => void navigate({ to: "/projects" });
-  const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "search" ? "Search" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
+  const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "search" ? "Search" : section === "settings" ? "Settings" : section === "account" ? "Account" : "todoi";
 
   // The browser tab names the project on screen ("todoi - New project"); every other page keeps the app's name.
   const projectName = projectId ? project.data?.name : undefined;

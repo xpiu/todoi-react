@@ -60,7 +60,7 @@ const restore = (person: Person, bytes: Uint8Array) => {
   return app.request("/api/me/restore", { method: "POST", headers: { origin: process.env.APP_URL ?? "http://localhost:5173", cookie: person.cookie }, body: form });
 };
 
-describe("Todoi archive", () => {
+describe("todoi archive", () => {
   it("exports everything, including the Trash, comments and file bytes", async () => {
     const files = unzipSync(await exportOf(flo));
     const manifest = JSON.parse(new TextDecoder().decode(files[ARCHIVE_MANIFEST]));
@@ -139,9 +139,9 @@ describe("Todoi archive", () => {
     const before = (await db.select().from(groups).where(eq(groups.ownerId, someone.id))).length;
     const not = await restore(someone, strToU8("hello"));
     expect(not.status).toBe(422);
-    expect((await not.json()).error).toBe("This file isn't a Todoi export. Choose the .zip file that Export everything downloaded.");
+    expect((await not.json()).error).toBe("This file isn't a todoi export. Choose the .zip file that Export everything downloaded.");
     const newer = await restore(someone, zipSync({ [ARCHIVE_MANIFEST]: strToU8(JSON.stringify({ format: "todoi.archive", version: 2 })) }));
-    expect((await newer.json()).error).toBe("This export is from a newer version of Todoi (format 2; this one reads 1). Reload the page to update, then try again.");
+    expect((await newer.json()).error).toBe("This export is from a newer version of todoi (format 2; this one reads 1). Reload the page to update, then try again.");
     const files = unzipSync(await exportOf(flo));
     delete files[`projects/${ids.project}.json`];
     expect((await (await restore(someone, zipSync(files))).json()).error).toBe(`This export is incomplete (projects/${ids.project}.json is missing). Run Export everything again and restore the new file.`);

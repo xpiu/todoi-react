@@ -1,4 +1,4 @@
-// Todoi data model (Drizzle ORM, PostgreSQL). Vocabulary and column rationale: docs/design/glossary.md.
+// todoi data model (Drizzle ORM, PostgreSQL). Vocabulary and column rationale: docs/design/glossary.md.
 // Conventions: app-generated text ids (nanoid), timestamptz created_at / updated_at on every table,
 // soft removal as two timestamps (archived_at, deleted_at), enums mirroring the const arrays in src/shared/.
 import { sql, type SQLWrapper } from "drizzle-orm";
@@ -273,7 +273,7 @@ export interface ItemCover {
   /** One of the kit's sample covers (design/covers/*.svg) — seed data only, until attachments land */
   sample?: string;
 }
-/** What a synced file holds about an item that Todoi has no column for, kept so a round trip never drops it. */
+/** What a synced file holds about an item that todoi has no column for, kept so a round trip never drops it. */
 export interface ItemSyncExtra {
   /** Custom fields, verbatim */
   fields?: Record<string, string>;
@@ -284,7 +284,7 @@ export interface ItemSyncExtra {
 }
 export interface ItemNotification {
   kind: string;
-  /** Member id, or null when Todoi itself sends it */
+  /** Member id, or null when todoi itself sends it */
   fromUserId?: string | null;
   /** The key of the item it refers to */
   aboutKey?: string;
@@ -510,7 +510,7 @@ export const activity = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     itemId: text("item_id"),
-    /** Null when Todoi itself acted */
+    /** Null when todoi itself acted */
     actorId: text("actor_id").references(() => users.id),
     type: activityTypeEnum("type").notNull(),
     /** The sentence after the actor: 'moved “Pricing page” from To-do to Doing' */
@@ -626,7 +626,7 @@ export const gitConnections = pgTable("git_connections", {
 });
 export type GitConnection = typeof gitConnections.$inferSelect;
 
-/** One sync of a connection: what moved which way, and Todoi's document before (what Undo last merge restores). */
+/** One sync of a connection: what moved which way, and todoi's document before (what Undo last merge restores). */
 export const gitSyncRuns = pgTable(
   "git_sync_runs",
   {
@@ -637,7 +637,7 @@ export const gitSyncRuns = pgTable(
     actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
     trigger: text("trigger").$type<"connect" | "manual" | "webhook" | "auto" | "resolve" | "undo">().notNull(),
     outcome: text("outcome").$type<"pushed" | "pulled" | "merged" | "unchanged" | "conflict" | "failed" | "undone">().notNull(),
-    /** Items changed in Todoi / in the file by this run */
+    /** Items changed in todoi / in the file by this run */
     pulled: integer("pulled").notNull().default(0),
     pushed: integer("pushed").notNull().default(0),
     conflicts: integer("conflicts").notNull().default(0),

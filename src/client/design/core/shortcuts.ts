@@ -1,4 +1,4 @@
-// Canonical keyboard map — the SINGLE SOURCE OF TRUTH for every shortcut Todoi owns.
+// Canonical keyboard map — the SINGLE SOURCE OF TRUTH for every shortcut todoi owns.
 // Display: ShortcutsDialog and Settings › Keyboard render SHORTCUTS.sections.
 // Matching: KeyNav, ItemOverlay and the app shell match events through the helpers below.
 // Add or change a shortcut HERE, nowhere else. Spec: DESIGN.md › Interaction & keyboard.

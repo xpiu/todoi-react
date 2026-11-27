@@ -243,7 +243,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
           // projects that aren't synced), Import & export (the files you move by hand), This device.
           ...(registered
             ? git.storageGroups
-            : [{ id: "gh-signedout", title: "Projects", tone: "info" as const, rows: [{ id: "ghSignIn", label: "Log in to sync", hint: "Guest workspaces stay in Todoi", control: <Button icon="log-in" onClick={() => navigate({ to: "/login", search: { next: "/settings?s=storage" } })}>Log in</Button> }] }]
+            : [{ id: "gh-signedout", title: "Projects", tone: "info" as const, rows: [{ id: "ghSignIn", label: "Log in to sync", hint: "Guest workspaces stay in todoi", control: <Button icon="log-in" onClick={() => navigate({ to: "/login", search: { next: "/settings?s=storage" } })}>Log in</Button> }] }]
           ).map((g, i) => (i ? g : { ...g, heading: "Synchronization", headingNote: "Each project can keep a copy in a Markdown file in a GitHub repository. Edits sync both ways" })),
           {
             id: "impexp",
@@ -251,7 +251,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             heading: "Import & export",
             rows: [
               ...exportRows(notify, navigate, registered ? restore.start : undefined),
-              { id: "importFile", label: "Import", hint: "Markdown (Embridge), a Todoi JSON or YAML file, a Trello board or a CSV. You review everything before it lands", control: <Button icon="upload" onClick={() => navigate({ to: "/import" })}>Import…</Button> },
+              { id: "importFile", label: "Import", hint: "Markdown (Embridge), a todoi JSON or YAML file, a Trello board or a CSV. You review everything before it lands", control: <Button icon="upload" onClick={() => navigate({ to: "/import" })}>Import…</Button> },
             ],
           },
           {
@@ -264,7 +264,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
               ...(save.storageError ? [{ id: "deviceError", label: "Device save failed", hint: "Keep this tab open. Check available browser storage and try your change again. " + save.storageError }] : []),
               ...(save.transientWaiting ? [{ id: "transientPending", label: "Waiting in this tab", hint: `${save.transientWaiting} ${save.transientWaiting === 1 ? "action hasn't" : "actions haven't"} been saved on this device. Keep this tab open until they finish` }] : []),
               ...(save.transientFailed && !save.failed ? [{ id: "transientFailed", label: "An action didn't save", hint: "The action failed before it could be saved. Check the error message and try your change again" }] : []),
-              { id: "install", label: "Install app", hint: install.state === "installed" ? "Todoi is open in its own window" : install.state === "prompt" ? "Opens Todoi in its own window, from your home screen or dock" : INSTALL_HINT, control: install.state === "installed" ? <StatusDot on label="Installed" /> : <Button icon="monitor-down" disabled={install.state !== "prompt"} onClick={() => void install.install()}>Install</Button> },
+              { id: "install", label: "Install app", hint: install.state === "installed" ? "todoi is open in its own window" : install.state === "prompt" ? "Opens todoi in its own window, from your home screen or dock" : INSTALL_HINT, control: install.state === "installed" ? <StatusDot on label="Installed" /> : <Button icon="monitor-down" disabled={install.state !== "prompt"} onClick={() => void install.install()}>Install</Button> },
             ],
           },
           ...(save.operations.length ? [{
@@ -356,12 +356,12 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
             title: "Getting started",
             rows: [
               { id: "sample", label: "Sample project", hint: "A small project to click around in; delete it whenever you like", control: <Button icon="kanban" onClick={() => lifecycle.openNewProject()}>Create a project</Button> },
-              { id: "docs", label: "How Todoi works", hint: "The basics on one page", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> },
+              { id: "docs", label: "How todoi works", hint: "The basics on one page", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> },
               { id: "shortcuts", label: "Keyboard shortcuts", hint: "The full map, also behind ? anywhere in the app", control: <Button icon="keyboard" onClick={() => navigate({ to: "/settings", search: { s: "keyboard" } })}>Open</Button> },
             ],
           },
           { id: "help-topics", title: "Topics", rows: [{ id: "helpSearch", label: "Search help", hint: helpQ.trim() ? `${count(topics.length, "topic")} match` : "Type to filter the topics below", control: <TextField icon="search" value={helpQ} onChange={(e) => setHelpQ(e.target.value)} placeholder="Search" aria-label="Search help" /> }, ...topics.map((t) => ({ id: t.id, label: t.label, hint: t.hint, bodyText: t.body, body: expanded === t.id ? t.body : undefined, control: <IconButton name="chevron-down" label={`${expanded === t.id ? "Collapse" : "Expand"} ${t.label}`} size={28} iconSize={16} aria-expanded={expanded === t.id} onClick={() => setExpanded((e) => (e === t.id ? null : t.id))} /> }))] },
-          { id: "legal", title: "About", rows: [{ id: "version", label: "Version", hint: BUILD.builtAt ? `Built ${new Date(BUILD.builtAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}` : "Development build", keywords: [BUILD.sha], control: <MonoValue value={shortSha(BUILD.sha)} /> }, ...ABOUT_LINKS.map(([id, label, href]) => ({ id, label, hint: id === "licences" ? "Open-source software used in Todoi" : undefined, control: <SettingsLink href={href} /> }))] },
+          { id: "legal", title: "About", rows: [{ id: "version", label: "Version", hint: BUILD.builtAt ? `Built ${new Date(BUILD.builtAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}` : "Development build", keywords: [BUILD.sha], control: <MonoValue value={shortSha(BUILD.sha)} /> }, ...ABOUT_LINKS.map(([id, label, href]) => ({ id, label, hint: id === "licences" ? "Open-source software used in todoi" : undefined, control: <SettingsLink href={href} /> }))] },
         ],
       },
       {
@@ -371,7 +371,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
         icon: "git-branch",
         groups: [
           ...git.integrationGroups.map((g) => ({ ...g, rows: [...g.rows, { id: "ghSetup", label: "Set up sync", hint: "Connect, sync and resolve conflicts per project", control: <Button icon="arrow-right" onClick={() => navigate({ to: "/settings", search: { s: "storage" } })}>Storage & sync</Button> }] })),
-          { id: "api", title: "API", rows: [{ id: "apiTokens", label: "API tokens", hint: "Scripts and tools act as you with a personal token", control: <Button icon="code" onClick={() => navigate({ to: "/account", search: { s: "tokens" } })}>Manage tokens</Button> }, { id: "agentDocs", label: "Todoi for agents", hint: "How an AI agent or a script uses the API", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs/agents" })}>Open</Button> }] },
+          { id: "api", title: "API", rows: [{ id: "apiTokens", label: "API tokens", hint: "Scripts and tools act as you with a personal token", control: <Button icon="code" onClick={() => navigate({ to: "/account", search: { s: "tokens" } })}>Manage tokens</Button> }, { id: "agentDocs", label: "todoi for agents", hint: "How an AI agent or a script uses the API", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs/agents" })}>Open</Button> }] },
         ],
       },
       {
@@ -389,7 +389,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
               { id: "notifyMentions", label: "Mentions", hint: "When someone @mentions you in a comment", control: prefSwitch("notifyMentions", "Mentions") },
               { id: "notifyAssignments", label: "Assignments", hint: "When an item is assigned to you", control: prefSwitch("notifyAssignments", "Assignments") },
               { id: "notifyWatched", label: "Watched items", hint: "New comments on items you watch (Watch is in the item’s side panel)", control: prefSwitch("notifyWatched", "Watched items") },
-              { id: "notifyNews", label: "Todoi news", hint: "Todoi doesn't send release news yet", control: <MonoValue value="Not sent yet" /> },
+              { id: "notifyNews", label: "todoi news", hint: "todoi doesn't send release news yet", control: <MonoValue value="Not sent yet" /> },
             ],
           },
         ],
@@ -706,7 +706,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { slug
           { id: "danger", title: "Delete account", tone: "danger", rows: [deleteAccount.row] },
         ],
       },
-      { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How Todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> })), ...(me.data?.operator ? [{ id: "sup-admin", label: "Operator console", hint: "Errors, background jobs, Git sync health and accounts across Todoi", control: <Button icon="activity" onClick={() => navigate({ to: "/admin" })}>Open</Button> }] : [])] }] },
+      { id: "support", label: "Support", icon: "life-buoy", groups: [{ id: "support", title: "Support", rows: [{ id: "sup-docs", label: "Documentation", hint: "How todoi works, for people and for agents", control: <Button icon="book-open" onClick={() => navigate({ to: "/docs" })}>Open</Button> }, ...SUPPORT_LINKS.map(([id, label, hint, href]) => ({ id: `sup-${id}`, label, hint, control: <SettingsLink href={href} /> })), ...(me.data?.operator ? [{ id: "sup-admin", label: "Operator console", hint: "Errors, background jobs, Git sync health and accounts across todoi", control: <Button icon="activity" onClick={() => navigate({ to: "/admin" })}>Open</Button> }] : [])] }] },
     ],
   };
   const dialogs = (

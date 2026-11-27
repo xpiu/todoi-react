@@ -90,7 +90,7 @@ describe("connecting", () => {
     const repoItem = live.find((i) => i.title === "From the repo")!;
     expect((await db.select().from(comments).where(eq(comments.itemId, repoItem.id)))[0]).toMatchObject({ body: "**sam**\n\nSpec is in docs/", fileOrigin: { author: "sam", text: "Spec is in docs/" } });
     expect((await db.select({ name: labels.name }).from(itemLabels).innerJoin(labels, eq(labels.id, itemLabels.labelId)).where(eq(itemLabels.itemId, repoItem.id)))[0]?.name).toBe("web");
-    // The file got its ids written back, in Todoi's canonical form.
+    // The file got its ids written back, in todoi's canonical form.
     const written = JSON.parse(file("plans.json", "dev")!);
     expect(written.lists[0].items[0].id).toBe(repoItem.externalId);
     expect(written.title).toBe("Website");
@@ -105,7 +105,7 @@ describe("connecting", () => {
 });
 
 describe("syncing", () => {
-  it("writes Todoi's edits to the file, and the file's edits to Todoi", async () => {
+  it("writes todoi's edits to the file, and the file's edits to todoi", async () => {
     const f = await fixture();
     const { connection } = await connect(f);
     await updateItem(f.review, { done: true }, {}, {}, f.userId);
@@ -131,13 +131,13 @@ describe("syncing", () => {
   it("pauses on a conflict, then applies the side picked per conflict", async () => {
     const f = await fixture();
     const { connection } = await connect(f);
-    await updateItem(f.review, {}, { title: "Review (Todoi)" }, {}, f.userId);
+    await updateItem(f.review, {}, { title: "Review (todoi)" }, {}, f.userId);
     await fake.control.push(REPO, "main", "todo/website.md", file()!.replace("Review", "Review (file)").replace("- [ ] Write the post", "- [x] Write the post"));
     const paused = await syncConnection(connection.id, "manual", f.userId);
     expect(paused).toMatchObject({ outcome: "conflict", conflicts: 1 });
     const [c] = await db.select().from(gitConnections).where(eq(gitConnections.id, connection.id));
     expect(c).toMatchObject({ state: "conflict" });
-    expect(c!.pending!.conflicts).toEqual([expect.objectContaining({ kind: "field", field: "title", ours: "Review (Todoi)", theirs: "Review (file)" })]);
+    expect(c!.pending!.conflicts).toEqual([expect.objectContaining({ kind: "field", field: "title", ours: "Review (todoi)", theirs: "Review (file)" })]);
     // Nothing applied while paused.
     expect((await row(f.write)).done).toBe(false);
 
@@ -152,7 +152,7 @@ describe("syncing", () => {
   it("decides conflicts by policy when told to", async () => {
     const f = await fixture();
     const { connection } = await connect(f, { conflictPolicy: "file" });
-    await updateItem(f.review, {}, { title: "Todoi" }, {}, f.userId);
+    await updateItem(f.review, {}, { title: "todoi" }, {}, f.userId);
     await fake.control.push(REPO, "main", "todo/website.md", file()!.replace("Review", "File"));
     expect(await syncConnection(connection.id, "manual", f.userId)).toMatchObject({ outcome: "pulled", conflicts: 1 });
     expect((await row(f.review)).title).toBe("File");
@@ -176,7 +176,7 @@ describe("syncing", () => {
     const md = file()!.replace(/(- \[ \] Review\nstatus: todo, prio: high, due: 2026-12-01, id: \w+)/, "$1, ref: A-7, assignee: \"@flo, @ghost\"\n  - [Spec](docs/spec.pdf)\n  - [ ] Check copy\n    - [ ] Check headings");
     await fake.control.push(REPO, "main", "todo/website.md", md);
     const run = await syncConnection(connection.id, "manual", f.userId);
-    expect(run.notes).toEqual(["“Check headings” was a subitem of a subitem, so it's now a direct subitem of “Review”. Todoi has two levels: items and subitems"]);
+    expect(run.notes).toEqual(["“Check headings” was a subitem of a subitem, so it's now a direct subitem of “Review”. todoi has two levels: items and subitems"]);
     expect((await row(f.review)).syncExtra).toEqual({ fields: { ref: "A-7" }, assignees: ["ghost"], attachments: [{ label: "Spec", url: "docs/spec.pdf", image: false }] });
     const after = file()!;
     expect(after).toMatch(/assignee: "@flo, @ghost"/);

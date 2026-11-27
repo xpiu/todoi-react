@@ -30,7 +30,7 @@ function fold(line: string): string {
   return result;
 }
 
-/** A portable snapshot of dated items, with stable identities and links back to Todoi. */
+/** A portable snapshot of dated items, with stable identities and links back to todoi. */
 export function itemsToCalendar(items: CalendarItem[], appUrl: string, now = new Date()): string {
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Todoi//Calendar export//EN", "CALSCALE:GREGORIAN"];
   for (const item of items) {
@@ -46,7 +46,7 @@ export function itemsToCalendar(items: CalendarItem[], appUrl: string, now = new
       end.setUTCDate(end.getUTCDate() + 1);
       lines.push(`DTSTART;VALUE=DATE:${date(item.startDate ?? dueDate)}`, `DTEND;VALUE=DATE:${date(end.toISOString().slice(0, 10))}`);
     }
-    const description = [item.description, item.done ? "Completed in Todoi." : null].filter(Boolean).join("\n\n");
+    const description = [item.description, item.done ? "Completed in todoi." : null].filter(Boolean).join("\n\n");
     if (description) lines.push(`DESCRIPTION:${text(description)}`);
     lines.push(`URL:${itemLink(appUrl, item, item.project)}`, "END:VEVENT");
   }

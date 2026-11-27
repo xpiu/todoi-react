@@ -339,7 +339,7 @@ async function replay() {
       const response = await fetch(op.path, { method: op.method, body: op.body || undefined, credentials: "same-origin", headers: { "content-type": "application/json", "X-Todoi-Operation-Id": op.id, "X-Todoi-Owner-Id": ownerId, ...(op.baseVersion !== undefined ? { "X-Todoi-Base-Version": String(op.baseVersion) } : {}) }, signal: AbortSignal.timeout(15_000) });
       const body = await response.text();
       if (workspace?.ownerId !== ownerId) return;
-      if ([408, 425, 429].includes(response.status) || response.status >= 500) throw new TypeError("Todoi hasn't confirmed this change yet.");
+      if ([408, 425, 429].includes(response.status) || response.status >= 500) throw new TypeError("todoi hasn't confirmed this change yet.");
       if (!response.ok) {
         let detail: { error?: string } = {};
         try { detail = JSON.parse(body) as typeof detail; } catch { /* A proxy refusal may have no JSON body. */ }

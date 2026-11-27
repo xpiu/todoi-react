@@ -74,7 +74,7 @@ for (const scope of ["rounded-dark", "minimal-light"] as Scope[]) {
     await page.getByRole("button", { name: "Restore…" }).click();
     const dialog = page.getByRole("dialog", { name: "Restore from an export" });
     await dialog.locator('input[type="file"]').setInputFiles({ name: "notes.zip", mimeType: "application/zip", buffer: Buffer.from("not a zip") });
-    await expect(dialog.getByText("This file isn't a Todoi export. Choose the .zip file that Export everything downloaded.")).toBeVisible();
+    await expect(dialog.getByText("This file isn't a todoi export. Choose the .zip file that Export everything downloaded.")).toBeVisible();
     await page.waitForTimeout(350);
     await page.screenshot({ path: `.tmp/shots/archive-refused-${scope}.png` });
   });

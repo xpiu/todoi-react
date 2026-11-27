@@ -8,7 +8,7 @@ import { Icon, type IconName } from "../core/Icon";
 import { InlineError } from "../core/InlineError";
 import "./AuthShell.css";
 
-export function AuthShell({ brand = "Todoi", footer, children, width, style }: { brand?: string; footer?: ReactNode | null; children: ReactNode; width?: number; style?: CSSProperties }) {
+export function AuthShell({ brand = "todoi", footer, children, width, style }: { brand?: string; footer?: ReactNode | null; children: ReactNode; width?: number; style?: CSSProperties }) {
   return (
     <div className="td-auth" style={style}>
       <div className="td-auth-mark">{brand}</div>

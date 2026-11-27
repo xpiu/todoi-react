@@ -1,4 +1,4 @@
-// The project document: one project as a file sees it, in every format Todoi reads and writes (Embridge
+// The project document: one project as a file sees it, in every format todoi reads and writes (Embridge
 // Markdown, JSON, YAML). Import, export and Git sync all convert through this one model, so a format is
 // only a codec (`parse` text → document, `serialize` document → text) and merging never touches text.
 // Hierarchy: Project › Lists › Items › Subitems, no deeper (DESIGN.md › Storage & sync).
@@ -42,7 +42,7 @@ const itemShape = {
   description: z.string().nullable(),
   comments: z.array(docCommentSchema),
   attachments: z.array(docAttachmentSchema),
-  /** Fields Todoi has no place for, kept verbatim so a round trip doesn't drop them */
+  /** Fields todoi has no place for, kept verbatim so a round trip doesn't drop them */
   fields: z.record(z.string(), z.string()),
 };
 

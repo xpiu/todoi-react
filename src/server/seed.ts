@@ -62,7 +62,7 @@ interface SeedInboxItem {
   created: string;
   unread?: boolean;
   description?: string;
-  /** A notification: who it came from (null = Todoi itself) and which main-project key it is about */
+  /** A notification: who it came from (null = todoi itself) and which main-project key it is about */
   kind?: NotificationKind;
   from?: string | null;
   about?: number;
@@ -117,11 +117,11 @@ const SAMPLE_ITEMS: SeedItem[] = [
 const INBOX: SeedInboxItem[] = [
   { kind: "mention", from: SAM, about: 112, title: "Sam Verhoeven mentioned you on MP-112: Pricing page: do we show the price", created: "2026-08-25", unread: true, description: "> @Todoi both dealers want the price hidden on the new models — fine with you before I change the copy?" },
   { kind: "assignment", from: SAM, about: 126, title: "Sam Verhoeven assigned MP-126 to you: Cut the helicopter photos to the right sizes", created: "2026-08-25", unread: true },
-  { kind: "sync", from: null, about: 112, title: "Sync conflict on MP-112 — changed in Todoi and on GitHub", created: "2026-08-24", unread: true, description: "The title and due date differ between the two copies. Keep one version in Settings › Storage & sync; nothing syncs for this project until you do." },
+  { kind: "sync", from: null, about: 112, title: "Sync conflict on MP-112 — changed in todoi and on GitHub", created: "2026-08-24", unread: true, description: "The title and due date differ between the two copies. Keep one version in Settings › Storage & sync; nothing syncs for this project until you do." },
   { title: "Call the insurance broker back about hull coverage", created: "2026-08-24" },
   { kind: "watch", from: SAM, about: 108, title: "Sam Verhoeven moved MP-108 to Done: Settled on the name: Helicopters Europe", created: "2026-08-23" },
   { title: "Idea: trade-in program for older helicopters", created: "2026-08-21", subitems: ["Ask both dealers if they'd take trade-ins", "Check what a trade-in is worth"] },
-  { kind: "news", from: null, title: "Todoi 2.1 is out: drag items between lists, sort menus, and calendar rescheduling", created: "2026-08-18", unread: true },
+  { kind: "news", from: null, title: "todoi 2.1 is out: drag items between lists, sort menus, and calendar rescheduling", created: "2026-08-18", unread: true },
 ];
 
 const hasAny = async (table: typeof attachments | typeof comments, where: SQL) => ((await db.select({ n: count() }).from(table).where(where))[0]?.n ?? 0) > 0;

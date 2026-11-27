@@ -113,7 +113,7 @@ export const auth = betterAuth({
   plugins: [passkey({
     // The relying party is the app's own address (APP_URL): a passkey made for localhost works on localhost only.
     rpID: new URL(env.APP_URL).hostname,
-    rpName: "Todoi",
+    rpName: "todoi",
     origin: new URL(env.APP_URL).origin,
     // Sudo mode (hooks.before) replaces the plugin's own "fresh session" rule (a log-in under a day old).
     // Without it the registration still belongs to the session that asked for the options.

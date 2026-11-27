@@ -13,7 +13,7 @@ export interface VerifyEmailPageProps {
   email?: string | null;
   /** Hours the link works @default 24 */
   linkHours?: number;
-  /** Confirmed: "Continue to Todoi" */
+  /** Confirmed: "Continue to todoi" */
   onContinue?: () => void;
   /** Expired or not working: "Open Account", where a new link is sent */
   onOpenAccount?: () => void;
@@ -34,7 +34,7 @@ export function VerifyEmailPage({ stage, email, linkHours = EMAIL_LINK_HOURS, on
         </AuthState>
         <div className="td-auth-stack">
           <Button variant="primary" size="lg" onClick={onContinue}>
-            Continue to Todoi
+            Continue to todoi
           </Button>
         </div>
       </AuthShell>

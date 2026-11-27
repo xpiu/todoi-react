@@ -9,7 +9,7 @@ import { signIn, trackAccounts, useScope, type Scope } from "./helpers";
 trackAccounts(test);
 
 for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
-  test(`shows Todoi's health to an operator and records a browser error in ${scope}`, async ({ page }) => {
+  test(`shows todoi's health to an operator and records a browser error in ${scope}`, async ({ page }) => {
     await useScope(page, scope);
     await signIn(page);
     await page.goto("/account?s=support");
@@ -38,7 +38,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
 test("refuses someone who isn't an operator, and doesn't show them the way in", async ({ page }) => {
   expect((await page.request.post("/api/auth/sign-up/email", { data: { name: "Not an operator", email: `admin-${nanoid(8).toLowerCase()}@example.test`, password: "admin-test-password" } })).ok()).toBeTruthy();
   await page.goto("/admin");
-  await expect(page.getByText("Only Todoi's operators can open this page")).toBeVisible();
+  await expect(page.getByText("Only todoi's operators can open this page")).toBeVisible();
   await page.goto("/account?s=support");
   await expect(page.getByText("Documentation")).toBeVisible();
   await expect(page.getByText("Operator console")).toHaveCount(0);

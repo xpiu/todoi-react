@@ -109,7 +109,7 @@ describe("API v1", () => {
       expect(res.status, `${method} ${path}`).toBe(404);
     }
     const res = await as(secret, "/api/v1/me/tokens", { json: { name: "Escalate", access: "write" } });
-    expect((await res.json()).error).toMatch(/isn't part of Todoi's API v1/);
+    expect((await res.json()).error).toMatch(/isn't part of todoi's API v1/);
   });
 
   it("serves the same routes to a signed-in browser", async () => {

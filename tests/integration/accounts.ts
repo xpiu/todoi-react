@@ -81,7 +81,7 @@ export async function openLink(link: string, cookie?: string): Promise<{ status:
 
 /** The person opened their confirmation link: inviting and invites sent to their address need it (R4). */
 export async function confirmEmail(person: Pick<Person, "email">) {
-  const mail = (await emailsTo(person.email)).find((m) => m.subject === "Confirm your email for Todoi");
+  const mail = (await emailsTo(person.email)).find((m) => m.subject === "Confirm your email for todoi");
   if (!mail?.link) throw new Error(`No confirmation email reached ${person.email}`);
   const landing = await openLink(mail.link);
   if (landing.status !== 302) throw new Error(`The confirmation link answered ${landing.status}`);

@@ -1,5 +1,5 @@
 // Request throttling (work plan R3): fixed-window counters kept in this process's memory, keyed by the
-// client's address, an API token or an account. One instance serves Todoi today (the Dockerfile), so
+// client's address, an API token or an account. One instance serves todoi today (the Dockerfile), so
 // in-memory counts are exact; a second instance would multiply each limit by the instance count. Limits
 // that must hold across restarts and instances (wrong passwords per account) count in Postgres instead
 // (services/attempts.ts). On by default in production; RATE_LIMIT=false turns them off, and development

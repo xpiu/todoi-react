@@ -1,6 +1,6 @@
 // Git sync from the client: a project's connection to a file in a GitHub repository, and every connection
 // in the person's projects (Settings › Storage & sync). Syncing is online-only — it talks to GitHub — so
-// these calls never go through the offline queue. After a sync that changed Todoi, project data refreshes.
+// these calls never go through the offline queue. After a sync that changed todoi, project data refreshes.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { GitCheckInput, GitConnectInput, GitConnectionView, GitRunView } from "../../shared/gitSync";

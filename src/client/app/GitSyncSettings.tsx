@@ -31,7 +31,7 @@ interface ProjectLite {
 
 const POLICY_OPTIONS = [
   { value: "ask", label: "Ask me each time" },
-  { value: "todoi", label: "Todoi's version wins" },
+  { value: "todoi", label: "todoi's version wins" },
   { value: "file", label: "The file's version wins" },
 ] as const;
 
@@ -101,7 +101,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
       },
     );
   const undo = (c: GitConnectionView) =>
-    gm.undo.mutate({ projectId: c.projectId }, { onSuccess: () => notify({ message: `Undid the last sync of ${quote(c.projectName)}. The file has Todoi's version again`, icon: "undo-2" }), onError: (err) => notify({ message: `Couldn't undo: ${errorMessage(err)}`, icon: "circle-alert" }) });
+    gm.undo.mutate({ projectId: c.projectId }, { onSuccess: () => notify({ message: `Undid the last sync of ${quote(c.projectName)}. The file has todoi's version again`, icon: "undo-2" }), onError: (err) => notify({ message: `Couldn't undo: ${errorMessage(err)}`, icon: "circle-alert" }) });
 
   /** A connection's settings, for project owners and admins. */
   const syncSettingsRows = (c: GitConnectionView): SettingsRow[] => [
@@ -112,7 +112,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
       setTokenError(null);
       setTokenFor(c.projectId);
     }}>Replace token</Button> },
-    { id: `gh-${c.projectId}-disconnect`, label: "Stop syncing", hint: "The file stays in the repository and the project stays in Todoi", control: <Button icon="unplug" onClick={() => setDisconnectFor(c.projectId)}>Disconnect</Button> },
+    { id: `gh-${c.projectId}-disconnect`, label: "Stop syncing", hint: "The file stays in the repository and the project stays in todoi", control: <Button icon="unplug" onClick={() => setDisconnectFor(c.projectId)}>Disconnect</Button> },
   ];
   /** One card per connected project, titled by the project: where the file lives, one state row with the action that state needs, the recent syncs, then its settings. */
   const panel = (c: GitConnectionView): SettingsGroup => {
@@ -132,7 +132,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
           id: `gh-${c.projectId}-sync`,
           label: paused || failed || c.stale ? <StateLabel tone={c.stale && !paused && !failed ? "warn" : "danger"} text={paused ? `Paused · ${count(c.conflicts.length, "thing")} changed in both places` : failed ? "Last sync failed" : "Sync overdue"} /> : c.lastSyncedAt ? "In sync" : "Not synced yet",
           hint: paused
-            ? only ? `${quote(only.title)} differs between Todoi and the file. Pick a version to sync again` : "Pick a version for each to sync again"
+            ? only ? `${quote(only.title)} differs between todoi and the file. Pick a version to sync again` : "Pick a version for each to sync again"
             : failed
               ? (c.lastError ?? "Try again in a minute")
               : c.stale
@@ -151,7 +151,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
         ...runs.map((r) => ({
           id: `gh-run-${r.id}`,
           label: runSentence(r),
-          hint: [formatRelative(r.at), r.outcome === "undone" ? null : TRIGGER_WORDS[r.trigger], r.error, ...r.notes, r === undoable ? "Undo restores Todoi to before this sync and updates the file" : null].filter(Boolean).join(" · "),
+          hint: [formatRelative(r.at), r.outcome === "undone" ? null : TRIGGER_WORDS[r.trigger], r.error, ...r.notes, r === undoable ? "Undo restores todoi to before this sync and updates the file" : null].filter(Boolean).join(" · "),
           control:
             r === undoable ? (
               <Button icon="undo-2" disabled={!online || gm.undo.isPending} onClick={() => undo(c)}>
@@ -168,14 +168,14 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
   const unset = projects.filter((p) => !byProject.has(p.id) && canAdmin(p.id));
   const storageGroups: SettingsGroup[] = [
     ...ordered.map(panel),
-    ...(unset.length ? [{ id: "gh-unset", title: "Not synced", rows: unset.map((p) => ({ id: `gh-unset-${p.id}`, label: p.name, hint: "Only in Todoi", control: <Button icon="git-branch" disabled={!online} onClick={() => openConnect(p.id)}>Connect</Button> })) }] : []),
+    ...(unset.length ? [{ id: "gh-unset", title: "Not synced", rows: unset.map((p) => ({ id: `gh-unset-${p.id}`, label: p.name, hint: "Only in todoi", control: <Button icon="git-branch" disabled={!online} onClick={() => openConnect(p.id)}>Connect</Button> })) }] : []),
   ];
 
   /** Account › Projects and storage: where one project's data lives. */
   const storageRow = (p: ProjectLite): SettingsRow => {
     const c = byProject.get(p.id);
-    if (c) return { id: `pj-${p.id}-storage`, label: "Storage", hint: `Todoi, synced with ${c.path} (${c.branch})`, control: <MonoValue value={`${c.owner}/${c.repo}`} /> };
-    return { id: `pj-${p.id}-storage`, label: "Storage", hint: canAdmin(p.id) ? "Only in Todoi. Connect a GitHub repository to sync it with a file" : "Only in Todoi", control: canAdmin(p.id) ? <Button icon="git-branch" disabled={!online} onClick={() => openConnect(p.id)}>Connect repository</Button> : <MonoValue value="Todoi database" /> };
+    if (c) return { id: `pj-${p.id}-storage`, label: "Storage", hint: `todoi, synced with ${c.path} (${c.branch})`, control: <MonoValue value={`${c.owner}/${c.repo}`} /> };
+    return { id: `pj-${p.id}-storage`, label: "Storage", hint: canAdmin(p.id) ? "Only in todoi. Connect a GitHub repository to sync it with a file" : "Only in todoi", control: canAdmin(p.id) ? <Button icon="git-branch" disabled={!online} onClick={() => openConnect(p.id)}>Connect repository</Button> : <MonoValue value="todoi database" /> };
   };
 
   const integrationGroups: SettingsGroup[] = [
@@ -277,7 +277,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
         open={!!disconnectConn}
         onClose={() => setDisconnectFor(null)}
         title={`Disconnect ${disconnectConn ? quote(disconnectConn.projectName) : "this project"}?`}
-        body={disconnectConn ? `Todoi stops syncing with ${disconnectConn.path} in ${disconnectConn.owner}/${disconnectConn.repo}. The file stays in the repository and the project stays in Todoi; you can connect again later.` : ""}
+        body={disconnectConn ? `todoi stops syncing with ${disconnectConn.path} in ${disconnectConn.owner}/${disconnectConn.repo}. The file stays in the repository and the project stays in todoi; you can connect again later.` : ""}
         confirmLabel="Disconnect"
         danger
         busy={gm.disconnect.isPending}

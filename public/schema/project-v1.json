@@ -259,7 +259,7 @@
                       ]
                     },
                     "fields": {
-                      "description": "Your own values; Todoi keeps them as they are",
+                      "description": "Your own values; todoi keeps them as they are",
                       "anyOf": [
                         {
                           "type": "object",
@@ -486,7 +486,7 @@
                                 ]
                               },
                               "fields": {
-                                "description": "Your own values; Todoi keeps them as they are",
+                                "description": "Your own values; todoi keeps them as they are",
                                 "anyOf": [
                                   {
                                     "type": "object",
@@ -507,7 +507,7 @@
                               "title"
                             ],
                             "additionalProperties": false,
-                            "description": "A subitem. Todoi has two levels, items and subitems, so a subitem has no subitems"
+                            "description": "A subitem. todoi has two levels, items and subitems, so a subitem has no subitems"
                           }
                         },
                         {
@@ -541,7 +541,7 @@
     "lists"
   ],
   "additionalProperties": false,
-  "description": "A Todoi project: lists, items and subitems (todoi.com)",
+  "description": "A todoi project: lists, items and subitems (todoi.com)",
   "$id": "https://todoi.com/schema/project-v1.json",
-  "title": "Todoi project file"
+  "title": "todoi project file"
 }

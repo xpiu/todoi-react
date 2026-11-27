@@ -40,7 +40,7 @@ export function parseEnv(source: Record<string, string | undefined>) {
       /** Resend (resend.com) API key for account and invite emails; unset = each email is written to EMAIL_DIR instead */
       RESEND_API_KEY: optionalValue,
       /** The sender of every email; the domain must be verified at Resend */
-      EMAIL_FROM: z.string().trim().min(3).default("Todoi <no-reply@todoi.com>"),
+      EMAIL_FROM: z.string().trim().min(3).default("todoi <no-reply@todoi.com>"),
       /** Where the development transport writes emails (.html, .txt and .json headers) when RESEND_API_KEY is unset */
       EMAIL_DIR: z.string().default(".data/emails"),
       /** Who may open the operator console (/admin): comma-separated sign-in addresses, confirmed ones only. Development defaults to the seeded account */
@@ -73,7 +73,7 @@ export function parseEnv(source: Record<string, string | undefined>) {
   const parsed = schema.safeParse(source);
   if (!parsed.success) {
     const lines = parsed.error.issues.map((i) => `  - ${i.path.join(".") || "env"}: ${i.message}`);
-    throw new Error(`Todoi can't start: the ${dev ? "development" : "production"} configuration is invalid.\n${lines.join("\n")}`);
+    throw new Error(`todoi can't start: the ${dev ? "development" : "production"} configuration is invalid.\n${lines.join("\n")}`);
   }
   return { ...parsed.data, NOINDEX: parsed.data.NOINDEX ?? parsed.data.SIGN_UP === "invite", DEV: dev };
 }

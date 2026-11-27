@@ -1,4 +1,4 @@
-// Docs — two short secondary pages: /docs (how to use Todoi) and /docs/agents (how an AI agent uses the
+// Docs — two short secondary pages: /docs (how to use todoi) and /docs/agents (how an AI agent uses the
 // API). Brief on purpose; the full reference comes later. Same canvas and cards as Import
 // (SettingsPageFrame + SettingsCard); each card's body is prose. Spec: DESIGN.md › Secondary pages.
 // public/docs/agents.md is the plain-Markdown copy of the agents page (served at /docs/agents.md and
@@ -22,7 +22,7 @@ const API = "https://todoi.com/api/v1";
 
 const PAGES: Record<DocsPage, { title: string; crumb: string; cards: DocsCard[] }> = {
   people: {
-    title: "How Todoi works",
+    title: "How todoi works",
     crumb: "The basics on one page. Settings › Help has topics and the full shortcut map.",
     cards: [
       {
@@ -84,15 +84,15 @@ const PAGES: Record<DocsPage, { title: string; crumb: string; cards: DocsCard[] 
         title: "Your data",
         body: (
           <p>
-            Export a project as Markdown, PDF or CSV, or your whole account from Account › Data. Import Markdown, a Trello board or a CSV from Settings › Storage &amp; sync. Todoi keeps working offline and syncs when you're back.
+            Export a project as Markdown, PDF or CSV, or your whole account from Account › Data. Import Markdown, a Trello board or a CSV from Settings › Storage &amp; sync. todoi keeps working offline and syncs when you're back.
           </p>
         ),
       },
     ],
   },
   agents: {
-    title: "Todoi for agents",
-    crumb: "How an AI agent or script reads and changes Todoi on someone's behalf.",
+    title: "todoi for agents",
+    crumb: "How an AI agent or script reads and changes todoi on someone's behalf.",
     cards: [
       {
         id: "auth",
@@ -141,7 +141,7 @@ Content-Type: application/json`}</pre>
                 <code>POST /items/:id/comments</code>: <code>{`{ "id", "body" }`}</code>
               </li>
               <li>
-                <code>GET /me/export</code>: everything the person can see, as a <code>.zip</code> Todoi archive (a <code>todoi-archive.json</code> manifest, one JSON file per project, the Inbox and the attachment files); a token limited to some projects can't export
+                <code>GET /me/export</code>: everything the person can see, as a <code>.zip</code> todoi archive (a <code>todoi-archive.json</code> manifest, one JSON file per project, the Inbox and the attachment files); a token limited to some projects can't export
               </li>
             </ul>
           </>
@@ -156,7 +156,7 @@ Content-Type: application/json`}</pre>
               You choose new ids: 21 characters from <code>A–Z a–z 0–9 _ -</code>. Dates are <code>YYYY-MM-DD</code>. Priority is <code>URGENT</code>, <code>HIGH</code>, <code>MEDIUM</code> or <code>LOW</code>.
             </li>
             <li>
-              To retry a write safely, send the same <code>X-Todoi-Operation-Id</code> header again; Todoi applies it once.
+              To retry a write safely, send the same <code>X-Todoi-Operation-Id</code> header again; todoi applies it once.
             </li>
             <li>Errors return a status code and a plain sentence in <code>error</code>; show it to the person rather than guessing.</li>
             <li>Read before you write, and delete or archive only when the person asked you to.</li>
@@ -170,7 +170,7 @@ Content-Type: application/json`}</pre>
 export function DocsScreen({ page }: { page: DocsPage }) {
   const navigate = useNavigate();
   const doc = PAGES[page];
-  const other = page === "people" ? { label: "Todoi for agents", hint: "Using Todoi from an AI agent or a script", to: "/docs/agents" as const } : { label: "How Todoi works", hint: "The guide for people", to: "/docs" as const };
+  const other = page === "people" ? { label: "todoi for agents", hint: "Using todoi from an AI agent or a script", to: "/docs/agents" as const } : { label: "How todoi works", hint: "The guide for people", to: "/docs" as const };
   const more: SettingsRow[] = [{ id: "other", label: other.label, hint: other.hint, control: <Button icon="arrow-right" onClick={() => void navigate({ to: other.to })}>Open</Button> }];
   if (page === "agents") {
     more.push({ id: "markdown", label: "This page as Markdown", hint: "/docs/agents.md — plain text for agents, also listed in /llms.txt", control: <SettingsLink href="/docs/agents.md" /> });

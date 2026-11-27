@@ -33,19 +33,19 @@ describe("Embridge ⇄ project document", () => {
     expect(doc.lists[0]!.items[0]!.subitems.map((s) => [s.title, s.done])).toEqual([["Sub", false], ["Deep", true], ["Deeper", false], ["Sub two", false]]);
     expect(doc.lists[0]!.items[0]!.subitems[1]!.attachments).toEqual([{ label: "shot", url: "s.png", image: true }]);
     expect(warnings).toEqual([
-      "“Deep” was a subitem of a subitem, so it's now a direct subitem of “Top”. Todoi has two levels: items and subitems",
-      "“Deeper” was nested 3 levels under an item, so it's now a direct subitem of “Top”. Todoi has two levels: items and subitems",
+      "“Deep” was a subitem of a subitem, so it's now a direct subitem of “Top”. todoi has two levels: items and subitems",
+      "“Deeper” was nested 3 levels under an item, so it's now a direct subitem of “Top”. todoi has two levels: items and subitems",
     ]);
   });
 
-  it("keeps what Todoi can't use, verbatim, and warns", () => {
+  it("keeps what todoi can't use, verbatim, and warns", () => {
     const { doc, warnings } = fromEmbridge("- Call the client\nprio: someday, due: end of Q3, on: 2026-05-02, ref: A-7, status: blocked\nThey prefer mornings\n");
     const it0 = doc.lists[0]!.items[0]!;
     expect(doc.lists[0]!.name).toBe("Items");
     expect(it0).toMatchObject({ done: false, start: "2026-05-02", due: null, priority: null, status: null, fields: { prio: "someday", due: "end of Q3", ref: "A-7", status: "blocked" } });
     expect(warnings).toHaveLength(4);
     expect(warnings[0]).toBe('Line 3, “They prefer mornings”: left out because it isn\'t a field, description or comment. To keep it, put it in quotes ("…") or start it with >');
-    expect(warnings[1]).toBe("“Call the client”: Todoi doesn't know the priority “someday”");
+    expect(warnings[1]).toBe("“Call the client”: todoi doesn't know the priority “someday”");
   });
 
   it("repairs a repeated id before anything matches on it", () => {
@@ -74,7 +74,7 @@ describe("Embridge ⇄ project document", () => {
               description: 'Two lines\nwith "quotes"',
               comments: [{ author: "sam", at: "2026-09-20 14:30", text: "Looks good\nShip it", depth: 1 }, { author: null, at: null, text: "Agreed", depth: 2 }],
               attachments: [{ label: "Hero [v2]", url: "assets/hero (final).png", image: true }],
-              fields: { ref: "A-7", prio: "ignored because Todoi knows the priority" },
+              fields: { ref: "A-7", prio: "ignored because todoi knows the priority" },
               subitems: [docSubitem("Crop", { id: "k9x8y7z", done: true, status: "DONE" })],
             }),
           ],

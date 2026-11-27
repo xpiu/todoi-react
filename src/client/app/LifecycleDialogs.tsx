@@ -119,7 +119,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
         await m.transferOwnership.mutateAsync({ projectId, userId: member.id, quiet: true });
         notify({ message: `Transferred ${quote(p.name)} to ${member.name}. You’re now an admin.`, icon: "users" });
       }}
-      activity={(activity.data ?? []).map((a) => ({ id: a.id, type: a.type, actor: a.actor?.name ?? "Todoi", actorImage: a.actor?.image ?? undefined, actorColor: avatarColorVar(a.actor?.avatarColor), text: a.text, key: a.itemKey ? `${p.keyPrefix}-${a.itemKey}` : null, time: a.createdAt }))}
+      activity={(activity.data ?? []).map((a) => ({ id: a.id, type: a.type, actor: a.actor?.name ?? "todoi", actorImage: a.actor?.image ?? undefined, actorColor: avatarColorVar(a.actor?.avatarColor), text: a.text, key: a.itemKey ? `${p.keyPrefix}-${a.itemKey}` : null, time: a.createdAt }))}
       archivedCount={p.archivedCount}
       currentUserId={user.id}
       section={section}

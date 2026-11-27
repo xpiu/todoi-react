@@ -1,4 +1,4 @@
-// The operator console's data (/admin): an overview of Todoi's health and the account list.
+// The operator console's data (/admin): an overview of todoi's health and the account list.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
 

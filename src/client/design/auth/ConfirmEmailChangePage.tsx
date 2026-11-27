@@ -14,7 +14,7 @@ export interface ConfirmEmailChangePageProps {
   email?: string | null;
   /** @default 24 */
   linkHours?: number;
-  /** Confirmed: "Continue to Todoi" */
+  /** Confirmed: "Continue to todoi" */
   onContinue?: () => void;
   /** Expired or used: "Open Account" */
   onOpenAccount?: () => void;
@@ -45,7 +45,7 @@ export function ConfirmEmailChangePage({ stage = "confirmed", email, linkHours =
       <div className="td-auth-stack">
         {stage === "confirmed" ? (
           <Button variant="primary" size="lg" onClick={onContinue}>
-            Continue to Todoi
+            Continue to todoi
           </Button>
         ) : (
           <Button variant="primary" size="lg" onClick={onOpenAccount}>

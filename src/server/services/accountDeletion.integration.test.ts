@@ -96,7 +96,7 @@ describe("deleting an account", () => {
     await call("/api/auth/request-password-reset", { json: { email: flo.email, redirectTo: "/reset" } });
     // Two wrong passwords at the confirm step (services/sudo.ts) are on the count.
     await db.insert(verifications).values({ id: nanoid(), identifier: `sudo-tries:${flo.id}`, value: "2", expiresAt: new Date(Date.now() + 600_000) });
-    expect((await emailsTo(flo.email)).map((m) => m.subject)).toContain("Reset your Todoi password");
+    expect((await emailsTo(flo.email)).map((m) => m.subject)).toContain("Reset your todoi password");
     for (const key of [ownFile!.storageKey, inboxFile!.storageKey, floUpload!.storageKey, avatarKey]) expect(await openUpload(key)).not.toBeNull();
 
     const res = await remove(flo, flo.email.toUpperCase());

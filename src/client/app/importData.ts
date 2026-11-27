@@ -34,7 +34,7 @@ const withAttachments = (description: string | null, attachments: DocAttachment[
 };
 const planComments = (cs: DocComment[]) => cs.map((c) => ({ text: c.text, author: c.author, at: c.at, depth: c.depth })).filter((c) => c.text.trim());
 
-/** A project document (from any codec) as an import plan. Fields Todoi has no place for are named in the warnings. */
+/** A project document (from any codec) as an import plan. Fields todoi has no place for are named in the warnings. */
 export function docToPlan(doc: ProjectDoc, warnings: string[], fallbackName: string): ImportPlan {
   const plan: ImportPlan = { ...blank(), name: doc.title || fallbackName, warnings: [...warnings] };
   const leftOut = new Set<string>();
@@ -54,7 +54,7 @@ export function docToPlan(doc: ProjectDoc, warnings: string[], fallbackName: str
     }
     plan.lists.push(list);
   }
-  if (leftOut.size) plan.warnings.push(`Fields Todoi doesn't use are left out: ${[...leftOut].sort().join(", ")}`);
+  if (leftOut.size) plan.warnings.push(`Fields todoi doesn't use are left out: ${[...leftOut].sort().join(", ")}`);
   if (linked) plan.warnings.push(`${count(linked, "attachment link")} added to descriptions; the files themselves aren't copied`);
   return plan;
 }
@@ -114,7 +114,7 @@ function parseLegacyMarkdown(text: string): ImportPlan {
         } else if (/^due\s+/i.test(part)) item.due = isoOf(part.replace(/^due\s+/i, ""));
         else if (PRIORITY_WORDS[part.toLowerCase()]) item.priority = PRIORITY_WORDS[part.toLowerCase()];
         else if (part.startsWith("@")) item.assignee = part.slice(1);
-        else plan.warnings.push(`“${title}”: “${part}” isn't a property Todoi reads, so it's left out`);
+        else plan.warnings.push(`“${title}”: “${part}” isn't a property todoi reads, so it's left out`);
       }
       list.items.push(item);
       continue;
@@ -126,7 +126,7 @@ function parseLegacyMarkdown(text: string): ImportPlan {
   return plan;
 }
 
-/** A Todoi project file (todoi.com/schema/project-v1.json) in JSON or YAML; `{` first means JSON. */
+/** A todoi project file (todoi.com/schema/project-v1.json) in JSON or YAML; `{` first means JSON. */
 export function parseProjectFile(text: string, fileName?: string | null): ImportPlan {
   const fallback = fileName?.replace(/\.[^.]+$/, "") ?? "";
   try {

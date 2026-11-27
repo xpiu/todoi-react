@@ -55,7 +55,7 @@ export function SessionError(props: ErrorComponentProps) {
     <ErrorState
       page
       title="Couldn't open your workspace"
-      hint={navigator.onLine ? "Todoi didn't answer. Try again in a moment, or log in to an account." : "You're offline. Connect and try again."}
+      hint={navigator.onLine ? "todoi didn't answer. Try again in a moment, or log in to an account." : "You're offline. Connect and try again."}
       error={error}
       reset={reset}
       secondary={{ label: "Log in", onClick: () => void navigate({ to: "/login" }) }}

@@ -82,7 +82,7 @@ describe("API error envelope", () => {
   it("hides an unexpected error's details from the response and logs them once under the request id", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const r = await call("/bug");
-    expect(r).toMatchObject({ status: 500, body: { error: "Something went wrong on Todoi's side. Try again in a moment.", code: "internal" } });
+    expect(r).toMatchObject({ status: 500, body: { error: "Something went wrong on todoi's side. Try again in a moment.", code: "internal" } });
     expect(JSON.stringify(r.body)).not.toContain("token");
     expect(error).toHaveBeenCalledTimes(1);
     expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toMatchObject({ level: "error", requestId: r.body.requestId, status: 500, error: { name: "Error" } });

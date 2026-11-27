@@ -1,6 +1,6 @@
 {
-  "name": "Todoi",
-  "short_name": "Todoi",
+  "name": "todoi",
+  "short_name": "todoi",
   "description": "Lists, boards and a calendar for the work you share.",
   "id": "/",
   "start_url": "/",

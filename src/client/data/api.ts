@@ -37,7 +37,7 @@ function statusMessage(status: number): string {
   if (status === 404) return "That isn't there anymore. It may have been moved or deleted.";
   if (status === 409) return "That changed in the meantime. Refresh and try again.";
   if (status === 413) return "That's too large to send.";
-  if (status >= 500) return "Todoi couldn't finish that. Try again in a moment.";
+  if (status >= 500) return "todoi couldn't finish that. Try again in a moment.";
   return "That change isn't valid.";
 }
 
@@ -61,7 +61,7 @@ export function fromErrorBody(status: number, body: Partial<ErrorBody> | null | 
 /** A failed request in words for the person: the server's reason, or that it never arrived. Server faults carry a short reference to quote. */
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.status >= 500 && err.requestId ? `${err.message} (ref ${err.requestId.slice(0, 8)})` : err.message;
-  if (err instanceof TypeError) return "Couldn't reach Todoi. Check your connection.";
+  if (err instanceof TypeError) return "Couldn't reach todoi. Check your connection.";
   return err instanceof Error && err.message ? err.message : "Something went wrong.";
 }
 

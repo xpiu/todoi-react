@@ -53,7 +53,7 @@ export function Avatar({ name = "?", src, size = 32, color, decorative, style, c
   const ink = LIGHT_INK.test(bg) || isDark(bg) ? "light" : "dark";
   return (
     // The initials are drawn from data-initials (Avatar.css): they picture the person, so they are no
-    // part of a surrounding control's visible label ("Account: Todoi" around "T").
+    // part of a surrounding control's visible label ("Account: todoi" around "T").
     <span className={cls} data-initials={initialsOf(name)} data-ink={ink} title={name} {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })} style={{ width: size, height: size, background: bg, fontSize: Math.round(size * 0.38), ...style }} />
   );
 }

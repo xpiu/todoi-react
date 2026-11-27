@@ -47,7 +47,7 @@ describe("mergeDocs", () => {
   it("merges sets member by member", () => {
     const ours = edit(base, (d) => {
       d.lists[0]!.items[0]!.labels = ["a", "ours"];
-      d.lists[0]!.items[0]!.comments = [{ author: "sam", at: null, text: "from Todoi", depth: 1 }];
+      d.lists[0]!.items[0]!.comments = [{ author: "sam", at: null, text: "from todoi", depth: 1 }];
       d.lists[0]!.items[0]!.fields = { ref: "A" };
     });
     const theirs = edit(base, (d) => {
@@ -58,16 +58,16 @@ describe("mergeDocs", () => {
     const r = mergeDocs(base, ours, theirs);
     expect(r.conflicts).toEqual([]);
     expect(item(r.doc, "w")).toMatchObject({ labels: ["ours", "theirs"], fields: { ref: "A", sprint: "12" } });
-    expect(item(r.doc, "w")!.comments.map((c) => c.text)).toEqual(["from Todoi", "from the file"]);
+    expect(item(r.doc, "w")!.comments.map((c) => c.text)).toEqual(["from todoi", "from the file"]);
   });
 
   it("reports a conflict per field and resolves it by choice or policy", () => {
-    const ours = edit(base, (d) => void (d.lists[0]!.items[1]!.title = "Review (Todoi)"));
+    const ours = edit(base, (d) => void (d.lists[0]!.items[1]!.title = "Review (todoi)"));
     const theirs = edit(base, (d) => void (d.lists[0]!.items[1]!.title = "Review (file)"));
     const r = mergeDocs(base, ours, theirs);
-    expect(r.conflicts).toEqual([{ key: "field:r:title", kind: "field", id: "r", title: "Review (Todoi)", field: "title", base: "Review", ours: "Review (Todoi)", theirs: "Review (file)" }]);
+    expect(r.conflicts).toEqual([{ key: "field:r:title", kind: "field", id: "r", title: "Review (todoi)", field: "title", base: "Review", ours: "Review (todoi)", theirs: "Review (file)" }]);
     expect(r.open).toHaveLength(1);
-    expect(item(r.doc, "r")!.title).toBe("Review (Todoi)");
+    expect(item(r.doc, "r")!.title).toBe("Review (todoi)");
     expect(item(mergeDocs(base, ours, theirs, { prefer: "theirs" }).doc, "r")!.title).toBe("Review (file)");
     const chosen = mergeDocs(base, ours, theirs, { choices: { "field:r:title": "theirs" } });
     expect(item(chosen.doc, "r")!.title).toBe("Review (file)");
@@ -75,10 +75,10 @@ describe("mergeDocs", () => {
   });
 
   it("adds new items from both sides in place, and gives the file's new items ids", () => {
-    const ours = edit(base, (d) => void d.lists[0]!.items.splice(1, 0, docItem("From Todoi", { id: "t1" })));
+    const ours = edit(base, (d) => void d.lists[0]!.items.splice(1, 0, docItem("From todoi", { id: "t1" })));
     const theirs = edit(base, (d) => void d.lists[0]!.items.push(docItem("From the file")));
     const r = mergeDocs(base, ours, theirs, { newId });
-    expect(titles(r.doc)[0]).toEqual(["todo", ["Write(Outline,Draft)", "From Todoi", "Review", "Ship", "From the file"]]);
+    expect(titles(r.doc)[0]).toEqual(["todo", ["Write(Outline,Draft)", "From todoi", "Review", "Ship", "From the file"]]);
     expect(r.doc.lists[0]!.items.at(-1)!.id).toMatch(/^new\d+$/);
   });
 
@@ -105,14 +105,14 @@ describe("mergeDocs", () => {
     expect(titles(r.doc)).toEqual([["todo", ["Write(Draft,Outline)", "Review"]], ["done", ["Plan", "Ship"]]]);
   });
 
-  it("keeps a list the file removed when Todoi added to it, and asks", () => {
+  it("keeps a list the file removed when todoi added to it, and asks", () => {
     const ours = edit(base, (d) => void d.lists[1]!.items.push(docItem("Retro", { id: "x" })));
     const theirs = edit(base, (d) => void d.lists.splice(1, 1));
     const r = mergeDocs(base, ours, theirs);
     expect(r.conflicts.map((c) => c.key)).toEqual(["list-removed:done"]);
     expect(titles(r.doc)).toEqual([["todo", ["Write(Outline,Draft)", "Review", "Ship"]], ["done", ["Retro"]]]);
     const dropped = mergeDocs(base, ours, theirs, { prefer: "theirs" });
-    // The list goes; what Todoi added in it moves to the first list rather than vanishing.
+    // The list goes; what todoi added in it moves to the first list rather than vanishing.
     expect(titles(dropped.doc)).toEqual([["todo", ["Write(Outline,Draft)", "Review", "Ship", "Retro"]]]);
   });
 
@@ -134,7 +134,7 @@ describe("mergeDocs", () => {
     expect(titles(kept.doc)[0]).toEqual(["todo", ["Review", "Ship", "Outline"]]);
   });
 
-  it("works across formats: a hand edit to the Markdown merges with a Todoi edit", () => {
+  it("works across formats: a hand edit to the Markdown merges with a todoi edit", () => {
     const md = toEmbridge(base);
     const handEdited = md.replace("- [ ] Review", "- [x] Review").replace("- [ ] Ship\nid: s", "- [ ] Ship it\nid: s");
     const theirs = fromEmbridge(handEdited).doc;

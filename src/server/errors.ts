@@ -92,7 +92,7 @@ function databaseFailure(db: DbError): { status: ContentfulStatusCode; message: 
     case "57P01":
     case "57P03":
     case "53300":
-      return { status: 503, message: "Todoi can't reach its database right now. Try again in a moment." };
+      return { status: 503, message: "todoi can't reach its database right now. Try again in a moment." };
     default:
       return null;
   }
@@ -141,6 +141,6 @@ function defaultMessage(status: number): string {
   if (status === 401) return "Sign in to continue";
   if (status === 403) return "You don't have access to this content";
   if (status === 404) return "Not found";
-  if (status >= 500) return "Something went wrong on Todoi's side. Try again in a moment.";
+  if (status >= 500) return "Something went wrong on todoi's side. Try again in a moment.";
   return "That request isn't valid";
 }

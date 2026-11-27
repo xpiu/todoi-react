@@ -51,7 +51,7 @@ function openDatabase() {
     request.onblocked = () => {
       blocked = true;
       database = undefined;
-      reject(new Error("Close other Todoi tabs to update device storage."));
+      reject(new Error("Close other todoi tabs to update device storage."));
     };
   });
   return database;

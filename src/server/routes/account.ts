@@ -97,13 +97,13 @@ export const exportRoute = new Hono().get("/calendar", async (c) => {
   const v = viewerOf(c);
   return c.body(await calendarOf(v.userId, v.inboxListId), 200, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="todoi-calendar-${new Date().toISOString().slice(0, 10)}.ics"` });
 }).get("/", async (c) => {
-  // Everything, restorable: the Todoi archive (shared/archive.ts) — projects, Inbox, comments, files.
+  // Everything, restorable: the todoi archive (shared/archive.ts) — projects, Inbox, comments, files.
   const v = viewerOf(c);
   const zip = await buildArchive(v);
   return c.body(zip as Uint8Array<ArrayBuffer>, 200, { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="todoi-export-${new Date().toISOString().slice(0, 10)}.zip"` });
 });
 
-/** POST /api/me/restore — a Todoi archive, restored as new groups and projects of the signed-in account. */
+/** POST /api/me/restore — a todoi archive, restored as new groups and projects of the signed-in account. */
 export const restoreRoute = new Hono().post("/", bodyLimit({ maxSize: MAX_ARCHIVE_BYTES, onError: (c) => fail(c, 413, "The export is larger than 512 MB") }), async (c) => {
   const body = await c.req.parseBody();
   const file = body.file;

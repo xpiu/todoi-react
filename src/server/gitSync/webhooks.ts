@@ -1,10 +1,10 @@
 // Inbound GitHub push webhooks: a push that touches a connected file starts a sync of that project, so
-// an edit on GitHub (by a person, an agent or CI) reaches Todoi without anyone pressing Sync now.
+// an edit on GitHub (by a person, an agent or CI) reaches todoi without anyone pressing Sync now.
 //
 // Each connection has its own webhook with its own secret (sealed at rest). A delivery is trusted only
 // when its X-Hub-Signature-256 verifies — in constant time — against a connection for that repository
 // and branch; anything else gets a bare 401. Deliveries are capped in size, repeated delivery ids are
-// dropped, Todoi's own commits are recognised and skipped, and the sync is a durable job (jobKinds.ts),
+// dropped, todoi's own commits are recognised and skipped, and the sync is a durable job (jobKinds.ts),
 // coalesced per connection and retried, that runs after the response (GitHub wants one within 10 s).
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
@@ -102,7 +102,7 @@ export async function handleWebhook(headers: { event?: string; delivery?: string
   const synced: string[] = [];
   for (const c of verified) {
     if (c.branch !== branch || (!truncated && !touched.has(c.path))) continue;
-    // Todoi's own commit coming back: nothing new in it.
+    // todoi's own commit coming back: nothing new in it.
     const [last] = await db.select({ commitSha: gitSyncRuns.commitSha }).from(gitSyncRuns).where(eq(gitSyncRuns.connectionId, c.id)).orderBy(desc(gitSyncRuns.createdAt)).limit(1);
     if (payload.after && last?.commitSha === payload.after) continue;
     synced.push(c.id);

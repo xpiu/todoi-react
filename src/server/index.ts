@@ -41,7 +41,7 @@ const isApi = (path: string) => path === "/api" || path.startsWith("/api/");
 if (env.CLIENT_DIR) {
   const index = join(env.CLIENT_DIR, "index.html");
   if (!existsSync(index)) {
-    console.error(`Todoi can't start: ${index} is missing. Run \`npm run build\` first, or set CLIENT_DIR= to serve the API only.`);
+    console.error(`todoi can't start: ${index} is missing. Run \`npm run build\` first, or set CLIENT_DIR= to serve the API only.`);
     process.exit(1);
   }
   // Every page the client serves carries the Content-Security-Policy (csp.ts; CSP=report-only only reports).

@@ -49,7 +49,7 @@ describe("log-ins per account (R3)", () => {
 
     // The reset link proves the address: the new password logs in at once.
     await call("/api/auth/request-password-reset", { json: { email: person.email, redirectTo: "/reset" } });
-    const mail = (await emailsTo(person.email)).find((m) => m.subject === "Reset your Todoi password")!;
+    const mail = (await emailsTo(person.email)).find((m) => m.subject === "Reset your todoi password")!;
     const token = new URL((await openLink(mail.link!)).location!).searchParams.get("token")!;
     expect((await call("/api/auth/reset-password", { json: { newPassword: "a fresh passphrase", token } })).status).toBe(200);
     expect((await logIn(person.email, "a fresh passphrase")).status).toBe(200);

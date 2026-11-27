@@ -49,7 +49,7 @@ const sign = (secret: string, body: string) => `sha256=${createHmac("sha256", se
 const headers = (secret: string, body: string, event = "push") => ({ event, delivery: randomUUID(), signature: sign(secret, body) });
 
 describe("GitHub webhooks", () => {
-  it("registers a hook with its own sealed secret, where GitHub can reach Todoi", async () => {
+  it("registers a hook with its own sealed secret, where GitHub can reach todoi", async () => {
     const { c, secret } = await connected();
     expect(webhookUrl()).toBe("http://127.0.0.1:9/api/webhooks/github");
     expect(c.hookId).toBeGreaterThan(0);
@@ -99,7 +99,7 @@ describe("GitHub webhooks", () => {
     expect(await handleWebhook(once, body, none)).toEqual({ status: 200, synced: [] });
   });
 
-  it("skips Todoi's own commit coming back", async () => {
+  it("skips todoi's own commit coming back", async () => {
     const { c, secret } = await connected();
     const [last] = await db.select().from(gitSyncRuns).where(eq(gitSyncRuns.connectionId, c.id));
     const body = push(c.path, { after: last!.commitSha });

@@ -26,7 +26,7 @@ it("escapes user text and folds Unicode without breaking code points or injectin
   const data = exportItems([{ ...item, title, description: "Line one\nLine two", done: true }]);
   const unfolded = data.replace(/\r\n /g, "");
   expect(unfolded).toContain(`SUMMARY:${"計画😀".repeat(30)}\\, team\\; notes\\\\next\\nEND:VEVENT`);
-  expect(unfolded).toContain("DESCRIPTION:Line one\\nLine two\\n\\nCompleted in Todoi.");
+  expect(unfolded).toContain("DESCRIPTION:Line one\\nLine two\\n\\nCompleted in todoi.");
   expect(data.split("\r\n").every((line) => new TextEncoder().encode(line).length <= 75)).toBe(true);
   expect(data.match(/\r\nEND:VEVENT\r\n/g)).toHaveLength(1);
 });

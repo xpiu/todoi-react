@@ -22,7 +22,7 @@ export async function isOperator(viewer: { userId: string; email: string; isAnon
 }
 
 const operatorsOnly: MiddlewareHandler = async (c, next) => {
-  if (!(await isOperator(viewerOf(c)))) return fail(c, 403, "This page is for Todoi's operators");
+  if (!(await isOperator(viewerOf(c)))) return fail(c, 403, "This page is for todoi's operators");
   await next();
 };
 

@@ -1,4 +1,4 @@
-// Export everything as a Todoi archive (src/shared/archive.ts) and restore one. Export collects every
+// Export everything as a todoi archive (src/shared/archive.ts) and restore one. Export collects every
 // project the person is a member of, their own groups and their Inbox — archived and trashed content
 // too — with comments, reactions, relations, saved views, activity and the attachment bytes. Restore
 // validates every file first, then creates fresh copies for the person restoring (new ids throughout)
@@ -216,7 +216,7 @@ async function restoreRows(tx: Tx, manifest: ArchiveManifest, files: ArchiveProj
     if (projectId) {
       const views = f.savedViews.filter((v) => v.shared || ctx.me(v.ownerId));
       if (views.length) await tx.insert(savedViews).values(views.map((v) => ({ id: map(v.id), projectId, ownerId: viewer.userId, name: v.name, shared: v.shared, definition: v.definition as never, position: v.position })));
-      // Your activity and Todoi's own come back; other people's lines would read as Todoi's, so they stay out (the summary says so).
+      // Your activity and todoi's own come back; other people's lines would read as todoi's, so they stay out (the summary says so).
       const acts = f.activity.filter((a) => !a.actorId || ctx.me(a.actorId));
       if (acts.length) await tx.insert(activity).values(acts.map((a) => ({ id: nanoid(), projectId, itemId: a.itemId && newId.has(a.itemId) ? map(a.itemId) : null, actorId: ctx.me(a.actorId), type: a.type, text: a.text, itemKey: a.itemKey, createdAt: new Date(a.createdAt) })));
     }

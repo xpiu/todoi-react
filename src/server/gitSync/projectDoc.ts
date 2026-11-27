@@ -2,7 +2,7 @@
 // Git sync merges as "ours", giving every live list and item a file id first (bookkeeping that doesn't
 // bump row versions; see migration 0021). `applyProjectDoc` makes the project match a merged document in
 // the caller's transaction: lists and items are created, edited, moved and reordered, items the document
-// dropped go to the Trash (never deleted outright), and what Todoi has no column for — custom fields,
+// dropped go to the Trash (never deleted outright), and what todoi has no column for — custom fields,
 // assignees who aren't members, attachment links — is kept in items.sync_extra so the file keeps it too.
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";

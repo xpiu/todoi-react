@@ -22,7 +22,7 @@ describe("passkeys", () => {
     await confirmIt(flo.cookie);
     const options = await call("/api/auth/passkey/generate-register-options", { cookie: flo.cookie });
     expect(options.status).toBe(200);
-    expect(await options.json()).toMatchObject({ rp: { id: new URL(env.APP_URL).hostname, name: "Todoi" }, user: { name: flo.email } });
+    expect(await options.json()).toMatchObject({ rp: { id: new URL(env.APP_URL).hostname, name: "todoi" }, user: { name: flo.email } });
     const guest = await call("/api/auth/sign-in/anonymous", { json: {} });
     const refused = await call("/api/auth/passkey/generate-register-options", { cookie: cookiesFrom(guest) });
     expect(refused.status).toBe(403);

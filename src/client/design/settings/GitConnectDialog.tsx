@@ -1,6 +1,6 @@
 // GitConnectDialog — connect a project to a file in a GitHub repository, in two stages on the shared
 // Dialog: "form" (repository, branch, file and format, the token, how conflicts are decided) → "checked"
-// (what Todoi found: the repository, and whether the file is already there, which decides the one thing
+// (what todoi found: the repository, and whether the file is already there, which decides the one thing
 // connecting can do — store the project as a new file, or let the existing file become the project).
 // Pasting a GitHub link fills the repository, branch and file. Pure: the host checks and connects.
 // Spec: DESIGN.md › Storage & sync › Git sync.
@@ -61,11 +61,11 @@ const FORMATS: ReadonlyArray<{ id: FileFormat; label: string; ext: string }> = [
 ];
 const POLICIES: ReadonlyArray<{ value: ConflictPolicy; label: string }> = [
   { value: "ask", label: "Ask me each time" },
-  { value: "todoi", label: "Todoi's version wins" },
+  { value: "todoi", label: "todoi's version wins" },
   { value: "file", label: "The file's version wins" },
 ];
 /** GitHub's page for a new fine-grained token, with a name and the one permission sync needs. */
-export const NEW_TOKEN_URL = "https://github.com/settings/personal-access-tokens/new?name=Todoi%20sync&description=Keeps%20Todoi%20projects%20in%20sync%20with%20files%20in%20this%20repository&contents=write";
+export const NEW_TOKEN_URL = "https://github.com/settings/personal-access-tokens/new?name=todoi%20sync&description=Keeps%20todoi%20projects%20in%20sync%20with%20files%20in%20this%20repository&contents=write";
 
 export function GitConnectDialog({ open, onClose, projectName, itemCount, defaultPath, checked, onCheck, onConnect, onEdit, busy = false, error, offline = false }: GitConnectDialogProps) {
   const [repoText, setRepoText] = useState("");
@@ -166,11 +166,11 @@ export function GitConnectDialog({ open, onClose, projectName, itemCount, defaul
                 <b>{projectName}</b> takes the file's lists and items.
               </>
             )}{" "}
-            From then on, edits in Todoi and in the file sync both ways.
+            From then on, edits in todoi and in the file sync both ways.
           </FlowState>
         ) : (
           <FlowState icon="file-plus-2" title={`No ${path.trim()} yet`}>
-            Todoi writes <b>{projectName}</b> to this new file{itemCount ? ` (${itemCount === 1 ? "1 item" : `${itemCount} items`})` : ""} and keeps both in sync from then on.
+            todoi writes <b>{projectName}</b> to this new file{itemCount ? ` (${itemCount === 1 ? "1 item" : `${itemCount} items`})` : ""} and keeps both in sync from then on.
           </FlowState>
         )}
         <InlineError message={lost} />
@@ -209,7 +209,7 @@ export function GitConnectDialog({ open, onClose, projectName, itemCount, defaul
         }}
       >
         <p className="td-account-text">
-          Keep <b>{projectName}</b> in a file in a GitHub repository. Edits in Todoi and in the file sync both ways.
+          Keep <b>{projectName}</b> in a file in a GitHub repository. Edits in todoi and in the file sync both ways.
         </p>
         <div className="td-account-field">
           <label className="td-account-label" htmlFor="td-git-repo">
@@ -250,7 +250,7 @@ export function GitConnectDialog({ open, onClose, projectName, itemCount, defaul
             <a className="td-git-link" href={NEW_TOKEN_URL} target="_blank" rel="noreferrer">
               Create one on GitHub
             </a>
-            , then pick this repository there. Todoi stores the token encrypted and never shows it again.
+            , then pick this repository there. todoi stores the token encrypted and never shows it again.
           </p>
         </div>
         <div className="td-account-field">

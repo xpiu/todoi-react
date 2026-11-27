@@ -1,4 +1,4 @@
-// Import reads spec-conformant Embridge (the format's own demo file) and Todoi project files (JSON and
+// Import reads spec-conformant Embridge (the format's own demo file) and todoi project files (JSON and
 // YAML): the Review step shows the lists, counts and what was left out — or why a file was refused — and
 // Create lands items, subitems, dates, Status and comment threads.
 import { readFile } from "node:fs/promises";
@@ -21,7 +21,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
     await expect(page.getByRole("textbox", { name: "Project name" })).toHaveValue("Project title");
     await expect(review.locator(".td-import-list li")).toHaveText(["List with backlog · 2 items · linked to Backlog", "To-do · 2 items · linked to To-do", "In progress · 1 item · linked to Doing", "Done · 1 item · linked to Done"]);
     await expect(page.getByText("4 lists · 6 items · 2 subitems · 2 labels · 10 comments", { exact: false })).toBeVisible();
-    await expect(review.locator(".td-import-warn")).toHaveText(["Fields Todoi doesn't use are left out: created, updated", "3 attachment links added to descriptions; the files themselves aren't copied"]);
+    await expect(review.locator(".td-import-warn")).toHaveText(["Fields todoi doesn't use are left out: created, updated", "3 attachment links added to descriptions; the files themselves aren't copied"]);
     await page.screenshot({ path: `.tmp/shots/import-embridge-review-${scope}.png` });
     await review.locator(".td-import-table").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `.tmp/shots/import-embridge-mapping-${scope}.png` });
@@ -65,11 +65,11 @@ lists:
 `;
 
 for (const scope of ["rounded-dark", "minimal-light"] as Scope[]) {
-  test(`imports a Todoi YAML file, and explains a refused JSON file, in ${scope}`, async ({ page }) => {
+  test(`imports a todoi YAML file, and explains a refused JSON file, in ${scope}`, async ({ page }) => {
     await useScope(page, scope);
     await page.goto("/import");
-    await page.getByRole("button", { name: "Todoi file" }).click();
-    const contents = page.getByRole("textbox", { name: "Todoi file contents" });
+    await page.getByRole("button", { name: "todoi file" }).click();
+    const contents = page.getByRole("textbox", { name: "todoi file contents" });
     await contents.fill('{"format":"todoi.project","version":1,"lists":[{"name":"L","items":[{"title":"A","subitems":[{"title":"B","subitems":[{"title":"C"}]}]}]}]}');
     await page.getByRole("button", { name: "Review import" }).click();
     await expect(page.locator(".td-import-warn")).toHaveText(["lists[0].items[0].subitems[0] “B”: a subitem can't have its own subitems. Make them subitems of “A” or items in the list"]);

@@ -87,14 +87,14 @@ function renderHtml(c: EmailContent): string {
 <table ${TABLE} width="100%" class="bg" bgcolor="#f3f3f1" style="background:#f3f3f1;">
 <tr><td align="center" style="padding:32px 12px;">
 <table ${TABLE} width="600" class="wrap" style="width:600px;max-width:600px;">
-<tr><td class="pad ink" style="padding:0 32px 16px;font:bold 20px/28px ${FONT};color:#111111;">Todoi</td></tr>
+<tr><td class="pad ink" style="padding:0 32px 16px;font:bold 20px/28px ${FONT};color:#111111;">todoi</td></tr>
 <tr><td class="card" bgcolor="#fbfbfa" style="background:#fbfbfa;border:1px solid #d9d9d6;">
 <table ${TABLE} width="100%"><tr><td class="pad" style="padding:32px 32px 20px;">
 <h1 class="ink" style="margin:0 0 16px;font:bold 22px/30px ${FONT};color:#111111;mso-line-height-rule:exactly;">${html(c.heading)}</h1>
 ${body}
 </td></tr></table>
 </td></tr>
-<tr><td class="pad dim" style="padding:16px 32px 0;font:13px/20px ${FONT};color:#55555a;mso-line-height-rule:exactly;">${html(c.footer)}<br>Todoi &middot; <a class="link" href="${SITE}" style="${LINK_STYLE}">todoi.com</a> &middot; <a class="link" href="${HELP}" style="${LINK_STYLE}">Help</a></td></tr>
+<tr><td class="pad dim" style="padding:16px 32px 0;font:13px/20px ${FONT};color:#55555a;mso-line-height-rule:exactly;">${html(c.footer)}<br>todoi &middot; <a class="link" href="${SITE}" style="${LINK_STYLE}">todoi.com</a> &middot; <a class="link" href="${HELP}" style="${LINK_STYLE}">Help</a></td></tr>
 </table>
 </td></tr>
 </table>
@@ -125,7 +125,7 @@ function renderText(c: EmailContent): string {
     `${c.linkLead}\n${c.url}`,
     ...(c.expiry ? [wrapText(plain(c.expiry))] : []),
     wrapText(plain(c.ignore)),
-    `--\n${wrapText(plain(c.footer))}\nTodoi - ${SITE} - Help: ${HELP}`,
+    `--\n${wrapText(plain(c.footer))}\ntodoi - ${SITE} - Help: ${HELP}`,
   ];
   return `${blocks.join("\n\n")}\n`;
 }
@@ -140,7 +140,7 @@ const EMAIL_SPAN = linkSpan(EMAIL_LINK_HOURS * 60);
 /** To the account address: the link opens the reset page. */
 export function passwordResetEmail({ email, url }: { email: string; url: string }): RenderedEmail {
   return render({
-    subject: ["Reset your Todoi password"],
+    subject: ["Reset your todoi password"],
     preheader: [`Use this link to set a new password. It works once and expires in ${RESET_SPAN}.`],
     heading: ["Reset your password"],
     intro: ["We got a request to reset the password for ", b(email), "."],
@@ -156,32 +156,32 @@ export function passwordResetEmail({ email, url }: { email: string; url: string 
 /** To the address that signed up. */
 export function verifyEmailEmail({ email, url }: { email: string; url: string }): RenderedEmail {
   return render({
-    subject: ["Confirm your email for Todoi"],
-    preheader: ["Confirm your address to finish setting up your Todoi account."],
+    subject: ["Confirm your email for todoi"],
+    preheader: ["Confirm your address to finish setting up your todoi account."],
     heading: ["Confirm your email"],
-    intro: ["Confirm that ", b(email), " is yours to finish setting up your Todoi account."],
+    intro: ["Confirm that ", b(email), " is yours to finish setting up your todoi account."],
     button: "Confirm email",
     linkLead: "Confirm your email:",
     url,
     expiry: [`The link expires in ${EMAIL_SPAN}.`],
-    ignore: ["Didn't create a Todoi account? Ignore this email and no account is set up."],
-    footer: ["You got this email because this address was used to sign up for Todoi."],
+    ignore: ["Didn't create a todoi account? Ignore this email and no account is set up."],
+    footer: ["You got this email because this address was used to sign up for todoi."],
   });
 }
 
 /** To the NEW address; the old one keeps logging in until the link is opened. */
 export function changeEmailEmail({ oldEmail, newEmail, url }: { oldEmail: string; newEmail: string; url: string }): RenderedEmail {
   return render({
-    subject: ["Confirm your new email for Todoi"],
-    preheader: ["Confirm that you want to log in to Todoi with this address."],
+    subject: ["Confirm your new email for todoi"],
+    preheader: ["Confirm that you want to log in to todoi with this address."],
     heading: ["Confirm your new email"],
-    intro: ["Confirm that you want to log in to Todoi with ", b(newEmail), " instead of ", b(oldEmail), "."],
+    intro: ["Confirm that you want to log in to todoi with ", b(newEmail), " instead of ", b(oldEmail), "."],
     button: "Confirm new email",
     linkLead: "Confirm your new email:",
     url,
     expiry: ["Until you confirm, you log in with ", v(oldEmail), `. The link expires in ${EMAIL_SPAN}.`],
     ignore: ["Didn't ask for this? Ignore this email and nothing changes."],
-    footer: ["You got this email because someone asked to use this address for a Todoi account."],
+    footer: ["You got this email because someone asked to use this address for a todoi account."],
   });
 }
 
@@ -212,7 +212,7 @@ export interface InviteEmailInput {
 export function projectInviteEmail({ email, inviterName, inviterEmail, projectName, role, message, url, expiresAt }: InviteEmailInput): RenderedEmail {
   const r = ROLE_MEANINGS[role];
   return render({
-    subject: [v(inviterName), " invited you to “", v(projectName), "” on Todoi"],
+    subject: [v(inviterName), " invited you to “", v(projectName), "” on todoi"],
     preheader: ["Join the project ", v(projectName), ` as ${r.article} ${r.name}.`],
     heading: [v(inviterName), " invited you to ", v(projectName)],
     intro: ["You'll join the project ", b(projectName), ` as ${r.article} `, b(r.name), `: ${r.meaning}.`],
@@ -222,7 +222,7 @@ export function projectInviteEmail({ email, inviterName, inviterEmail, projectNa
     url,
     expiry: ["The invitation is for ", v(email), ` and expires on ${inviteDate(expiresAt)}.`],
     ignore: ["Don't know ", v(inviterName), "? Ignore this email. You won't be added to anything."],
-    footer: ["You got this email because ", v(inviterName), " (", v(inviterEmail), ") invited this address to a Todoi project."],
+    footer: ["You got this email because ", v(inviterName), " (", v(inviterEmail), ") invited this address to a todoi project."],
   });
 }
 
@@ -255,9 +255,9 @@ export function notificationEmail({ kind, actorName, itemKey, itemTitle, project
   const item = itemKey ? `${itemKey}: ${itemTitle}` : itemTitle;
   const quote = kind !== "assignment" && excerpt?.trim() ? { message: excerptOf(excerpt), by: actorName } : undefined;
   const what: Record<NotificationKind, { subject: Piece[]; heading: Piece[]; intro: Piece[]; reason: string }> = {
-    assignment: { subject: [v(actorName), " assigned ", v(itemKey ?? "an item"), " to you: ", v(itemTitle)], heading: [v(actorName), " assigned you an item"], intro: [b(actorName), " assigned ", b(item), " to you in ", b(projectName), "."], reason: "an item in a Todoi project was assigned to you" },
-    mention: { subject: [v(actorName), " mentioned you on ", v(item)], heading: [v(actorName), " mentioned you"], intro: [b(actorName), " mentioned you in a comment on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you were @mentioned in a Todoi project" },
-    watch: { subject: [v(actorName), " commented on ", v(item)], heading: [v(actorName), " commented on an item you watch"], intro: [b(actorName), " commented on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you watch an item in a Todoi project" },
+    assignment: { subject: [v(actorName), " assigned ", v(itemKey ?? "an item"), " to you: ", v(itemTitle)], heading: [v(actorName), " assigned you an item"], intro: [b(actorName), " assigned ", b(item), " to you in ", b(projectName), "."], reason: "an item in a todoi project was assigned to you" },
+    mention: { subject: [v(actorName), " mentioned you on ", v(item)], heading: [v(actorName), " mentioned you"], intro: [b(actorName), " mentioned you in a comment on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you were @mentioned in a todoi project" },
+    watch: { subject: [v(actorName), " commented on ", v(item)], heading: [v(actorName), " commented on an item you watch"], intro: [b(actorName), " commented on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you watch an item in a todoi project" },
   };
   const w = what[kind];
   return render({
@@ -269,7 +269,7 @@ export function notificationEmail({ kind, actorName, itemKey, itemTitle, project
     button: "Open item",
     linkLead: "Open the item:",
     url,
-    ignore: [`Don't want these emails? Turn off ${SWITCHES[kind]} under Settings › Notifications › Email notifications. The item is in your Todoi Inbox too.`],
+    ignore: [`Don't want these emails? Turn off ${SWITCHES[kind]} under Settings › Notifications › Email notifications. The item is in your todoi Inbox too.`],
     footer: [`You got this email because ${w.reason} and your ${SWITCHES[kind]} emails are on.`],
   });
 }

@@ -1,4 +1,4 @@
-// The OpenAPI 3.1 contract of Todoi's API v1 (work plan R5), served at /api/v1/openapi.json. Built from the
+// The OpenAPI 3.1 contract of todoi's API v1 (work plan R5), served at /api/v1/openapi.json. Built from the
 // routes themselves: the operations are apiV1.ts's table, and each one's path, query and body come from the
 // Zod schemas its `validate` middleware checks (errors.ts records them), so the document can't drift from
 // what the server accepts. Responses are JSON (the shapes follow the app's own types; only errors are
@@ -77,9 +77,9 @@ export function openApiDocument(routes: RouterRoute[], appUrl: string) {
   return {
     openapi: "3.1.0",
     info: {
-      title: "Todoi API",
+      title: "todoi API",
       version: "1",
-      description: "Read and change Todoi on someone's behalf with their personal API token. A token is read only or read and write, and reaches every project and the Inbox or only the projects picked when it was made. Guide: /docs/agents.",
+      description: "Read and change todoi on someone's behalf with their personal API token. A token is read only or read and write, and reaches every project and the Inbox or only the projects picked when it was made. Guide: /docs/agents.",
       contact: { email: "info@todoi.com" },
     },
     servers: [{ url: `${appUrl}${V1_PREFIX}` }],

@@ -56,7 +56,7 @@ export interface ListRowProps {
   /** Inbox: not opened yet */
   unread?: boolean;
   /** Notification: who it came from */
-  /** Who an Inbox notification came from: a person (avatar), or Todoi itself (the kind's glyph and label) */
+  /** Who an Inbox notification came from: a person (avatar), or todoi itself (the kind's glyph and label) */
   from?: { name?: string; src?: string; color?: string; icon?: IconName; label?: string };
   /** Notification: the item it is about — its key opens that item */
   about?: { key: string; title?: string; onOpen?: () => void };
@@ -240,7 +240,7 @@ export function ListRow({ title, itemId, showId = true, labels = [], done, onDon
         <Checkbox checked={!!done} onChange={(v) => onDone?.(v)} shape="circle" recurring={recurring} aria-label={done ? "Mark not done" : "Mark done"} />
       </span>
       {from ? (
-        <span className="td-list-row-from" title={from.name ? `From ${from.name}` : from.label ? `${from.label} · from Todoi` : "From Todoi"}>
+        <span className="td-list-row-from" title={from.name ? `From ${from.name}` : from.label ? `${from.label} · from todoi` : "From todoi"}>
           {from.name ? (
             <Avatar name={from.name} src={from.src} color={from.color} size={20} />
           ) : (

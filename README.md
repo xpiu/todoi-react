@@ -1,6 +1,6 @@
-# Todoi (web application)
+# todoi (web application)
 
-Todoi is a lightweight task manager focused on usability, legibility, speed and support for AI agents.
+todoi is a lightweight task manager focused on usability, legibility, speed and support for AI agents.
 
 ## 📝 About
 
@@ -9,6 +9,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - **Placeholder history:** v2 went live on 2026-08-21; recorded source: `archive/todoi-placeholder-20260820/` (absent from this checkout).
 - **Staging:** [staging.todoi.com](https://staging.todoi.com): Dokploy builds the repo `Dockerfile` with PostgreSQL 18; CI deploys `main` after every gate passes (see [Production](#-production)).
 - **Staging database:** `dbstagingtodoireact` in PostgreSQL 18 (also known as `db-staging-todoi-react` in Dokploy on VPS 2).
+- **Name:** in our own branding (visual work: the app, emails, the site, marketing) the name is lower case, `todoi`, also at the start of a sentence. Other companies and people may write `todoi` or `Todoi` as they like. The sample account that owns the seeded workspace is a person named "Todoi", and stays capitalised.
 - **Email:** any `@todoi.com` address that fits its purpose: `info@todoi.com` for contact, `no-reply@todoi.com` as the sender (`EMAIL_FROM`).
 - **Domains:** we own todoi.com and todoi.org. todoi.com is the default in links, emails, IDs and examples. Some core features will be reused at todoi.org, so a variant built for it may use todoi.org addresses instead (`info@todoi.org`). The development seed's sign-ins (`info@todoi.org`, `gates@todoi.org`) are local fixtures, not mailboxes. We don't own todoi.app, so never use it in links, emails, IDs or examples.
 - **Documentation:** [Design spec](DESIGN.md), [glossary](docs/design/glossary.md), [data model](docs/design/data-model-impact.md), [kit notes](docs/design/kit-walkthrough.md), [changelog](CHANGELOG.md). Root `PRODUCT.md` is missing.
@@ -40,12 +41,12 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 
 ## 💎 Unique selling propositions
 
-These six USPs define the intended commercial positioning of Todoi at todoi.com. They describe the product direction; current implementation status is noted below.
+These six USPs define the intended commercial positioning of todoi at todoi.com. They describe the product direction; current implementation status is noted below.
 
-1. **Freedom of data storage.** Choose where task data lives, including Todoi-hosted storage and external repositories or other supported storage providers, so users retain control of their data and can keep it outside the SaaS.
+1. **Freedom of data storage.** Choose where task data lives, including todoi-hosted storage and external repositories or other supported storage providers, so users retain control of their data and can keep it outside the SaaS.
 2. **Freedom of storage format.** Keep tasks in portable, accessible formats, with YAML, JSON and EMBRIDGE. Users should be able to choose supported formats, export their work and continue using it with other tools.
 3. **Open agent access in the codebase.** Store task files alongside source code so your preferred AI agent can read and update them using its existing file and Git tools, without a separate task-management API integration.
-4. **Bidirectional synchronization.** Keep changes made in Todoi and changes made directly in external task files synchronized, supporting an ongoing workflow for humans, agents and other tools.
+4. **Bidirectional synchronization.** Keep changes made in todoi and changes made directly in external task files synchronized, supporting an ongoing workflow for humans, agents and other tools.
 5. **Tasks versioned alongside the work.** Keep task files under Git version control with the code they describe. Developers and agents can commit task updates with code changes, review diffs and trace the history and authorship of task changes using Git.
 6. **Substantially lower pricing.** Aim to offer the key task-management workflows our customers need at roughly one-fifth of the price of a major competitor such as Linear. This is a pricing goal, subject to sustainable operating costs and final plan design.
 
@@ -79,7 +80,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 - **Workspace:** Project groups, Projects, Lists, Items, Subitems, labels, assignees, watchers, relations, recurrence, covers and attachments. List/Board/Calendar views with filters, sorting and saved views; item overlay with Tiptap descriptions, comments and activity.
 - **Status follows List** (was "Link Lists with Status"): a per-project switch on the Projects page (also in Project settings; default on). See [User flow, UI and UX](#-user-flow-ui-and-ux) and [DESIGN.md](DESIGN.md) (Project automation setting).
 - **Git sync:** a project kept in a file (Embridge Markdown, JSON or YAML) in a GitHub repository, synced both ways: three-way merge, a conflict dialog or a conflict policy, sync history with undo, and push webhooks. Connect under Settings › Storage & sync with a fine-grained token.
-- **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), Todoi JSON/YAML project files, Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export everything as a restorable `.zip`.
+- **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), todoi JSON/YAML project files, Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export everything as a restorable `.zip`.
 - **Accounts:** private guest workspaces, email/password accounts, project roles and invite links, personal API tokens and account preferences stored in PostgreSQL.
 
 Current limits:
@@ -88,7 +89,7 @@ Current limits:
 - **Sync:** workspace JSON edits persist in IndexedDB before sending, survive reload/close and retry in order with server deduplication. Snapshots refresh on reconnect, focus/navigation and every 30 seconds in visible tabs, preserving pending fields. Storage &amp; sync retains submitted text for conflict review; access loss purges cached content. Unsubmitted description/comment drafts use `sessionStorage`. App-shell offline caching, binary uploads and account/session actions are outside the queue. See [sync behavior](docs/sync.md).
 - **Deployment:** one API process with local attachment storage. Background work runs on a Postgres job queue that several processes can share; multiple processes would still need shared persistent storage for uploads.
 - **Attachments:** 25 MiB per file; storage quotas per uploader: 100 MiB for guests, 2 GiB for accounts.
-- **Exports:** Export everything writes a `.zip` Todoi archive — every project you're a member of (archived and trashed content too), your Inbox, comments with reactions, relations, saved views, activity and the attachment files — and Restore from an export brings it back as new copies (other people's work keeps its attribution in text; other members aren't re-added). Git sync connections, tokens and sign-in methods aren't exported. Up to 512 MB per restore; back up PostgreSQL and uploads for whole-server recovery.
+- **Exports:** Export everything writes a `.zip` todoi archive — every project you're a member of (archived and trashed content too), your Inbox, comments with reactions, relations, saved views, activity and the attachment files — and Restore from an export brings it back as new copies (other people's work keeps its attribution in text; other members aren't re-added). Git sync connections, tokens and sign-in methods aren't exported. Up to 512 MB per restore; back up PostgreSQL and uploads for whole-server recovery.
 - **Deferred:** OpenAPI, large-project virtualization and Linux screenshot baselines. Sequence-based deltas/SSE, Yjs collaboration and Redis remain possible later options.
 
 ## 🧭 User flow, UI and UX
@@ -235,7 +236,7 @@ export PATH="$(brew --prefix postgresql@18)/bin:$PATH"  # also add to ~/.zshrc
 
 The API runs on `:3000`, migrating/seeding on development boot. Vite serves `http://localhost:5173`, proxying `/api` to `:3000`; update `vite.config.ts` when changing the API port. API scripts read `.env`; Vite also reads `.env.local`.
 
-Seeded accounts: `info@todoi.org` and `sam@helicopterseurope.com`, verified, password `todoi-dev-password`. Todoi's samples include Helicopters Europe projects, MP-115 photos, Sam's comments and a filled Inbox; seeded starts replenish missing samples. Sign up at `/signup`; copy invites in **Project settings → Members**. Component gallery: `/dev/ds`.
+Seeded accounts: `info@todoi.org` and `sam@helicopterseurope.com`, verified, password `todoi-dev-password`. todoi's samples include Helicopters Europe projects, MP-115 photos, Sam's comments and a filled Inbox; seeded starts replenish missing samples. Sign up at `/signup`; copy invites in **Project settings → Members**. Component gallery: `/dev/ds`.
 
 Common commands:
 
@@ -270,13 +271,13 @@ Environment variables override `.env`:
 - **`SEED_ON_START`:** Must be `false` (production default); demo accounts have a published password.
 - **`CLIENT_DIR`:** Default `dist`; empty serves only the API.
 - **`RESEND_API_KEY`:** Resend API key for the account and invite emails (sent with `fetch`, no SDK). Unset, every email is written to `EMAIL_DIR` as `.html`, `.txt` and `.json` and logged instead; production warns at start. Until it is set, an operator can mark a person's address confirmed in `/admin` › Accounts, which unlocks what R4 waits for (inviting, joining by address).
-- **`EMAIL_FROM`:** Default `Todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
+- **`EMAIL_FROM`:** Default `todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
 - **`EMAIL_DIR`:** Default `.data/emails` (`/data/emails` in the Docker image, on the volume); the development transport's folder. Operators see its newest emails, with their links, under Outbox in `/admin`.
 - **`SYNC_SECRET_KEY`:** 32+ characters; encrypts the GitHub tokens and webhook secrets Git sync stores. Unset, a key is derived from `BETTER_AUTH_SECRET`, so rotating that secret disconnects every repository.
 - **`RATE_LIMIT`:** Default `true` in production, `false` in development. Throttles every request per client address (1200/min), log-ins (30 per 10 min per address), sign-ups (10/h), guest workspaces (30/h), reset and confirmation emails (10/h per address, 5/h per recipient), each API token (600 per 10 min), tokens that don't work (20 per 10 min per address) and account exports (10/h per person), browser error reports (60 per 10 min per person) and GitHub webhooks (120/min per address); a refusal is 429 with `Retry-After`. Counts live in memory, per instance. Wrong passwords are also throttled per account (10 log-ins per 15 min, cleared by a log-in that works or a password reset; 5 wrong ones at "Confirm it's you"), in Postgres and always on. Limits are in `src/server/rateLimit.ts`.
 - **`ADMIN_EMAILS`:** Comma-separated sign-in addresses that may open the operator console at `/admin` (errors, the job queue, Git sync health, accounts), once the address is confirmed. Default: none in production, the seeded `info@todoi.org` in development.
 - **`TRUST_PROXY_HOPS`:** Default `0` (the socket's address). Behind a reverse proxy that appends to `X-Forwarded-For`, set the number of such proxies (usually `1`), or every visitor shares the proxy's address and one budget.
-- **`SIGN_UP`:** Default `open` (staging.todoi.com since 2026-11-27, so a visitor lands in the app): anyone may create an account, and every visitor first gets a guest workspace. `invite` (staging.todoi.com while the first testers tried Todoi) makes no guest workspaces (a visitor without a session is sent to the log-in page) and creates an account only for an address in `SIGN_UP_EMAILS` or `ADMIN_EMAILS`, an address with an open project invite, or whoever signs up from an open invite link (`/i/:code`) that isn't locked to another address. Existing accounts log in as usual, and `NOINDEX` defaults to on. Social sign-in isn't gated yet: keep it switched off while `invite` is on.
+- **`SIGN_UP`:** Default `open` (staging.todoi.com since 2026-11-27, so a visitor lands in the app): anyone may create an account, and every visitor first gets a guest workspace. `invite` (staging.todoi.com while the first testers tried todoi) makes no guest workspaces (a visitor without a session is sent to the log-in page) and creates an account only for an address in `SIGN_UP_EMAILS` or `ADMIN_EMAILS`, an address with an open project invite, or whoever signs up from an open invite link (`/i/:code`) that isn't locked to another address. Existing accounts log in as usual, and `NOINDEX` defaults to on. Social sign-in isn't gated yet: keep it switched off while `invite` is on.
 - **`SIGN_UP_EMAILS`:** With `SIGN_UP=invite`, comma-separated addresses that may sign up without a project invite (the testers).
 - **`NOINDEX`:** Keeps search engines out: every response carries `X-Robots-Tag: noindex, nofollow` and `/robots.txt` disallows everything. Default `true` with `SIGN_UP=invite`, `false` otherwise; staging.todoi.com sets `true`. Production (todoi.com) leaves it unset so it is indexed.
 - **`CSP`:** Default `enforce`. `report-only` sends the same policy as `Content-Security-Policy-Report-Only`: browsers report what it would block (in `/admin`) but block nothing, the way back if a page breaks under it.
@@ -316,7 +317,7 @@ APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED
 
 - **Unit:** `npm run check` covers parsers, dates, recurrence/completion, Markdown, views, filters, export, shortcuts, item rows, mutations and server configuration/errors. The [theme-parity audit](src/client/design/tokens/parity.test.ts) checks matching token sets across four scopes, valid token references and no raw hex, bare z-index or `@media` in design component CSS.
 - **Integration:** `npm run test:integration` reads `.env` and checks PostgreSQL services/routes, including lifecycle cascades, rollback, attachment cleanup/security, completion, moves, duplication, search and notifications. Each test file gets a migrated disposable database and upload directory, removed afterward. The configured database role needs `CREATEDB`; fixtures do not use the application database.
-- **Browser:** `npx playwright install chromium` once, then `npm run test:e2e`. Playwright starts/reuses `:5173`; PostgreSQL and seeded accounts are required. List/Board/Calendar, overlay, Settings and saved views cover all four scopes with snapshots and axe WCAG 2.1 A/AA (serious/critical violations fail; **color contrast disabled; Base UI focus guards excluded**). Those snapshots sign in as `gates@todoi.org`, a copy of Todoi's samples that every run first resets to the seed, so hand edits to `info@todoi.org` never move a baseline; don't use it by hand. Other specs cover reduced motion, keyboard interaction, guest isolation/account transfers, offline edits, drafts, uploads and editing flows. Fixtures use the development database and are cleaned up afterward.
+- **Browser:** `npx playwright install chromium` once, then `npm run test:e2e`. Playwright starts/reuses `:5173`; PostgreSQL and seeded accounts are required. List/Board/Calendar, overlay, Settings and saved views cover all four scopes with snapshots and axe WCAG 2.1 A/AA (serious/critical violations fail; **color contrast disabled; Base UI focus guards excluded**). Those snapshots sign in as `gates@todoi.org`, a copy of todoi's samples that every run first resets to the seed, so hand edits to `info@todoi.org` never move a baseline; don't use it by hand. Other specs cover reduced motion, keyboard interaction, guest isolation/account transfers, offline edits, drafts, uploads and editing flows. Fixtures use the development database and are cleaned up afterward.
 
 Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration tests, Storybook build/tests, `design-sync:check` and app Chromium tests. App screenshots compare against Linux baselines, recorded on CI's runner image by the `linux-baselines` workflow (Actions › Run workflow, then commit its artifact). Playwright reports: `.tmp/`, uploaded on CI failure.
 

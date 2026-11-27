@@ -81,7 +81,7 @@ export function DesignGallery() {
   return (
     <div className="td-gallery">
       <header className="td-gallery-top">
-        <strong>Todoi design primitives</strong>
+        <strong>todoi design primitives</strong>
         <Segmented aria-label="Theme" value={ap.theme} onChange={(t) => ap.set({ theme: t })} options={THEMES.map((t) => ({ id: t.id, label: t.label }))} />
         <Segmented aria-label="Mode" value={ap.mode} onChange={(m) => ap.set({ mode: m })} options={MODES.map((m) => ({ id: m.id, label: m.label, icon: m.icon }))} />
         <span className="td-gallery-meta">

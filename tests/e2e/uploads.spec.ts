@@ -28,7 +28,7 @@ test("uploads report per-file outcomes and retry only the failed file", async ({
     ]);
     await expect(row("huge.bin")).toContainText("huge.bin is larger than 25 MB");
     await expect(row("huge.bin").getByRole("button", { name: "Retry" })).toHaveCount(0);
-    await expect(row("flaky.txt")).toContainText("Couldn't reach Todoi");
+    await expect(row("flaky.txt")).toContainText("Couldn't reach todoi");
     await expect(dialog.locator('.td-attachments-row[data-uploading="true"]', { hasText: "kept.txt" })).toHaveCount(0);
     await expect(row("kept.txt")).toHaveCount(1);
     await expect(row("kept.txt")).toContainText("Added");

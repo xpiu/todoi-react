@@ -61,7 +61,7 @@ async function send(key: string): Promise<Attachment | null> {
   }
 }
 
-/** “huge.bin is larger than 25 MB”, or “Couldn't attach “a.pdf”. Couldn't reach Todoi…” when the reason does not name the file. */
+/** “huge.bin is larger than 25 MB”, or “Couldn't attach “a.pdf”. Couldn't reach todoi…” when the reason does not name the file. */
 const reason = (u: PendingUpload) => (u.error!.includes(u.file.name) ? u.error! : `Couldn't attach ${quote(u.file.name)}. ${u.error}`);
 
 /** One toast for a batch: what was attached, or what failed with a Retry for the files that can be retried. */

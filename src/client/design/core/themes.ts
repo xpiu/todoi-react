@@ -1,4 +1,4 @@
-// Theme registry — the one declaration of Todoi's app themes and their per-mode palettes.
+// Theme registry — the one declaration of todoi's app themes and their per-mode palettes.
 // Two axes: theme (Rounded · Minimal: look and feel) × mode (dark · light: colour scheme).
 // CSS twin: src/client/design/tokens/themes/<theme>.css, scoped by <html data-theme data-mode>.
 // Adding a theme = one entry in THEMES + one tokens/themes/<id>.css + one @import in index.css.

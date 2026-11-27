@@ -52,7 +52,7 @@ export const Saving: Story = { args: { stage: "new", email: "info@todoi.org", bu
 export const Done: Story = {
   args: { stage: "done" },
   async play({ args, canvas, userEvent }) {
-    await userEvent.click(canvas.getByRole("button", { name: "Continue to Todoi" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Continue to todoi" }));
     await expect(args.onContinue).toHaveBeenCalledOnce();
   },
 };

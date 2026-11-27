@@ -25,7 +25,7 @@ export const Default: Story = {
   async play({ canvas }) {
     await expect(canvas.getByRole("heading", { level: 1, name: "Log in" })).toBeVisible();
     // The wordmark is plain text: no aria-label on a role-less element.
-    await expect(canvas.getByText("Todoi")).not.toHaveAttribute("aria-label");
+    await expect(canvas.getByText("todoi")).not.toHaveAttribute("aria-label");
     await expect(canvas.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "https://todoi.com/privacy");
   },
 };
@@ -33,7 +33,7 @@ export const SuccessState: Story = {
   args: {
     children: <>
       <AuthState icon="circle-check" tone="success" title="Password updated">You're logged in on this device and logged out everywhere else.</AuthState>
-      <div className="td-auth-stack"><Button variant="primary" size="lg">Continue to Todoi</Button></div>
+      <div className="td-auth-stack"><Button variant="primary" size="lg">Continue to todoi</Button></div>
     </>,
   },
 };

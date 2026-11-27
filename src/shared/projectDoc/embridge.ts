@@ -35,7 +35,7 @@ export function fromEmbridge(source: string | EmbridgeDocument, opts: FromEmbrid
   const warnings = tree.diagnostics.filter((d) => !/^duplicate item id/i.test(d.message)).map((d) => readable(d.line, d.message, lines[d.line - 1]));
   warnings.push(...repairDuplicateIds(tree, opts.newId));
 
-  /** A value Todoi can't use stays in the item's fields, verbatim, and the reader hears why. */
+  /** A value todoi can't use stays in the item's fields, verbatim, and the reader hears why. */
   const keep = (target: DocItem, key: string, value: string, warning: string) => {
     target.fields[key] = value;
     warnings.push(warning);
@@ -48,9 +48,9 @@ export function fromEmbridge(source: string | EmbridgeDocument, opts: FromEmbrid
     const prio = f.prio?.toLowerCase();
     if (prio && PRIORITY_IN[prio]) out.priority = PRIORITY_IN[prio];
     else if (prio && ITEM_PRIORITIES.includes(prio.toUpperCase() as ItemPriority)) out.priority = prio.toUpperCase() as ItemPriority;
-    else if (f.prio) keep(out, "prio", f.prio, `“${out.title}”${where}: Todoi doesn't know the priority “${f.prio}”`);
+    else if (f.prio) keep(out, "prio", f.prio, `“${out.title}”${where}: todoi doesn't know the priority “${f.prio}”`);
     const status = f.status ? suggestedRoleForTitle(f.status) : null;
-    if (f.status && !status) keep(out, "status", f.status, `“${out.title}”${where}: Todoi doesn't know the status “${f.status}”`);
+    if (f.status && !status) keep(out, "status", f.status, `“${out.title}”${where}: todoi doesn't know the status “${f.status}”`);
     // The checkbox decides done; an explicit status: field decides the rest (spec › List Sections).
     out.done = src.completed ?? status === "DONE";
     out.status = out.done ? "DONE" : status === "DONE" ? null : status;
@@ -60,7 +60,7 @@ export function fromEmbridge(source: string | EmbridgeDocument, opts: FromEmbrid
       if (!f[key]) continue;
       const iso = isoOf(f[key]);
       if (iso) out[key === "on" ? "start" : "due"] = iso;
-      else keep(out, key, f[key], `“${out.title}”${where}: “${f[key]}” (${key}) isn't a date Todoi can read`);
+      else keep(out, key, f[key], `“${out.title}”${where}: “${f[key]}” (${key}) isn't a date todoi can read`);
     }
     if (out.start && out.due && out.start > out.due) {
       keep(out, "on", out.start, `“${out.title}”${where}: the start (${out.start}) is after the due date, so only the due date is used`);
@@ -88,7 +88,7 @@ export function fromEmbridge(source: string | EmbridgeDocument, opts: FromEmbrid
             continue;
           }
           const { subitems: _drop, ...sub } = item(child, ` (under “${parent.title}”)`);
-          if (depth > 1) warnings.push(`“${sub.title}” was ${depth === 2 ? "a subitem of a subitem" : `nested ${depth} levels under an item`}, so it's now a direct subitem of “${parent.title}”. Todoi has two levels: items and subitems`);
+          if (depth > 1) warnings.push(`“${sub.title}” was ${depth === 2 ? "a subitem of a subitem" : `nested ${depth} levels under an item`}, so it's now a direct subitem of “${parent.title}”. todoi has two levels: items and subitems`);
           parent.subitems.push(sub);
           visit(child.subitems, sub, depth + 1);
         }
@@ -116,7 +116,7 @@ function toWritable(it: DocItem | DocSubitem): WritableItem {
   if (it.start) fields.on = it.start;
   if (it.due) fields.due = it.due;
   if (it.id) fields.id = it.id;
-  // Kept fields never overwrite what Todoi itself knows.
+  // Kept fields never overwrite what todoi itself knows.
   for (const [k, v] of Object.entries(it.fields)) if (!(k in fields)) fields[k] = v;
   const escape = (s: string, chars: RegExp) => s.replace(chars, "\\$&");
   const attachments: WritableItem[] = it.attachments.map((a) => ({ title: `${a.image ? "!" : ""}[${escape(a.label, /[\]\\]/g)}](${escape(a.url, /[)\\]/g)})`, completed: null }));

@@ -26,7 +26,7 @@ test("reset a forgotten password through the emailed link", async ({ page }) => 
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Send reset link" }).click();
   await expect(page.getByRole("heading", { name: "Check your inbox" })).toBeVisible();
-  const mail = await emailTo(email, "Reset your Todoi password");
+  const mail = await emailTo(email, "Reset your todoi password");
   expect(mail.text).toContain("The link works once and expires in 1 hour.");
   await page.goto(mail.link);
   await expect(page.getByRole("heading", { name: "Set a new password" })).toBeVisible();
@@ -64,7 +64,7 @@ test("change the sign-in email: confirm it's you, link to the new address, confi
   await dialog.getByRole("button", { name: "Done" }).click();
   await expect(page.getByText(`${email} · Waiting for you to confirm ${next}`)).toBeVisible();
 
-  const mail = await emailTo(next, "Confirm your new email for Todoi");
+  const mail = await emailTo(next, "Confirm your new email for todoi");
   expect(mail.text).toContain(`Until you confirm, you log in with ${email}.`);
   await page.goto(mail.link);
   await expect(page.getByRole("heading", { name: "Email changed" })).toBeVisible();
@@ -84,7 +84,7 @@ test("confirm the address, then the Email notifications switches save to the acc
   await expect(group.getByRole("switch", { name: "Email me about invites" })).toBeDisabled();
   await group.getByRole("button", { name: "Send confirmation" }).click();
   await expect(group.getByText(`Sent. Open the link in the email to ${email}`)).toBeVisible();
-  const mail = await emailTo(email, "Confirm your email for Todoi");
+  const mail = await emailTo(email, "Confirm your email for todoi");
   await page.goto(mail.link);
   await expect(page.getByRole("heading", { name: "Email confirmed" })).toBeVisible();
   await page.goto("/settings?s=notifications");

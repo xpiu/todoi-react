@@ -1,4 +1,4 @@
-// Icon — the one glyph API. Lucide through an explicit map (icons.ts), plus Todoi's own glyphs:
+// Icon — the one glyph API. Lucide through an explicit map (icons.ts), plus todoi's own glyphs:
 // "circle-todo" (the To-do status: a dial at zero), Ledger variants for the Minimal theme, and
 // pixel-snapped panel / list / kanban / calendar glyphs (Rounded's own shapes, and the Ledger view
 // glyphs for Minimal), where Lucide's 24-unit grid would blur axis-aligned lines at 16–20px. Under
@@ -419,7 +419,7 @@ export function Icon({ name, size = 16, strokeWidth = 2, color, style, className
       const sw = (LEDGER_STROKE * ipx) / 24;
       return <RawSvg ref={svgRef} nodes={ledgerSnapped(ipx)} size={size} viewBox={`0 0 ${ipx} ${ipx}`} stroke={sw} color={color} style={{ strokeWidth: sw, ...style }} className={className} />;
     }
-    // Design's drawings first (Todoi's own glyphs, then Lucide 0.454's), then the mapped lucide-react glyph.
+    // Design's drawings first (todoi's own glyphs, then Lucide 0.454's), then the mapped lucide-react glyph.
     const lucide = !(name in CUSTOM) && !DESIGN_LUCIDE[name as LucideIconName] && LUCIDE_ICONS[name as LucideIconName] ? lucideGlyph(name as LucideIconName) : null;
     const nodes: SvgNode[] | undefined = (CUSTOM as Partial<Record<IconName, SvgNode[]>>)[name] ?? DESIGN_LUCIDE[name as LucideIconName] ?? lucide?.nodes;
     if (nodes) {

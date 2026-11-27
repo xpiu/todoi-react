@@ -89,7 +89,7 @@ export const Blocked: Story = {
 };
 export const OwnsNothing: Story = { args: { projects: [], groups: [], attachments: { count: 0 }, memberOf: 0 } };
 export const Loading: Story = { args: { projects: [], groups: [], attachments: undefined, memberOf: 0, loading: true } };
-export const ReviewFailed: Story = { args: { projects: [], groups: [], attachments: undefined, reviewError: "Couldn't reach Todoi. Check your connection" } };
+export const ReviewFailed: Story = { args: { projects: [], groups: [], attachments: undefined, reviewError: "Couldn't reach todoi. Check your connection" } };
 export const Exporting: Story = { args: { exportState: "busy" } };
 export const Exported: Story = { args: { exportState: "done" } };
 export const ExportFailed: Story = { args: { exportError: "the server didn't answer" } };

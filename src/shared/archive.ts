@@ -1,4 +1,4 @@
-// The Todoi archive: everything an account can see, in one zip that Todoi can restore — every field of
+// The todoi archive: everything an account can see, in one zip that todoi can restore — every field of
 // every group, project, list, item and subitem (archived and in the Trash too), labels, assignees,
 // watchers, relations, comment threads with reactions, attachment files, saved views and activity.
 //
@@ -155,8 +155,8 @@ export function summarizeArchive(manifest: ArchiveManifest, files: ReadonlyArray
   return { groups: manifest.groups.length, projects: projects.length, items, inboxItems, comments, attachments, attachmentBytes, notes, yours: mine.has(manifest.account.id) };
 }
 
-/** A file that isn't an export at all (not a zip, or a zip Todoi didn't write). */
-export const NOT_AN_EXPORT = "This file isn't a Todoi export. Choose the .zip file that Export everything downloaded.";
+/** A file that isn't an export at all (not a zip, or a zip todoi didn't write). */
+export const NOT_AN_EXPORT = "This file isn't a todoi export. Choose the .zip file that Export everything downloaded.";
 
 /** A refused archive, in words the person can act on. */
 export class ArchiveRejected extends Error {
@@ -186,7 +186,7 @@ export function checkArchive(text: (name: string) => string | undefined, has: (n
   const m = archiveManifestSchema.safeParse(raw);
   if (!m.success) {
     const version = (raw as { format?: unknown; version?: unknown } | null)?.version;
-    throw new ArchiveRejected((raw as { format?: unknown } | null)?.format === ARCHIVE_FORMAT && typeof version === "number" && version > ARCHIVE_VERSION ? `This export is from a newer version of Todoi (format ${version}; this one reads ${ARCHIVE_VERSION}). Reload the page to update, then try again.` : NOT_AN_EXPORT);
+    throw new ArchiveRejected((raw as { format?: unknown } | null)?.format === ARCHIVE_FORMAT && typeof version === "number" && version > ARCHIVE_VERSION ? `This export is from a newer version of todoi (format ${version}; this one reads ${ARCHIVE_VERSION}). Reload the page to update, then try again.` : NOT_AN_EXPORT);
   }
   const names = [...m.data.projects.map((p) => p.file), ...(m.data.inbox ? [m.data.inbox] : [])];
   const files = names.map((name) => {

@@ -1,6 +1,6 @@
-# Todoi for agents
+# todoi for agents
 
-How an AI agent or script reads and changes Todoi on someone's behalf.
+How an AI agent or script reads and changes todoi on someone's behalf.
 
 ## Sign in with a token
 
@@ -23,11 +23,11 @@ JSON over HTTPS at `https://todoi.com/api/v1`. Tokens work only there; anything 
 - `PATCH /items/:id`: change fields; `{ "done": true }` completes it
 - `POST /items/:id/move`: `{ "listId", "position"? }`
 - `POST /items/:id/comments`: `{ "id", "body" }`
-- `GET /me/export`: everything the person can see, as a `.zip` Todoi archive (a `todoi-archive.json` manifest, one JSON file per project, the Inbox and the attachment files); a token limited to some projects can't export
+- `GET /me/export`: everything the person can see, as a `.zip` todoi archive (a `todoi-archive.json` manifest, one JSON file per project, the Inbox and the attachment files); a token limited to some projects can't export
 
 ## Good manners
 
 - You choose new ids: 21 characters from `A–Z a–z 0–9 _ -`. Dates are `YYYY-MM-DD`. Priority is `URGENT`, `HIGH`, `MEDIUM` or `LOW`.
-- To retry a write safely, send the same `X-Todoi-Operation-Id` header again; Todoi applies it once.
+- To retry a write safely, send the same `X-Todoi-Operation-Id` header again; todoi applies it once.
 - Errors return a status code and a plain sentence in `error`; show it to the person rather than guessing.
 - Read before you write, and delete or archive only when the person asked you to.

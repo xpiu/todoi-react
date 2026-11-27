@@ -40,7 +40,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await project.item("Book the venue");
       await page.goto("/settings?s=storage");
       await expect(page.getByRole("heading", { level: 2, name: "Synchronization" })).toBeVisible();
-      await expect(group(page, "Not synced").locator(".td-settings-row").filter({ hasText: project.name })).toContainText("Only in Todoi");
+      await expect(group(page, "Not synced").locator(".td-settings-row").filter({ hasText: project.name })).toContainText("Only in todoi");
 
       // Connect: check the repository, then store the project as a new file.
       await page.locator(".td-settings-row").filter({ hasText: project.name }).getByRole("button", { name: "Connect" }).click();
@@ -76,7 +76,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       expect(items.find((i) => i.title === "Send the invites")?.done).toBe(false);
 
       // Both sides change the same title: the push's sync pauses; the dialog shows the versions.
-      expect((await page.request.patch(`/api/items/${review}`, { data: { title: "Review the copy (Todoi)" } })).ok()).toBeTruthy();
+      expect((await page.request.patch(`/api/items/${review}`, { data: { title: "Review the copy (todoi)" } })).ok()).toBeTruthy();
       const now = (await fakeFile(repo, file))!.text;
       await fake("push", { fullName: repo, branch: "main", path: file, text: now.replace("- [ ] Review the copy", "- [ ] Review the copy (file)") });
       await expect.poll(async () => (await gitOf(page, project.projectId)).state, { timeout: 15_000 }).toBe("conflict");
@@ -85,7 +85,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await expect(panel.getByRole("button", { name: "Sync now" })).toHaveCount(0);
       await panel.getByRole("button", { name: "Resolve conflict" }).click();
       const conflict = page.getByRole("dialog", { name: "Resolve GitHub sync conflict" });
-      await expect(conflict.getByText("Title changed in Todoi and in the file")).toBeVisible();
+      await expect(conflict.getByText("Title changed in todoi and in the file")).toBeVisible();
       await expect(conflict.getByRole("button", { name: "Apply and sync" })).toBeDisabled();
       await conflict.getByRole("button", { name: /Keep the file's/ }).click();
       await settle(page);
@@ -94,7 +94,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await expect(page.getByRole("status").filter({ hasText: "Conflict resolved" })).toBeVisible();
       expect(((await (await page.request.get(`/api/items/${review}`)).json()) as { title: string }).title).toBe("Review the copy (file)");
 
-      // The history lists every run; Undo puts Todoi back as it was before the last sync that changed it.
+      // The history lists every run; Undo puts todoi back as it was before the last sync that changed it.
       // The recent syncs are rows of the same card, right after the state row.
       const newestRun = panel.locator(".td-settings-row").nth(2);
       await expect(newestRun).toContainText("Brought in 1 change from the file");
@@ -103,8 +103,8 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       await panel.getByRole("button", { name: "Undo" }).click();
       await expect(page.getByRole("status").filter({ hasText: "Undid the last sync" })).toBeVisible();
       await expect(newestRun).toContainText(/^Undid a sync and wrote \d+ changes? back to the file/);
-      expect(((await (await page.request.get(`/api/items/${review}`)).json()) as { title: string }).title).toBe("Review the copy (Todoi)");
-      expect((await fakeFile(repo, file))!.text).toContain("- [ ] Review the copy (Todoi)");
+      expect(((await (await page.request.get(`/api/items/${review}`)).json()) as { title: string }).title).toBe("Review the copy (todoi)");
+      expect((await fakeFile(repo, file))!.text).toContain("- [ ] Review the copy (todoi)");
 
       // A schedule keeps it in sync; one that stalls reads "Sync overdue".
       const schedule = panel.getByRole("switch", { name: "Sync on a schedule" });

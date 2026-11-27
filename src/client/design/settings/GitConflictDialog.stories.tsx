@@ -16,7 +16,7 @@ const meta = {
   component: GitConflictDialog,
   args: { open: true, repoName: "acme/plans", conflicts: CONFLICTS, places: { "list:doing": "Doing", "list:todo": "To-do" }, onClose: fn(), onApply: fn() },
   parameters: {
-    docs: { description: { component: "Resolve GitHub sync conflict: each thing that changed in Todoi and in the file since the last sync, with its three versions and a choice per conflict (or one side for all). Apply stays disabled until every conflict is decided; Leave paused keeps the sync paused. Values read as Todoi shows them." } },
+    docs: { description: { component: "Resolve GitHub sync conflict: each thing that changed in todoi and in the file since the last sync, with its three versions and a choice per conflict (or one side for all). Apply stays disabled until every conflict is decided; Leave paused keeps the sync paused. Values read as Todoi shows them." } },
   },
 } satisfies Meta<typeof GitConflictDialog>;
 export default meta;
@@ -28,12 +28,12 @@ export const PickPerConflict: Story = {
     await waitFor(() => expect(dialog).toBeVisible());
     const d = within(dialog);
     await expect(d.getByText("In “To-do”")).toBeVisible();
-    await expect(d.getByText("Changed in Todoi, deleted in the file")).toBeVisible();
+    await expect(d.getByText("Changed in todoi, deleted in the file")).toBeVisible();
     // A title conflict is named by the title it had.
     await expect(dialog.querySelector(".td-git-conflict-title")?.firstChild?.textContent).toBe("Update hull copy");
     const apply = d.getByRole("button", { name: "Apply and sync" });
     await expect(apply).toBeDisabled();
-    await userEvent.click(d.getByRole("button", { name: "Keep Todoi's for all" }));
+    await userEvent.click(d.getByRole("button", { name: "Keep todoi's for all" }));
     await userEvent.click(d.getByRole("button", { name: "Keep the file's Update hull cover copy" }));
     await expect(apply).toBeEnabled();
     await userEvent.click(apply);

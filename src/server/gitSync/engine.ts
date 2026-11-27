@@ -1,11 +1,11 @@
 // Git sync: a project kept in one file in a GitHub repository, in sync both ways.
 //
-// A sync reads the file, builds Todoi's document, and three-way merges them against the document of the
-// last sync (the connection's `base`). Todoi's side is applied in one transaction that first locks the
+// A sync reads the file, builds todoi's document, and three-way merges them against the document of the
+// last sync (the connection's `base`). todoi's side is applied in one transaction that first locks the
 // project's items and re-checks nothing moved since it was read; the file is written as a commit against
 // the blob it was read at, so a concurrent push makes the write "stale" and the whole sync runs again.
 // Conflicts follow the connection's policy: "ask" pauses until someone picks a side per conflict, "todoi"
-// and "file" decide them. Every sync is a run in git_sync_runs with Todoi's document before it applied
+// and "file" decide them. Every sync is a run in git_sync_runs with todoi's document before it applied
 // anything, which is what "Undo last sync" restores. One sync per connection at a time, across processes
 // (a Postgres advisory lock).
 import { createHash, randomBytes } from "node:crypto";
@@ -41,7 +41,7 @@ const repoName = (c: Pick<GitConnection, "owner" | "repo">) => `${c.owner}/${c.r
 
 function clientFor(c: GitConnection): GitHubClient {
   const token = open(c.tokenCipher);
-  if (!token) throw new SyncFailure("token", "Todoi can't read the stored GitHub token anymore. Connect the repository again with a new token");
+  if (!token) throw new SyncFailure("token", "todoi can't read the stored GitHub token anymore. Connect the repository again with a new token");
   return githubClient(token);
 }
 
@@ -88,10 +88,10 @@ async function loadConnection(id: string): Promise<GitConnection> {
   return c;
 }
 
-/** Todoi's document, read in a short transaction (it may record file ids). */
+/** todoi's document, read in a short transaction (it may record file ids). */
 const readOurs = (projectId: string) => db.transaction((tx) => readProjectDoc(tx, projectId));
 
-/** Apply `target` to the project unless Todoi changed since `expected` was read; false = it did, merge again. */
+/** Apply `target` to the project unless todoi changed since `expected` was read; false = it did, merge again. */
 async function applyIfUnchanged(projectId: string, expected: ProjectDoc, target: ProjectDoc, actorId: string) {
   return db.transaction(async (tx) => {
     // Hold the project's items still while comparing and applying.
@@ -103,7 +103,7 @@ async function applyIfUnchanged(projectId: string, expected: ProjectDoc, target:
 }
 
 function commitMessage(projectName: string, changed: number) {
-  return `Todoi: sync “${projectName}”${changed ? ` (${changed} item${changed === 1 ? "" : "s"})` : ""}`;
+  return `todoi: sync “${projectName}”${changed ? ` (${changed} item${changed === 1 ? "" : "s"})` : ""}`;
 }
 
 async function record(c: GitConnection, run: Omit<typeof gitSyncRuns.$inferInsert, "id" | "connectionId">) {
@@ -176,7 +176,7 @@ async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string,
       return record(c, { actorId: actor, trigger, outcome: "conflict", conflicts: undecided.length, notes });
     }
     let pulled = 0;
-    // What Todoi holds after applying is the result: its own rules (a new item takes its list's Status) are part of it.
+    // What todoi holds after applying is the result: its own rules (a new item takes its list's Status) are part of it.
     let result = merged.doc;
     if (merged.changed.ours) {
       const applied = await applyIfUnchanged(c.projectId, ours, merged.doc, actor);
@@ -193,14 +193,14 @@ async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string,
         fileSha = out.sha;
         commitSha = out.commitSha;
       } catch (e) {
-        // Someone pushed since the read: start over from the new file (what was applied to Todoi stays and merges again).
+        // Someone pushed since the read: start over from the new file (what was applied to todoi stays and merges again).
         if (e instanceof GitHubError && e.reason === "stale") continue;
         throw e;
       }
     }
     await db.update(gitConnections).set({ base: result, fileSha, lastSyncedAt: new Date(), state: "ok", lastError: null, pending: null }).where(eq(gitConnections.id, c.id));
     const outcome = pulled && pushed ? "merged" : pulled ? "pulled" : pushed || commitSha ? "pushed" : "unchanged";
-    // A push or scheduled sync that changed nothing (often Todoi's own commit echoing back) leaves no line in the history.
+    // A push or scheduled sync that changed nothing (often todoi's own commit echoing back) leaves no line in the history.
     if (outcome === "unchanged" && (trigger === "webhook" || trigger === "auto")) return { id: "", connectionId: c.id, actorId: actor, trigger, outcome, pulled: 0, pushed: 0, conflicts: 0, error: null, notes, before: null, commitSha: null, createdAt: new Date() };
     return record(c, { actorId: actor, trigger, outcome, pulled, pushed, conflicts: merged.conflicts.length, notes, before: pulled ? ours : null, commitSha });
   }
@@ -267,7 +267,7 @@ export async function connectProject(input: ConnectInput, actorId: string): Prom
     let fileSha = file?.sha ?? null, commitSha: string | null = null;
     if (!file || text !== file.text) {
       const [project] = await db.select({ name: projects.name }).from(projects).where(eq(projects.id, input.projectId));
-      const out = await gh.writeFile(refOf(c), text, file?.sha ?? null, file ? `Todoi: link “${project?.name}” (ids added)` : `Todoi: store “${project?.name}”`);
+      const out = await gh.writeFile(refOf(c), text, file?.sha ?? null, file ? `todoi: link “${project?.name}” (ids added)` : `todoi: store “${project?.name}”`);
       fileSha = out.sha;
       commitSha = out.commitSha;
     }
@@ -277,7 +277,7 @@ export async function connectProject(input: ConnectInput, actorId: string): Prom
   });
 }
 
-/** Stop syncing a project: the file stays in the repository, the project stays in Todoi. */
+/** Stop syncing a project: the file stays in the repository, the project stays in todoi. */
 export async function disconnectProject(projectId: string): Promise<boolean> {
   const [c] = await db.select().from(gitConnections).where(eq(gitConnections.projectId, projectId));
   if (!c) return false;
@@ -289,7 +289,7 @@ export async function disconnectProject(projectId: string): Promise<boolean> {
   return true;
 }
 
-/** Put Todoi back as it was before the last sync that changed it, then sync that to the file. */
+/** Put todoi back as it was before the last sync that changed it, then sync that to the file. */
 export async function undoLastSync(connectionId: string, actorId: string): Promise<GitSyncRun> {
   const [last] = await db
     .select()

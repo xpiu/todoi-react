@@ -17,7 +17,7 @@ export interface ExportFormat {
 }
 export const EXPORT_FORMATS: ReadonlyArray<ExportFormat> = [
   { id: "pdf", label: "PDF", ext: ".pdf", icon: "file-text", hint: "Laid out as shown — for print and sharing" },
-  { id: "md", label: "Markdown", ext: ".md", icon: "file-code", hint: "Embridge format — imports back into Todoi" },
+  { id: "md", label: "Markdown", ext: ".md", icon: "file-code", hint: "Embridge format — imports back into todoi" },
   { id: "csv", label: "CSV", ext: ".csv", icon: "table", hint: "One row per item — for spreadsheets" },
 ];
 

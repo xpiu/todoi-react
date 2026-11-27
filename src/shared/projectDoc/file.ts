@@ -50,9 +50,9 @@ const itemFields = {
   description: text.nullish().describe("Markdown"),
   comments: z.array(fileComment).nullish(),
   attachments: z.array(fileAttachment).nullish(),
-  fields: z.record(text, text).nullish().describe("Your own values; Todoi keeps them as they are"),
+  fields: z.record(text, text).nullish().describe("Your own values; todoi keeps them as they are"),
 };
-const fileSubitem = z.object(itemFields).strict().describe("A subitem. Todoi has two levels, items and subitems, so a subitem has no subitems");
+const fileSubitem = z.object(itemFields).strict().describe("A subitem. todoi has two levels, items and subitems, so a subitem has no subitems");
 const fileItem = z.object({ ...itemFields, subitems: z.array(fileSubitem).nullish() }).strict();
 const fileList = z
   .object({
@@ -72,14 +72,14 @@ export const projectFileSchema = z
     lists: z.array(fileList),
   })
   .strict()
-  .describe("A Todoi project: lists, items and subitems (todoi.com)");
+  .describe("A todoi project: lists, items and subitems (todoi.com)");
 export type ProjectFile = z.infer<typeof projectFileSchema>;
 
 /** The JSON Schema agents and editors validate against (draft 2020-12). */
 export const projectFileJsonSchema = () => ({
   ...z.toJSONSchema(projectFileSchema, { target: "draft-2020-12", io: "input" }),
   $id: PROJECT_FILE_SCHEMA_URL,
-  title: "Todoi project file",
+  title: "todoi project file",
 });
 
 /** A file that isn't a valid project file: says where and what, in words a person can act on. */
@@ -137,7 +137,7 @@ export function fileToDoc(data: unknown): DocParse {
   const seen = new Set<string>();
   const item = <T extends DocSubitem>(src: z.infer<typeof fileSubitem>, base: T): T => {
     const repeated = !!src.id && seen.has(src.id);
-    if (repeated) warnings.push(`“${src.title}” repeats the id “${src.id}”, so Todoi treats it as a new item`);
+    if (repeated) warnings.push(`“${src.title}” repeats the id “${src.id}”, so todoi treats it as a new item`);
     else if (src.id) seen.add(src.id);
     const status = src.status ? (src.status.toUpperCase() as ItemStatus) : null;
     const done = src.done ?? status === "DONE";

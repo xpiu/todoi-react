@@ -1,5 +1,5 @@
-// Embridge (https://github.com/embridge-foundation/embridge), the Markdown item-list format Todoi reads
-// and writes. Parsing is the reference parser's, so Todoi reads exactly what the spec's conformance suite
+// Embridge (https://github.com/embridge-foundation/embridge), the Markdown item-list format todoi reads
+// and writes. Parsing is the reference parser's, so todoi reads exactly what the spec's conformance suite
 // pins; this module adds what tooling needs on top of the parse tree: canonical field names and order,
 // identity repair and the attachment convention. The writer is ./write.ts.
 import { parseEmbridge as parseReference } from "embridge";

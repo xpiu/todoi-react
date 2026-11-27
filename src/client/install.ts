@@ -46,7 +46,7 @@ export function useInstallState(): { state: "installed" | "prompt" | "manual"; i
   };
 }
 
-/** How to add Todoi to the home screen where the browser has no prompt to show */
+/** How to add todoi to the home screen where the browser has no prompt to show */
 export const INSTALL_HINT = /iPhone|iPad|iPod/.test(typeof navigator === "undefined" ? "" : navigator.userAgent)
   ? "In Safari, tap Share, then Add to Home Screen"
-  : "Use your browser's menu: Install Todoi, or Add to Home screen";
+  : "Use your browser's menu: Install todoi, or Add to Home screen";

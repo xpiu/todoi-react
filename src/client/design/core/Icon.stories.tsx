@@ -25,7 +25,7 @@ const meta = {
   title: "Core/Icon",
   component: Icon,
   args: { name: "inbox", size: 16 },
-  parameters: { docs: { description: { component: "The one glyph API: Lucide through the explicit map in icons.ts plus Todoi's own glyphs. Always decorative (aria-hidden); the surrounding control carries the accessible name. Use 16px for badges and meta, 20px for section headers. List, kanban, calendar and panel glyphs redraw per theme, so read the name from the map rather than importing Lucide directly." } } },
+  parameters: { docs: { description: { component: "The one glyph API: Lucide through the explicit map in icons.ts plus todoi's own glyphs. Always decorative (aria-hidden); the surrounding control carries the accessible name. Use 16px for badges and meta, 20px for section headers. List, kanban, calendar and panel glyphs redraw per theme, so read the name from the map rather than importing Lucide directly." } } },
 } satisfies Meta<typeof Icon>;
 export default meta;
 type Story = StoryObj<typeof meta>;

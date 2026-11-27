@@ -9,7 +9,7 @@ const meta = {
   args: { stage: "confirmed", onContinue: fn(), onOpenAccount: fn() },
   parameters: {
     layout: "fullscreen",
-    docs: { description: { component: "Where the link in the “Confirm your email” message lands, on AuthShell: confirmed (Continue to Todoi), expired after 24 hours, or a link that doesn't work. Both failures lead to Account, where Settings › Notifications sends a new link." } },
+    docs: { description: { component: "Where the link in the “Confirm your email” message lands, on AuthShell: confirmed (Continue to todoi), expired after 24 hours, or a link that doesn't work. Both failures lead to Account, where Settings › Notifications sends a new link." } },
   },
 } satisfies Meta<typeof VerifyEmailPage>;
 export default meta;
@@ -20,7 +20,7 @@ export const Confirmed: Story = {
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByRole("heading", { name: "Email confirmed" })).toBeVisible();
     await expect(canvas.getByText("info@todoi.org")).toBeVisible();
-    await userEvent.click(canvas.getByRole("button", { name: "Continue to Todoi" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Continue to todoi" }));
     await expect(args.onContinue).toHaveBeenCalledOnce();
   },
 };

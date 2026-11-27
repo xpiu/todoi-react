@@ -1,4 +1,4 @@
-// Three-way merge of project documents: the last synced version (base), Todoi's (ours) and the file's
+// Three-way merge of project documents: the last synced version (base), todoi's (ours) and the file's
 // (theirs). It works on the parsed model, never on text, so it is the same for every format. Items and
 // lists match by id; a change on one side wins; both sides changing the same thing differently is a
 // conflict, decided by `choices` (per conflict key) or the `prefer` policy. Sets — labels, assignees,
@@ -29,7 +29,7 @@ export interface MergeConflict {
 export interface MergeOptions {
   /** Per conflict key; overrides `prefer` */
   choices?: Readonly<Record<string, Side>>;
-  /** How undecided conflicts land in the merged document (default: ours, i.e. Todoi's) */
+  /** How undecided conflicts land in the merged document (default: ours, i.e. todoi's) */
   prefer?: Side;
   /** Ids for items and lists the file added without one */
   newId?: () => string;
@@ -119,7 +119,7 @@ function mergeRecord(base: Readonly<Record<string, string>>, ours: Readonly<Reco
   const out: Record<string, string> = {};
   for (const k of [...new Set([...Object.keys(ours), ...Object.keys(theirs), ...Object.keys(base)])].sort()) {
     const b = base[k], o = ours[k], t = theirs[k];
-    // Per key: a one-sided change wins; both changing it differently keeps Todoi's.
+    // Per key: a one-sided change wins; both changing it differently keeps todoi's.
     const v = o === b ? t : t === b ? o : o;
     if (v !== undefined) out[k] = v;
   }
@@ -266,7 +266,7 @@ export function mergeDocs(baseDoc: ProjectDoc | null, oursDoc: ProjectDoc, their
   for (const id of mergedLists.keys()) if (!listOrder.includes(id)) listOrder.push(id);
 
   const doc: ProjectDoc = canonicalDoc({
-    // The project's title: a one-sided change wins; otherwise Todoi's.
+    // The project's title: a one-sided change wins; otherwise todoi's.
     title: baseDoc && oursDoc.title === baseDoc.title ? theirsDoc.title || oursDoc.title : oursDoc.title || theirsDoc.title,
     uuid: oursDoc.uuid ?? theirsDoc.uuid,
     lists: listOrder.map((lid) => ({

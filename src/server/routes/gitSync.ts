@@ -89,7 +89,7 @@ export const gitSyncRoute = new Hono()
     try {
       const input = c.req.valid("json");
       const { connection } = await connectProject({ ...input, projectId: id }, viewerOf(c).userId);
-      // Pushes to GitHub start a sync when GitHub can reach Todoi and the token may add a webhook.
+      // Pushes to GitHub start a sync when GitHub can reach todoi and the token may add a webhook.
       await registerWebhook(connection, input.token);
       return c.json({ connection: await connectionView((await connectionOf(id))!, await projectName(id)) }, 201);
     } catch (e) {

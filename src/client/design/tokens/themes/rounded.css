@@ -1,5 +1,5 @@
 /* ═══ Rounded theme ═══════════════════════════════════════════════════════════════════
-   Todoi's rounded app theme. New users start with Minimal light via index.html and the Appearance store. Scope contract (see tokens/colors.css):
+   todoi's rounded app theme. New users start with Minimal light via index.html and the Appearance store. Scope contract (see tokens/colors.css):
      dark  → :root (no attribute needed) and [data-theme="rounded"]
      light → [data-theme="rounded"][data-mode="light"], plus html:not([data-theme])[data-mode="light"] for a page that sets
              only the mode (legacy CSS fallback). Never a bare [data-mode="light"]: that would also match Minimal light and

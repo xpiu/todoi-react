@@ -1,5 +1,5 @@
 // A new account's first project on an invite-only server (SIGN_UP=invite, which makes no guest workspaces):
-// a few items that teach Todoi by doing, so a tester has something real to click, drag and tick. Every shortcut and
+// a few items that teach todoi by doing, so a tester has something real to click, drag and tick. Every shortcut and
 // quick-add token here is one the app has (client/design/core/shortcuts.ts); deleting the project is fine.
 import { nanoid } from "nanoid";
 
@@ -83,7 +83,7 @@ export const STARTER_PLAN: ImportPlan = {
     {
       name: "Done",
       statusRole: "DONE",
-      items: [{ title: "Open Todoi", labels: [], done: true, subitems: [] }],
+      items: [{ title: "Open todoi", labels: [], done: true, subitems: [] }],
     },
   ],
 };

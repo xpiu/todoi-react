@@ -70,7 +70,7 @@ test("details still loading are announced as a status, and the overlay stays axe
 });
 
 test("a guest session that cannot start says so, and Try again opens the workspace", async ({ page }) => {
-  await page.route("**/api/auth/**", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Todoi is starting up", code: "unavailable", requestId: "test" }) }));
+  await page.route("**/api/auth/**", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "todoi is starting up", code: "unavailable", requestId: "test" }) }));
   await page.goto("/inbox");
   await expect(page.getByText("Couldn't open your workspace")).toBeVisible();
   await page.screenshot({ path: ".tmp/test-results/missing-session-failed.png" });

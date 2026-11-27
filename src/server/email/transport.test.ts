@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMailer, EmailNotSent } from "./transport";
 
-const message = { to: "flo@todoi.com", subject: "Reset your Todoi password", html: "<p>hi</p>", text: "hi\n" };
-const FROM = "Todoi <no-reply@todoi.com>";
+const message = { to: "flo@todoi.com", subject: "Reset your todoi password", html: "<p>hi</p>", text: "hi\n" };
+const FROM = "todoi <no-reply@todoi.com>";
 let dir: string | undefined;
 afterEach(async () => {
   if (dir) await rm(dir, { recursive: true, force: true });
@@ -23,9 +23,9 @@ describe("the development transport", () => {
     const read = (ext: string) => readFile(join(dir!, "nested", files.find((f) => f.endsWith(ext))!), "utf8");
     expect(await read(".html")).toBe("<p>hi</p>");
     expect(await read(".txt")).toBe("hi\n");
-    expect(JSON.parse(await read(".json"))).toEqual({ from: FROM, to: "flo@todoi.com", subject: "Reset your Todoi password", date: "2026-11-25T10:00:00.000Z" });
+    expect(JSON.parse(await read(".json"))).toEqual({ from: FROM, to: "flo@todoi.com", subject: "Reset your todoi password", date: "2026-11-25T10:00:00.000Z" });
     expect(log).toHaveBeenCalledOnce();
-    expect(log.mock.calls[0]![0]).toMatch(/^Email to flo@todoi\.com · Reset your Todoi password → .*\.html/);
+    expect(log.mock.calls[0]![0]).toMatch(/^Email to flo@todoi\.com · Reset your todoi password → .*\.html/);
   });
 });
 

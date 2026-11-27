@@ -93,7 +93,7 @@ export async function deleteAccount(userId: string): Promise<{ removed: boolean 
     }
     await tx.delete(groups).where(eq(groups.ownerId, userId));
 
-    // Other people's projects: the person leaves, the log says why (as Todoi, so it needs no account).
+    // Other people's projects: the person leaves, the log says why (as todoi, so it needs no account).
     const left = await tx.delete(members).where(eq(members.userId, userId)).returning({ projectId: members.projectId });
     for (const m of left) await logActivity(tx, { projectId: m.projectId, actorId: null, type: "member", text: `removed ${user.name}, whose account was deleted` });
     await tx.delete(itemAssignees).where(eq(itemAssignees.userId, userId));

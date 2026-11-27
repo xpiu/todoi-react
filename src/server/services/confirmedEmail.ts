@@ -1,5 +1,5 @@
 // Confirmed sign-in addresses (work plan R4). Signing up and signing in never wait for the confirmation
-// link; work that relies on owning the address does: inviting people (Todoi emails strangers on the
+// link; work that relies on owning the address does: inviting people (todoi emails strangers on the
 // inviter's behalf), joining through an invite sent to an address (otherwise whoever signs up first with
 // a teammate's address takes their seat), and getting notification email. The flag is read from the
 // database, not the session, whose cookie cache can lag a just-opened link by up to a minute.

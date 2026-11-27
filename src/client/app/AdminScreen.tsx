@@ -1,4 +1,4 @@
-// The operator console (/admin, work plan R8): Todoi's health for the people who run it — accounts and
+// The operator console (/admin, work plan R8): todoi's health for the people who run it — accounts and
 // content, grouped errors (server, browser, jobs, Git sync) with their stack and a way to mark them
 // resolved, the background job queue with retries, Git sync connections that fail or fell behind, and
 // an account search. Built from the settings shell's cards. Operators only (ADMIN_EMAILS).
@@ -35,7 +35,7 @@ export function AdminScreen() {
     return (
       <SettingsPageFrame title="Operator console">
         {denied ? (
-          <EmptyState icon="lock" title="Only Todoi's operators can open this page" hint="It shows errors and accounts across Todoi. Your own data is under Settings and Account." />
+          <EmptyState icon="lock" title="Only todoi's operators can open this page" hint="It shows errors and accounts across todoi. Your own data is under Settings and Account." />
         ) : (
           <EmptyState tone="danger" icon="circle-alert" title="The console couldn't load" hint={errorMessage(overview.error)} action={{ label: "Try again", icon: "refresh-cw", onClick: () => void overview.refetch() }} />
         )}
@@ -66,7 +66,7 @@ export function AdminScreen() {
   }));
 
   return (
-    <SettingsPageFrame title="Operator console" crumb="Todoi's health: accounts, errors, background work and Git sync. Only operators see this page.">
+    <SettingsPageFrame title="Operator console" crumb="todoi's health: accounts, errors, background work and Git sync. Only operators see this page.">
       <SettingsCard
         group={{
           id: "overview",

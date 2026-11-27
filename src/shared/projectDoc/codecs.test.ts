@@ -109,7 +109,7 @@ describe("the published JSON Schema", () => {
     if (process.env.UPDATE_SCHEMA) writeFileSync(published, current);
     expect(readFileSync(published, "utf8")).toBe(current);
   });
-  it("accepts what Todoi writes and refuses what Todoi refuses", () => {
+  it("accepts what todoi writes and refuses what todoi refuses", () => {
     const validate = addFormats(new Ajv2020({ strict: false })).compile(projectFileJsonSchema());
     expect(validate(JSON.parse(toJson(rich))), JSON.stringify(validate.errors)).toBe(true);
     const bad = (patch: (f: { lists: Array<{ items: Array<Record<string, unknown>> }> }) => void) => {

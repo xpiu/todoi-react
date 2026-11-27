@@ -29,7 +29,7 @@ interface SourceSpec {
   hint: string;
   placeholder: string;
   parse: (text: string, fileName: string | null) => ImportPlan;
-  /** Source field → Todoi field → note, for the Review table */
+  /** Source field → todoi field → note, for the Review table */
   mapping: Array<[string, string, string]>;
 }
 const SOURCES: Record<Source, SourceSpec> = {
@@ -52,10 +52,10 @@ const SOURCES: Record<Source, SourceSpec> = {
     ],
   },
   file: {
-    label: "Todoi file",
+    label: "todoi file",
     icon: "file-code",
     accept: ".json,.yaml,.yml",
-    hint: "Todoi's JSON or YAML project format, as Git sync writes it",
+    hint: "todoi's JSON or YAML project format, as Git sync writes it",
     placeholder: 'format: todoi.project\nversion: 1\ntitle: "Website"\nlists:\n  - name: "To-do"\n    items:\n      - title: "First item"\n        due: "2026-10-12"',
     parse: parseProjectFile,
     mapping: [
@@ -215,7 +215,7 @@ export function ImportScreen() {
               <thead>
                 <tr>
                   <th>{src.label}</th>
-                  <th>Todoi</th>
+                  <th>todoi</th>
                   <th>Note</th>
                 </tr>
               </thead>

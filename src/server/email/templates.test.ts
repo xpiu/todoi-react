@@ -21,13 +21,13 @@ describe("account emails", () => {
     const [subjectLine, blank, ...body] = sample("project-invite.txt").split("\n");
     expect(blank).toBe("");
     expect(body.join("\n")).toBe(invite().text);
-    expect(subjectLine).toBe('Subject: Sam Verhoeven invited you to "Website" on Todoi');
-    expect(invite().subject).toBe("Sam Verhoeven invited you to “Website” on Todoi");
+    expect(subjectLine).toBe('Subject: Sam Verhoeven invited you to "Website" on todoi');
+    expect(invite().subject).toBe("Sam Verhoeven invited you to “Website” on todoi");
   });
 
   it("give the other three a plain-text part with the same copy in the same order", () => {
     const reset = passwordResetEmail({ email: OLD, url: "https://todoi.com/reset/abc" });
-    expect(reset.subject).toBe("Reset your Todoi password");
+    expect(reset.subject).toBe("Reset your todoi password");
     expect(reset.text).toBe(
       [
         "Reset your password",
@@ -44,17 +44,17 @@ describe("account emails", () => {
         "--",
         "You got this email because someone asked to reset the password for this",
         "address.",
-        "Todoi - https://todoi.com - Help: https://todoi.com/help",
+        "todoi - https://todoi.com - Help: https://todoi.com/help",
         "",
       ].join("\n"),
     );
     const change = changeEmailEmail({ oldEmail: OLD, newEmail: NEW, url: "https://todoi.com/c" });
-    expect(change.subject).toBe("Confirm your new email for Todoi");
-    expect(change.text).toContain(`Confirm that you want to log in to Todoi with ${NEW} instead of\n${OLD}.`);
+    expect(change.subject).toBe("Confirm your new email for todoi");
+    expect(change.text).toContain(`Confirm that you want to log in to todoi with ${NEW} instead of\n${OLD}.`);
     expect(change.text).toContain(`Until you confirm, you log in with ${OLD}. The link expires\nin 24 hours.`);
     const verify = verifyEmailEmail({ email: OLD, url: "https://todoi.com/v" });
-    expect(verify.subject).toBe("Confirm your email for Todoi");
-    expect(verify.text.split("\n\n").map((block) => block.split("\n")[0])).toEqual(["Confirm your email", `Confirm that ${OLD} is yours to finish setting up your`, "Confirm your email:", "The link expires in 24 hours.", "Didn't create a Todoi account? Ignore this email and no account is set up.", "--"]);
+    expect(verify.subject).toBe("Confirm your email for todoi");
+    expect(verify.text.split("\n\n").map((block) => block.split("\n")[0])).toEqual(["Confirm your email", `Confirm that ${OLD} is yours to finish setting up your`, "Confirm your email:", "The link expires in 24 hours.", "Didn't create a todoi account? Ignore this email and no account is set up.", "--"]);
   });
 
   it("escape every variable in the HTML and keep the text part literal", () => {
@@ -65,13 +65,13 @@ describe("account emails", () => {
     expect(evil.html).toContain("&ldquo;Click &lt;a href=&#39;x&#39;&gt;here&lt;/a&gt;&rdquo;");
     expect(evil.html).toContain('href="https://todoi.com/i/x&quot;onmouseover=&quot;y"');
     expect(evil.html).toContain("The invitation is for a&amp;b@example.com");
-    expect(evil.subject).toBe(`Eve <script>alert("x")</script> invited you to “R&D <b>” on Todoi`);
+    expect(evil.subject).toBe(`Eve <script>alert("x")</script> invited you to “R&D <b>” on todoi`);
     expect(evil.text).toContain(`    "Click <a href='x'>here</a>"`);
   });
 
   it("keep names on one line and drop the quote without a message", () => {
     const e = invite({ inviterName: "Sam\r\nBcc: someone@example.com", message: "  " });
-    expect(e.subject).toBe("Sam Bcc: someone@example.com invited you to “Website” on Todoi");
+    expect(e.subject).toBe("Sam Bcc: someone@example.com invited you to “Website” on todoi");
     expect(e.html).not.toContain("&ldquo;");
     expect(e.text).not.toContain('    "');
   });

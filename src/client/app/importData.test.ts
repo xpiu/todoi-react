@@ -42,8 +42,8 @@ describe("import parsers", () => {
     expect(it0.comments).toEqual([{ text: "Started", author: "alice", at: "2026-09-20", depth: 1 }, { text: "Thanks", author: null, at: null, depth: 2 }]);
     expect(it0.subitems.map((s) => [s.title, s.done])).toEqual([["Read the docs", true], ["Chapter 3", false]]);
     expect(plan.warnings).toEqual([
-      "“Chapter 3” was a subitem of a subitem, so it's now a direct subitem of “Research caching”. Todoi has two levels: items and subitems",
-      "Fields Todoi doesn't use are left out: ref",
+      "“Chapter 3” was a subitem of a subitem, so it's now a direct subitem of “Research caching”. todoi has two levels: items and subitems",
+      "Fields todoi doesn't use are left out: ref",
       "1 attachment link added to descriptions; the files themselves aren't copied",
     ]);
   });
@@ -61,11 +61,11 @@ describe("import parsers", () => {
     expect(plan.lists[0]!.items[0]!.subitems).toEqual([{ title: "child one", done: true }, { title: "child two", done: false }]);
     expect(plan.lists[0]!.items[0]!.description).toBe("Some notes");
   });
-  it("reads a Todoi project file as YAML or JSON, and explains a refusal", () => {
+  it("reads a todoi project file as YAML or JSON, and explains a refusal", () => {
     const yaml = 'format: todoi.project\nversion: 1\ntitle: "Site"\nlists:\n  - name: "Doing"\n    items:\n      - title: "Hero"\n        status: doing\n        priority: high\n        fields: { ref: "A-7" }\n        subitems:\n          - title: "Crop"\n            done: true\n';
     const plan = parseProjectFile(yaml, "site.yaml");
     expect(plan).toMatchObject({ name: "Site", lists: [{ name: "Doing", statusRole: "DOING", items: [{ title: "Hero", status: "DOING", priority: "HIGH", subitems: [{ title: "Crop", done: true }] }] }] });
-    expect(plan.warnings).toEqual(["Fields Todoi doesn't use are left out: ref"]);
+    expect(plan.warnings).toEqual(["Fields todoi doesn't use are left out: ref"]);
     const refused = parseProjectFile('{"format":"todoi.project","version":1,"lists":[{"name":"L","items":[{"title":"A","subitems":[{"title":"B","subitems":[]}]}]}]}', "deep.json");
     expect(refused.lists).toEqual([]);
     expect(refused.name).toBe("deep");

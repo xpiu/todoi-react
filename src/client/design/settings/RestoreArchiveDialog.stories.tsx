@@ -36,7 +36,7 @@ const dialogOf = async (canvasElement: HTMLElement) => {
 };
 
 export const Choose: Story = {};
-export const NotAnExport: Story = { args: { error: "This file isn't a Todoi export. Choose the .zip file that Export everything downloaded." } };
+export const NotAnExport: Story = { args: { error: "This file isn't a todoi export. Choose the .zip file that Export everything downloaded." } };
 export const Review: Story = {
   args: { stage: "review" },
   async play({ args, canvasElement, userEvent }) {

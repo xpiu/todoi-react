@@ -70,7 +70,7 @@ export function ResetPasswordPage({ stage, email: emailProp = "", onSend, onSave
         </AuthState>
         <div className="td-auth-stack">
           <Button variant="primary" size="lg" onClick={onContinue}>
-            Continue to Todoi
+            Continue to todoi
           </Button>
         </div>
       </AuthShell>

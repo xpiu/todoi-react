@@ -38,9 +38,9 @@ describe("changing the sign-in email", () => {
     expect(asked.status).toBe(200);
     expect(await asked.json()).toEqual({ pendingEmail: next });
     expect(await me(person.cookie)).toMatchObject({ email: person.email, pendingEmail: next });
-    expect((await emailsTo(person.email)).map((m) => m.subject)).toEqual(["Confirm your email for Todoi"]);
+    expect((await emailsTo(person.email)).map((m) => m.subject)).toEqual(["Confirm your email for todoi"]);
     const [mail] = await emailsTo(next);
-    expect(mail?.subject).toBe("Confirm your new email for Todoi");
+    expect(mail?.subject).toBe("Confirm your new email for todoi");
     expect(mail?.text).toContain(`Until you confirm, you log in with ${person.email}.`);
 
     const opened = await openLink(mail!.link!);
@@ -77,7 +77,7 @@ describe("changing the sign-in email", () => {
     const next = fresh();
     await call("/api/me/email-change", { cookie: person.cookie, json: { email: next } });
     await signUp("Someone else", next);
-    const link = (await emailsTo(next)).find((m) => m.subject === "Confirm your new email for Todoi")!.link!;
+    const link = (await emailsTo(next)).find((m) => m.subject === "Confirm your new email for todoi")!.link!;
     expect(target((await openLink(link)).location)).toMatchObject({ error: "EMAIL_TAKEN" });
     expect((await db.select({ email: users.email }).from(users).where(eq(users.id, person.id)))[0]!.email).toBe(person.email);
   });

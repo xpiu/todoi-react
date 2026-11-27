@@ -19,7 +19,7 @@ describe("account emails over the API", () => {
   it("send a confirmation link at sign-up that lands on /verify-email and confirms the address", async () => {
     const person = await signUp("Flo");
     const [mail] = await emailsTo(person.email);
-    expect(mail).toMatchObject({ subject: "Confirm your email for Todoi" });
+    expect(mail).toMatchObject({ subject: "Confirm your email for todoi" });
     expect(mail!.text).toContain(`Confirm that ${person.email} is yours`);
     expect(mail!.link).toMatch(/\/api\/auth\/verify-email\?token=/);
     expect(new URL(mail!.link!).searchParams.get("callbackURL")).toBe(`${env.APP_URL}/verify-email`);
@@ -32,7 +32,7 @@ describe("account emails over the API", () => {
     const person = await signUp("Reset");
     const asked = await call("/api/auth/request-password-reset", { json: { email: person.email, redirectTo: `${env.APP_URL}/reset?email=${encodeURIComponent(person.email)}` } });
     expect(asked.status).toBe(200);
-    const mail = (await emailsTo(person.email)).find((m) => m.subject === "Reset your Todoi password");
+    const mail = (await emailsTo(person.email)).find((m) => m.subject === "Reset your todoi password");
     expect(mail?.text).toContain("The link works once and expires in 1 hour.");
     const landing = await openLink(mail!.link!);
     const target = new URL(landing.location!);
@@ -56,7 +56,7 @@ describe("account emails over the API", () => {
     const invite = (await first.json()) as { code: string; emailed: boolean };
     expect(invite.emailed).toBe(true);
     const [mail] = await emailsTo(stranger);
-    expect(mail?.subject).toBe("Sam Verhoeven invited you to “Website” on Todoi");
+    expect(mail?.subject).toBe("Sam Verhoeven invited you to “Website” on todoi");
     expect(mail?.text).toContain("You'll join the project Website as a Viewer");
     expect(mail?.link).toBe(`${env.APP_URL}/i/${invite.code}`);
 
@@ -64,12 +64,12 @@ describe("account emails over the API", () => {
     expect((await call("/api/me/prefs", { method: "PATCH", cookie: colleague.cookie, json: { emailInvites: false } })).status).toBe(200);
     const quiet = await call(`/api/projects/${projectId}/invites`, { cookie: owner.cookie, json: { email: colleague.email.toUpperCase(), role: "editor" } });
     expect(((await quiet.json()) as { emailed: boolean }).emailed).toBe(false);
-    expect((await emailsTo(colleague.email)).map((m) => m.subject)).toEqual(["Confirm your email for Todoi"]);
+    expect((await emailsTo(colleague.email)).map((m) => m.subject)).toEqual(["Confirm your email for todoi"]);
 
     await call("/api/me/prefs", { method: "PATCH", cookie: colleague.cookie, json: { emailInvites: true } });
     const loud = await call(`/api/projects/${projectId}/invites`, { cookie: owner.cookie, json: { email: colleague.email, role: "editor" } });
     expect(((await loud.json()) as { emailed: boolean }).emailed).toBe(true);
-    expect((await emailsTo(colleague.email)).map((m) => m.subject)).toContain("Sam Verhoeven invited you to “Website” on Todoi");
+    expect((await emailsTo(colleague.email)).map((m) => m.subject)).toContain("Sam Verhoeven invited you to “Website” on todoi");
 
     // A link-only invite (no address) is never emailed.
     const linkOnly = await call(`/api/projects/${projectId}/invites`, { cookie: owner.cookie, json: { role: "viewer" } });
