@@ -176,7 +176,7 @@ export function AppShell() {
         : () => void navigate({ to: "/projects" });
   const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "search" ? "Search" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
-  // The browser tab names the project on screen ("Todoi - New project"); every other page keeps the app's name.
+  // The browser tab names the project on screen ("todoi - New project"); every other page keeps the app's name.
   const projectName = projectId ? project.data?.name : undefined;
   useEffect(() => {
     if (!projectName) return;

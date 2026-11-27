@@ -33,10 +33,10 @@ test("every page outside a project returns to the last project in its last view"
   // A project title has no Back
   await expect(page.locator("button.td-topnav-back")).toHaveCount(0);
   // The browser tab names the project, and only a project
-  await expect(page).toHaveTitle(`Todoi - ${project.name}`);
+  await expect(page).toHaveTitle(`todoi - ${project.name}`);
   for (const [path, title] of PAGES) {
     await page.goto(path);
-    await expect(page).toHaveTitle("Todoi");
+    await expect(page).toHaveTitle("todoi");
     const back = page.getByRole("button", { name: `Back to ${project.name}`, exact: true });
     await expect(back).toBeVisible();
     await expect(page.locator(".td-topnav-title[data-back]")).toContainText(title);
