@@ -29,6 +29,27 @@ describe("the development transport", () => {
   });
 });
 
+describe("attachments and a reply address of the email's own", () => {
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+  const withFile = { ...message, replyTo: "sam@todoi.com", attachments: [{ filename: "qa-shot.png", content: png, contentType: "image/png" }] };
+
+  it("are written beside the development copy", async () => {
+    dir = await mkdtemp(join(tmpdir(), "todoi-emails-"));
+    await createMailer({ EMAIL_FROM: FROM, EMAIL_REPLY_TO: "info@todoi.com", EMAIL_DIR: dir }, { log: () => undefined })(withFile);
+    const files = await readdir(dir);
+    const file = files.find((f) => f.endsWith(".qa-shot.png"))!;
+    expect(new Uint8Array(await readFile(join(dir, file)))).toEqual(png);
+    expect(JSON.parse(await readFile(join(dir, files.find((f) => f.endsWith(".json"))!), "utf8"))).toMatchObject({ replyTo: "sam@todoi.com", attachments: ["qa-shot.png"] });
+  });
+
+  it("go to Resend as base64", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ id: "re_1" }), { status: 200 }));
+    await createMailer({ RESEND_API_KEY: "re_test", EMAIL_FROM: FROM, EMAIL_REPLY_TO: "info@todoi.com", EMAIL_DIR: "unused" }, { fetch })(withFile);
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toMatchObject({ reply_to: "sam@todoi.com", attachments: [{ filename: "qa-shot.png", content: "iVBORw==", content_type: "image/png" }] });
+  });
+});
+
 describe("the Resend transport", () => {
   it("posts one multipart email with the key, the sender, the reply address and both parts", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({ id: "re_1" }), { status: 200 }));

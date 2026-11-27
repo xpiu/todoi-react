@@ -10,6 +10,7 @@ import "./design/core/appearance";
 // Marks <html data-device data-touch> before the first render.
 import "./design/core/viewport";
 import "./app/app.css";
+import { QaGate } from "./qa/QaGate";
 import { queryClient } from "./queryClient";
 import { router } from "./router";
 import { initializeSync } from "./data/sync";
@@ -24,6 +25,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <QaGate />
     </QueryClientProvider>
   </StrictMode>,
 );

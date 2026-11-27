@@ -2,8 +2,9 @@
 import { env } from "../env";
 import { createMailer } from "./transport";
 
-export { EmailNotSent, writtenEmails, type WrittenEmail } from "./transport";
+export { EmailNotSent, writtenEmails, type EmailAttachment, type WrittenEmail } from "./transport";
 export * from "./templates";
+export * from "./qaReport";
 
 if (!env.DEV && !env.RESEND_API_KEY) console.warn(`RESEND_API_KEY is not set: emails are written to ${env.EMAIL_DIR} and not sent.`);
 

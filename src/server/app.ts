@@ -11,6 +11,7 @@ import { adminRoute, clientErrorsRoute } from "./routes/admin";
 import { cspReportsRoute } from "./routes/cspReports";
 import { gitConnectionsRoute, gitSyncRoute, webhooksRoute } from "./routes/gitSync";
 import { itemsRoute } from "./routes/items";
+import { qaReportsRoute } from "./routes/qaReports";
 import { searchRoute } from "./routes/search";
 import { auth, authMiddleware } from "./auth";
 import { groupsRoute, listsRoute, projectsRoute, archiveRoute, membersRoute } from "./routes/projects";
@@ -25,6 +26,7 @@ import { openApiDocument } from "./openapi";
 // Throttling (rateLimit.ts, work plan R3). One counter per rule, shared by the paths it covers.
 const signInLimit = rateLimit(LIMITS.signIn);
 const authEmailLimit = rateLimit(LIMITS.authEmail);
+const qaReportLimit = rateLimit(LIMITS.qaReports);
 
 // Chained so Hono can infer the full route type for the RPC client (`hc<AppType>`).
 export const app = new Hono({ getPath: routePath })
@@ -65,6 +67,8 @@ export const app = new Hono({ getPath: routePath })
   .use("/me/export/*", rateLimit(LIMITS.export))
   .use("/me/restore", rateLimit(LIMITS.export))
   .use("/errors", rateLimit(LIMITS.clientErrors))
+  // Sending a QA note emails it; reading the stored ones is not limited here.
+  .use("/qa-reports", (c, next) => (c.req.method === "POST" ? qaReportLimit(c, next) : next()))
   .use("*", workspaceMutations)
   .route("/me", meRoute)
   .route("/me/sudo", sudoRoute)
@@ -84,6 +88,7 @@ export const app = new Hono({ getPath: routePath })
   .route("/git", gitConnectionsRoute)
   .route("/admin", adminRoute)
   .route("/errors", clientErrorsRoute)
+  .route("/qa-reports", qaReportsRoute)
   .route("/archive", archiveRoute)
   .route("/lists", listsRoute)
   .route("/items", itemsRoute)

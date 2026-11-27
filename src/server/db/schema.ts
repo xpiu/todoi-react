@@ -9,6 +9,7 @@ import { ITEM_STATUSES } from "../../shared/item-status";
 import type { TokenAccess } from "../../shared/apiTokens";
 import type { RepeatRule } from "../../shared/items";
 import type { Prefs } from "../../shared/prefs";
+import type { QaContext } from "../../shared/qa";
 import type { FileFormat } from "../../shared/projectDoc/codecs";
 import type { MergeConflict } from "../../shared/projectDoc/merge";
 import type { DocAttachment, DocComment, ProjectDoc } from "../../shared/projectDoc/model";
@@ -709,3 +710,32 @@ export const errorGroups = pgTable(
   (t) => [index("error_groups_last_seen_idx").on(t.lastSeen)],
 );
 export type ErrorGroup = typeof errorGroups.$inferSelect;
+
+/**
+ * QA notes from todoi's own people (shared/qa.ts): what they wrote, the page it was about and the screenshot
+ * with their drawing (bytes under UPLOAD_DIR). Stored first, then emailed to QA_REPORT_TO by a job.
+ */
+export const qaReports = pgTable(
+  "qa_reports",
+  {
+    id: text("id").primaryKey(),
+    /** Who sent it; the address and name are kept as they were, also after the account is gone */
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+    email: text("email").notNull(),
+    name: text("name").notNull(),
+    text: text("text").notNull(),
+    /** The page it is about */
+    url: text("url").notNull(),
+    context: jsonb("context").$type<QaContext>().notNull(),
+    /** The screenshot's bytes (services/uploads.ts); null when none arrived */
+    screenshotKey: text("screenshot_key"),
+    screenshotSize: integer("screenshot_size").notNull().default(0),
+    /** When the email left; null while its job is queued or failing */
+    emailedAt: timestamp("emailed_at", { withTimezone: true }),
+    /** Dealt with: set from the operator console, so the list shows what is still open */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("qa_reports_created_idx").on(t.createdAt)],
+);
+export type QaReport = typeof qaReports.$inferSelect;

@@ -8,6 +8,7 @@ import { defineJob, enqueue, every, pruneJobs, startWorker } from "./jobs";
 import { pruneErrorGroups } from "./services/errorTracking";
 import { purgeIdleGuests } from "./services/guests";
 import { purgeTrash } from "./services/lifecycle";
+import { deliverQaReport } from "./services/qaReports";
 import { drainUploadCleanup } from "./services/uploadCleanup";
 import { pruneOperationReceipts } from "./sync";
 
@@ -19,6 +20,9 @@ export const STALE_AFTER_MS = 3 * RECONCILE_EVERY_MS;
 
 /** One sync of a connection. Coalesced: while one is queued, asking again changes nothing. */
 export const enqueueGitSync = (connectionId: string, trigger: Extract<SyncTrigger, "webhook" | "auto">) => enqueue("git-sync", { connectionId, trigger }, { key: `git-sync:${connectionId}` });
+
+/** The email for one stored QA note (services/qaReports.ts). Retried while the mail service refuses. */
+export const enqueueQaReportEmail = (reportId: string) => enqueue("qa-report-email", { reportId }, { key: `qa-report-email:${reportId}` });
 
 export function defineJobs() {
   defineJob<{ connectionId: string; trigger: Extract<SyncTrigger, "webhook" | "auto"> }>("git-sync", {
@@ -51,6 +55,7 @@ export function defineJobs() {
       await pruneErrorGroups();
     },
   });
+  defineJob<{ reportId: string }>("qa-report-email", { maxAttempts: 8, run: ({ reportId }) => deliverQaReport(reportId) });
   defineJob("upload-cleanup", { run: async () => void (await drainUploadCleanup()) });
   defineJob("receipts-prune", { run: async () => void (await pruneOperationReceipts()) });
 }

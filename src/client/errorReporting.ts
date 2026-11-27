@@ -5,6 +5,9 @@
 const sent = new Set<string>();
 const MAX_REPORTS = 20;
 
+/** What this page load has reported so far, as "TypeError: message" lines (a QA note quotes them). */
+export const reportedErrors = () => [...sent].map((key) => key.replace("\n", ": "));
+
 export function reportError(error: unknown, context?: string) {
   const e = error instanceof Error ? error : new Error(typeof error === "string" ? error : "Unknown error");
   const message = `${context ? `${context}: ` : ""}${e.message || e.name}`.slice(0, 500);

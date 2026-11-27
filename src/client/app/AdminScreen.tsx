@@ -1,11 +1,12 @@
 // The operator console (/admin, work plan R8): todoi's health for the people who run it — accounts and
 // content, grouped errors (server, browser, jobs, Git sync) with their stack and a way to mark them
-// resolved, the background job queue with retries, Git sync connections that fail or fell behind, and
-// an account search. Built from the settings shell's cards. Operators only (ADMIN_EMAILS).
+// resolved, the QA notes todoi's own people sent from inside the app (src/client/qa) with their screenshot,
+// the background job queue with retries, Git sync connections that fail or fell behind, and an account search. Built from the settings shell's cards. Operators only (ADMIN_EMAILS).
 import { useState } from "react";
 
 import { useAdminAccounts, useAdminMutations, useAdminOutbox, useAdminOverview, type AdminOverview } from "../data/admin";
 import { ApiError, errorMessage } from "../data/api";
+import { useQaNotes, useResolveQaNote } from "../data/qaReports";
 import { Button } from "../design/core/Button";
 import { formatRelative } from "../design/core/dates";
 import { EmptyState } from "../design/core/EmptyState";
@@ -19,6 +20,15 @@ import "./admin.css";
 const SOURCE_NAMES = { server: "Server", client: "Browser", job: "Background job", "git-sync": "Git sync" } as const;
 const ago = (iso: string | null) => (iso ? formatRelative(iso) : "never");
 const num = (n: number) => n.toLocaleString("en");
+/** A page's address without its origin: the note's own deployment is this one. */
+const pageOf = (url: string) => {
+  try {
+    const u = new URL(url);
+    return u.pathname + u.search;
+  } catch {
+    return url;
+  }
+};
 
 export function AdminScreen() {
   const overview = useAdminOverview();
@@ -27,6 +37,8 @@ export function AdminScreen() {
   const outbox = useAdminOutbox();
   const [open, setOpen] = useState<string | null>(null);
   const am = useAdminMutations();
+  const notes = useQaNotes();
+  const resolveNote = useResolveQaNote();
   const notify = useFeedback((s) => s.notify);
   const failed = (what: string) => (err: unknown) => notify({ message: `Couldn't ${what}: ${errorMessage(err)}`, icon: "circle-alert" });
 
@@ -65,6 +77,32 @@ export function AdminScreen() {
     ),
   }));
 
+  const openNotes = notes.data?.filter((n) => !n.resolvedAt) ?? [];
+  const noteRows: SettingsRow[] = (notes.data ?? []).map((n) => ({
+    id: `qa-${n.id}`,
+    label: <span className="td-admin-error">{n.text || "Drawing without a note"}</span>,
+    hint: [n.name, pageOf(n.url), ago(n.createdAt), n.emailedAt ? null : "email not sent yet", n.resolvedAt ? `resolved ${ago(n.resolvedAt)}` : null].filter(Boolean).join(" · "),
+    bodyText: [n.url, ...n.marked].join(" "),
+    body:
+      open === n.id ? (
+        <div className="td-admin-note">
+          <a href={n.url}>{n.url}</a>
+          {n.marked.length ? <pre className="td-admin-stack">{n.marked.join("\n")}</pre> : null}
+          {n.screenshot ? (
+            <a href={n.screenshot} target="_blank" rel="noreferrer">
+              <img className="td-admin-shot" src={n.screenshot} alt="The screenshot with its drawing" />
+            </a>
+          ) : null}
+        </div>
+      ) : undefined,
+    control: (
+      <span className="td-admin-actions">
+        <IconButton name={open === n.id ? "chevron-up" : "chevron-down"} label={`${open === n.id ? "Hide" : "Show"} the screenshot`} size={28} iconSize={16} aria-expanded={open === n.id} onClick={() => setOpen((x) => (x === n.id ? null : n.id))} />
+        {n.resolvedAt ? <StatusDot label="Resolved" /> : <Button onClick={() => resolveNote.mutate(n.id, { onError: failed("mark it resolved") })}>Resolve</Button>}
+      </span>
+    ),
+  }));
+
   return (
     <SettingsPageFrame title="Operator console" crumb="todoi's health: accounts, errors, background work and Git sync. Only operators see this page.">
       <SettingsCard
@@ -81,6 +119,7 @@ export function AdminScreen() {
         }}
       />
       <SettingsCard group={{ id: "errors", title: "Errors", sub: o ? (openErrors.length ? count(openErrors.length, "open problem") : "Nothing open") : undefined, tone: openErrors.length ? "warn" : undefined, rows: errorRows, empty: "No errors recorded" }} />
+      <SettingsCard group={{ id: "qa-notes", title: "QA notes", sub: notes.data ? (openNotes.length ? count(openNotes.length, "open note") : "Nothing open") : undefined, rows: noteRows, empty: "No QA notes yet" }} />
       <SettingsCard
         group={{
           id: "jobs",

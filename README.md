@@ -38,6 +38,7 @@ todoi is a lightweight task manager focused on usability, legibility, speed and 
 - [💻 Local development](#-local-development)
 - [🚀 Production](#-production)
 - [✅ Quality gates](#-quality-gates)
+- [QA notes](#qa-notes)
 
 ## 💎 Unique selling propositions
 
@@ -274,10 +275,11 @@ Environment variables override `.env`:
 - **`EMAIL_FROM`:** Default `todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
 - **`EMAIL_REPLY_TO`:** Default `info@todoi.com`; sent as the Reply-To header so replies to the no-reply sender reach the Hostinger inbox.
 - **`npm run email:test -- <address>`:** Sends one test email through the same mailer (`src/server/email/sendTest.ts`) with the key and `EMAIL_FROM` from `.env`, and prints Resend's reason if it refuses. Before todoi.com is verified at Resend, add `--from onboarding@resend.dev` (Resend only delivers that sender to the account owner's own address).
+- **`QA_REPORT_TO`:** Default `info@todoi.com`; where QA notes are emailed (see [QA notes](#qa-notes)), with Reply-To set to the person who wrote the note.
 - **`EMAIL_DIR`:** Default `.data/emails` (`/data/emails` in the Docker image, on the volume); the development transport's folder. Operators see its newest emails, with their links, under Outbox in `/admin`.
 - **`SYNC_SECRET_KEY`:** 32+ characters; encrypts the GitHub tokens and webhook secrets Git sync stores. Unset, a key is derived from `BETTER_AUTH_SECRET`, so rotating that secret disconnects every repository.
 - **`RATE_LIMIT`:** Default `true` in production, `false` in development. Throttles every request per client address (1200/min), log-ins (30 per 10 min per address), sign-ups (10/h), guest workspaces (30/h), reset and confirmation emails (10/h per address, 5/h per recipient), each API token (600 per 10 min), tokens that don't work (20 per 10 min per address) and account exports (10/h per person), browser error reports (60 per 10 min per person) and GitHub webhooks (120/min per address); a refusal is 429 with `Retry-After`. Counts live in memory, per instance. Wrong passwords are also throttled per account (10 log-ins per 15 min, cleared by a log-in that works or a password reset; 5 wrong ones at "Confirm it's you"), in Postgres and always on. Limits are in `src/server/rateLimit.ts`.
-- **`ADMIN_EMAILS`:** Comma-separated sign-in addresses that may open the operator console at `/admin` (errors, the job queue, Git sync health, accounts), once the address is confirmed. Default: none in production, the seeded `info@todoi.org` in development.
+- **`ADMIN_EMAILS`:** Comma-separated sign-in addresses that may open the operator console at `/admin` (errors, QA notes, the job queue, Git sync health, accounts), once the address is confirmed. Default: none in production, the seeded `info@todoi.org` in development.
 - **`TRUST_PROXY_HOPS`:** Default `0` (the socket's address). Behind a reverse proxy that appends to `X-Forwarded-For`, set the number of such proxies (usually `1`), or every visitor shares the proxy's address and one budget.
 - **`SIGN_UP`:** Default `open` (staging.todoi.com since 2026-11-27, so a visitor lands in the app): anyone may create an account, and every visitor first gets a guest workspace. `invite` (staging.todoi.com while the first testers tried todoi) makes no guest workspaces (a visitor without a session is sent to the log-in page) and creates an account only for an address in `SIGN_UP_EMAILS` or `ADMIN_EMAILS`, an address with an open project invite, or whoever signs up from an open invite link (`/i/:code`) that isn't locked to another address. Existing accounts log in as usual, and `NOINDEX` defaults to on. Social sign-in isn't gated yet: keep it switched off while `invite` is on.
 - **`SIGN_UP_EMAILS`:** With `SIGN_UP=invite`, comma-separated addresses that may sign up without a project invite (the testers).
@@ -324,6 +326,19 @@ APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED
 Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration tests, Storybook build/tests, `design-sync:check` and app Chromium tests. App screenshots compare against Linux baselines, recorded on CI's runner image by the `linux-baselines` workflow (Actions › Run workflow, then commit its artifact). Playwright reports: `.tmp/`, uploaded on CI failure.
 
 Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Attachment cleanup runs after commit and as a job each minute, with retries backing off to one hour. What has been in the Trash for 90 days is deleted for good by the `trash-purge` job. Migrate before starting an updated API.
+
+## QA notes
+
+For todoi's own people, on local, staging and live: an account whose confirmed sign-in address ends in `@todoi.com` (`src/shared/qa.ts`; the seed makes `flo@todoi.com` and `info@todoi.com` in development).
+
+- **Summon:** Ctrl+Shift+F (⌃⇧F, the real Control key on macOS) on any screen, also while typing or over a dialog. The same keys hide it; the draft is kept. Esc in the note hides it too.
+- **Draw:** the screen freezes as it is (an open menu stays in the picture) and the cursor becomes a pencil: bright red, 3px, anti-aliased. The pencil does not show over the panel. Undo stroke and Clear drawing are in the panel; drag the panel by its title bar.
+- **Use the app:** the other half of the Draw switch lets clicks and scrolling through, to bring the app into the state you want to show; the drawing stays on top. Switching back to Draw freezes the new state.
+- **Exact capture:** the frozen picture is the page re-rendered from its DOM, because a page cannot read its own pixels silently. Where it looks wrong, the camera button swaps it for the tab's real pixels through the browser's screen-sharing prompt (choose this tab).
+- **Submit** (or ⌘↵ / Ctrl+↵): the PNG is put together then, the frozen picture with the drawing on top, and sent with the text and the page's context: URL, title, browser, viewport, theme, build, errors the page reported, and the elements under each stroke by tag and `td-*` class.
+- **Where it goes:** stored first (`qa_reports`, the PNG under `UPLOAD_DIR`), then emailed to `QA_REPORT_TO` by the `qa-report-email` job (retried while the mail service refuses), subject `[QA local|staging|live] …`, the PNG attached, facts as labelled lines and again as JSON. The operator console (`/admin`) lists the notes, open ones first, with the screenshot and Resolve. `GET /api/qa-reports`, `/api/qa-reports/:id` and `/api/qa-reports/:id/screenshot` serve the stored copy to staff and operators.
+- **Local sends are real** when `.env` has a `RESEND_API_KEY`; without one the email and its PNG land in `EMAIL_DIR`.
+- **Limits:** the picture is the viewport, not the whole page; hover states are not in the re-rendered still; images from other sites that forbid cross-origin reads come out as placeholders (Exact capture shows them).
 
 ## Email
 

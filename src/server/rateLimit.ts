@@ -181,6 +181,8 @@ export const LIMITS = {
   export: { name: "export", limit: 10, windowMs: HOUR, key: viewerId, message: "You've exported a lot in the last hour. Try again later." },
   /** Error reports from the browser (POST /api/errors), per person; a page sends at most 20 (client/errorReporting.ts) */
   clientErrors: { name: "client-errors", limit: 60, windowMs: 10 * MINUTE, key: viewerId },
+  /** QA notes from todoi's own people (POST /api/qa-reports), per person: each one sends an email */
+  qaReports: { name: "qa-reports", limit: 30, windowMs: 10 * MINUTE, key: viewerId, message: "That's a lot of QA notes in a few minutes. Try again shortly." },
   /** Content-Security-Policy reports (POST /api/csp-reports), per address: a page sends one per blocked resource */
   cspReports: { name: "csp-reports", limit: 60, windowMs: 10 * MINUTE, key: (c) => clientIp(c) },
   /** Inbound repository webhooks, per sender address and endpoint (mount on the webhook route) */

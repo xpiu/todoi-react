@@ -48,6 +48,7 @@
     "@tiptap/pm": "^3.33.0",
     "@tiptap/react": "^3.33.1",
     "@tiptap/starter-kit": "^3.33.1",
+    "@zumer/snapdom": "3.7.6",
     "better-auth": "^1.7.20",
     "drizzle-orm": "^0.45.4",
     "embridge": "0.2.2",
