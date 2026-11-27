@@ -13,6 +13,7 @@
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "test:storybook": "vitest run --config vitest.storybook.config.ts",
+    "email:test": "tsx --env-file=.env src/server/email/sendTest.ts",
     "build": "vite build && npm run build:server",
     "build:server": "vite build --ssr src/server/index.ts --outDir dist-server --emptyOutDir",
     "start": "NODE_ENV=production node --env-file-if-exists=.env dist-server/index.js",
