@@ -5,7 +5,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 
-import { MAX_QA_CONTEXT_CHARS, MAX_QA_REQUEST_BYTES, MAX_QA_SCREENSHOT_BYTES, MAX_QA_TEXT, qaContextSchema } from "../../shared/qa";
+import { isStaffEmail, MAX_QA_CONTEXT_CHARS, MAX_QA_REQUEST_BYTES, MAX_QA_SCREENSHOT_BYTES, MAX_QA_TEXT, qaContextSchema } from "../../shared/qa";
 import { MB } from "../../shared/uploads";
 import { maybeViewer, viewerOf } from "../auth";
 import { db } from "../db";
@@ -14,13 +14,17 @@ import { qaScreenshotName } from "../email";
 import { fail, idParam } from "../errors";
 import { enqueueQaReportEmail } from "../jobKinds";
 import { attachmentHeaders, previewType } from "../services/attachmentResponse";
+import { requireConfirmedEmail } from "../services/confirmedEmail";
 import { createQaReport, isStaff } from "../services/qaReports";
 import { isOperator } from "./admin";
 import { openUpload } from "../services/uploads";
 
 const REFUSAL = "QA notes are for todoi's own people";
 const staffOnly: MiddlewareHandler = async (c, next) => {
-  if (!(await isStaff(maybeViewer(c)))) return fail(c, 403, REFUSAL);
+  const viewer = maybeViewer(c);
+  if (!viewer || viewer.isAnonymous || !isStaffEmail(viewer.email)) return fail(c, 403, REFUSAL);
+  // One of ours who hasn't opened the confirmation link yet: say that, so the tool can send it again.
+  await requireConfirmedEmail(viewer, "send QA notes");
   await next();
 };
 /** Reading and resolving: the people who write the notes, and the operators whose console lists them. */

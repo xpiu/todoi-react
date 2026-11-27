@@ -97,6 +97,41 @@ test("todoi's own people draw on the screen, write a note and submit it", async 
   await expect(panel.getByRole("button", { name: "Undo the last stroke" })).toBeDisabled();
 });
 
+test("an address that isn't confirmed yet gets its link sent once, and the note waits", async ({ page }) => {
+  let confirmed = false;
+  let links = 0;
+  await page.route("**/api/qa-reports", (route) =>
+    confirmed
+      ? route.fulfill({ status: 201, json: { id: "AAAAAAAAAAAAAAAAAAAAA" } })
+      : route.fulfill({ status: 403, json: { error: "Confirm your email address to send QA notes.", fields: { confirmEmail: "EMAIL_UNCONFIRMED" } } }),
+  );
+  await page.route("**/api/auth/send-verification-email", async (route) => {
+    links++;
+    expect(route.request().postDataJSON()).toMatchObject({ email: STAFF.email, callbackURL: "/verify-email?next=%2Fprojects" });
+    await route.fulfill({ json: { status: true } });
+  });
+  await openAsStaff(page);
+  await page.keyboard.press(SHORTCUT);
+  const panel = page.getByRole("dialog", { name: "QA note" });
+  const note = panel.getByRole("textbox", { name: "What is wrong" });
+  await expect(note).toBeFocused();
+  await page.keyboard.type("The header overlaps");
+
+  const submit = panel.getByRole("button", { name: "Submit" });
+  const refusal = panel.getByText(`Confirm your email address first. We sent a link to ${STAFF.email}: open it, then submit again.`);
+  await submit.click();
+  await expect(refusal).toBeVisible();
+  await expect(note).toHaveValue("The header overlaps");
+  // Asking again before the link was opened sends no second email.
+  await submit.click();
+  await expect(refusal).toBeVisible();
+  expect(links).toBe(1);
+
+  confirmed = true;
+  await submit.click();
+  await expect(panel.getByRole("status")).toHaveText("Sent");
+});
+
 test("hiding keeps the draft, the panel moves, and Use the app lets clicks through", async ({ page }) => {
   await openAsStaff(page);
   // Summoned while typing in a field: the field keeps its text and its caret (on macOS the keys alone would

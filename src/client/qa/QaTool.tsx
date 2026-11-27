@@ -8,6 +8,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 import { MAX_QA_TEXT } from "../../shared/qa";
+import { useCurrentUser } from "../app/session";
+import { emailUnconfirmed, sendEmailConfirmation } from "../auth";
 import { errorMessage } from "../data/api";
 import { sendQaNote } from "../data/qaReports";
 import { Button } from "../design/core/Button";
@@ -39,6 +41,7 @@ export default function QaTool() {
   const undoStroke = useQaNote((s) => s.undoStroke);
   const clearStrokes = useQaNote((s) => s.clearStrokes);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const email = useCurrentUser().user?.email ?? "";
 
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -53,6 +56,7 @@ export default function QaTool() {
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
   const positionRef = useRef({ x: 0, y: 0 });
   const focusedRef = useRef(false);
+  const linkSentRef = useRef(false);
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -233,6 +237,12 @@ export default function QaTool() {
     fieldRef.current?.focus({ preventScroll: true });
   };
 
+  /** The API wants the sign-in address confirmed first: send its link (once), which comes back to this page. The note stays. */
+  const confirmFirst = async () => {
+    linkSentRef.current ||= await sendEmailConfirmation(email, window.location.pathname + window.location.search).then((r) => !r.error, () => false);
+    return linkSentRef.current ? `Confirm your email address first. We sent a link to ${email}: open it, then submit again.` : "Confirm your email address first. Send the link from Settings › Notifications, then submit again.";
+  };
+
   const submit = async () => {
     const note = useQaNote.getState();
     if (status.kind === "sending" || status.kind === "sent") return;
@@ -250,7 +260,7 @@ export default function QaTool() {
       note.reset();
       setStatus({ kind: "sent" });
     } catch (error) {
-      setStatus({ kind: "error", message: errorMessage(error) });
+      setStatus({ kind: "error", message: emailUnconfirmed(error) ? await confirmFirst() : errorMessage(error) });
     }
   };
 

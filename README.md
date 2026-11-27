@@ -329,7 +329,7 @@ Archive/Trash visibility follows parent items/projects; restoring a container pr
 
 ## QA notes
 
-For todoi's own people, on local, staging and live: an account whose confirmed sign-in address ends in `@todoi.com` (`src/shared/qa.ts`; the seed makes `flo@todoi.com` and `info@todoi.com` in development).
+For todoi's own people, on local, staging and live: an account whose confirmed sign-in address ends in `@todoi.com` (`src/shared/qa.ts`; the seed makes `flo@todoi.com` and `info@todoi.com` in development). An `@todoi.com` account that hasn't confirmed its address yet can open the tool, but Submit answers "Confirm your email address first" and sends the confirmation link again (once); the note and the drawing wait, and Submit works as soon as the link is opened.
 
 - **Summon:** Ctrl+Shift+F (⌃⇧F, the real Control key on macOS) on any screen, also while typing or over a dialog. The same keys hide it; the draft is kept. Esc in the note hides it too.
 - **Draw:** the screen freezes as it is (an open menu stays in the picture) and the cursor becomes a pencil: bright red, 3px, anti-aliased. The pencil does not show over the panel. Undo stroke and Clear drawing are in the panel; drag the panel by its title bar.

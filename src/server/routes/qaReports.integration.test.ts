@@ -8,6 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { call, confirmEmail, emailsTo, signUp, type Person } from "../../../tests/integration/accounts";
 import { app } from "../app";
+import { EMAIL_UNCONFIRMED } from "../../shared/accountLinks";
 import type { QaContext } from "../../shared/qa";
 import { db } from "../db";
 import { qaReports } from "../db/schema";
@@ -52,12 +53,14 @@ beforeAll(async () => {
 describe("QA notes", () => {
   it("are for confirmed @todoi.com accounts only", async () => {
     expect((await send(null)).status).toBe(401);
-    for (const person of [unconfirmed, customer]) {
-      const refused = await send(person);
-      expect(refused.status).toBe(403);
-      expect(((await refused.json()) as { error: string }).error).toBe("QA notes are for todoi's own people");
-      expect((await call("/api/qa-reports", { cookie: person.cookie })).status).toBe(403);
-    }
+    const refused = await send(customer);
+    expect(refused.status).toBe(403);
+    expect(((await refused.json()) as { error: string }).error).toBe("QA notes are for todoi's own people");
+    // One of ours who hasn't confirmed the address yet is told so, with the marker the tool sends the link on.
+    const unproven = await send(unconfirmed);
+    expect(unproven.status).toBe(403);
+    expect(await unproven.json()).toMatchObject({ error: expect.stringMatching(/^Confirm your email address to send QA notes\./), fields: { confirmEmail: EMAIL_UNCONFIRMED } });
+    for (const person of [unconfirmed, customer]) expect((await call("/api/qa-reports", { cookie: person.cookie })).status).toBe(403);
     expect((await call("/api/qa-reports")).status).toBe(403);
     expect(await db.select().from(qaReports)).toHaveLength(0);
   });
