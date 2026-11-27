@@ -246,7 +246,7 @@ Non-API GET deep links serve HTML; hashed `/assets/*` cache for a year, HTML rev
 
 **Deploys (staging.todoi.com):** CI's `deploy-staging` job fast-forwards the `staging` branch to a `main` commit once every gate has passed, and Dokploy (GitHub provider, branch `staging`, Autodeploy on push) builds that branch; a push to `main` alone never deploys. Rules once testers hold real data: never reseed or wipe staging; `src/server/db/migrations.test.ts` (in `npm run check`) refuses a new migration that drops, renames or tightens a column without a `-- reviewed: …` line saying why it's safe; take a dump before deploying such a migration (`docker exec <db container> pg_dump -U <user> -Fc <db> > before-<sha>.dump` on the VPS; the VPS backup job also dumps every Postgres daily); and a migration must accept edits that older clients replay from their offline outbox. To roll back, point `staging` at the previous good commit (`git push --force origin <sha>:staging`); a migration that already ran stays, so roll back code only past additive migrations.
 
-Staging environment (Dokploy › Environment), names only:
+Staging environment (Dokploy › Environment), names only. Saving a change there doesn't touch the running container: it takes effect on the next deploy (CI's, or Deploy in Dokploy), and `/api/health`'s `build.builtAt` tells you whether that has happened yet.
 
 | Key | Staging value |
 | --- | --- |
