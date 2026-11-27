@@ -51,6 +51,8 @@ export function parseEnv(source: Record<string, string | undefined>) {
       SIGN_UP: z.enum(["open", "invite"]).default("open"),
       /** With SIGN_UP=invite: comma-separated addresses that may sign up without a project invite (testers) */
       SIGN_UP_EMAILS: z.string().default("").transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
+      /** Keep search engines out (a staging copy): every response says `X-Robots-Tag: noindex, nofollow` and `/robots.txt` disallows everything. Default: on with SIGN_UP=invite, off otherwise */
+      NOINDEX: z.stringbool().optional(),
       /** Social sign-in OAuth apps (shared/socialSignIn.ts). Unused while a provider is switched off there, which both are for now */
       GITHUB_CLIENT_ID: optionalValue,
       GITHUB_CLIENT_SECRET: optionalValue,
@@ -73,5 +75,5 @@ export function parseEnv(source: Record<string, string | undefined>) {
     const lines = parsed.error.issues.map((i) => `  - ${i.path.join(".") || "env"}: ${i.message}`);
     throw new Error(`Todoi can't start: the ${dev ? "development" : "production"} configuration is invalid.\n${lines.join("\n")}`);
   }
-  return { ...parsed.data, DEV: dev };
+  return { ...parsed.data, NOINDEX: parsed.data.NOINDEX ?? parsed.data.SIGN_UP === "invite", DEV: dev };
 }

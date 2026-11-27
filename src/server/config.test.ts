@@ -32,6 +32,13 @@ describe("server configuration", () => {
     expect(prod({ APP_URL: "http://localhost:3000", BETTER_AUTH_SECRET: SECRET }).APP_URL).toBe("http://localhost:3000");
   });
 
+  it("keeps search engines out on request, and by default only on an invite-only server", () => {
+    expect(parseEnv({ DATABASE_URL }).NOINDEX).toBe(false);
+    expect(parseEnv({ DATABASE_URL, SIGN_UP: "invite" }).NOINDEX).toBe(true);
+    expect(parseEnv({ DATABASE_URL, SIGN_UP: "open", NOINDEX: "true" }).NOINDEX).toBe(true);
+    expect(parseEnv({ DATABASE_URL, SIGN_UP: "invite", NOINDEX: "false" }).NOINDEX).toBe(false);
+  });
+
   it("sends email through Resend only with a key, from Todoi's no-reply address by default", () => {
     expect(parseEnv({ DATABASE_URL, RESEND_API_KEY: " " })).toMatchObject({ RESEND_API_KEY: undefined, EMAIL_FROM: "Todoi <no-reply@todoi.com>", EMAIL_DIR: ".data/emails" });
     expect(parseEnv({ DATABASE_URL, RESEND_API_KEY: "re_123", EMAIL_FROM: "Todoi <hello@todoi.com>" })).toMatchObject({ RESEND_API_KEY: "re_123", EMAIL_FROM: "Todoi <hello@todoi.com>" });
