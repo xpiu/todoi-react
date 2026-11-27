@@ -44,7 +44,7 @@ todoi is a lightweight task manager focused on usability, legibility, speed and 
 These six USPs define the intended commercial positioning of todoi at todoi.com. They describe the product direction; current implementation status is noted below.
 
 1. **Freedom of data storage.** Choose where task data lives, including todoi-hosted storage and external repositories or other supported storage providers, so users retain control of their data and can keep it outside the SaaS.
-2. **Freedom of storage format.** Keep tasks in portable, accessible formats, with YAML, JSON and EMBRIDGE. Users should be able to choose supported formats, export their work and continue using it with other tools.
+2. **Freedom of storage format.** Keep tasks in portable, accessible formats, with YAML, JSON and Embridge. Users should be able to choose supported formats, export their work and continue using it with other tools.
 3. **Open agent access in the codebase.** Store task files alongside source code so your preferred AI agent can read and update them using its existing file and Git tools, without a separate task-management API integration.
 4. **Bidirectional synchronization.** Keep changes made in todoi and changes made directly in external task files synchronized, supporting an ongoing workflow for humans, agents and other tools.
 5. **Tasks versioned alongside the work.** Keep task files under Git version control with the code they describe. Developers and agents can commit task updates with code changes, review diffs and trace the history and authorship of task changes using Git.
@@ -323,3 +323,19 @@ APP_URL=http://localhost:3000 BETTER_AUTH_SECRET=$(openssl rand -base64 32) SEED
 Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional changes with `npm run test:e2e:update` and commit baselines. [CI](.github/workflows/ci.yml) runs `check`, integration tests, Storybook build/tests, `design-sync:check` and app Chromium tests. App screenshots compare against Linux baselines, recorded on CI's runner image by the `linux-baselines` workflow (Actions › Run workflow, then commit its artifact). Playwright reports: `.tmp/`, uploaded on CI failure.
 
 Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Attachment cleanup runs after commit and as a job each minute, with retries backing off to one hour. What has been in the Trash for 90 days is deleted for good by the `trash-purge` job. Migrate before starting an updated API.
+
+## Email
+
+This webapp leans on email for a number of features. We pay for an email provider at Hostinger.
+
+Email provider: Hostinger
+Email web browser URL access: https://mail.hostinger.com/
+Package subscription for the inbox: "Starter Business Email"
+Billing date: 2030-05-01
+Auto-renewal of package at Hostinger: on
+API access to email for AI agents: yes, via Hostinger
+API access token: stored where we normally store keys
+
+## Licence
+
+project by Floris Zuallaert (Github user xpiu) 
