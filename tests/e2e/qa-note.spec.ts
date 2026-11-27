@@ -99,8 +99,16 @@ test("todoi's own people draw on the screen, write a note and submit it", async 
 
 test("hiding keeps the draft, the panel moves, and Use the app lets clicks through", async ({ page }) => {
   await openAsStaff(page);
+  // Summoned while typing in a field: the field keeps its text and its caret (on macOS the keys alone would
+  // extend the selection).
+  const search = page.locator('.td-topnav input[aria-label="Search"]');
+  await search.click();
+  await page.keyboard.type("heli");
+  await page.keyboard.press("ArrowLeft");
   await page.keyboard.press(SHORTCUT);
   const panel = page.getByRole("dialog", { name: "QA note" });
+  await expect(panel).toBeVisible();
+  expect(await search.evaluate((el: HTMLInputElement) => [el.value, el.selectionStart, el.selectionEnd])).toEqual(["heli", 3, 3]);
   const note = panel.getByRole("textbox", { name: "What is wrong" });
   await expect(note).toBeFocused();
   await page.keyboard.type("Half a thought");
@@ -173,6 +181,10 @@ test("Exact capture swaps the still for the tab's real pixels", async ({ page })
   await expect.poll(pixel).toEqual([0, 200, 0]);
   await expect(panel).toBeVisible();
   await expect(panel.getByRole("textbox", { name: "What is wrong" })).toBeFocused();
+  // Chrome's sharing bar comes and goes with resize events of its own: they must not bring back the re-rendered still.
+  await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+  await page.waitForTimeout(500);
+  expect(await pixel()).toEqual([0, 200, 0]);
 
   await page.keyboard.type("Exact");
   await panel.getByRole("button", { name: "Submit" }).click();

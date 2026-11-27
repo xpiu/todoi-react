@@ -59,8 +59,9 @@ export const captureDeclined = (frame: Frame) => /^(NotAllowedError|AbortError)/
  */
 export async function captureScreen(hide: (hidden: boolean) => void): Promise<Frame> {
   const started = performance.now();
-  const width = window.innerWidth, height = window.innerHeight;
-  const done = (canvas: HTMLCanvasElement | null, error?: string): Frame => ({ canvas, width, height, ms: Math.round(performance.now() - started), source: "screen", error });
+  // Measured when the frame is read, not before: while a tab is shared Chrome shows a bar above the page,
+  // so the viewport (and the picture) is that much shorter than it was when the button was pressed.
+  const done = (canvas: HTMLCanvasElement | null, error?: string): Frame => ({ canvas, width: window.innerWidth, height: window.innerHeight, ms: Math.round(performance.now() - started), source: "screen", error });
   let stream: MediaStream | undefined;
   try {
     // preferCurrentTab and selfBrowserSurface are Chrome's hints to put "This tab" first; others ignore them.
@@ -77,7 +78,7 @@ export async function captureScreen(hide: (hidden: boolean) => void): Promise<Fr
     await pause(400);
     if (!video.videoWidth || !video.videoHeight) return done(null, "The screen share gave no picture");
     // Another window or a whole screen is not this page: its shape gives it away.
-    if (Math.abs(video.videoWidth / video.videoHeight - width / height) > 0.02) return done(null, "Choose this tab in the browser's prompt to capture it exactly");
+    if (Math.abs(video.videoWidth / video.videoHeight - window.innerWidth / window.innerHeight) > 0.02) return done(null, "Choose this tab in the browser's prompt to capture it exactly");
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -90,6 +91,14 @@ export async function captureScreen(hide: (hidden: boolean) => void): Promise<Fr
     for (const track of stream?.getTracks() ?? []) track.stop();
   }
 }
+
+/**
+ * Whether a still no longer fits the viewport and must be taken again. A re-rendered one: after any change
+ * of size. The tab's real pixels: only after a real resize, since the sharing bar leaving (or coming) moves
+ * the height by its own few dozen pixels and taking those pixels again would need the prompt again.
+ */
+export const frameOutdated = (frame: Frame) =>
+  frame.source === "screen" ? frame.width !== window.innerWidth || Math.abs(frame.height - window.innerHeight) > 96 : frame.width !== window.innerWidth || frame.height !== window.innerHeight;
 
 /** The PNG that is sent: the frame (when there is one) with the strokes on top. */
 export function composePng(frame: Frame, strokes: ReadonlyArray<ReadonlyArray<number>>): Promise<Blob> {

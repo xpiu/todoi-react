@@ -16,7 +16,7 @@ import { InlineError } from "../design/core/InlineError";
 import { Segmented } from "../design/core/Segmented";
 import { SHORTCUTS } from "../design/core/shortcuts";
 import { TextField } from "../design/core/TextField";
-import { canCaptureScreen, captureDeclined, capturePage, captureScreen, composePng, type Frame } from "./capture";
+import { canCaptureScreen, captureDeclined, capturePage, captureScreen, composePng, frameOutdated, type Frame } from "./capture";
 import { collectContext, markedBy } from "./context";
 import { addPoint, drawStrokes } from "./ink";
 import { useQaNote, type QaMode } from "./store";
@@ -60,9 +60,11 @@ export default function QaTool() {
     if (!canvas || !ctx) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const frame = frameRef.current?.canvas;
-    if (frame) ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-    ctx.setTransform(canvas.width / window.innerWidth, 0, 0, canvas.height / window.innerHeight, 0, 0);
+    const scale = canvas.width / window.innerWidth;
+    const frame = frameRef.current;
+    // At its own size from the top-left corner, never stretched: a stroke stays on what it was drawn on.
+    if (frame?.canvas) ctx.drawImage(frame.canvas, 0, 0, frame.width * scale, frame.height * scale);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
     const strokes = useQaNote.getState().strokes.map((s) => s.points);
     drawStrokes(ctx, liveRef.current ? [...strokes, liveRef.current] : strokes);
   }, []);
@@ -157,7 +159,8 @@ export default function QaTool() {
       fit();
       place(positionRef.current.x, positionRef.current.y);
       window.clearTimeout(timer);
-      if (useQaNote.getState().mode === "draw") timer = window.setTimeout(() => void freeze(), 200);
+      // A new still only when the old one stopped fitting (sharing a tab fires resizes of its own).
+      if (useQaNote.getState().mode === "draw") timer = window.setTimeout(() => (!frameRef.current || frameOutdated(frameRef.current)) && void freeze(), 200);
     };
     // The still must not slide under the pencil: the wheel does nothing while drawing.
     const canvas = canvasRef.current;
@@ -214,6 +217,8 @@ export default function QaTool() {
   const captureExactly = async () => {
     const host = hostRef.current;
     if (!host) return;
+    // The tool leaves the screen for the shot. The mouse pointer does not: a tab share paints it into the
+    // picture wherever it rests, and Chrome has no option to leave it out (its `cursor` setting is fixed).
     const frame = await captureScreen((hidden) => host.classList.toggle("is-hidden", hidden));
     if (!frame.canvas) {
       if (!captureDeclined(frame)) setStatus({ kind: "error", message: `Exact capture didn't work. ${frame.error ?? ""}`.trim() });

@@ -54,10 +54,11 @@ const MATCH: Record<ShortcutId, (e: KeyEvt) => boolean> = {
   help: (e) => e.key === "?",
   select: (e) => noMod(e) && !e.shiftKey && low(e) === "s",
   "select-all": (e) => mod(e) && !e.shiftKey && low(e) === "a",
-  // Ctrl+Shift+F (⌃⇧F on macOS too: the real Control key, which no browser or system shortcut pairs with
-  // Shift+F). The QA note of todoi's own people (src/client/qa); it works while typing and over any dialog,
-  // and is left out of the sections below because it does nothing for anyone else. Matched by the physical
-  // key, so a keyboard layout or a held modifier cannot change it.
+  // Ctrl+Shift+F (⌃⇧F on macOS too: the real Control key). macOS has no system shortcut on it and neither
+  // Chrome's nor Firefox's menus bind it (their F shortcuts all take ⌘); in a text field it would extend the
+  // selection by a character, which the QA gate prevents. The QA note of todoi's own people (src/client/qa):
+  // it works while typing and over any dialog, and is left out of the sections below because it does nothing
+  // for anyone else. Matched by the physical key, so a keyboard layout cannot change it.
   "qa-note": (e) => e.ctrlKey && e.shiftKey && !e.metaKey && !e.altKey && e.code === "KeyF",
 };
 
