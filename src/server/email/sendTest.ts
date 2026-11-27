@@ -15,7 +15,7 @@ if (!to?.includes("@")) {
 }
 
 const key = process.env.RESEND_API_KEY || undefined;
-const config = { RESEND_API_KEY: key, EMAIL_FROM: from ?? (process.env.EMAIL_FROM || "todoi <no-reply@todoi.com>"), EMAIL_DIR: process.env.EMAIL_DIR || ".data/emails" };
+const config = { RESEND_API_KEY: key, EMAIL_FROM: from ?? (process.env.EMAIL_FROM || "todoi <no-reply@todoi.com>"), EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO || "info@todoi.com", EMAIL_DIR: process.env.EMAIL_DIR || ".data/emails" };
 const sent = new Date().toISOString();
 
 try {

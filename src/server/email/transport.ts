@@ -13,6 +13,8 @@ export interface OutgoingEmail extends RenderedEmail {
 export interface MailerConfig {
   RESEND_API_KEY?: string;
   EMAIL_FROM: string;
+  /** Reply-To header, so replies to the no-reply sender reach a person */
+  EMAIL_REPLY_TO?: string;
   EMAIL_DIR: string;
 }
 export type SendEmail = (email: OutgoingEmail) => Promise<void>;
@@ -38,7 +40,7 @@ export function createMailer(config: MailerConfig, deps: { fetch?: typeof fetch;
         res = await post(RESEND_URL, {
           method: "POST",
           headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ from: config.EMAIL_FROM, to: [to], subject, html, text }),
+          body: JSON.stringify({ from: config.EMAIL_FROM, reply_to: config.EMAIL_REPLY_TO, to: [to], subject, html, text }),
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
       } catch {
@@ -59,7 +61,7 @@ export function createMailer(config: MailerConfig, deps: { fetch?: typeof fetch;
     await Promise.all([
       writeFile(`${stem}.html`, html),
       writeFile(`${stem}.txt`, text),
-      writeFile(`${stem}.json`, `${JSON.stringify({ from: config.EMAIL_FROM, to, subject, date: at.toISOString() }, null, 2)}\n`),
+      writeFile(`${stem}.json`, `${JSON.stringify({ from: config.EMAIL_FROM, replyTo: config.EMAIL_REPLY_TO, to, subject, date: at.toISOString() }, null, 2)}\n`),
     ]);
     log(`Email to ${to} · ${subject} → ${stem}.html (RESEND_API_KEY is unset, so it was not sent)`);
   };

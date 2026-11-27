@@ -1,4 +1,4 @@
-// The app's one mailer, configured from the environment (RESEND_API_KEY, EMAIL_FROM, EMAIL_DIR).
+// The app's one mailer, configured from the environment (RESEND_API_KEY, EMAIL_FROM, EMAIL_REPLY_TO, EMAIL_DIR).
 import { env } from "../env";
 import { createMailer } from "./transport";
 

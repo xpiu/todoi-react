@@ -30,15 +30,15 @@ describe("the development transport", () => {
 });
 
 describe("the Resend transport", () => {
-  it("posts one multipart email with the key, the sender and both parts", async () => {
+  it("posts one multipart email with the key, the sender, the reply address and both parts", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({ id: "re_1" }), { status: 200 }));
-    await createMailer({ RESEND_API_KEY: "re_test", EMAIL_FROM: FROM, EMAIL_DIR: "unused" }, { fetch })(message);
+    await createMailer({ RESEND_API_KEY: "re_test", EMAIL_FROM: FROM, EMAIL_REPLY_TO: "info@todoi.com", EMAIL_DIR: "unused" }, { fetch })(message);
     expect(fetch).toHaveBeenCalledOnce();
     const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://api.resend.com/emails");
     expect(init.method).toBe("POST");
     expect(init.headers).toMatchObject({ Authorization: "Bearer re_test", "Content-Type": "application/json" });
-    expect(JSON.parse(init.body as string)).toEqual({ from: FROM, to: ["flo@todoi.com"], subject: message.subject, html: message.html, text: message.text });
+    expect(JSON.parse(init.body as string)).toEqual({ from: FROM, reply_to: "info@todoi.com", to: ["flo@todoi.com"], subject: message.subject, html: message.html, text: message.text });
   });
 
   it("turns a refusal or no answer into a short reason", async () => {

@@ -40,7 +40,7 @@ describe("server configuration", () => {
   });
 
   it("sends email through Resend only with a key, from todoi's no-reply address by default", () => {
-    expect(parseEnv({ DATABASE_URL, RESEND_API_KEY: " " })).toMatchObject({ RESEND_API_KEY: undefined, EMAIL_FROM: "todoi <no-reply@todoi.com>", EMAIL_DIR: ".data/emails" });
+    expect(parseEnv({ DATABASE_URL, RESEND_API_KEY: " " })).toMatchObject({ RESEND_API_KEY: undefined, EMAIL_FROM: "todoi <no-reply@todoi.com>", EMAIL_REPLY_TO: "info@todoi.com", EMAIL_DIR: ".data/emails" });
     expect(parseEnv({ DATABASE_URL, RESEND_API_KEY: "re_123", EMAIL_FROM: "todoi <hello@todoi.com>" })).toMatchObject({ RESEND_API_KEY: "re_123", EMAIL_FROM: "todoi <hello@todoi.com>" });
   });
 });

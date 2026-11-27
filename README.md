@@ -272,6 +272,7 @@ Environment variables override `.env`:
 - **`CLIENT_DIR`:** Default `dist`; empty serves only the API.
 - **`RESEND_API_KEY`:** Resend API key for the account and invite emails (sent with `fetch`, no SDK). Unset, every email is written to `EMAIL_DIR` as `.html`, `.txt` and `.json` and logged instead; production warns at start. Until it is set, an operator can mark a person's address confirmed in `/admin` › Accounts, which unlocks what R4 waits for (inviting, joining by address).
 - **`EMAIL_FROM`:** Default `todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
+- **`EMAIL_REPLY_TO`:** Default `info@todoi.com`; sent as the Reply-To header so replies to the no-reply sender reach the Hostinger inbox.
 - **`npm run email:test -- <address>`:** Sends one test email through the same mailer (`src/server/email/sendTest.ts`) with the key and `EMAIL_FROM` from `.env`, and prints Resend's reason if it refuses. Before todoi.com is verified at Resend, add `--from onboarding@resend.dev` (Resend only delivers that sender to the account owner's own address).
 - **`EMAIL_DIR`:** Default `.data/emails` (`/data/emails` in the Docker image, on the volume); the development transport's folder. Operators see its newest emails, with their links, under Outbox in `/admin`.
 - **`SYNC_SECRET_KEY`:** 32+ characters; encrypts the GitHub tokens and webhook secrets Git sync stores. Unset, a key is derived from `BETTER_AUTH_SECRET`, so rotating that secret disconnects every repository.

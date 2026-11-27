@@ -41,6 +41,8 @@ export function parseEnv(source: Record<string, string | undefined>) {
       RESEND_API_KEY: optionalValue,
       /** The sender of every email; the domain must be verified at Resend */
       EMAIL_FROM: z.string().trim().min(3).default("todoi <no-reply@todoi.com>"),
+      /** Where replies to our emails go (the Reply-To header): a person's inbox, since EMAIL_FROM is a no-reply address */
+      EMAIL_REPLY_TO: z.string().trim().min(3).default("info@todoi.com"),
       /** Where the development transport writes emails (.html, .txt and .json headers) when RESEND_API_KEY is unset */
       EMAIL_DIR: z.string().default(".data/emails"),
       /** Who may open the operator console (/admin): comma-separated sign-in addresses, confirmed ones only. Development defaults to the seeded account */
