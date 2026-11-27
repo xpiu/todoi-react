@@ -1,5 +1,7 @@
 # To-do
 
+- we need to consider whether our domain construction rules in the old s.todoi.com are better that the recent domain construction ones at staging.todoi.com (e.g. https://staging.todoi.com/p/7SpNP1vU6eJE33e-_VnC0?v=board ) , ref. old docs .tmp/20261126_tasks.md & .tmp/20261125_report.html 
+created: 2026-11-27, prio: high
 - Develop an MVP that works locally
   created: 20261010
   - Keep debugging the app until it behaves closer to the one in Claude Design
