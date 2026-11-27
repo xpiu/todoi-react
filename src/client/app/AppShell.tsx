@@ -176,6 +176,17 @@ export function AppShell() {
         : () => void navigate({ to: "/projects" });
   const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "search" ? "Search" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
+  // The browser tab names the project on screen ("Todoi - New project"); every other page keeps the app's name.
+  const projectName = projectId ? project.data?.name : undefined;
+  useEffect(() => {
+    if (!projectName) return;
+    const base = document.title;
+    document.title = `${base} - ${projectName}`;
+    return () => {
+      document.title = base;
+    };
+  }, [projectName]);
+
   const resolved = useResolvedView(projectId ?? "", projectMatch?.search ?? {}, project.data?.defaultView);
   const state = projectMatch ? resolved.state : null;
   const view = resolved.view;
