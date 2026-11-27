@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { freshProject, trackAccounts } from "./helpers";
+import { freshProject, keyOf, trackAccounts } from "./helpers";
 
 trackAccounts(test);
 
@@ -35,7 +35,7 @@ test("account calendar download includes live dated project and Inbox items", as
   expect(data).toContain("DTSTART;VALUE=DATE:20261017\r\nDTEND;VALUE=DATE:20261018");
   expect(data).toContain("DTSTART;VALUE=DATE:20261010\r\nDTEND;VALUE=DATE:20261013");
   expect(data).toContain("DTSTART:20261016T093000");
-  expect(data).toContain(`?item=${dated}`);
+  expect(data).toContain(`/${f.slug}?item=${await keyOf(page, dated)}`);
   await page.screenshot({ path: ".tmp/calendar/account-data.png" });
 });
 

@@ -20,12 +20,12 @@ async function fixture() {
   ]);
   const group = nanoid(), project = nanoid(), list = nanoid(), item = nanoid();
   await db.insert(groups).values({ id: group, name: "G", keyPrefix: "NT", ownerId: author });
-  await db.insert(projects).values({ id: project, groupId: group, name: "Rotor shop" });
+  const [{ slug } = { slug: "" }] = await db.insert(projects).values({ id: project, groupId: group, name: "Rotor shop" }).returning({ slug: projects.slug });
   await db.insert(lists).values({ id: list, projectId: project, name: "To do" });
   await db.insert(members).values([author, sam, quiet].map((userId) => ({ projectId: project, userId, role: "editor" as const })));
   await db.insert(items).values({ id: item, projectId: project, listId: list, title: "Order blades", keyNumber: 7 });
   const [about] = await db.select().from(items).where(eq(items.id, item));
-  return { author: { userId: author, name: "Todoi" }, sam, quiet, outsider, about: about! };
+  return { author: { userId: author, name: "Todoi" }, sam, quiet, outsider, about: about!, slug };
 }
 const inboxOf = async (userId: string) => db.select().from(items).where(and(eq(items.listId, await inboxFor(userId)), isNotNull(items.notification)));
 
@@ -69,7 +69,7 @@ describe("notifications", () => {
     const [sam] = await db.update(users).set({ emailVerified: true }).where(eq(users.id, f.sam)).returning({ email: users.email });
     await notifyPeople("assignment", [f.sam], f.author, f.about);
     const [mail] = await emailsTo(sam!.email);
-    expect(mail).toMatchObject({ subject: "Todoi assigned NT-7 to you: Order blades", link: `${env.APP_URL}/p/${f.about.projectId}?item=${f.about.id}` });
+    expect(mail).toMatchObject({ subject: "Todoi assigned NT-7 to you: Order blades", link: `${env.APP_URL}/${f.slug}?item=NT-7` });
     expect(mail!.text).toContain("Todoi assigned NT-7: Order blades to you in Rotor shop.");
 
     // Comments on watched items are off by default; mentions are on.

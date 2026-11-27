@@ -76,11 +76,11 @@ test("same-name project navigation discards the outgoing title draft", async ({ 
     expect((await page.request.patch(`/api/projects/${other.projectId}`, { data: { name: project.name } })).ok()).toBeTruthy();
     await page.goto(`/p/${project.projectId}`);
     await page.locator('.td-sidebar-row:not([aria-current="true"])').filter({ hasText: project.name }).click();
-    await expect(page).toHaveURL(new RegExp(`/p/${other.projectId}$`));
+    await expect(page).toHaveURL(new RegExp(`/${other.slug}$`));
     await page.getByRole("button", { name: `Rename project: ${project.name}` }).click();
     await page.getByRole("textbox", { name: "Project name", exact: true }).fill("Outgoing draft");
     await page.goBack();
-    await expect(page).toHaveURL(new RegExp(`/p/${project.projectId}$`));
+    await expect(page).toHaveURL(new RegExp(`/${project.slug}$`));
     await expect(page.getByRole("button", { name: `Rename project: ${project.name}` })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Project name", exact: true })).toHaveCount(0);
     for (const id of [project.projectId, other.projectId]) {

@@ -1,10 +1,12 @@
-import { itemLink } from "./accountLinks";
+import { itemLink } from "./projectLinks";
 
 interface CalendarItem {
   id: string;
   title: string;
   description: string | null;
-  projectId: string | null;
+  keyNumber: number | null;
+  /** Where the event's link opens the item; null for an Inbox item */
+  project: { slug: string; keyPrefix: string | null } | null;
   dueDate: string | null;
   startDate: string | null;
   dueTime: string | null;
@@ -46,7 +48,7 @@ export function itemsToCalendar(items: CalendarItem[], appUrl: string, now = new
     }
     const description = [item.description, item.done ? "Completed in Todoi." : null].filter(Boolean).join("\n\n");
     if (description) lines.push(`DESCRIPTION:${text(description)}`);
-    lines.push(`URL:${itemLink(appUrl, item)}`, "END:VEVENT");
+    lines.push(`URL:${itemLink(appUrl, item, item.project)}`, "END:VEVENT");
   }
   return [...lines, "END:VCALENDAR"].map(fold).join("\r\n") + "\r\n";
 }

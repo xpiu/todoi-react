@@ -36,10 +36,10 @@ export const Description: Story = {
 export const Lists: Story = {
   // link-in-text-block: .td-markdown a has no underline and only 2.48:1 contrast against body text in Rounded Light.
   parameters: { a11y: { test: "todo" } },
-  args: { text: "## Before launch\n1. Price list\n2. Stock check\n3) Photos\n\n- loose bullet\n* another one\n\nA paragraph with a single\nline break and a bare link https://todoi.com/p/helicopters." },
+  args: { text: "## Before launch\n1. Price list\n2. Stock check\n3) Photos\n\n- loose bullet\n* another one\n\nA paragraph with a single\nline break and a bare link https://todoi.com/hc6m9xtq2a." },
   async play({ canvas }) {
     // The sentence's full stop stays text, outside the link.
-    await expect(canvas.getByRole("link", { name: "todoi.com/p/helicopters" })).toHaveAttribute("href", "https://todoi.com/p/helicopters");
+    await expect(canvas.getByRole("link", { name: "todoi.com/hc6m9xtq2a" })).toHaveAttribute("href", "https://todoi.com/hc6m9xtq2a");
   },
 };
 export const CodeBlock: Story = {

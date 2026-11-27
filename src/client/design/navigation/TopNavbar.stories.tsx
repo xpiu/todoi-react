@@ -47,7 +47,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Project: Story = {};
 export const WithSubNavbar: Story = {
-  args: { children: <SubNavbar activeView="board" projectUrl="https://todoi.com/p/helicopter-sales" /> },
+  args: { children: <SubNavbar activeView="board" projectUrl="https://todoi.com/hs8d3kfw5t" /> },
 };
 export const RenameTitle: Story = {
   async play({ args, canvas, userEvent }) {

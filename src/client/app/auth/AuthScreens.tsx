@@ -22,7 +22,7 @@ import type { IconName } from "../../design/core/Icon";
 import { ViewSkeleton } from "../../design/core/Skeleton";
 import { avatarColorVar } from "../items";
 import { useCurrentUser } from "../session";
-import { useOpenProject } from "../useOpenProject";
+import { useOpenProject } from "../projectNav";
 
 const loginRoute = getRouteApi("/login");
 const signupRoute = getRouteApi("/signup");

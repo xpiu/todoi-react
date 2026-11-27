@@ -20,7 +20,7 @@ import { useLifecycle, useRemoveProject } from "./lifecycle";
 import { avatarColorVar } from "./items";
 import { useCurrentUser } from "./session";
 import { StateDialog } from "./StateDialog";
-import { useOpenProject } from "./useOpenProject";
+import { rememberSlug, useOpenProject, useProjectNavigate } from "./projectNav";
 
 export function LifecycleDialogs() {
   const dialog = useLifecycle((s) => s.dialog);
@@ -34,6 +34,7 @@ export function LifecycleDialogs() {
   const createProject = async (p: NewProject) => {
     const id = newId();
     const made = await m.createProject.mutateAsync({ id, groupId: p.groupId, name: p.name, icon: p.icon, color: p.color, visibility: p.visibility, lists: p.lists ? p.lists.map(([n, r]) => [n, r ?? null] as [string, typeof r | null]) : undefined, copyFrom: p.copyFrom ?? undefined, quiet: true }).catch(explain);
+    rememberSlug(made.project);
     const g = groups.data?.find((x) => x.id === p.groupId);
     const lists = made.lists.map((l) => l.name);
     close();
@@ -69,6 +70,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   const removeProject = useRemoveProject();
   const notify = useFeedback((s) => s.notify);
   const navigate = useNavigate();
+  const goToProject = useProjectNavigate();
   const [open, setOpen] = useState(true);
   const { user } = useCurrentUser();
   const p = project.data;
@@ -106,7 +108,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
   return (
     <ProjectPanel
       open={open}
-      project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, checkedMove: p.checkedMove, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: projectUrl(p.id), role }}
+      project={{ id: p.id, name: p.name, icon: p.icon as IconName | null, color: p.color as LabelColor | null, description: p.description, visibility: p.visibility, defaultView: p.defaultView, linkStatuses: p.linkStatuses, checkedMove: p.checkedMove, groupId: p.groupId, groupName: p.groupName, keyPrefix: p.keyPrefix, url: projectUrl(p), role }}
       members={p.members.map((x) => ({ id: x.userId, name: x.name, email: x.email, role: x.role, image: x.image, isAnonymous: x.isAnonymous, color: avatarColorVar(x.avatarColor) }))}
       invites={invites.data}
       invitesLoading={invites.isPending}
@@ -137,7 +139,7 @@ function SettingsPanel({ projectId, section, onClose }: { projectId: string; sec
       onOpenKey={(key) => {
         const n = Number(key.split("-")[1]);
         finish();
-        void navigate({ to: "/p/$projectId", params: { projectId: p.id }, search: { item: undefined } });
+        void goToProject(p.id);
         void n;
       }}
       onClose={finish}

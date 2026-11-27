@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { fontsLoaded, SCOPES, trackAccounts, useScope } from "./helpers";
+import { fontsLoaded, SCOPES, trackAccounts, useScope, PROJECT_URL } from "./helpers";
 import { apiOffline, guestItem, serverItems } from "./sync-helpers";
 
 const { watch } = trackAccounts(test);
@@ -205,7 +205,7 @@ test("a queued create cannot write under a different account", async ({ page, co
   try {
     const otherPage = await other.newPage();
     await otherPage.goto("/");
-    await expect(otherPage).toHaveURL(/\/p\//);
+    await expect(otherPage).toHaveURL(PROJECT_URL);
     await context.clearCookies();
     await context.addCookies(await other.cookies());
     let refused = 0;

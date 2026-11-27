@@ -26,7 +26,7 @@ if (env.SEED_ON_START) await seedIfEmpty();
 const stopJobs = await startJobs();
 
 // The API under /api; in production also the built client (CLIENT_DIR), with every other path answered
-// by index.html so a deep link (/p/…, /inbox) opens the app. Development serves the client with Vite.
+// by index.html so a deep link (/epd5vjxy38, /inbox) opens the app. Development serves the client with Vite.
 const server = new Hono({ getPath: routePath });
 // A deployment that isn't for search engines (staging; NOINDEX, on by default with SIGN_UP=invite) says so on every response.
 if (env.NOINDEX) {

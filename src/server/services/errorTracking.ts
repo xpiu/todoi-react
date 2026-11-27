@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 
 import { and, isNotNull, lt } from "drizzle-orm";
 
+import { isProjectSlug } from "../../shared/projectLinks";
 import { db } from "../db";
 import { errorGroups, type ErrorGroup } from "../db/schema";
 
@@ -18,6 +19,13 @@ export interface ErrorEvent {
   userId?: string | null;
   stack?: string | null;
 }
+
+/** A page's path with what names one project or row taken out, so one problem stays one group: /:project, /p/:id */
+export const pagePathGroup = (path: string) =>
+  path
+    .split("?")[0]!
+    .replace(/\b[A-Za-z0-9_-]{21}\b/g, ":id")
+    .replace(/^\/([^/]+)/, (root, segment: string) => (isProjectSlug(segment) ? "/:project" : root));
 
 /** The same problem with different ids or numbers in its message is still one problem. */
 export const normalizeMessage = (m: string) =>

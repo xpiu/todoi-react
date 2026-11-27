@@ -3,7 +3,7 @@
 // Browsers send these without cookies, so the route sits before authentication, throttled per address.
 import { Hono } from "hono";
 
-import { recordError } from "../services/errorTracking";
+import { pagePathGroup, recordError } from "../services/errorTracking";
 
 type Report = Record<string, unknown>;
 
@@ -19,7 +19,7 @@ function blockedLabel(blocked: string): string {
 /** The page's path, ids replaced so one problem stays one group */
 function pagePath(page: string): string {
   try {
-    return new URL(page).pathname.replace(/\b[A-Za-z0-9_-]{21}\b/g, ":id");
+    return pagePathGroup(new URL(page).pathname);
   } catch {
     return "unknown page";
   }

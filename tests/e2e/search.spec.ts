@@ -2,7 +2,7 @@ import { expect, test as base, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
 import type { GroupWithProjects, ProjectDetail } from "../../src/client/data/api";
-import { seedProjectId, signIn } from "./helpers";
+import { seedProjectId, signIn, keyOf, slugOf } from "./helpers";
 
 // Search and the Ctrl+K palette open results by id: a filtered-out item, a subitem, an Inbox item and an
 // item in another project, by keyboard and by pointer.
@@ -60,7 +60,7 @@ test("the top-bar search opens hidden, nested, Inbox and other-project items", a
   // Another project: a fresh view of that project.
   await field(page).fill(`elsewhere ${f.tag}`);
   await results(page).getByRole("option", { name: new RegExp(`Zephyr elsewhere ${f.tag}`) }).click();
-  await expect(page).toHaveURL(new RegExp(`/p/${f.otherId}\\?item=${f.elsewhere}$`));
+  await expect(page).toHaveURL(new RegExp(`/${await slugOf(page, f.otherId)}\\?item=${await keyOf(page, f.elsewhere)}$`));
   await overlayOpen(page, `Zephyr elsewhere ${f.tag}`);
   await page.keyboard.press("Escape");
 
@@ -93,7 +93,7 @@ test("the Ctrl+K palette searches every project and opens by id", async ({ page,
   const target = names.findIndex((n) => n.includes(`Zephyr elsewhere ${f.tag}`));
   for (let i = 0; i < target; i++) await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(new RegExp(`/p/${f.otherId}\\?item=${f.elsewhere}$`));
+  await expect(page).toHaveURL(new RegExp(`/${await slugOf(page, f.otherId)}\\?item=${await keyOf(page, f.elsewhere)}$`));
   await overlayOpen(page, `Zephyr elsewhere ${f.tag}`);
   await page.keyboard.press("Escape");
 

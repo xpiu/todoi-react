@@ -92,15 +92,15 @@ describe("text helpers", () => {
 });
 
 describe("notification emails (R10)", () => {
-  const base = { actorName: "Sam Verhoeven", itemKey: "WEB-7", itemTitle: "Order blades", projectName: "Website", url: "https://todoi.com/p/abc?item=def" };
+  const base = { actorName: "Sam Verhoeven", itemKey: "WEB-7", itemTitle: "Order blades", projectName: "Website", url: "https://todoi.com/epd5vjxy38?item=WEB-7" };
 
   it("use the Inbox item's title as the subject and link to the item", () => {
     const assigned = notificationEmail({ ...base, kind: "assignment" });
     expect(assigned.subject).toBe("Sam Verhoeven assigned WEB-7 to you: Order blades");
     expect(assigned.text).toContain("Sam Verhoeven assigned WEB-7: Order blades to you in Website.");
-    expect(assigned.text).toContain("Open the item:\nhttps://todoi.com/p/abc?item=def");
+    expect(assigned.text).toContain("Open the item:\nhttps://todoi.com/epd5vjxy38?item=WEB-7");
     expect(assigned.text.replace(/\s+/g, " ")).toContain("Turn off Assignments under Settings › Notifications › Email notifications.");
-    expect(assigned.html).toContain('href="https://todoi.com/p/abc?item=def"');
+    expect(assigned.html).toContain('href="https://todoi.com/epd5vjxy38?item=WEB-7"');
     expect(notificationEmail({ ...base, itemKey: null, kind: "assignment" }).subject).toBe("Sam Verhoeven assigned an item to you: Order blades");
     expect(notificationEmail({ ...base, kind: "mention", excerpt: "x" }).subject).toBe("Sam Verhoeven mentioned you on WEB-7: Order blades");
     expect(notificationEmail({ ...base, kind: "watch", excerpt: "x" }).subject).toBe("Sam Verhoeven commented on WEB-7: Order blades");

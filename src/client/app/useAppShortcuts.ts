@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import { isTyping, SHORTCUTS } from "../design/core/shortcuts";
 import { useFeedback } from "./feedback";
+import { useProjectNavigate } from "./projectNav";
 import { addTrigger } from "./quickAddRequest";
 
 export interface AppShortcutHandlers {
@@ -20,6 +21,7 @@ export interface AppShortcutHandlers {
 
 export function useAppShortcuts(h: AppShortcutHandlers) {
   const navigate = useNavigate();
+  const goToProject = useProjectNavigate();
   const undo = useFeedback((s) => s.undo);
   const latest = useRef(h);
   useEffect(() => {
@@ -44,7 +46,7 @@ export function useAppShortcuts(h: AppShortcutHandlers) {
         const t = SHORTCUTS.goTarget(e.key);
         if (t) {
           e.preventDefault();
-          if (t.view && c.projectId) void navigate({ to: "/p/$projectId", params: { projectId: c.projectId }, search: (prev: Record<string, unknown>) => ({ ...prev, v: t.view, view: undefined }) });
+          if (t.view && c.projectId) void goToProject(c.projectId, (prev) => ({ ...prev, v: t.view, view: undefined }));
           else if (t.nav) void navigate({ to: `/${t.nav}` });
           return;
         }
@@ -85,5 +87,5 @@ export function useAppShortcuts(h: AppShortcutHandlers) {
       document.removeEventListener("keydown", onKey);
       if (chord) clearTimeout(chord);
     };
-  }, [navigate, undo]);
+  }, [navigate, goToProject, undo]);
 }

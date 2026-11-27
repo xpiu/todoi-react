@@ -18,7 +18,7 @@ function SharePanel(args: PopoverProps) {
     >
       <div style={{ display: "grid", gap: "var(--sp-2)", padding: "var(--sp-3)" }}>
         <strong>Share project</strong>
-        <TextField value="https://todoi.com/p/helicopters" readOnly aria-label="Project URL" />
+        <TextField value="https://todoi.com/hc6m9xtq2a" readOnly aria-label="Project URL" />
         <PopoverClose render={<Button variant="primary">Copy project URL</Button>} />
       </div>
     </Popover>

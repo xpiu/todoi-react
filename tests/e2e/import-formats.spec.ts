@@ -4,7 +4,7 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
-import { trackAccounts, useScope, type Scope } from "./helpers";
+import { trackAccounts, useScope, type Scope, projectIdOnPage } from "./helpers";
 
 trackAccounts(test);
 
@@ -28,8 +28,7 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
 
     await page.getByRole("button", { name: "Create project" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Imported" })).toHaveText(/Imported “Project title”: 4 lists, 6 items, 2 subitems/);
-    await expect(page).toHaveURL(/\/p\//);
-    const projectId = /\/p\/([^/?]+)/.exec(page.url())![1]!;
+    const projectId = await projectIdOnPage(page);
     const items = (await (await page.request.get(`/api/items?projectId=${projectId}`)).json()) as Array<{ id: string; title: string; parentItemId: string | null; status: string | null; priority: string | null; dueDate: string | null; done: boolean; description: string | null }>;
     const by = (t: string) => items.find((i) => i.title === t)!;
     expect(by("Research caching strategies")).toMatchObject({ status: "NEW", priority: "HIGH", dueDate: "2025-01-20", description: "lorem ipsum" });
@@ -87,7 +86,7 @@ for (const scope of ["rounded-dark", "minimal-light"] as Scope[]) {
     await page.screenshot({ path: `.tmp/shots/import-file-review-${scope}.png` });
     await page.getByRole("button", { name: "Create project" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Imported" })).toHaveText(/Imported “Launch plan”: 2 lists, 2 items, 1 subitem/);
-    const projectId = /\/p\/([^/?]+)/.exec(page.url())![1]!;
+    const projectId = await projectIdOnPage(page);
     const items = (await (await page.request.get(`/api/items?projectId=${projectId}`)).json()) as Array<{ title: string; priority: string | null; dueDate: string | null; done: boolean }>;
     expect(items.find((i) => i.title === "Write the announcement")).toMatchObject({ priority: "HIGH", dueDate: "2026-12-01", done: false });
     expect(items.find((i) => i.title === "Book the venue")).toMatchObject({ done: true });

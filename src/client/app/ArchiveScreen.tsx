@@ -1,6 +1,6 @@
 // Archive and Trash on real data, account-wide or scoped to one project (?project=). Restore puts
 // things back where they were; Delete forever is the explicit, inline-confirmed step.
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { getRouteApi } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import type { UpdateItemInput } from "../../shared/items";
@@ -14,7 +14,7 @@ import { ArchiveView, type ArchiveEntry } from "../design/project/ArchiveView";
 import { projectColorVar } from "../design/project/ProjectIconPicker";
 import { notifyFailure, quote, useFeedback } from "./feedback";
 import { LoadFailed } from "./LoadFailed";
-import { useOpenProject } from "./useOpenProject";
+import { useOpenProject, useProjectNavigate } from "./projectNav";
 
 const route = getRouteApi("/app/archive");
 
@@ -26,8 +26,8 @@ export function ArchiveScreen() {
   const scope = useMemo(() => (projectId ? { projectId } : { listId: "none" }), [projectId]);
   const updateItem = useUpdateItem(scope);
   const notify = useFeedback((s) => s.notify);
-  const navigate = useNavigate();
   const openProject = useOpenProject();
+  const goToProject = useProjectNavigate();
   const [busy, setBusy] = useState(false);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -81,7 +81,7 @@ export function ArchiveScreen() {
       })}
       onOpen={(e) => {
         if (e.kind === "project") openProject(e.id);
-        else if (e.projectId) void navigate({ to: "/p/$projectId", params: { projectId: e.projectId }, search: { item: e.id } });
+        else if (e.projectId) void goToProject(e.projectId, { item: e.id });
       }}
     />
   );

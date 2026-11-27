@@ -1,7 +1,7 @@
 import { expect, test as base, type Page } from "@playwright/test";
 
 import type { Item } from "../../src/client/data/api";
-import { freshProject, signIn, type FreshProject } from "./helpers";
+import { freshProject, signIn, type FreshProject, keyOf } from "./helpers";
 
 // Item dates (DESIGN.md › Dates): the API refuses days and times that do not exist and a start after the
 // due; a calendar drag moves an item's whole range and one Undo puts both dates back; today turns over at
@@ -90,7 +90,7 @@ test("in the calendar a chip opens its item, and clicking an empty day adds one"
   await page.goto(`/p/${f.projectId}?v=calendar`);
   await page.locator(".td-calendar-chip", { hasText: "Chip to open" }).click();
   await expect(page.getByRole("dialog", { name: "Chip to open", exact: true })).toBeVisible();
-  await expect(page).toHaveURL(new RegExp(`item=${chip}`));
+  await expect(page).toHaveURL(new RegExp(`item=${await keyOf(page, chip)}(&|$)`));
   await page.keyboard.press("Escape");
   const count = async () => ((await (await page.request.get(`/api/items?projectId=${f.projectId}`)).json()) as Item[]).length;
   expect(await count()).toBe(1);

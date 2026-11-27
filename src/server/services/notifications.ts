@@ -7,7 +7,7 @@
 import { eq, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-import { itemLink } from "../../shared/accountLinks";
+import { itemKey, itemLink } from "../../shared/projectLinks";
 import { prefsOf, type Prefs } from "../../shared/prefs";
 import { inboxFor } from "../auth";
 import { readableItemIds } from "../access";
@@ -44,8 +44,8 @@ export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { 
   const ids = [...new Set(recipientIds)].filter((id) => id !== actor.userId);
   if (!ids.length) return [];
   const people = await db.select({ id: users.id, prefs: users.prefs, email: users.email, emailVerified: users.emailVerified, isAnonymous: users.isAnonymous }).from(users).where(inArray(users.id, ids));
-  const [group] = await db.select({ keyPrefix: groups.keyPrefix, projectName: projects.name }).from(projects).innerJoin(groups, eq(groups.id, projects.groupId)).where(eq(projects.id, about.projectId));
-  const key = group && about.keyNumber != null ? `${group.keyPrefix}-${about.keyNumber}` : undefined;
+  const [group] = await db.select({ keyPrefix: groups.keyPrefix, projectName: projects.name, slug: projects.slug }).from(projects).innerJoin(groups, eq(groups.id, projects.groupId)).where(eq(projects.id, about.projectId));
+  const key = itemKey(group?.keyPrefix, about.keyNumber);
   const sent: string[] = [];
   for (const person of people) {
     const prefs = prefsOf(person.prefs);
@@ -61,7 +61,7 @@ export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { 
     });
     if (prefs[EMAIL_OPT_IN[kind]] && person.emailVerified && !person.isAnonymous) {
       const to = person.email;
-      const message = notificationEmail({ kind, actorName: actor.name, itemKey: key, itemTitle: about.title, projectName: group?.projectName ?? "a project", excerpt: opts.excerpt, url: itemLink(env.APP_URL, about) });
+      const message = notificationEmail({ kind, actorName: actor.name, itemKey: key, itemTitle: about.title, projectName: group?.projectName ?? "a project", excerpt: opts.excerpt, url: itemLink(env.APP_URL, about, group ?? null) });
       await afterCommit(() => sendEmail({ to, ...message }).catch((error: unknown) => console.error(`The ${kind} email to ${to} wasn't sent`, error)));
     }
     sent.push(person.id);

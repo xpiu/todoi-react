@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import { idSchema } from "../../shared/items";
+import { isProjectSlug, itemKeyNumber } from "../../shared/projectLinks";
 import { importProjectSchema } from "../../shared/import";
 import { createGroupSchema, createListSchema, createProjectSchema, memberRoleSchema, moveProjectGroupSchema, updateGroupSchema, updateListSchema, updateProjectSchema } from "../../shared/projects";
 import { grantReachesPersonal, withinGrant } from "../access";
@@ -63,6 +64,23 @@ export const groupsRoute = new Hono()
   });
 
 export const projectsRoute = new Hono()
+  // Whose link this is: the project behind the short id in /epd5vjxy38 (access.ts checks it may be read).
+  .get("/", validate("query", z.object({ slug: z.string().refine(isProjectSlug, "Not a project link") })), async (c) => {
+    const [project] = await db.select({ id: projects.id, slug: projects.slug }).from(projects).where(eq(projects.slug, c.req.valid("query").slug));
+    return project ? c.json(project) : fail(c, 404, "Not found");
+  })
+  // The item a link names by key (?item=MP-102) when it is not among the project's live items: archived, in the
+  // Trash, or moved to another project of the group, where it keeps its number. Only the id; reading it is checked there.
+  .get("/:id/items/:key", validate("param", z.object({ id: idSchema, key: z.string().max(40) })), async (c) => {
+    const { id, key } = c.req.valid("param");
+    const keyNumber = itemKeyNumber(key);
+    if (keyNumber == null) return fail(c, 404, "This item doesn't exist");
+    const [here] = await db.select({ id: items.id }).from(items).where(and(eq(items.projectId, id), eq(items.keyNumber, keyNumber)));
+    if (here) return c.json(here);
+    const siblings = db.select({ id: projects.id }).from(projects).where(eq(projects.groupId, db.select({ groupId: projects.groupId }).from(projects).where(eq(projects.id, id))));
+    const [moved] = await db.select({ id: items.id }).from(items).where(and(inArray(items.projectId, siblings), eq(items.keyNumber, keyNumber)));
+    return moved ? c.json(moved) : fail(c, 404, "This item doesn't exist");
+  })
   .get("/:id", idParam, async (c) => {
     const { id } = c.req.valid("param");
     const [project] = await db.select().from(projects).where(eq(projects.id, id));

@@ -6,22 +6,29 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+import { itemKeyNumber } from "../../shared/projectLinks";
 import { ApiError, errorMessage } from "../data/api";
 import { scopeOf, useUpdateItem } from "../data/mutations";
-import { itemLocationQuery, keys } from "../data/queries";
+import { itemByKeyQuery, itemLocationQuery, keys } from "../data/queries";
 import { quote, useFeedback } from "./feedback";
 import { useOpenResult } from "./search";
 import { StateDialog, type StateDialogProps } from "./StateDialog";
 
+/** `itemId`: what the link names the item by — an id, or in a project also a key (MP-102), which is looked up first. */
 export function MissingItem({ itemId, projectId, onClose }: { itemId: string; projectId: string | null; onClose: () => void }) {
-  const found = useQuery(itemLocationQuery(itemId));
+  const byKey = !!projectId && itemKeyNumber(itemId) != null;
+  const named = useQuery({ ...itemByKeyQuery(projectId ?? "", itemId), enabled: byKey });
+  const id = byKey ? named.data?.id : itemId;
+  const located = useQuery({ ...itemLocationQuery(id ?? ""), enabled: !!id });
+  // A key that names nothing is the answer; otherwise where the item is.
+  const found = byKey && !id ? named : located;
   const qc = useQueryClient();
   const navigate = useNavigate();
   const open = useOpenResult();
   const scope = scopeOf(projectId);
   const updateItem = useUpdateItem(scope);
   const notify = useFeedback((s) => s.notify);
-  const it = found.data;
+  const it = located.data;
   const here = !!it && (it.projectId ?? null) === projectId;
   // Live and here, but not in the list on screen yet (made or restored elsewhere a moment ago): fetch it.
   const stale = here && it.state === "live";

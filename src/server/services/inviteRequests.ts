@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
 
+import { projectPath } from "../../shared/projectLinks";
 import { inboxFor } from "../auth";
 import { db } from "../db";
 import { invites, members, projects } from "../db/schema";
@@ -29,7 +30,7 @@ export async function requestNewInvite(code: string, actor: { userId: string; na
     await createInboxNotification(tx, await inboxFor(recipient.userId), actor.userId, {
       id: inviteRequestId(code, actor.userId),
       title: `${actor.name} requested a new invite to ${project.name}`,
-      description: `The expired invite was for ${actor.email}. Create a new invite in project settings and send them its link.\n\n[Open project](${env.APP_URL}/p/${project.id})`,
+      description: `The expired invite was for ${actor.email}. Create a new invite in project settings and send them its link.\n\n[Open project](${env.APP_URL}${projectPath(project.slug)})`,
       notification: { kind: "invite", fromUserId: actor.userId },
     });
   });

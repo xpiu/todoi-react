@@ -63,8 +63,34 @@ export function seedProjectId(page: Page, user: SeededUser = DEV_USER): Promise<
   return id;
 }
 
+/** A project's link path: its slug at the root (shared/projectLinks.ts) */
+export const PROJECT_PATH = "/[a-km-np-z2-9]{10}";
+
+/** The address of a project, whatever its query */
+export const PROJECT_URL = new RegExp(`${PROJECT_PATH}(\\?|$)`);
+
+/** The slug in a project's link. */
+export async function slugOf(page: Page, projectId: string): Promise<string> {
+  return ((await (await page.request.get(`/api/projects/${projectId}`)).json()) as { slug: string }).slug;
+}
+
+/** The key a link names an item by ("MP-102"). */
+export async function keyOf(page: Page, itemId: string): Promise<string> {
+  const it = (await (await page.request.get(`/api/items/${itemId}`)).json()) as { keyPrefix: string; keyNumber: number };
+  return `${it.keyPrefix}-${it.keyNumber}`;
+}
+
+/** The id of the project on screen, from the slug in the address. */
+export async function projectIdOnPage(page: Page): Promise<string> {
+  await expect(page).toHaveURL(PROJECT_URL);
+  const slug = new URL(page.url()).pathname.slice(1);
+  return ((await (await page.request.get(`/api/projects?slug=${slug}`)).json()) as { id: string }).id;
+}
+
 export interface FreshProject {
   projectId: string;
+  /** The short id in its link: /<slug> */
+  slug: string;
   name: string;
   groupId: string;
   /** The project's lists, in order */
@@ -81,14 +107,14 @@ export async function freshProject(page: Page, label: string, { lists = [["To-do
   groupId ??= ((await (await page.request.get(`/api/projects/${await seedProjectId(page)}`)).json()) as { groupId: string }).groupId;
   const made = await page.request.post("/api/projects", { data: { id: projectId, groupId, name, lists } });
   expect(made.status()).toBe(201);
-  const madeLists = ((await made.json()) as { lists: Array<{ id: string; name: string }> }).lists;
+  const { lists: madeLists, project: { slug } } = (await made.json()) as { lists: Array<{ id: string; name: string }>; project: { slug: string } };
   const item = async (title: string, fields: Record<string, unknown> = {}) => {
     const id = nanoid();
     expect((await page.request.post("/api/items", { data: { id, title, listId: madeLists[0]!.id, ...fields } })).status()).toBe(201);
     return id;
   };
   const cleanup = async () => expect([204, 404]).toContain((await page.request.delete(`/api/archive/projects/${projectId}`)).status());
-  return { projectId, name, groupId, lists: madeLists, item, cleanup };
+  return { projectId, slug, name, groupId, lists: madeLists, item, cleanup };
 }
 
 /**

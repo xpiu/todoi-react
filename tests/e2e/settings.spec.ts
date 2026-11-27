@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { trackAccounts } from "./helpers";
+import { trackAccounts, projectIdOnPage } from "./helpers";
 import { apiOffline } from "./sync-helpers";
 
 // Settings › General and › Notifications change what they describe. Each test runs in a fresh guest
@@ -13,8 +13,7 @@ const shot = (page: Page, name: string) => page.screenshot({ path: `.tmp/shots/s
 
 async function guestProject(page: Page) {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
-  const projectId = page.url().split("/p/")[1]!.split("?")[0]!;
+  const projectId = await projectIdOnPage(page);
   const project = await (await page.request.get(`/api/projects/${projectId}`)).json() as { lists: Array<{ id: string; name: string; statusRole: string | null }> };
   return { projectId, listId: project.lists[0]!.id, listName: project.lists[0]!.name };
 }

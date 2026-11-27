@@ -2,11 +2,11 @@ import { expect, type BrowserContext, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
 import type { Item } from "../../src/client/data/api";
+import { projectIdOnPage } from "./helpers";
 
 export async function guestItem(page: Page, title = "Sync fixture") {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
-  const projectId = page.url().split("/p/")[1]!.split("?")[0]!;
+  const projectId = await projectIdOnPage(page);
   const project = await (await page.request.get(`/api/projects/${projectId}`)).json() as { lists: Array<{ id: string; statusRole: string | null }> };
   const listId = project.lists.find((list) => list.statusRole !== "DONE")!.id;
   const id = nanoid();

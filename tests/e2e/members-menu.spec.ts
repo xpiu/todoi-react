@@ -5,7 +5,7 @@ import { checkA11y, freshProject, seedProjectId, signIn } from "./helpers";
 
 // The Members dropdown (DESIGN.md › Subnavbar): the roster with role pickers, Invite members, Visibility
 // and the project link, on a fresh project where Sam is an editor. Changes land without closing it.
-type Fixture = { projectId: string; sam: { id: string; name: string } };
+type Fixture = { projectId: string; slug: string; sam: { id: string; name: string } };
 const test = base.extend<{ fixture: Fixture }>({
   fixture: async ({ page }, use) => {
     await signIn(page);
@@ -14,7 +14,7 @@ const test = base.extend<{ fixture: Fixture }>({
     const f = await freshProject(page, "Members");
     try {
       expect((await page.request.put(`/api/projects/${f.projectId}/members/${sam.userId}`, { data: { role: "editor" } })).ok()).toBeTruthy();
-      await use({ projectId: f.projectId, sam: { id: sam.userId, name: sam.name } });
+      await use({ projectId: f.projectId, slug: f.slug, sam: { id: sam.userId, name: sam.name } });
     } finally {
       await f.cleanup();
     }
@@ -41,7 +41,7 @@ test("the Members dropdown changes a role and the visibility in place, and Invit
   await menu.getByRole("radio", { name: /Public/ }).click();
   await expect(menu.getByRole("radio", { name: /Public/ })).toHaveAttribute("aria-checked", "true");
   await expect.poll(async () => (await detail(page, f.projectId)).visibility).toBe("public");
-  await expect(menu.getByRole("textbox", { name: "Project link" })).toHaveValue(new RegExp(`/p/${f.projectId}$`));
+  await expect(menu.getByRole("textbox", { name: "Project link" })).toHaveValue(new RegExp(`/${f.slug}$`));
   await page.screenshot({ path: ".tmp/test-results/members-menu.png" });
 
   await menu.getByRole("button", { name: "Invite members…" }).click();

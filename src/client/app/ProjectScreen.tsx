@@ -1,14 +1,16 @@
 // ProjectScreen — one project in the view the URL names: List (default), Board, Calendar. The URL
 // also carries the filters and sort; selection lives here so it survives a view switch.
 // Spec: DESIGN.md › Views, Filtering, Selection.
+import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 
 import type { GroupKey } from "../../shared/enums";
 import type { ItemStatus } from "../../shared/item-status";
+import { findItemByRef, itemRef } from "../../shared/projectLinks";
 import { ApiError, type Item, type Label, type ProjectDetail } from "../data/api";
 import { newId } from "../data/mutations";
-import { useLabels, useProject, useProjectItems } from "../data/queries";
+import { keys, useLabels, useProject, useProjectItems } from "../data/queries";
 import { BoardView } from "../design/board/BoardView";
 import { ItemCard, type CardMenuAction } from "../design/board/ItemCard";
 import type { BulkOption } from "../design/core/BulkBar";
@@ -53,6 +55,7 @@ import { formatDate } from "../design/core/dates";
 import { usePrefs } from "./prefs";
 import { useProjectPicker } from "./useProjectPicker";
 import { LoadFailed } from "./LoadFailed";
+import { rememberSlug, useProjectNavigate, useRouteProject } from "./projectNav";
 import { peopleOf, useProjectReadOnly } from "./session";
 import { usePersistedFlag } from "./usePersistedFlag";
 import { useToday } from "./today";
@@ -61,12 +64,47 @@ import { useResolvedView } from "./useResolvedView";
 import { addTrigger, useQuickAddRequest } from "./quickAddRequest";
 import "./screens.css";
 
-const projectRoute = getRouteApi("/app/p/$projectId");
+const projectRoute = getRouteApi("/app/$projectSlug");
+const oldProjectRoute = getRouteApi("/app/p/$projectId");
 
-export function ProjectScreen() {
-  const { projectId } = projectRoute.useParams();
-  const search = projectRoute.useSearch();
+/** A failed load of the project or of what its link names: a lost session goes to the login page, anything else says why. */
+function ProjectLoadFailed({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const navigate = useNavigate();
+  const signedOut = error instanceof ApiError && error.status === 401;
+  useEffect(() => {
+    if (signedOut) void navigate({ to: "/login", search: { next: location.pathname + location.search } });
+  }, [signedOut, navigate]);
+  return signedOut ? null : <LoadFailed what="this project" error={error} onRetry={onRetry} />;
+}
+
+/** The project a link names by its slug (/epd5vjxy38). */
+export function ProjectScreen() {
+  const { projectId, lookup } = useRouteProject();
+  if (projectId) return <ProjectView projectId={projectId} />;
+  if (lookup.isError) return <ProjectLoadFailed error={lookup.error} onRetry={() => void lookup.refetch()} />;
+  return <ViewSkeleton view="list" lists={3} />;
+}
+
+/** /p/:id, the link from before slugs: once the project is known, the address becomes its own link. */
+export function OldProjectLink() {
+  const { projectId } = oldProjectRoute.useParams();
+  const search = oldProjectRoute.useSearch();
+  const project = useProject(projectId);
+  const go = useProjectNavigate();
+  // A copy kept on this device from before slugs has none; the refetch under way brings it.
+  const found = project.data?.slug ? project.data : undefined;
+  useEffect(() => {
+    if (!found) return;
+    rememberSlug(found);
+    void go(found.id, search, { replace: true });
+  }, [found, go, search]);
+  if (project.isError) return <ProjectLoadFailed error={project.error} onRetry={() => void project.refetch()} />;
+  return <ViewSkeleton view="list" lists={3} />;
+}
+
+function ProjectView({ projectId }: { projectId: string }) {
+  const search = projectRoute.useSearch();
+  const goTo = useProjectNavigate();
   const project = useProject(projectId);
   const items = useProjectItems(projectId);
   const labels = useLabels(projectId);
@@ -76,15 +114,27 @@ export function ProjectScreen() {
   const selectedIds = sel.pid === projectId ? sel.ids : [];
   const setSelectedIds = useCallback((next: string[] | ((prev: string[]) => string[])) => setSel((cur) => ({ pid: projectId, ids: typeof next === "function" ? next(cur.pid === projectId ? cur.ids : []) : next })), [projectId]);
   // Keep card callbacks stable when only item data changes.
-  const go = useCallback((next: Partial<typeof state>) => void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, next) }), [navigate, projectId, state]);
-  const openItem = useCallback((id: string, edit?: boolean) => go({ item: id, edit: !!edit }), [go]);
+  const go = useCallback((next: Partial<typeof state>, opts?: { replace?: boolean }) => void goTo(projectId, nextViewSearch(state, next), opts), [goTo, projectId, state]);
+  // The link names the open item by its key (?item=MP-102), or by its id while it has none.
+  const keyPrefix = project.data?.keyPrefix;
+  const qc = useQueryClient();
+  const openItem = useCallback(
+    (id: string, edit?: boolean) => {
+      // Read when called, so the callback stays the same while item data changes.
+      const it = qc.getQueryData<Item[]>(keys.items({ projectId }))?.find((x) => x.id === id);
+      go({ item: it ? itemRef(it, qc.getQueryData<ProjectDetail>(keys.project(projectId))?.keyPrefix) : id, edit: !!edit });
+    },
+    [go, projectId, qc],
+  );
+  const opened = state.item && items.data ? findItemByRef(items.data, state.item) : undefined;
+  // A link that names the item another way (its id, an old prefix, lower case) is rewritten to its key.
+  const openedRef = opened && keyPrefix !== undefined ? itemRef(opened, keyPrefix) : undefined;
+  useEffect(() => {
+    if (openedRef && openedRef !== state.item) go({ item: openedRef }, { replace: true });
+  }, [openedRef, state.item, go]);
 
   const failed = project.isError ? project : items.isError ? items : labels.isError ? labels : null;
-  if (failed && failed.error instanceof ApiError && failed.error.status === 401) {
-    void navigate({ to: "/login", search: { next: location.pathname + location.search } });
-    return null;
-  }
-  if (failed) return <LoadFailed what="this project" error={failed.error} onRetry={() => void failed.refetch()} />;
+  if (failed) return <ProjectLoadFailed error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!project.data || !items.data || !labels.data) return <ViewSkeleton view={view === "board" ? "board" : "list"} lists={project.data?.lists.length ?? 3} />;
   // A change to filters or sort leaves the saved view (the URL turns ad-hoc); opening an item keeps it.
   const props: ViewProps = {
@@ -100,7 +150,7 @@ export function ProjectScreen() {
     clearFilters: () => go({ filters: [] }),
     openItem,
   };
-  const overlay = state.item ? <ItemOverlayScreen key={state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={openItem} /> : null;
+  const overlay = state.item ? <ItemOverlayScreen key={opened?.id ?? state.item} projectId={projectId} project={project.data} items={items.data} labels={labels.data} itemId={opened?.id ?? state.item} editTitle={state.edit} onClose={() => go({ item: undefined, edit: undefined })} onOpen={openItem} /> : null;
   const body = view === "board" ? <ProjectBoard {...props} /> : view === "calendar" ? <ProjectCalendar {...props} /> : <ProjectList {...props} />;
   return (
     <>

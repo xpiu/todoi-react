@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { freshProject, SCOPES, trackAccounts, useScope } from "./helpers";
+import { freshProject, SCOPES, trackAccounts, useScope, PROJECT_URL } from "./helpers";
 
 trackAccounts(test);
 
@@ -20,7 +20,7 @@ async function download(page: Page, format: "CSV" | "Markdown", count: number) {
 for (const scope of SCOPES) test(`exports preserve visible items, sorting and counts in ${scope}`, async ({ page }) => {
   await useScope(page, scope);
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   const groups = await (await page.request.get("/api/groups")).json();
   const project = await freshProject(page, "Export accuracy", { groupId: groups[0].id, lists: [["Zulu", "TODO"], ["Alpha", "DOING"], ["Hidden", "TODO"]] });
   try {

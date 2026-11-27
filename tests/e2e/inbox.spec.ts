@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { signIn, trackAccounts } from "./helpers";
+import { signIn, trackAccounts, PROJECT_URL, PROJECT_PATH } from "./helpers";
 
 // The Inbox end to end in a fresh guest workspace (an empty Inbox and one project to file into):
 // capture, open and edit, file into a chosen list, undo, delete and restore — by keyboard and pointer.
@@ -12,7 +12,7 @@ const shot = (page: Page, name: string) => page.screenshot({ path: `.tmp/shots/i
 
 async function freshInbox(page: Page) {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   await page.goto("/inbox");
   await expect(page.getByText("Your inbox is empty")).toBeVisible();
 }
@@ -109,7 +109,7 @@ test("a notification's key opens the item it is about and reads it", async ({ pa
     const about = page.locator(`[data-drag-id="${note!.id}"] .td-list-row-about`);
     await expect(about).toHaveText(note!.notification!.aboutKey!);
     await about.click();
-    await expect(page).toHaveURL(/\/p\/[^?]+\?item=/);
+    await expect(page).toHaveURL(new RegExp(`${PROJECT_PATH}\\?item=`));
     await expect(page.getByRole("dialog")).toContainText(note!.notification!.aboutKey!);
     await expect.poll(async () => ((await (await page.request.get("/api/items")).json()) as typeof inbox).find((it) => it.id === note!.id)?.unread).toBe(false);
   } finally {

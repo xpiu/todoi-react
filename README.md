@@ -27,6 +27,7 @@ Todoi is a lightweight task manager focused on usability, legibility, speed and 
 - [✨ Features and limits](#-features-and-limits)
 - [🧭 User flow, UI and UX](#-user-flow-ui-and-ux)
   - [Status follows List](#status-follows-list)
+  - [Links](#links)
 - [👥 Visitors and accounts](#-visitors-and-accounts)
 - [🧰 Tech stack](#-tech-stack)
 - [🎨 Design](#-design)
@@ -111,6 +112,23 @@ The per-project setting was renamed from "Link Lists with Status"; the stored fi
 - **Group by Status:** dropping an item into another Status group, or adding inside one, is a move to the list with that role.
 
 **Off:** List and Status are both shown, both editable and independent.
+
+### Links
+
+A project's link is its short public id at the root, and an open item is named by its key: `https://todoi.com/epd5vjxy38?v=board&item=MP-102`.
+
+Decided 2026-11-27:
+
+- **Project path:** `/<slug>`. The slug is separate from the database id: 10 characters from lowercase letters and digits without `o`, `0`, `1` and `l`, always with a digit.
+- **Host:** the React app has its host to itself. The Next.js build at s.todoi.com is an older prototype without public data, so none of its links are carried over.
+- **Open item:** `?item=<key>`, or the item's id while it has no key (Inbox items).
+- **View:** `v=` stays (`view=` names a saved view).
+- **Timing:** done before the first testing round, so no shared link needs a redirect later.
+- **Resetting a project's link:** not built. The separate slug makes it possible later.
+
+In the app since 2026-11-27: the database makes the slug (migration `0025`), every link the app writes uses it (address bar, Copy link, emails, calendar feed), and links from before (`/p/<id>`, `?item=<id>`) still open and are rewritten. The rules are in `src/shared/projectLinks.ts`.
+
+**Rule for new routes:** no top-level route of exactly 10 characters that contains a digit from 2 to 9, so a route can never be mistaken for a project.
 
 ## 👥 Visitors and accounts
 

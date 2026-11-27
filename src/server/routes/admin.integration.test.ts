@@ -49,9 +49,9 @@ describe("error tracking", () => {
   });
 
   it("takes reports from the browser, without page content", async () => {
-    const res = await call("/api/errors", { cookie: member.cookie, json: { kind: "TypeError", message: "x is not a function", stack: "TypeError: x is not a function\n    at render (app.js:1:2)", path: "/p/4hMbbqFb6CHl0SJ8bSEhJ?item=abc" } });
+    const res = await call("/api/errors", { cookie: member.cookie, json: { kind: "TypeError", message: "x is not a function", stack: "TypeError: x is not a function\n    at render (app.js:1:2)", path: "/epd5vjxy38?item=MP-102" } });
     expect(res.status).toBe(204);
-    const [g] = await db.select().from(errorGroups).where(eq(errorGroups.where, "/p/:id"));
+    const [g] = await db.select().from(errorGroups).where(eq(errorGroups.where, "/:project"));
     expect(g).toMatchObject({ source: "client", kind: "TypeError", lastUserId: member.id });
     expect((await call("/api/errors", { cookie: member.cookie, json: { message: "", path: "/" } })).status).toBe(400);
   });

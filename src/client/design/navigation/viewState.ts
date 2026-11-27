@@ -1,6 +1,6 @@
 // View state ↔ URL query. A saved view stores {filters, sort, group} only; the view type travels in the URL as
 // `v`, also beside a saved view (`view=<id>&v=board`), so picking a saved view never switches List / Board /
-// Calendar. The project lives in the path (/p/:id); the query keeps the spec's keys: `view` (a saved view
+// Calendar. The project lives in the path (/<slug>, shared/projectLinks.ts); the query keeps the spec's keys: `view` (a saved view
 // id), `v`, `f` (type:value,…), `s` (lists.key.dir,items.key.dir), `g` (the Group by key).
 // Spec: DESIGN.md › Saved views.
 import { GROUP_KEYS, type GroupKey, type ProjectView } from "../../../shared/enums";

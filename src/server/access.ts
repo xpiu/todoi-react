@@ -98,7 +98,12 @@ export const workspaceAccess: MiddlewareHandler = async (c, next) => {
     case "projects": {
       const selfRemoval = action === "members" && c.req.method === "DELETE" && c.req.path.split("/").at(-1) === viewer?.userId;
       if (selfRemoval) scopes.push({ kind: "personal", id: viewerOf(c).userId });
-      else if (id && id !== "import" && action === "git") {
+      else if (!id && read && c.req.query("slug")) {
+        // A project link (/epd5vjxy38): reading the project behind its short id follows the project's read rule.
+        const [linked] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, c.req.query("slug")!));
+        if (!linked) throw missing();
+        await projectAccess(linked.id, "read");
+      } else if (id && id !== "import" && action === "git") {
         // Git sync: members only, even to look (the repository is the team's business); sync and undo
         // are edits; connecting, settings and disconnecting are administration, for registered accounts.
         const sub = c.req.path.split("/")[5];

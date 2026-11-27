@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { trackAccounts } from "./helpers";
+import { trackAccounts, PROJECT_URL } from "./helpers";
 import { apiOffline, editTitle, guestItem, itemCheckbox, openRow, serverItems } from "./sync-helpers";
 
 const { watch, own } = trackAccounts(test);
@@ -291,7 +291,7 @@ test("revoked project access removes cached private content including after offl
   try {
     const member = await memberContext.newPage();
     await member.goto("/");
-    await expect(member).toHaveURL(/\/p\//);
+    await expect(member).toHaveURL(PROJECT_URL);
     const memberRegistration = await member.request.post("/api/auth/sign-up/email", { headers: { Origin: new URL(member.url()).origin }, data: { name: "Sync permission member", email: `sync-member-${nanoid()}@example.test`, password: "sync-permission-password" } });
     expect(memberRegistration.ok(), await memberRegistration.text()).toBe(true);
     const memberUser = (await (await member.request.get("/api/auth/get-session")).json()).user.id as string;

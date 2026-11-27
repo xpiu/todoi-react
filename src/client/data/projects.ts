@@ -26,8 +26,8 @@ export function useProjectMutations() {
     qc.invalidateQueries({ queryKey: projectId ? keys.project(projectId) : ["project"] }),
     qc.invalidateQueries({ queryKey: projectId ? keys.items({ projectId }) : ["items"] }),
   ]);
-  const createProject = useMutation({ mutationFn: ({ quiet: _quiet, ...input }: CreateProjectInput & Quiet) => api.api.projects.$post({ json: input }).then((r) => unwrap<{ project: { id: string; name: string }; lists: Array<{ name: string }> }>(r)), onSettled: () => refresh() });
-  const importProject = useMutation({ mutationFn: ({ quiet: _quiet, ...input }: ImportProjectInput & Quiet) => api.api.projects.import.$post({ json: input }).then((r) => unwrap<{ project: { id: string; name: string }; items: number }>(r)), onSettled: () => refresh() });
+  const createProject = useMutation({ mutationFn: ({ quiet: _quiet, ...input }: CreateProjectInput & Quiet) => api.api.projects.$post({ json: input }).then((r) => unwrap<{ project: { id: string; name: string; slug: string }; lists: Array<{ name: string }> }>(r)), onSettled: () => refresh() });
+  const importProject = useMutation({ mutationFn: ({ quiet: _quiet, ...input }: ImportProjectInput & Quiet) => api.api.projects.import.$post({ json: input }).then((r) => unwrap<{ project: { id: string; name: string; slug: string }; items: number }>(r)), onSettled: () => refresh() });
   const createGroup = useMutation({ mutationFn: ({ quiet: _quiet, ...input }: CreateGroupInput & Quiet) => api.api.groups.$post({ json: input }).then((r) => unwrap<{ id: string; name: string }>(r)), onSettled: () => refresh() });
   const updateProject = useMutation({ mutationFn: (vars: { id: string } & UpdateProjectInput) => api.api.projects[":id"].$patch({ param: { id: vars.id }, json: vars }).then((r) => unwrap(r)), onSettled: (_d, _e, v) => refresh(v.id) });
   /** Another group: its items take new keys there; the reply carries what an Undo hands back */

@@ -9,7 +9,7 @@ import { and, asc, eq, inArray, isNotNull, or } from "drizzle-orm";
 import { itemsToCalendar } from "../../shared/calendarExport";
 import { inboxFor } from "../auth";
 import { db } from "../db";
-import { calendarFeeds, items } from "../db/schema";
+import { calendarFeeds, groups, items, projects } from "../db/schema";
 import { env } from "../env";
 import { itemIsLive } from "./lifecycle";
 import { memberProjectIds } from "./projects";
@@ -17,11 +17,14 @@ import { memberProjectIds } from "./projects";
 /** The calendar's items: dated (a due or a start), live, in the person's projects or Inbox. */
 export async function calendarItemsOf(userId: string, inboxListId: string) {
   const ids = await memberProjectIds(userId);
-  return db
-    .select()
+  const rows = await db
+    .select({ item: items, slug: projects.slug, keyPrefix: groups.keyPrefix })
     .from(items)
+    .leftJoin(projects, eq(projects.id, items.projectId))
+    .leftJoin(groups, eq(groups.id, projects.groupId))
     .where(and(itemIsLive, or(isNotNull(items.dueDate), isNotNull(items.startDate)), or(ids.length ? inArray(items.projectId, ids) : undefined, eq(items.listId, inboxListId))))
     .orderBy(asc(items.dueDate), asc(items.id));
+  return rows.map((r) => ({ ...r.item, project: r.slug ? { slug: r.slug, keyPrefix: r.keyPrefix } : null }));
 }
 
 /** The person's calendar as text/calendar */

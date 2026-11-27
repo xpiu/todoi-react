@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 import { Pool } from "pg";
 
-import { checkA11y, trackAccounts } from "./helpers";
+import { checkA11y, trackAccounts, PROJECT_URL } from "./helpers";
 
 const password = "guest-test-password";
 const { watch, own } = trackAccounts(test);
@@ -33,7 +33,7 @@ async function addThroughGui(page: Page, title: string) {
 
 test("new browser gets an empty, editable private workspace; avatar and /account expose authentication", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   await expect(page.getByText("New project", { exact: true }).first()).toBeVisible();
   const user = await session(page);
   expect(user.isAnonymous).toBe(true);
@@ -65,7 +65,7 @@ test("new browser gets an empty, editable private workspace; avatar and /account
 
 test("GUI items and subitems survive refresh, registration and logout/login", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   const guest = await session(page);
   const { group, project, list } = await workspace(page);
   await addThroughGui(page, "Plan my first project");
@@ -93,7 +93,7 @@ test("GUI items and subitems survive refresh, registration and logout/login", as
   await page.getByLabel("Email", { exact: true }).fill(`guest-${nanoid()}@example.test`);
   await page.getByLabel(/^Password/).fill(password);
   await page.getByRole("button", { name: "Create account", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/p/${project.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/${project.slug}$`));
   const registered = await session(page);
   expect(registered.isAnonymous).toBe(false);
   expect(registered.id).not.toBe(guest.id);
@@ -123,7 +123,7 @@ test("GUI items and subitems survive refresh, registration and logout/login", as
 
 test("logout does not restore the former account when the next session check is unavailable", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   const { project } = await workspace(page);
   await addThroughGui(page, "Private work must stay signed out");
   const signup = await page.request.post("/api/auth/sign-up/email", { headers: { Origin: new URL(page.url()).origin }, data: { name: "Offline logout test", email: `logout-${nanoid()}@example.test`, password } });
@@ -162,7 +162,7 @@ test("logout does not restore the former account when the next session check is 
 test("concurrent first visits in two tabs share one guest workspace", async ({ page, context }) => {
   const second = await context.newPage();
   await Promise.all([page.goto("/"), second.goto("/")]);
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   await expect(second).toHaveURL(page.url());
   const user = await session(page);
   expect((await session(second)).id).toBe(user.id);
@@ -189,7 +189,7 @@ test("existing-account login merges rich guest content and both Inboxes without 
   expect((await accountPage.request.post("/api/items", { data: oldInboxItem })).ok()).toBe(true);
 
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   const guest = await session(page);
   const { project, list } = await workspace(page);
   await addThroughGui(page, "Guest content to keep");
@@ -253,7 +253,7 @@ test("existing-account login merges rich guest content and both Inboxes without 
 
 test("a second visitor cannot read or change private guest content; public links stay read-only", async ({ page, browser }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/p\//);
+  await expect(page).toHaveURL(PROJECT_URL);
   const owner = await session(page);
   const { group, project, list } = await workspace(page);
   const item = { id: nanoid(), listId: list.id, title: "Private guest item" };
@@ -262,7 +262,7 @@ test("a second visitor cannot read or change private guest content; public links
   watch(context);
   const stranger = await context.newPage();
   await stranger.goto("/");
-  await expect(stranger).toHaveURL(/\/p\//);
+  await expect(stranger).toHaveURL(PROJECT_URL);
   expect((await session(stranger)).id).not.toBe(owner.id);
   const other = await workspace(stranger);
   expect(other.project.id).not.toBe(project.id);

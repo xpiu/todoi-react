@@ -52,7 +52,7 @@ import { useCurrentUser } from "./session";
 import { useSidebarOrder } from "./useSidebarOrder";
 import { useLastProject } from "./lastProject";
 import { SidebarOrder } from "../design/navigation/SidebarOrder";
-import { useOpenProject } from "./useOpenProject";
+import { useOpenProject } from "./projectNav";
 import { useChangeEmailFlow, useDeleteAccountFlow, useEmailConfirmation, usePasskeysFlow } from "./AccountFlows";
 import { describeAgent } from "./deviceName";
 import { emailNotificationsGroup, type EmailKind } from "../design/settings/EmailNotifications";
@@ -522,7 +522,7 @@ function useLabelsSection(projectId: string | null, setProject: (id: string) => 
 }
 
 /** Account: profile, sign-in, tokens, security, devices, projects, data, support. */
-function useAccountPages(active: boolean, projects: Array<ProjectOption & { groupName: string; visibility: string; itemCount: number; role: string }>, online: boolean, storageRow: (p: { id: string; name: string; itemCount: number; role: string }) => SettingsRow, onRestore?: () => void): { page: SettingsPage; dialogs: ReactNode } {
+function useAccountPages(active: boolean, projects: Array<ProjectOption & { slug: string; groupName: string; visibility: string; itemCount: number; role: string }>, online: boolean, storageRow: (p: { id: string; name: string; itemCount: number; role: string }) => SettingsRow, onRestore?: () => void): { page: SettingsPage; dialogs: ReactNode } {
   const { user } = useCurrentUser();
   const me = useMe(active);
   const changeEmail = useChangeEmailFlow(me.data, user?.email ?? "", online);
@@ -682,7 +682,7 @@ function useAccountPages(active: boolean, projects: Array<ProjectOption & { grou
             rows: [
               { id: `pj-${p.id}-members`, label: "Members and invites", hint: "Roles, invites and the project link live in Project settings", control: <Button icon="users" onClick={() => lifecycle.openSettings(p.id, "members")}>Open</Button> },
               { id: `pj-${p.id}-link`, label: "Share link", hint: p.visibility === "public" ? "Anyone with the link can read this project" : p.visibility === "shared" ? "Members and guests can open the link" : "Only members can open the link", control: <Button icon="link" onClick={() => {
-                void copyAndNotify(projectUrl(p.id), `Copied the link to ${quote(p.name)}`);
+                void copyAndNotify(projectUrl(p), `Copied the link to ${quote(p.name)}`);
               }}>Copy link</Button> },
               storageRow(p),
             ],

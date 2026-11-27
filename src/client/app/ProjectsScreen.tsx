@@ -19,7 +19,7 @@ import { LoadFailed } from "./LoadFailed";
 import "../design/core/text.css";
 import { TableAddRow } from "./TableAddRow";
 import "./tables.css";
-import { useOpenProject } from "./useOpenProject";
+import { useOpenProject } from "./projectNav";
 
 export function ProjectsScreen() {
   const groups = useGroups();

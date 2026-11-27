@@ -8,6 +8,8 @@ import { api, ApiError, unwrap, type GroupWithProjects, type Item, type ItemDeta
 export const keys = {
   groups: ["groups"] as const,
   project: (id: string) => ["project", id] as const,
+  projectLink: (slug: string) => ["project-link", slug] as const,
+  itemByKey: (projectId: string, key: string) => ["item-key", projectId, key.toUpperCase()] as const,
   items: (scope: { projectId: string } | { listId: string }) => ["items", scope] as const,
   itemDetails: (id: string) => ["item", id, "details"] as const,
   itemLocation: (id: string) => ["item", id, "location"] as const,
@@ -31,6 +33,26 @@ export const projectQuery = (id: string) =>
     queryKey: keys.project(id),
     queryFn: ({ signal }) => api.api.projects[":id"].$get({ param: { id } }, { init: { signal } }).then((r) => unwrap<ProjectDetail>(r)),
     enabled: !!id,
+  });
+
+// "Doesn't exist" and "not yours" are answers, not hiccups.
+const retryUnlessAnswered = (n: number, err: unknown) => !(err instanceof ApiError && err.status < 500) && n < 1;
+
+/** The project behind the short id in a link (/epd5vjxy38). A slug never changes, so the answer keeps. */
+export const projectLinkQuery = (slug: string) =>
+  queryOptions({
+    queryKey: keys.projectLink(slug),
+    queryFn: ({ signal }) => api.api.projects.$get({ query: { slug } }, { init: { signal } }).then((r) => unwrap<{ id: string; slug: string }>(r)),
+    staleTime: Infinity,
+    retry: retryUnlessAnswered,
+  });
+
+/** The id of the item a link names by key (?item=MP-102) when it is not among the project's live items. */
+export const itemByKeyQuery = (projectId: string, key: string) =>
+  queryOptions({
+    queryKey: keys.itemByKey(projectId, key),
+    queryFn: ({ signal }) => api.api.projects[":id"].items[":key"].$get({ param: { id: projectId, key } }, { init: { signal } }).then((r) => unwrap<{ id: string }>(r)),
+    retry: retryUnlessAnswered,
   });
 
 export const projectItemsQuery = (projectId: string) =>
@@ -65,8 +87,7 @@ export const itemLocationQuery = (id: string) =>
   queryOptions({
     queryKey: keys.itemLocation(id),
     queryFn: ({ signal }) => api.api.items[":id"].$get({ param: { id } }, { init: { signal } }).then((r) => unwrap<ItemLocation>(r)),
-    // "Doesn't exist" and "not yours" are answers, not hiccups.
-    retry: (n, err) => !(err instanceof ApiError && err.status < 500) && n < 1,
+    retry: retryUnlessAnswered,
   });
 
 export const activityQuery = (projectId: string) =>

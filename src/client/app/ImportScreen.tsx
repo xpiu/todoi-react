@@ -19,7 +19,7 @@ import { SettingsCard, SettingsPageFrame } from "../design/settings/SettingsShel
 import { quote, useFeedback } from "./feedback";
 import { parseCsv, parseMarkdown, parseProjectFile, parseTrello, planCounts } from "./importData";
 import "./import.css";
-import { useOpenProject } from "./useOpenProject";
+import { rememberSlug, useOpenProject } from "./projectNav";
 
 type Source = "md" | "file" | "trello" | "csv";
 interface SourceSpec {
@@ -114,7 +114,8 @@ export function ImportScreen() {
     pm.importProject.mutate(
       { id, groupId, name: name.trim(), plan },
       {
-        onSuccess: () => {
+        onSuccess: (made) => {
+          rememberSlug(made.project);
           // The counts Review showed, so the two never disagree.
           const n = planCounts(plan);
           notify({ message: `Imported ${quote(name.trim())}: ${[count(n.lists, "list"), count(n.items, "item"), n.subitems ? count(n.subitems, "subitem") : null].filter(Boolean).join(", ")}`, icon: "upload" });

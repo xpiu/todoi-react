@@ -3,14 +3,14 @@
 // current view happens to render); the Search page's paged full-text search. Spec: DESIGN.md ›
 // Search dropdown, Command palette, Search page.
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useMatch, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import type { ItemStatus } from "../../shared/item-status";
 import { errorMessage, type SearchHit } from "../data/api";
 import { fullSearchQuery, searchQuery, type FullSearchParams } from "../data/queries";
 import { SEARCH_MIN_QUERY, UNASSIGNED } from "../design/navigation/SearchResults";
-import { useOpenProject } from "./useOpenProject";
+import { useOpenProject, useProjectNavigate, useRouteProject } from "./projectNav";
 
 export type SearchStatus = "idle" | "loading" | "offline" | "error" | "ready";
 
@@ -94,15 +94,15 @@ export function hitContext(h: SearchHit, currentProjectId?: string): string {
 export function useOpenResult() {
   const navigate = useNavigate();
   const openProject = useOpenProject();
-  const match = useMatch({ from: "/app/p/$projectId", shouldThrow: false });
+  const goToProject = useProjectNavigate();
+  const { match, projectId } = useRouteProject();
   return {
     project: openProject,
     groups: () => void navigate({ to: "/groups" }),
     item: (it: { id: string; projectId: string | null }) => {
       if (!it.projectId) return void navigate({ to: "/inbox", search: { item: it.id } });
       // In the current project the view (filters, sort, saved view) stays; the overlay opens on top.
-      const here = match?.params.projectId === it.projectId;
-      void navigate({ to: "/p/$projectId", params: { projectId: it.projectId }, search: here ? { ...match.search, item: it.id, edit: undefined } : { item: it.id } });
+      void goToProject(it.projectId, match && projectId === it.projectId ? { ...match.search, item: it.id, edit: undefined } : { item: it.id });
     },
   };
 }

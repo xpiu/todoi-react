@@ -1,7 +1,7 @@
 import { expect, test as base } from "@playwright/test";
 import { AxeBuilder } from "@axe-core/playwright";
 
-import { checkA11y, freshProject, SCOPES, signIn, useScope } from "./helpers";
+import { checkA11y, freshProject, SCOPES, signIn, useScope, keyOf } from "./helpers";
 import { apiOffline } from "./sync-helpers";
 
 type Fixture = { projectId: string; itemId: string };
@@ -44,7 +44,7 @@ for (const scope of SCOPES) test(`cold editor preserves focus, formatting and ke
     await editor.fill("A formatted description");
     await page.keyboard.type(" n f g ?");
     await expect(page.getByRole("dialog")).toHaveCount(1);
-    await expect(page).toHaveURL(new RegExp(`item=${fixture.itemId}`));
+    await expect(page).toHaveURL(new RegExp(`item=${await keyOf(page, fixture.itemId)}(&|$)`));
     await editor.press("ControlOrMeta+A");
     await dialog.getByRole("button", { name: /^Bold/ }).click();
     await expect(editor.locator("strong")).toContainText("A formatted description");
@@ -76,7 +76,7 @@ test("a failed editor load recovers on the same item without losing its saved co
   await page.screenshot({ path: ".tmp/quick-wins/shots/minimal-light-editor-failed-phone.png" });
   // Browsers retain a rejected module import until reload; importing it again cannot recover.
   await dialog.getByRole("button", { name: "Reload", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`item=${fixture.itemId}`));
+  await expect(page).toHaveURL(new RegExp(`item=${await keyOf(page, fixture.itemId)}(&|$)`));
   await dialog.getByTitle("Click to edit description").click();
   const editor = dialog.getByRole("textbox", { name: "Description", exact: true });
   await expect(editor).toHaveText("The saved description");

@@ -1,12 +1,14 @@
-// Routes (DESIGN.md › Secondary pages, Saved views): projects live at /p/:id with the view state in
-// the query (`v`, `f`, `s`, or `view` for a saved view); /inbox, /projects, /groups, /search, /settings,
+// Routes (DESIGN.md › Secondary pages, Saved views): a project lives at the root under its slug (/epd5vjxy38,
+// shared/projectLinks.ts) with the view state in the query (`v`, `f`, `s`, or `view` for a saved view) and the open
+// item by key (`item=MP-102`); /p/:id, the earlier project link, moves on to it; /inbox, /projects, /groups, /search, /settings,
 // /account, /import, /docs, /docs/agents, /i/:code; the emailed links' landings /reset, /verify-email and /confirm-email; /account-deleted; /dev/ds is the primitives gallery outside the app frame.
-import { createRootRoute, createRoute, createRouter, Outlet, redirect } from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter, notFound, Outlet, redirect } from "@tanstack/react-router";
 import { lazy } from "react";
 import { z } from "zod";
 
 import { GROUP_KEYS, PROJECT_VIEWS } from "../shared/enums";
 import { ITEM_STATUSES } from "../shared/item-status";
+import { isProjectSlug } from "../shared/projectLinks";
 import { AppShell } from "./app/AppShell";
 import { preloadDescriptionEditor } from "./design/overlay/DescriptionEditor";
 import { ScreenError, SessionError } from "./app/RouteError";
@@ -16,7 +18,8 @@ import { InboxScreen } from "./app/InboxScreen";
 import { ArchiveScreen } from "./app/ArchiveScreen";
 import { GroupsScreen } from "./app/GroupsScreen";
 import { ProjectsScreen } from "./app/ProjectsScreen";
-import { ProjectScreen } from "./app/ProjectScreen";
+import { OldProjectLink, ProjectScreen } from "./app/ProjectScreen";
+import { slugOf } from "./app/projectNav";
 import { SearchScreen } from "./app/SearchScreen";
 import { queryClient } from "./queryClient";
 import { groupsQuery } from "./data/queries";
@@ -28,7 +31,7 @@ const viewSearchSchema = z.object({
   s: z.string().optional().catch(undefined),
   /** Group by (List view) */
   g: z.enum(GROUP_KEYS).optional().catch(undefined),
-  /** The open item (overlay) */
+  /** The open item (overlay): its key (MP-102), or its id while it has none */
   item: z.string().optional().catch(undefined),
   /** Open with the title in edit mode (the E shortcut) */
   edit: z.boolean().optional().catch(undefined),
@@ -59,15 +62,35 @@ export const indexRoute = createRoute({
   beforeLoad: async () => {
     const groups = await queryClient.ensureQueryData(groupsQuery());
     const first = groups.flatMap((g) => g.projects)[0];
-    throw redirect(first ? { to: "/p/$projectId", params: { projectId: first.id }, search: {} } : { to: "/inbox" });
+    if (!first) throw redirect({ to: "/inbox" });
+    // A sidebar kept on this device from before slugs has none until it refreshes: the id link finds the project.
+    throw redirect(first.slug ? { to: "/$projectSlug", params: { projectSlug: first.slug }, search: {} } : { to: "/p/$projectId", params: { projectId: first.id }, search: {} });
   },
 });
 
+// The one dynamic route at the root. A slug always holds a digit and no app route does (isProjectSlug), so
+// anything else here is a page that doesn't exist, not a project.
 export const projectRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/$projectSlug",
+  validateSearch: (search: Record<string, unknown>) => viewSearchSchema.parse(search),
+  beforeLoad: ({ params }) => {
+    if (!isProjectSlug(params.projectSlug)) throw notFound();
+  },
+  component: ProjectScreen,
+});
+// A project link by database id, as the app wrote them before slugs: it moves on to the project's own link.
+export const oldProjectRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/p/$projectId",
   validateSearch: (search: Record<string, unknown>) => viewSearchSchema.parse(search),
-  component: ProjectScreen,
+  beforeLoad: async ({ params, search }) => {
+    // The sidebar knows the person's own projects; any other project is found by the page itself (OldProjectLink).
+    await queryClient.ensureQueryData(groupsQuery()).catch(() => undefined);
+    const slug = slugOf(params.projectId);
+    if (slug) throw redirect({ to: "/$projectSlug", params: { projectSlug: slug }, search, replace: true });
+  },
+  component: OldProjectLink,
 });
 
 // `item`: the open Inbox item (overlay; `edit` opens its title for renaming); `capture`: open the quick-add field.
@@ -122,7 +145,7 @@ export const inviteRoute = createRoute({ getParentRoute: () => rootRoute, path: 
 const DesignGallery = lazy(() => import("./dev/DesignGallery").then((m) => ({ default: m.DesignGallery })));
 export const galleryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/dev/ds", component: DesignGallery });
 
-const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, inboxRoute, projectsRoute, groupsRoute, searchRoute, archiveRoute, settingsRoute, accountRoute, importRoute, adminRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, verifyEmailRoute, confirmEmailRoute, accountDeletedRoute, inviteRoute, galleryRoute]);
+const routeTree = rootRoute.addChildren([appRoute.addChildren([indexRoute, projectRoute, oldProjectRoute, inboxRoute, projectsRoute, groupsRoute, searchRoute, archiveRoute, settingsRoute, accountRoute, importRoute, adminRoute, docsRoute, agentDocsRoute]), loginRoute, signupRoute, resetRoute, verifyEmailRoute, confirmEmailRoute, accountDeletedRoute, inviteRoute, galleryRoute]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true, defaultErrorComponent: ScreenError });
 

@@ -13,7 +13,7 @@ import { fail, validate } from "../errors";
 import { STALE_AFTER_MS } from "../jobKinds";
 import { writtenEmails } from "../email";
 import { emailConfirmed } from "../services/confirmedEmail";
-import { recordError } from "../services/errorTracking";
+import { pagePathGroup, recordError } from "../services/errorTracking";
 
 /** Whether this person may open the operator console: a confirmed address listed in ADMIN_EMAILS. */
 export async function isOperator(viewer: { userId: string; email: string; isAnonymous?: boolean } | null | undefined): Promise<boolean> {
@@ -91,7 +91,7 @@ export const clientErrorsRoute = new Hono().post(
     const e = c.req.valid("json");
     const v = viewerOf(c);
     // Ids in the page path would split one problem into many.
-    const where = e.path.split("?")[0]!.replace(/\b[A-Za-z0-9_-]{21}\b/g, ":id");
+    const where = pagePathGroup(e.path);
     await recordError({ source: "client", kind: e.kind, message: e.message, where, userId: v.userId, stack: e.stack });
     return c.body(null, 204);
   },

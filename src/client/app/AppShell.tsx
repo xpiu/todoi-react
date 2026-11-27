@@ -1,7 +1,7 @@
 // AppShell — the frame around every app screen: TopNavbar (with the project's SubNavbar hoisted in
 // on desktop), Sidebar, the content, the one Toast, the ? dialog and the Ctrl+K palette. The URL is
 // the single source of truth for the current project and view. Spec: DESIGN.md › Responsive.
-import { Outlet, useLocation, useMatch, useNavigate } from "@tanstack/react-router";
+import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useState } from "react";
 
 import { movesOnCheck } from "../../shared/completion";
@@ -31,6 +31,7 @@ import { useSavedViewMutations } from "../data/savedViews";
 import { useResolvedView } from "./useResolvedView";
 import { usePersistedFlag } from "./usePersistedFlag";
 import { projectUrl } from "./links";
+import { useProjectNavigate, useRouteProject } from "./projectNav";
 import { count } from "../design/core/text";
 import { CommandPalette } from "../design/overlay/CommandPalette";
 import { ShortcutsDialog } from "../design/overlay/ShortcutsDialog";
@@ -77,8 +78,8 @@ export function AppShell() {
   const suggestShortcuts = useThemePreference("suggestShortcuts");
   const groups = useGroups();
   const unread = useInboxUnread();
-  const projectMatch = useMatch({ from: "/app/p/$projectId", shouldThrow: false });
-  const projectId = projectMatch?.params.projectId;
+  const { match: projectMatch, projectId, slug: projectSlug } = useRouteProject();
+  const goToProject = useProjectNavigate();
   const project = useProject(projectId ?? "");
   const projectItems = useProjectItems(projectId ?? "");
   const projectLabels = useLabels(projectId ?? "");
@@ -160,7 +161,7 @@ export function AppShell() {
     const target = destination === "inbox" ? null : destination === "current" ? current : known ? destination : null;
     if (!target) return capture();
     requestQuickAdd(target);
-    if (target !== projectId) void navigate({ to: "/p/$projectId", params: { projectId: target } });
+    if (target !== projectId) void goToProject(target);
   };
   const activeId = projectId ?? (section === "inbox" || section === "projects" || section === "groups" ? section : undefined);
   // Back on the pages outside a project: to the last project in this tab, in the view it was left in; else the first
@@ -171,7 +172,7 @@ export function AppShell() {
     backTarget === undefined || (backTarget === null && section === "projects")
       ? undefined
       : backTarget
-        ? () => void navigate({ to: "/p/$projectId", params: { projectId: backTarget.id }, search: backTarget.id === lastProjectId ? getLastProjectView() : {} })
+        ? () => void goToProject(backTarget.id, backTarget.id === lastProjectId ? getLastProjectView() : {})
         : () => void navigate({ to: "/projects" });
   const title = projectId ? (project.data?.name ?? "") : section === "inbox" ? "Inbox" : section === "projects" ? "Projects" : section === "groups" ? "Project groups" : section === "search" ? "Search" : section === "settings" ? "Settings" : section === "account" ? "Account" : "Todoi";
 
@@ -222,17 +223,17 @@ export function AppShell() {
   const goSaved = (id: string | null) => {
     if (!projectId) return;
     setLastSaved(id ? { projectId, id } : null);
-    void navigate({ to: "/p/$projectId", params: { projectId }, search: id ? { view: id, v: view, item: state?.item } : { item: state?.item } });
+    void goToProject(projectId, id ? { view: id, v: view, item: state?.item } : { item: state?.item });
   };
   const setView = (v: string) => {
     if (!projectId || !state) return;
     suggest(`view-${v}`);
-    void navigate({ to: "/p/$projectId", params: { projectId }, search: encodeViewState({ ...state, view: v as typeof view }) });
+    void goToProject(projectId, encodeViewState({ ...state, view: v as typeof view }));
   };
   const setViewState = (patch: Partial<typeof state & object>) => {
     if (!projectId || !state) return;
     if (resolved.raw.savedView) setLastSaved({ projectId, id: resolved.raw.savedView });
-    void navigate({ to: "/p/$projectId", params: { projectId }, search: nextViewSearch(state, patch) });
+    void goToProject(projectId, nextViewSearch(state, patch));
   };
   const clearFilters = () => setViewState({ filters: [] });
   const toggleFilter = (f: { type: string; value: string }) => (showRow("filter"), setViewState({ filters: state!.filters.some((a) => sameFilter(a, f)) ? state!.filters.filter((a) => !sameFilter(a, f)) : [...state!.filters, { type: f.type, value: f.value }] }));
@@ -328,7 +329,7 @@ export function AppShell() {
           const v = resolved.savedViews.find((x) => x.id === id);
           if (!v) return;
           if (action === "copy-link") {
-            void copyAndNotify(projectUrl(projectId, `?view=${id}`), `Copied the link to ${quote(v.name)}`);
+            void copyAndNotify(projectUrl({ slug: projectSlug! }, `?view=${id}`), `Copied the link to ${quote(v.name)}`);
           } else if (action === "update") {
             svm.update.mutate({ id, definition: currentDef }, { onSuccess: () => {
               goSaved(id);
@@ -417,7 +418,7 @@ export function AppShell() {
       onChangeRole={(mem, r) => pm.setMember.mutate({ projectId: pd.id, userId: mem.id, role: r })}
       onInvite={() => lifecycle.openSettings(pd.id, "members")}
       onSettings={() => lifecycle.openSettings(pd.id, "members")}
-      url={projectUrl(pd.id)}
+      url={projectUrl(pd)}
     />
   ) : undefined;
   const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={changeMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} groupMenu={groupMenu} filterActive={filters.length > 0} sortActive={sortActive.length > 0} groupActive={!!group} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} checkedMove={project.data ? movesOnCheck(project.data) : false} onOpenCheckedMove={() => navigate({ to: "/projects" })} membersMenu={membersMenu} /> : null;

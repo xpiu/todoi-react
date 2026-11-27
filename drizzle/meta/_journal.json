@@ -176,6 +176,13 @@
       "when": 1795648129044,
       "tag": "0024_api_token_scopes",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795774490345,
+      "tag": "0025_project_slug",
+      "breakpoints": true
     }
   ]
 }

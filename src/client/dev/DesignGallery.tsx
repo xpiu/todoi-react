@@ -192,7 +192,7 @@ export function DesignGallery() {
         >
           <div className="td-gallery-panel">
             <strong>Share project</strong>
-            <TextField value="https://todoi.com/p/helicopters" readOnly aria-label="Project URL" />
+            <TextField value="https://todoi.com/hc6m9xtq2a" readOnly aria-label="Project URL" />
             <Button variant="primary" onClick={panel.close}>
               Copy project URL
             </Button>

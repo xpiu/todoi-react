@@ -21,7 +21,3 @@ export function linkSpan(minutes: number): string {
 export const EMAIL_UNCONFIRMED = "EMAIL_UNCONFIRMED";
 /** The error code when sign-up is invite-only (SIGN_UP=invite) and this guest or address wasn't invited */
 export const INVITE_ONLY = "INVITE_ONLY";
-
-/** An item's absolute link: opened over its project, or in the Inbox (calendar events, notification emails). */
-export const itemLink = (appUrl: string, item: { id: string; projectId: string | null }) =>
-  `${appUrl.replace(/\/$/, "")}${item.projectId ? `/p/${encodeURIComponent(item.projectId)}` : "/inbox"}?item=${encodeURIComponent(item.id)}`;

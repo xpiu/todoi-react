@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 
 import { itemsToCalendar } from "./calendarExport";
 
-const item = { id: "calendar-item", title: "Plan", description: null, projectId: "project", dueDate: "2028-02-29", startDate: null, dueTime: null, done: false };
+const item = { id: "calendar-item", title: "Plan", description: null, keyNumber: 102, project: { slug: "epd5vjxy38", keyPrefix: "MP" }, dueDate: "2028-02-29", startDate: null, dueTime: null, done: false };
 const now = new Date("2026-10-10T12:34:56Z");
 const exportItems = (items: Parameters<typeof itemsToCalendar>[0]) => itemsToCalendar(items, "https://todoi.example/", now);
 
@@ -11,7 +11,7 @@ it("exports all-day ranges with an exclusive end and skips undated items", () =>
   expect(data).toContain("DTSTART;VALUE=DATE:20280227\r\nDTEND;VALUE=DATE:20280301");
   expect(data).toContain("UID:calendar-item@todoi.com\r\nDTSTAMP:20261010T123456Z");
   expect(data.match(/BEGIN:VEVENT/g)).toHaveLength(1);
-  expect(data).toContain("URL:https://todoi.example/p/project?item=calendar-item");
+  expect(data).toContain("URL:https://todoi.example/epd5vjxy38?item=MP-102");
   expect(data).toMatch(/END:VCALENDAR\r\n$/);
 });
 
@@ -29,6 +29,10 @@ it("escapes user text and folds Unicode without breaking code points or injectin
   expect(unfolded).toContain("DESCRIPTION:Line one\\nLine two\\n\\nCompleted in Todoi.");
   expect(data.split("\r\n").every((line) => new TextEncoder().encode(line).length <= 75)).toBe(true);
   expect(data.match(/\r\nEND:VEVENT\r\n/g)).toHaveLength(1);
+});
+
+it("links an Inbox item, which has no key, by its id", () => {
+  expect(exportItems([{ ...item, keyNumber: null, project: null }])).toContain("URL:https://todoi.example/inbox?item=calendar-item");
 });
 
 it("includes items with only a start date as a one-day event", () => {

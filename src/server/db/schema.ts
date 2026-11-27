@@ -217,6 +217,8 @@ export const projects = pgTable(
   "projects",
   {
     id: text("id").primaryKey(),
+    /** The short public id in the project's link (/epd5vjxy38); the database makes it (shared/projectLinks.ts) */
+    slug: text("slug").notNull().default(sql`project_slug()`),
     groupId: text("group_id")
       .notNull()
       .references(() => groups.id),
@@ -237,7 +239,7 @@ export const projects = pgTable(
     version: integer("version").notNull().default(1),
     ...timestamps,
   },
-  (t) => [index("projects_group_idx").on(t.groupId)],
+  (t) => [index("projects_group_idx").on(t.groupId), uniqueIndex("projects_slug_idx").on(t.slug)],
 );
 
 export const lists = pgTable(
