@@ -8,7 +8,7 @@ import { defineJob, enqueue, every, pruneJobs, startWorker } from "./jobs";
 import { pruneErrorGroups } from "./services/errorTracking";
 import { purgeIdleGuests } from "./services/guests";
 import { purgeTrash } from "./services/lifecycle";
-import { deliverQaReport } from "./services/qaReports";
+import { deliverQaReport, purgeOldQaScreenshots } from "./services/qaReports";
 import { drainUploadCleanup } from "./services/uploadCleanup";
 import { pruneOperationReceipts } from "./sync";
 
@@ -50,6 +50,8 @@ export function defineJobs() {
       if (gone.items || gone.projects) console.log(JSON.stringify({ level: "info", msg: "trash purged", ...gone }));
       const guests = await purgeIdleGuests();
       if (guests.removed || guests.kept) console.log(JSON.stringify({ level: "info", msg: "idle guest workspaces purged", ...guests }));
+      const screenshots = await purgeOldQaScreenshots();
+      if (screenshots) console.log(JSON.stringify({ level: "info", msg: "old QA screenshots deleted", screenshots }));
       await pruneJobs();
       await pruneSyncRuns();
       await pruneErrorGroups();

@@ -15,6 +15,9 @@ import { qaReports } from "../db/schema";
 import { env } from "../env";
 import { defineJobs } from "../jobKinds";
 import { runDueJobs } from "../jobs";
+import { purgeOldQaScreenshots } from "../services/qaReports";
+import { drainUploadCleanup } from "../services/uploadCleanup";
+import { readUpload } from "../services/uploads";
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 73, 72, 68, 82, 1, 2, 3, 4]);
 const context: QaContext = {
@@ -122,6 +125,29 @@ describe("QA notes", () => {
     }
     expect((await call(`/api/qa-reports/${older.id}/resolve`, { method: "POST", cookie: customer.cookie })).status).toBe(403);
     expect((await call(`/api/qa-reports/${older.id}/resolve`, { method: "POST", cookie: staff.cookie })).status).toBe(204);
+  });
+
+  it("lose only their screenshot after two years", async () => {
+    const [old, recent] = (await Promise.all([send(staff, { text: "Old note" }), send(staff, { text: "Recent note" })].map(async (r) => (await r).json()))) as Array<{ id: string }>;
+    const DAY = 24 * 60 * 60 * 1000;
+    await db.update(qaReports).set({ createdAt: new Date(Date.now() - 733 * DAY) }).where(eq(qaReports.id, old!.id));
+    await db.update(qaReports).set({ createdAt: new Date(Date.now() - 728 * DAY) }).where(eq(qaReports.id, recent!.id));
+    const key = (await db.select().from(qaReports).where(eq(qaReports.id, old!.id)))[0]!.screenshotKey!;
+    expect(await readUpload(key)).not.toBeNull();
+
+    expect(await purgeOldQaScreenshots()).toBe(1);
+    await drainUploadCleanup();
+    expect(await readUpload(key)).toBeNull();
+    // The note is all still there, without its picture.
+    const [row] = await db.select().from(qaReports).where(eq(qaReports.id, old!.id));
+    expect(row).toMatchObject({ text: "Old note", email: staff.email, url: context.url, screenshotKey: null, screenshotSize: PNG.byteLength });
+    expect(row!.context.marked[0]!.selector).toBe("button.td-btn");
+    const read = await call(`/api/qa-reports/${old!.id}`, { cookie: staff.cookie });
+    expect(await read.json()).toMatchObject({ text: "Old note", screenshot: null });
+    expect((await call(`/api/qa-reports/${old!.id}/screenshot`, { cookie: staff.cookie })).status).toBe(404);
+    // A younger note keeps its screenshot, and a second run finds nothing more.
+    expect((await call(`/api/qa-reports/${recent!.id}/screenshot`, { cookie: staff.cookie })).status).toBe(200);
+    expect(await purgeOldQaScreenshots()).toBe(0);
   });
 
   it("refuse an empty note, a context that isn't one and a screenshot that isn't a PNG", async () => {
