@@ -10,5 +10,7 @@ This file provides guidance to AI agents when working with code in this reposito
 - If you discover things that might hinder the goals of the latest assignment, then feel free to pause and ask the user for clarification.
 - Our domains are todoi.com and todoi.org. Use todoi.com by default in links, emails, IDs and examples, with the address that fits its purpose (`info@todoi.com` for contact, `no-reply@todoi.com` as a sender, others as needed). Some core features will be reused at todoi.org, so a variant built for it may use todoi.org addresses instead (`info@todoi.org`). We don't own todoi.app, so never use it.
 - If you decide to make and use new git branches for your work, then you MUST merge your work back into our `main` branch after working on your new git branch.
+- AI agents can access the project's email inbox via the Hostinger email API with API token `HOSTINGER_MAIL_API_TOKEN`, Base URL `https://api.mail.hostinger.com/api/v1` and mailbox `info@todoi.com`
+- User feedback submitted with our Q&A tool is accessible in the Hostinger mail inbox
 - Git commit with a relevant message after completing a feature or subfeature, unless the files are in .gitignore
 - Git push after completing a task
