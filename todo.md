@@ -1,5 +1,8 @@
 # To-do
 
+- start paying for backup service to backup our project (e.g. Backblaze or something cheap like it)
+description: "we need to have better backups for failure situations", created: 2026-11-28, prio: urgent, 
+
 - add cloudflare r2 for media files and imgs and attachments
   created: 2026-11-28
   > @agent: Added at Charlie's request. Reference: https://www.cloudflare.com/products/r2/
