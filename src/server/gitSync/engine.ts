@@ -19,7 +19,8 @@ import type { ProjectDoc } from "../../shared/projectDoc/model";
 import { db } from "../db";
 import { gitConnections, gitSyncRuns, items, projects, type GitConflictPolicy, type GitConnection, type GitSyncRun } from "../db/schema";
 import { recordError } from "../services/errorTracking";
-import { githubClient, GitHubError, type FileRef, type GitHubClient } from "./github";
+import { githubClient, GitHubError, type FileRef, type GitHubClient, type RepoInfo } from "./github";
+import { forgetInstallationToken, installationToken } from "./githubApp";
 import { applyProjectDoc, readProjectDoc } from "./projectDoc";
 import { open, seal, tokenHint } from "./secrets";
 
@@ -39,14 +40,19 @@ export class SyncFailure extends Error {
 const refOf = (c: Pick<GitConnection, "owner" | "repo" | "branch" | "path">): FileRef => ({ owner: c.owner, repo: c.repo, branch: c.branch, path: c.path });
 const repoName = (c: Pick<GitConnection, "owner" | "repo">) => `${c.owner}/${c.repo}`;
 
-function clientFor(c: GitConnection): GitHubClient {
-  const token = open(c.tokenCipher);
+/** How a connection reaches GitHub: through the app's installation (a token minted now) or with its stored token. */
+async function clientFor(c: GitConnection): Promise<GitHubClient> {
+  if (c.installationId) return githubClient(await installationToken(c.installationId));
+  const token = c.tokenCipher ? open(c.tokenCipher) : null;
   if (!token) throw new SyncFailure("token", "todoi can't read the stored GitHub token anymore. Connect the repository again with a new token");
   return githubClient(token);
 }
 
 /** A GitHub failure as a sentence that says what to do. */
-export function explainGitHub(e: GitHubError, c: Pick<GitConnection, "owner" | "repo" | "branch" | "path">): string {
+export function explainGitHub(e: GitHubError, c: Pick<GitConnection, "owner" | "repo" | "branch" | "path"> & { installationId?: number | null }): string {
+  // Through the app there is no token to replace: access is given and taken on GitHub.
+  if (c.installationId && (e.reason === "unauthorized" || e.reason === "forbidden" || e.reason === "not-found"))
+    return `todoi's GitHub app can't reach ${repoName(c)} (${c.branch}) anymore. Give the app access to this repository on GitHub, or disconnect and connect again`;
   switch (e.reason) {
     case "unauthorized":
       return "GitHub didn't accept the token. It may have expired or been revoked; connect again with a new token";
@@ -56,6 +62,8 @@ export function explainGitHub(e: GitHubError, c: Pick<GitConnection, "owner" | "
       return `GitHub's rate limit was reached. Sync again in ${e.retryAt ? Math.max(1, Math.ceil((e.retryAt.getTime() - Date.now()) / 60_000)) : 1} minute${e.retryAt && Math.ceil((e.retryAt.getTime() - Date.now()) / 60_000) > 1 ? "s" : ""}`;
     case "not-found":
       return `GitHub can't find ${repoName(c)} or its ${c.branch} branch. Check the name and branch, and that the token includes this repository`;
+    case "protected":
+      return `The ${c.branch} branch of ${repoName(c)} is protected on GitHub, so todoi can't commit to it. Allow it there, or disconnect and connect another branch`;
     case "too-large":
     case "not-a-file":
       return e.message;
@@ -124,8 +132,17 @@ export async function syncConnection(connectionId: string, trigger: SyncTrigger,
     const c = await loadConnection(connectionId);
     const actor = actorId ?? c.createdBy ?? (await projectOwner(c.projectId));
     try {
-      return await syncLocked(c, trigger, actor, opts);
+      try {
+        return await syncLocked(c, trigger, actor, opts);
+      } catch (e) {
+        // A renamed or transferred repository keeps its id: follow it once, then sync as usual.
+        const moved = e instanceof GitHubError && e.reason === "not-found" ? await followRename(c) : null;
+        if (!moved) throw e;
+        return await syncLocked(moved, trigger, actor, opts);
+      }
     } catch (e) {
+      // A held installation token may be what GitHub refused (the installation changed): the next sync mints a new one.
+      if (c.installationId && e instanceof GitHubError && e.reason === "unauthorized") forgetInstallationToken(c.installationId);
       if (e instanceof SyncFailure && e.reason === "busy") throw e;
       const message = e instanceof GitHubError ? explainGitHub(e, c) : e instanceof SyncFailure ? e.message : e instanceof ProjectFileError ? `The file in ${repoName(c)} can't be read: ${e.problems.join("; ")}` : "The sync stopped on an unexpected error. Try again; if it keeps failing, disconnect and connect again";
       if (!(e instanceof GitHubError || e instanceof SyncFailure || e instanceof ProjectFileError)) {
@@ -143,6 +160,15 @@ export async function syncConnection(connectionId: string, trigger: SyncTrigger,
   });
 }
 
+/** The connection under the repository's current name, when its id answers to another one; null otherwise. */
+async function followRename(c: GitConnection): Promise<GitConnection | null> {
+  if (!c.repoId) return null;
+  const now = await (await clientFor(c)).repoById(c.repoId).catch(() => null);
+  if (!now || (now.owner === c.owner && now.name === c.repo)) return null;
+  const [moved] = await db.update(gitConnections).set({ owner: now.owner, repo: now.name }).where(eq(gitConnections.id, c.id)).returning();
+  return moved ?? null;
+}
+
 async function projectOwner(projectId: string): Promise<string> {
   const [row] = await db.execute<{ user_id: string }>(sql`select user_id from members where project_id = ${projectId} and role = 'owner' limit 1`).then((r) => r.rows);
   if (!row) throw new SyncFailure("not-found", "The project has no owner to sync as. Give the project an owner in Project settings › Members");
@@ -150,7 +176,7 @@ async function projectOwner(projectId: string): Promise<string> {
 }
 
 async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string, opts: SyncOptions): Promise<GitSyncRun> {
-  const gh = clientFor(c);
+  const gh = await clientFor(c);
   const codec = CODECS[c.format];
   const [project] = await db.select({ name: projects.name }).from(projects).where(eq(projects.id, c.projectId));
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -208,9 +234,12 @@ async function syncLocked(c: GitConnection, trigger: SyncTrigger, actor: string,
 }
 
 // ── Connecting ───────────────────────────────────────────────────────────────────────────────────────
+/** What a new connection reaches GitHub with: a pasted token, or the app's installation on the repository (githubApp.ts). */
+export type GitAccess = { token: string; installationId?: undefined } | { token: string; installationId: number; repo: RepoInfo };
+
 export interface ConnectInput {
   projectId: string;
-  token: string;
+  access: GitAccess;
   owner: string;
   repo: string;
   branch: string;
@@ -222,13 +251,15 @@ export interface ConnectInput {
 }
 
 /** Check the token, repository, branch and path for a connection, before anything is saved. */
-export async function checkTarget(input: Pick<ConnectInput, "token" | "owner" | "repo" | "branch" | "path">) {
-  const gh = githubClient(input.token);
-  const ref = { owner: input.owner, repo: input.repo, branch: input.branch, path: input.path };
+export async function checkTarget(input: Pick<ConnectInput, "access" | "owner" | "repo" | "branch" | "path">) {
+  const { access } = input;
+  const gh = githubClient(access.token);
+  const ref = { owner: input.owner, repo: input.repo, branch: input.branch, path: input.path, installationId: access.installationId };
   try {
-    const repo = await gh.repo(input.owner, input.repo);
+    // Through the app, the person's own access was the check (appAccess); a token is asked what it may do.
+    const repo = access.installationId ? access.repo : await gh.repo(input.owner, input.repo);
     if (!repo.canPush) throw new SyncFailure("access", `The token can read ${repo.fullName} but not write to it. Give it Contents: Read and write access`);
-    if (!(await gh.branchExists(input.owner, input.repo, input.branch))) throw new SyncFailure("access", `${repo.fullName} has no branch named ${input.branch}`);
+    if (!(await gh.branchExists(input.owner, input.repo, input.branch))) throw new SyncFailure("access", `${repo.fullName} has no branch named ${input.branch}${input.branch === repo.defaultBranch ? ". An empty repository needs a first commit on GitHub" : ""}`);
     const file = await gh.readFile(ref);
     return { repo, file };
   } catch (e) {
@@ -238,7 +269,8 @@ export async function checkTarget(input: Pick<ConnectInput, "token" | "owner" | 
 }
 
 export async function connectProject(input: ConnectInput, actorId: string): Promise<{ connection: GitConnection; run: GitSyncRun }> {
-  const { file } = await checkTarget(input);
+  const { access } = input;
+  const { file, repo } = await checkTarget(input);
   const codec = CODECS[input.format];
   if (input.mode === "store" && file) throw new SyncFailure("file-exists", `${input.path} already exists in ${input.owner}/${input.repo}. Use the existing file, or pick another path`);
   if (input.mode === "use" && !file) throw new SyncFailure("missing-file", `There's no ${input.path} in ${input.owner}/${input.repo} (${input.branch}). Store a new file there instead`);
@@ -248,11 +280,24 @@ export async function connectProject(input: ConnectInput, actorId: string): Prom
   if (existing) await disconnectProject(input.projectId);
   const [connection] = await db
     .insert(gitConnections)
-    .values({ id: nanoid(), projectId: input.projectId, owner: input.owner, repo: input.repo, branch: input.branch, path: input.path, format: input.format, tokenCipher: seal(input.token), tokenHint: tokenHint(input.token), createdBy: actorId, conflictPolicy: input.conflictPolicy ?? "ask" })
+    .values({
+      id: nanoid(),
+      projectId: input.projectId,
+      // GitHub's own spelling of the names, and the id that outlives them.
+      owner: repo.owner,
+      repo: repo.name,
+      repoId: repo.id,
+      branch: input.branch,
+      path: input.path,
+      format: input.format,
+      ...(access.installationId ? { installationId: access.installationId, tokenCipher: null, tokenHint: "" } : { tokenCipher: seal(access.token), tokenHint: tokenHint(access.token) }),
+      createdBy: actorId,
+      conflictPolicy: input.conflictPolicy ?? "ask",
+    })
     .returning();
   const c = connection!;
   return withConnectionLock(c.id, async () => {
-    const gh = githubClient(input.token);
+    const gh = githubClient(access.token);
     const ours = await readOurs(input.projectId);
     let before: ProjectDoc | null = null, target = ours, pulled = 0;
     if (input.mode === "use" && theirs) {
@@ -282,7 +327,7 @@ export async function disconnectProject(projectId: string): Promise<boolean> {
   const [c] = await db.select().from(gitConnections).where(eq(gitConnections.projectId, projectId));
   if (!c) return false;
   if (c.hookId) {
-    const token = open(c.tokenCipher);
+    const token = c.tokenCipher ? open(c.tokenCipher) : null;
     if (token) await githubClient(token).deleteHook(c.owner, c.repo, c.hookId).catch(() => undefined);
   }
   await db.delete(gitConnections).where(eq(gitConnections.id, c.id));

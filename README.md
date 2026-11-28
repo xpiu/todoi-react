@@ -53,7 +53,7 @@ These six USPs define the intended commercial positioning of todoi at todoi.com.
 5. **Tasks versioned alongside the work.** Keep task files under Git version control with the code they describe. Developers and agents can commit task updates with code changes, review diffs and trace the history and authorship of task changes using Git.
 6. **Substantially lower pricing.** Aim to offer the key task-management workflows our customers need at roughly one-fifth of the price of a major competitor such as Linear. This is a pricing goal, subject to sustainable operating costs and final plan design.
 
-**React implementation status:** Git sync keeps a project in a file in a GitHub repository — Embridge Markdown, JSON or YAML — and syncs both ways with a three-way merge, conflict resolution, undo and push webhooks (see [DESIGN.md › Git sync](DESIGN.md)). It connects with a fine-grained personal access token; a GitHub App install, other storage providers and scheduled syncs are still to come. The client/server synchronization described under [Features and limits](#-features-and-limits) is separate from it. The pricing target is not a published subscription price.
+**React implementation status:** Git sync keeps a project in a file in a GitHub repository — Embridge Markdown, JSON or YAML — and syncs both ways with a three-way merge, conflict resolution, undo and push webhooks (see [DESIGN.md › Git sync](DESIGN.md)). It connects through todoi's GitHub App (**Continue with GitHub**, then pick a repository) or with a fine-grained personal access token; other storage providers are still to come. The client/server synchronization described under [Features and limits](#-features-and-limits) is separate from it. The pricing target is not a published subscription price.
 
 ## ⚡ Quick Start
 
@@ -82,7 +82,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 
 - **Workspace:** Project groups, Projects, Lists, Items, Subitems, labels, assignees, watchers, relations, recurrence, covers and attachments. List/Board/Calendar views with filters, sorting and saved views; item overlay with Tiptap descriptions, comments and activity.
 - **Status follows List** (was "Link Lists with Status"): a per-project switch on the Projects page (also in Project settings; default on). See [User flow, UI and UX](#-user-flow-ui-and-ux) and [DESIGN.md](DESIGN.md) (Project automation setting).
-- **Git sync:** a project kept in a file (Embridge Markdown, JSON or YAML) in a GitHub repository, synced both ways: three-way merge, a conflict dialog or a conflict policy, sync history with undo, and push webhooks. Connect under Settings › Storage & sync with a fine-grained token.
+- **Git sync:** a project kept in a file (Embridge Markdown, JSON or YAML) in a GitHub repository, synced both ways: three-way merge, a conflict dialog or a conflict policy, sync history with undo, and push webhooks. Connect under Settings › Storage & sync: **Continue with GitHub** (a GitHub App: you choose the repositories on GitHub, no token is pasted or stored) or a fine-grained token. See [Git sync with a GitHub App](#git-sync-with-a-github-app).
 - **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), todoi JSON/YAML project files, Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export everything as a restorable `.zip`.
 - **QA notes.** With a confirmed `@todoi.com` account, press Ctrl+Shift+F (⌃⇧F on macOS) on any screen to report an issue with an annotated screenshot. See [QA notes](#-qa-notes-and-feedback-tool-and-system).
 - **Accounts:** private guest workspaces, email/password accounts, project roles and invite links, personal API tokens and account preferences stored in PostgreSQL.
@@ -290,13 +290,35 @@ Environment variables override `.env`:
 - **`CSP`:** Default `enforce`. `report-only` sends the same policy as `Content-Security-Policy-Report-Only`: browsers report what it would block (in `/admin`) but block nothing, the way back if a page breaks under it.
 - **`TRUST_CLOUDFLARE`:** Default `false`. Behind Cloudflare, `true` counts a request whose address (after `TRUST_PROXY_HOPS`) is one of Cloudflare's edge ranges as its `CF-Connecting-IP`; without it every visitor routed through the same Cloudflare data centre shares one budget. A request that reaches the origin directly can't claim an address this way.
 - **`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`:** The OAuth apps behind social sign-in, callback `<APP_URL>/api/auth/callback/github` or `/google`. **Unused for now:** both providers are switched off in `src/shared/socialSignIn.ts` until the lead developer has set up their OAuth apps, so the log-in and sign-up pages show "GitHub login temporarily unavailable" and "Google login temporarily unavailable" under disabled buttons. A provider works once it is switched on there and both of its variables are set.
-- **`GITHUB_API_URL`:** Default `https://api.github.com`; GitHub Enterprise, or the fake GitHub the tests run (`tests/fakes/fakeGithub.ts`).
+- **`GITHUB_API_URL`, `GITHUB_URL`:** Defaults `https://api.github.com` and `https://github.com`; GitHub Enterprise, or the fake GitHub the tests run (`tests/fakes/fakeGithub.ts`), which plays both.
+- **`GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`:** The GitHub App behind **Continue with GitHub** in Git sync; all five or none (the API refuses to start on some). Without them, connecting takes a token. The key is GitHub's PEM as is, with `\n` for line breaks, or base64. `GITHUB_APP_WEBHOOK_SECRET` (optional) lets pushes sync on their own. See [Git sync with a GitHub App](#git-sync-with-a-github-app).
 
 Production startup rejects invalid/missing configuration, development/example secrets, short secrets, non-HTTPS external URLs or enabled seeding. Development uses convenient defaults.
 
 Non-API GET deep links serve HTML; hashed `/assets/*` cache for a year, HTML revalidates. Every response carries baseline security headers (no MIME sniffing, same-origin framing and embedding, no referrer, HSTS for this host), and every page the client serves carries a Content-Security-Policy (`src/server/csp.ts`: scripts from this origin plus the pre-paint script by hash, no eval, `object-src 'none'`, `frame-ancestors 'self'`). What it blocks is reported to `/api/csp-reports` and grouped in `/admin` as CSP errors. `SIGTERM`/`SIGINT` stop new connections and close the database pool, with a 10-second shutdown limit. Fault/refused-write logs carry the client's “ref …” `requestId`.
 
 **Docker (staging):** the `Dockerfile` builds with every dependency and ships a non-root `node:22-slim` image with production dependencies, `dist/`, `dist-server/` and `drizzle/`. It defaults `UPLOAD_DIR=/data/uploads` (mount a named volume at `/data`, one replica) and health-checks `/api/health`, which also names the build (`{ ok, build: { sha, builtAt } }`, shown in Settings › Help › About).
+
+### Git sync with a GitHub App
+
+How a person connects a repository (`src/server/gitSync/githubApp.ts`, routes in `src/server/routes/gitSync.ts`), built on what the earlier todoi's GitHub App flow taught us:
+
+1. **Continue with GitHub** in the connect dialog goes to `/api/git/github/start`, which sends the browser to GitHub to authorize the app. Someone who has the app installed already is back in one step; anyone else is sent on to install it and choose repositories, once.
+2. GitHub returns to `/api/git/github/callback`. The only thing trusted in that URL is a one-time state held in a short-lived cookie. **An installation id in the URL is never used**: what a person may connect is what GitHub answers to *their own* app token (`/user/installations`), which reaches only what both they and the app can. Their token is stored sealed and renewed when it expires.
+3. The dialog reopens on the same project with a repository picker; the branch follows the repository's default. An organization owner's pending approval, a cancelled or expired trip and "no repository chosen" each say so.
+4. Syncing runs on **installation tokens** minted when needed and kept in memory, so no token is stored per connection and a sync keeps working when the person who connected leaves. A renamed or transferred repository is followed by its id. If the app loses the repository, the connection says so.
+
+One GitHub App per environment (never share one between staging and production). Settings on GitHub:
+
+| Setting | Value |
+| --- | --- |
+| Callback URL **and** Setup URL | `<APP_URL>/api/git/github/callback` (tick *Redirect on update*) |
+| Request user authorization (OAuth) during installation | on (recommended; with it off the Setup URL return still works) |
+| Repository permissions | Contents: Read and write; Metadata: Read-only. Nothing else |
+| Webhook (optional) | URL `<APP_URL>/api/webhooks/github`, secret = `GITHUB_APP_WEBHOOK_SECRET`, events *Push*; installation events arrive on their own |
+| Where can this app be installed | Any account (production); Only on this account (testing) |
+
+Then set the five `GITHUB_APP_*` variables. Tests never call github.com: `tests/fakes/fakeGithub.ts` plays the API and the authorize and install pages (`githubApp.integration.test.ts`; in the browser, `tests/e2e/git-sync.spec.ts` with the API started on `GITHUB_API_URL` and `GITHUB_URL` pointing at the fake).
 
 **Deploys (staging.todoi.com):** CI's `deploy-staging` job fast-forwards the `staging` branch to a `main` commit once every gate has passed, and Dokploy (GitHub provider, branch `staging`, Autodeploy on push) builds that branch; a push to `main` alone never deploys. Rules once testers hold real data: never reseed or wipe staging; `src/server/db/migrations.test.ts` (in `npm run check`) refuses a new migration that drops, renames or tightens a column without a `-- reviewed: …` line saying why it's safe; take a dump before deploying such a migration (`docker exec <db container> pg_dump -U <user> -Fc <db> > before-<sha>.dump` on the VPS; the VPS backup job also dumps every Postgres daily); and a migration must accept edits that older clients replay from their offline outbox. To roll back, point `staging` at the previous good commit (`git push --force origin <sha>:staging`); a migration that already ran stays, so roll back code only past additive migrations.
 

@@ -3,10 +3,12 @@
 // the Storage row of Account › Projects, the Integrations list — and the dialogs they open (connect,
 // resolve a conflict, replace the token, disconnect). Data: data/gitSync.ts.
 // Spec: DESIGN.md › Storage & sync › Git sync.
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+import type { GitHubReturn } from "../../shared/gitSync";
 
 import { errorMessage } from "../data/api";
-import { useGitConnections, useGitMutations, type GitConnectionView, type GitRunView } from "../data/gitSync";
+import { continueWithGitHub, useGitConnections, useGitHubLink, useGitMutations, type GitConnectionView, type GitRunView } from "../data/gitSync";
 import { Button } from "../design/core/Button";
 import { Icon } from "../design/core/Icon";
 import { relativeSync } from "../design/core/ConnectionStatus";
@@ -34,6 +36,22 @@ const POLICY_OPTIONS = [
   { value: "todoi", label: "todoi's version wins" },
   { value: "file", label: "The file's version wins" },
 ] as const;
+
+/** A trip to GitHub that didn't end linked, in words for the connect dialog. */
+const RETURN_NOTICES: Record<Exclude<GitHubReturn, "linked">, string> = {
+  requested: "An owner of that organization has to approve todoi on GitHub. Continue again once they have",
+  none: "todoi wasn't given a repository on GitHub. Continue, and choose at least one",
+  denied: "Nothing was connected: the request was cancelled on GitHub",
+  expired: "That took longer than GitHub's link lasts. Continue again",
+  failed: "GitHub didn't confirm the link. Try again in a minute",
+};
+/** Back from GitHub: the project that was being connected and how the trip ended (the route's `connect` and `github`). */
+export interface GitHubReturned {
+  projectId?: string;
+  outcome?: GitHubReturn;
+  /** Take both out of the address, so a reload doesn't replay them */
+  clear: () => void;
+}
 
 /** A state that needs attention: the glyph carries the tone, so it shows on every theme. */
 function StateLabel({ tone, text }: { tone: "warn" | "danger"; text: string }) {
@@ -67,11 +85,27 @@ export function runSentence(r: GitRunView): string {
 }
 const TRIGGER_WORDS: Record<GitRunView["trigger"], string> = { connect: "When connected", manual: "Synced by you", webhook: "After a push", auto: "On schedule", resolve: "After resolving a conflict", undo: "After an undo" };
 
-export function useGitSyncSettings({ projects, currentProjectId, online, enabled }: { projects: ProjectLite[]; currentProjectId: string | null; online: boolean; enabled: boolean }) {
+export function useGitSyncSettings({ projects, currentProjectId, online, enabled, returned }: { projects: ProjectLite[]; currentProjectId: string | null; online: boolean; enabled: boolean; returned?: GitHubReturned }) {
   const connections = useGitConnections(enabled);
   const gm = useGitMutations();
   const notify = useFeedback((s) => s.notify);
   const [connectFor, setConnectFor] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const github = useGitHubLink(enabled && !!connectFor);
+  // Back from GitHub: the dialog reopens where it was left, on the picker or on why there is none.
+  const { projectId: returnedFor, outcome, clear } = returned ?? {};
+  const arrival = returnedFor || outcome ? `${returnedFor} ${outcome}` : null;
+  const [arrived, setArrived] = useState<string | null>(null);
+  // Taken in while rendering, not in an effect: the dialog is open in the first paint.
+  if (arrival && arrival !== arrived) {
+    setArrived(arrival);
+    if (returnedFor) setConnectFor(returnedFor);
+    setNotice(outcome && outcome !== "linked" ? RETURN_NOTICES[outcome] : null);
+  }
+  // Then the address forgets it, so a reload doesn't replay the return.
+  useEffect(() => {
+    if (arrival) clear?.();
+  }, [arrival, clear]);
   const [checked, setChecked] = useState<GitCheckResult | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [conflictFor, setConflictFor] = useState<string | null>(null);
@@ -80,13 +114,14 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
   const [newToken, setNewToken] = useState("");
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [disconnectFor, setDisconnectFor] = useState<string | null>(null);
-  const list = connections.data ?? [];
+  const list = connections.data?.connections ?? [];
   const byProject = new Map(list.map((c) => [c.projectId, c]));
   const canAdmin = (projectId: string) => ["owner", "admin"].includes(projects.find((p) => p.id === projectId)?.role ?? "");
 
   const openConnect = (projectId: string) => {
     setChecked(null);
     setFormError(null);
+    setNotice(null);
     setConnectFor(projectId);
   };
   const syncNow = (c: GitConnectionView) =>
@@ -107,11 +142,12 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
   const syncSettingsRows = (c: GitConnectionView): SettingsRow[] => [
     { id: `gh-${c.projectId}-policy`, label: "When both sides change the same thing", hint: c.conflictPolicy === "ask" ? "Sync pauses until you pick a version" : "Decided without asking; the sync history says so", control: <Select aria-label="When both sides change the same thing" value={c.conflictPolicy} options={POLICY_OPTIONS} onChange={(v) => gm.update.mutate({ projectId: c.projectId, conflictPolicy: v }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} placement="bottom-end" tier="detached" width={240} /> },
     { id: `gh-${c.projectId}-auto`, label: "Sync on a schedule", hint: c.autoSync ? `Every 10 minutes${c.webhook ? ", and after each push" : ""}` : c.webhook ? "After each push, or when you press Sync now" : "Only when you press Sync now", control: <Switch aria-label="Sync on a schedule" checked={c.autoSync} onChange={(on) => gm.update.mutate({ projectId: c.projectId, autoSync: on }, { onError: (err) => notify({ message: `Couldn't save: ${errorMessage(err)}`, icon: "circle-alert" }) })} /> },
-    { id: `gh-${c.projectId}-token`, label: "GitHub token", hint: `${c.tokenHint} · Replace it before it expires`, control: <Button icon="key-round" onClick={() => {
+    // Through the GitHub App there is no token to keep: access is given and taken on GitHub.
+    ...(c.via === "app" ? [] : [{ id: `gh-${c.projectId}-token`, label: "GitHub token", hint: `${c.tokenHint} · Replace it before it expires`, control: <Button icon="key-round" onClick={() => {
       setNewToken("");
       setTokenError(null);
       setTokenFor(c.projectId);
-    }}>Replace token</Button> },
+    }}>Replace token</Button> }]),
     { id: `gh-${c.projectId}-disconnect`, label: "Stop syncing", hint: "The file stays in the repository and the project stays in todoi", control: <Button icon="unplug" onClick={() => setDisconnectFor(c.projectId)}>Disconnect</Button> },
   ];
   /** One card per connected project, titled by the project: where the file lives, one state row with the action that state needs, the recent syncs, then its settings. */
@@ -127,7 +163,7 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
       sub: c.projectId === currentProjectId ? "Current project" : undefined,
       tone: paused || failed ? "danger" : c.stale ? "warn" : undefined,
       rows: [
-        { id: `gh-${c.projectId}-repo`, label: "Repository", hint: `${c.branch} · ${c.path}`, control: <MonoValue value={`${c.owner}/${c.repo}`} /> },
+        { id: `gh-${c.projectId}-repo`, label: "Repository", hint: `${c.branch} · ${c.path}${c.via === "app" ? " · through todoi's GitHub app" : ""}`, control: <MonoValue value={`${c.owner}/${c.repo}`} /> },
         {
           id: `gh-${c.projectId}-sync`,
           label: paused || failed || c.stale ? <StateLabel tone={c.stale && !paused && !failed ? "warn" : "danger"} text={paused ? `Paused · ${count(c.conflicts.length, "thing")} changed in both places` : failed ? "Last sync failed" : "Sync overdue"} /> : c.lastSyncedAt ? "In sync" : "Not synced yet",
@@ -202,7 +238,23 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
         defaultPath={`todo/${fileSlug(connectProject?.name ?? "project")}.md`}
         checked={checked}
         busy={gm.check.isPending || gm.connect.isPending}
-        error={formError}
+        github={
+          connections.data?.github.app
+            ? {
+                // Who they are on GitHub is known at once; what they can pick arrives a moment later.
+                login: github.data ? github.data.login : connections.data.github.login,
+                repos: github.data?.repos ?? [],
+                more: github.data?.more,
+                manageUrl: github.data?.manageUrl,
+                loading: github.isPending,
+                notice,
+                // Come back to this page with the dialog open on this project.
+                onContinue: () => continueWithGitHub(`${window.location.pathname}?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), connect: connectFor! })}`),
+                onUnlink: () => gm.unlinkGitHub.mutate(undefined, { onError: (err) => setFormError(errorMessage(err)) }),
+              }
+            : undefined
+        }
+        error={formError ?? (github.isError ? errorMessage(github.error) : null)}
         offline={!online}
         onEdit={() => {
           setChecked(null);

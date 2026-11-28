@@ -64,10 +64,27 @@ export function parseEnv(source: Record<string, string | undefined>) {
       GOOGLE_CLIENT_SECRET: optionalValue,
       /** The GitHub REST API Git sync talks to (a GitHub Enterprise or test server can stand in) */
       GITHUB_API_URL: z.url().default("https://api.github.com"),
+      /** GitHub's website, where people authorize and install the app (a GitHub Enterprise or test server can stand in) */
+      GITHUB_URL: z.url().default("https://github.com"),
+      /**
+       * The GitHub App behind "Continue with GitHub" in Git sync (gitSync/githubApp.ts): repositories are picked on
+       * GitHub instead of pasting a token. All five or none; without them Git sync connects with a token only.
+       * The private key is the PEM from GitHub, as is, with `\n` for line breaks, or base64-encoded.
+       */
+      GITHUB_APP_ID: optionalValue,
+      GITHUB_APP_SLUG: optionalValue,
+      GITHUB_APP_CLIENT_ID: optionalValue,
+      GITHUB_APP_CLIENT_SECRET: optionalValue,
+      GITHUB_APP_PRIVATE_KEY: optionalValue,
+      /** The app's webhook secret: with it, pushes to connected repositories sync on their own (webhook URL: APP_URL/api/webhooks/github) */
+      GITHUB_APP_WEBHOOK_SECRET: optionalValue,
       /** Encrypts stored GitHub tokens and webhook secrets; unset = derived from BETTER_AUTH_SECRET (rotating that then disconnects every repository) */
       SYNC_SECRET_KEY: optionalValue.pipe(z.string().min(32, "SYNC_SECRET_KEY must be at least 32 characters").optional()),
     })
     .superRefine((e, ctx) => {
+      const app = ["GITHUB_APP_ID", "GITHUB_APP_SLUG", "GITHUB_APP_CLIENT_ID", "GITHUB_APP_CLIENT_SECRET", "GITHUB_APP_PRIVATE_KEY"] as const;
+      const unset = app.filter((k) => !e[k]);
+      if (unset.length && unset.length < app.length) ctx.addIssue({ code: "custom", path: [unset[0]!], message: `The GitHub App needs all of ${app.join(", ")}; missing: ${unset.join(", ")}` });
       if (dev) return;
       if (e.BETTER_AUTH_SECRET === DEV_AUTH_SECRET || /change-me|dev-secret|ci-only|example/i.test(e.BETTER_AUTH_SECRET)) ctx.addIssue({ code: "custom", path: ["BETTER_AUTH_SECRET"], message: "BETTER_AUTH_SECRET is a development or example value; generate a new one (openssl rand -base64 32)" });
       const url = new URL(e.APP_URL);

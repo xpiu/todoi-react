@@ -38,7 +38,7 @@ import { MODES, THEMES } from "../design/core/themes";
 import { relativeSync } from "../design/core/ConnectionStatus";
 import { useSaveState } from "./saveState";
 import { SyncRecovery, syncOperationLabel } from "./SyncRecovery";
-import { useGitSyncSettings } from "./GitSyncSettings";
+import { useGitSyncSettings, type GitHubReturned } from "./GitSyncSettings";
 import { useRestoreArchive } from "./RestoreArchive";
 import { PasswordField } from "../design/auth/PasswordField";
 import { MonoValue, SettingsLink, SettingsShell, StatusDot, type SettingsGroup, type SettingsPage, type SettingsRow } from "../design/settings/SettingsShell";
@@ -114,7 +114,9 @@ export function SettingsScreen({ page }: { page: Page }) {
   const navigate = useNavigate();
   // The page this visit started on stays first in the nav: it travels in the history entry, so Back, Forward and a reload keep it.
   const lead = useRouterState({ select: (s) => s.location.state.settingsLead }) ?? page;
-  const { pages, dialogs } = useSettingsPages(page);
+  // Stable while the address is: the hook's effect runs once per return from GitHub.
+  const returned = useMemo(() => ({ projectId: search.connect, outcome: search.github, clear: () => void navigate({ to: ".", search: { s: search.s }, replace: true }) }), [search.connect, search.github, search.s, navigate]);
+  const { pages, dialogs } = useSettingsPages(page, returned);
   return (
     <>
       <SettingsShell pages={pages} page={page} section={search.s} lead={lead} onNavigate={(p, s) => void navigate({ to: p === "settings" ? "/settings" : "/account", search: { s }, state: (prev) => ({ ...prev, settingsLead: lead }) })} />
@@ -153,7 +155,7 @@ const exportRows = (notify: Notify, navigate: UseNavigateResult<string>, onResto
 ];
 
 /** Both registries: the other page's rows stay searchable, but its data loads only when it is open. */
-function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNode } {
+function useSettingsPages(page: Page, returned: GitHubReturned): { pages: SettingsPage[]; dialogs: ReactNode } {
   const prefs = usePrefs();
   const ap = useAppearance();
   const notify = useFeedback((s) => s.notify);
@@ -173,7 +175,7 @@ function useSettingsPages(page: Page): { pages: SettingsPage[]; dialogs: ReactNo
   const [labelProject, setLabelProject] = useState<string | null>(null);
   const labelsSection = useLabelsSection(page === "settings" ? labelProject : null, setLabelProject, page === "settings" ? projects : []);
   const registered = !!user && !user.isAnonymous;
-  const git = useGitSyncSettings({ projects, currentProjectId: lastProjectId ?? null, online, enabled: registered });
+  const git = useGitSyncSettings({ projects, currentProjectId: lastProjectId ?? null, online, enabled: registered, returned });
   const restore = useRestoreArchive({ email: user?.email ?? "", online });
   const account = useAccountPages(page === "account", projects, online, git.storageRow);
   const me = useMe(page === "settings" && registered);

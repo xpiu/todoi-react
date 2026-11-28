@@ -1,6 +1,9 @@
 // Git sync in the browser, against the fake GitHub (tests/fakes/fakeGithub.ts on :3199; the dev API must
 // run with GITHUB_API_URL=http://127.0.0.1:3199): connect a project and store it as a new file, a push to
-// GitHub arriving by webhook, a real conflict resolved in the dialog, undo, and disconnect.
+// GitHub arriving by webhook, a real conflict resolved in the dialog, undo, and disconnect. With a GitHub
+// App configured on the API (GITHUB_APP_*, and GITHUB_URL on the fake too), also "Continue with GitHub":
+// the trip to the fake's authorize and install pages and back, picking a repository, and connecting
+// without a token. Nothing here reaches github.com.
 import { expect, test, type Page } from "@playwright/test";
 import { Pool } from "pg";
 
@@ -45,6 +48,10 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
       // Connect: check the repository, then store the project as a new file.
       await page.locator(".td-settings-row").filter({ hasText: project.name }).getByRole("button", { name: "Connect" }).click();
       const dialog = page.getByRole("dialog", { name: "Connect a repository" });
+      // With a GitHub App on the API the dialog opens on Continue with GitHub: this test takes the token's way.
+      await expect(dialog.getByRole("button", { name: "Cancel" })).toBeVisible();
+      const byToken = dialog.getByRole("button", { name: /^Use a token/ });
+      if (await byToken.count()) await byToken.click();
       await dialog.getByLabel("Repository").fill(`github.com/${repo}`);
       await dialog.getByLabel("GitHub token").fill(token);
       await settle(page);
@@ -132,3 +139,99 @@ for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
     }
   });
 }
+
+// ── Continue with GitHub (the GitHub App) ────────────────────────────────────────────────────────────
+test.describe("through the GitHub App", () => {
+  test.describe.configure({ mode: "serial" });
+  let appOn = false;
+  test.beforeEach(async ({ page }) => {
+    await signIn(page);
+    appOn = fakeRunning && ((await (await page.request.get("/api/git")).json()) as { github?: { app: boolean } }).github?.app === true;
+    test.skip(!appOn, "needs the fake GitHub on :3199 and an API started with GITHUB_APP_* and GITHUB_URL pointing at it");
+    // Each test starts as someone GitHub hasn't met.
+    await page.request.delete("/api/git/github", { headers: { origin: new URL(page.url() === "about:blank" ? (test.info().project.use.baseURL ?? "http://localhost:5173") : page.url()).origin } });
+  });
+  const callback = () => `${test.info().project.use.baseURL}/api/git/github/callback`;
+
+  for (const scope of ["rounded-light", "minimal-dark"] as Scope[]) {
+    test(`continues with GitHub, installs, picks the repository and connects without a token in ${scope}`, async ({ page }) => {
+      test.setTimeout(60_000);
+      await useScope(page, scope);
+      const repo = `acme/app-${scope}`;
+      await fake("repo", { fullName: repo });
+      // On GitHub: signed in as flo, the app installed nowhere yet; installing gives it this one repository.
+      await fake("app-user", { user: { login: "flo", installations: {}, onInstall: { [scope === "rounded-light" ? 21 : 22]: [repo] } }, callback: callback() });
+      const project = await freshProject(page, "App sync", { lists: [["To-do", "TODO"]] });
+      try {
+        await project.item("Ship the connect flow");
+        await page.goto("/settings?s=storage");
+        await page.locator(".td-settings-row").filter({ hasText: project.name }).getByRole("button", { name: "Connect" }).click();
+        const dialog = page.getByRole("dialog", { name: "Connect a repository" });
+        // One way forward, no token field.
+        await expect(dialog.getByRole("button", { name: "Continue with GitHub" })).toBeVisible();
+        await expect(dialog.getByLabel("GitHub token")).toHaveCount(0);
+        await settle(page);
+        await page.screenshot({ path: `.tmp/shots/git-app-continue-${scope}.png` });
+
+        // To GitHub (authorize, then install, on the fake) and back: the dialog is open again on this project.
+        await dialog.getByRole("button", { name: "Continue with GitHub" }).click();
+        await page.waitForURL(/\/settings\?s=storage$/);
+        await expect(dialog).toBeVisible();
+        // The one repository the app was given is picked, its default branch filled in.
+        await expect(dialog.getByRole("combobox", { name: "Repository" })).toHaveText(new RegExp(repo));
+        await expect(dialog.getByLabel("Branch")).toHaveValue("main");
+        await expect(dialog.getByLabel("GitHub token")).toHaveCount(0);
+        await expect(dialog.getByText("GitHub: flo")).toBeVisible();
+        await settle(page);
+        await page.screenshot({ path: `.tmp/shots/git-app-pick-${scope}.png` });
+
+        await dialog.getByRole("button", { name: "Check repository" }).click();
+        const ready = page.getByRole("dialog", { name: "Ready to connect" });
+        await expect(ready.getByText("todoi's GitHub app can write to it", { exact: false })).toBeVisible();
+        const path = (await ready.getByText(/^No todo\/.*\.md yet$/).textContent())!.replace(/^No | yet$/g, "");
+        await ready.getByRole("button", { name: "Store new file" }).click();
+        await expect(page.getByRole("status").filter({ hasText: "Stored" })).toContainText(`Stored “${project.name}” in ${repo}`);
+        expect((await fakeFile(repo, path))?.text).toContain("- [ ] Ship the connect flow");
+
+        // The card says how it is connected, and has no token to replace.
+        const panel = group(page, project.name);
+        await expect(panel.locator(".td-settings-row").first()).toContainText("through todoi's GitHub app");
+        await expect(panel.getByRole("button", { name: "Replace token" })).toHaveCount(0);
+        await settle(page);
+        await page.screenshot({ path: `.tmp/shots/git-app-panel-${scope}.png` });
+
+        // A push on GitHub reaches todoi through the app's installation.
+        await fake("push", { fullName: repo, branch: "main", path, text: (await fakeFile(repo, path))!.text.replace("- [ ] Ship", "- [x] Ship") });
+        await panel.getByRole("button", { name: "Sync now" }).click();
+        await expect(page.getByRole("status").filter({ hasText: "Brought in 1 change from the file" })).toBeVisible();
+
+        await panel.getByRole("button", { name: "Disconnect" }).click();
+        await page.getByRole("alertdialog").getByRole("button", { name: "Disconnect" }).click();
+        await expect(panel).toHaveCount(0);
+      } finally {
+        await project.cleanup();
+      }
+    });
+  }
+
+  test("says when an organization's owner has to approve, and keeps the token as the other way", async ({ page }) => {
+    await useScope(page, "rounded-light");
+    await fake("app-user", { user: { login: "flo", installations: {}, install: "request" }, callback: callback() });
+    const project = await freshProject(page, "App pending", { lists: [["To-do", "TODO"]] });
+    try {
+      await page.goto("/settings?s=storage");
+      await page.locator(".td-settings-row").filter({ hasText: project.name }).getByRole("button", { name: "Connect" }).click();
+      const dialog = page.getByRole("dialog", { name: "Connect a repository" });
+      await dialog.getByRole("button", { name: "Continue with GitHub" }).click();
+      await page.waitForURL(/\/settings\?s=storage$/);
+      await expect(dialog.getByText("An owner of that organization has to approve todoi on GitHub", { exact: false })).toBeVisible();
+      await settle(page);
+      await page.screenshot({ path: ".tmp/shots/git-app-requested.png" });
+      await expect(dialog.getByRole("button", { name: "Continue with GitHub" })).toBeEnabled();
+      await dialog.getByRole("button", { name: "Use a token instead" }).click();
+      await expect(dialog.getByLabel("GitHub token")).toBeVisible();
+    } finally {
+      await project.cleanup();
+    }
+  });
+});

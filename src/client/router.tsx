@@ -2,6 +2,7 @@
 // shared/projectLinks.ts) with the view state in the query (`v`, `f`, `s`, or `view` for a saved view) and the open
 // item by key (`item=MP-102`); /p/:id, the earlier project link, moves on to it; /inbox, /projects, /groups, /search, /settings,
 // /account, /import, /docs, /docs/agents, /i/:code; the emailed links' landings /reset, /verify-email and /confirm-email; /account-deleted; /dev/ds is the primitives gallery outside the app frame.
+import { GITHUB_RETURNS } from "../shared/gitSync";
 import { createRootRoute, createRoute, createRouter, notFound, Outlet, redirect } from "@tanstack/react-router";
 import { lazy } from "react";
 import { z } from "zod";
@@ -120,7 +121,8 @@ if (typeof window !== "undefined") (window.requestIdleCallback ?? ((cb: () => vo
 });
 const ImportScreen = lazy(() => import("./app/ImportScreen").then((m) => ({ default: m.ImportScreen })));
 const AdminScreen = lazy(() => import("./app/AdminScreen").then((m) => ({ default: m.AdminScreen })));
-const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined) }).parse(s);
+/** `connect` and `github`: back from GitHub (GitSyncSettings), the project being connected and how the trip ended. */
+const sectionSearch = (s: Record<string, unknown>) => z.object({ s: z.string().optional().catch(undefined), connect: z.string().optional().catch(undefined), github: z.enum(GITHUB_RETURNS).optional().catch(undefined) }).parse(s);
 export const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: () => <SettingsScreen page="settings" />, validateSearch: sectionSearch });
 export const accountRoute = createRoute({ getParentRoute: () => appRoute, path: "/account", component: () => <SettingsScreen page="account" />, validateSearch: sectionSearch, beforeLoad: async () => {
   const session = await authClient.getSession();

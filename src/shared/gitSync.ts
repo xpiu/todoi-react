@@ -18,7 +18,8 @@ export const repoPath = z
   .refine((p) => /\.(md|markdown|json|ya?ml)$/i.test(p), "End the file name in .md, .json or .yaml");
 const token = z.string().trim().min(20, "Paste the whole token").max(400);
 
-export const gitCheckSchema = z.object({ token, owner, repo, branch, path: repoPath });
+/** Without a token, the connection goes through the GitHub App the person linked with "Continue with GitHub". */
+export const gitCheckSchema = z.object({ token: token.optional(), owner, repo, branch, path: repoPath });
 export const gitConnectSchema = gitCheckSchema
   .extend({
     format: z.enum(FILE_FORMATS),
@@ -62,6 +63,8 @@ export interface GitConnectionView {
   path: string;
   format: FileFormat;
   tokenHint: string;
+  /** How it reaches GitHub: the GitHub App's installation, or a pasted token */
+  via: "app" | "token";
   state: "ok" | "conflict" | "error";
   lastError: string | null;
   lastSyncedAt: string | null;
@@ -75,6 +78,30 @@ export interface GitConnectionView {
   places: Record<string, string>;
   runs: GitRunView[];
 }
+
+/** A repository the person can pick: the GitHub App is installed on it and they can reach it themselves. */
+export interface GitHubRepoView {
+  fullName: string;
+  defaultBranch: string;
+  private: boolean;
+  /** False: they can read it on GitHub but not write, so it can't be connected */
+  canPush: boolean;
+}
+/** The person's link to GitHub through the app, for the connect dialog. */
+export interface GitHubLinkView {
+  /** False: this server has no GitHub App; connecting takes a token */
+  app: boolean;
+  /** Their GitHub name once linked */
+  login: string | null;
+  repos: GitHubRepoView[];
+  /** There are more repositories than listed */
+  more: boolean;
+  /** Where the app gets more repositories, on GitHub */
+  manageUrl: string | null;
+}
+/** How a round trip to GitHub ended, carried back in `?github=`. */
+export const GITHUB_RETURNS = ["linked", "requested", "none", "denied", "expired", "failed"] as const;
+export type GitHubReturn = (typeof GITHUB_RETURNS)[number];
 
 /** "acme/plans", "github.com/acme/plans" or a full URL (with .git, /tree/branch/…) → owner, repo and what else it names. */
 export function parseRepoInput(input: string): { owner: string; repo: string; branch?: string; path?: string } | null {

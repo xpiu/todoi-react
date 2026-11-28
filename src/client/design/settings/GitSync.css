@@ -27,6 +27,22 @@
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+  /* The same link as a button (Use a token instead, Switch account). */
+  button.td-git-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+  }
+  button.td-git-link:focus-visible {
+    outline: 2px solid var(--focus-ring, var(--ink-900));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .td-dialog-foot-lead .td-git-link {
+    color: inherit;
+  }
 
   /* Conflict dialog: one block per conflict — what changed, then the three versions, then the choice. */
   .td-git-conflicts {

@@ -11,7 +11,7 @@
 import { and, count, eq, inArray, like, ne, or, sql } from "drizzle-orm";
 
 import { afterCommit, db, type Tx } from "../db";
-import { accounts, apiTokens, attachments, groups, itemAssignees, items, itemWatchers, lists, members, operationReceipts, passkeys, projects, savedViews, sessions, uploadCleanup, users, verifications } from "../db/schema";
+import { accounts, apiTokens, attachments, githubAccounts, groups, itemAssignees, items, itemWatchers, lists, members, operationReceipts, passkeys, projects, savedViews, sessions, uploadCleanup, users, verifications } from "../db/schema";
 import { ApiFailure } from "../errors";
 import { logActivity } from "./activity";
 import { avatarKey } from "./avatars";
@@ -102,6 +102,8 @@ export async function deleteAccount(userId: string): Promise<{ removed: boolean 
 
     // Every way back in, and what it left behind.
     await tx.delete(apiTokens).where(eq(apiTokens.userId, userId));
+    // Their link to GitHub (a sealed app token) goes too; connections they made keep syncing on the app's installation.
+    await tx.delete(githubAccounts).where(eq(githubAccounts.userId, userId));
     await tx.delete(sessions).where(eq(sessions.userId, userId));
     await tx.delete(accounts).where(eq(accounts.userId, userId));
     await tx.delete(passkeys).where(eq(passkeys.userId, userId));

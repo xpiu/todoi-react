@@ -3,7 +3,7 @@
 // these calls never go through the offline queue. After a sync that changed todoi, project data refreshes.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { GitCheckInput, GitConnectInput, GitConnectionView, GitRunView } from "../../shared/gitSync";
+import type { GitCheckInput, GitConnectInput, GitConnectionView, GitHubLinkView, GitRunView } from "../../shared/gitSync";
 import { api, unwrap } from "./api";
 import { useProjectMutations } from "./projects";
 
@@ -18,7 +18,18 @@ export const useGitConnection = (projectId: string | null | undefined) =>
 
 export const useGitConnections = (enabled = true) =>
   // Pushes to GitHub sync on the server by themselves: refresh what Settings shows while it is open.
-  useQuery({ queryKey: ["git"], queryFn: ({ signal }) => api.api.git.$get(undefined, { init: { signal } }).then((r) => unwrap<{ connections: GitConnectionView[] }>(r)).then((r) => r.connections), enabled, refetchInterval: 15_000 });
+  useQuery({ queryKey: ["git"], queryFn: ({ signal }) => api.api.git.$get(undefined, { init: { signal } }).then((r) => unwrap<{ connections: GitConnectionView[]; github: Pick<GitHubLinkView, "app" | "login"> }>(r)), enabled, refetchInterval: 15_000 });
+
+/**
+ * The person's link to GitHub through the GitHub App, and the repositories they can pick. Asked only while
+ * the connect dialog is open, and again when the window regains focus: that is how a repository added on
+ * GitHub in another tab shows up.
+ */
+export const useGitHubLink = (enabled: boolean) =>
+  useQuery({ queryKey: ["git", "github"], queryFn: ({ signal }) => api.api.git.github.$get(undefined, { init: { signal } }).then((r) => unwrap<GitHubLinkView>(r)), enabled, refetchOnWindowFocus: "always", retry: false });
+
+/** Leave for GitHub to authorize (and install) the app; the server brings the browser back to `next`. A full navigation: the route redirects off-site. */
+export const continueWithGitHub = (next: string) => window.location.assign(`/api/git/github/start?next=${encodeURIComponent(next)}`);
 
 export function useGitMutations() {
   const qc = useQueryClient();
@@ -46,5 +57,6 @@ export function useGitMutations() {
     onSuccess: (_r, v) => settle(v.projectId),
   });
   const disconnect = useMutation({ mutationFn: ({ projectId }: { projectId: string }) => api.api.projects[":id"].git.$delete({ param: { id: projectId } }).then((r) => unwrap<void>(r)), onSuccess: () => qc.invalidateQueries({ queryKey: ["git"] }) });
-  return { check, connect, update, sync, undo, disconnect };
+  const unlinkGitHub = useMutation({ mutationFn: () => api.api.git.github.$delete().then((r) => unwrap<void>(r)), onSuccess: () => qc.invalidateQueries({ queryKey: ["git", "github"] }) });
+  return { check, connect, update, sync, undo, disconnect, unlinkGitHub };
 }
