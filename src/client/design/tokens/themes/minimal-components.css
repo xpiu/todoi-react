@@ -96,7 +96,7 @@ html[data-theme="minimal"] .td-sidebar-rowwrap[data-sb-insert="after"]::after{bo
 html[data-theme="minimal"] .td-sidebar-group[data-sb-insert="before"]::after,html[data-theme="minimal"] .td-sidebar-nav>.td-sidebar-rowwrap:first-child[data-sb-insert="before"]::after{top:-6px}
 html[data-theme="minimal"] .td-sidebar-group[data-sb-insert="after"]::after{bottom:-6px}
 html[data-theme="minimal"] .td-sidebar-head[data-sb-drop="true"]{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-sidebar-rename{outline:none;box-shadow:0 1px 0 var(--ink-900);border-radius:0;background:none;padding:0;margin:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-sidebar-rename{outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-sidebar-drophint{width:196px!important;padding:8px 24px;color:var(--ink-400)}
 /* ── Board: columns in a 24px gutter, no list surface; the list name sits over the same hairline that ends every row */
 /* 16px under the columns so the last row clears the horizontal scrollbar, which is thin like the column ones */
@@ -703,7 +703,6 @@ html[data-theme="minimal"] .td-filter-menu-row>svg{stroke:currentColor!important
 /* No trigger marker in Minimal: the chip rows under the toolbar are the indicator */
 html[data-theme="minimal"] .td-subnav-dot{display:none}
 html[data-theme="minimal"] .td-filter-menu-count{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
-html[data-theme="minimal"] .td-group-options{padding:6px 0}
 html[data-theme="minimal"] .td-sort-menu-hint{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sort-menu-direction{font:400 11px/16px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-members-menu-title{font:500 13px/20px var(--font-ui)}
