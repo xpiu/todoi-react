@@ -96,15 +96,20 @@
       background: transparent;
     }
   }
+  /* A page's name over its sections: the small-caps section label the menus use (SortMenu.css), so it reads as a group title and never as one more row */
   .td-settings-navhead {
-    font: var(--type-small);
-    font-weight: var(--weight-medium);
+    font: var(--weight-semibold) 11px / 16px var(--font-ui);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--chrome-text-dim);
     padding: 0 var(--sp-2);
     height: 24px;
     display: flex;
     align-items: center;
     margin-top: var(--sp-2);
+  }
+  .td-settings-navpage + .td-settings-navpage > .td-settings-navhead {
+    margin-top: var(--sp-5);
   }
   .td-settings-navrow {
     display: flex;
@@ -382,7 +387,8 @@
       padding: 0 var(--sp-5) var(--sp-1);
       scrollbar-width: none;
     }
-    .td-settings-navhead {
+    .td-settings-navhead,
+    .td-settings-navpage + .td-settings-navpage > .td-settings-navhead {
       flex: none;
       margin: 0 var(--sp-1) 0 0;
       height: 34px;
