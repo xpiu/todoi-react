@@ -1,5 +1,11 @@
 # To-do
 
+- add cloudflare r2 for media files and imgs and attachments
+  created: 2026-11-28
+  > @agent: Added at Charlie's request. Reference: https://www.cloudflare.com/products/r2/
+  > @agent: Proposed conservative starting limits per Todoi account (not Cloudflare account): 100 MB total storage, 10 MB per file, 100 stored files, and 20 uploads per day; count images and generated variants toward the same storage quota. These are suggested application limits, not Cloudflare limits.
+  > @agent: Enforce quotas server-side before upload with concurrency-safe reservations, require authenticated uploads and authorized downloads, and clean up deleted/orphaned objects. Show usage and clear limit errors; keep limits configurable and monitor aggregate R2 storage/request costs across all accounts.
+
 - we need to consider whether our domain construction rules in the old s.todoi.com are better that the recent domain construction ones at staging.todoi.com (e.g. https://staging.todoi.com/p/7SpNP1vU6eJE33e-_VnC0?v=board ) , ref. old docs .tmp/20261126_tasks.md & .tmp/20261125_report.html 
 created: 2026-11-27, prio: high
 - Develop an MVP that works locally
