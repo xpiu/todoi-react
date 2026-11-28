@@ -269,16 +269,19 @@
   .td-sidebar-rowwrap[data-current="true"] .td-sidebar-add:hover {
     background: var(--n-a06);
   }
+  /* Renaming in place: the field is one text line high and its side padding is pulled back out, so the name keeps the label's position; the frame is drawn outside the box */
   .td-sidebar-rename {
     flex: 1;
     min-width: 0;
-    height: 24px;
+    height: 1lh;
     border: none;
     outline: 1px solid var(--ink-400);
-    outline-offset: 0;
+    outline-offset: 2px;
     border-radius: var(--radius-xs);
     background: var(--chrome-selected);
+    box-shadow: 0 0 0 2px var(--chrome-selected);
     padding: 0 var(--sp-1);
+    margin: 0 calc(-1 * var(--sp-1));
     font: var(--type-body);
     color: var(--chrome-selected-text);
   }
