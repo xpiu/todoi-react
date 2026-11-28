@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { trackAccounts, projectIdOnPage } from "./helpers";
+import { expectScope, trackAccounts, projectIdOnPage, useScope } from "./helpers";
 import { apiOffline } from "./sync-helpers";
 
 // Settings › General and › Notifications change what they describe. Each test runs in a fresh guest
@@ -100,19 +100,26 @@ test("smart dates off keeps the words; default priority applies; hidden complete
   await expect(page.getByText("Call the broker due fri")).toBeVisible();
 });
 
-test("the Inbox badge follows its setting, and unavailable controls say so", async ({ page }) => {
+test("unread items are marked inside the Inbox, and unavailable settings say so", async ({ page }) => {
+  await useScope(page, "minimal-light");
   await guestProject(page);
   const id = nanoid();
   expect((await page.request.post("/api/items", { data: { id, title: "Unread thing" } })).status()).toBe(201);
-  await page.request.patch(`/api/items/${id}`, { data: { unread: true } });
+  expect((await page.request.patch(`/api/items/${id}`, { data: { unread: true } })).ok()).toBe(true);
+  await page.goto("/groups");
+  await expectScope(page, "minimal-light");
+  const inboxLink = page.getByRole("complementary", { name: "Sidebar" }).getByRole("button", { name: /^Inbox — Open the Inbox/ });
+  await expect(inboxLink).toBeVisible();
+  await expect(inboxLink.locator(".td-sidebar-dot")).toHaveCount(0);
+  await inboxLink.click();
+  const unreadRow = page.locator(".td-list-row").filter({ hasText: "Unread thing" });
+  await expect(unreadRow).toHaveClass(/\bis-unread\b/);
+  await page.getByRole("button", { name: "Mark all read" }).click();
+  await expect(unreadRow).not.toHaveClass(/\bis-unread\b/);
+
   await page.goto("/settings?s=notifications");
-  const sidebar = page.locator(".td-sidebar");
-  const dot = sidebar.locator(".td-sidebar-dot");
-  await expect(sidebar.getByRole("button", { name: /Inbox.*1 unread/ })).toBeVisible();
-  await expect(dot).toBeVisible();
-  await toggle(page, "Unread count on Inbox", false);
-  await expect(dot).toHaveCount(0);
-  await expect(sidebar.getByRole("button", { name: /Inbox.*unread/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open Inbox", exact: true })).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Unread count on Inbox" })).toHaveCount(0);
   await expect(page.getByText("todoi doesn't send release news yet")).toBeVisible();
   // A guest has no address to email: the Email notifications group is for accounts (account-email.spec.ts).
   await expect(page.getByRole("region", { name: "Email notifications" })).toHaveCount(0);

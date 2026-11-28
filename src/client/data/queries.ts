@@ -14,7 +14,6 @@ export const keys = {
   itemDetails: (id: string) => ["item", id, "details"] as const,
   itemLocation: (id: string) => ["item", id, "location"] as const,
   labels: (projectId: string) => ["labels", projectId] as const,
-  inboxUnread: ["inbox", "unread"] as const,
   activity: (projectId: string) => ["activity", projectId] as const,
   search: (q: string) => ["search", q] as const,
   // Under "search", so item changes refresh them too (ITEM_DEPENDENTS); not kept for offline use (sync.ts queryPath).
@@ -97,12 +96,6 @@ export const activityQuery = (projectId: string) =>
     enabled: !!projectId,
   });
 
-export const inboxUnreadQuery = () =>
-  queryOptions({
-    queryKey: keys.inboxUnread,
-    queryFn: ({ signal }) => api.api.inbox.unread.$get(undefined, { init: { signal } }).then((r) => unwrap<{ unread: number }>(r)),
-  });
-
 /** Items across the viewer's projects and Inbox by title or key (bounded by the server). */
 export const searchQuery = (q: string) =>
   queryOptions({
@@ -150,5 +143,4 @@ export const useProjectItems = (projectId: string) => useQuery(projectItemsQuery
 export const useListItems = (listId?: string) => useQuery(listItemsQuery(listId));
 export const useLabels = (projectId: string) => useQuery(labelsQuery(projectId));
 export const useItemDetails = (id: string) => useQuery(itemDetailsQuery(id));
-export const useInboxUnread = () => useQuery(inboxUnreadQuery());
 export const useActivity = (projectId: string) => useQuery(activityQuery(projectId));

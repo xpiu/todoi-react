@@ -8,7 +8,7 @@ import { movesOnCheck } from "../../shared/completion";
 import { newId, useCreateList } from "../data/mutations";
 import { useQuery } from "@tanstack/react-query";
 
-import { listItemsQuery, projectsOf, useGroups, useInboxUnread, useLabels, useProject, useProjectItems } from "../data/queries";
+import { listItemsQuery, projectsOf, useGroups, useLabels, useProject, useProjectItems } from "../data/queries";
 import { explain, type Item, type SearchHit } from "../data/api";
 import { useThemePreference } from "../design/core/appearance";
 import { SHORTCUTS } from "../design/core/shortcuts";
@@ -20,7 +20,7 @@ import { FilterBar } from "../design/navigation/FilterBar";
 import { FilterMenu } from "../design/navigation/FilterMenu";
 import { GroupOptions } from "../design/navigation/GroupOptions";
 import { MembersMenu } from "../design/navigation/MembersMenu";
-import { DEFAULT_NAV, Sidebar } from "../design/navigation/Sidebar";
+import { Sidebar } from "../design/navigation/Sidebar";
 import { SortBar } from "../design/navigation/SortBar";
 import { SortMenu } from "../design/navigation/SortMenu";
 import { SubNavbar, type SubNavbarMenu } from "../design/navigation/SubNavbar";
@@ -77,7 +77,6 @@ export function AppShell() {
   const sidebarLeft = useThemePreference("sidebarLeft");
   const suggestShortcuts = useThemePreference("suggestShortcuts");
   const groups = useGroups();
-  const unread = useInboxUnread();
   const { match: projectMatch, projectId, slug: projectSlug } = useRouteProject();
   const goToProject = useProjectNavigate();
   const project = useProject(projectId ?? "");
@@ -91,7 +90,6 @@ export function AppShell() {
   usePrefsSync(!!user);
   useFreshness(!!user);
   const today = useToday();
-  const inboxBadge = usePrefs((s) => s.inboxBadge);
   const conventions = useDateConventionsKey();
   const save = useSaveState();
   useLeaveGuard(save.unsafeToLeave);
@@ -455,7 +453,6 @@ export function AppShell() {
   ) : null;
 
   const sidebarGroups = sidebarOrder.rail;
-  const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: inboxBadge ? (unread.data?.unread ?? 0) : 0 } : n));
   const prefix = project.data?.keyPrefix ?? "";
   const hitSource = (h: SearchHit) => ({ id: h.id, projectId: h.projectId, title: h.title, itemId: hitKey(h), listName: hitContext(h, projectId), done: h.done });
   // Before a query the palette lists this project's items; a query searches everything the viewer can open.
@@ -527,7 +524,6 @@ export function AppShell() {
         </main>
         <Sidebar
           groups={sidebarGroups}
-          navItems={navItems}
           activeId={activeId}
           collapsed={!sidebarOpen}
           modal={!vp.desktop}

@@ -55,8 +55,6 @@ export interface SidebarNavItem {
   tip?: string;
   /** Longer description, aria only */
   tooltip?: string;
-  /** Unread count: renders the dot on the icon */
-  unread?: number;
   count?: number;
 }
 
@@ -389,11 +387,11 @@ export function Sidebar({ groups = [], navItems = DEFAULT_NAV, activeId, onSelec
   const navRow = (it: SidebarNavItem) => {
     const current = it.id === activeId;
     const hasAdd = !!(it.addable && onNavAdd);
+    const label = it.count == null ? it.label : `${it.label} ${it.count}`;
     const btn = (
-      <button type="button" className={"td-sidebar-row" + (it.tip ? " td-tooltip" : "")} tabIndex={collapsed ? -1 : undefined} {...keyProps("top", it.id)} data-tip={it.tip} aria-label={it.tooltip || it.unread ? [it.count != null ? `${it.label} ${it.count}` : it.label, it.unread ? `${it.unread} unread` : null, it.tooltip].filter(Boolean).join(" — ") : undefined} aria-current={current ? "true" : undefined} onClick={() => onSelect?.(it.id)}>
-        <span className="td-sidebar-iconwrap" data-unread={it.unread ? "true" : undefined}>
+      <button type="button" className={"td-sidebar-row" + (it.tip ? " td-tooltip" : "")} tabIndex={collapsed ? -1 : undefined} {...keyProps("top", it.id)} data-tip={it.tip} aria-label={it.tooltip ? `${label} — ${it.tooltip}` : undefined} aria-current={current ? "true" : undefined} onClick={() => onSelect?.(it.id)}>
+        <span className="td-sidebar-iconwrap">
           <Icon name={it.icon} size={16} />
-          {it.unread ? <span className="td-sidebar-dot" aria-hidden="true" /> : null}
         </span>
         <span className="td-sidebar-label">{it.label}</span>
         {/* The space keeps "Inbox 7" two words in the name check (the flex row drops it visually). */}

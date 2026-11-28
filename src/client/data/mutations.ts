@@ -26,7 +26,7 @@ export const scopeOf = (projectId: string | null): ItemsScope => (projectId ? { 
  * the sidebar and Projects counts, Archive and Trash, the Inbox badge, item details, activity and search.
  * Caches on screen refetch at once; the rest are only marked stale and refetch when shown.
  */
-export const ITEM_DEPENDENTS: readonly QueryKey[] = [keys.groups, ["archive"], keys.inboxUnread, ["item"], ["activity"], ["search"]];
+export const ITEM_DEPENDENTS: readonly QueryKey[] = [keys.groups, ["archive"], ["item"], ["activity"], ["search"]];
 
 /** Mark these queries stale (those on screen refetch); resolves once the refetches are done. */
 export const invalidate = (qc: QueryClient, queryKeys: readonly QueryKey[]) => Promise.all(queryKeys.map((queryKey) => qc.invalidateQueries({ queryKey })));

@@ -108,9 +108,6 @@ export const DropInboxItem: Story = {
     await waitFor(() => expect(canvas.queryByText("Drop on a project to file it")).not.toBeInTheDocument());
   },
 };
-export const Unread: Story = {
-  args: { activeId: "inbox", navItems: DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: 3, count: 7 } : n)) },
-};
 export const DockedLeft: Story = {
   args: { side: "left" },
   decorators: [(Story) => <div style={{ display: "flex", height: "100vh", background: "var(--chrome-canvas)" }}><Story /><div style={{ flex: 1 }} /></div>],

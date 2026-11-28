@@ -666,11 +666,6 @@ html[data-theme="minimal"] .td-popover.td-popover-flush:not([data-sheet]){paddin
 /* Appearance menu: a 14px edge like the menus beside it. The app pads the inner .td-appearance-menu (the kit pads the popover), so the popover itself carries none */
 html[data-theme="minimal"] .td-popover.td-appearance-popover{padding:0}
 html[data-theme="minimal"] .td-appearance-menu{padding:14px}
-/* Keep the unread indicator visible when Minimal hides navigation icons (app-only: the "Unread count on Inbox" setting); it gives way to the row's + while the row is hovered or focused, so the two never overlap */
-html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"]{display:inline-flex!important;order:1;width:7px;height:7px;margin-left:auto}
-html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"] svg{display:none!important}
-html[data-theme="minimal"] .td-sidebar-iconwrap[data-unread="true"] .td-sidebar-dot{position:static;display:block;flex-shrink:0}
-html[data-theme="minimal"] .td-sidebar-rowwrap:is(:hover,:focus-within):has(.td-sidebar-add) .td-sidebar-iconwrap[data-unread="true"]{visibility:hidden}
 html[data-theme="minimal"] .td-menu,html[data-theme="minimal"] .td-select-list,html[data-theme="minimal"] .td-repeat-picker-list,html[data-theme="minimal"] .td-picker-list,html[data-theme="minimal"] .td-item-picker-list{gap:0}
 html[data-theme="minimal"] .td-menu-item,html[data-theme="minimal"] .td-picker-row,html[data-theme="minimal"] .td-item-picker-row,html[data-theme="minimal"] .td-user-menu-item,html[data-theme="minimal"] .td-user-menu-id{border-radius:0;padding:6px 14px;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-menu-item:hover,html[data-theme="minimal"] .td-menu-item:focus-visible,html[data-theme="minimal"] .td-menu-item:active,html[data-theme="minimal"] .td-picker-row:hover,html[data-theme="minimal"] .td-picker-row:focus-visible,html[data-theme="minimal"] .td-user-menu-item:hover,html[data-theme="minimal"] .td-user-menu-item:focus-visible,html[data-theme="minimal"] button.td-user-menu-id:hover{background:var(--chrome-hover);color:var(--ink-900);box-shadow:none}

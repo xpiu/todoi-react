@@ -61,7 +61,6 @@ export function InboxScreen() {
     mutationFn: () => api.api.inbox["mark-all-read"].$post().then((r) => unwrap<{ marked: number }>(r)),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.items(INBOX_SCOPE) });
-      void qc.invalidateQueries({ queryKey: keys.inboxUnread });
     },
   });
   const markRead = (it: Item) => {

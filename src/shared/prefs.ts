@@ -24,6 +24,7 @@ export const prefsSchema = z.object({
   notifyMentions: z.boolean(),
   notifyAssignments: z.boolean(),
   notifyWatched: z.boolean(),
+  /** Legacy sidebar preference accepted for older clients and their queued edits. */
   inboxBadge: z.boolean(),
   /** Email as well as the Inbox, per kind (Settings › Notifications › Email notifications), to a confirmed address only; Comments covers watched items */
   emailMentions: z.boolean(),
