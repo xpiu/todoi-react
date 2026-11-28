@@ -91,7 +91,8 @@
   .td-qa-form[inert] {
     visibility: hidden;
   }
-  /* The confirmation, in the form's place: the Done mark, one title, one line. Rounded here: the circle
+  /* The confirmation, in the form's place: the Done mark, one title, one line, in the panel's own type
+     (its title's role, then body). Rounded here: the circle
      checkbox's green disc with its tick (Checkbox.css), large and centred; the disc settles, the tick is
      drawn, the words follow. Minimal's ledger entry is in tokens/themes/minimal-components.css. */
   .td-qa-sent {
@@ -125,7 +126,7 @@
   }
   .td-qa-sent-title {
     margin: 0;
-    font: var(--type-page-title);
+    font: var(--type-section);
     color: var(--ink-900);
     animation: td-qa-sent-text var(--duration-overlay) var(--ease-standard) var(--duration-fast) backwards;
   }
