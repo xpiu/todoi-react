@@ -2,8 +2,9 @@
 // neutral style for every recipient, tables for layout, every style inline, a hidden preheader and a
 // <style> block that only adds dark mode and phone padding. Each render fills the variables (escaped)
 // and returns the subject, the HTML and a plain-text part with the same copy in the same order as
-// Design's project-invite.txt. The sample values in ./samples reproduce Design's files byte for byte
-// (templates.test.ts). Pure: no environment, no I/O.
+// Design's project-invite.txt. The sample values in ./samples reproduce the files in ./samples byte for byte
+// (templates.test.ts); those are ahead of Design's by the Contact link, the wrapping fallback link and the
+// preheader filler, which Design takes over at the next sync. Pure: no environment, no I/O.
 import type { MemberRole } from "../../shared/enums";
 import { EMAIL_LINK_HOURS, linkSpan, RESET_LINK_MINUTES } from "../../shared/accountLinks";
 
@@ -16,7 +17,8 @@ export interface RenderedEmail {
 /** Literal hex values: an email can't read the app's tokens. */
 const FONT = "Helvetica,Arial,sans-serif";
 const SITE = "https://todoi.com";
-const HELP = "https://todoi.com/help";
+/** The marketing site's contact page: the footer's way to reach a person (the app's failed-load screen links there too). */
+const CONTACT = "https://todoi.com/contact";
 const TEXT_WIDTH = 78;
 
 const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -24,12 +26,15 @@ export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ESCAPES[c]
 /** Names and addresses are one line: no breaks smuggled into a subject or a sentence. */
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 
-/** Copy is trusted text; `v` marks a variable (escaped in HTML), `b` a bold variable. */
-type Piece = string | { v: string; bold?: boolean };
+/** Copy is trusted text; `v` marks a variable (escaped in HTML), `b` a bold variable, `a` a link (its address follows it in the text part). */
+type Piece = string | { v: string; bold?: boolean; href?: string };
 const v = (value: string): Piece => ({ v: oneLine(value) });
 const b = (value: string): Piece => ({ v: oneLine(value), bold: true });
-const html = (pieces: Piece[]) => pieces.map((p) => (typeof p === "string" ? p : p.bold ? `<b>${escapeHtml(p.v)}</b>` : escapeHtml(p.v))).join("");
-const plain = (pieces: Piece[]) => pieces.map((p) => (typeof p === "string" ? p : p.v)).join("");
+const a = (label: string, href: string): Piece => ({ v: label, href });
+const LINK_STYLE = "color:#111111;text-decoration:underline;";
+const htmlPiece = (p: Exclude<Piece, string>) => (p.href ? `<a class="link" href="${escapeHtml(p.href)}" style="${LINK_STYLE}">${escapeHtml(p.v)}</a>` : p.bold ? `<b>${escapeHtml(p.v)}</b>` : escapeHtml(p.v));
+const html = (pieces: Piece[]) => pieces.map((p) => (typeof p === "string" ? p : htmlPiece(p))).join("");
+const plain = (pieces: Piece[]) => pieces.map((p) => (typeof p === "string" ? p : p.href ? `${p.v} (${p.href})` : p.v)).join("");
 
 interface EmailContent {
   /** <title> and the subject line */
@@ -46,14 +51,15 @@ interface EmailContent {
   /** When the link stops working; notification emails link to the item and leave it out */
   expiry?: Piece[];
   ignore: Piece[];
-  /** Why the email came, before the todoi.com · Help line */
+  /** Why the email came, before the todoi.com · Contact line */
   footer: Piece[];
 }
 
 const P_INK = `<p class="ink" style="margin:0 0 16px;font:16px/24px ${FONT};color:#111111;mso-line-height-rule:exactly;">`;
 const P_DIM = `<p class="dim" style="margin:0 0 12px;font:14px/20px ${FONT};color:#55555a;mso-line-height-rule:exactly;">`;
-const LINK_STYLE = "color:#111111;text-decoration:underline;";
 const TABLE = `role="presentation" cellpadding="0" cellspacing="0" border="0"`;
+/** Invisible filler after the preheader, so the inbox preview stops there instead of running on into "todoi" and the heading. */
+const PREHEADER_PAD = "&#847;&zwnj;&nbsp;".repeat(90);
 
 function renderHtml(c: EmailContent): string {
   const url = escapeHtml(c.url);
@@ -66,7 +72,7 @@ function renderHtml(c: EmailContent): string {
     `<table ${TABLE} style="margin:8px 0 24px;"><tr><td class="btn" bgcolor="#111111" style="background:#111111;border-radius:2px;"><a href="${url}" style="display:block;padding:12px 24px;font:bold 16px/24px ${FONT};color:#ffffff;text-decoration:none;mso-line-height-rule:exactly;">${c.button}</a></td></tr></table>`,
     c.expiry ? `${P_INK}${html(c.expiry)}</p>` : "",
     `<table ${TABLE} width="100%"><tr><td class="rule" style="border-top:1px solid #d9d9d6;font-size:0;line-height:0;height:20px;">&nbsp;</td></tr></table>`,
-    `${P_DIM}If the button doesn't work, copy this link into your browser:<br><a class="link" href="${url}" style="${LINK_STYLE}">${url}</a></p>`,
+    `${P_DIM}If the button doesn't work, copy this link into your browser:<br><a class="link" href="${url}" style="${LINK_STYLE}word-break:break-all;">${url}</a></p>`,
     `${P_DIM}${html(c.ignore)}</p>`,
   ].join("");
   return `<!doctype html>
@@ -83,7 +89,7 @@ function renderHtml(c: EmailContent): string {
 </style>
 </head>
 <body class="bg" style="margin:0;padding:0;background:#f3f3f1;">
-<span style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">${html(c.preheader)}</span>
+<span style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">${html(c.preheader)}${PREHEADER_PAD}</span>
 <table ${TABLE} width="100%" class="bg" bgcolor="#f3f3f1" style="background:#f3f3f1;">
 <tr><td align="center" style="padding:32px 12px;">
 <table ${TABLE} width="600" class="wrap" style="width:600px;max-width:600px;">
@@ -94,7 +100,7 @@ function renderHtml(c: EmailContent): string {
 ${body}
 </td></tr></table>
 </td></tr>
-<tr><td class="pad dim" style="padding:16px 32px 0;font:13px/20px ${FONT};color:#55555a;mso-line-height-rule:exactly;">${html(c.footer)}<br>todoi &middot; <a class="link" href="${SITE}" style="${LINK_STYLE}">todoi.com</a> &middot; <a class="link" href="${HELP}" style="${LINK_STYLE}">Help</a></td></tr>
+<tr><td class="pad dim" style="padding:16px 32px 0;font:13px/20px ${FONT};color:#55555a;mso-line-height-rule:exactly;">${html(c.footer)}<br>todoi &middot; <a class="link" href="${SITE}" style="${LINK_STYLE}">todoi.com</a> &middot; <a class="link" href="${CONTACT}" style="${LINK_STYLE}">Contact</a></td></tr>
 </table>
 </td></tr>
 </table>
@@ -125,7 +131,7 @@ function renderText(c: EmailContent): string {
     `${c.linkLead}\n${c.url}`,
     ...(c.expiry ? [wrapText(plain(c.expiry))] : []),
     wrapText(plain(c.ignore)),
-    `--\n${wrapText(plain(c.footer))}\ntodoi - ${SITE} - Help: ${HELP}`,
+    `--\n${wrapText(plain(c.footer))}\ntodoi - ${SITE} - Contact: ${CONTACT}`,
   ];
   return `${blocks.join("\n\n")}\n`;
 }
@@ -242,6 +248,8 @@ export interface NotificationEmailInput {
   excerpt?: string | null;
   /** The item, opened over its project */
   url: string;
+  /** Settings › Notifications in the app, where the kind's switch is */
+  settingsUrl: string;
 }
 
 const EXCERPT_CHARS = 400;
@@ -251,7 +259,7 @@ const excerptOf = (text: string) => {
 };
 
 /** The email copy of an Inbox notification (services/notifications.ts): the same subject as the Inbox item's title. */
-export function notificationEmail({ kind, actorName, itemKey, itemTitle, projectName, excerpt, url }: NotificationEmailInput): RenderedEmail {
+export function notificationEmail({ kind, actorName, itemKey, itemTitle, projectName, excerpt, url, settingsUrl }: NotificationEmailInput): RenderedEmail {
   const item = itemKey ? `${itemKey}: ${itemTitle}` : itemTitle;
   const quote = kind !== "assignment" && excerpt?.trim() ? { message: excerptOf(excerpt), by: actorName } : undefined;
   const what: Record<NotificationKind, { subject: Piece[]; heading: Piece[]; intro: Piece[]; reason: string }> = {
@@ -269,7 +277,7 @@ export function notificationEmail({ kind, actorName, itemKey, itemTitle, project
     button: "Open item",
     linkLead: "Open the item:",
     url,
-    ignore: [`Don't want these emails? Turn off ${SWITCHES[kind]} under Settings › Notifications › Email notifications. The item is in your todoi Inbox too.`],
+    ignore: [`Don't want these emails? Turn off ${SWITCHES[kind]} under `, a("Settings › Notifications › Email notifications", settingsUrl), ". The item is in your todoi Inbox too."],
     footer: [`You got this email because ${w.reason} and your ${SWITCHES[kind]} emails are on.`],
   });
 }

@@ -44,7 +44,7 @@ describe("account emails", () => {
         "--",
         "You got this email because someone asked to reset the password for this",
         "address.",
-        "todoi - https://todoi.com - Help: https://todoi.com/help",
+        "todoi - https://todoi.com - Contact: https://todoi.com/contact",
         "",
       ].join("\n"),
     );
@@ -92,14 +92,15 @@ describe("text helpers", () => {
 });
 
 describe("notification emails (R10)", () => {
-  const base = { actorName: "Sam Verhoeven", itemKey: "WEB-7", itemTitle: "Order blades", projectName: "Website", url: "https://todoi.com/epd5vjxy38?item=WEB-7" };
+  const base = { actorName: "Sam Verhoeven", itemKey: "WEB-7", itemTitle: "Order blades", projectName: "Website", url: "https://todoi.com/epd5vjxy38?item=WEB-7", settingsUrl: "https://todoi.com/settings?s=notifications" };
 
   it("use the Inbox item's title as the subject and link to the item", () => {
     const assigned = notificationEmail({ ...base, kind: "assignment" });
     expect(assigned.subject).toBe("Sam Verhoeven assigned WEB-7 to you: Order blades");
     expect(assigned.text).toContain("Sam Verhoeven assigned WEB-7: Order blades to you in Website.");
     expect(assigned.text).toContain("Open the item:\nhttps://todoi.com/epd5vjxy38?item=WEB-7");
-    expect(assigned.text.replace(/\s+/g, " ")).toContain("Turn off Assignments under Settings › Notifications › Email notifications.");
+    expect(assigned.text.replace(/\s+/g, " ")).toContain("Turn off Assignments under Settings › Notifications › Email notifications (https://todoi.com/settings?s=notifications).");
+    expect(assigned.html).toContain('<a class="link" href="https://todoi.com/settings?s=notifications" style="color:#111111;text-decoration:underline;">Settings › Notifications › Email notifications</a>');
     expect(assigned.html).toContain('href="https://todoi.com/epd5vjxy38?item=WEB-7"');
     expect(notificationEmail({ ...base, itemKey: null, kind: "assignment" }).subject).toBe("Sam Verhoeven assigned an item to you: Order blades");
     expect(notificationEmail({ ...base, kind: "mention", excerpt: "x" }).subject).toBe("Sam Verhoeven mentioned you on WEB-7: Order blades");
@@ -115,6 +116,13 @@ describe("notification emails (R10)", () => {
     expect(mail.text).toContain("    Sam Verhoeven");
     // An assignment has no comment to quote.
     expect(notificationEmail({ ...base, kind: "assignment", excerpt: "ignored" }).text).not.toContain("ignored");
+  });
+
+  it("wrap a long link inside the card and end the inbox preview at the preheader", () => {
+    const mail = notificationEmail({ ...base, kind: "assignment" });
+    expect(mail.html).toContain('text-decoration:underline;word-break:break-all;">https://todoi.com/epd5vjxy38?item=WEB-7</a>');
+    expect(mail.html).toMatch(/Open WEB-7: Order blades in Website\.(&#847;&zwnj;&nbsp;){90}<\/span>/);
+    expect(mail.html).toContain('<a class="link" href="https://todoi.com/contact"');
   });
 
   it("put no expiry line in, unlike the account emails", () => {

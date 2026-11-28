@@ -61,7 +61,7 @@ export async function notifyPeople(kind: Kind, recipientIds: string[], actor: { 
     });
     if (prefs[EMAIL_OPT_IN[kind]] && person.emailVerified && !person.isAnonymous) {
       const to = person.email;
-      const message = notificationEmail({ kind, actorName: actor.name, itemKey: key, itemTitle: about.title, projectName: group?.projectName ?? "a project", excerpt: opts.excerpt, url: itemLink(env.APP_URL, about, group ?? null) });
+      const message = notificationEmail({ kind, actorName: actor.name, itemKey: key, itemTitle: about.title, projectName: group?.projectName ?? "a project", excerpt: opts.excerpt, url: itemLink(env.APP_URL, about, group ?? null), settingsUrl: `${env.APP_URL}/settings?s=notifications` });
       await afterCommit(() => sendEmail({ to, ...message }).catch((error: unknown) => console.error(`The ${kind} email to ${to} wasn't sent`, error)));
     }
     sent.push(person.id);
