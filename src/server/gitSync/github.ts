@@ -1,10 +1,11 @@
-// The slice of GitHub's REST API Git sync uses, with `fetch` (no SDK): who the token is, a repository,
+// The slice of GitHub's REST API Git sync uses, with `fetch` (no SDK): who the token is, a repository
+// (by name, or by id after a rename),
 // its branches, one file's contents and blob sha, writing that file against the sha it was read at, and
 // a push webhook. Every failure becomes a GitHubError with a reason the UI can explain. The base URL is
 // GITHUB_API_URL, so tests and GitHub Enterprise use the same code.
 import { env } from "../env";
 
-export type GitHubReason = "unauthorized" | "forbidden" | "rate-limited" | "not-found" | "stale" | "too-large" | "not-a-file" | "unavailable" | "invalid";
+export type GitHubReason = "unauthorized" | "forbidden" | "rate-limited" | "not-found" | "stale" | "protected" | "too-large" | "not-a-file" | "unavailable" | "invalid";
 
 export class GitHubError extends Error {
   constructor(
@@ -26,45 +27,71 @@ export interface FileRef {
   path: string;
 }
 
+export interface RepoInfo {
+  id: number;
+  owner: string;
+  name: string;
+  fullName: string;
+  defaultBranch: string;
+  private: boolean;
+  canPush: boolean;
+}
+export interface RawRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  default_branch: string;
+  private: boolean;
+  owner: { login: string };
+  permissions?: { push?: boolean };
+}
+export const repoInfo = (r: RawRepo): RepoInfo => ({ id: r.id, owner: r.owner.login, name: r.name, fullName: r.full_name, defaultBranch: r.default_branch, private: r.private, canPush: r.permissions?.push ?? false });
+
 /** Files larger than this aren't synced: a task file that size is a mistake, and it would be slow everywhere. */
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
 
 const encodePath = (path: string) => path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
 
-export function githubClient(token: string, baseUrl: string = env.GITHUB_API_URL) {
-  async function call(method: string, route: string, body?: unknown, accept = "application/vnd.github+json"): Promise<Response> {
-    let res: Response;
-    try {
-      res = await fetch(`${baseUrl.replace(/\/$/, "")}${route}`, {
-        method,
-        headers: { authorization: `Bearer ${token}`, accept, "x-github-api-version": "2022-11-28", "user-agent": "todoi.com", ...(body ? { "content-type": "application/json" } : {}) },
-        body: body ? JSON.stringify(body) : undefined,
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-    } catch (e) {
-      throw new GitHubError("unavailable", 0, `GitHub didn't answer (${(e as Error).name === "TimeoutError" ? "timed out" : "network error"})`);
-    }
-    if (res.ok) return res;
-    const text = await res.text().catch(() => "");
-    const message = (() => {
-      try {
-        return (JSON.parse(text) as { message?: string }).message ?? text;
-      } catch {
-        return text;
-      }
-    })();
-    const reset = Number(res.headers.get("x-ratelimit-reset"));
-    if ((res.status === 403 || res.status === 429) && (res.headers.get("x-ratelimit-remaining") === "0" || /rate limit/i.test(message))) {
-      throw new GitHubError("rate-limited", res.status, message, reset ? new Date(reset * 1000) : new Date(Date.now() + 60_000));
-    }
-    if (res.status === 401) throw new GitHubError("unauthorized", 401, message);
-    if (res.status === 403) throw new GitHubError("forbidden", 403, message);
-    if (res.status === 404) throw new GitHubError("not-found", 404, message);
-    if (res.status === 409 || (res.status === 422 && /sha/i.test(message))) throw new GitHubError("stale", res.status, message);
-    if (res.status >= 500) throw new GitHubError("unavailable", res.status, message);
-    throw new GitHubError("invalid", res.status, message);
+/** One request as `token` (a personal token, an installation token, a person's app token or the app's JWT); a failure is a GitHubError. */
+export async function githubRequest(token: string, method: string, route: string, body?: unknown, accept = "application/vnd.github+json", baseUrl: string = env.GITHUB_API_URL): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl.replace(/\/$/, "")}${route}`, {
+      method,
+      headers: { authorization: `Bearer ${token}`, accept, "x-github-api-version": "2022-11-28", "user-agent": "todoi.com", ...(body ? { "content-type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw new GitHubError("unavailable", 0, `GitHub didn't answer (${(e as Error).name === "TimeoutError" ? "timed out" : "network error"})`);
   }
+  if (res.ok) return res;
+  const text = await res.text().catch(() => "");
+  const message = (() => {
+    try {
+      return (JSON.parse(text) as { message?: string }).message ?? text;
+    } catch {
+      return text;
+    }
+  })();
+  // The primary limit names its reset; a secondary limit says how long to wait.
+  const reset = Number(res.headers.get("x-ratelimit-reset")), wait = Number(res.headers.get("retry-after"));
+  if ((res.status === 403 || res.status === 429) && (res.headers.get("x-ratelimit-remaining") === "0" || wait > 0 || /rate limit/i.test(message))) {
+    throw new GitHubError("rate-limited", res.status, message, wait > 0 ? new Date(Date.now() + wait * 1000) : reset ? new Date(reset * 1000) : new Date(Date.now() + 60_000));
+  }
+  // A protected branch or a ruleset refuses the commit (403, 409 or 422): no retry gets past it.
+  if (method !== "GET" && /protected branch|rule violations|required status check/i.test(message)) throw new GitHubError("protected", res.status, message);
+  if (res.status === 401) throw new GitHubError("unauthorized", 401, message);
+  if (res.status === 403) throw new GitHubError("forbidden", 403, message);
+  if (res.status === 404) throw new GitHubError("not-found", 404, message);
+  if (res.status === 409 || (res.status === 422 && /sha/i.test(message))) throw new GitHubError("stale", res.status, message);
+  if (res.status >= 500) throw new GitHubError("unavailable", res.status, message);
+  throw new GitHubError("invalid", res.status, message);
+}
+
+export function githubClient(token: string, baseUrl: string = env.GITHUB_API_URL) {
+  const call = (method: string, route: string, body?: unknown, accept?: string) => githubRequest(token, method, route, body, accept, baseUrl);
   const json = async <T>(res: Response) => (await res.json()) as T;
 
   return {
@@ -72,9 +99,17 @@ export function githubClient(token: string, baseUrl: string = env.GITHUB_API_URL
     async user(): Promise<{ login: string }> {
       return json(await call("GET", "/user"));
     },
-    async repo(owner: string, repo: string): Promise<{ fullName: string; defaultBranch: string; private: boolean; canPush: boolean }> {
-      const r = await json<{ full_name: string; default_branch: string; private: boolean; permissions?: { push?: boolean } }>(await call("GET", `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`));
-      return { fullName: r.full_name, defaultBranch: r.default_branch, private: r.private, canPush: r.permissions?.push ?? false };
+    async repo(owner: string, repo: string): Promise<RepoInfo> {
+      return repoInfo(await json(await call("GET", `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`)));
+    },
+    /** The repository by its id, which survives a rename or a transfer; null when it is gone or out of reach. */
+    async repoById(id: number): Promise<RepoInfo | null> {
+      try {
+        return repoInfo(await json(await call("GET", `/repositories/${id}`)));
+      } catch (e) {
+        if (e instanceof GitHubError && e.reason === "not-found") return null;
+        throw e;
+      }
     },
     async branchExists(owner: string, repo: string, branch: string): Promise<boolean> {
       try {

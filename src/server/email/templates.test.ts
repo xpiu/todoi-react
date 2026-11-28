@@ -113,14 +113,17 @@ describe("notification emails (R10)", () => {
     expect(mail.html).toContain("&lt;b&gt;look&lt;/b&gt;");
     expect(mail.html).not.toContain("<b>look</b>");
     expect(mail.text).toMatch(/"@flo <b>look<\/b> word[^"]*…"/);
-    expect(mail.text).toContain("    Sam Verhoeven");
+    // The sentence above the quote names the author; no name under it, and only the item is bold.
+    expect(mail.text).not.toContain("    Sam Verhoeven");
+    expect(mail.html).toContain("Sam Verhoeven mentioned you in a comment on <b>WEB-7: Order blades</b> in Website:</p>");
     // An assignment has no comment to quote.
     expect(notificationEmail({ ...base, kind: "assignment", excerpt: "ignored" }).text).not.toContain("ignored");
   });
 
   it("wrap a long link inside the card and end the inbox preview at the preheader", () => {
     const mail = notificationEmail({ ...base, kind: "assignment" });
-    expect(mail.html).toContain('text-decoration:underline;word-break:break-all;">https://todoi.com/epd5vjxy38?item=WEB-7</a>');
+    expect(mail.html).toContain('color:#55555a;text-decoration:underline;word-break:break-all;">https://todoi.com/epd5vjxy38?item=WEB-7</a>');
+    expect(mail.html).toContain('padding:32px 32px 20px;word-break:break-word;"');
     expect(mail.html).toMatch(/Open WEB-7: Order blades in Website\.(&#847;&zwnj;&nbsp;){90}<\/span>/);
     expect(mail.html).toContain('<a class="link" href="https://todoi.com/contact"');
   });
@@ -128,5 +131,8 @@ describe("notification emails (R10)", () => {
   it("put no expiry line in, unlike the account emails", () => {
     const mail = notificationEmail({ ...base, kind: "assignment" });
     expect(mail.text).not.toMatch(/expires/);
+    // Without the caption the button keeps its full space above the rule.
+    expect(mail.html).toContain('style="margin:8px 0 24px;"><tr><td class="btn"');
+    expect(passwordResetEmail({ email: OLD, url: "https://todoi.com/reset/abc" }).html).toContain('style="margin:8px 0 12px;"><tr><td class="btn"');
   });
 });

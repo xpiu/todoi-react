@@ -46,7 +46,7 @@ async function fixture() {
   return { userId, projectId, todo, done, write, outline, review };
 }
 const connect = (f: Awaited<ReturnType<typeof fixture>>, over: Partial<Parameters<typeof connectProject>[0]> = {}) =>
-  connectProject({ projectId: f.projectId, token: "github_pat_test_write_0001", owner: "acme", repo: "plans", branch: "main", path: "todo/website.md", format: "embridge", mode: "store", ...over }, f.userId);
+  connectProject({ projectId: f.projectId, access: { token: "github_pat_test_write_0001" }, owner: "acme", repo: "plans", branch: "main", path: "todo/website.md", format: "embridge", mode: "store", ...over }, f.userId);
 const file = (path = "todo/website.md", branch = "main") => fake.control.file(REPO, branch, path)?.text ?? null;
 const row = async (id: string) => (await db.select().from(items).where(eq(items.id, id)))[0]!;
 
@@ -70,8 +70,8 @@ describe("connecting", () => {
 
   it("refuses a token that can't write, a missing branch, and an existing file in store mode", async () => {
     const f = await fixture();
-    await expect(connect(f, { token: "nope" })).rejects.toThrow(/didn't accept the token/);
-    await expect(connect(f, { token: "github_pat_test_read_0002" })).rejects.toThrow(/can read acme\/plans but not write/);
+    await expect(connect(f, { access: { token: "nope" } })).rejects.toThrow(/didn't accept the token/);
+    await expect(connect(f, { access: { token: "github_pat_test_read_0002" } })).rejects.toThrow(/can read acme\/plans but not write/);
     await expect(connect(f, { branch: "gone" })).rejects.toThrow(/no branch named gone/);
     await fake.control.push(REPO, "main", "todo/website.md", "- [ ] Already here\n");
     await expect(connect(f)).rejects.toThrow(SyncFailure);

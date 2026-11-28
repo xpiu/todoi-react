@@ -3,8 +3,9 @@
 // <style> block that only adds dark mode and phone padding. Each render fills the variables (escaped)
 // and returns the subject, the HTML and a plain-text part with the same copy in the same order as
 // Design's project-invite.txt. The sample values in ./samples reproduce the files in ./samples byte for byte
-// (templates.test.ts); those are ahead of Design's by the Contact link, the wrapping fallback link and the
-// preheader filler, which Design takes over at the next sync. Pure: no environment, no I/O.
+// (templates.test.ts); those are ahead of Design's by the Contact link, the preheader filler and the layout
+// (16px wordmark, the expiry as the button's dim caption, the fallback link dim at 13px and wrapping, long
+// words breaking inside the card), which Design takes over at the next sync. Pure: no environment, no I/O.
 import type { MemberRole } from "../../shared/enums";
 import { EMAIL_LINK_HOURS, linkSpan, RESET_LINK_MINUTES } from "../../shared/accountLinks";
 
@@ -42,8 +43,8 @@ interface EmailContent {
   preheader: Piece[];
   heading: Piece[];
   intro: Piece[];
-  /** The inviter's own words, quoted with their name under them */
-  quote?: { message: string; by: string };
+  /** Someone's own words; `by` puts their name under them, for an intro that doesn't already say whose they are */
+  quote?: { message: string; by?: string };
   button: string;
   /** The plain-text line above the link ("Open the invitation:") */
   linkLead: string;
@@ -64,15 +65,16 @@ const PREHEADER_PAD = "&#847;&zwnj;&nbsp;".repeat(90);
 function renderHtml(c: EmailContent): string {
   const url = escapeHtml(c.url);
   const quote = c.quote
-    ? `<table ${TABLE} width="100%" style="margin:0 0 16px;"><tr><td class="quote ink" style="padding:4px 0 4px 14px;border-left:2px solid #8a8a8f;font:16px/24px ${FONT};color:#111111;mso-line-height-rule:exactly;">&ldquo;${escapeHtml(oneLine(c.quote.message))}&rdquo;<br><span class="dim" style="font:14px/20px ${FONT};color:#55555a;">${escapeHtml(oneLine(c.quote.by))}</span></td></tr></table>`
+    ? `<table ${TABLE} width="100%" style="margin:0 0 16px;"><tr><td class="quote ink" style="padding:4px 0 4px 14px;border-left:2px solid #8a8a8f;font:16px/24px ${FONT};color:#111111;mso-line-height-rule:exactly;">&ldquo;${escapeHtml(oneLine(c.quote.message))}&rdquo;${c.quote.by ? `<br><span class="dim" style="font:14px/20px ${FONT};color:#55555a;">${escapeHtml(oneLine(c.quote.by))}</span>` : ""}</td></tr></table>`
     : "";
   const body = [
     `${P_INK}${html(c.intro)}</p>`,
     quote,
-    `<table ${TABLE} style="margin:8px 0 24px;"><tr><td class="btn" bgcolor="#111111" style="background:#111111;border-radius:2px;"><a href="${url}" style="display:block;padding:12px 24px;font:bold 16px/24px ${FONT};color:#ffffff;text-decoration:none;mso-line-height-rule:exactly;">${c.button}</a></td></tr></table>`,
-    c.expiry ? `${P_INK}${html(c.expiry)}</p>` : "",
+    `<table ${TABLE} style="margin:8px 0 ${c.expiry ? 12 : 24}px;"><tr><td class="btn" bgcolor="#111111" style="background:#111111;border-radius:2px;"><a href="${url}" style="display:block;padding:12px 24px;font:bold 16px/24px ${FONT};color:#ffffff;text-decoration:none;mso-line-height-rule:exactly;">${c.button}</a></td></tr></table>`,
+    // The button's caption: dim and close under it, so the card reads heading, message, action.
+    c.expiry ? `<p class="dim" style="margin:0 0 24px;font:14px/20px ${FONT};color:#55555a;mso-line-height-rule:exactly;">${html(c.expiry)}</p>` : "",
     `<table ${TABLE} width="100%"><tr><td class="rule" style="border-top:1px solid #d9d9d6;font-size:0;line-height:0;height:20px;">&nbsp;</td></tr></table>`,
-    `${P_DIM}If the button doesn't work, copy this link into your browser:<br><a class="link" href="${url}" style="${LINK_STYLE}word-break:break-all;">${url}</a></p>`,
+    `${P_DIM}If the button doesn't work, copy this link into your browser:<br><a class="dim" href="${url}" style="font:13px/20px ${FONT};color:#55555a;text-decoration:underline;word-break:break-all;">${url}</a></p>`,
     `${P_DIM}${html(c.ignore)}</p>`,
   ].join("");
   return `<!doctype html>
@@ -88,14 +90,14 @@ function renderHtml(c: EmailContent): string {
 @media (max-width:620px){.wrap{width:100%!important}.pad{padding-left:20px!important;padding-right:20px!important}}
 </style>
 </head>
-<body class="bg" style="margin:0;padding:0;background:#f3f3f1;">
+<body class="bg" style="margin:0;padding:0;background:#f3f3f1;-webkit-text-size-adjust:100%;text-size-adjust:100%;">
 <span style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">${html(c.preheader)}${PREHEADER_PAD}</span>
 <table ${TABLE} width="100%" class="bg" bgcolor="#f3f3f1" style="background:#f3f3f1;">
 <tr><td align="center" style="padding:32px 12px;">
 <table ${TABLE} width="600" class="wrap" style="width:600px;max-width:600px;">
-<tr><td class="pad ink" style="padding:0 32px 16px;font:bold 20px/28px ${FONT};color:#111111;">todoi</td></tr>
+<tr><td class="pad ink" style="padding:0 32px 12px;font:bold 16px/24px ${FONT};color:#111111;">todoi</td></tr>
 <tr><td class="card" bgcolor="#fbfbfa" style="background:#fbfbfa;border:1px solid #d9d9d6;">
-<table ${TABLE} width="100%"><tr><td class="pad" style="padding:32px 32px 20px;">
+<table ${TABLE} width="100%"><tr><td class="pad" style="padding:32px 32px 20px;word-break:break-word;">
 <h1 class="ink" style="margin:0 0 16px;font:bold 22px/30px ${FONT};color:#111111;mso-line-height-rule:exactly;">${html(c.heading)}</h1>
 ${body}
 </td></tr></table>
@@ -127,7 +129,7 @@ function renderText(c: EmailContent): string {
   const blocks = [
     wrapText(plain(c.heading)),
     wrapText(plain(c.intro)),
-    ...(c.quote ? [`${wrapText(`"${oneLine(c.quote.message)}"`, TEXT_WIDTH, "    ")}\n${wrapText(oneLine(c.quote.by), TEXT_WIDTH, "    ")}`] : []),
+    ...(c.quote ? [[wrapText(`"${oneLine(c.quote.message)}"`, TEXT_WIDTH, "    "), ...(c.quote.by ? [wrapText(oneLine(c.quote.by), TEXT_WIDTH, "    ")] : [])].join("\n")] : []),
     `${c.linkLead}\n${c.url}`,
     ...(c.expiry ? [wrapText(plain(c.expiry))] : []),
     wrapText(plain(c.ignore)),
@@ -261,11 +263,12 @@ const excerptOf = (text: string) => {
 /** The email copy of an Inbox notification (services/notifications.ts): the same subject as the Inbox item's title. */
 export function notificationEmail({ kind, actorName, itemKey, itemTitle, projectName, excerpt, url, settingsUrl }: NotificationEmailInput): RenderedEmail {
   const item = itemKey ? `${itemKey}: ${itemTitle}` : itemTitle;
-  const quote = kind !== "assignment" && excerpt?.trim() ? { message: excerptOf(excerpt), by: actorName } : undefined;
+  // No name under the quote: the sentence above it ("Sam commented on …:") already says whose words they are.
+  const quote = kind !== "assignment" && excerpt?.trim() ? { message: excerptOf(excerpt) } : undefined;
   const what: Record<NotificationKind, { subject: Piece[]; heading: Piece[]; intro: Piece[]; reason: string }> = {
-    assignment: { subject: [v(actorName), " assigned ", v(itemKey ?? "an item"), " to you: ", v(itemTitle)], heading: [v(actorName), " assigned you an item"], intro: [b(actorName), " assigned ", b(item), " to you in ", b(projectName), "."], reason: "an item in a todoi project was assigned to you" },
-    mention: { subject: [v(actorName), " mentioned you on ", v(item)], heading: [v(actorName), " mentioned you"], intro: [b(actorName), " mentioned you in a comment on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you were @mentioned in a todoi project" },
-    watch: { subject: [v(actorName), " commented on ", v(item)], heading: [v(actorName), " commented on an item you watch"], intro: [b(actorName), " commented on ", b(item), " in ", b(projectName), quote ? ":" : "."], reason: "you watch an item in a todoi project" },
+    assignment: { subject: [v(actorName), " assigned ", v(itemKey ?? "an item"), " to you: ", v(itemTitle)], heading: [v(actorName), " assigned you an item"], intro: [v(actorName), " assigned ", b(item), " to you in ", v(projectName), "."], reason: "an item in a todoi project was assigned to you" },
+    mention: { subject: [v(actorName), " mentioned you on ", v(item)], heading: [v(actorName), " mentioned you"], intro: [v(actorName), " mentioned you in a comment on ", b(item), " in ", v(projectName), quote ? ":" : "."], reason: "you were @mentioned in a todoi project" },
+    watch: { subject: [v(actorName), " commented on ", v(item)], heading: [v(actorName), " commented on an item you watch"], intro: [v(actorName), " commented on ", b(item), " in ", v(projectName), quote ? ":" : "."], reason: "you watch an item in a todoi project" },
   };
   const w = what[kind];
   return render({

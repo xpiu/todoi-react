@@ -2,7 +2,7 @@
 // Conventions: app-generated text ids (nanoid), timestamptz created_at / updated_at on every table,
 // soft removal as two timestamps (archived_at, deleted_at), enums mirroring the const arrays in src/shared/.
 import { sql, type SQLWrapper } from "drizzle-orm";
-import { boolean, customType, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { bigint, boolean, customType, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { ACTIVITY_TYPES, ITEM_PRIORITIES, LIST_KINDS, MEMBER_ROLES, PROJECT_VIEWS, PROJECT_VISIBILITIES, RELATION_TYPES, type GroupKey } from "../../shared/enums";
 import { ITEM_STATUSES } from "../../shared/item-status";
@@ -608,9 +608,14 @@ export const gitConnections = pgTable("git_connections", {
   branch: text("branch").notNull(),
   path: text("path").notNull(),
   format: text("format").$type<FileFormat>().notNull(),
-  tokenCipher: text("token_cipher").notNull(),
-  /** "github_pat_…x7Qa": enough to recognise the token, never enough to use it */
+  /** A pasted token, sealed; null when the connection goes through the GitHub App (`installationId`) */
+  tokenCipher: text("token_cipher"),
+  /** "github_pat_…x7Qa": enough to recognise the token, never enough to use it ("" for the app) */
   tokenHint: text("token_hint").notNull(),
+  /** The GitHub App installation that reaches the repository: tokens are minted from it when needed, none is stored */
+  installationId: bigint("installation_id", { mode: "number" }),
+  /** GitHub's id for the repository, which survives a rename or a transfer (owner and repo follow it) */
+  repoId: bigint("repo_id", { mode: "number" }),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   fileSha: text("file_sha"),
   base: jsonb("base").$type<ProjectDoc>(),
@@ -626,6 +631,24 @@ export const gitConnections = pgTable("git_connections", {
   ...timestamps,
 });
 export type GitConnection = typeof gitConnections.$inferSelect;
+
+/**
+ * A person's link to GitHub through the GitHub App ("Continue with GitHub" in Git sync): their app token, sealed,
+ * which reaches only what both they and the app can. It lists the repositories to pick from and proves a
+ * repository is theirs to connect; syncing itself runs on installation tokens.
+ */
+export const githubAccounts = pgTable("github_accounts", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  login: text("login").notNull(),
+  tokenCipher: text("token_cipher").notNull(),
+  refreshCipher: text("refresh_cipher"),
+  /** When the token stops working (null: it doesn't expire) */
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  ...timestamps,
+});
+export type GitHubAccount = typeof githubAccounts.$inferSelect;
 
 /** One sync of a connection: what moved which way, and todoi's document before (what Undo last merge restores). */
 export const gitSyncRuns = pgTable(
