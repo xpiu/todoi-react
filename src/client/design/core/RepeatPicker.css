@@ -48,8 +48,7 @@
     box-shadow: var(--shadow-input);
   }
   .td-repeat-picker-number:focus {
-    border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--focus-ring);
+    border-color: var(--ink-400);
   }
   .td-repeat-picker-number-sm {
     height: 26px;
@@ -125,7 +124,7 @@
     outline: none;
   }
   .td-repeat-picker-inline:focus {
-    border-color: var(--focus-ring);
+    border-color: var(--ink-400);
   }
   .td-repeat-picker-preview {
     font: var(--weight-regular) 11px / 16px var(--font-ui);

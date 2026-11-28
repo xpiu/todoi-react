@@ -1,4 +1,8 @@
-/* TextField — bordered card-surface input; "dark" is the translucent variant on the chrome (top-bar search). */
+/* TextField — bordered card-surface input; "dark" is the translucent variant on the chrome (top-bar search).
+   Focus, here and on every field outside the List and Board content: no ring. The caret says where typing lands and
+   the field's own hairline goes one step darker, so a form of several fields still shows the active one; the dark
+   field on the chrome does not change at all. Fields typed into inside the content draw a 1px accent line instead
+   (QuickAddInput.css). */
 @layer components {
   .td-field {
     display: block;
@@ -17,8 +21,7 @@
   }
   .td-field:focus {
     outline: none;
-    border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--focus-ring);
+    border-color: var(--ink-400);
   }
   textarea.td-field {
     resize: vertical;
@@ -29,6 +32,9 @@
     border-color: var(--chrome-border);
     color: var(--chrome-text);
     box-shadow: none;
+  }
+  .td-field-dark:focus {
+    border-color: var(--chrome-border);
   }
   .td-field-dark::placeholder {
     color: var(--chrome-text-dim);

@@ -108,10 +108,13 @@
   .td-list-row-title-text.is-editable {
     cursor: text;
   }
+  /* Editing a title in place: the same 1px accent frame as the add row's field (QuickAddInput.css) */
   .td-list-row-title-text.is-editing {
     display: block;
     min-height: 1lh;
-    outline: none;
+    outline: 1px solid var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: 1px;
     cursor: text;
     white-space: pre-wrap;
   }

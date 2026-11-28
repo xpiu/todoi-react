@@ -11,6 +11,13 @@
     <meta name="apple-mobile-web-app-title" content="todoi" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#141415" media="(prefers-color-scheme: dark)" />
+    <!-- The cascade-layer order, declared before any stylesheet. The build splits shared component CSS into chunks
+         that load ahead of the main sheet; without this the first `@layer components` they carry would rank
+         components below base, and base's focus outline would then win over every component and theme rule.
+         Keep in step with src/client/design/index.css (tokens/layerOrder.test.ts checks it). -->
+    <style>
+      @layer tokens, base, components, theme;
+    </style>
     <script>
       // Zod parses without compiling (`Function(…)`), which the Content-Security-Policy (src/server/csp.ts)
       // doesn't allow; set here because a module-level z.config() can run after the first parse.

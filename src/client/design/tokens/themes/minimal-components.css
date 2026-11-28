@@ -258,6 +258,9 @@ html[data-theme="minimal"] .td-hidden-lists:focus-visible{box-shadow:none;outlin
 /* The composer is the add row with a caret: same hairline above, same 13/20 line, same 41px, so opening it moves nothing */
 html[data-theme="minimal"] .td-list-column-composer{margin:0;padding:10px 0;background:none;box-shadow:none;border-radius:0;border-top:1px solid transparent}
 html[data-theme="minimal"] .td-list-column-composer .td-quick-add-input{font:400 13px/20px var(--font-ui)}
+/* Typing in the content (a new item, a row's title): no frame, one ink hairline under the text, as under the rename fields. The Board's composer row loses the Rounded card's ring */
+html[data-theme="minimal"] .td-list-column-composer:focus-within{box-shadow:none}
+html[data-theme="minimal"] .td-quick-add-input:focus,html[data-theme="minimal"] .td-list-row-title-text.is-editing{outline:none;border-radius:0;box-shadow:0 1px 0 var(--ink-900)}
 /* The composer keeps the add row's plus, so the caret lands where the label was */
 html[data-theme="minimal"] .td-list-column-composer{display:flex;align-items:flex-start;gap:10px}
 html[data-theme="minimal"] .td-list-column-composer>.td-quick-add{flex:1;min-width:0}

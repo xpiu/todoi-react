@@ -162,7 +162,7 @@
     min-width: 0;
     height: 24px;
     border: none;
-    outline: 2px solid var(--blue-500);
+    outline: 1px solid var(--focus-ring);
     outline-offset: 0;
     border-radius: var(--radius-xs);
     background: var(--surface-card);
@@ -258,6 +258,13 @@
     background: var(--surface-card);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-card);
+    transition: box-shadow var(--duration-fast) var(--ease-standard);
+  }
+  /* Typing a new item: the card itself is the field, framed by the 1px accent line (QuickAddInput.css) */
+  .td-list-column-composer:focus-within {
+    box-shadow:
+      var(--shadow-card),
+      0 0 0 1px var(--focus-ring);
   }
   /* ⋯ › Add an item: the same white composer card, opened above the first card (2px card inset, 6px + the 2px scroller pad = the 8px card gap) */
   .td-list-column-composer.is-top {

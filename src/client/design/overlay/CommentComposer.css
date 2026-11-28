@@ -22,8 +22,7 @@
   }
   .td-mention-field-textarea:focus {
     outline: none;
-    border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--focus-ring);
+    border-color: var(--ink-400);
   }
   .td-mention-field-textarea::placeholder {
     color: var(--ink-400);

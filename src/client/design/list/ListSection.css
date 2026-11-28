@@ -128,7 +128,7 @@
     height: 24px;
     margin-right: auto;
     border: none;
-    outline: 2px solid var(--blue-500);
+    outline: 1px solid var(--focus-ring);
     outline-offset: 0;
     border-radius: var(--radius-xs);
     background: var(--surface-card);
@@ -200,6 +200,12 @@
   }
   .td-list-section-addrow .td-quick-add-input::placeholder {
     color: var(--ink-600);
+  }
+  /* Typing a new item: the 1px accent frame (QuickAddInput.css), set 3px off the text */
+  .td-list-section-addrow .td-quick-add-input:focus {
+    outline: 1px solid var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: 1px;
   }
   .td-list-section-body.td-drop-before,
   .td-list-section-body.td-drop-end {

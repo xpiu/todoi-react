@@ -68,8 +68,7 @@
     box-shadow: var(--shadow-input);
   }
   .td-label-picker-name:focus {
-    border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--focus-ring);
+    border-color: var(--ink-400);
   }
   .td-label-picker-swatches {
     display: grid;

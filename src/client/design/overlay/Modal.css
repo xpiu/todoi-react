@@ -135,9 +135,8 @@
     font: inherit;
     color: inherit;
     background: var(--surface-card);
-    border: 1px solid var(--focus-ring);
+    border: 1px solid var(--ink-400);
     border-radius: var(--radius-xs);
-    box-shadow: 0 0 0 1px var(--focus-ring);
     outline: none;
   }
   .td-modal-key {

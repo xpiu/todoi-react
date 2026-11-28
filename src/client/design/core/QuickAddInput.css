@@ -1,3 +1,6 @@
+/* Typing inside the List and Board content (this field, a list's rename field, a row's title) is marked by one
+   1px line in the focus colour, never a thick ring: Rounded draws it as a rounded frame around the field, or around
+   the Board's composer card; Minimal as an ink hairline under the text (themes/minimal-components.css). */
 @layer components {
   .td-quick-add {
     display: flex;

@@ -40,8 +40,7 @@
     color: var(--ink-600);
   }
   .td-search-field:focus-within {
-    border-color: var(--blue-500);
-    box-shadow: 0 0 0 1px var(--blue-500);
+    border-color: var(--ink-400);
   }
   .td-search-input {
     flex: 1;

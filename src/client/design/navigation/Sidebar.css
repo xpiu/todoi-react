@@ -274,7 +274,7 @@
     min-width: 0;
     height: 24px;
     border: none;
-    outline: 2px solid var(--blue-500);
+    outline: 1px solid var(--ink-400);
     outline-offset: 0;
     border-radius: var(--radius-xs);
     background: var(--chrome-selected);
