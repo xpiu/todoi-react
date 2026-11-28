@@ -162,6 +162,13 @@
   .td-auth-field {
     margin-bottom: var(--sp-3);
   }
+  .td-auth-field > .td-auth-link {
+    display: block;
+    margin-block-start: var(--sp-1);
+    margin-inline-start: auto;
+    min-block-size: var(--sp-6);
+    text-decoration: underline;
+  }
   .td-auth-field .td-field {
     height: 36px;
     padding-top: 0;

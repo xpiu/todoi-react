@@ -22,7 +22,6 @@ export const Empty: Story = {
     await expect(submit).toBeDisabled();
     await userEvent.type(canvas.getByLabelText("Email"), "  info@todoi.org ");
     const password = canvas.getByLabelText(/^Password/);
-    // Forgot? sits beside the label, not in it.
     await expect(password).toHaveAccessibleName("Password");
     await userEvent.type(password, "correct horse");
     await expect(submit).toBeEnabled();
@@ -34,7 +33,8 @@ export const ContinueWhereYouLeftOff: Story = {
   args: { context: "Log in to continue where you left off.", defaultEmail: "info@todoi.org" },
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByLabelText(/^Password/)).toHaveFocus();
-    canvas.getByRole("button", { name: "Forgot?" }).focus();
+    await userEvent.tab();
+    await expect(canvas.getByRole("button", { name: /^Forgot password\?$/ })).toHaveFocus();
     await userEvent.keyboard(" ");
     await expect(args.onForgotPassword).toHaveBeenCalledWith("info@todoi.org");
     await expect(args.onSignIn).not.toHaveBeenCalled();

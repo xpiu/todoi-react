@@ -49,11 +49,11 @@ export function SignInPage({ context, defaultEmail = "", onSignIn, onPasskey, pa
           <input id="td-signin-email" className="td-field" type="email" autoComplete={onPasskey ? "username webauthn" : "email"} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoFocus={!defaultEmail} />
         </div>
         <div className="td-auth-field">
-          <div className="td-auth-label">
-            <label htmlFor="td-signin-pw">Password</label>
-            {onForgotPassword ? <AuthLink label="Forgot?" onClick={() => onForgotPassword(email.trim())} /> : null}
-          </div>
+          <label className="td-auth-label" htmlFor="td-signin-pw">
+            Password
+          </label>
           <input id="td-signin-pw" className="td-field" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoFocus={!!defaultEmail} />
+          {onForgotPassword ? <AuthLink label="Forgot password?" onClick={() => onForgotPassword(email.trim())} /> : null}
         </div>
         <AuthError error={error} />
         <div className="td-auth-stack is-tight">

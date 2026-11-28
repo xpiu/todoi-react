@@ -21,9 +21,9 @@ test("reset a forgotten password through the emailed link", async ({ page }) => 
   const { email } = await signUp(page, "Reset test");
   await page.context().clearCookies();
   await page.goto(`/login?email=${encodeURIComponent(email)}`);
-  await page.getByRole("button", { name: "Forgot?" }).click();
+  await page.getByRole("button", { name: "Forgot password?", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
-  await page.getByLabel("Email").fill(email);
+  await expect(page.getByLabel("Email")).toHaveValue(email);
   await page.getByRole("button", { name: "Send reset link" }).click();
   await expect(page.getByRole("heading", { name: "Check your inbox" })).toBeVisible();
   const mail = await emailTo(email, "Reset your todoi password");
