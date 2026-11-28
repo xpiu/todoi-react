@@ -1356,13 +1356,7 @@ html[data-theme="minimal"] .td-sbo-move{border-radius:0;color:var(--ink-400)}
 html[data-theme="minimal"] .td-sbo-move:hover,html[data-theme="minimal"] .td-sbo-move:active{background:none;color:var(--ink-900)}
 html[data-theme="minimal"][data-touch="true"] .td-sbo-row,html[data-theme="minimal"][data-device="phone"] .td-sbo-row{min-height:49px}
 html[data-theme="minimal"] .td-settings-body:has(>.td-sbo){padding:0}
-/* ── Group by (Design, 2026-11-24): the Group menu is the Sort menu's sheet; group sections are list sections whose header leads with a 16px glyph, a 6px label swatch or mono initials, and always shows its count in mono */
-html[data-theme="minimal"] .td-group-menu-note{padding:10px 14px;font:400 13px/20px var(--font-ui);color:var(--ink-400)}
-html[data-theme="minimal"] .td-group-menu-link{font:400 13px/20px var(--font-ui);color:var(--ink-900);text-decoration:underline;border-radius:0}
-html[data-theme="minimal"] .td-group-menu-link:focus-visible{box-shadow:none;outline:1px solid var(--ink-900);outline-offset:2px}
-html[data-theme="minimal"] .td-group-menu-divider{margin:6px 0}
-html[data-theme="minimal"] .td-group-menu .td-sort-menu-row:disabled{color:var(--ink-300)}
-html[data-theme="minimal"] .td-group-menu .td-sort-menu-row[role="checkbox"]:hover{background:var(--chrome-hover)}
+/* ── Grouped list sections lead with a 16px glyph, a 6px label swatch or mono initials, and show counts in mono */
 html[data-theme="minimal"] .td-list-section-lead{width:16px;height:20px;margin:0;color:var(--ink-900)}
 html[data-theme="minimal"] .td-list-section-lead svg{width:16px;height:16px;stroke:currentColor!important}
 html[data-theme="minimal"] .td-list-section-swatch{width:6px;height:6px;border-radius:0}

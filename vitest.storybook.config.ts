@@ -18,6 +18,7 @@ const scopes = process.env.VITEST_STORYBOOK === "true"
 export default defineConfig({
   test: {
     projects: scopes.map(({ name, initialGlobals }) => ({
+      optimizeDeps: { include: ["@base-ui/react/collapsible"] },
       plugins: [storybookTest({
         configDir: fileURLToPath(new URL(".storybook", import.meta.url)),
         initialGlobals,

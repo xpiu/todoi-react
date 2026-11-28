@@ -8,7 +8,7 @@ import type { IconName } from "../core/Icon";
 
 export type { GroupKey };
 
-/** The Group menu's rows (Design: ViewControls GROUP_OPTIONS): None, then the five keys */
+/** The grouping rows in Sort (Design: ViewControls GROUP_OPTIONS): None, then the five keys */
 export const GROUP_OPTIONS: ReadonlyArray<{ key: "none" | GroupKey; label: string; icon: IconName; hint?: string }> = [
   { key: "none", label: "None", icon: "circle-slash-2", hint: "Lists" },
   { key: "status", label: "Status", icon: "circle-dot" },

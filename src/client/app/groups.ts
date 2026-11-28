@@ -1,5 +1,5 @@
 // Group by (List view) over the API's items — the app side of Design's ViewControls `groupItems` / `groupDrop` /
-// `dueBucket`. Pure: the List view groups with it, the toolbar's Group menu counts its groups, and a drop or
+// `dueBucket`. Pure: the List view groups with it, the grouping controls in Sort counts its groups, and a drop or
 // Ctrl/Cmd+Shift+↑↓ between groups asks `groupDrop` what changes. Group ids are stable ids (Status,
 // priority, member and label ids, Due buckets), never display names. Spec: DESIGN.md › Group by.
 import type { GroupKey, ItemPriority } from "../../shared/enums";

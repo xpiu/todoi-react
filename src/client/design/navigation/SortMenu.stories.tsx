@@ -73,7 +73,7 @@ export const Sorted: Story = {
   args: { sort: { lists: { key: "name", dir: "desc" }, items: { key: "priority", dir: "asc" } } },
   async play({ args, canvas, userEvent }) {
     await expect(canvas.getByRole("radio", { name: /Name/ })).toHaveTextContent("Z–A");
-    await userEvent.click(canvas.getByRole("button", { name: "Reset" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Reset sorting" }));
     await expect(args.onReset).toHaveBeenCalledOnce();
     await expect(canvas.getByRole("radiogroup", { name: "Sort items" })).toContainElement(canvas.getAllByRole("radio", { name: /None/, checked: true })[1]!);
   },

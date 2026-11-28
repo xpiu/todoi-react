@@ -1,4 +1,4 @@
-// Group by in List view (Design 2026-11-24, Part A): the toolbar's Group menu regroups the rows; dragging a row onto
+// Group by in List view: the toolbar's Sort menu regroups the rows; dragging a row onto
 // another group — or Ctrl/Cmd+Shift+↑↓ — changes that one field with one toast and Undo; a range group (This week,
 // Later…) refuses and says why; the group rides in the URL and in a saved view. Every row lives in the test's own
 // project, removed afterwards. Spec: DESIGN.md › Group by.
@@ -36,8 +36,16 @@ async function drag(page: Page, from: Locator, to: Locator) {
   };
 }
 
-/** The toolbar's Group button (project names in the sidebar may start with "Group" too) */
-const groupButton = (page: Page) => page.getByRole("toolbar", { name: "Project views and actions" }).locator('[data-menu="group"]');
+const toolbar = (page: Page) => page.getByRole("toolbar", { name: "Project views and actions" });
+const sortButton = (page: Page) => toolbar(page).getByRole("button", { name: /^Sort/ });
+const sortMenu = (page: Page) => page.getByRole("dialog", { name: "Sort options" });
+const groupingButton = (menu: Locator) => menu.getByRole("button", { name: /^Group items by/ });
+async function openGrouping(page: Page) {
+  await sortButton(page).click();
+  const menu = sortMenu(page);
+  await groupingButton(menu).click();
+  return menu;
+}
 const itemOf = async (page: Page, id: string) => (await (await page.request.get(`/api/items/${id}`)).json()) as Item;
 const group = (page: Page, id: string) => page.locator(`.td-list-groups .td-list-section[data-group-id="${id}"]`);
 const row = (page: Page, groupId: string, itemId: string) => group(page, groupId).locator(`.td-list-row[data-drag-id="${itemId}"]`);
@@ -46,13 +54,24 @@ test("Group by Priority: a drag and Ctrl/Cmd+Shift+↓ between groups change the
   const high = await own.item("Pick the paint", { priority: "HIGH" });
   const none = await own.item("Call the hangar");
   await page.goto(`/p/${own.projectId}?v=list`);
-  await groupButton(page).click();
-  const menu = page.getByRole("dialog", { name: "Group options" });
-  await menu.getByRole("radio", { name: "Priority" }).click();
+  await expect(toolbar(page).getByRole("button", { name: /^Group/ })).toHaveCount(0);
+  const menu = await openGrouping(page);
+  const grouping = menu.getByRole("radiogroup", { name: "Group items by" });
+  const sortItems = menu.getByRole("radiogroup", { name: "Sort items" });
+  await sortItems.getByRole("radio", { name: /^Title/ }).click();
+  await grouping.getByRole("radio", { name: "Priority" }).click();
   await expect(page).toHaveURL(/[?&]g=priority/);
+  await expect(sortItems.getByRole("radio", { name: /^Title/ })).toBeChecked();
+  await menu.getByRole("button", { name: "Reset sorting" }).click();
+  await expect(page).not.toHaveURL(/[?&]s=/);
+  await expect(menu.getByRole("button", { name: "Group items by Priority" })).toBeVisible();
   // The menu stays open on a pick; Escape closes it
-  await expect(menu.getByRole("radio", { name: "Priority" })).toHaveAttribute("aria-checked", "true");
+  await expect(grouping.getByRole("radio", { name: "Priority" })).toBeChecked();
+  await menu.getByRole("button", { name: "Collapse all groups" }).click();
+  await menu.getByRole("button", { name: "Expand all groups" }).click();
   await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
+  await expect(sortButton(page)).toBeFocused();
   await expect(group(page, "HIGH")).toBeVisible();
   await expect(row(page, "__none", none)).toBeVisible();
   // No bottom add rows in a grouped view: each group adds through its header + (below)
@@ -95,8 +114,7 @@ test("Group by Due: Today takes a row, a range group refuses and says why", asyn
   expect((await itemOf(page, undated)).dueDate).toBeNull();
 
   // "Show empty groups" brings Today back; dropping there sets today's date
-  await groupButton(page).click();
-  await page.getByRole("dialog", { name: "Group options" }).getByRole("checkbox", { name: "Show empty groups" }).click();
+  await (await openGrouping(page)).getByRole("checkbox", { name: "Show empty groups" }).click();
   await page.keyboard.press("Escape");
   await expect(group(page, "today")).toContainText("No items");
   const accepted = await drag(page, row(page, "later", later), group(page, "today"));
@@ -107,8 +125,7 @@ test("Group by Due: Today takes a row, a range group refuses and says why", asyn
   expect(today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   expect(today! < "2099-06-01").toBe(true);
   // Leave the device preference as it was
-  await groupButton(page).click();
-  await page.getByRole("dialog", { name: "Group options" }).getByRole("checkbox", { name: "Show empty groups" }).click();
+  await (await openGrouping(page)).getByRole("checkbox", { name: "Show empty groups" }).click();
 });
 
 test("the group is part of a saved view and its link", async ({ page, own }) => {
@@ -128,15 +145,23 @@ test("the group is part of a saved view and its link", async ({ page, own }) => 
   const view = saved.find((v) => v.name === "By label")!;
   expect(view.definition.group).toBe("label");
 
-  // A fresh visit through the saved view's link groups again; Board has no Group button but keeps the pick for List
+  // A fresh visit through the saved view's link groups again; the other views keep the pick for List
   await page.goto(`/p/${own.projectId}?view=${view.id}&v=list`);
   await expect(group(page, "__none")).toBeVisible();
-  await page.goto(`/p/${own.projectId}?view=${view.id}&v=board`);
-  await expect(page.getByRole("toolbar", { name: "Project views and actions" })).toBeVisible();
-  await expect(groupButton(page)).toHaveCount(0);
+  for (const mode of ["board", "calendar"]) {
+    await page.goto(`/p/${own.projectId}?view=${view.id}&v=${mode}`);
+    await sortButton(page).click();
+    await expect(sortMenu(page).getByRole("radiogroup", { name: "Sort items" })).toBeVisible();
+    await expect(groupingButton(sortMenu(page))).toHaveCount(0);
+  }
   await page.goto(`/p/${own.projectId}?view=${view.id}&v=list`);
   await expect(group(page, "__none")).toBeVisible();
-  await expect(groupButton(page)).toBeVisible();
+  const menu = await openGrouping(page);
+  const grouping = menu.getByRole("radiogroup", { name: "Group items by" });
+  await expect(grouping.getByRole("radio", { name: "Label" })).toBeChecked();
+  await grouping.getByRole("radio", { name: /^None/ }).click();
+  await expect(page).not.toHaveURL(/[?&](?:g|view)=/);
+  await expect(group(page, "__none")).toHaveCount(0);
 });
 
 test("Group by Label: a drop swaps the source label for the target's and keeps the others, with Undo", async ({ page, own }) => {
@@ -251,8 +276,7 @@ test("Group by Due: a range group has no +, so N there opens the first group tha
   await expect(group(page, "none").locator(".td-list-row", { hasText: "Sweep the hangar" })).toBeVisible();
 
   // With "Show empty groups", Today comes first among the groups that take a value: its items are due today
-  await groupButton(page).click();
-  await page.getByRole("dialog", { name: "Group options" }).getByRole("checkbox", { name: "Show empty groups" }).click();
+  await (await openGrouping(page)).getByRole("checkbox", { name: "Show empty groups" }).click();
   await page.keyboard.press("Escape");
   await row(page, "overdue", late).focus();
   await page.keyboard.press("n");
@@ -264,6 +288,5 @@ test("Group by Due: a range group has no +, so N there opens the first group tha
   await expect.poll(async () => (await byTitle(page, own.projectId, "Check the weather"))?.dueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   await expect(group(page, "today").locator(".td-list-row", { hasText: "Check the weather" })).toBeVisible();
   // Leave the device preference as it was
-  await groupButton(page).click();
-  await page.getByRole("dialog", { name: "Group options" }).getByRole("checkbox", { name: "Show empty groups" }).click();
+  await (await openGrouping(page)).getByRole("checkbox", { name: "Show empty groups" }).click();
 });

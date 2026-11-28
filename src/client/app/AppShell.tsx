@@ -18,7 +18,7 @@ import { ToastPortalProvider } from "../design/core/ToastPortal";
 import { useViewport } from "../design/core/viewport";
 import { FilterBar } from "../design/navigation/FilterBar";
 import { FilterMenu } from "../design/navigation/FilterMenu";
-import { GroupMenu } from "../design/navigation/GroupMenu";
+import { GroupOptions } from "../design/navigation/GroupOptions";
 import { MembersMenu } from "../design/navigation/MembersMenu";
 import { DEFAULT_NAV, Sidebar } from "../design/navigation/Sidebar";
 import { SortBar } from "../design/navigation/SortBar";
@@ -280,7 +280,7 @@ export function AppShell() {
     }), sort.lists);
   }, [visibleTop, filterCtx, view, projectLists, sort]);
   const exportCount = exportLists.reduce((total, l) => total + l.count, 0);
-  const sortActive = (["lists", "items"] as const).filter((d) => sort[d]);
+  const sortActive = Boolean(sort.lists || sort.items);
   // The Filter row offers the quick filters (labels, Overdue) plus whatever else is active.
   const barAvailable = [...available.filter((f) => f.type === "label" || f.type === "due"), ...filters.filter((f) => f.type !== "label" && f.type !== "due").map((f) => available.find((a) => sameFilter(a, f)) ?? f)];
   const resetSort = () => setViewState({ sort: { lists: null, items: null } });
@@ -327,7 +327,7 @@ export function AppShell() {
         views={resolved.savedViews}
         activeId={activeSavedId}
         dirty={svDirty}
-        canSave={(filters.length > 0 || sortActive.length > 0 || !!group) && (!activeSaved || svDirty)}
+        canSave={(filters.length > 0 || sortActive || !!group) && (!activeSaved || svDirty)}
         currentDef={currentDef}
         onSelect={goSaved}
         onSave={async (name, shared) => {
@@ -403,15 +403,11 @@ export function AppShell() {
     addList: projectId && project.data ? () => createList.mutate({ id: newId(), name: `List ${project.data!.lists.length + 1}` }) : undefined,
   });
 
-  // Group by is List view's alone: Board and Calendar have no Group button (the pick is kept for the next visit there),
-  // and a Group menu left open closes when the view changes.
-  if (openMenu === "group" && view !== "list") setOpenMenu(null);
-  const groupMenu =
+  const grouping =
     view === "list" ? (
-      <GroupMenu
+      <GroupOptions
         group={group}
         onSelect={selectGroup}
-        onReset={() => selectGroup("none")}
         showEmpty={showEmptyGroups}
         onShowEmptyChange={setShowEmptyGroups}
         allCollapsed={groupIds.length > 0 && groupIds.every((id) => collapsedGroups.includes(id))}
@@ -432,7 +428,31 @@ export function AppShell() {
       url={projectUrl(pd)}
     />
   ) : undefined;
-  const nav = projectId ? <SubNavbar activeView={view} onViewChange={setView} savedViewsToggle savedViewsOpen={savedViewsOpen} onSavedViewsToggle={setSavedViewsOpen} savedViewsId={savedViewsId} openMenu={openMenu} onOpenMenuChange={changeMenu} onAction={(id) => id === "filter" && suggest("filter")} filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />} sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} />} groupMenu={groupMenu} filterActive={filters.length > 0} sortActive={sortActive.length > 0} groupActive={!!group} onExport={exportView} exportCount={exportCount} exportFiltered={filters.length > 0} visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"} onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })} checkedMove={project.data ? movesOnCheck(project.data) : false} onOpenCheckedMove={() => navigate({ to: "/projects" })} membersMenu={membersMenu} /> : null;
+  const nav = projectId ? (
+    <SubNavbar
+      activeView={view}
+      onViewChange={setView}
+      savedViewsToggle
+      savedViewsOpen={savedViewsOpen}
+      onSavedViewsToggle={setSavedViewsOpen}
+      savedViewsId={savedViewsId}
+      openMenu={openMenu}
+      onOpenMenuChange={changeMenu}
+      onAction={(id) => id === "filter" && suggest("filter")}
+      filterMenu={<FilterMenu sections={FILTER_SECTIONS} available={available} filters={filters} counts={counts} onToggle={toggleFilter} onClear={() => { clearFilters(); suggest("clear-filters", 200); }} />}
+      sortMenu={<SortMenu sections={[["Sort lists", "lists"], ["Sort items", "items"]]} options={SORT_OPTS} sort={sort} onSelect={selectSort} onReset={resetSort} grouping={grouping} />}
+      filterActive={filters.length > 0}
+      sortActive={sortActive || (view === "list" && !!group)}
+      onExport={exportView}
+      exportCount={exportCount}
+      exportFiltered={filters.length > 0}
+      visibility={project.data ? ((project.data.visibility.charAt(0).toUpperCase() + project.data.visibility.slice(1)) as "Private" | "Shared" | "Public") : "Private"}
+      onOpenAppearance={() => navigate({ to: "/settings", search: { s: "appearance" } })}
+      checkedMove={project.data ? movesOnCheck(project.data) : false}
+      onOpenCheckedMove={() => navigate({ to: "/projects" })}
+      membersMenu={membersMenu}
+    />
+  ) : null;
 
   const sidebarGroups = sidebarOrder.rail;
   const navItems = DEFAULT_NAV.map((n) => (n.id === "inbox" ? { ...n, unread: inboxBadge ? (unread.data?.unread ?? 0) : 0 } : n));

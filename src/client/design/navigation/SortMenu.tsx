@@ -1,5 +1,7 @@
-// SortMenu — the Sort action's panel: "Sort lists" and "Sort items" radio groups; picking the active
-// key reverses it (the direction label says which way). Body of a toolbar-tier Popover.
+// SortMenu — the Sort action's panel: optional List grouping and one radio group per sort dimension.
+// Picking the active sort key reverses it (the direction label says which way).
+import type { ReactNode } from "react";
+
 import { Button } from "../core/Button";
 import { Icon, type IconName } from "../core/Icon";
 import "./SortMenu.css";
@@ -22,9 +24,11 @@ export interface SortMenuProps {
   sort: Record<string, SortMenuSpec | null>;
   onSelect: (dim: string, key: string) => void;
   onReset?: () => void;
+  /** Grouping controls, when the current view supports them */
+  grouping?: ReactNode;
 }
 
-export function SortMenu({ sections, options, sort, onSelect, onReset }: SortMenuProps) {
+export function SortMenu({ sections, options, sort, onSelect, onReset, grouping }: SortMenuProps) {
   const anyActive = Object.values(sort).some(Boolean);
   return (
     <div className="td-sort-menu" role="group" aria-label="Sort options">
@@ -33,11 +37,12 @@ export function SortMenu({ sections, options, sort, onSelect, onReset }: SortMen
         <span className="td-sort-menu-title">Sort</span>
         {anyActive && onReset ? (
           <Button variant="chrome" className="td-sort-menu-reset" onClick={onReset}>
-            Reset
+            Reset sorting
           </Button>
         ) : null}
       </div>
       <div className="td-sort-menu-scroll">
+        {grouping}
         {sections.map(([label, dim]) => (
           <div key={dim}>
             <div className="td-sort-menu-section">{label}</div>

@@ -1,5 +1,5 @@
 // Group by's per-device state (owner decision A4: not per account): which groups are collapsed, per project and
-// group key, and "Show empty groups". The toolbar's Group menu and the List view both read it, so it is one small
+// group key, and "Show empty groups". The grouping controls in Sort and the List view both read it, so it is one small
 // persisted store (localStorage "td-list-groups"), read through focused selectors. Spec: DESIGN.md › Group by.
 import { create } from "zustand";
 import { persist } from "zustand/middleware";

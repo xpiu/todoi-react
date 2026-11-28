@@ -1,0 +1,18 @@
+@layer components {
+  .td-group-options {
+    padding-bottom: var(--sp-1);
+    border-bottom: 1px solid var(--border-divider);
+  }
+  .td-group-options-chevron {
+    color: var(--ink-600);
+  }
+  .td-group-options-trigger[aria-expanded="true"] .td-group-options-chevron {
+    transform: rotate(180deg);
+  }
+  .td-group-options .td-sort-menu-row[role="checkbox"][aria-checked="true"]:not(:hover) {
+    background: none;
+  }
+  html[data-touch="true"] .td-group-options .td-sort-menu-row {
+    min-height: 44px;
+  }
+}
