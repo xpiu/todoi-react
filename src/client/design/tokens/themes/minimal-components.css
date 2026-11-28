@@ -96,7 +96,7 @@ html[data-theme="minimal"] .td-sidebar-rowwrap[data-sb-insert="after"]::after{bo
 html[data-theme="minimal"] .td-sidebar-group[data-sb-insert="before"]::after,html[data-theme="minimal"] .td-sidebar-nav>.td-sidebar-rowwrap:first-child[data-sb-insert="before"]::after{top:-6px}
 html[data-theme="minimal"] .td-sidebar-group[data-sb-insert="after"]::after{bottom:-6px}
 html[data-theme="minimal"] .td-sidebar-head[data-sb-drop="true"]{background:var(--blue-100);box-shadow:inset 0 0 0 1px var(--ink-900)}
-html[data-theme="minimal"] .td-sidebar-rename{outline:none;border-bottom:1px solid var(--ink-900);border-radius:0;background:none;padding:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
+html[data-theme="minimal"] .td-sidebar-rename{outline:none;box-shadow:0 1px 0 var(--ink-900);border-radius:0;background:none;padding:0;margin:0;color:var(--ink-900);font:400 13px/20px var(--font-ui)}
 html[data-theme="minimal"] .td-sidebar-drophint{width:196px!important;padding:8px 24px;color:var(--ink-400)}
 /* ── Board: columns in a 24px gutter, no list surface; the list name sits over the same hairline that ends every row */
 /* 16px under the columns so the last row clears the horizontal scrollbar, which is thin like the column ones */
@@ -703,6 +703,7 @@ html[data-theme="minimal"] .td-filter-menu-row>svg{stroke:currentColor!important
 /* No trigger marker in Minimal: the chip rows under the toolbar are the indicator */
 html[data-theme="minimal"] .td-subnav-dot{display:none}
 html[data-theme="minimal"] .td-filter-menu-count{font:400 11px/16px var(--font-mono);color:var(--ink-400)}
+html[data-theme="minimal"] .td-group-options{padding:6px 0}
 html[data-theme="minimal"] .td-sort-menu-hint{font:400 11px/16px var(--font-ui);color:var(--ink-400)}
 html[data-theme="minimal"] .td-sort-menu-direction{font:400 11px/16px var(--font-ui);color:var(--ink-900)}
 html[data-theme="minimal"] .td-members-menu-title{font:500 13px/20px var(--font-ui)}
@@ -1472,3 +1473,11 @@ html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column.is-drop
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-list-column-cards{padding:0 8px 0 4px;margin:0 -8px 0 -4px}
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-list-column-cards>.td-list-cue{left:4px!important;right:8px!important}
 html[data-theme="minimal"][data-colorize-columns="true"] .td-list-column[data-column-tint]:not([data-status-role]) .td-card::before{left:-4px;right:-4px}
+/* ── QA note (src/client/qa): the confirmation is a ledger entry — the checked box in ink beside the title (the theme's own Done box, Checkbox above), the line under it, left-aligned on the panel's edge; no colour, and nothing moves: it fades in once */
+html[data-theme="minimal"] .td-qa-sent{display:grid;grid-template-columns:auto minmax(0,1fr);align-content:center;align-items:start;gap:2px 10px;text-align:left;animation:td-qa-sent-fade var(--duration-base) var(--ease-standard) backwards}
+html[data-theme="minimal"] .td-qa-sent-mark{width:16px;height:16px;margin:2px 0;border-radius:2px;background:var(--ink-900);box-shadow:none;color:var(--surface-card);animation:none}
+html[data-theme="minimal"] .td-qa-sent-mark svg{width:12px;height:12px;stroke-width:2}
+html[data-theme="minimal"] .td-qa-sent-mark svg path{stroke-dasharray:none;animation:none}
+html[data-theme="minimal"] .td-qa-sent-title{font:500 14px/20px var(--font-ui);letter-spacing:-.005em;animation:none}
+html[data-theme="minimal"] .td-qa-sent-hint{grid-column:2;font:400 13px/20px var(--font-ui);color:var(--ink-900);animation:none}
+@keyframes td-qa-sent-fade{from{opacity:0}}

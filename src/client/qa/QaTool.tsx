@@ -332,7 +332,10 @@ export default function QaTool() {
           <div className="td-qa-sent" role="status">
             {status.kind === "sent" ? (
               <>
-                <Icon name="circle-check" size={44} />
+                {/* The theme's own Done mark, enlarged: Rounded's green disc, Minimal's ink box (qa.css · minimal-components.css). */}
+                <span className="td-qa-sent-mark" aria-hidden="true">
+                  <Icon name="check" size={24} strokeWidth={3} />
+                </span>
                 <p className="td-qa-sent-title">Note sent</p>
                 <p className="td-qa-sent-hint">Screenshot and page details included.</p>
               </>

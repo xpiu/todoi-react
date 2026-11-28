@@ -91,7 +91,9 @@
   .td-qa-form[inert] {
     visibility: hidden;
   }
-  /* The confirmation, in the form's place: a large tick, one title, one line. */
+  /* The confirmation, in the form's place: the Done mark, one title, one line. Rounded here: the circle
+     checkbox's green disc with its tick (Checkbox.css), large and centred; the disc settles, the tick is
+     drawn, the words follow. Minimal's ledger entry is in tokens/themes/minimal-components.css. */
   .td-qa-sent {
     display: flex;
     flex-direction: column;
@@ -101,26 +103,54 @@
     text-align: center;
     pointer-events: none;
   }
-  .td-qa-sent svg {
-    color: var(--success-icon);
-    margin-bottom: var(--sp-2);
-    animation: td-qa-sent-in var(--duration-overlay) var(--ease-standard);
+  .td-qa-sent-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-bottom: var(--sp-3);
+    border-radius: var(--radius-full);
+    background: var(--success-icon);
+    /* A soft halo in the same green, so the disc sits in the card instead of on it */
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--success-icon) 16%, transparent);
+    /* The tick is the card showing through: white in light, near-black on the brighter dark-mode green */
+    color: var(--surface-card);
+    animation: td-qa-sent-mark var(--duration-overlay) var(--ease-standard) backwards;
+  }
+  /* Drawn from its short stroke up: the path runs the other way, so the dash is let in from its end. */
+  .td-qa-sent-mark svg path {
+    stroke-dasharray: 23;
+    animation: td-qa-sent-tick var(--duration-overlay) var(--ease-standard) var(--duration-fast) backwards;
   }
   .td-qa-sent-title {
     margin: 0;
     font: var(--type-page-title);
     color: var(--ink-900);
+    animation: td-qa-sent-text var(--duration-overlay) var(--ease-standard) var(--duration-fast) backwards;
   }
   .td-qa-sent-hint {
     margin: 0;
     font: var(--type-body);
     color: var(--ink-600);
     text-wrap: pretty;
+    animation: td-qa-sent-text var(--duration-overlay) var(--ease-standard) var(--duration-base) backwards;
   }
-  @keyframes td-qa-sent-in {
+  @keyframes td-qa-sent-mark {
     from {
       opacity: 0;
-      transform: scale(0.8);
+      transform: scale(0.6);
+    }
+  }
+  @keyframes td-qa-sent-tick {
+    from {
+      stroke-dashoffset: -23;
+    }
+  }
+  @keyframes td-qa-sent-text {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
     }
   }
   .td-qa-tools {
