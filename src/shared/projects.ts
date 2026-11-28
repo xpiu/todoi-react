@@ -79,7 +79,6 @@ export const PROJECT_TEMPLATES = [
   { id: "blank", name: "Blank", hint: "No lists yet", lists: [] as Array<[string, (typeof ITEM_STATUSES)[number]?]> },
   { id: "simple", name: "To-do, Doing, Done", hint: "To-do · Doing · Done", lists: [["To-do", "TODO"], ["Doing", "DOING"], ["Done", "DONE"]] as Array<[string, (typeof ITEM_STATUSES)[number]?]> },
   { id: "intake", name: "Intake", hint: "New · To-do · Doing · Done · Backlog", lists: [["New", "NEW"], ["To-do", "TODO"], ["Doing", "DOING"], ["Done", "DONE"], ["Backlog", "BACKLOG"]] as Array<[string, (typeof ITEM_STATUSES)[number]?]> },
-  { id: "weekly", name: "Weekly plan", hint: "This week · Next week · Later · Done", lists: [["This week", "TODO"], ["Next week"], ["Later", "BACKLOG"], ["Done", "DONE"]] as Array<[string, (typeof ITEM_STATUSES)[number]?]> },
 ] as const;
 
 /** "Helicopters Europe" → "HE", "Sales" → "SAL": the key-prefix suggestion for a new group. */

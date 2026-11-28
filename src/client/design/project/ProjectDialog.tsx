@@ -21,7 +21,7 @@ export const PROJECT_VISIBILITY: ReadonlyArray<{ value: ProjectVisibility; label
   { value: "shared", label: "Shared", icon: "users", hint: "Members and guests", detail: "Members and invited guests" },
   { value: "public", label: "Public", icon: "globe", hint: "Anyone with the link", detail: "Anyone with the link can view" },
 ];
-const TEMPLATE_ICONS: Record<string, IconName> = { blank: "square", simple: "kanban", intake: "inbox", weekly: "calendar" };
+const TEMPLATE_ICONS: Record<string, IconName> = { blank: "square", simple: "kanban", intake: "inbox" };
 
 export interface NewProject {
   name: string;
