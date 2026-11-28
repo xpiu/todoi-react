@@ -1,7 +1,10 @@
 @layer components {
   .td-group-options {
-    padding-bottom: var(--sp-1);
-    border-bottom: 1px solid var(--border-divider);
+    flex: 0 1 auto;
+    min-height: 44px;
+    overflow-y: auto;
+    padding: 6px;
+    border-top: 1px solid var(--border-divider);
   }
   .td-group-options-chevron {
     color: var(--ink-600);

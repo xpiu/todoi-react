@@ -1,4 +1,4 @@
-// SortMenu — the Sort action's panel: optional List grouping and one radio group per sort dimension.
+// SortMenu — the Sort action's panel: one radio group per sort dimension, then the optional List grouping pinned under them.
 // Picking the active sort key reverses it (the direction label says which way).
 import type { ReactNode } from "react";
 
@@ -42,7 +42,6 @@ export function SortMenu({ sections, options, sort, onSelect, onReset, grouping 
         ) : null}
       </div>
       <div className="td-sort-menu-scroll">
-        {grouping}
         {sections.map(([label, dim]) => (
           <div key={dim}>
             <div className="td-sort-menu-section">{label}</div>
@@ -71,6 +70,7 @@ export function SortMenu({ sections, options, sort, onSelect, onReset, grouping 
           </div>
         ))}
       </div>
+      {grouping}
     </div>
   );
 }
