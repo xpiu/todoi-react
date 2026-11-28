@@ -38,7 +38,9 @@ todoi is a lightweight task manager focused on usability, legibility, speed and 
 - [💻 Local development](#-local-development)
 - [🚀 Production](#-production)
 - [✅ Quality gates](#-quality-gates)
-- [QA notes](#qa-notes)
+- [🐞 Q&A notes and feedback tool and system](#-qa-notes-and-feedback-tool-and-system)
+- [📧 Email](#-email)
+- [📄 Licence](#-licence)
 
 ## 💎 Unique selling propositions
 
@@ -82,7 +84,7 @@ Open [localhost:5173](http://localhost:5173). Migrations and demo data load auto
 - **Status follows List** (was "Link Lists with Status"): a per-project switch on the Projects page (also in Project settings; default on). See [User flow, UI and UX](#-user-flow-ui-and-ux) and [DESIGN.md](DESIGN.md) (Project automation setting).
 - **Git sync:** a project kept in a file (Embridge Markdown, JSON or YAML) in a GitHub repository, synced both ways: three-way merge, a conflict dialog or a conflict policy, sync history with undo, and push webhooks. Connect under Settings › Storage & sync with a fine-grained token.
 - **Tools:** Inbox capture, filing and notifications; search, command palette, Archive/Trash with Undo, Settings and Account. Reviewed imports: Markdown task lists (Embridge), todoi JSON/YAML project files, Trello JSON or CSV. Export views/items to Markdown/CSV, print/save PDF, or export everything as a restorable `.zip`.
-- **QA notes.** With a confirmed `@todoi.com` account, press Ctrl+Shift+F (⌃⇧F on macOS) on any screen to report an issue with an annotated screenshot. See [QA notes](#qa-notes).
+- **QA notes.** With a confirmed `@todoi.com` account, press Ctrl+Shift+F (⌃⇧F on macOS) on any screen to report an issue with an annotated screenshot. See [QA notes](#-qa-notes-and-feedback-tool-and-system).
 - **Accounts:** private guest workspaces, email/password accounts, project roles and invite links, personal API tokens and account preferences stored in PostgreSQL.
 
 Current limits:
@@ -276,7 +278,7 @@ Environment variables override `.env`:
 - **`EMAIL_FROM`:** Default `todoi <no-reply@todoi.com>`; its domain must be verified at Resend.
 - **`EMAIL_REPLY_TO`:** Default `info@todoi.com`; sent as the Reply-To header so replies to the no-reply sender reach the Hostinger inbox.
 - **`npm run email:test -- <address>`:** Sends one test email through the same mailer (`src/server/email/sendTest.ts`) with the key and `EMAIL_FROM` from `.env`, and prints Resend's reason if it refuses. Before todoi.com is verified at Resend, add `--from onboarding@resend.dev` (Resend only delivers that sender to the account owner's own address).
-- **`QA_REPORT_TO`:** Default `info@todoi.com`; where QA notes are emailed (see [QA notes](#qa-notes)), with Reply-To set to the person who wrote the note.
+- **`QA_REPORT_TO`:** Default `info@todoi.com`; where QA notes are emailed (see [QA notes](#-qa-notes-and-feedback-tool-and-system)), with Reply-To set to the person who wrote the note.
 - **`EMAIL_DIR`:** Default `.data/emails` (`/data/emails` in the Docker image, on the volume); the development transport's folder. Operators see its newest emails, with their links, under Outbox in `/admin`.
 - **`SYNC_SECRET_KEY`:** 32+ characters; encrypts the GitHub tokens and webhook secrets Git sync stores. Unset, a key is derived from `BETTER_AUTH_SECRET`, so rotating that secret disconnects every repository.
 - **`RATE_LIMIT`:** Default `true` in production, `false` in development. Throttles every request per client address (1200/min), log-ins (30 per 10 min per address), sign-ups (10/h), guest workspaces (30/h), reset and confirmation emails (10/h per address, 5/h per recipient), each API token (600 per 10 min), tokens that don't work (20 per 10 min per address) and account exports (10/h per person), browser error reports (60 per 10 min per person) and GitHub webhooks (120/min per address); a refusal is 429 with `Retry-After`. Counts live in memory, per instance. Wrong passwords are also throttled per account (10 log-ins per 15 min, cleared by a log-in that works or a password reset; 5 wrong ones at "Confirm it's you"), in Postgres and always on. Limits are in `src/server/rateLimit.ts`.
@@ -328,7 +330,7 @@ Snapshots: `tests/e2e/__screenshots__/`, per platform. Update intentional change
 
 Archive/Trash visibility follows parent items/projects; restoring a container preserves children's own states. Permanent deletion cascades; project activity survives item deletion, but disappears with its project. Attachment cleanup runs after commit and as a job each minute, with retries backing off to one hour. What has been in the Trash for 90 days is deleted for good by the `trash-purge` job. Migrate before starting an updated API.
 
-## QA notes
+## 🐞 Q&A notes and feedback tool and system
 
 For todoi's own people, on local, staging and live: an account whose confirmed sign-in address ends in `@todoi.com` (`src/shared/qa.ts`; the seed makes `flo@todoi.com` and `info@todoi.com` in development). An `@todoi.com` account that hasn't confirmed its address yet can open the tool, but Submit answers "Confirm your email address first" and sends the confirmation link again (once); the note and the drawing wait, and Submit works as soon as the link is opened.
 
@@ -341,18 +343,22 @@ For todoi's own people, on local, staging and live: an account whose confirmed s
 - **Local sends are real** when `.env` has a `RESEND_API_KEY`; without one the email and its PNG land in `EMAIL_DIR`.
 - **Limits:** the picture is the viewport, not the whole page; hover states are not in the re-rendered still; images from other sites that forbid cross-origin reads come out as placeholders (Exact capture shows them).
 
-## Email
+## 📧 Email
 
 This webapp leans on email for a number of features. We pay for an email provider at Hostinger.
 
-Email provider: Hostinger
-Email web browser URL access: https://mail.hostinger.com/
-Package subscription for the inbox: "Starter Business Email"
-Billing date: 2030-05-01
-Auto-renewal of package at Hostinger: on
-API access to email for AI agents: yes, via Hostinger
-API access token: stored where we normally store keys
+- Email provider: Hostinger
+- Email web browser URL access: https://mail.hostinger.com/
+- Package subscription for the inbox: "Starter Business Email"
+- Billing date: 2030-05-01
+- Auto-renewal of package at Hostinger: on
+- API access to email for AI agents: yes, via Hostinger
+- API access token: stored where we normally store keys -> look for "HOSTINGER_MAIL_API_TOKEN"
+- API Token location: HOSTINGER_MAIL_API_TOKEN
+- API Base URL: https://api.mail.hostinger.com/api/v1
+- API Mailbox: info@todoi.com; (AI can find resourceId from GET /me )
+- API Docs: https://docs.hostinger.com
 
-## Licence
+## 📄 Licence
 
 project by Floris Zuallaert (Github user xpiu) 
