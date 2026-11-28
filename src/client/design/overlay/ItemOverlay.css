@@ -10,6 +10,15 @@
     margin: var(--sp-1) var(--sp-2);
     background: var(--border-divider);
   }
+  .td-modal.is-sheet .td-overlay-select-value {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
   .td-select-foot {
     width: 100%;
     border: 0;

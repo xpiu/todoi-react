@@ -101,6 +101,8 @@ export const Default: Story = {
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
     await waitFor(() => expect(dialog).toBeVisible());
     await expect(within(dialog).getByRole("heading", { level: 2, name: "Prepare the helicopter quote" })).toBeVisible();
+    await expect(within(dialog).getByRole("combobox", { name: "Move to list" })).toHaveTextContent(/^List: Doing$/);
+    await expect(within(dialog).getByRole("combobox", { name: "Status" })).toHaveTextContent(/^Status Doing$/);
     await expect(within(dialog).getByRole("button", { name: "Watching" })).toHaveAttribute("aria-pressed", "true");
     await expect(within(dialog).getByText("Blocked", { selector: ".td-relations-blocked" })).toBeVisible();
   },
@@ -250,14 +252,14 @@ export const MakeSubitemBlocked: Story = {
   },
 };
 /** "Status follows List" on, the item's Status set by its list: the List field moves the item, and Status reads
- * "Doing · set by list" (the suffix quiet). It opens, but only the current Status is enabled; "Change list…" hands over to the List field. */
+ * "Status Doing · set by list" (the suffix quiet). It opens, but only the current Status is enabled; "Change list…" hands over to the List field. */
 export const StatusFollowsList: Story = {
   args: { linkStatuses: true, lists: [{ id: "l1", name: "To do", statusRole: "TODO" }, { id: "l2", name: "Doing", statusRole: "DOING" }, { id: "l3", name: "Ideas" }] },
   async play({ args, canvasElement, userEvent }) {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
     const status = within(dialog).getByRole("combobox", { name: "Status: Doing · set by list" });
-    await expect(status).toHaveTextContent("Doing · set by list");
+    await expect(status).toHaveTextContent(/^Status Doing · set by list$/);
     await expect(status).toHaveAttribute("title", "Status · set by the list Doing");
     await userEvent.click(status);
     await expect(await page.findByRole("option", { name: "Done" })).toHaveAttribute("aria-disabled", "true");
@@ -273,7 +275,7 @@ export const StatusFollowsListEveryRole: Story = {
   async play({ canvasElement }) {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
-    await expect(within(dialog).getByRole("combobox", { name: "Move to list. Sets Status, now Doing" })).toBeInTheDocument();
+    await expect(within(dialog).getByRole("combobox", { name: "Move to list. Sets Status, now Doing" })).toHaveTextContent(/^List: Doing$/);
     await expect(within(dialog).queryByRole("combobox", { name: /^Status/ })).not.toBeInTheDocument();
   },
 };
@@ -284,7 +286,7 @@ export const StatusFollowsListDiffers: Story = {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Prepare the helicopter quote" });
     // No Status assigned: the field reads "No status", and so does the picker's first option
-    await expect(within(dialog).getByRole("combobox", { name: "Status" })).toHaveTextContent("No status");
+    await expect(within(dialog).getByRole("combobox", { name: "Status" })).toHaveTextContent(/^No status$/);
     await userEvent.click(within(dialog).getByRole("combobox", { name: "Status" }));
     await expect(await page.findByRole("option", { name: "No status" })).toBeInTheDocument();
     await userEvent.click(await page.findByRole("option", { name: "Done" }));

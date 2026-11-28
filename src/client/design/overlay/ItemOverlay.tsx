@@ -285,8 +285,9 @@ export function ItemOverlay(p: ItemOverlayProps) {
   const status = statusValue(item.status, item.done);
   // "Status follows List": the list sets the Status; a locked Status only points at the List field.
   const lock = p.inbox ? "free" : statusLock(p.lists, p.linkStatuses, item);
-  const listName = p.lists.find((l) => l.id === item.listId)?.name ?? "";
+  const listName = p.lists.find((l) => l.id === item.listId)?.name;
   const statusName = STATUS_OPTIONS.find((o) => o.value === status)?.label ?? "No status";
+  const statusTriggerLabel = status === NO_VALUE ? statusName : `Status ${statusName}`;
   const changeList = () => {
     setStatusOpen(false);
     setListOpen(true);
@@ -451,20 +452,33 @@ export function ItemOverlay(p: ItemOverlayProps) {
               </Popover>
             ) : null
           ) : (
-            <Select block tier="detached" aria-label={lock === "hidden" ? `Move to list. Sets Status, now ${statusName}` : "Move to list"} title={lock === "hidden" ? "Move to list · sets Status" : "Move to list"} open={listOpen} onOpenChange={setListOpen} value={item.listId} options={listOpts} width={200} onChange={(v) => v !== item.listId && p.onMoveToList(v)} footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. The project's Status follows List setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined} />
+            <Select
+              block
+              tier="detached"
+              aria-label={lock === "hidden" ? `Move to list. Sets Status, now ${statusName}` : "Move to list"}
+              title={lock === "hidden" ? "Move to list · sets Status" : "Move to list"}
+              open={listOpen}
+              onOpenChange={setListOpen}
+              value={item.listId}
+              options={listOpts}
+              renderValue={listName === undefined ? undefined : () => <span className="td-overlay-select-value">List: {listName}</span>}
+              width={200}
+              onChange={(v) => v !== item.listId && p.onMoveToList(v)}
+              footer={p.onCreateList || p.onManageLinks ? <>{p.onCreateList ? <button type="button" className="td-menu-item td-select-foot" onClick={p.onCreateList}><Icon name="plus" size={15} />Create new list</button> : null}{p.onManageLinks ? <><div className="td-menu-divider" role="separator" /><button type="button" className="td-menu-item td-select-foot" title="A list can carry a Status role. The project's Status follows List setting decides whether moving an item also updates its Status." onClick={p.onManageLinks}><Icon name="link-2" size={15} />Linked to a Status role</button></> : null}</> : undefined}
+            />
           )}
           {lock === "hidden" ? null : lock === "locked" ? (
             <Select
               block
               tier="detached"
               aria-label={labelWithValue("Status", `${statusName} · set by list`)}
-              title={`Status · set by the list ${listName}`}
+              title={`Status · set by the list ${listName ?? ""}`}
               open={statusOpen}
               onOpenChange={setStatusOpen}
               value={status}
               options={lockedStatusOptions(status)}
               width={220}
-              renderValue={() => <>{statusName}<span className="td-select-value-suffix"> · set by list</span></>}
+              renderValue={() => <span className="td-overlay-select-value">{statusTriggerLabel}<span className="td-select-value-suffix"> · set by list</span></span>}
               footer={
                 <>
                   <div className="td-menu-divider" role="separator" />
@@ -484,6 +498,7 @@ export function ItemOverlay(p: ItemOverlayProps) {
               title="Status"
               value={status}
               options={STATUS_OPTIONS}
+              renderValue={() => <span className="td-overlay-select-value">{statusTriggerLabel}</span>}
               width={200}
               onChange={(v) => p.onSetStatus(v === NO_VALUE ? null : (v as ItemStatus))}
               footer={
