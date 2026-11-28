@@ -13,6 +13,7 @@ import { emailUnconfirmed, sendEmailConfirmation } from "../auth";
 import { errorMessage } from "../data/api";
 import { sendQaNote } from "../data/qaReports";
 import { Button } from "../design/core/Button";
+import { Icon } from "../design/core/Icon";
 import { IconButton } from "../design/core/IconButton";
 import { InlineError } from "../design/core/InlineError";
 import { Segmented } from "../design/core/Segmented";
@@ -27,6 +28,8 @@ import "./qa.css";
 const HOST_ID = "td-qa-root";
 /** The panel's distance from the viewport edge, by default and at least */
 const EDGE = 16;
+/** How long the confirmation stays before the tool leaves */
+const SENT_MS = 2200;
 const MODES: ReadonlyArray<{ id: QaMode; label: string }> = [{ id: "draw", label: "Draw" }, { id: "use", label: "Use the app" }];
 
 type Status = { kind: "idle" | "sending" | "sent" } | { kind: "error"; message: string };
@@ -264,10 +267,10 @@ export default function QaTool() {
     }
   };
 
-  // "Sent" shows for a moment, then the tool leaves.
+  // The confirmation shows for a moment, then the tool leaves.
   useEffect(() => {
     if (status.kind !== "sent") return;
-    const timer = window.setTimeout(close, 900);
+    const timer = window.setTimeout(close, SENT_MS);
     return () => window.clearTimeout(timer);
   }, [status.kind, close]);
 
@@ -292,36 +295,50 @@ export default function QaTool() {
           <h2 className="td-qa-title">QA note</h2>
           <IconButton name="x" label="Close" size={24} onClick={close} />
         </header>
-        <div className="td-qa-tools">
-          <Segmented aria-label="Pointer" size="sm" stretch options={MODES} value={mode} onChange={setMode} disabled={busy} />
-          {canCaptureScreen() ? <IconButton name="camera" label="Capture the screen exactly" tooltip="Exact capture" tooltipSide="top" size={24} disabled={busy} onClick={() => void captureExactly()} /> : null}
-          <IconButton name="undo-2" label="Undo the last stroke" tooltip="Undo stroke" tooltipSide="top" size={24} disabled={!drawn || busy} onClick={undoStroke} />
-          <IconButton name="trash-2" label="Clear the drawing" tooltip="Clear drawing" tooltipSide="top" size={24} disabled={!drawn || busy} onClick={clearStrokes} />
+        {/* The form and the confirmation share one cell: the panel keeps its size when the note is sent. */}
+        <div className="td-qa-body">
+          <div className="td-qa-form" inert={status.kind === "sent"}>
+          <div className="td-qa-tools">
+            <Segmented aria-label="Pointer" size="sm" stretch options={MODES} value={mode} onChange={setMode} disabled={busy} />
+            {canCaptureScreen() ? <IconButton name="camera" label="Capture the screen exactly" tooltip="Exact capture" tooltipSide="top" size={24} disabled={busy} onClick={() => void captureExactly()} /> : null}
+            <IconButton name="undo-2" label="Undo the last stroke" tooltip="Undo stroke" tooltipSide="top" size={24} disabled={!drawn || busy} onClick={undoStroke} />
+            <IconButton name="trash-2" label="Clear the drawing" tooltip="Clear drawing" tooltipSide="top" size={24} disabled={!drawn || busy} onClick={clearStrokes} />
+          </div>
+          <TextField
+            multiline
+            ref={fieldRef}
+            rows={4}
+            className="td-qa-text"
+            aria-label="What is wrong"
+            placeholder="What's wrong here?"
+            maxLength={MAX_QA_TEXT}
+            value={text}
+            readOnly={busy}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (status.kind === "error") setStatus({ kind: "idle" });
+            }}
+          />
+          <InlineError message={status.kind === "error" ? status.message : null} />
+          <footer className="td-qa-foot">
+            <span className="td-qa-status" role="status">
+              {status.kind === "sending" ? "Sending…" : ""}
+            </span>
+            <Button variant="primary" disabled={busy} onClick={() => void submit()}>
+              Submit
+            </Button>
+          </footer>
+          </div>
+          <div className="td-qa-sent" role="status">
+            {status.kind === "sent" ? (
+              <>
+                <Icon name="circle-check" size={44} />
+                <p className="td-qa-sent-title">Note sent</p>
+                <p className="td-qa-sent-hint">Screenshot and page details included.</p>
+              </>
+            ) : null}
+          </div>
         </div>
-        <TextField
-          multiline
-          ref={fieldRef}
-          rows={4}
-          className="td-qa-text"
-          aria-label="What is wrong"
-          placeholder="What's wrong here?"
-          maxLength={MAX_QA_TEXT}
-          value={text}
-          readOnly={busy}
-          onChange={(e) => {
-            setText(e.target.value);
-            if (status.kind === "error") setStatus({ kind: "idle" });
-          }}
-        />
-        <InlineError message={status.kind === "error" ? status.message : null} />
-        <footer className="td-qa-foot">
-          <span className="td-qa-status" role="status">
-            {status.kind === "sending" ? "Sending…" : status.kind === "sent" ? "Sent" : ""}
-          </span>
-          <Button variant="primary" disabled={busy} onClick={() => void submit()}>
-            Submit
-          </Button>
-        </footer>
       </section>
     </div>
   );

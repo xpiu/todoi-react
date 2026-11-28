@@ -73,7 +73,7 @@ test("todoi's own people draw on the screen, write a note and submit it", async 
   await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toHaveCount(0);
 
   await panel.getByRole("button", { name: "Submit" }).click();
-  await expect(panel.getByRole("status")).toHaveText("Sent");
+  await expect(panel.getByRole("status").filter({ hasText: "Note sent" })).toBeVisible();
   await expect(panel).toHaveCount(0);
 
   const parts = partsOf(sent!);
@@ -129,7 +129,7 @@ test("an address that isn't confirmed yet gets its link sent once, and the note 
 
   confirmed = true;
   await submit.click();
-  await expect(panel.getByRole("status")).toHaveText("Sent");
+  await expect(panel.getByRole("status").filter({ hasText: "Note sent" })).toBeVisible();
 });
 
 test("hiding keeps the draft, the panel moves, and Use the app lets clicks through", async ({ page }) => {

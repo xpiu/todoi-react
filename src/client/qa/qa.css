@@ -75,6 +75,54 @@
     margin: 0;
     font: var(--type-section);
   }
+  .td-qa-body {
+    display: grid;
+  }
+  .td-qa-form,
+  .td-qa-sent {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+  .td-qa-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+  .td-qa-form[inert] {
+    visibility: hidden;
+  }
+  /* The confirmation, in the form's place: a large tick, one title, one line. */
+  .td-qa-sent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    text-align: center;
+    pointer-events: none;
+  }
+  .td-qa-sent svg {
+    color: var(--success-icon);
+    margin-bottom: var(--sp-2);
+    animation: td-qa-sent-in var(--duration-overlay) var(--ease-standard);
+  }
+  .td-qa-sent-title {
+    margin: 0;
+    font: var(--type-page-title);
+    color: var(--ink-900);
+  }
+  .td-qa-sent-hint {
+    margin: 0;
+    font: var(--type-body);
+    color: var(--ink-600);
+    text-wrap: pretty;
+  }
+  @keyframes td-qa-sent-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
   .td-qa-tools {
     display: flex;
     align-items: center;
