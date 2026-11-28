@@ -11,6 +11,7 @@
 import { createPrivateKey, createSign, randomBytes, timingSafeEqual, type KeyObject } from "node:crypto";
 import { eq } from "drizzle-orm";
 
+import { innerPath } from "../../shared/innerPath";
 import { db } from "../db";
 import { githubAccounts, type GitHubAccount } from "../db/schema";
 import { env } from "../env";
@@ -218,5 +219,5 @@ export interface RoundTrip {
 }
 export const newNonce = () => randomBytes(24).toString("base64url");
 export const sameNonce = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
-/** Only a path inside the app: "/settings?s=storage", never "//evil.example" or a full URL. */
-export const safeNext = (next: string | undefined) => (next && /^\/(?![/\\])/.test(next) ? next : "/settings?s=storage");
+/** Only a path inside the app: "/settings?s=storage", never another site however it is spelled (shared/innerPath.ts). */
+export const safeNext = (next: string | undefined) => innerPath(next, "/settings?s=storage");

@@ -2,6 +2,7 @@
 // shared/socialSignIn.ts), create an account, reset a password (request and the emailed
 // link's landing), confirm an email address or a change of address, the invite landing, and the page
 // after an account is deleted.
+import { innerPath } from "../../../shared/innerPath";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -32,7 +33,7 @@ const verifyRoute = getRouteApi("/verify-email");
 const confirmEmailRoute = getRouteApi("/confirm-email");
 const deletedRoute = getRouteApi("/account-deleted");
 
-const safeNext = (next: string | undefined) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+const safeNext = (next: string | undefined) => innerPath(next, "/");
 
 /** Log in with a password; a guest's queued changes sync first (they move to the account). Null, or why not. */
 async function signInWithPassword(email: string, password: string): Promise<string | null> {

@@ -239,7 +239,8 @@ export function useGitSyncSettings({ projects, currentProjectId, online, enabled
         checked={checked}
         busy={gm.check.isPending || gm.connect.isPending}
         github={
-          connections.data?.github.app
+          // An API from before the app (mid-deploy, a rollback) answers without `github`: the token's way then.
+          connections.data?.github?.app
             ? {
                 // Who they are on GitHub is known at once; what they can pick arrives a moment later.
                 login: github.data ? github.data.login : connections.data.github.login,

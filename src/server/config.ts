@@ -13,6 +13,8 @@ const LOOPBACK = /^(localhost|127\.0\.0\.1|\[::1\])$/;
 /** An optional value where an empty string counts as unset (`KEY=` in a .env file) */
 const optionalValue = z.string().trim().optional().transform((v) => v || undefined);
 
+const GITHUB_APP_KEYS = ["GITHUB_APP_ID", "GITHUB_APP_SLUG", "GITHUB_APP_CLIENT_ID", "GITHUB_APP_CLIENT_SECRET", "GITHUB_APP_PRIVATE_KEY"] as const;
+
 export function parseEnv(source: Record<string, string | undefined>) {
   const dev = source.NODE_ENV !== "production";
   const schema = z
@@ -68,7 +70,7 @@ export function parseEnv(source: Record<string, string | undefined>) {
       GITHUB_URL: z.url().default("https://github.com"),
       /**
        * The GitHub App behind "Continue with GitHub" in Git sync (gitSync/githubApp.ts): repositories are picked on
-       * GitHub instead of pasting a token. All five or none; without them Git sync connects with a token only.
+       * GitHub instead of pasting a token. All five; with any missing the app is off (a warning says which) and Git sync connects with a token only.
        * The private key is the PEM from GitHub, as is, with `\n` for line breaks, or base64-encoded.
        */
       GITHUB_APP_ID: optionalValue,
@@ -82,9 +84,6 @@ export function parseEnv(source: Record<string, string | undefined>) {
       SYNC_SECRET_KEY: optionalValue.pipe(z.string().min(32, "SYNC_SECRET_KEY must be at least 32 characters").optional()),
     })
     .superRefine((e, ctx) => {
-      const app = ["GITHUB_APP_ID", "GITHUB_APP_SLUG", "GITHUB_APP_CLIENT_ID", "GITHUB_APP_CLIENT_SECRET", "GITHUB_APP_PRIVATE_KEY"] as const;
-      const unset = app.filter((k) => !e[k]);
-      if (unset.length && unset.length < app.length) ctx.addIssue({ code: "custom", path: [unset[0]!], message: `The GitHub App needs all of ${app.join(", ")}; missing: ${unset.join(", ")}` });
       if (dev) return;
       if (e.BETTER_AUTH_SECRET === DEV_AUTH_SECRET || /change-me|dev-secret|ci-only|example/i.test(e.BETTER_AUTH_SECRET)) ctx.addIssue({ code: "custom", path: ["BETTER_AUTH_SECRET"], message: "BETTER_AUTH_SECRET is a development or example value; generate a new one (openssl rand -base64 32)" });
       const url = new URL(e.APP_URL);
@@ -96,5 +95,8 @@ export function parseEnv(source: Record<string, string | undefined>) {
     const lines = parsed.error.issues.map((i) => `  - ${i.path.join(".") || "env"}: ${i.message}`);
     throw new Error(`todoi can't start: the ${dev ? "development" : "production"} configuration is invalid.\n${lines.join("\n")}`);
   }
+  // A half-set GitHub App is off (Git sync still takes tokens), never a server that won't start: say what is missing.
+  const unset = GITHUB_APP_KEYS.filter((k) => !parsed.data[k]);
+  if (unset.length && unset.length < GITHUB_APP_KEYS.length && !source.VITEST) console.warn(`The GitHub App is off: it needs all of ${GITHUB_APP_KEYS.join(", ")}; missing: ${unset.join(", ")}`);
   return { ...parsed.data, NOINDEX: parsed.data.NOINDEX ?? parsed.data.SIGN_UP === "invite", DEV: dev };
 }

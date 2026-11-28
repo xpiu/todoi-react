@@ -170,6 +170,9 @@ describe("Continue with GitHub", () => {
     expect(await deliver("push", push, "someone-else")).toEqual({ status: 401 });
     expect(await deliver("installation_repositories", { action: "removed", installation: { id: 7 } })).toEqual({ status: 202, synced: [c!.id] });
     expect(await deliver("ping", { zen: "Keep it logically awesome." })).toEqual({ status: 200, synced: [] });
+    // Unsigned junk never reaches the database as anything but text or a whole number: a refusal, not a fault.
+    for (const body of ["null", "[]", '"x"', JSON.stringify({ repository: { id: "1; drop table users", full_name: "acme/roadmap" } }), JSON.stringify({ repository: { id: 1e40, full_name: { a: 1 } }, installation: { id: "7" } })])
+      expect((await handleWebhook({ event: "push", delivery: nanoid(), signature: "sha256=00" }, body, async (id) => void queued.push(id))).status).toBeGreaterThanOrEqual(400);
     expect(queued).toEqual([c!.id, c!.id]);
 
     // The repository is taken out of the installation on GitHub.

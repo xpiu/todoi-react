@@ -22,11 +22,11 @@ describe("server configuration", () => {
     expect(() => prod({ APP_URL: "https://todoi.com", BETTER_AUTH_SECRET: "short-but-random-1234" })).toThrow(/at least 32/);
   });
 
-  it("takes the GitHub App's settings together or not at all", () => {
+  it("starts with a half-set GitHub App (it is off, with a warning)", () => {
     const app = { GITHUB_APP_ID: "1", GITHUB_APP_SLUG: "todoi", GITHUB_APP_CLIENT_ID: "Iv1.x", GITHUB_APP_CLIENT_SECRET: "s", GITHUB_APP_PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----" };
     expect(parseEnv({ DATABASE_URL, ...app }).GITHUB_APP_SLUG).toBe("todoi");
     expect(parseEnv({ DATABASE_URL, GITHUB_APP_ID: "" }).GITHUB_APP_ID).toBeUndefined();
-    expect(() => parseEnv({ DATABASE_URL, ...app, GITHUB_APP_CLIENT_SECRET: "" })).toThrow(/GitHub App needs all of[\s\S]*missing: GITHUB_APP_CLIENT_SECRET/);
+    expect(parseEnv({ DATABASE_URL, ...app, GITHUB_APP_CLIENT_SECRET: "" })).toMatchObject({ GITHUB_APP_ID: "1", GITHUB_APP_CLIENT_SECRET: undefined });
   });
 
   it("refuses plain http outside localhost and the demo seed in production", () => {

@@ -84,6 +84,10 @@ export async function handleWebhook(headers: { event?: string; delivery?: string
   } catch {
     return { status: 400 };
   }
+  // Unverified so far: a body that isn't an object, or ids that aren't whole numbers, never reach a query.
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return { status: 400 };
+  const wholeId = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) && v > 0 ? v : null);
+  const installationId = wholeId(payload.installation?.id), repoId = wholeId(payload.repository?.id);
   const fromApp = !!env.GITHUB_APP_WEBHOOK_SECRET && signatureValid(env.GITHUB_APP_WEBHOOK_SECRET, body, headers.signature);
   const fresh = () => {
     if (!headers.delivery) return true;
@@ -93,16 +97,17 @@ export async function handleWebhook(headers: { event?: string; delivery?: string
   };
   // The app was removed, suspended or lost repositories: its connections sync now and report it themselves.
   if (fromApp && (headers.event === "installation" || headers.event === "installation_repositories")) {
-    if (!payload.installation?.id || !fresh()) return { status: 200, synced: [] };
-    const hit = await db.select({ id: gitConnections.id }).from(gitConnections).where(eq(gitConnections.installationId, payload.installation.id));
+    if (!installationId || !fresh()) return { status: 200, synced: [] };
+    const hit = await db.select({ id: gitConnections.id }).from(gitConnections).where(eq(gitConnections.installationId, installationId));
     for (const c of hit) await schedule(c.id);
     return { status: 202, synced: hit.map((c) => c.id) };
   }
-  const [owner, repo] = (payload.repository?.full_name ?? "").split("/");
+  const fullName = payload.repository?.full_name;
+  const [owner, repo] = (typeof fullName === "string" ? fullName : "").split("/");
   if (!owner || !repo) return fromApp ? { status: 200, synced: [] } : { status: 400 };
   // By name, or by id: a repository renamed on GitHub pushes under its new name before todoi has followed it.
   const named = and(sql`lower(${gitConnections.owner}) = ${owner.toLowerCase()}`, sql`lower(${gitConnections.repo}) = ${repo.toLowerCase()}`);
-  const candidates = await db.select().from(gitConnections).where(payload.repository?.id ? or(named, eq(gitConnections.repoId, payload.repository.id)) : named);
+  const candidates = await db.select().from(gitConnections).where(repoId ? or(named, eq(gitConnections.repoId, repoId)) : named);
   const verified = candidates.filter((c) => {
     if (c.installationId) return fromApp;
     const secret = c.hookSecretCipher ? open(c.hookSecretCipher) : null;

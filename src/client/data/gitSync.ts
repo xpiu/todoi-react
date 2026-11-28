@@ -18,7 +18,7 @@ export const useGitConnection = (projectId: string | null | undefined) =>
 
 export const useGitConnections = (enabled = true) =>
   // Pushes to GitHub sync on the server by themselves: refresh what Settings shows while it is open.
-  useQuery({ queryKey: ["git"], queryFn: ({ signal }) => api.api.git.$get(undefined, { init: { signal } }).then((r) => unwrap<{ connections: GitConnectionView[]; github: Pick<GitHubLinkView, "app" | "login"> }>(r)), enabled, refetchInterval: 15_000 });
+  useQuery({ queryKey: ["git"], queryFn: ({ signal }) => api.api.git.$get(undefined, { init: { signal } }).then((r) => unwrap<{ connections: GitConnectionView[]; github?: Pick<GitHubLinkView, "app" | "login"> }>(r)), enabled, refetchInterval: 15_000 });
 
 /**
  * The person's link to GitHub through the GitHub App, and the repositories they can pick. Asked only while
