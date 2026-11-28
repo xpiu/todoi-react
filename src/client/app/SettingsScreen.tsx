@@ -1,7 +1,7 @@
 // Settings and Account on the SettingsShell: every row is declared in the registries below, so the
 // nav, search and layout follow. Rows that need a backend not built yet say so in their hint.
 // Spec: DESIGN.md › Settings, Account.
-import { getRouteApi, useNavigate, type UseNavigateResult } from "@tanstack/react-router";
+import { getRouteApi, useNavigate, useRouterState, type UseNavigateResult } from "@tanstack/react-router";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { LABEL_COLORS, type LabelColor } from "../../shared/enums";
@@ -112,10 +112,12 @@ const SUPPORT_LINKS = [["status", "Service status", "Uptime and incidents", "htt
 export function SettingsScreen({ page }: { page: Page }) {
   const search = (page === "settings" ? settingsRoute : accountRoute).useSearch();
   const navigate = useNavigate();
+  // The page this visit started on stays first in the nav: it travels in the history entry, so Back, Forward and a reload keep it.
+  const lead = useRouterState({ select: (s) => s.location.state.settingsLead }) ?? page;
   const { pages, dialogs } = useSettingsPages(page);
   return (
     <>
-      <SettingsShell pages={pages} page={page} section={search.s} onNavigate={(p, s) => void navigate({ to: p === "settings" ? "/settings" : "/account", search: { s } })} />
+      <SettingsShell pages={pages} page={page} section={search.s} lead={lead} onNavigate={(p, s) => void navigate({ to: p === "settings" ? "/settings" : "/account", search: { s }, state: (prev) => ({ ...prev, settingsLead: lead }) })} />
       {dialogs}
     </>
   );

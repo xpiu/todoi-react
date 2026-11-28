@@ -153,4 +153,8 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }
+  interface HistoryState {
+    /** The settings page (/settings or /account) a visit started on; it stays first in the page nav (SettingsScreen). */
+    settingsLead?: "settings" | "account";
+  }
 }

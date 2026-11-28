@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { nanoid } from "nanoid";
 
-import { expectScope, trackAccounts, projectIdOnPage, useScope } from "./helpers";
+import { expectScope, trackAccounts, projectIdOnPage, signIn, useScope } from "./helpers";
 import { apiOffline } from "./sync-helpers";
 
 // Settings › General and › Notifications change what they describe. Each test runs in a fresh guest
@@ -162,4 +162,31 @@ test("confirmed account preferences survive an API-offline reload", async ({ pag
   } finally {
     await reconnect();
   }
+});
+
+test("the settings nav keeps the page the visit started on first", async ({ page }) => {
+  await signIn(page);
+  const heads = page.locator(".td-settings-navhead");
+  const nav = page.getByRole("navigation", { name: "Settings pages" });
+  // Entered through Settings: opening an Account section moves nothing in the nav
+  await page.goto("/settings");
+  await expect(heads).toHaveText(["Settings", "Account"]);
+  await nav.getByRole("button", { name: "Profile", exact: true }).click();
+  await expect(page).toHaveURL(/\/account\?s=profile$/);
+  await expect(nav.getByRole("button", { name: "Profile", exact: true })).toHaveAttribute("aria-current", "true");
+  await expect(heads).toHaveText(["Settings", "Account"]);
+  // … also after a reload, a further section, and Back
+  await page.reload();
+  await expect(heads).toHaveText(["Settings", "Account"]);
+  await nav.getByRole("button", { name: "Security", exact: true }).click();
+  await expect(heads).toHaveText(["Settings", "Account"]);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/account\?s=profile$/);
+  await expect(heads).toHaveText(["Settings", "Account"]);
+  // Entered through Account: Account leads, and stays first on a Settings section
+  await page.goto("/account");
+  await expect(heads).toHaveText(["Account", "Settings"]);
+  await nav.getByRole("button", { name: "Appearance", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\?s=appearance$/);
+  await expect(heads).toHaveText(["Account", "Settings"]);
 });

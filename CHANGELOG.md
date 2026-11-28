@@ -4,6 +4,7 @@ All notable changes to Todoi. Format: [Keep a Changelog](https://keepachangelog.
 
 ## Unreleased — 2026-10-06
 
+- Keep the Settings and Account page nav in place: the page you opened first stays on top, so picking a section of the other page no longer swaps the two groups.
 - Move “Group items by” into the Sort dropdown in List view. The dropdown shows the current grouping and keeps the grouping controls together.
 - Add QA notes for todoi's own people (a confirmed `@todoi.com` sign-in): Ctrl+Shift+F (⌃⇧F) on any screen opens a small panel that can be dragged anywhere, freezes the screen and turns the cursor into a red pencil to draw on it; write what is wrong and Submit. The note is stored with its screenshot (drawing included), the page, browser, viewport, theme, build and the elements under the drawing, emailed to `QA_REPORT_TO` (`info@todoi.com`) with the PNG attached, and listed under QA notes in the operator console with Resolve. "Use the app" lets clicks through to change what is on screen; "Exact capture" swaps the re-rendered still for the tab's real pixels through the browser's screen-sharing prompt.
 - Make the QA note confirmation easy to see: after Submit the panel shows a large tick with "Note sent" in the form's place for about two seconds, instead of a small "Sent" beside the button for under one.

@@ -63,6 +63,8 @@ export interface SettingsShellProps {
   pages: SettingsPage[];
   page: string;
   section?: string;
+  /** The page listed first in the nav: the one the visit started on, so opening a section of the other page reorders nothing. Defaults to `page` */
+  lead?: string;
   onNavigate: (page: string, section: string) => void;
 }
 
@@ -141,12 +143,13 @@ export function SettingsPageFrame({ title, crumb, children }: { title: string; c
 const rowText = (r: SettingsRow) => [typeof r.label === "string" ? r.label : "", r.hint ?? "", r.bodyText ?? "", ...(r.keywords ?? [])].join(" ").toLowerCase();
 const groupText = (g: SettingsGroup) => [g.title, g.heading ?? ""].join(" ").toLowerCase();
 
-export function SettingsShell({ pages, page, section, onNavigate }: SettingsShellProps) {
+export function SettingsShell({ pages, page, section, lead, onNavigate }: SettingsShellProps) {
   const [q, setQ] = useState("");
   const [hit, setHit] = useState<string | null>(null);
   const query = q.trim().toLowerCase();
   const cur = pages.find((p) => p.id === page) ?? pages[0]!;
   const sec = cur.sections.find((s) => s.id === section) ?? cur.sections[0]!;
+  const first = pages.find((p) => p.id === lead) ?? cur;
   const results = query
     ? pages.flatMap((p) =>
         p.sections.flatMap((s) =>
@@ -202,7 +205,7 @@ export function SettingsShell({ pages, page, section, onNavigate }: SettingsShel
             ) : null}
           </div>
           <div className="td-settings-navlist">
-            {[cur, ...pages.filter((p) => p.id !== cur.id)].map((p) => (
+            {[first, ...pages.filter((p) => p.id !== first.id)].map((p) => (
               <div key={p.id} className="td-settings-navpage">
                 <div className="td-settings-navhead">{p.title}</div>
                 {p.sections.map((s) => (

@@ -108,12 +108,14 @@ const PAGES: SettingsPage[] = [
   },
 ];
 
-// Story state models the router: the page and section come from the URL in the app.
+// Story state models the router: the page and section come from the URL in the app, and the page the
+// visit started on stays first in the nav.
 function RoutedShell(args: SettingsShellProps) {
   const [loc, setLoc] = useState({ page: args.page, section: args.section });
   return (
     <SettingsShell
       {...args}
+      lead={args.lead ?? args.page}
       page={loc.page}
       section={loc.section}
       onNavigate={(page, section) => {
