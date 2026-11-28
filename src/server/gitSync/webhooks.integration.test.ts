@@ -39,7 +39,7 @@ async function connected(path = `${nanoid(6)}.md`) {
   await db.insert(lists).values({ id: listId, projectId, name: "To-do", statusRole: "TODO" });
   await db.insert(items).values({ id: nanoid(), projectId, listId, title: "First", keyNumber: 1 });
   await db.insert(members).values({ projectId, userId, role: "owner" });
-  const { connection } = await connectProject({ projectId, access: { token: TOKEN }, owner: "acme", repo: "hooks", branch: "main", path, format: "embridge", mode: "store" }, userId);
+  const { connection } = await connectProject({ projectId, token: TOKEN, owner: "acme", repo: "hooks", branch: "main", path, format: "embridge", mode: "store" }, userId);
   expect(await registerWebhook(connection, TOKEN)).toBe(true);
   const [c] = await db.select().from(gitConnections).where(eq(gitConnections.id, connection.id));
   return { c: c!, projectId, secret: open(c!.hookSecretCipher!)! };

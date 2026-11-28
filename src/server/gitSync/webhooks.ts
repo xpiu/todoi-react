@@ -1,15 +1,13 @@
 // Inbound GitHub push webhooks: a push that touches a connected file starts a sync of that project, so
 // an edit on GitHub (by a person, an agent or CI) reaches todoi without anyone pressing Sync now.
 //
-// A connection made with a token has its own webhook with its own secret (sealed at rest); connections
-// through the GitHub App share the app's webhook and its GITHUB_APP_WEBHOOK_SECRET. A delivery is trusted
-// only when its X-Hub-Signature-256 verifies — in constant time — against one of those for that
-// repository; anything else gets a bare 401. The app's webhook also says when an installation is removed,
-// suspended or loses repositories: those connections sync at once, so they say what happened. Deliveries are capped in size, repeated delivery ids are
+// Each connection has its own webhook with its own secret (sealed at rest). A delivery is trusted only
+// when its X-Hub-Signature-256 verifies — in constant time — against a connection for that repository
+// and branch; anything else gets a bare 401. Deliveries are capped in size, repeated delivery ids are
 // dropped, todoi's own commits are recognised and skipped, and the sync is a durable job (jobKinds.ts),
 // coalesced per connection and retried, that runs after the response (GitHub wants one within 10 s).
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { and, desc, eq, or, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "../db";
 import { gitConnections, gitSyncRuns, type GitConnection } from "../db/schema";
@@ -54,14 +52,10 @@ export function signatureValid(secret: string, body: string, header: string | un
   return expected.length === given.length && timingSafeEqual(expected, given);
 }
 
-/** Pushes to app connections sync on their own when the app's webhook secret is set and GitHub can reach this app. */
-export const appWebhook = () => !!env.GITHUB_APP_WEBHOOK_SECRET && webhookUrl() !== null;
-
 interface PushPayload {
   ref?: string;
   after?: string;
-  installation?: { id?: number };
-  repository?: { id?: number; full_name?: string; name?: string; owner?: { login?: string; name?: string } };
+  repository?: { full_name?: string; name?: string; owner?: { login?: string; name?: string } };
   commits?: Array<{ id?: string; added?: string[]; modified?: string[]; removed?: string[] }>;
   head_commit?: { id?: string; added?: string[]; modified?: string[]; removed?: string[] } | null;
 }
@@ -84,32 +78,22 @@ export async function handleWebhook(headers: { event?: string; delivery?: string
   } catch {
     return { status: 400 };
   }
-  const fromApp = !!env.GITHUB_APP_WEBHOOK_SECRET && signatureValid(env.GITHUB_APP_WEBHOOK_SECRET, body, headers.signature);
-  const fresh = () => {
-    if (!headers.delivery) return true;
-    if (seen.has(headers.delivery)) return false;
-    remember(headers.delivery);
-    return true;
-  };
-  // The app was removed, suspended or lost repositories: its connections sync now and report it themselves.
-  if (fromApp && (headers.event === "installation" || headers.event === "installation_repositories")) {
-    if (!payload.installation?.id || !fresh()) return { status: 200, synced: [] };
-    const hit = await db.select({ id: gitConnections.id }).from(gitConnections).where(eq(gitConnections.installationId, payload.installation.id));
-    for (const c of hit) await schedule(c.id);
-    return { status: 202, synced: hit.map((c) => c.id) };
-  }
   const [owner, repo] = (payload.repository?.full_name ?? "").split("/");
-  if (!owner || !repo) return fromApp ? { status: 200, synced: [] } : { status: 400 };
-  // By name, or by id: a repository renamed on GitHub pushes under its new name before todoi has followed it.
-  const named = and(sql`lower(${gitConnections.owner}) = ${owner.toLowerCase()}`, sql`lower(${gitConnections.repo}) = ${repo.toLowerCase()}`);
-  const candidates = await db.select().from(gitConnections).where(payload.repository?.id ? or(named, eq(gitConnections.repoId, payload.repository.id)) : named);
+  if (!owner || !repo) return { status: 400 };
+  const candidates = await db
+    .select()
+    .from(gitConnections)
+    .where(and(sql`lower(${gitConnections.owner}) = ${owner.toLowerCase()}`, sql`lower(${gitConnections.repo}) = ${repo.toLowerCase()}`));
   const verified = candidates.filter((c) => {
-    if (c.installationId) return fromApp;
     const secret = c.hookSecretCipher ? open(c.hookSecretCipher) : null;
     return !!secret && signatureValid(secret, body, headers.signature);
   });
-  if (!verified.length) return fromApp ? { status: 200, synced: [] } : { status: 401 };
-  if (!fresh() || headers.event !== "push") return { status: 200, synced: [] };
+  if (!verified.length) return { status: 401 };
+  if (headers.delivery) {
+    if (seen.has(headers.delivery)) return { status: 200, synced: [] };
+    remember(headers.delivery);
+  }
+  if (headers.event !== "push") return { status: 200, synced: [] };
   const branch = payload.ref?.replace(/^refs\/heads\//, "");
   const commits = [...(payload.commits ?? []), ...(payload.head_commit ? [payload.head_commit] : [])];
   const touched = new Set(commits.flatMap((c) => [...(c.added ?? []), ...(c.modified ?? []), ...(c.removed ?? [])]));
