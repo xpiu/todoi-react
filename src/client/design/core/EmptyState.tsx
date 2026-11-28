@@ -31,12 +31,14 @@ export interface EmptyStateProps {
   /** Tighter padding for in-list use */
   compact?: boolean;
   children?: ReactNode;
+  /** One quiet closing line under the actions, e.g. where to get help */
+  footer?: ReactNode;
   style?: CSSProperties;
   className?: string;
   role?: string;
 }
 
-export function EmptyState({ icon, title, hint, action, secondary, surface = "chrome", tone = "neutral", compact = false, children, style, className, role }: EmptyStateProps) {
+export function EmptyState({ icon, title, hint, action, secondary, surface = "chrome", tone = "neutral", compact = false, children, footer, style, className, role }: EmptyStateProps) {
   const chrome = surface === "chrome";
   const cls = ["td-empty", chrome ? "td-empty-chrome" : "", tone === "danger" ? "td-empty-danger" : "", compact ? "td-empty-compact" : "", className ?? ""].filter(Boolean).join(" ");
   const btn = (a: EmptyStateAction | undefined, primary: boolean) =>
@@ -62,6 +64,7 @@ export function EmptyState({ icon, title, hint, action, secondary, surface = "ch
           {btn(secondary, false)}
         </div>
       ) : null}
+      {footer ? <p className="td-empty-hint td-empty-foot">{footer}</p> : null}
     </div>
   );
 }

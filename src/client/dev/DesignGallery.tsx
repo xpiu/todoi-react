@@ -239,7 +239,7 @@ export function DesignGallery() {
         <div className="td-gallery-wide">
           <EmptyState icon="list" title="No lists in this project yet" hint="Add a list to start collecting items, or begin with the usual three." action={{ label: "Add a list", icon: "plus", shortcut: "shift N" }} secondary={{ label: "To-do · Doing · Done" }} />
           <EmptyState surface="card" compact icon="inbox" title="Your inbox is empty" hint="Items you capture here can be dragged onto a project later." />
-          <EmptyState tone="danger" icon="cloud-off" title="Couldn't load this project" hint="Nothing is cached on this device yet." action={{ label: "Retry", icon: "refresh-cw" }} secondary={{ label: "Details" }} />
+          <EmptyState tone="danger" icon="cloud-off" title="We could not load this project" hint="Please check the connection and try again." action={{ label: "Retry", icon: "refresh-cw" }} secondary={{ label: "Details" }} footer={<>If the issue persists, please <a href="https://todoi.com/contact">contact</a> us.</>} />
           <div className="td-gallery-skeletons">
             <Skeleton width={120} />
             <Skeleton width={16} height={16} round />

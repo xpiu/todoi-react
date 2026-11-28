@@ -93,7 +93,7 @@ test("a key that names an archived or unknown item says so", async ({ page, fixt
 
 test("a slug nobody has says the project couldn't load, and other unknown paths are not projects", async ({ page, fixture: f }) => {
   await page.goto("/aaaaaaaaa2");
-  await expect(page.getByText("Couldn't load this project")).toBeVisible();
+  await expect(page.getByText("We could not load this project")).toBeVisible();
   // Not a slug (no digit, or the wrong length): no project is looked up.
   const lookups: string[] = [];
   page.on("request", (r) => void (r.url().includes("/api/projects?slug=") && lookups.push(r.url())));
@@ -104,7 +104,7 @@ test("a slug nobody has says the project couldn't load, and other unknown paths 
   for (const path of ["/inbox", "/projects", "/settings", "/search", "/archive"]) {
     await page.goto(path);
     await expect(page).toHaveURL(new RegExp(`${path}$`));
-    await expect(page.getByText("Couldn't load this project")).toHaveCount(0);
+    await expect(page.getByText("We could not load this project")).toHaveCount(0);
   }
   await page.goto(`/${f.slug}`);
   await expect(page.getByRole("button", { name: `Rename project: ${f.name}` })).toBeVisible();

@@ -60,6 +60,22 @@
   .td-empty-actions .td-btn-inverse {
     padding: 0 14px;
   }
+  /* The closing line: the hint's own type, and a link that stays in the text colour so the actions keep the weight */
+  .td-empty-foot {
+    margin-top: 14px;
+  }
+  .td-empty-foot a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    border-radius: var(--radius-xs);
+  }
+  .td-empty-foot a:hover {
+    color: var(--ink-900);
+  }
+  .td-empty-chrome .td-empty-foot a:hover {
+    color: var(--chrome-text);
+  }
   .td-empty-kbd {
     display: inline-block;
     padding: 0 5px;

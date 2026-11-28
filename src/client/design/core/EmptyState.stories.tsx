@@ -31,9 +31,10 @@ export const InCard: Story = {
   args: { surface: "card", compact: true, icon: "inbox", title: "Your inbox is empty", hint: "Items you capture here can be dragged onto a project later.", action: undefined, secondary: undefined },
 };
 export const LoadFailed: Story = {
-  args: { tone: "danger", role: "alert", icon: "cloud-off", title: "Couldn't load this project", hint: "Nothing is cached on this device yet.", action: { label: "Retry", icon: "refresh-cw", onClick: fn() }, secondary: { label: "Details", onClick: fn() } },
+  args: { tone: "danger", role: "alert", icon: "cloud-off", title: "We could not load this project", hint: "Please check the connection and try again.", action: { label: "Retry", icon: "refresh-cw", onClick: fn() }, secondary: { label: "Details", onClick: fn() }, footer: <>If the issue persists, please <a href="https://todoi.com/contact">contact</a> us.</> },
   async play({ args, canvas, userEvent }) {
-    await expect(canvas.getByRole("alert")).toHaveTextContent("Couldn't load this project");
+    await expect(canvas.getByRole("alert")).toHaveTextContent("We could not load this project");
+    await expect(canvas.getByRole("link", { name: "contact" })).toHaveAttribute("href", "https://todoi.com/contact");
     await userEvent.click(canvas.getByRole("button", { name: "Retry" }));
     await expect(args.action?.onClick).toHaveBeenCalledOnce();
   },

@@ -315,7 +315,7 @@ test("revoked project access removes cached private content including after offl
     await apiOffline(memberContext);
     await member.reload();
     await expect(member.getByText("Private title must disappear", { exact: true })).toHaveCount(0);
-    await expect(member.getByText("Couldn't load this project", { exact: true })).toBeVisible();
+    await expect(member.getByText("We could not load this project", { exact: true })).toBeVisible();
     await member.screenshot({ path: ".tmp/shots/sync-permission-revoked.png", animations: "disabled" });
   } finally { await memberContext.close(); }
 });
